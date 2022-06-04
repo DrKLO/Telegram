@@ -1,39 +1,59 @@
-## Telegram messenger for Android
+### Any **libtgvoip** or tgcalls **legacy\InstanceImplLegacy.cpp** voice voip call to Telegram Android 8.7.4 stuck on "exchnageinge keys " and disconnected after 20 secons**
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+### Very similar to Telegram Android 8.7.4 bug
+### Any other clinets works good
 
-## Creating your Telegram Application
+### Steps to reproduce
+For example:
+**### Use Telegram X and call to Telegram Android 8.7.4.**
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+### **Can it be fixed in Telegram Android?**
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+Logs
+```
+update data saving mode, config 0, enabled 0, reqd by peer 0
+Set remote endpoints, allowP2P=1, connectionMaxLayer=92
+Adding endpoint: 91.108.13.3:599 91.108.17.40:599 91.108.9.20:599
+Starting voip controller
+trying bind to port 19585
+Bound to local UDP port 19585
+Receive thread starting
+before create audio io
+AEC: 1 NS: 1 AGC: 1
+Socket 24 is ready to send
+Send udp pings
+Sending UDP ping
+Audio initialization took 0.000446 seconds
+Call state changed to 2
+=== send thread exiting ===
+Received UDP ping reply
+Sending UDP ping
+Received UDP ping reply
+Received init ack
+peer version from init ack 9
+jitter: set min packet count 2
+Sending public endpoints request to 91.108.9.20:599, 91.108.13.3:599, 91.108.17.40:599
+Send udp pings
+Sending UDP ping
+Received UDP ping
+Received init ack
+Received UDP ping reply
+Send udp pings
+Sending UDP ping
+Received UDP ping
+Received init ack
+Received UDP ping reply
+Received init ack
+Call state changed to 3
+UDP ping reply count: 4.00
+```
 
-### API, Protocol documentation
+![image](https://user-images.githubusercontent.com/95701997/170686050-b971cea1-c8fa-4d4e-8cb6-14bc4fd3833b.png)
 
-Telegram API manuals: https://core.telegram.org/api
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+	sometimes it apears wtih 4 emoji on top
 
-### Compilation Guide
+![image](https://user-images.githubusercontent.com/95701997/170875064-2e265885-79f9-41e3-bd2b-0cad2b5dca03.png)
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
 
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
-
-1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
-
-### Localization
-
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+InstanceImplLegacy.cpp - libtgvoip STOPPED WORK in 8.7.4
