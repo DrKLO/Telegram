@@ -330,7 +330,6 @@ public class SimpleExoPlayer extends BasePlayer
   private final WakeLockManager wakeLockManager;
   private final WifiLockManager wifiLockManager;
 
-  private boolean needSetSurface = true;
 
   @Nullable private Format videoFormat;
   @Nullable private Format audioFormat;
@@ -603,7 +602,6 @@ public class SimpleExoPlayer extends BasePlayer
       clearVideoDecoderOutputBufferRenderer();
     }
     this.textureView = textureView;
-    needSetSurface = true;
     if (textureView == null) {
       setVideoSurfaceInternal(/* surface= */ null, /* ownsSurface= */ true);
       maybeNotifySurfaceSizeChanged(/* width= */ 0, /* height= */ 0);
@@ -1795,10 +1793,6 @@ public class SimpleExoPlayer extends BasePlayer
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-      if (needSetSurface) {
-        setVideoSurfaceInternal(new Surface(surfaceTexture), true);
-        needSetSurface = false;
-      }
       setVideoSurfaceInternal(new Surface(surfaceTexture), /* ownsSurface= */ true);
       maybeNotifySurfaceSizeChanged(width, height);
     }
@@ -1817,7 +1811,6 @@ public class SimpleExoPlayer extends BasePlayer
       }
       setVideoSurfaceInternal(/* surface= */ null, /* ownsSurface= */ true);
       maybeNotifySurfaceSizeChanged(/* width= */ 0, /* height= */ 0);
-      needSetSurface = true;
       return true;
     }
 

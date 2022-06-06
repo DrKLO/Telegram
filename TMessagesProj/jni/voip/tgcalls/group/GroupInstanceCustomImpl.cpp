@@ -1514,7 +1514,13 @@ public:
         std::unique_ptr<AudioCapturePostProcessor> audioProcessor = nullptr;
     #endif
         if (_videoContentType != VideoContentType::Screencast) {
-            PlatformInterface::SharedInstance()->configurePlatformAudio();
+            int numChannels = 1;
+#ifdef WEBRTC_IOS
+            if (_disableAudioInput) {
+                numChannels = 2;
+            }
+#endif
+            PlatformInterface::SharedInstance()->configurePlatformAudio(numChannels);
 
     #if USE_RNNOISE
             audioProcessor = std::make_unique<AudioCapturePostProcessor>([weak, threads = _threads](GroupLevelValue const &level) {
@@ -3297,7 +3303,7 @@ private:
 #endif
         const auto create = [&](webrtc::AudioDeviceModule::AudioLayer layer) {
 #ifdef WEBRTC_IOS
-            return rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, disableRecording);
+            return rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, disableRecording, disableRecording ? 2 : 1);
 #else
             return webrtc::AudioDeviceModule::Create(
                 layer,

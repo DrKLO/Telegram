@@ -90,6 +90,7 @@ import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -108,7 +109,6 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -124,9 +124,13 @@ import org.webrtc.VideoFrame;
 import org.webrtc.VideoSink;
 import org.webrtc.voiceengine.WebRtcAudioTrack;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
@@ -2332,11 +2336,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			final boolean enableAec = !(sysAecAvailable && serverConfig.useSystemAec);
 			final boolean enableNs = !(sysNsAvailable && serverConfig.useSystemNs);
 			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip" + privateCall.id) : VoIPHelper.getLogFilePath(privateCall.id, false);
-			final String statisLogFilePath = "";
-			final Instance.Config config = new Instance.Config(initializationTimeout, receiveTimeout, voipDataSaving, privateCall.p2p_allowed, enableAec, enableNs, true, false, serverConfig.enableStunMarking, logFilePath, statisLogFilePath, privateCall.protocol.max_layer);
+			final String statsLogFilePath = VoIPHelper.getLogFilePath(privateCall.id, true);
+			final Instance.Config config = new Instance.Config(initializationTimeout, receiveTimeout, voipDataSaving, privateCall.p2p_allowed, enableAec, enableNs, true, false, serverConfig.enableStunMarking, logFilePath, statsLogFilePath, privateCall.protocol.max_layer);
 
 			// persistent state
-			final String persistentStateFilePath = new File(ApplicationLoader.applicationContext.getFilesDir(), "voip_persistent_state.json").getAbsolutePath();
+			final String persistentStateFilePath = new File(ApplicationLoader.applicationContext.getCacheDir(), "voip_persistent_state.json").getAbsolutePath();
 
 			// endpoints
 			final boolean forceTcp = preferences.getBoolean("dbg_force_tcp_in_calls", false);
@@ -3362,10 +3366,37 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}*/
 	}
 
+	public static String convertStreamToString(InputStream is) throws Exception {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		StringBuilder sb = new StringBuilder();
+		String line = null;
+		while ((line = reader.readLine()) != null) {
+			sb.append(line).append("\n");
+		}
+		reader.close();
+		return sb.toString();
+	}
+
+	public static String getStringFromFile(String filePath) throws Exception {
+		File fl = new File(filePath);
+		FileInputStream fin = new FileInputStream(fl);
+		String ret = convertStreamToString(fin);
+		fin.close();
+		return ret;
+	}
+
 	private void onTgVoipStop(Instance.FinalState finalState) {
 		if (user == null) {
 			return;
 		}
+		if (TextUtils.isEmpty(finalState.debugLog)) {
+			try {
+				finalState.debugLog = getStringFromFile(VoIPHelper.getLogFilePath(privateCall.id, true));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
 		if (needRateCall || forceRating || finalState.isRatingSuggested) {
 			startRatingActivity();
 			needRateCall = false;
@@ -3377,13 +3408,60 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			req.peer = new TLRPC.TL_inputPhoneCall();
 			req.peer.access_hash = privateCall.access_hash;
 			req.peer.id = privateCall.id;
+
+			File file = new File(VoIPHelper.getLogFilePath(privateCall.id, true));
+			String cachedFile = MediaController.copyFileToCache(Uri.fromFile(file), "log");
+
 			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.d("Sent debug logs, response = " + response);
 				}
+				try {
+					if (response instanceof TLRPC.TL_boolFalse) {
+						AndroidUtilities.runOnUIThread(() -> {
+							uploadLogFile(cachedFile);
+						});
+					} else {
+						File cacheFile = new File(cachedFile);
+						cacheFile.delete();
+					}
+				} catch (Exception e) {
+					FileLog.e(e);
+				}
 			});
 			needSendDebugLog = false;
 		}
+	}
+
+	private void uploadLogFile(String filePath) {
+		NotificationCenter.NotificationCenterDelegate uploadDelegate = new NotificationCenter.NotificationCenterDelegate() {
+			@Override
+			public void didReceivedNotification(int id, int account, Object... args) {
+				if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
+					final String location = (String) args[0];
+					if (location.equals(filePath)) {
+						if (id == NotificationCenter.fileUploaded) {
+							TLRPC.TL_phone_saveCallLog req = new TLRPC.TL_phone_saveCallLog();
+							final TLRPC.InputFile file = (TLRPC.InputFile) args[1];
+							req.file = file;
+							req.peer = new TLRPC.TL_inputPhoneCall();
+							req.peer.access_hash = privateCall.access_hash;
+							req.peer.id = privateCall.id;
+							ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+								if (BuildVars.LOGS_ENABLED) {
+									FileLog.d("Sent debug file log, response = " + response);
+								}
+							});
+						}
+						NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
+						NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadFailed);
+					}
+				}
+			}
+		};
+		NotificationCenter.getInstance(currentAccount).addObserver(uploadDelegate, NotificationCenter.fileUploaded);
+		NotificationCenter.getInstance(currentAccount).addObserver(uploadDelegate, NotificationCenter.fileUploadFailed);
+		FileLoader.getInstance(currentAccount).uploadFile(filePath, false, true, ConnectionsManager.FileTypeFile);
 	}
 
 	private void initializeAccountRelatedThings() {

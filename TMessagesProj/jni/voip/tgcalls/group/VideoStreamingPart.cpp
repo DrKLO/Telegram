@@ -87,20 +87,16 @@ public:
         return _frame;
     }
 
-    double pts(AVStream *stream) {
+    double pts(AVStream *stream, double &firstFramePts) {
         int64_t framePts = _frame->pts;
         double spf = av_q2d(stream->time_base);
-        return ((double)framePts) * spf;
-    }
-
-    double duration(AVStream *stream) {
-        int64_t frameDuration = _frame->pkt_duration;
-        double spf = av_q2d(stream->time_base);
-        if (frameDuration != 0) {
-            return ((double)frameDuration) * spf;
-        } else {
-            return spf;
+        double value = ((double)framePts) * spf;
+        
+        if (firstFramePts < 0.0) {
+            firstFramePts = value;
         }
+        
+        return value - firstFramePts;
     }
 
 private:
@@ -280,6 +276,9 @@ public:
 
         int ret = 0;
 
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
+        const
+#endif
         AVInputFormat *inputFormat = av_find_input_format(container.c_str());
         if (!inputFormat) {
             _didReadToEnd = true;
@@ -323,7 +322,7 @@ public:
         }
 
         if (videoCodecParameters && videoStream) {
-            AVCodec *codec = avcodec_find_decoder(videoCodecParameters->codec_id);
+            const AVCodec *codec = avcodec_find_decoder(videoCodecParameters->codec_id);
             if (codec) {
                 _codecContext = avcodec_alloc_context3(codec);
                 ret = avcodec_parameters_to_context(_codecContext, videoCodecParameters);
@@ -410,7 +409,7 @@ public:
                 .set_rotation(_rotation)
                 .build();
 
-            return VideoStreamingPartFrame(_endpointId, videoFrame, _frame.pts(_videoStream), _frame.duration(_videoStream), _frameIndex);
+            return VideoStreamingPartFrame(_endpointId, videoFrame, _frame.pts(_videoStream, _firstFramePts), _frameIndex);
         } else {
             return absl::nullopt;
         }
@@ -490,6 +489,7 @@ private:
     std::vector<VideoStreamingPartFrame> _finalFrames;
 
     int _frameIndex = 0;
+    double _firstFramePts = -1.0;
     bool _didReadToEnd = false;
 };
 
@@ -566,25 +566,33 @@ public:
 
     absl::optional<VideoStreamingPartFrame> getFrameAtRelativeTimestamp(double timestamp) {
         while (true) {
-            if (!_currentFrame) {
+            while (_availableFrames.size() >= 2) {
+                if (timestamp >= _availableFrames[1].pts) {
+                    _availableFrames.erase(_availableFrames.begin());
+                } else {
+                    break;
+                }
+            }
+            
+            if (_availableFrames.size() < 2) {
                 if (!_parsedVideoParts.empty()) {
                     auto result = _parsedVideoParts[0]->getNextFrame();
                     if (result) {
-                        _currentFrame = result;
-                        _relativeTimestamp += result->duration;
+                        _availableFrames.push_back(result.value());
                     } else {
                         _parsedVideoParts.erase(_parsedVideoParts.begin());
-                        continue;
                     }
+                    continue;
                 }
             }
 
-            if (_currentFrame) {
-                if (timestamp <= _relativeTimestamp) {
-                    return _currentFrame;
-                } else {
-                    _currentFrame = absl::nullopt;
+            if (!_availableFrames.empty()) {
+                for (size_t i = 1; i < _availableFrames.size(); i++) {
+                    if (timestamp < _availableFrames[i].pts) {
+                        return _availableFrames[i - 1];
+                    }
                 }
+                return _availableFrames[_availableFrames.size() - 1];
             } else {
                 return absl::nullopt;
             }
@@ -597,6 +605,10 @@ public:
         } else {
             return absl::nullopt;
         }
+    }
+    
+    bool hasRemainingFrames() const {
+        return !_parsedVideoParts.empty();
     }
 
     int getAudioRemainingMilliseconds() {
@@ -626,8 +638,7 @@ public:
 private:
     absl::optional<VideoStreamInfo> _videoStreamInfo;
     std::vector<std::unique_ptr<VideoStreamingPartInternal>> _parsedVideoParts;
-    absl::optional<VideoStreamingPartFrame> _currentFrame;
-    double _relativeTimestamp = 0.0;
+    std::vector<VideoStreamingPartFrame> _availableFrames;
 
     std::vector<std::unique_ptr<AudioStreamingPart>> _parsedAudioParts;
 };
@@ -654,6 +665,12 @@ absl::optional<std::string> VideoStreamingPart::getActiveEndpointId() const {
     return _state
         ? _state->getActiveEndpointId()
         : absl::nullopt;
+}
+
+bool VideoStreamingPart::hasRemainingFrames() const {
+    return _state
+        ? _state->hasRemainingFrames()
+        : false;
 }
 
 int VideoStreamingPart::getAudioRemainingMilliseconds() {

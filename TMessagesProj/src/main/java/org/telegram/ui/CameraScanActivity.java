@@ -27,15 +27,18 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -81,6 +84,7 @@ import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -200,6 +204,7 @@ public class CameraScanActivity extends BaseFragment {
                 actionBarLayout[0] = null;
             }
         };
+        bottomSheet.setUseLightStatusBar(false);
         AndroidUtilities.setLightNavigationBar(bottomSheet.getWindow(), false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             bottomSheet.getWindow().setNavigationBarColor(0xff000000);
@@ -418,7 +423,7 @@ public class CameraScanActivity extends BaseFragment {
         fragmentView = viewGroup;
 
         if (currentType == TYPE_QR || currentType == TYPE_QR_LOGIN) {
-            fragmentView.postDelayed(this::initCameraView, 200);
+            fragmentView.postDelayed(this::initCameraView, 350);
         } else {
             initCameraView();
         }
@@ -429,6 +434,7 @@ public class CameraScanActivity extends BaseFragment {
         } else {
             actionBar.setBackgroundDrawable(null);
             actionBar.setAddToContainer(false);
+            actionBar.setTitleColor(0xffffffff);
             actionBar.setItemsColor(0xffffffff, false);
             actionBar.setItemsBackgroundColor(0x22ffffff, false);
             viewGroup.setBackgroundColor(Theme.getColor(Theme.key_wallet_blackBackground));
@@ -440,10 +446,12 @@ public class CameraScanActivity extends BaseFragment {
         }
 
         Paint selectionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        selectionPaint.setPathEffect(LinkPath.roundedEffect);
-        selectionPaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 50));
+        selectionPaint.setPathEffect(LinkPath.getRoundedEffect());
+        selectionPaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 40));
         titleTextView = new TextView(context) {
             LinkPath textPath;
+            private LinkSpanDrawable<URLSpanNoUnderline> pressedLink;
+            LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -468,9 +476,54 @@ public class CameraScanActivity extends BaseFragment {
             }
 
             @Override
+            public boolean onTouchEvent(MotionEvent e) {
+                final Layout textLayout = getLayout();
+                int textX = 0, textY = 0;
+                int x = (int) (e.getX() - textX);
+                int y = (int) (e.getY() - textY);
+                if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_UP) {
+                    final int line = textLayout.getLineForVertical(y);
+                    final int off = textLayout.getOffsetForHorizontal(line, x);
+
+                    final float left = textLayout.getLineLeft(line);
+                    if (left <= x && left + textLayout.getLineWidth(line) >= x && y >= 0 && y <= textLayout.getHeight()) {
+                        Spannable buffer = (Spannable) textLayout.getText();
+                        ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                        if (link.length != 0) {
+                            links.clear();
+                            if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                                pressedLink = new LinkSpanDrawable(link[0], null, e.getX(), e.getY());
+                                pressedLink.setColor(0x2dffffff);
+                                links.addLink(pressedLink);
+                                int start = buffer.getSpanStart(pressedLink.getSpan());
+                                int end = buffer.getSpanEnd(pressedLink.getSpan());
+                                LinkPath path = pressedLink.obtainNewPath();
+                                path.setCurrentLayout(textLayout, start, textY);
+                                textLayout.getSelectionPath(start, end, path);
+                            } else if (e.getAction() == MotionEvent.ACTION_UP) {
+                                if (pressedLink != null && pressedLink.getSpan() == link[0]) {
+                                    link[0].onClick(this);
+                                }
+                                pressedLink = null;
+                            }
+                            return true;
+                        }
+                    }
+                }
+                if (e.getAction() == MotionEvent.ACTION_UP || e.getAction() == MotionEvent.ACTION_CANCEL) {
+                    links.clear();
+                    pressedLink = null;
+                }
+                return super.onTouchEvent(e);
+            }
+
+            @Override
             protected void onDraw(Canvas canvas) {
                 if (textPath != null) {
                     canvas.drawPath(textPath, selectionPaint);
+                }
+                if (links.draw(canvas)) {
+                    invalidate();
                 }
                 super.onDraw(canvas);
             }
@@ -507,8 +560,8 @@ public class CameraScanActivity extends BaseFragment {
                     SpannableStringBuilder spanned = new SpannableStringBuilder(text);
 
                     String[] links = new String[] {
-                        LocaleController.getString("AuthAnotherWebClientUrl", R.string.AuthAnotherWebClientUrl),
-                        LocaleController.getString("AuthAnotherClientDownloadClientUrl", R.string.AuthAnotherClientDownloadClientUrl)
+                        LocaleController.getString("AuthAnotherClientDownloadClientUrl", R.string.AuthAnotherClientDownloadClientUrl),
+                        LocaleController.getString("AuthAnotherWebClientUrl", R.string.AuthAnotherWebClientUrl)
                     };
                     for (int i = 0; i < links.length; ++i) {
                         text = spanned.toString();
@@ -521,15 +574,14 @@ public class CameraScanActivity extends BaseFragment {
                             spanned.replace(index1, index1 + 1, " ");
                             index1 += 1;
                             index2 += 1;
-                            spanned.setSpan(new URLSpanNoUnderline(links[i]), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            spanned.setSpan(new URLSpanNoUnderline(links[i], true), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             spanned.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         } else {
                             break;
                         }
                     }
 
-                    titleTextView.setLinkTextColor(Color.WHITE);
-                    titleTextView.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+                    titleTextView.setLinkTextColor(0xffffffff);
 
                     titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     titleTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
@@ -771,9 +823,9 @@ public class CameraScanActivity extends BaseFragment {
         if (normalBounds == null) {
             normalBounds = new RectF();
         }
-        int width = AndroidUtilities.displaySize.x,
-                height = AndroidUtilities.displaySize.y,
-                side = (int) (Math.min(width, height) / 1.5f);
+        int width = Math.max(AndroidUtilities.displaySize.x, fragmentView.getWidth()),
+            height = Math.max(AndroidUtilities.displaySize.y, fragmentView.getHeight()),
+            side = (int) (Math.min(width, height) / 1.5f);
         normalBounds.set(
             (width - side) / 2f / (float) width,
             (height - side) / 2f / (float) height,

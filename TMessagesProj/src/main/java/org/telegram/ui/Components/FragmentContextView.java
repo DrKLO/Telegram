@@ -389,9 +389,12 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             public void draw(Canvas canvas) {
                 super.draw(canvas);
 
-                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
-                joinButtonFlicker.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4));
-                invalidate();
+                final int halfOutlineWidth = AndroidUtilities.dp(1);
+                AndroidUtilities.rectTmp.set(halfOutlineWidth, halfOutlineWidth, getWidth() - halfOutlineWidth, getHeight() - halfOutlineWidth);
+                joinButtonFlicker.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(16));
+                if (joinButtonFlicker.getProgress() < 1f && !joinButtonFlicker.repeatEnabled) {
+                    invalidate();
+                }
             }
 
             @Override
@@ -403,7 +406,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         };
         joinButton.setText(LocaleController.getString("VoipChatJoin", R.string.VoipChatJoin));
         joinButton.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
-        joinButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+        joinButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
         joinButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         joinButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         joinButton.setGravity(Gravity.CENTER);
@@ -1999,7 +2002,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     private void startJoinFlickerAnimation() {
         if (joinButtonFlicker.getProgress() > 1) {
-            AndroidUtilities.runOnUIThread(()-> joinButtonFlicker.setProgress(0), 150);
+            AndroidUtilities.runOnUIThread(() -> {
+                joinButtonFlicker.setProgress(0);
+                joinButton.invalidate();
+            }, 150);
         }
     }
 

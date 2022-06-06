@@ -113,6 +113,9 @@ public class TextCheckCell2 extends FrameLayout {
     @Override
     public void setEnabled(boolean value) {
         super.setEnabled(value);
+        textView.clearAnimation();
+        valueTextView.clearAnimation();
+        checkBox.clearAnimation();
         if (value) {
             textView.setAlpha(1.0f);
             valueTextView.setAlpha(1.0f);
@@ -121,6 +124,28 @@ public class TextCheckCell2 extends FrameLayout {
             checkBox.setAlpha(0.5f);
             textView.setAlpha(0.5f);
             valueTextView.setAlpha(0.5f);
+        }
+    }
+
+    public void setEnabled(boolean value, boolean animated) {
+        super.setEnabled(value);
+        if (animated) {
+            textView.clearAnimation();
+            valueTextView.clearAnimation();
+            checkBox.clearAnimation();
+            textView.animate().alpha(value ? 1 : .5f).start();
+            valueTextView.animate().alpha(value ? 1 : .5f).start();
+            checkBox.animate().alpha(value ? 1 : .5f).start();
+        } else {
+            if (value) {
+                textView.setAlpha(1.0f);
+                valueTextView.setAlpha(1.0f);
+                checkBox.setAlpha(1.0f);
+            } else {
+                checkBox.setAlpha(0.5f);
+                textView.setAlpha(0.5f);
+                valueTextView.setAlpha(0.5f);
+            }
         }
     }
 

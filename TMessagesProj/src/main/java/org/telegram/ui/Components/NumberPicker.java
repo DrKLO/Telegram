@@ -39,12 +39,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
 
 public class NumberPicker extends LinearLayout {
 
+    public static final int DEFAULT_SIZE_PER_COUNT = 42;
     private int SELECTOR_WHEEL_ITEM_COUNT = 3;
     private static final long DEFAULT_LONG_PRESS_UPDATE_INTERVAL = 300;
     private int SELECTOR_MIDDLE_ITEM_INDEX = SELECTOR_WHEEL_ITEM_COUNT / 2;
@@ -265,8 +267,8 @@ public class NumberPicker extends LinearLayout {
         if (changed) {
             initializeSelectorWheel();
             initializeFadingEdges();
-            mTopSelectionDividerTop = (getHeight() - mSelectionDividersDistance) / 2 - mSelectionDividerHeight;
-            mBottomSelectionDividerBottom = mTopSelectionDividerTop + 2 * mSelectionDividerHeight + mSelectionDividersDistance;
+            mTopSelectionDividerTop = (getHeight() - mTextSize - mSelectorTextGapHeight) / 2;
+            mBottomSelectionDividerBottom = (getHeight() + mTextSize + mSelectorTextGapHeight) / 2;
         }
     }
 
@@ -517,7 +519,6 @@ public class NumberPicker extends LinearLayout {
         while (mCurrentScrollOffset - mInitialScrollOffset > mSelectorTextGapHeight) {
             mCurrentScrollOffset -= mSelectorElementHeight;
             decrementSelectorIndices(selectorIndices);
-            setValueInternal(selectorIndices[SELECTOR_MIDDLE_ITEM_INDEX], true);
             if (!mWrapSelectorWheel && selectorIndices[SELECTOR_MIDDLE_ITEM_INDEX] <= mMinValue && mCurrentScrollOffset > mInitialScrollOffset) {
                 mCurrentScrollOffset = mInitialScrollOffset;
             }
@@ -525,11 +526,11 @@ public class NumberPicker extends LinearLayout {
         while (mCurrentScrollOffset - mInitialScrollOffset < -mSelectorTextGapHeight) {
             mCurrentScrollOffset += mSelectorElementHeight;
             incrementSelectorIndices(selectorIndices);
-            setValueInternal(selectorIndices[SELECTOR_MIDDLE_ITEM_INDEX], true);
             if (!mWrapSelectorWheel && selectorIndices[SELECTOR_MIDDLE_ITEM_INDEX] >= mMaxValue && mCurrentScrollOffset < mInitialScrollOffset) {
                 mCurrentScrollOffset = mInitialScrollOffset;
             }
         }
+        setValueInternal(selectorIndices[SELECTOR_MIDDLE_ITEM_INDEX], true);
     }
 
     @Override
@@ -712,6 +713,7 @@ public class NumberPicker extends LinearLayout {
         removeAllCallbacks();
     }
 
+    private final static CubicBezierInterpolator interpolator = new CubicBezierInterpolator(0, 0.5f, 0.5f, 1f);
     @Override
     protected void onDraw(Canvas canvas) {
         float x = (getRight() - getLeft()) / 2 + textOffset;
@@ -728,7 +730,40 @@ public class NumberPicker extends LinearLayout {
             // IME he may see a dimmed version of the old value intermixed
             // with the new one.
             if (scrollSelectorValue != null && (i != SELECTOR_MIDDLE_ITEM_INDEX || mInputText.getVisibility() != VISIBLE)) {
-                canvas.drawText(scrollSelectorValue, x, y, mSelectorWheelPaint);
+                if (SELECTOR_WHEEL_ITEM_COUNT > 3) {
+                    float p;
+                    float cY = getMeasuredHeight() / 2f;
+                    float r = getMeasuredHeight() * 0.5f;
+                    float localY = y - mSelectorWheelPaint.getTextSize() / 2f;
+                    boolean top = true;
+                    if (localY < cY) {
+                        p = localY / r;
+                    } else {
+                        p = (getMeasuredHeight() - localY) / r;
+                        top = false;
+                    }
+                    p = interpolator.getInterpolation(Utilities.clamp(p, 1f, 0));
+                    float yOffset = (1f - p) * mSelectorWheelPaint.getTextSize();
+                    if (!top) {
+                        yOffset = -yOffset;
+                    }
+                    int oldAlpha = -1;
+
+                    canvas.save();
+                    canvas.translate(0, yOffset);
+                    canvas.scale(0.8f + p * 0.2f, p, x, localY);
+                    if (p < 0.1f) {
+                        oldAlpha = mSelectorWheelPaint.getAlpha();
+                        mSelectorWheelPaint.setAlpha((int) (oldAlpha * p / 0.1f));
+                    }
+                    canvas.drawText(scrollSelectorValue, x, y, mSelectorWheelPaint);
+                    canvas.restore();
+                    if (oldAlpha != -1) {
+                        mSelectorWheelPaint.setAlpha(oldAlpha);
+                    }
+                } else {
+                    canvas.drawText(scrollSelectorValue, x, y, mSelectorWheelPaint);
+                }
             }
             y += mSelectorElementHeight;
         }
@@ -846,7 +881,7 @@ public class NumberPicker extends LinearLayout {
         initializeSelectorWheelIndices();
         int[] selectorIndices = mSelectorIndices;
         int totalTextHeight = selectorIndices.length * mTextSize;
-        float totalTextGapHeight = (getBottom() - getTop()) - totalTextHeight;
+        float totalTextGapHeight = (getBottom() - getTop() + mTextSize) - totalTextHeight;
         float textGapCount = selectorIndices.length;
         mSelectorTextGapHeight = (int) (totalTextGapHeight / textGapCount + 0.5f);
         mSelectorElementHeight = mTextSize + mSelectorTextGapHeight;

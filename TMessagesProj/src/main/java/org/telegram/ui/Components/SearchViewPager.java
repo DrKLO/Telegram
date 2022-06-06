@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -185,12 +186,15 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     public void onTextChanged(String text) {
-        lastSearchString = text;
         View view = getCurrentView();
         boolean reset = false;
         if (!attached) {
             reset = true;
         }
+        if (TextUtils.isEmpty(lastSearchString)) {
+            reset = true;
+        }
+        lastSearchString = text;
         search(view, getCurrentPosition(), text, reset);
     }
 

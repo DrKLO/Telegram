@@ -231,6 +231,33 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public float lockedAspectRatio;
 
         public boolean initied;
+
+        @Override
+        public CropState clone() {
+            CropState cloned = new CropState();
+
+            cloned.cropPx = this.cropPx;
+            cloned.cropPy = this.cropPy;
+            cloned.cropScale = this.cropScale;
+            cloned.cropRotate = this.cropRotate;
+            cloned.cropPw = this.cropPw;
+            cloned.cropPh = this.cropPh;
+            cloned.transformWidth = this.transformWidth;
+            cloned.transformHeight = this.transformHeight;
+            cloned.transformRotation = this.transformRotation;
+            cloned.mirrored = this.mirrored;
+
+            cloned.stateScale = this.stateScale;
+            cloned.scale = this.scale;
+            cloned.matrix = this.matrix;
+            cloned.width = this.width;
+            cloned.height = this.height;
+            cloned.freeform = this.freeform;
+            cloned.lockedAspectRatio = this.lockedAspectRatio;
+
+            cloned.initied = this.initied;
+            return cloned;
+        }
     }
 
     public static class MediaEditState {
@@ -4082,7 +4109,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         try {
             int selectedType = type;
             ContentValues contentValues = new ContentValues();
-            String extension = MimeTypeMap.getFileExtensionFromUrl(sourceFile.getAbsolutePath());
+            String extension = FileLoader.getFileExtension(sourceFile);
             String mimeType = null;
             if (extension != null) {
                 mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
@@ -4831,7 +4858,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             resultWidth = temp;
         }
 
-        if (framerate > 30 && (Math.min(resultHeight, resultWidth) <= 480)) {
+        if (framerate > 40 && (Math.min(resultHeight, resultWidth) <= 480)) {
             framerate = 30;
         }
 
@@ -4885,6 +4912,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 info.mediaEntities,
                 info.isPhoto,
                 info.cropState,
+                info.roundVideo,
                 callback);
 
 
@@ -4929,12 +4957,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             minCompressFactor = 1f;
         } else if (Math.min(height, width) >= 720) {
             maxBitrate = 2600_000;
-            compressFactor = 0.8f;
-            minCompressFactor = 0.8f;
+            compressFactor = 1f;
+            minCompressFactor = 1f;
         } else if (Math.min(height, width) >= 480) {
             maxBitrate = 1000_000;
-            compressFactor = 0.7f;
-            minCompressFactor = 0.8f;
+            compressFactor = 0.75f;
+            minCompressFactor = 0.9f;
         } else {
             maxBitrate = 750_000;
             compressFactor = 0.6f;

@@ -50,6 +50,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
@@ -168,6 +169,8 @@ public class ActionBarMenuItem extends FrameLayout {
     private float transitionOffset;
     private View showSubMenuFrom;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private OnClickListener onClickListener;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor) {
         this(context, menu, backgroundColor, iconColor, false);
@@ -337,7 +340,7 @@ public class ActionBarMenuItem extends FrameLayout {
         }
         rect = new Rect();
         location = new int[2];
-        popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), resourcesProvider);
+        popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert2, resourcesProvider, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK);
         popupLayout.setOnTouchListener((v, event) -> {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 if (popupWindow != null && popupWindow.isShowing()) {
@@ -354,6 +357,14 @@ public class ActionBarMenuItem extends FrameLayout {
                 popupWindow.dismiss();
             }
         });
+
+        if (popupLayout.getSwipeBack() != null) {
+            popupLayout.getSwipeBack().setOnClickListener(view -> {
+                if (popupWindow != null) {
+                    popupWindow.dismiss();
+                }
+            });
+        }
     }
 
     public void removeAllSubItems() {
@@ -511,6 +522,35 @@ public class ActionBarMenuItem extends FrameLayout {
         return cell;
     }
 
+    public ActionBarMenuSubItem addSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
+        createPopupLayout();
+
+        ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getContext(), false, false, false, resourcesProvider);
+        cell.setTextAndIcon(text, icon, iconDrawable);
+        cell.setMinimumWidth(AndroidUtilities.dp(196));
+        cell.setRightIcon(R.drawable.msg_arrowright);
+        popupLayout.addView(cell);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+        if (LocaleController.isRTL) {
+            layoutParams.gravity = Gravity.RIGHT;
+        }
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(48);
+        cell.setLayoutParams(layoutParams);
+        int swipeBackIndex = popupLayout.addViewToSwipeBack(viewToSwipeBack);
+        cell.openSwipeBackLayout = () -> {
+            if (popupLayout.getSwipeBack() != null) {
+                popupLayout.getSwipeBack().openForeground(swipeBackIndex);
+            }
+        };
+        cell.setOnClickListener(view -> {
+            cell.openSwipeBack();
+        });
+
+        popupLayout.swipeBackGravityRight = true;
+        return cell;
+    }
+
     public View addDivider(int color) {
         createPopupLayout();
 
@@ -579,6 +619,9 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public ActionBarPopupWindow.ActionBarPopupWindowLayout getPopupLayout() {
+        if (popupLayout == null) {
+            createPopupLayout();
+        }
         return popupLayout;
     }
 
@@ -613,7 +656,11 @@ public class ActionBarMenuItem extends FrameLayout {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     popupLayout.measure(widthMeasureSpec, heightMeasureSpec);
-                    topView.getLayoutParams().width = popupLayout.getMeasuredWidth() - AndroidUtilities.dp(16);
+                    if (popupLayout.getSwipeBack() != null) {
+                        topView.getLayoutParams().width = popupLayout.getSwipeBack().getChildAt(0).getMeasuredWidth();
+                    } else {
+                        topView.getLayoutParams().width = popupLayout.getMeasuredWidth() - AndroidUtilities.dp(16);
+                    }
                     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 }
             };
@@ -629,6 +676,7 @@ public class ActionBarMenuItem extends FrameLayout {
             linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
             linearLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, -AndroidUtilities.dp(4), 0, 0));
             container = linearLayout;
+            popupLayout.setTopView(frameLayout);
         }
         popupWindow = new ActionBarPopupWindow(container, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
         if (animationEnabled && Build.VERSION.SDK_INT >= 19) {
@@ -673,6 +721,9 @@ public class ActionBarMenuItem extends FrameLayout {
             updateOrShowPopup(true, false);
         }
         popupLayout.updateRadialSelectors();
+        if (popupLayout.getSwipeBack() != null) {
+            popupLayout.getSwipeBack().closeForeground(false);
+        }
         popupWindow.startAnimation();
     }
     public void toggleSubMenu() {
@@ -1389,6 +1440,15 @@ public class ActionBarMenuItem extends FrameLayout {
         return this;
     }
 
+    public OnClickListener getOnClickListener() {
+        return onClickListener;
+    }
+
+    @Override
+    public void setOnClickListener(@Nullable OnClickListener l) {
+        super.setOnClickListener(onClickListener = l);
+    }
+
     private void checkClearButton() {
         if (clearButton != null) {
             if (!hasRemovableFilters() && TextUtils.isEmpty(searchField.getText()) &&
@@ -1852,5 +1912,28 @@ public class ActionBarMenuItem extends FrameLayout {
             Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
             return color != null ? color : Theme.getColor(key);
         }
+    }
+
+    public ActionBarPopupWindow.GapView addColoredGap() {
+        createPopupLayout();
+        ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(getContext(), Theme.key_graySection);
+        gap.setTag(R.id.fit_width_tag, 1);
+        popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+        return gap;
+    }
+
+    public static ActionBarMenuSubItem addItem(ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout, int icon, String text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
+        ActionBarMenuSubItem cell = new ActionBarMenuSubItem(windowLayout.getContext(), needCheck, false, false, resourcesProvider);
+        cell.setTextAndIcon(text, icon);
+        cell.setMinimumWidth(AndroidUtilities.dp(196));
+        windowLayout.addView(cell);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+        if (LocaleController.isRTL) {
+            layoutParams.gravity = Gravity.RIGHT;
+        }
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(48);
+        cell.setLayoutParams(layoutParams);
+        return cell;
     }
 }

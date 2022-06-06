@@ -242,7 +242,11 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         Intro.setPage(currentViewPagerPage);
                         Intro.setDate(time);
                         Intro.onDrawFrame(0);
-                        eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
+                        if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
+                            try {
+                                eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
+                            } catch (Exception ignored) {} // If display or surface already destroyed
+                        }
                     });
                     eglThread.postRunnable(eglThread.drawRunnable);
                 }

@@ -50,10 +50,11 @@ public class MediaCodecVideoConvertor {
                                 ArrayList<VideoEditedInfo.MediaEntity> mediaEntities,
                                 boolean isPhoto,
                                 MediaController.CropState cropState,
+                                boolean isRound,
                                 MediaController.VideoConvertorListener callback) {
         this.callback = callback;
         return convertVideoInternal(videoPath, cacheFile, rotationValue, isSecret, originalWidth, originalHeight,
-                resultWidth, resultHeight, framerate, bitrate, originalBitrate, startTime, endTime, avatarStartTime, duration, needCompress, false, savedFilterState, paintPath, mediaEntities, isPhoto, cropState);
+                resultWidth, resultHeight, framerate, bitrate, originalBitrate, startTime, endTime, avatarStartTime, duration, needCompress, false, savedFilterState, paintPath, mediaEntities, isPhoto, cropState, isRound);
     }
 
     public long getLastFrameTimestamp() {
@@ -73,7 +74,8 @@ public class MediaCodecVideoConvertor {
                                          String paintPath,
                                          ArrayList<VideoEditedInfo.MediaEntity> mediaEntities,
                                          boolean isPhoto,
-                                         MediaController.CropState cropState) {
+                                         MediaController.CropState cropState,
+                                         boolean isRound) {
 
         long time = System.currentTimeMillis();
         boolean error = false;
@@ -330,6 +332,12 @@ public class MediaCodecVideoConvertor {
                             long additionalPresentationTime = 0;
                             long minPresentationTime = Integer.MIN_VALUE;
                             long frameDelta = 1000 / framerate * 1000;
+                            long frameDeltaFroSkipFrames;
+                            if (framerate < 30) {
+                                frameDeltaFroSkipFrames = 1000 / (framerate + 5) * 1000;
+                            } else {
+                                frameDeltaFroSkipFrames = 1000 / (framerate + 1) * 1000;
+                            }
 
                             extractor.selectTrack(videoIndex);
                             MediaFormat videoFormat = extractor.getTrackFormat(videoIndex);
@@ -401,7 +409,9 @@ public class MediaCodecVideoConvertor {
 
                             decoder = MediaCodec.createDecoderByType(videoFormat.getString(MediaFormat.KEY_MIME));
                             outputSurface = new OutputSurface(savedFilterState, null, paintPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false);
-                            outputSurface.changeFragmentShader(createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true), createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false));
+                            if (!isRound && Math.max(resultHeight, resultHeight) / (float) Math.max(originalHeight, originalWidth) < 0.9f) {
+                                outputSurface.changeFragmentShader(createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true), createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false));
+                            }
                             decoder.configure(videoFormat, outputSurface.getSurface(), null, 0);
                             decoder.start();
 
@@ -681,7 +691,7 @@ public class MediaCodecVideoConvertor {
                                                 decoder.flush();
                                                 flushed = true;
                                             }
-                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDelta && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) {
+                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDeltaFroSkipFrames && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) {
                                                 doRender = false;
                                             }
                                             trueStartTime = avatarStartTime >= 0 ? avatarStartTime : startTime;
@@ -794,7 +804,7 @@ public class MediaCodecVideoConvertor {
                     originalWidth, originalHeight,
                     resultWidth, resultHeight, framerate, bitrate, originalBitrate, startTime, endTime, avatarStartTime, duration,
                     needCompress, true, savedFilterState, paintPath, mediaEntities,
-                    isPhoto, cropState);
+                    isPhoto, cropState, isRound);
         }
 
         long timeLeft = System.currentTimeMillis() - time;

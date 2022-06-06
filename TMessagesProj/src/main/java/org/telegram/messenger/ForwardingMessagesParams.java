@@ -67,6 +67,7 @@ public class ForwardingMessagesParams {
             message.post = messageObject.messageOwner.post;
             message.legacy = messageObject.messageOwner.legacy;
             message.restriction_reason = messageObject.messageOwner.restriction_reason;
+            message.replyMessage = messageObject.messageOwner.replyMessage;
 
             TLRPC.MessageFwdHeader header = null;
 

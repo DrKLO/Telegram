@@ -433,11 +433,11 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             if (chatActivity.isInScheduleMode()) {
                 AlertsCreator.createScheduleDatePickerDialog(chatActivity.getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
                     delegate.sendPoll(poll, params, notify, scheduleDate);
-                    parentAlert.dismiss();
+                    parentAlert.dismiss(true);
                 });
             } else {
                 delegate.sendPoll(poll, params, true, 0);
-                parentAlert.dismiss();
+                parentAlert.dismiss(true);
             }
         }
     }

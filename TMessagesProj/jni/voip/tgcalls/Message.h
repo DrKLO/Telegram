@@ -18,13 +18,14 @@ enum class AudioState;
 struct PeerIceParameters {
     std::string ufrag;
     std::string pwd;
+    bool supportsRenomination = false;
     
     PeerIceParameters() = default;
-    PeerIceParameters(const PeerIceParameters &other) = default;
 
-    PeerIceParameters(std::string ufrag_, std::string pwd_) :
+    PeerIceParameters(std::string ufrag_, std::string pwd_, bool supportsRenomination_) :
     ufrag(ufrag_),
-    pwd(pwd_) {
+    pwd(pwd_),
+    supportsRenomination(supportsRenomination_) {
     }
 
 };
@@ -127,11 +128,20 @@ rtc::CopyOnWriteBuffer SerializeMessageWithSeq(
 absl::optional<Message> DeserializeMessage(
 	rtc::ByteBufferReader &reader,
 	bool singleMessagePacket);
+absl::optional<rtc::CopyOnWriteBuffer> DeserializeRawMessage(
+    rtc::ByteBufferReader &reader,
+    bool singleMessagePacket);
 
 struct DecryptedMessage {
 	Message message;
 	uint32_t counter = 0;
 };
+
+struct DecryptedRawMessage {
+    rtc::CopyOnWriteBuffer message;
+    uint32_t counter = 0;
+};
+
 
 } // namespace tgcalls
 

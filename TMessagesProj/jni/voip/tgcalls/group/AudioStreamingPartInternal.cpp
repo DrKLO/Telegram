@@ -104,6 +104,9 @@ _avIoContext(std::move(fileData)) {
 
     _frame = av_frame_alloc();
 
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
+    const
+#endif
     AVInputFormat *inputFormat = av_find_input_format(container.c_str());
     if (!inputFormat) {
         _didReadToEnd = true;
@@ -144,7 +147,7 @@ _avIoContext(std::move(fileData)) {
         
         _streamId = i;
 
-        _durationInMilliseconds = (int)((inStream->duration + inStream->first_dts) * 1000 / 48000);
+        _durationInMilliseconds = (int)(inStream->duration * av_q2d(inStream->time_base) * 1000);
 
         if (inStream->metadata) {
             AVDictionaryEntry *entry = av_dict_get(inStream->metadata, "TG_META", nullptr, 0);

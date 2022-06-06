@@ -35,6 +35,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class ReactedUsersListView extends FrameLayout {
@@ -190,7 +191,7 @@ public class ReactedUsersListView extends FrameLayout {
                     }
 
                     if (onlySeenNow) {
-                        Collections.sort(userReactions, (o1, o2) -> Integer.compare(o1.reaction != null ? 1 : 0, o2.reaction != null ? 1 : 0));
+                        Collections.sort(userReactions, Comparator.comparingInt(o -> o.reaction != null ? 0 : 1));
                     }
 
                     if (onlySeenNow) {

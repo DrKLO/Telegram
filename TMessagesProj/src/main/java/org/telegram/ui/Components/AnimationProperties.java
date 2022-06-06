@@ -53,6 +53,18 @@ public class AnimationProperties {
         }
     };
 
+    public static final Property<Paint, Integer> PAINT_COLOR = new IntProperty<Paint>("color") {
+        @Override
+        public void setValue(Paint object, int value) {
+            object.setColor(value);
+        }
+
+        @Override
+        public Integer get(Paint object) {
+            return object.getColor();
+        }
+    };
+
     public static final Property<ColorDrawable, Integer> COLOR_DRAWABLE_ALPHA = new IntProperty<ColorDrawable>("alpha") {
         @Override
         public void setValue(ColorDrawable object, int value) {

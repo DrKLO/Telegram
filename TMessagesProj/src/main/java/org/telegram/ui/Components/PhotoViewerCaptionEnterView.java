@@ -69,6 +69,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         void onWindowSizeChanged(int size);
         void onEmojiViewCloseStart();
         void onEmojiViewCloseEnd();
+        void onEmojiViewOpen();
     }
 
     private EditTextCaption messageEditText;
@@ -645,6 +646,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             }
 
             emojiView.setVisibility(VISIBLE);
+            delegate.onEmojiViewOpen();
 
             if (keyboardHeight <= 0) {
                 keyboardHeight = MessagesController.getGlobalEmojiSettings().getInt("kbd_height", AndroidUtilities.dp(200));

@@ -127,6 +127,7 @@ public class ChatThemeController extends BaseController {
     private static SharedPreferences getSharedPreferences() {
         return ApplicationLoader.applicationContext.getSharedPreferences("chatthemeconfig", Context.MODE_PRIVATE);
     }
+
     private static SharedPreferences getEmojiSharedPreferences() {
         return ApplicationLoader.applicationContext.getSharedPreferences("chatthemeconfig_emoji", Context.MODE_PRIVATE);
     }

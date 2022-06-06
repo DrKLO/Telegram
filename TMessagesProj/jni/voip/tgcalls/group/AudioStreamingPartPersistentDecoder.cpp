@@ -32,7 +32,7 @@ public:
     AudioStreamingPartPersistentDecoderState(AVCodecParameters const *codecParameters, AVRational timeBase) :
     _codecParameters(codecParameters),
     _timeBase(timeBase) {
-        AVCodec *codec = avcodec_find_decoder(codecParameters->codec_id);
+        const AVCodec *codec = avcodec_find_decoder(codecParameters->codec_id);
         if (codec) {
             _codecContext = avcodec_alloc_context3(codec);
             int ret = avcodec_parameters_to_context(_codecContext, codecParameters);

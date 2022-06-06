@@ -47,6 +47,12 @@ import java.util.ArrayList;
 
 public class ForwardingPreviewView extends FrameLayout {
 
+    TLRPC.Peer sendAsPeer;
+    public void setSendAsPeer(TLRPC.Peer defPeer) {
+        sendAsPeer = defPeer;
+        updateMessages();
+    }
+
     public interface ResourcesDelegate extends Theme.ResourcesProvider {
 
         Drawable getWallpaperDrawable();
@@ -108,7 +114,7 @@ public class ForwardingPreviewView extends FrameLayout {
     private final ResourcesDelegate resourcesProvider;
 
     @SuppressLint("ClickableViewAccessibility")
-    public ForwardingPreviewView(@NonNull Context context, ForwardingMessagesParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount, ResourcesDelegate resourcesProvider) {
+    public ForwardingPreviewView(@NonNull Context context, ForwardingMessagesParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount, ResourcesDelegate resourcesProvider)  {
         super(context);
         this.currentAccount = currentAccount;
         currentUser = user;
@@ -168,7 +174,7 @@ public class ForwardingPreviewView extends FrameLayout {
                     if ((cell.getCurrentPosition() != null && cell.getCurrentPosition().last) || cell.getTransitionParams().animateBackgroundBoundsInner) {
                         cell.drawTime(canvas, 1f, true);
                     }
-                    if ((cell.getCurrentPosition() != null && cell.getCurrentPosition().last) || cell.getCurrentPosition() == null) {
+                    if (cell.getCurrentPosition() == null || (cell.getCurrentPosition().last || cell.getCurrentMessagesGroup().isDocuments)) {
                         cell.drawCaptionLayout(canvas, false, 1f);
                     }
                     cell.getTransitionParams().recordDrawingStatePreview();
@@ -779,10 +785,13 @@ public class ForwardingPreviewView extends FrameLayout {
         for (int i = 0; i < forwardingMessagesParams.previewMessages.size(); i++) {
             MessageObject messageObject = forwardingMessagesParams.previewMessages.get(i);
             messageObject.forceUpdate = true;
+            messageObject.sendAsPeer = sendAsPeer;
             if (!forwardingMessagesParams.hideForwardSendersName) {
                 messageObject.messageOwner.flags |= TLRPC.MESSAGE_FLAG_FWD;
+                messageObject.hideSendersName = false;
             } else {
                 messageObject.messageOwner.flags &= ~TLRPC.MESSAGE_FLAG_FWD;
+                messageObject.hideSendersName = true;
             }
             if (forwardingMessagesParams.hideCaption) {
                 messageObject.caption = null;

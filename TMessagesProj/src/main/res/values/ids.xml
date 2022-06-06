@@ -10,6 +10,7 @@
     <item name="menu_groupbolditalic" type="id"/>
     <item name="parent_tag" type="id"/>
     <item name="object_tag" type="id"/>
+    <item name="fit_width_tag" type="id"/>
     <item name="index_tag" type="id"/>
     <item name="svg_tag" type="id"/>
     <item name="width_tag" type="id"/>
@@ -20,6 +21,10 @@
     <item name="acc_action_open_photo" type="id"/>
 
     <item name="timeout_callback" type="id"/>
+
+    <item name="menu_open_bot" type="id"/>
+    <item name="menu_reload_page" type="id"/>
+    <item name="menu_delete_bot" type="id"/>
 
     <!-- there are required for focusing order customization on the passcode screen -->
     <item name="passcode_btn_1" type="id"/>

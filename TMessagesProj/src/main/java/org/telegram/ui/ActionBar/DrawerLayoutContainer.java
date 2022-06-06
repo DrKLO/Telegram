@@ -311,6 +311,13 @@ public class DrawerLayoutContainer extends FrameLayout {
         parentActionBarLayout = layout;
     }
 
+    public void presentFragment(BaseFragment fragment) {
+        if (parentActionBarLayout != null) {
+            parentActionBarLayout.presentFragment(fragment);
+        }
+        closeDrawer(false);
+    }
+
     public void closeDrawer() {
         if (drawerPosition != 0) {
             setDrawerPosition(0);

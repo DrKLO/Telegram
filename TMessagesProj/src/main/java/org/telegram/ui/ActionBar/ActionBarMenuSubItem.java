@@ -34,6 +34,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     private int itemHeight = 48;
     private final Theme.ResourcesProvider resourcesProvider;
+    Runnable openSwipeBackLayout;
 
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
         this(context, false, top, bottom);
@@ -108,7 +109,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         if (rightIcon == null) {
             rightIcon = new ImageView(getContext());
             rightIcon.setScaleType(ImageView.ScaleType.CENTER);
-            rightIcon.setColorFilter(textColor, PorterDuff.Mode.MULTIPLY);
+            rightIcon.setColorFilter(iconColor, PorterDuff.Mode.MULTIPLY);
             if (LocaleController.isRTL) {
                 rightIcon.setScaleX(-1);
             }
@@ -236,5 +237,15 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     public CheckBox2 getCheckView() {
         return checkView;
+    }
+
+    public void openSwipeBack() {
+        if (openSwipeBackLayout != null) {
+            openSwipeBackLayout.run();
+        }
+    }
+
+    public ImageView getRightIcon() {
+        return rightIcon;
     }
 }

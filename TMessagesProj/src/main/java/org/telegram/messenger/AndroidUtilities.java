@@ -64,6 +64,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
@@ -94,6 +95,7 @@ import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -210,6 +212,7 @@ public class AndroidUtilities {
     public static Pattern BAD_CHARS_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_LONG_PATTERN = null;
+    private static Pattern singleTagPatter = null;
 
     static {
         try {
@@ -401,6 +404,35 @@ public class AndroidUtilities {
             return findActivity(((ContextWrapper) context).getBaseContext());
         }
         return null;
+    }
+
+    public static CharSequence replaceSingleTag(String str, Runnable runnable) {
+        int startIndex = str.indexOf("**");
+        int endIndex = str.indexOf("**", startIndex + 1);
+        str = str.replace("**", "");
+        int index = -1;
+        int len = 0;
+        if (startIndex >= 0 && endIndex >= 0 && endIndex - startIndex > 2) {
+            len = endIndex - startIndex - 2;
+            index = startIndex;
+        }
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        if (index >= 0) {
+            spannableStringBuilder.setSpan(new ClickableSpan() {
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(false);
+                }
+
+                @Override
+                public void onClick(@NonNull View view) {
+                    runnable.run();
+                }
+            }, index, index + len, 0);
+        }
+        return spannableStringBuilder;
     }
 
     private static class LinkSpec {
@@ -2427,7 +2459,7 @@ public class AndroidUtilities {
     }
 
     public static boolean shouldShowClipboardToast() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.isOneUI();
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.hasBuiltInClipboardToasts();
     }
 
     public static void addToClipboard(CharSequence str) {
@@ -3954,26 +3986,38 @@ public class AndroidUtilities {
         return false;
     }
 
-    public static void setLightNavigationBar(Window window, boolean enable) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final View decorView = window.getDecorView();
-            int flags = decorView.getSystemUiVisibility();
+    public static void setLightNavigationBar(View view, boolean enable) {
+        if (view != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int flags = view.getSystemUiVisibility();
             if (enable) {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             } else {
                 flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             }
-            decorView.setSystemUiVisibility(flags);
+            view.setSystemUiVisibility(flags);
+        }
+    }
+
+    public static void setLightNavigationBar(Window window, boolean enable) {
+        if (window != null) {
+            setLightNavigationBar(window.getDecorView(), enable);
         }
     }
 
     private static HashMap<Window, ValueAnimator> navigationBarColorAnimators;
+    public interface IntColorCallback {
+        public void run(int color);
+    }
 
     public static void setNavigationBarColor(Window window, int color) {
         setNavigationBarColor(window, color, true);
     }
 
     public static void setNavigationBarColor(Window window, int color, boolean animated) {
+        setNavigationBarColor(window, color, animated, null);
+    }
+
+    public static void setNavigationBarColor(Window window, int color, boolean animated, IntColorCallback onUpdate) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (navigationBarColorAnimators != null) {
                 ValueAnimator animator = navigationBarColorAnimators.get(window);
@@ -3984,10 +4028,23 @@ public class AndroidUtilities {
             }
 
             if (!animated) {
-                window.setNavigationBarColor(color);
+                if (onUpdate != null) {
+                    onUpdate.run(color);
+                }
+                try {
+                    window.setNavigationBarColor(color);
+                } catch (Exception ignore) {}
             } else {
                 ValueAnimator animator = ValueAnimator.ofArgb(window.getNavigationBarColor(), color);
-                animator.addUpdateListener(a -> window.setNavigationBarColor((int) a.getAnimatedValue()));
+                animator.addUpdateListener(a -> {
+                    int tcolor = (int) a.getAnimatedValue();
+                    if (onUpdate != null) {
+                        onUpdate.run(tcolor);
+                    }
+                    try {
+                        window.setNavigationBarColor(tcolor);
+                    } catch (Exception ignore) {}
+                });
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -4207,7 +4264,7 @@ public class AndroidUtilities {
             bitmap.compress(format, 100, out);
             out.close();
             return FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", file);
-        } catch (IOException e) {
+        } catch (Exception e) {
             FileLog.e(e);
         }
         return null;
