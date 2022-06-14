@@ -386,7 +386,7 @@ Probably it's a good thing 😃
       vanilla version
     * APP lost few permission due it not need it anymore
         * app do not check number, sim state or is number is the actual you use on
-          regitration/login, due we just say "yes"/`true`
+          regisration/login, due we just say "yes"/`true`
     * due app is from github official "check update" disabled, so app will not ask TG servers if
       there are new one.
     * api keys are `4`/`014b35b6184100b085b0d0572f9b5103` due gplay/store/web versions are use them
