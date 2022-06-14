@@ -39,7 +39,7 @@ It gives us `telegram` -> `master` -> `master_8.3.1` -> `noshit_8.3.1`
 So **all the code changes** are in `noshit_8.3.1` (when this project started, actual version is
 different)
 
-### Detailed summary / noshit_8.6.2
+### Detailed summary / noshit_8.7.4
 
 * DISABLED ADS
     * YES!!1
@@ -50,7 +50,7 @@ different)
     * ~~messages are elements too, you still can click but cannot save them into downloads~~ fixed
         * ~~however i do not recomment this~~
     * use it wisely
-* ~~6 accounts instead of 3~~ 32 accounts
+* ~~6 accounts instead of 3~~ ~~32~~ 128 accounts
     * to enbale more than 3 you need to activate "3+" option
     * ~~client support upto 6 accounts~~
         * ~~on the 1st run when you type phone number and continue it can throw an API error~~
@@ -162,7 +162,7 @@ It's very simple
 * build it
     * you can use official guide `https://core.telegram.org/reproducible-builds`
         * open the folder with the repo
-        * git checkout lastest **noshit** branch (`git checkout remotes/origin/noshit_8.5.2` for
+        * git checkout lastest **noshit** branch (`git checkout remotes/origin/noshit_8.7.4` for
           example)
         * run `docker build -t telegram-build .`
         * run `docker run --rm -v "$PWD":/home/source telegram-build`
@@ -182,17 +182,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.2r8.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_arm64_v8a/Telegraher.8.6.2r8.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.2r8.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_arm64_v8a/Telegraher.8.6.2r8.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.7.4r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_arm64_v8a/Telegraher.8.7.4r1.arm64_v8a.apk)
+    * `x`  [Telegraher.8.7.4r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_arm64_v8a/Telegraher.8.7.4r1.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.2r8.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_armeabi_v7a/Telegraher.8.6.2r8.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.2r8.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_armeabi_v7a/Telegraher.8.6.2r8.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.7.4r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_armeabi_v7a/Telegraher.8.7.4r1.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.7.4r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_armeabi_v7a/Telegraher.8.7.4r1.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.2r8.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_x86/Telegraher.8.6.2r8.x86.apk)
-    * `x`  [Telegraher.8.6.2r8.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_x86/Telegraher.8.6.2r8.x86_sdk23.apk)
+    * `x`  [Telegraher.8.7.4r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86/Telegraher.8.7.4r1.x86.apk)
+    * `x`  [Telegraher.8.7.4r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86/Telegraher.8.7.4r1.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.2r8.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_x86_64/Telegraher.8.6.2r8.x86_64.apk)
-    * `x`  [Telegraher.8.6.2r8.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r8_x86_64/Telegraher.8.6.2r8.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.7.4r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86_64/Telegraher.8.7.4r1.x86_64.apk)
+    * `x`  [Telegraher.8.7.4r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86_64/Telegraher.8.7.4r1.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -201,11 +201,19 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.7.4_release1
+    * the vanilla release as is (nearly)
+    * disabled `needSendDebugLog` (from 8.7.0) for voice calls
+    * maximum account updated from 32 to 128
+    * removed custom fonts (need to do that another way)
+    * bit beta so feel free to feedback in our chat
+        * custom icons & features in next release2 update!
 * noshit_8.6.2_release8
     * remote deletions fix (medias w/ timers), it's fixed. Open it twice to wipe for sender.
     * added tabs on forward
     * next channel on swap disabled by default
-    * added custom support for fonts. Actually REGULAR affect most of UI except the messages. Need to dig deeper to find how to change it for messages well.
+    * added custom support for fonts. Actually REGULAR affect most of UI except the messages. Need
+      to dig deeper to find how to change it for messages well.
     * fixed a crhash when admin delete in chat messages posted by a channel
 * noshit_8.6.2_release7
     * `isoparser` video fix (rollback from new 1.1.22 to old 1.0.6)
