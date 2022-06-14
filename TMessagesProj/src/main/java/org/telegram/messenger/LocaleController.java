@@ -2235,6 +2235,8 @@ public class LocaleController {
                 }, ConnectionsManager.RequestFlagWithoutLogin);
             } else {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    if (!UserConfig.existsInHsAccs(a)) continue;
+                    if (UserConfig.TDBG) System.out.printf("HEY LocaleController ImportingService [%d]%n", a);
                     ConnectionsManager.setLangCode(localeInfo.getLangCode());
                 }
                 TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();

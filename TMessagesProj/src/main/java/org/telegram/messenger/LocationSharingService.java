@@ -40,6 +40,8 @@ public class LocationSharingService extends Service implements NotificationCente
             handler.postDelayed(runnable, 1000);
             Utilities.stageQueue.postRunnable(() -> {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    if (!UserConfig.existsInHsAccs(a)) continue;
+                    if (UserConfig.TDBG) System.out.printf("HEY LocationSharingService onCreate [%d]%n", a);
                     LocationController.getInstance(a).update();
                 }
             });
@@ -80,6 +82,8 @@ public class LocationSharingService extends Service implements NotificationCente
     private ArrayList<LocationController.SharingLocationInfo> getInfos() {
         ArrayList<LocationController.SharingLocationInfo> infos = new ArrayList<>();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY LocationSharingService getInfos [%d]%n", a);
             ArrayList<LocationController.SharingLocationInfo> arrayList = LocationController.getInstance(a).sharingLocationsUI;
             if (!arrayList.isEmpty()) {
                 infos.addAll(arrayList);

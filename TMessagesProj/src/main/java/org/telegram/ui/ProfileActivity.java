@@ -7964,7 +7964,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 new SearchResult(502, LocaleController.getString("AddAnotherAccount", R.string.AddAnotherAccount), 0, () -> {
                     int freeAccount = -1;
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                        if (!UserConfig.getInstance(a).isClientActivated()) {
+                        if (!UserConfig.getInstance(a).isClientActivated() && UserConfig.existsInHsAccs(a)) {
                             freeAccount = a;
                             break;
                         }

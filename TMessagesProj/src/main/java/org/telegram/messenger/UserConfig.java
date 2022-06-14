@@ -8,20 +8,28 @@
 
 package org.telegram.messenger;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Base64;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.HashSet;
 
 public class UserConfig extends BaseController {
 
     public static int selectedAccount;
-    public final static int MAX_ACCOUNT_COUNT = 6;
+    public final static int MAX_ACCOUNT_COUNT = 32;
+    public final static int ACC_TO_INIT = 3;
+    public final static boolean TDBG = false;
 
     private final Object sync = new Object();
     private boolean configLoaded;
@@ -63,6 +71,67 @@ public class UserConfig extends BaseController {
     public volatile byte[] savedPasswordHash;
     public volatile byte[] savedSaltedPassword;
     public volatile long savedPasswordTime;
+
+    private static SharedPreferences telegraherSettings;
+    private static HashSet<Integer> hsAccs;
+    private static boolean hsAccsInit=false;
+    private static boolean hsAccsSaved=false;
+
+    synchronized public static void initHsAccs() {
+        if (hsAccsInit) return;
+        hsAccsInit = true;
+        telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings", Activity.MODE_PRIVATE);
+        if (TDBG && telegraherSettings != null) System.out.printf("HEY UserConfig telegraherSettings%n%s%n", new Gson().toJson(telegraherSettings.getAll()));
+        if (TDBG) System.out.printf("HEY initHsAccs telegraherSettings is null %b%n", telegraherSettings == null);
+        Type lhs = new TypeToken<HashSet<Integer>>() {}.getType();
+        if (isTh("EnableAccountExtendVanilla")) {
+            hsAccs = new Gson().fromJson(telegraherSettings.getString("accountsHS", "[0,1,2]"), lhs);
+        } else
+            hsAccs = new Gson().fromJson("[0,1,2]", lhs);
+    }
+
+    public static boolean isTh(String key) {
+        return isTh(key, false);
+    }
+
+    public static boolean isTh(String key, boolean def) {
+        initHsAccs();
+        if (TDBG) System.out.printf("HEY isTh telegraherSettings is null %b%n", telegraherSettings == null);
+        if (telegraherSettings == null) return false;
+        return telegraherSettings.getBoolean(key, def);
+    }
+
+    public static HashSet<Integer> getHsAccs(){
+        initHsAccs();
+        return hsAccs;
+    }
+
+    synchronized public static void addToHsAccs(int a) {
+        initHsAccs();
+        hsAccs.add(a);
+    }
+
+    public static boolean existsInHsAccs(int a) {
+        initHsAccs();
+        return hsAccs.contains(a);
+    }
+
+    public static int nextHsAccId() {
+        initHsAccs();
+        if (hsAccs.size() < MAX_ACCOUNT_COUNT && isTh("EnableAccountExtendVanilla")) return hsAccs.size();
+        return hsAccs.size() - 1;
+    }
+
+    synchronized public static boolean saveHsAccs() {
+        initHsAccs();
+        if (hsAccsSaved) return false;
+        if (TDBG) System.out.printf("HEY saveHsAccs%n");
+
+        MessagesController.getGlobalTelegraherSettings().edit().putString("accountsHS", new Gson().toJson(hsAccs)).commit();
+        hsAccsSaved = true;
+        MessagesController.refreshGlobalTelegraherSettings();
+        return true;
+    }
 
     private static volatile UserConfig[] Instance = new UserConfig[UserConfig.MAX_ACCOUNT_COUNT];
     public static UserConfig getInstance(int num) {

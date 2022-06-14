@@ -32,6 +32,8 @@ import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.util.Consumer;
 
+import com.google.gson.Gson;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -745,6 +747,10 @@ public class MessagesController extends BaseController implements NotificationCe
         return getInstance(account).telegraherSettings;
     }
 
+    public static void refreshGlobalTelegraherSettings() {
+        getInstance(0).telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings", Activity.MODE_PRIVATE);
+    }
+
     public static SharedPreferences getGlobalTelegraherSettings() {
         return getInstance(0).telegraherSettings;
     }
@@ -789,11 +795,13 @@ public class MessagesController extends BaseController implements NotificationCe
             getNotificationCenter().addObserver(messagesController, NotificationCenter.updateMessageMedia);
         });
         addSupportUser();
+        if (UserConfig.TDBG) System.out.printf("HEY Loading SharedPreferences [%d]%n", currentAccount);
         if (currentAccount == 0) {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
             telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings", Activity.MODE_PRIVATE);
+            if (UserConfig.TDBG && telegraherSettings != null) System.out.printf("HEY MessagesController telegraherSettings%n%s%n", new Gson().toJson(telegraherSettings.getAll()));
         } else {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications" + currentAccount, Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);

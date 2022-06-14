@@ -87,6 +87,12 @@ public class ConnectionsManager extends BaseController {
     public final static byte USE_IPV6_ONLY = 1;
     public final static byte USE_IPV4_IPV6_RANDOM = 2;
 
+    public final static byte IP_STRATEGY_BYTE = getIpStrategy();
+
+    private static int accountsCounter = 0;
+    private static int accountsExists = 0;
+    private static int accountsInit = 0;
+
     private static long lastDnsRequestTime;
 
     public final static int DEFAULT_DATACENTER_ID = Integer.MAX_VALUE;
@@ -157,6 +163,9 @@ public class ConnectionsManager extends BaseController {
 
     public ConnectionsManager(int instance) {
         super(instance);
+        accountsCounter++;
+        if (!UserConfig.isTh("EnableAccountExtendVanilla") && !UserConfig.existsInHsAccs(instance)) return;
+
         connectionState = native_getConnectionState(currentAccount);
         String deviceModel;
         String systemLangCode;
@@ -202,6 +211,24 @@ public class ConnectionsManager extends BaseController {
             systemVersion = "SDK Unknown";
         }
         getUserConfig().loadConfig();
+
+        if (getUserConfig().getClientUserId() != 0) {
+            accountsExists++;
+            if (
+                    (UserConfig.isTh("EnableAccountExtendVanilla") || currentAccount < UserConfig.ACC_TO_INIT)
+                            && currentAccount < UserConfig.MAX_ACCOUNT_COUNT
+            )
+                UserConfig.addToHsAccs(currentAccount);
+        }
+        if (UserConfig.isTh("EnableAccountExtendVanilla")
+                && accountsExists == UserConfig.getHsAccs().size()
+                && accountsExists < UserConfig.MAX_ACCOUNT_COUNT) UserConfig.addToHsAccs(accountsExists);
+        if (!UserConfig.getHsAccs().contains(currentAccount)) return;
+
+        if (UserConfig.TDBG) System.out.printf("HEY accountsExists %d accountsCounter %d accountsInit %d A%n", accountsExists, accountsCounter, accountsInit);
+        accountsInit++;
+        if (UserConfig.TDBG) System.out.printf("HEY accountsExists %d accountsCounter %d accountsInit %d B%n", accountsExists, accountsCounter, accountsInit);
+
         String pushString = getRegId();
         String fingerprint = AndroidUtilities.getCertificateSHA256Fingerprint();
 
@@ -405,6 +432,8 @@ public class ConnectionsManager extends BaseController {
     public static void setLangCode(String langCode) {
         langCode = langCode.replace('_', '-').toLowerCase();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY ConnectionsManager setLangCode [%d] `%s` %n", a, langCode);
             native_setLangCode(a, langCode);
         }
     }
@@ -418,6 +447,8 @@ public class ConnectionsManager extends BaseController {
             pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getInstance(0).getCurrentTime() + "__";
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY ConnectionsManager setRegId [%d]%n", a);
             native_setRegId(a, pushString);
         }
     }
@@ -425,6 +456,8 @@ public class ConnectionsManager extends BaseController {
     public static void setSystemLangCode(String langCode) {
         langCode = langCode.replace('_', '-').toLowerCase();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY ConnectionsManager setSystemLangCode [%d]%n", a);
             native_setSystemLangCode(a, langCode);
         }
     }

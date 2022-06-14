@@ -1250,6 +1250,8 @@ public class GcmPushListenerService extends FirebaseMessagingService {
             }
             SharedConfig.pushString = token;
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (!UserConfig.existsInHsAccs(a)) continue;
+                if (UserConfig.TDBG) System.out.printf("HEY GcmPushListenerService sendRegistrationToServer [%d]%n", a);
                 UserConfig userConfig = UserConfig.getInstance(a);
                 userConfig.registeredForPush = false;
                 userConfig.saveConfig(false);

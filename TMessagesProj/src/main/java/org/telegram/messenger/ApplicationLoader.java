@@ -119,6 +119,8 @@ public class ApplicationLoader extends Application {
 
                     boolean isSlow = isConnectionSlow();
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                        if (!UserConfig.existsInHsAccs(a)) continue;
+                        if (UserConfig.TDBG) System.out.printf("HEY ApplicationLoader postInitApplication 1 [%d]%n", a);
                         ConnectionsManager.getInstance(a).checkConnection();
                         FileLoader.getInstance(a).onNetworkChanged(isSlow);
                     }
@@ -174,6 +176,8 @@ public class ApplicationLoader extends Application {
 
         MediaController.getInstance();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY ApplicationLoader postInitApplication 2 [%d]%n", a);
             ContactsController.getInstance(a).checkAppAccount();
             DownloadController.getInstance(a);
         }
@@ -188,6 +192,7 @@ public class ApplicationLoader extends Application {
     public void onCreate() {
         try {
             applicationContext = getApplicationContext();
+            UserConfig.initHsAccs();
         } catch (Throwable ignore) {
 
         }
