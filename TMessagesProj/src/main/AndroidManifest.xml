@@ -86,6 +86,7 @@
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
+            android:theme="@style/Theme.TMessages.Start"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="@bool/useHardwareAcceleration"
             android:launchMode="singleTask"

@@ -88,7 +88,7 @@ _isOutgoing(encryptionKey.isOutgoing),
 _stateUpdated(std::move(stateUpdated)),
 _transportMessageReceived(std::move(transportMessageReceived)),
 _sendSignalingMessage(std::move(sendSignalingMessage)),
-_localIceParameters(rtc::CreateRandomString(cricket::ICE_UFRAG_LENGTH), rtc::CreateRandomString(cricket::ICE_PWD_LENGTH)) {
+_localIceParameters(rtc::CreateRandomString(cricket::ICE_UFRAG_LENGTH), rtc::CreateRandomString(cricket::ICE_PWD_LENGTH), false) {
 	assert(_thread->IsCurrent());
 
     _networkMonitorFactory = PlatformInterface::SharedInstance()->createNetworkMonitorFactory();
@@ -104,6 +104,7 @@ NetworkManager::~NetworkManager() {
 	_portAllocator.reset();
 	_networkManager.reset();
 	_socketFactory.reset();
+    _networkMonitorFactory.reset();
 }
 
 void NetworkManager::start() {
@@ -206,7 +207,7 @@ void NetworkManager::receiveSignalingMessage(DecryptedMessage &&message) {
 	assert(list != nullptr);
 
     if (!_remoteIceParameters.has_value()) {
-        PeerIceParameters parameters(list->iceParameters.ufrag, list->iceParameters.pwd);
+        PeerIceParameters parameters(list->iceParameters.ufrag, list->iceParameters.pwd, false);
         _remoteIceParameters = parameters;
 
         cricket::IceParameters remoteIceParameters(

@@ -40,6 +40,7 @@ public class NotificationsCheckCell extends FrameLayout {
     private boolean drawLine = true;
     private boolean isMultiline;
     private int currentHeight;
+    private boolean animationsEnabled;
 
     public NotificationsCheckCell(Context context) {
         this(context, 21, 70, false);
@@ -112,7 +113,7 @@ public class NotificationsCheckCell extends FrameLayout {
     public void setTextAndValueAndCheck(String text, CharSequence value, boolean checked, int iconType, boolean multiline, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);
-        checkBox.setChecked(checked, iconType, false);
+        checkBox.setChecked(checked, iconType, animationsEnabled);
         valueTextView.setVisibility(VISIBLE);
         needDivider = divider;
         isMultiline = multiline;
@@ -159,5 +160,9 @@ public class NotificationsCheckCell extends FrameLayout {
             int y = (getMeasuredHeight() - AndroidUtilities.dp(22)) / 2;
             canvas.drawRect(x, y, x + 2, y + AndroidUtilities.dp(22), Theme.dividerPaint);
         }
+    }
+
+    public void setAnimationsEnabled(boolean animationsEnabled) {
+        this.animationsEnabled = animationsEnabled;
     }
 }

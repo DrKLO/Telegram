@@ -39,6 +39,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -201,9 +202,6 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
             actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
             actionBar.setCastShadows(false);
-            if (!AndroidUtilities.isTablet()) {
-                actionBar.showActionModeTop();
-            }
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -1298,5 +1296,11 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         } else {
             super.finishFragment();
         }
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

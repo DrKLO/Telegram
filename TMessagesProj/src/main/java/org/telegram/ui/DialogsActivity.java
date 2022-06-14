@@ -115,6 +115,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -136,6 +137,7 @@ import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.DrawerUserCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HashtagSearchCell;
+import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.HintDialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
@@ -301,6 +303,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private RecyclerView sideMenu;
     private ChatActivityEnterView commentView;
+    private View commentViewBg;
+    private final boolean commentViewAnimated = false;
     private ImageView[] writeButton;
     private FrameLayout writeButtonContainer;
     private View selectedCountView;
@@ -359,6 +363,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean afterSignup;
     private boolean showSetPasswordConfirm;
     private int otherwiseReloginDays;
+    private boolean closeFragment;
 
     private FrameLayout updateLayout;
     private AnimatorSet updateLayoutAnimator;
@@ -826,9 +831,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             setBottomClip(paddingBottom);
             lastMeasuredTopPadding = topPadding;
 
-            for (int i = 0; i < count; i++) {
-                final View child = getChildAt(i);
-                if (child.getVisibility() == GONE) {
+            for (int i = -1; i < count; i++) {
+                final View child = i == -1 ? commentView : getChildAt(i);
+                if (child == null || child.getVisibility() == GONE) {
                     continue;
                 }
                 final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) child.getLayoutParams();
@@ -903,6 +908,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             searchViewPager.setKeyboardHeight(keyboardSize);
             notifyHeightChanged();
             updateContextViewPosition();
+            updateCommentView();
         }
 
         @Override
@@ -1536,6 +1542,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             return super.onInterceptTouchEvent(e);
         }
+
+        @Override
+        protected boolean allowSelectChildAtPosition(View child) {
+            if (child instanceof HeaderCell && !child.isClickable()) {
+                return false;
+            }
+            return true;
+        }
     }
 
     private class SwipeController extends ItemTouchHelper.Callback {
@@ -1840,6 +1854,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             hasInvoice = arguments.getBoolean("hasInvoice", false);
             showSetPasswordConfirm = arguments.getBoolean("showSetPasswordConfirm", showSetPasswordConfirm);
             otherwiseReloginDays = arguments.getInt("otherwiseRelogin");
+            closeFragment = arguments.getBoolean("closeFragment", true);
         }
 
         if (initialDialogsType == 0) {
@@ -1916,6 +1931,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             accountInstance.getMediaDataController().loadRecents(MediaDataController.TYPE_GREETINGS, false, true, false);
             accountInstance.getMediaDataController().checkFeaturedStickers();
             accountInstance.getMediaDataController().checkReactions();
+            accountInstance.getMediaDataController().checkMenuBots();
             AndroidUtilities.runOnUIThread(() -> accountInstance.getDownloadController().loadDownloadingFiles(), 200);
             for (String emoji : messagesController.diceEmojies) {
                 accountInstance.getMediaDataController().loadStickersByEmojiOrName(emoji, true, true);
@@ -2071,6 +2087,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (proxyItem != null && proxyItemVisible) {
                     proxyItem.setVisibility(View.GONE);
                 }
+                if (downloadsItem != null && downloadsItemVisible) {
+                    downloadsItem.setVisibility(View.GONE);
+                }
                 if (viewPages[0] != null) {
                     if (searchString != null) {
                         viewPages[0].listView.hide();
@@ -2097,6 +2116,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (proxyItem != null && proxyItemVisible) {
                     proxyItem.setVisibility(View.VISIBLE);
+                }
+                if (downloadsItem != null && downloadsItemVisible) {
+                    downloadsItem.setVisibility(View.VISIBLE);
                 }
                 if (searchString != null) {
                     finishFragment();
@@ -2502,7 +2524,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
                         }
                     };
-                    tabView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_actionBarDefault)));
+                    tabView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), 0, Theme.getColor(Theme.key_actionBarDefault)));
                     scrimPopupWindow.setDismissAnimationDuration(220);
                     scrimPopupWindow.setOutsideTouchable(true);
                     scrimPopupWindow.setClippingEnabled(true);
@@ -2867,7 +2889,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             ArrayList<Long> arrayList = new ArrayList<>();
                             arrayList.add(-chatId);
                             DialogsActivityDelegate dialogsActivityDelegate = delegate;
-                            removeSelfFromStack();
+                            if (closeFragment) {
+                                removeSelfFromStack();
+                            }
                             dialogsActivityDelegate.didSelectDialogs(DialogsActivity.this, arrayList, null, true);
                         }
 
@@ -3321,12 +3345,33 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     return super.dispatchTouchEvent(ev);
                 }
+                                @Override
+                public void setTranslationY(float translationY) {
+                    super.setTranslationY(translationY);
+                    if (!commentViewAnimated) {
+                        return;
+                    }
+                    if (commentViewBg != null) {
+                        commentViewBg.setTranslationY(translationY);
+                    }
+                    if (writeButtonContainer != null) {
+                        writeButtonContainer.setTranslationY(translationY);
+                    }
+                    if (selectedCountView != null) {
+                        selectedCountView.setTranslationY(translationY);
+                    }
+                }
             };
+            contentView.setClipChildren(false);
+            contentView.setClipToPadding(false);
             commentView.allowBlur = false;
             commentView.setAllowStickersAndGifs(false, false);
             commentView.setForceShowSendButton(true, false);
             commentView.setVisibility(View.GONE);
             commentView.getSendButton().setAlpha(0);
+            commentViewBg = new View(getParentActivity());
+            commentViewBg.setBackgroundColor(getThemedColor(Theme.key_chat_messagePanelBackground));
+            contentView.addView(commentViewBg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1600, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, -1600));
             contentView.addView(commentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
             commentView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
                 @Override
@@ -3345,6 +3390,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 @Override
                 public void onTextSelectionChanged(int start, int end) {
 
+                }
+
+                @Override
+                public void bottomPanelTranslationYChanged(float translation) {
+                    if (commentViewAnimated) {
+                        if (keyboardAnimator != null) {
+                            keyboardAnimator.cancel();
+                            keyboardAnimator = null;
+                        }
+                        if (commentView != null) {
+                            commentView.setTranslationY(translation);
+                            commentViewIgnoreTopUpdate = true;
+                        }
+                    }
                 }
 
                 @Override
@@ -3741,6 +3800,35 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateMenuButton(false);
         actionBar.setDrawBlurBackground(contentView);
         return fragmentView;
+    }
+
+    private int commentViewPreviousTop = -1;
+    private ValueAnimator keyboardAnimator;
+    private boolean commentViewIgnoreTopUpdate = false;
+
+    private void updateCommentView() {
+        if (!commentViewAnimated || commentView == null) {
+            return;
+        }
+        int top = commentView.getTop();
+        if (commentViewPreviousTop > 0 && Math.abs(top - commentViewPreviousTop) > AndroidUtilities.dp(20) && !commentView.isPopupShowing()) {
+            if (commentViewIgnoreTopUpdate) {
+                commentViewIgnoreTopUpdate = false;
+                commentViewPreviousTop = top;
+                return;
+            }
+            if (keyboardAnimator != null) {
+                keyboardAnimator.cancel();
+            }
+            keyboardAnimator = ValueAnimator.ofFloat(commentViewPreviousTop - top, 0);
+            keyboardAnimator.addUpdateListener(a -> {
+                commentView.setTranslationY((float) a.getAnimatedValue());
+            });
+            keyboardAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
+            keyboardAnimator.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
+            keyboardAnimator.start();
+        }
+        commentViewPreviousTop = top;
     }
 
     private void updateAppUpdateViews(boolean animated) {
@@ -5224,6 +5312,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             addOrRemoveSelectedDialog(dialog.id, view);
             updateSelectedCount();
+            return true;
         } else {
             if (dialog instanceof TLRPC.TL_dialogFolder) {
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -5264,7 +5353,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             showOrUpdateActionMode(dialog.id, view);
             return true;
         }
-        return false;
     }
 
     private boolean showChatPreview(DialogCell cell) {
@@ -6478,7 +6566,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean isNextButton = false;
-
+    private AnimatorSet commentViewAnimator;
+    
     private void updateSelectedCount() {
         if (commentView != null) {
             if (selectedDialogs.isEmpty()) {
@@ -6490,9 +6579,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (commentView.getTag() != null) {
                     commentView.hidePopup(false);
                     commentView.closeKeyboard();
-                    AnimatorSet animatorSet = new AnimatorSet();
-                    animatorSet.playTogether(
-                            ObjectAnimator.ofFloat(commentView, View.TRANSLATION_Y, 0, commentView.getMeasuredHeight()),
+                    if (commentViewAnimator != null) {
+                        commentViewAnimator.cancel();
+                    }
+                    commentViewAnimator = new AnimatorSet();
+                    commentView.setTranslationY(0);
+                    commentViewAnimator.playTogether(
+                            ObjectAnimator.ofFloat(commentView, View.TRANSLATION_Y, commentView.getMeasuredHeight()),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_X, .2f),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_Y, .2f),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.ALPHA, 0),
@@ -6500,16 +6593,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             ObjectAnimator.ofFloat(selectedCountView, View.SCALE_Y, 0.2f),
                             ObjectAnimator.ofFloat(selectedCountView, View.ALPHA, 0.0f)
                     );
-                    animatorSet.setDuration(180);
-                    animatorSet.setInterpolator(new DecelerateInterpolator());
-                    animatorSet.addListener(new AnimatorListenerAdapter() {
+                    commentViewAnimator.setDuration(180);
+                    commentViewAnimator.setInterpolator(new DecelerateInterpolator());
+                    commentViewAnimator.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
                             commentView.setVisibility(View.GONE);
                             writeButtonContainer.setVisibility(View.GONE);
                         }
                     });
-                    animatorSet.start();
+                    commentViewAnimator.start();
                     commentView.setTag(null);
                     fragmentView.requestLayout();
                 }
@@ -6517,11 +6610,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 selectedCountView.invalidate();
                 if (commentView.getTag() == null) {
                     commentView.setFieldText("");
+                    if (commentViewAnimator != null) {
+                        commentViewAnimator.cancel();
+                    }
                     commentView.setVisibility(View.VISIBLE);
                     writeButtonContainer.setVisibility(View.VISIBLE);
-                    AnimatorSet animatorSet = new AnimatorSet();
-                    animatorSet.playTogether(
-                            ObjectAnimator.ofFloat(commentView, View.TRANSLATION_Y, commentView.getMeasuredHeight(), 0),
+                    commentViewAnimator = new AnimatorSet();
+                    commentViewAnimator.playTogether(
+                            ObjectAnimator.ofFloat(commentView, View.TRANSLATION_Y, commentView.getMeasuredHeight(),0),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_X, 1f),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_Y, 1f),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.ALPHA, 1f),
@@ -6529,16 +6625,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             ObjectAnimator.ofFloat(selectedCountView, View.SCALE_Y, 1f),
                             ObjectAnimator.ofFloat(selectedCountView, View.ALPHA, 1f)
                     );
-                    animatorSet.setDuration(180);
-                    animatorSet.setInterpolator(new DecelerateInterpolator());
-                    animatorSet.addListener(new AnimatorListenerAdapter() {
+                    commentViewAnimator.setDuration(180);
+                    commentViewAnimator.setInterpolator(new DecelerateInterpolator());
+                    commentViewAnimator.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
                             commentView.setTag(2);
                             commentView.requestLayout();
                         }
                     });
-                    animatorSet.start();
+                    commentViewAnimator.start();
                     commentView.setTag(1);
                 }
                 actionBar.setTitle(LocaleController.formatPluralString("Recipient", selectedDialogs.size()));
@@ -6547,7 +6643,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             hideFloatingButton(selectedDialogs.isEmpty());
         }
 
-        isNextButton = shouldShowNextButton(this, selectedDialogs, commentView.getFieldText(), false);
+        isNextButton = shouldShowNextButton(this, selectedDialogs, commentView != null ? commentView.getFieldText() : "", false);
         AndroidUtilities.updateViewVisibilityAnimated(writeButton[0], !isNextButton, 0.5f, true);
         AndroidUtilities.updateViewVisibilityAnimated(writeButton[1], isNextButton, 0.5f, true);
     }
@@ -7042,7 +7138,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (dialogsType == 1 || dialogsType == 10 || dialogsType == 13) {
             return messagesController.dialogsServerOnly;
         } else if (dialogsType == 2) {
-            return messagesController.dialogsCanAddUsers;
+            ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>(messagesController.dialogsCanAddUsers.size() + messagesController.dialogsMyChannels.size() + messagesController.dialogsMyGroups.size() + 2);
+            if (messagesController.dialogsMyChannels.size() > 0) {
+                dialogs.add(null);
+                dialogs.addAll(messagesController.dialogsMyChannels);
+            }
+            if (messagesController.dialogsMyGroups.size() > 0) {
+                dialogs.add(null);
+                dialogs.addAll(messagesController.dialogsMyGroups);
+            }
+            if (messagesController.dialogsCanAddUsers.size() > 0) {
+                dialogs.add(null);
+                dialogs.addAll(messagesController.dialogsCanAddUsers);
+            }
+            return dialogs;
         } else if (dialogsType == 3) {
             return messagesController.dialogsForward;
         } else if (dialogsType == 4 || dialogsType == 12) {
@@ -7579,11 +7688,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         int[] location = new int[2];
         view.getLocationInWindow(location);
         int y;
-//        if (keyboardVisible && parentFragment.contentView.getMeasuredHeight() > AndroidUtilities.dp(58)) {
-//            y = location[1] + view.getMeasuredHeight();
-//        } else {
         y = location[1] - layout.getMeasuredHeight() - AndroidUtilities.dp(2);
-//        }
         sendPopupWindow.showAtLocation(view, Gravity.LEFT | Gravity.TOP, location[0] + view.getMeasuredWidth() - layout.getMeasuredWidth() + AndroidUtilities.dp(8), y);
         sendPopupWindow.dimBehind();
         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);

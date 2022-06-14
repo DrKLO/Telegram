@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utilities {
-
     public static Pattern pattern = Pattern.compile("[\\-0-9]+");
     public static SecureRandom random = new SecureRandom();
     public static Random fastRandom = new Xoroshiro128PlusRandom(random.nextLong());
@@ -38,6 +37,8 @@ public class Utilities {
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
+
+    private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -404,5 +405,17 @@ public class Utilities {
 
     public static float clamp(float value, float top, float bottom) {
         return Math.max(Math.min(value, top), bottom);
+    }
+
+    public static String generateRandomString() {
+        return generateRandomString(16);
+    }
+
+    public static String generateRandomString(int chars) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < chars; i++) {
+            sb.append(RANDOM_STRING_CHARS.charAt(fastRandom.nextInt(RANDOM_STRING_CHARS.length())));
+        }
+        return sb.toString();
     }
 }

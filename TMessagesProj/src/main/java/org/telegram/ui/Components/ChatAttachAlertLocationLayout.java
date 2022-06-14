@@ -33,6 +33,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.text.Html;
 import android.text.TextUtils;
@@ -49,6 +50,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
@@ -65,14 +67,13 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
-import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -271,11 +272,11 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 if (chatActivity.isInScheduleMode()) {
                     AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
                         delegate.didSelectLocation(location.venue, locationType, notify, scheduleDate);
-                        parentAlert.dismiss();
+                        parentAlert.dismiss(true);
                     }, resourcesProvider);
                 } else {
                     delegate.didSelectLocation(location.venue, locationType, true, 0);
-                    parentAlert.dismiss();
+                    parentAlert.dismiss(true);
                 }
             });
 
@@ -285,7 +286,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             nameTextView.setSingleLine(true);
             nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            nameTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             lastPressedMarkerView.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 18, 10, 18, 0));
 
@@ -545,7 +546,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         searchAreaButton.setBackgroundDrawable(drawable);
         searchAreaButton.setTextColor(getThemedColor(Theme.key_location_actionActiveIcon));
         searchAreaButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        searchAreaButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+        searchAreaButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         searchAreaButton.setText(LocaleController.getString("PlacesInThisArea", R.string.PlacesInThisArea));
         searchAreaButton.setGravity(Gravity.CENTER);
         searchAreaButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -697,7 +698,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         emptyTitleTextView = new TextView(context);
         emptyTitleTextView.setTextColor(getThemedColor(Theme.key_dialogEmptyText));
         emptyTitleTextView.setGravity(Gravity.CENTER);
-        emptyTitleTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+        emptyTitleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         emptyTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         emptyTitleTextView.setText(LocaleController.getString("NoPlacesFound", R.string.NoPlacesFound));
         emptyView.addView(emptyTitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 11, 0, 0));
@@ -785,11 +786,11 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                         if (chatActivity.isInScheduleMode()) {
                             AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
                                 delegate.didSelectLocation(location, locationType, notify, scheduleDate);
-                                parentAlert.dismiss();
+                                parentAlert.dismiss(true);
                             }, resourcesProvider);
                         } else {
                             delegate.didSelectLocation(location, locationType, true, 0);
-                            parentAlert.dismiss();
+                            parentAlert.dismiss(true);
                         }
                     }
                 } else if (locationDenied) {
@@ -798,7 +799,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             } else if (position == 2 && locationType == LOCATION_TYPE_SEND_WITH_LIVE) {
                 if (getLocationController().isSharingLocation(dialogId)) {
                     getLocationController().removeSharingLocation(dialogId);
-                    parentAlert.dismiss();
+                    parentAlert.dismiss(true);
                 } else {
                     if (myLocation == null && locationDenied) {
                         AlertsCreator.createLocationRequiredDialog(getParentActivity(), true).show();
@@ -812,11 +813,11 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                     if (chatActivity.isInScheduleMode()) {
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
                             delegate.didSelectLocation((TLRPC.TL_messageMediaVenue) object, locationType, notify, scheduleDate);
-                            parentAlert.dismiss();
+                            parentAlert.dismiss(true);
                         }, resourcesProvider);
                     } else {
                         delegate.didSelectLocation((TLRPC.TL_messageMediaVenue) object, locationType, true, 0);
-                        parentAlert.dismiss();
+                        parentAlert.dismiss(true);
                     }
                 } else if (object instanceof LiveLocation) {
                     LiveLocation liveLocation = (LiveLocation) object;
@@ -940,11 +941,11 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 if (chatActivity.isInScheduleMode()) {
                     AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate) -> {
                         delegate.didSelectLocation(object, locationType, notify, scheduleDate);
-                        parentAlert.dismiss();
+                        parentAlert.dismiss(true);
                     }, resourcesProvider);
                 } else {
                     delegate.didSelectLocation(object, locationType, true, 0);
-                    parentAlert.dismiss();
+                    parentAlert.dismiss(true);
                 }
             }
         });
@@ -1183,7 +1184,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             location.geo._long = AndroidUtilities.fixLocationCoord(myLocation.getLongitude());
             location.period = param;
             delegate.didSelectLocation(location, locationType, true, 0);
-            parentAlert.dismiss();
+            parentAlert.dismiss(true);
         }, resourcesProvider).show();
     }
 

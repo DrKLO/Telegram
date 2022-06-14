@@ -297,7 +297,7 @@ public:
 	static PlatformInterface *SharedInstance();
 	virtual ~PlatformInterface() = default;
 
-	virtual void configurePlatformAudio() {
+	virtual void configurePlatformAudio(int numChannels = 1) {
 	}
 
     virtual std::unique_ptr<rtc::NetworkMonitorFactory> createNetworkMonitorFactory() {

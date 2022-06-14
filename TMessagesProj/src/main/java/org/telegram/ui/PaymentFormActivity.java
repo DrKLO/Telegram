@@ -8,16 +8,19 @@
 
 package org.telegram.ui;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -57,6 +60,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.tasks.Task;
 //import com.google.android.gms.wallet.AutoResolveHelper;
 //import com.google.android.gms.wallet.IsReadyToPayRequest;
 //import com.google.android.gms.wallet.PaymentData;
@@ -71,13 +76,12 @@ import com.stripe.android.exception.APIException;
 import com.stripe.android.model.Card;
 import com.stripe.android.model.Token;
 import com.stripe.android.net.StripeApiHandler;
+import com.stripe.android.net.TokenParser;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.PhoneFormat.PhoneFormat;
-import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -85,6 +89,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
@@ -1218,6 +1223,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             public final String[] PREFIXES_14 = {"300", "301", "302", "303", "304", "305", "309", "36", "38", "39"};
                             public final String[] PREFIXES_16 = {
                                     "2221", "2222", "2223", "2224", "2225", "2226", "2227", "2228", "2229",
+                                    "2200", "2201", "2202", "2203", "2204",
                                     "223", "224", "225", "226", "227", "228", "229",
                                     "23", "24", "25", "26",
                                     "270", "271", "2720",
@@ -1949,7 +1955,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         String text = LocaleController.getInstance().formatCurrencyString(amount, paymentForm.invoice.currency);
                         TextView valueTextView = new TextView(context);
                         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                        valueTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+                        valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                         valueTextView.setLines(1);
                         valueTextView.setTag(amount);
                         valueTextView.setMaxLines(1);
@@ -2163,7 +2169,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 payTextView.setText(LocaleController.formatString("PaymentCheckoutPay", R.string.PaymentCheckoutPay, totalPrice[0]));
                 payTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 payTextView.setGravity(Gravity.CENTER);
-                payTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+                payTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 bottomLayout.addView(payTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
                 progressViewButton = new ContextProgressView(context, 0);

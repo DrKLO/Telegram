@@ -61,6 +61,9 @@ class RTC_LOCKABLE MutexImpl final {
     owner_.SetOwner();
   }
   ABSL_MUST_USE_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+      if (!mutexEnabled()) {
+          return false;
+      }
     if (pthread_mutex_trylock(&mutex_) != 0) {
       return false;
     }

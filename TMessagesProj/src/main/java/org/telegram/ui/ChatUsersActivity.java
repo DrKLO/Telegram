@@ -1044,9 +1044,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         }
                     });
                 } else if (position == addNew2Row) {
-                    ManageLinksActivity fragment = new ManageLinksActivity(chatId, 0, 0);
-                    fragment.setInfo(info, info.exported_invite);
-                    presentFragment(fragment);
+                    if (info != null) {
+                        ManageLinksActivity fragment = new ManageLinksActivity(chatId, 0, 0);
+                        fragment.setInfo(info, info.exported_invite);
+                        presentFragment(fragment);
+                    }
                     return;
                 } else if (position > permissionsSectionRow && position <= changeInfoRow) {
                     TextCheckCell2 checkCell = (TextCheckCell2) view;
@@ -1256,7 +1258,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             bannedRights.invite_users = true;
                             bannedRights.change_info = true;
                         }
-                        ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, adminRights, defaultBannedRights, bannedRights, rank, type == TYPE_ADMIN ? ChatRightsEditActivity.TYPE_ADMIN : ChatRightsEditActivity.TYPE_BANNED, canEdit, participant == null);
+                        ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, adminRights, defaultBannedRights, bannedRights, rank, type == TYPE_ADMIN ? ChatRightsEditActivity.TYPE_ADMIN : ChatRightsEditActivity.TYPE_BANNED, canEdit, participant == null, null);
                         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
                             @Override
                             public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {
@@ -1481,7 +1483,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     private void openRightsEdit2(long peerId, int date, TLObject participant, TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank, boolean canEditAdmin, int type, boolean removeFragment) {
         boolean[] needShowBulletin = new boolean[1];
         final boolean isAdmin = participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_chatParticipantAdmin;
-        ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, adminRights, defaultBannedRights, bannedRights, rank, type, true, false) {
+        ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, adminRights, defaultBannedRights, bannedRights, rank, type, true, false, null) {
             @Override
             protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
                 if (!isOpen && backward && needShowBulletin[0] && BulletinFactory.canShowBulletin(ChatUsersActivity.this)) {
@@ -1572,7 +1574,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     }
 
     private void openRightsEdit(long user_id, TLObject participant, TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank, boolean canEditAdmin, int type, boolean removeFragment) {
-        ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, chatId, adminRights, defaultBannedRights, bannedRights, rank, type, canEditAdmin, participant == null);
+        ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, chatId, adminRights, defaultBannedRights, bannedRights, rank, type, canEditAdmin, participant == null, null);
         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
             @Override
             public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {
@@ -1661,7 +1663,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 map.remove(peerId);
                 arrayList.remove(p);
                 updated = true;
-                if (type == TYPE_BANNED) {
+                if (type == TYPE_BANNED && info != null) {
                     info.kicked_count--;
                 }
             }
@@ -1869,7 +1871,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             builder.setItems(items, icons, (dialogInterface, i) -> {
                 if (type == TYPE_ADMIN) {
                     if (i == 0 && items.length == 2) {
-                        ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, adminRights, null, null, rank, ChatRightsEditActivity.TYPE_ADMIN, true, false);
+                        ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, adminRights, null, null, rank, ChatRightsEditActivity.TYPE_ADMIN, true, false, null);
                         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
                             @Override
                             public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {
@@ -1889,13 +1891,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         });
                         presentFragment(fragment);
                     } else {
-                        getMessagesController().setUserAdminRole(chatId, getMessagesController().getUser(peerId), new TLRPC.TL_chatAdminRights(), "", !isChannel, ChatUsersActivity.this, false);
+                        getMessagesController().setUserAdminRole(chatId, getMessagesController().getUser(peerId), new TLRPC.TL_chatAdminRights(), "", !isChannel, ChatUsersActivity.this, false, false, null,null);
                         removeParticipants(peerId);
                     }
                 } else if (type == TYPE_BANNED || type == TYPE_KICKED) {
                     if (i == 0) {
                         if (type == TYPE_KICKED) {
-                            ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, null, defaultBannedRights, bannedRights, rank, ChatRightsEditActivity.TYPE_BANNED, true, false);
+                            ChatRightsEditActivity fragment = new ChatRightsEditActivity(peerId, chatId, null, defaultBannedRights, bannedRights, rank, ChatRightsEditActivity.TYPE_BANNED, true, false, null);
                             fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
                                 @Override
                                 public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {

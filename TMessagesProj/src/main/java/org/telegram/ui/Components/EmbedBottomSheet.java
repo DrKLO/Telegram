@@ -67,6 +67,7 @@ import org.telegram.ui.PhotoViewer;
 import java.util.HashMap;
 import java.util.Locale;
 
+@SuppressLint("WrongConstant")
 public class EmbedBottomSheet extends BottomSheet {
 
     private WebView webView;
@@ -77,7 +78,6 @@ public class EmbedBottomSheet extends BottomSheet {
     private View progressBarBlackBackground;
     private RadialProgressView progressBar;
     private Activity parentActivity;
-    private PipVideoView pipVideoView;
     private LinearLayout imageButtonsContainer;
     private TextView copyTextButton;
     private FrameLayout containerLayout;
@@ -205,7 +205,7 @@ public class EmbedBottomSheet extends BottomSheet {
     private OnShowListener onShowListener = new OnShowListener() {
         @Override
         public void onShow(DialogInterface dialog) {
-            if (pipVideoView != null && videoView.isInline()) {
+            if (PipVideoOverlay.isVisible() && videoView.isInline()) {
                 videoView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                     @Override
                     public boolean onPreDraw() {
@@ -276,14 +276,14 @@ public class EmbedBottomSheet extends BottomSheet {
             protected void onDetachedFromWindow() {
                 super.onDetachedFromWindow();
                 try {
-                    if ((pipVideoView == null || webView.getVisibility() != VISIBLE) && webView.getParent() != null) {
+                    if ((!PipVideoOverlay.isVisible() || webView.getVisibility() != VISIBLE) && webView.getParent() != null) {
                         removeView(webView);
                         webView.stopLoading();
                         webView.loadUrl("about:blank");
                         webView.destroy();
                     }
 
-                    if (!videoView.isInline() && pipVideoView == null) {
+                    if (!videoView.isInline() && !PipVideoOverlay.isVisible()) {
                         if (instance == EmbedBottomSheet.this) {
                             instance = null;
                         }
@@ -341,7 +341,7 @@ public class EmbedBottomSheet extends BottomSheet {
 
             @Override
             public void onShowCustomView(View view, CustomViewCallback callback) {
-                if (customView != null || pipVideoView != null) {
+                if (customView != null || PipVideoOverlay.isVisible()) {
                     callback.onCustomViewHidden();
                     return;
                 }
@@ -497,12 +497,12 @@ public class EmbedBottomSheet extends BottomSheet {
                     }
 
                     setOnShowListener(null);
-                    if (animated) {
+                    if (animated && PipVideoOverlay.IS_TRANSITION_ANIMATION_SUPPORTED) {
                         TextureView textureView = videoView.getTextureView();
                         View controlsView = videoView.getControlsView();
                         ImageView textureImageView = videoView.getTextureImageView();
 
-                        Rect rect = PipVideoView.getPipRect(aspectRatio);
+                        Rect rect = PipVideoOverlay.getPipRect(true, aspectRatio);
 
                         float scale = rect.width / textureView.getWidth();
 
@@ -551,9 +551,9 @@ public class EmbedBottomSheet extends BottomSheet {
                         }
                     }
 
-                    if (animated) {
+                    if (animated && PipVideoOverlay.IS_TRANSITION_ANIMATION_SUPPORTED) {
                         setOnShowListener(onShowListener);
-                        Rect rect = PipVideoView.getPipRect(aspectRatio);
+                        Rect rect = PipVideoOverlay.getPipRect(false, aspectRatio);
 
                         TextureView textureView = videoView.getTextureView();
                         ImageView textureImageView = videoView.getTextureImageView();
@@ -567,8 +567,7 @@ public class EmbedBottomSheet extends BottomSheet {
                         textureView.setTranslationX(rect.x);
                         textureView.setTranslationY(rect.y);
                     } else {
-                        pipVideoView.close();
-                        pipVideoView = null;
+                        PipVideoOverlay.dismiss();
                     }
                     setShowWithoutAnimation(true);
                     show();
@@ -581,11 +580,16 @@ public class EmbedBottomSheet extends BottomSheet {
             }
 
             @Override
-            public TextureView onSwitchInlineMode(View controlsView, boolean inline, float aspectRatio, int rotation, boolean animated) {
+            public TextureView onSwitchInlineMode(View controlsView, boolean inline, int videoWidth, int videoHeight, int rotation, boolean animated) {
                 if (inline) {
                     controlsView.setTranslationY(0);
-                    pipVideoView = new PipVideoView(false);
-                    return pipVideoView.show(parentActivity, EmbedBottomSheet.this, controlsView, aspectRatio, rotation, null);
+
+                    TextureView textureView = new TextureView(parentActivity);
+                    if (PipVideoOverlay.show(false, parentActivity, textureView, videoWidth, videoHeight)) {
+                        PipVideoOverlay.setParentSheet(EmbedBottomSheet.this);
+                        return textureView;
+                    }
+                    return null;
                 }
 
                 if (animated) {
@@ -734,6 +738,12 @@ public class EmbedBottomSheet extends BottomSheet {
         pipButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         imageButtonsContainer.addView(pipButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 4, 0));
         pipButton.setOnClickListener(v -> {
+            if (PipVideoOverlay.isVisible()) {
+                PipVideoOverlay.dismiss();
+                AndroidUtilities.runOnUIThread(v::callOnClick, 300);
+                return;
+            }
+
             boolean inAppOnly = isYouTube && "inapp".equals(MessagesController.getInstance(currentAccount).youtubePipType);
             if (!inAppOnly && !checkInlinePermissions()) {
                 return;
@@ -742,12 +752,14 @@ public class EmbedBottomSheet extends BottomSheet {
                 return;
             }
             boolean animated = false;
-            pipVideoView = new PipVideoView(inAppOnly);
-            pipVideoView.show(parentActivity, EmbedBottomSheet.this, null, width != 0 && height != 0 ? width / (float) height : 1.0f, 0, webView);
+            if (PipVideoOverlay.show(inAppOnly, parentActivity, webView, width, height)) {
+                PipVideoOverlay.setParentSheet(EmbedBottomSheet.this);
+            }
+
             if (isYouTube) {
                 runJsCode("hideControls();");
             }
-            if (animated) {
+            if (animated && PipVideoOverlay.IS_TRANSITION_ANIMATION_SUPPORTED) {
                 animationInProgress = true;
 
                 View view = videoView.getAspectRatioView();
@@ -1012,9 +1024,6 @@ public class EmbedBottomSheet extends BottomSheet {
                 }
             }
         }
-        if (pipVideoView != null) {
-            pipVideoView.onConfigurationChanged();
-        }
     }
 
     public void destroy() {
@@ -1024,10 +1033,7 @@ public class EmbedBottomSheet extends BottomSheet {
             webView.loadUrl("about:blank");
             webView.destroy();
         }
-        if (pipVideoView != null) {
-            pipVideoView.close();
-            pipVideoView = null;
-        }
+        PipVideoOverlay.dismiss();
         if (videoView != null) {
             videoView.destroy();
         }
@@ -1045,7 +1051,7 @@ public class EmbedBottomSheet extends BottomSheet {
     }
 
     public void exitFromPip() {
-        if (webView == null || pipVideoView == null) {
+        if (webView == null || !PipVideoOverlay.isVisible()) {
             return;
         }
         if (ApplicationLoader.mainInterfacePaused) {
@@ -1065,8 +1071,7 @@ public class EmbedBottomSheet extends BottomSheet {
         containerLayout.addView(webView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 48 + 36 + (hasDescription ? 22 : 0)));
         setShowWithoutAnimation(true);
         show();
-        pipVideoView.close();
-        pipVideoView = null;
+        PipVideoOverlay.dismiss(true);
     }
 
     public static EmbedBottomSheet getInstance() {
@@ -1136,8 +1141,7 @@ public class EmbedBottomSheet extends BottomSheet {
             waitingForDraw--;
             if (waitingForDraw == 0) {
                 videoView.updateTextureImageView();
-                pipVideoView.close();
-                pipVideoView = null;
+                PipVideoOverlay.dismiss();
             } else {
                 container.invalidate();
             }

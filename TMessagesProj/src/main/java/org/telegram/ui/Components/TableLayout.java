@@ -194,7 +194,7 @@ public class TableLayout extends View {
             }
         }
 
-        public void draw(Canvas canvas) {
+        public void draw(Canvas canvas, View view) {
             if (cell == null) {
                 return;
             }
@@ -251,7 +251,7 @@ public class TableLayout extends View {
                 if (selectionIndex >= 0) {
                     textSelectionHelper.draw(canvas, (TextSelectionHelper.ArticleSelectableView) getParent().getParent(), selectionIndex);
                 }
-                textLayout.draw(canvas);
+                textLayout.draw(canvas, view);
                 canvas.restore();
             }
             if (drawLines) {
@@ -707,7 +707,7 @@ public class TableLayout extends View {
     protected void onDraw(Canvas canvas) {
         for (int i = 0, N = getChildCount(); i < N; i++) {
             Child c = getChildAt(i);
-            c.draw(canvas);
+            c.draw(canvas, this);
         }
     }
 

@@ -19,6 +19,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -56,6 +57,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -271,6 +273,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private float dragY;
     private float clipTop;
     private float clipBottom;
+    private float clipTopOrigin;
+    private float clipBottomOrigin;
     private float clipHorizontal;
     private float translationX;
     private float translationY;
@@ -281,7 +285,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private float animateToScale;
     private float animateToClipTop;
     private float animateToClipBottom;
+    private float animateToClipTopOrigin;
+    private float animateToClipBottomOrigin;
     private float animateToClipHorizontal;
+    private int[] animateFromRadius;
+    private boolean animateToRadius;
     private float animationValue;
     private int currentRotation;
     private long animationStartTime;
@@ -725,6 +733,14 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         int viewHeight = AndroidUtilities.displaySize.y + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
         scale = Math.max(width / viewWidth, height / viewHeight);
 
+        if (object.radius != null) {
+            animateFromRadius = new int[object.radius.length];
+            for (int i = 0; i < object.radius.length; ++i) {
+                animateFromRadius[i] = object.radius[i];
+            }
+        } else {
+            animateFromRadius = null;
+        }
         translationX = object.viewX + drawRegion.left + width / 2 -  viewWidth / 2;
         translationY = object.viewY + drawRegion.top + height / 2 - viewHeight / 2;
         clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
@@ -732,24 +748,25 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         int[] coords2 = new int[2];
         object.parentView.getLocationInWindow(coords2);
         clipTop = coords2[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight) - (object.viewY + drawRegion.top) + object.clipTopAddition;
-        if (clipTop < 0) {
-            clipTop = 0;
-        }
+        clipTop = Math.max(0, Math.max(clipTop, clipVertical));
         clipBottom = (object.viewY + drawRegion.top + (int) height) - (coords2[1] + object.parentView.getHeight() - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight)) + object.clipBottomAddition;
-        if (clipBottom < 0) {
-            clipBottom = 0;
-        }
-        clipTop = Math.max(clipTop, clipVertical);
-        clipBottom = Math.max(clipBottom, clipVertical);
+        clipBottom = Math.max(0, Math.max(clipBottom, clipVertical));
 
+        clipTopOrigin = 0;//coords2[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight) - (object.viewY + drawRegion.top) + object.clipTopAddition;
+        clipTopOrigin = Math.max(0, Math.max(clipTopOrigin, clipVertical));
+        clipBottomOrigin = 0;//(object.viewY + drawRegion.top + (int) height) - (coords2[1] + object.parentView.getHeight() - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight)) + object.clipBottomAddition;
+        clipBottomOrigin = Math.max(0, Math.max(clipBottomOrigin, clipVertical));
 
         animationStartTime = System.currentTimeMillis();
         animateToX = 0;
         animateToY = 0;
         animateToClipBottom = 0;
+        animateToClipBottomOrigin = 0;
         animateToClipHorizontal = 0;
         animateToClipTop = 0;
+        animateToClipTopOrigin = 0;
         animateToScale = 1.0f;
+        animateToRadius = true;
         zoomAnimation = true;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
@@ -941,6 +958,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     }
 
+    private float[] currentRadii;
+    private Path roundRectPath = new Path();
+
     private void onDraw(Canvas canvas) {
         if (!isPhotoVisible) {
             return;
@@ -951,6 +971,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         float currentScale;
         float currentClipTop;
         float currentClipBottom;
+        float currentClipTopOrigin;
+        float currentClipBottomOrigin;
         float currentClipHorizontal;
         float aty = -1;
 
@@ -974,6 +996,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 currentTranslationX = translationX + (animateToX - translationX) * av;
                 currentClipTop = clipTop + (animateToClipTop - clipTop) * av;
                 currentClipBottom = clipBottom + (animateToClipBottom - clipBottom) * av;
+                currentClipTopOrigin = clipTopOrigin + (animateToClipTopOrigin - clipTopOrigin) * av;
+                currentClipBottomOrigin = clipBottomOrigin + (animateToClipBottomOrigin - clipBottomOrigin) * av;
                 currentClipHorizontal = clipHorizontal + (animateToClipHorizontal - clipHorizontal) * av;
             } else {
                 currentScale = scale + (animateToScale - scale) * animationValue;
@@ -981,8 +1005,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 currentTranslationX = translationX + (animateToX - translationX) * animationValue;
                 currentClipTop = clipTop + (animateToClipTop - clipTop) * animationValue;
                 currentClipBottom = clipBottom + (animateToClipBottom - clipBottom) * animationValue;
+                currentClipTopOrigin = clipTopOrigin + (animateToClipTopOrigin - clipTopOrigin) * animationValue;
+                currentClipBottomOrigin = clipBottomOrigin + (animateToClipBottomOrigin - clipBottomOrigin) * animationValue;
                 currentClipHorizontal = clipHorizontal + (animateToClipHorizontal - clipHorizontal) * animationValue;
             }
+
             if (animateToScale == 1 && scale == 1 && translationX == 0) {
                 aty = currentTranslationY;
             }
@@ -994,6 +1021,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 translationY = animateToY;
                 clipBottom = animateToClipBottom;
                 clipTop = animateToClipTop;
+                clipTopOrigin = animateToClipTopOrigin;
+                clipBottomOrigin = animateToClipBottomOrigin;
                 clipHorizontal = animateToClipHorizontal;
                 scale = animateToScale;
                 animationStartTime = 0;
@@ -1017,9 +1046,26 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             currentTranslationX = translationX;
             currentClipTop = clipTop;
             currentClipBottom = clipBottom;
+            currentClipTopOrigin = clipTopOrigin;
+            currentClipBottomOrigin = clipBottomOrigin;
             currentClipHorizontal = clipHorizontal;
             if (!moving) {
                 aty = translationY;
+            }
+        }
+
+        boolean zeroRadius = true;
+        if (animateFromRadius != null) {
+            if (currentRadii == null) {
+                currentRadii = new float[8];
+            }
+            float t = animateToRadius ? animationValue : 1f - animationValue;
+            zeroRadius = true;
+            for (int i = 0; i < 8; i += 2) {
+                currentRadii[i] = currentRadii[i + 1] = AndroidUtilities.lerp((float) animateFromRadius[i / 2] * 2, 0, t);
+                if (currentRadii[i] > 0) {
+                    zeroRadius = false;
+                }
             }
         }
 
@@ -1063,6 +1109,12 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         int height = (int) (bitmapHeight * scale);
 
         canvas.clipRect(-width / 2 + currentClipHorizontal / sc, -height / 2 + currentClipTop / sc, width / 2 - currentClipHorizontal / sc, height / 2 - currentClipBottom / sc);
+        if (!zeroRadius) {
+            roundRectPath.reset();
+            AndroidUtilities.rectTmp.set(-width / 2 + currentClipHorizontal / sc, -height / 2 + currentClipTopOrigin / sc, width / 2 - currentClipHorizontal / sc, height / 2 - currentClipBottomOrigin / sc);
+            roundRectPath.addRoundRect(AndroidUtilities.rectTmp, currentRadii, Path.Direction.CW);
+            canvas.clipPath(roundRectPath);
+        }
 
         if (!drawTextureView || !textureUploaded || !videoCrossfadeStarted || videoCrossfadeAlpha != 1.0f) {
             centerImage.setAlpha(alpha);
@@ -1183,21 +1235,22 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 int[] coords2 = new int[2];
                 object.parentView.getLocationInWindow(coords2);
                 animateToClipTop = coords2[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight) - (object.viewY + drawRegion.top) + object.clipTopAddition;
-                if (animateToClipTop < 0) {
-                    animateToClipTop = 0;
-                }
+                animateToClipTop = Math.max(0, Math.max(animateToClipTop, clipVertical));
                 animateToClipBottom = (object.viewY + drawRegion.top + (int) height) - (coords2[1] + object.parentView.getHeight() - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight)) + object.clipBottomAddition;
-                if (animateToClipBottom < 0) {
-                    animateToClipBottom = 0;
-                }
+                animateToClipBottom = Math.max(0, Math.max(animateToClipBottom, clipVertical));
+
+                animateToClipTopOrigin = 0; // coords2[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight) - (object.viewY + drawRegion.top) + object.clipTopAddition;
+                animateToClipTopOrigin = Math.max(0, Math.max(animateToClipTopOrigin, clipVertical));
+                animateToClipBottomOrigin = 0; // (object.viewY + drawRegion.top + (int) height) - (coords2[1] + object.parentView.getHeight() - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight)) + object.clipBottomAddition;
+                animateToClipBottomOrigin = Math.max(0, Math.max(animateToClipBottomOrigin, clipVertical));
+
                 animationStartTime = System.currentTimeMillis();
-                animateToClipBottom = Math.max(animateToClipBottom, clipVertical);
-                animateToClipTop = Math.max(animateToClipTop, clipVertical);
                 zoomAnimation = true;
             } else {
                 int h = (AndroidUtilities.displaySize.y + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
                 animateToY = translationY >= 0 ? h : -h;
             }
+            animateToRadius = false;
             if (isVideo) {
                 videoCrossfadeStarted = false;
                 textureUploaded = false;

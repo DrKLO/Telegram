@@ -61,16 +61,20 @@ public:
   explicit ThreadsImpl(size_t i) {
     auto suffix = i == 0 ? "" : "#" + std::to_string(i);
     media_ = create("tgc-media" + suffix);
-    //worker_ = create("tgc-work"  + suffix);
-    worker_ = create_network("tgc-work" + suffix);
-    //network_ = create_network("tgc-net" + suffix);
+    worker_ = create("tgc-work" + suffix);
+    network_ = create_network("tgc-net" + suffix);
+      
+    media_->AllowInvokesToThread(worker_.get());
+    media_->AllowInvokesToThread(network_.get());
+    worker_->AllowInvokesToThread(network_.get());
+      
     //network_->DisallowAllInvokes();
     //worker_->DisallowAllInvokes();
     //worker_->AllowInvokesToThread(network_.get());
   }
 
   rtc::Thread *getNetworkThread() override {
-    return worker_.get();
+    return network_.get();
   }
   rtc::Thread *getMediaThread() override {
     return media_.get();
@@ -90,7 +94,7 @@ public:
   }
 
 private:
-  //Thread network_;
+  Thread network_;
   Thread media_;
   Thread worker_;
   rtc::scoped_refptr<webrtc::SharedModuleThread> shared_module_thread_;

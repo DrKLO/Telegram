@@ -378,4 +378,29 @@ absl::optional<Message> DeserializeMessage(
 		: absl::nullopt;
 }
 
+absl::optional<rtc::CopyOnWriteBuffer> DeserializeRawMessage(
+    rtc::ByteBufferReader &reader,
+    bool singleMessagePacket) {
+    if (!reader.Length()) {
+        return absl::nullopt;
+    }
+    
+    uint32_t length = 0;
+    if (!reader.ReadUInt32(&length)) {
+        return absl::nullopt;
+    }
+    
+    if (length < 0 || length > 1024 * 1024) {
+        return absl::nullopt;
+    }
+    
+    rtc::CopyOnWriteBuffer result;
+    result.SetSize(length);
+    if (!reader.ReadBytes((char *)result.MutableData(), result.size())) {
+        return absl::nullopt;
+    }
+    
+    return result;
+}
+
 } // namespace tgcalls

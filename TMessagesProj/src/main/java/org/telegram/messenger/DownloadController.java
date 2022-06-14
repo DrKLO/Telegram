@@ -1107,16 +1107,15 @@ public class DownloadController extends BaseController implements NotificationCe
 
 
     public void startDownloadFile(TLRPC.Document document, MessageObject parentObject) {
+        if (parentObject.getDocument() == null) {
+            return;
+        }
         AndroidUtilities.runOnUIThread(() -> {
             boolean contains = false;
 
             for (int i = 0; i < recentDownloadingFiles.size(); i++) {
                 if (recentDownloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
-                    if (parentObject.mediaExists) {
-                        contains = true;
-                    } else {
-                        recentDownloadingFiles.remove(i);
-                    }
+                    contains = true;
                     break;
                 }
             }
@@ -1182,51 +1181,52 @@ public class DownloadController extends BaseController implements NotificationCe
                     putToUnviewedDownloads(parentObject);
                 }
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+                getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                    try {
+                        String req = String.format(Locale.ENGLISH, "UPDATE downloading_documents SET state = 1, date = %d WHERE hash = %d AND id = %d", System.currentTimeMillis(), parentObject.getDocument().dc_id,  parentObject.getDocument().id);
+                        getMessagesStorage().getDatabase().executeFast(req).stepThis().dispose();
+                        SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT COUNT(*) FROM downloading_documents WHERE state = 1");
+                        int count = 0;
+                        if (cursor.next()) {
+                            count = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+
+                        cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT state FROM downloading_documents WHERE state = 1");
+                        if (cursor.next()) {
+                            int state = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+
+                        int limitDownloadsDocuments = 100;
+                        if (count > limitDownloadsDocuments) {
+                            cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT hash, id FROM downloading_documents WHERE state = 1 ORDER BY date ASC LIMIT " + (limitDownloadsDocuments - count));
+                            ArrayList<DownloadingDocumentEntry> entriesToRemove = new ArrayList<>();
+                            while (cursor.next()) {
+                                DownloadingDocumentEntry entry = new DownloadingDocumentEntry();
+                                entry.hash = cursor.intValue(0);
+                                entry.id = cursor.longValue(1);
+                                entriesToRemove.add(entry);
+                            }
+                            cursor.dispose();
+
+                            SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("DELETE FROM downloading_documents WHERE hash = ? AND id = ?");
+                            for (int i = 0; i < entriesToRemove.size(); i++) {
+                                state.requery();
+                                state.bindInteger(1, entriesToRemove.get(i).hash);
+                                state.bindLong(2, entriesToRemove.get(i).id);
+                                state.step();
+                            }
+                            state.dispose();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                });
             }
         });
 
-        getMessagesStorage().getStorageQueue().postRunnable(() -> {
-            try {
-                String req = String.format(Locale.ENGLISH, "UPDATE downloading_documents SET state = 1, date = %d WHERE hash = %d AND id = %d", System.currentTimeMillis(), parentObject.getDocument().dc_id,  parentObject.getDocument().id);
-                getMessagesStorage().getDatabase().executeFast(req).stepThis().dispose();
-                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT COUNT(*) FROM downloading_documents WHERE state = 1");
-                int count = 0;
-                if (cursor.next()) {
-                    count = cursor.intValue(0);
-                }
-                cursor.dispose();
 
-                cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT state FROM downloading_documents WHERE state = 1");
-                if (cursor.next()) {
-                    int state = cursor.intValue(0);
-                }
-                cursor.dispose();
-
-                int limitDownloadsDocuments = 100;
-                if (count > limitDownloadsDocuments) {
-                    cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT hash, id FROM downloading_documents WHERE state = 1 ORDER BY date ASC LIMIT " + (limitDownloadsDocuments - count));
-                    ArrayList<DownloadingDocumentEntry> entriesToRemove = new ArrayList<>();
-                    while (cursor.next()) {
-                        DownloadingDocumentEntry entry = new DownloadingDocumentEntry();
-                        entry.hash = cursor.intValue(0);
-                        entry.id = cursor.longValue(1);
-                        entriesToRemove.add(entry);
-                    }
-                    cursor.dispose();
-
-                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("DELETE FROM downloading_documents WHERE hash = ? AND id = ?");
-                    for (int i = 0; i < entriesToRemove.size(); i++) {
-                        state.requery();
-                        state.bindInteger(1, entriesToRemove.get(i).hash);
-                        state.bindLong(2, entriesToRemove.get(i).id);
-                        state.step();
-                    }
-                    state.dispose();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
     }
 
     public void onDownloadFail(MessageObject parentObject, int reason) {
@@ -1264,7 +1264,7 @@ public class DownloadController extends BaseController implements NotificationCe
         });
     }
 
-    Runnable clearUnviewedDownloadsRunnbale = new Runnable() {
+    Runnable clearUnviewedDownloadsRunnale = new Runnable() {
         @Override
         public void run() {
             clearUnviewedDownloads();
@@ -1273,8 +1273,8 @@ public class DownloadController extends BaseController implements NotificationCe
     };
     private void putToUnviewedDownloads(MessageObject parentObject) {
         unviewedDownloads.put(parentObject.getId(), parentObject);
-        AndroidUtilities.cancelRunOnUIThread(clearUnviewedDownloadsRunnbale);
-        AndroidUtilities.runOnUIThread(clearUnviewedDownloadsRunnbale, 60000);
+        AndroidUtilities.cancelRunOnUIThread(clearUnviewedDownloadsRunnale);
+        AndroidUtilities.runOnUIThread(clearUnviewedDownloadsRunnale, 60000);
     }
 
     public void clearUnviewedDownloads() {
@@ -1356,7 +1356,7 @@ public class DownloadController extends BaseController implements NotificationCe
         for (int i = 0; i < messageObjects.size(); i++) {
             boolean found = false;
             for (int j = 0; j < recentDownloadingFiles.size(); j++) {
-                if (messageObjects.get(i).getId() == recentDownloadingFiles.get(j).getId()) {
+                if (messageObjects.get(i).getId() == recentDownloadingFiles.get(j).getId() && recentDownloadingFiles.get(j).getDialogId() == messageObjects.get(i).getDialogId()) {
                     recentDownloadingFiles.remove(j);
                     found = true;
                     break;
@@ -1364,7 +1364,7 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if (!found) {
                 for (int j = 0; j < downloadingFiles.size(); j++) {
-                    if (messageObjects.get(i).getId() == downloadingFiles.get(j).getId()) {
+                    if (messageObjects.get(i).getId() == downloadingFiles.get(j).getId() && downloadingFiles.get(j).getDialogId() == messageObjects.get(i).getDialogId()) {
                         downloadingFiles.remove(j);
                         found = true;
                         break;

@@ -21,7 +21,6 @@ import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -51,7 +50,7 @@ public class UserCell2 extends FrameLayout {
     private TLObject currentObject;
 
     private CharSequence currentName;
-    private CharSequence currrntStatus;
+    private CharSequence currentStatus;
     private int currentId;
     private int currentDrawable;
 
@@ -106,7 +105,7 @@ public class UserCell2 extends FrameLayout {
 
     public void setData(TLObject object, CharSequence name, CharSequence status, int resId) {
         if (object == null && name == null && status == null) {
-            currrntStatus = null;
+            currentStatus = null;
             currentName = null;
             currentObject = null;
             nameTextView.setText("");
@@ -114,7 +113,7 @@ public class UserCell2 extends FrameLayout {
             avatarImageView.setImageDrawable(null);
             return;
         }
-        currrntStatus = status;
+        currentStatus = status;
         currentName = name;
         currentObject = object;
         currentDrawable = resId;
@@ -242,9 +241,13 @@ public class UserCell2 extends FrameLayout {
             }
             nameTextView.setText(lastName);
         }
-        if (currrntStatus != null) {
+
+        if (currentStatus != null) {
             statusTextView.setTextColor(statusColor);
-            statusTextView.setText(currrntStatus);
+            statusTextView.setText(currentStatus);
+            if (avatarImageView != null) {
+                avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
+            }
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);

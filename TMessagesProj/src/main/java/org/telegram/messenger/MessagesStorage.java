@@ -84,7 +84,7 @@ public class MessagesStorage extends BaseController {
     private CountDownLatch openSync = new CountDownLatch(1);
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
-    private final static int LAST_DB_VERSION = 92;
+    private final static int LAST_DB_VERSION = 93;
     private final static int DUROV_RELOGIN = 2;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
@@ -397,6 +397,8 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE INDEX IF NOT EXISTS reaction_mentions_did ON reaction_mentions(dialog_id);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE downloading_documents(data BLOB, hash INTEGER, id INTEGER, state INTEGER, date INTEGER, PRIMARY KEY(hash, id));").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE attach_menu_bots(data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
                 //version
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
 
@@ -1574,6 +1576,11 @@ public class MessagesStorage extends BaseController {
             version = 92;
         }
 
+        if (version == 92) {
+            database.executeFast("CREATE TABLE IF NOT EXISTS attach_menu_bots(data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 93").stepThis().dispose();
+        }
+
         if (durovRelogin < 1) {
             System.out.println("durov_relogin<1 " + durovRelogin);
             database.executeFast("CREATE TABLE telegraher_init(durov_relogin INTEGER);").stepThis().dispose();
@@ -2107,6 +2114,7 @@ public class MessagesStorage extends BaseController {
 
                 database.executeFast("DELETE FROM reaction_mentions").stepThis().dispose();
                 database.executeFast("DELETE FROM downloading_documents").stepThis().dispose();
+                database.executeFast("DELETE FROM attach_menu_bots").stepThis().dispose();
 
                 SQLiteCursor cursor = database.queryFinalized("SELECT did FROM dialogs WHERE 1");
                 StringBuilder ids = new StringBuilder();
@@ -2182,6 +2190,7 @@ public class MessagesStorage extends BaseController {
             } finally {
                 AndroidUtilities.runOnUIThread(() -> {
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didClearDatabase);
+                    getMediaDataController().loadAttachMenuBots(false, true);
                 });
             }
         });
@@ -3382,7 +3391,7 @@ public class MessagesStorage extends BaseController {
         arrayList.add(message);
     }
 
-    protected void loadReplyMessages(LongSparseArray<SparseArray<ArrayList<TLRPC.Message>>> replyMessageOwners, LongSparseArray<ArrayList<Integer>> dialogReplyMessagesIds, ArrayList<Long> usersToLoad, ArrayList<Long> chatsToLoad) throws SQLiteException {
+    protected void loadReplyMessages(LongSparseArray<SparseArray<ArrayList<TLRPC.Message>>> replyMessageOwners, LongSparseArray<ArrayList<Integer>> dialogReplyMessagesIds, ArrayList<Long> usersToLoad, ArrayList<Long> chatsToLoad, boolean scheduled) throws SQLiteException {
         if (replyMessageOwners.isEmpty()) {
             return;
         }
@@ -3394,7 +3403,12 @@ public class MessagesStorage extends BaseController {
             if (ids == null) {
                 continue;
             }
-            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, isdel FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+            SQLiteCursor cursor;
+            if (scheduled) {
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+            } else {
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, isdel FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+            }
             while (cursor.next()) {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
                 if (data != null) {
@@ -3402,7 +3416,8 @@ public class MessagesStorage extends BaseController {
                     message.readAttachPath(data, getUserConfig().clientUserId);
                     data.reuse();
                     message.id = cursor.intValue(1);
-                    message.isDeleted = cursor.intValue(4) == 1;
+                    if (!scheduled) message.isDeleted = cursor.intValue(4) == 1;
+                    else message.isDeleted = false;
                     message.date = cursor.intValue(2);
                     message.dialog_id = cursor.longValue(3);
 
@@ -3564,7 +3579,7 @@ public class MessagesStorage extends BaseController {
                     }
                     cursor.dispose();
 
-                    loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad);
+                    loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad, false);
 
                     if (!encryptedChatIds.isEmpty()) {
                         getEncryptedChatsInternal(TextUtils.join(",", encryptedChatIds), encryptedChats, usersToLoad);
@@ -7492,7 +7507,7 @@ public class MessagesStorage extends BaseController {
                     }
                 }
             } else {
-                loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad);
+                loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad, scheduled);
             }
             if (!usersToLoad.isEmpty()) {
                 getUsersInternal(TextUtils.join(",", usersToLoad), res.users);
@@ -11627,7 +11642,7 @@ public class MessagesStorage extends BaseController {
                     cursor.dispose();
                 }
 
-                loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad);
+                loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad, false);
 
                 if (draftsDialogIds != null) {
                     ArrayList<Long> unloadedDialogs = new ArrayList<>();
@@ -12655,7 +12670,7 @@ public class MessagesStorage extends BaseController {
                 state.dispose();
 
                 if (count == 0) {
-                    state = database.executeFast("UPDATE reaction_mentions SET state = 0 WHERE dialog_id ?");
+                    state = database.executeFast("UPDATE reaction_mentions SET state = 0 WHERE dialog_id = ?");
                     state.bindLong(1, dialogId);
                     state.step();
                     state.dispose();

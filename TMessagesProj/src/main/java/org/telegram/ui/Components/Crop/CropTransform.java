@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components.Crop;
 
+import androidx.annotation.NonNull;
+
 public class CropTransform {
 
     private boolean hasTransform;
@@ -23,6 +25,10 @@ public class CropTransform {
     private float cropPh;
     private float trueCropScale;
     private float minScale;
+
+    public void setViewTransform(boolean set) {
+        hasTransform = set;
+    }
 
     public void setViewTransform(boolean set, float px, float py, float rotate, int orientation, float scale, float cs, float ms, float pw, float ph, float cx, float cy, boolean mirrored) {
         hasTransform = set;
@@ -96,5 +102,24 @@ public class CropTransform {
 
     public boolean isMirrored () {
         return isMirrored;
+    }
+
+    @Override
+    public CropTransform clone() {
+        CropTransform cloned = new CropTransform();
+        cloned.hasTransform = this.hasTransform;
+        cloned.cropPx = this.cropPx;
+        cloned.cropPy = this.cropPy;
+        cloned.cropAreaX = this.cropAreaX;
+        cloned.cropAreaY = this.cropAreaY;
+        cloned.cropScale = this.cropScale;
+        cloned.cropRotation = this.cropRotation;
+        cloned.isMirrored = this.isMirrored;
+        cloned.cropOrientation = this.cropOrientation;
+        cloned.cropPw = this.cropPw;
+        cloned.cropPh = this.cropPh;
+        cloned.trueCropScale = this.trueCropScale;
+        cloned.minScale = this.minScale;
+        return cloned;
     }
 }

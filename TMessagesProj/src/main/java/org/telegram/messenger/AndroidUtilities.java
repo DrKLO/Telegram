@@ -64,6 +64,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.Base64;
@@ -95,6 +96,7 @@ import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -106,7 +108,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.android.internal.telephony.ITelephony;
 //import com.google.android.gms.auth.api.phone.SmsRetriever;
 //import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
-import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import com.google.android.gms.tasks.Task;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
@@ -213,6 +215,7 @@ public class AndroidUtilities {
     public static Pattern BAD_CHARS_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_LONG_PATTERN = null;
+    private static Pattern singleTagPatter = null;
 
     static {
         try {
@@ -404,6 +407,35 @@ public class AndroidUtilities {
             return findActivity(((ContextWrapper) context).getBaseContext());
         }
         return null;
+    }
+
+    public static CharSequence replaceSingleTag(String str, Runnable runnable) {
+        int startIndex = str.indexOf("**");
+        int endIndex = str.indexOf("**", startIndex + 1);
+        str = str.replace("**", "");
+        int index = -1;
+        int len = 0;
+        if (startIndex >= 0 && endIndex >= 0 && endIndex - startIndex > 2) {
+            len = endIndex - startIndex - 2;
+            index = startIndex;
+        }
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        if (index >= 0) {
+            spannableStringBuilder.setSpan(new ClickableSpan() {
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(false);
+                }
+
+                @Override
+                public void onClick(@NonNull View view) {
+                    runnable.run();
+                }
+            }, index, index + len, 0);
+        }
+        return spannableStringBuilder;
     }
 
     private static class LinkSpec {
@@ -2265,7 +2297,7 @@ public class AndroidUtilities {
             }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
             for (int a = 0; a < bolds.size() / 2; a++) {
-                spannableStringBuilder.setSpan(new TypefaceSpan(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium"))), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             return spannableStringBuilder;
         } catch (Exception e) {
@@ -2415,7 +2447,7 @@ public class AndroidUtilities {
     }
 
     public static boolean shouldShowClipboardToast() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.isOneUI();
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.hasBuiltInClipboardToasts();
     }
 
     public static void addToClipboard(CharSequence str) {
@@ -3862,7 +3894,8 @@ public class AndroidUtilities {
 //        mapRSA.put("web852", "MIIDTwYJKoZIhvcNAQcCoIIDQDCCAzwCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3DQEHAaCCAhswggIXMIIBgKADAgECAgRSH51JMA0GCSqGSIb3DQEBBQUAMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjAeFw0xMzA4MjkxOTEzMTNaFw0zODA4MjMxOTEzMTNaMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA316ZOg3sCrW1V9//d+CyInGGy/E9H9Htjp3rVlDF/URnu1G/pYUijQhL0nBF90FbfE448IvjYmOaLuubDHSdpGDycF9qfhSsp2q+M2CvALcZzF8/9NTaBZWDJ+lIs2eeZBete6qHebnWiXmbo0WDmgSf1ENiSZBUoIA6AXjHc3kCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDdpYzdkBWcQx7MShWQLq+welDgG6nU+OZV7BSwa9jodxI5cQoomRA54C41J2LrUkrwdgK737R503GGWKU01BHfqzASLI0KXv0WWmIGadgKIhoErH1os4ERUMdpz5fTJ0vpufJ8TFh36rvPiZBAnllD343rUJ+oPWjqvHT3xZdnQzGB/TCB+gIBATBYMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdgIEUh+dSTAJBgUrDgMCGgUAMA0GCSqGSIb3DQEBAQUABIGARP+eoWqKYpgP9Ubuv2m0ex7EkAIgOJbfMf3Tb5NKC4FmJf08hGcN3CZ22u05GlprFo4XXHBhCL8uMbycpsMkBvsignn+tXZUdD2dpzgAcTzSWHrgN74gtpdvrMAhJ9Kj6w0Sq2ZldQi5S4hmPSn5PhVViSfJbjvJ5FvokWaSBPQ=");
 //        mapRSA.put("store854", "MIIDTwYJKoZIhvcNAQcCoIIDQDCCAzwCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3DQEHAaCCAhswggIXMIIBgKADAgECAgRSH51JMA0GCSqGSIb3DQEBBQUAMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjAeFw0xMzA4MjkxOTEzMTNaFw0zODA4MjMxOTEzMTNaMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA316ZOg3sCrW1V9//d+CyInGGy/E9H9Htjp3rVlDF/URnu1G/pYUijQhL0nBF90FbfE448IvjYmOaLuubDHSdpGDycF9qfhSsp2q+M2CvALcZzF8/9NTaBZWDJ+lIs2eeZBete6qHebnWiXmbo0WDmgSf1ENiSZBUoIA6AXjHc3kCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDdpYzdkBWcQx7MShWQLq+welDgG6nU+OZV7BSwa9jodxI5cQoomRA54C41J2LrUkrwdgK737R503GGWKU01BHfqzASLI0KXv0WWmIGadgKIhoErH1os4ERUMdpz5fTJ0vpufJ8TFh36rvPiZBAnllD343rUJ+oPWjqvHT3xZdnQzGB/TCB+gIBATBYMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdgIEUh+dSTAJBgUrDgMCGgUAMA0GCSqGSIb3DQEBAQUABIGAJFCw+xW+NV1mqV+4j5RoPULljr/0iRAXqyhTBXMDO4T61WnhNQ9NqjTewEQRsOjZXw0bVVJlv0abUmXVA2OUBhbMGUxaQRUIoNO/ijjmGb2v6Jsemg8ONJC+bwwjODJM7+Fi6YAXe91zjy0ac2qtoGsW4ItADqrXWiRQKapskRs=");
 //        mapRSA.put("store861", "MIIDTwYJKoZIhvcNAQcCoIIDQDCCAzwCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3DQEHAaCCAhswggIXMIIBgKADAgECAgRSH51JMA0GCSqGSIb3DQEBBQUAMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjAeFw0xMzA4MjkxOTEzMTNaFw0zODA4MjMxOTEzMTNaMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA316ZOg3sCrW1V9//d+CyInGGy/E9H9Htjp3rVlDF/URnu1G/pYUijQhL0nBF90FbfE448IvjYmOaLuubDHSdpGDycF9qfhSsp2q+M2CvALcZzF8/9NTaBZWDJ+lIs2eeZBete6qHebnWiXmbo0WDmgSf1ENiSZBUoIA6AXjHc3kCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDdpYzdkBWcQx7MShWQLq+welDgG6nU+OZV7BSwa9jodxI5cQoomRA54C41J2LrUkrwdgK737R503GGWKU01BHfqzASLI0KXv0WWmIGadgKIhoErH1os4ERUMdpz5fTJ0vpufJ8TFh36rvPiZBAnllD343rUJ+oPWjqvHT3xZdnQzGB/TCB+gIBATBYMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdgIEUh+dSTAJBgUrDgMCGgUAMA0GCSqGSIb3DQEBAQUABIGAn3HjuiINOgQ7T2p8KRmxVRRpKmKzvWz04fDEGGAifPrWNT7Xi/tHYnzfxEDkEo+eW54Y19OXw9ZE0SgtsgIrnbfYqdG8DT0uwnQy6hvsinS4+LDEwI2i5p2x/Gjx50TMZJACrnTmqeAl8SpmRreymrsR++S/F+qz2H4g9J7jv+Y=");
-        mapRSA.put("store862", "MIIDTwYJKoZIhvcNAQcCoIIDQDCCAzwCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3DQEHAaCCAhswggIXMIIBgKADAgECAgRSH51JMA0GCSqGSIb3DQEBBQUAMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjAeFw0xMzA4MjkxOTEzMTNaFw0zODA4MjMxOTEzMTNaMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA316ZOg3sCrW1V9//d+CyInGGy/E9H9Htjp3rVlDF/URnu1G/pYUijQhL0nBF90FbfE448IvjYmOaLuubDHSdpGDycF9qfhSsp2q+M2CvALcZzF8/9NTaBZWDJ+lIs2eeZBete6qHebnWiXmbo0WDmgSf1ENiSZBUoIA6AXjHc3kCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDdpYzdkBWcQx7MShWQLq+welDgG6nU+OZV7BSwa9jodxI5cQoomRA54C41J2LrUkrwdgK737R503GGWKU01BHfqzASLI0KXv0WWmIGadgKIhoErH1os4ERUMdpz5fTJ0vpufJ8TFh36rvPiZBAnllD343rUJ+oPWjqvHT3xZdnQzGB/TCB+gIBATBYMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdgIEUh+dSTAJBgUrDgMCGgUAMA0GCSqGSIb3DQEBAQUABIGArhw54aK6JilvbEIMfz+s6kZEMSEtMa4ue68qVVVEriYiB0wodJHjJoqqt39ZZV67cOWjTph7n2D5Z2TPtiFNLzmTnWBBseIufuqMe4yBwWN4+SAAXWYM6peREYrDi2zw4YKxHnxNjNc9DEYh7ZxSEC1khrraKZaElfYlHnpZN8E=");
+//        mapRSA.put("store862", "MIIDTwYJKoZIhvcNAQcCoIIDQDCCAzwCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3DQEHAaCCAhswggIXMIIBgKADAgECAgRSH51JMA0GCSqGSIb3DQEBBQUAMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjAeFw0xMzA4MjkxOTEzMTNaFw0zODA4MjMxOTEzMTNaMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA316ZOg3sCrW1V9//d+CyInGGy/E9H9Htjp3rVlDF/URnu1G/pYUijQhL0nBF90FbfE448IvjYmOaLuubDHSdpGDycF9qfhSsp2q+M2CvALcZzF8/9NTaBZWDJ+lIs2eeZBete6qHebnWiXmbo0WDmgSf1ENiSZBUoIA6AXjHc3kCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDdpYzdkBWcQx7MShWQLq+welDgG6nU+OZV7BSwa9jodxI5cQoomRA54C41J2LrUkrwdgK737R503GGWKU01BHfqzASLI0KXv0WWmIGadgKIhoErH1os4ERUMdpz5fTJ0vpufJ8TFh36rvPiZBAnllD343rUJ+oPWjqvHT3xZdnQzGB/TCB+gIBATBYMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdgIEUh+dSTAJBgUrDgMCGgUAMA0GCSqGSIb3DQEBAQUABIGArhw54aK6JilvbEIMfz+s6kZEMSEtMa4ue68qVVVEriYiB0wodJHjJoqqt39ZZV67cOWjTph7n2D5Z2TPtiFNLzmTnWBBseIufuqMe4yBwWN4+SAAXWYM6peREYrDi2zw4YKxHnxNjNc9DEYh7ZxSEC1khrraKZaElfYlHnpZN8E=");
+        mapRSA.put("store874", "MIIDTwYJKoZIhvcNAQcCoIIDQDCCAzwCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3DQEHAaCCAhswggIXMIIBgKADAgECAgRSH51JMA0GCSqGSIb3DQEBBQUAMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjAeFw0xMzA4MjkxOTEzMTNaFw0zODA4MjMxOTEzMTNaMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdjCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA316ZOg3sCrW1V9//d+CyInGGy/E9H9Htjp3rVlDF/URnu1G/pYUijQhL0nBF90FbfE448IvjYmOaLuubDHSdpGDycF9qfhSsp2q+M2CvALcZzF8/9NTaBZWDJ+lIs2eeZBete6qHebnWiXmbo0WDmgSf1ENiSZBUoIA6AXjHc3kCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDdpYzdkBWcQx7MShWQLq+welDgG6nU+OZV7BSwa9jodxI5cQoomRA54C41J2LrUkrwdgK737R503GGWKU01BHfqzASLI0KXv0WWmIGadgKIhoErH1os4ERUMdpz5fTJ0vpufJ8TFh36rvPiZBAnllD343rUJ+oPWjqvHT3xZdnQzGB/TCB+gIBATBYMFAxGTAXBgNVBAcTEFNhaW50LVBldGVyc2J1cmcxCzAJBgNVBAoTAlZLMQswCQYDVQQLEwJWSzEZMBcGA1UEAxMQTmlrb2xheSBLdWRhc2hvdgIEUh+dSTAJBgUrDgMCGgUAMA0GCSqGSIb3DQEBAQUABIGAOAAceH6Sobr64Kcd1yKZNPMpOhvuoR7rvw5J2QBlXhv8/yZdbpmyauRJf7EoraAGLSY3CqrgZezQzuwMbND601l8HPzPenXVdmoREkBBM/5XtQw+d1+VJuIR08p+aaYQFQ4prsnvU2doSGNfz7zJODdCtMMJyu1XE2CnKJXGgpU=");
         try {
             for (Map.Entry<String, String> m : mapRSA.entrySet()) {
                 InputStream input = new ByteArrayInputStream(Base64.decode(m.getValue(), Base64.NO_WRAP));
@@ -3976,26 +4009,38 @@ public class AndroidUtilities {
         return false;
     }
 
-    public static void setLightNavigationBar(Window window, boolean enable) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final View decorView = window.getDecorView();
-            int flags = decorView.getSystemUiVisibility();
+    public static void setLightNavigationBar(View view, boolean enable) {
+        if (view != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int flags = view.getSystemUiVisibility();
             if (enable) {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             } else {
                 flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             }
-            decorView.setSystemUiVisibility(flags);
+            view.setSystemUiVisibility(flags);
+        }
+    }
+
+    public static void setLightNavigationBar(Window window, boolean enable) {
+        if (window != null) {
+            setLightNavigationBar(window.getDecorView(), enable);
         }
     }
 
     private static HashMap<Window, ValueAnimator> navigationBarColorAnimators;
+    public interface IntColorCallback {
+        public void run(int color);
+    }
 
     public static void setNavigationBarColor(Window window, int color) {
         setNavigationBarColor(window, color, true);
     }
 
     public static void setNavigationBarColor(Window window, int color, boolean animated) {
+        setNavigationBarColor(window, color, animated, null);
+    }
+
+    public static void setNavigationBarColor(Window window, int color, boolean animated, IntColorCallback onUpdate) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (navigationBarColorAnimators != null) {
                 ValueAnimator animator = navigationBarColorAnimators.get(window);
@@ -4006,10 +4051,23 @@ public class AndroidUtilities {
             }
 
             if (!animated) {
-                window.setNavigationBarColor(color);
+                if (onUpdate != null) {
+                    onUpdate.run(color);
+                }
+                try {
+                    window.setNavigationBarColor(color);
+                } catch (Exception ignore) {}
             } else {
                 ValueAnimator animator = ValueAnimator.ofArgb(window.getNavigationBarColor(), color);
-                animator.addUpdateListener(a -> window.setNavigationBarColor((int) a.getAnimatedValue()));
+                animator.addUpdateListener(a -> {
+                    int tcolor = (int) a.getAnimatedValue();
+                    if (onUpdate != null) {
+                        onUpdate.run(tcolor);
+                    }
+                    try {
+                        window.setNavigationBarColor(tcolor);
+                    } catch (Exception ignore) {}
+                });
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -4229,7 +4287,7 @@ public class AndroidUtilities {
             bitmap.compress(format, 100, out);
             out.close();
             return FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", file);
-        } catch (IOException e) {
+        } catch (Exception e) {
             FileLog.e(e);
         }
         return null;

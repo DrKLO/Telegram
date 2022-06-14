@@ -88,8 +88,6 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
     private VoIPTextureView textureView;
     private FrameLayout controlsView;
 
-    private int textureWidth, textureHeight;
-
     private CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable();
     private BackupImageView avatarImageView;
     private View flickerView;
@@ -529,16 +527,11 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
                 AndroidUtilities.runOnUIThread(()-> bindTextureView());
             }
 
-            @SuppressWarnings("SuspiciousNameCombination")
             @Override
             public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
                 if ((rotation / 90) % 2 == 0) {
-                    textureWidth = videoWidth;
-                    textureHeight = videoHeight;
                     aspectRatio = (float) videoHeight / videoWidth;
                 } else {
-                    textureWidth = videoHeight;
-                    textureHeight = videoWidth;
                     aspectRatio = (float) videoWidth / videoHeight;
                 }
                 AndroidUtilities.runOnUIThread(()-> bindTextureView());
