@@ -1450,7 +1450,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		privateCall = phoneCall;
 		if (phoneCall instanceof TLRPC.TL_phoneCallDiscarded) {
-			needSendDebugLog = phoneCall.need_debug;
+			needSendDebugLog = false;
 			needRateCall = phoneCall.need_rating;
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("call discarded, stopping service");
