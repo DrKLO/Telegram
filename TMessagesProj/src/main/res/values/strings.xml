@@ -5247,6 +5247,11 @@
     <string name="THVoiceLabelRow">Voice message section</string>
     <string name="THVoipLabelRow">VoIP calls section</string>
     <string name="THProfileLabelRow">Profile section</string>
+    <string name="THHardwareLabelRow">Hardware section</string>
+    <string name="THHardwareProximitySensorModeRow">* Proximity sensor disable:</string>
+    <string name="THHardwareProximitySensorModeRow0">Keep working!</string>
+    <string name="THHardwareProximitySensorModeRow1">start/stop</string>
+    <string name="THHardwareProximitySensorModeRow2">blackscreen</string>
     <string name="THChatLabelRow">Chat section</string>
     <string name="THGifLabelHDRow">GIF section</string>
     <string name="THVideoLabelMaxResolutionRow">* Maximum video resolution</string>

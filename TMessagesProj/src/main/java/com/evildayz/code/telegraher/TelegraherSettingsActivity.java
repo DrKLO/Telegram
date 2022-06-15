@@ -86,6 +86,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int uiSystemFontBoldItalicRow;
     private int uiSystemFontMonoRow;
 
+    private int hardwareLabelRow;
+    private int hardwareProximitySensorModeLabelRow;
+    private int hardwareProximitySensorModeRow;
+
     private int profileLabelRow;
     private int profileUIDRow;
     private int profileDCIDRow;
@@ -126,7 +130,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         showLabelTelegraherMenuRow = rowCount++;
         showTelegraherMenuRow = rowCount++;
 
-        uiLabelRow = rowCount++;
+//        uiLabelRow = rowCount++;
 //        uiSystemFontRegularRow = rowCount++;//TODO WTF need the fuck make it work
 //        uiSystemFontBoldRow = rowCount++;
 //        uiSystemFontItalicRow = rowCount++;
@@ -139,6 +143,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
         voipLabelRow = -1;
         voipHDRow = -1;
+
+        hardwareLabelRow = rowCount++;
+        hardwareProximitySensorModeLabelRow = rowCount++;
+        hardwareProximitySensorModeRow = rowCount++;
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
@@ -418,6 +426,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THVoipLabelRow));
                     } else if (position == profileLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THProfileLabelRow));
+                    } else if (position == hardwareLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THHardwareLabelRow));
+                    } else if (position == hardwareProximitySensorModeLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THHardwareProximitySensorModeRow));
                     } else if (position == chatLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THChatLabelRow));
                     } else if (position == gifLabelHDRow) {
@@ -568,6 +580,22 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                 editor.commit();
                             }
                         });
+                    } else if (position == hardwareProximitySensorModeRow) {
+                        String[] strings = new String[]{
+                                LocaleController.getString(R.string.THHardwareProximitySensorModeRow0),
+                                LocaleController.getString(R.string.THHardwareProximitySensorModeRow1),
+                                LocaleController.getString(R.string.THHardwareProximitySensorModeRow2)
+                        };
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("HardwareProximitySensorMode", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("HardwareProximitySensorMode", index);
+                                editor.commit();
+                            }
+                        });
                     }
                     break;
                 }
@@ -599,6 +627,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == uiLabelRow
                             || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
+                            || position == hardwareLabelRow
+                            || position == hardwareProximitySensorModeLabelRow
                             || position == chatLabelRow
                             || position == gifLabelHDRow
                             || position == accountLabelRow
@@ -624,6 +654,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     position == showTelegraherMenuRow
                             || position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow
                             || position == videoMaxResolutionRow
+                            || position == hardwareProximitySensorModeRow
             ) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {

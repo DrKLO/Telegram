@@ -34,6 +34,11 @@
     <string name="THVoiceLabelRow">Секция голосовых сообщений</string>
     <string name="THVoipLabelRow">Секция VoIP звонков</string>
     <string name="THProfileLabelRow">Секция профилей</string>
+    <string name="THHardwareLabelRow">Секция железа</string>
+    <string name="THHardwareProximitySensorModeRow">* Выключить для сенсора приближения:</string>
+    <string name="THHardwareProximitySensorModeRow0">Пусть работает!</string>
+    <string name="THHardwareProximitySensorModeRow1">старт/стоп</string>
+    <string name="THHardwareProximitySensorModeRow2">черный экран</string>
     <string name="THChatLabelRow">Секция чатов</string>
     <string name="THGifLabelHDRow">Секция гифок</string>
     <string name="THVideoLabelMaxResolutionRow">* Максимальное разрешение видео</string>

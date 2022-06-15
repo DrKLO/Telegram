@@ -923,7 +923,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
                 proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
                 PowerManager powerManager = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-                proximityWakeLock = powerManager.newWakeLock(0x00000020, "telegram:proximity_lock");
+                proximityWakeLock = (MessagesController.getGlobalTelegraherSettings().getInt("HardwareProximitySensorMode", 0) > 1) ? null : powerManager.newWakeLock(0x00000020, "telegram:proximity_lock");
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1448,6 +1448,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     private boolean isNearToSensor(float value) {
+        if (MessagesController.getGlobalTelegraherSettings().getInt("HardwareProximitySensorMode", 0) > 0) return false;
         return value < 5.0f && value != proximitySensor.getMaximumRange();
     }
 
