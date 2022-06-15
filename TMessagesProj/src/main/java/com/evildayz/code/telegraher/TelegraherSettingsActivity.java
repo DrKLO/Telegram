@@ -647,6 +647,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             if (
                     position == showLabelTelegraherMenuRow
                             || position == uiLabelRow
+                            || position == uiAppNotificationIconRow
                             || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == hardwareLabelRow
