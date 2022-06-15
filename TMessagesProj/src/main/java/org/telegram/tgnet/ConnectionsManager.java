@@ -186,7 +186,7 @@ public class ConnectionsManager extends BaseController {
             langCode = LocaleController.getLocaleStringIso639().toLowerCase();
             deviceModel = Build.MANUFACTURER + Build.MODEL;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            appVersion = BuildVars.BUILD_VERSION_STRING + " (" + pInfo.versionCode + ")";
+            appVersion = BuildVars.BUILD_VERSION_STRING + " (" + (pInfo.versionCode / 100) + ")";
             if (BuildVars.DEBUG_PRIVATE_VERSION) {
                 appVersion += " pbeta";
             } else if (BuildVars.DEBUG_VERSION) {

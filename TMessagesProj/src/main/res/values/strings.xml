@@ -5247,6 +5247,11 @@
     <string name="THVoiceLabelRow">Voice message section</string>
     <string name="THVoipLabelRow">VoIP calls section</string>
     <string name="THProfileLabelRow">Profile section</string>
+    <string name="THHardwareLabelRow">Hardware section</string>
+    <string name="THHardwareProximitySensorModeRow">* Proximity sensor disable:</string>
+    <string name="THHardwareProximitySensorModeRow0">Keep working!</string>
+    <string name="THHardwareProximitySensorModeRow1">start/stop</string>
+    <string name="THHardwareProximitySensorModeRow2">blackscreen</string>
     <string name="THChatLabelRow">Chat section</string>
     <string name="THGifLabelHDRow">GIF section</string>
     <string name="THVideoLabelMaxResolutionRow">* Maximum video resolution</string>
@@ -5260,6 +5265,10 @@
     <string name="THDSMainActivityHint1">You can override currect account device %s here</string>
     <string name="THNotificationBackgroundNotice">To let you receive push notifications w/o GApps</string>
     <string name="THUILabelRow">UI section</string>
+    <string name="THUIAppNotificationIconRow">* App notification icon</string>
+    <string name="THUIAppNotificationIconRow0">The head</string>
+    <string name="THUIAppNotificationIconRow1">The eyez</string>
+    <string name="THUIAppNotificationIconRow2">Vanilla one</string>
     <string name="THUIUseCustomFontRegular">Change Regular font</string>
     <string name="THUIUseCustomFontBold">Change Bold font</string>
     <string name="THUIUseCustomFontItalic">Change Italic font</string>

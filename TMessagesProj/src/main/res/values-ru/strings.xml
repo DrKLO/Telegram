@@ -6,7 +6,7 @@
     <string name="NonSecretChat">Незеленые чаты</string>
     <string name="NonSecretLinkPreviewAlert">Хотите ли вы включить предпросмотр ссылок в незеленых чатах? Важно, превью будет сгенерировано на серверах Telegram.</string>
     <string name="THSettingsLabel">Telegraher настройки 💦</string>
-    <string name="THEnableVoiceHD">* HD головые</string>
+    <string name="THEnableVoiceHD">* HD голосовые</string>
     <string name="THEnableVoiceBadman">* 🦇 голос бэтмена</string>
     <string name="THEnableVoIPHD">HD звонки</string>
     <string name="THEnableProfileUID">Показывать числовой ID</string>
@@ -34,6 +34,11 @@
     <string name="THVoiceLabelRow">Секция голосовых сообщений</string>
     <string name="THVoipLabelRow">Секция VoIP звонков</string>
     <string name="THProfileLabelRow">Секция профилей</string>
+    <string name="THHardwareLabelRow">Секция железа</string>
+    <string name="THHardwareProximitySensorModeRow">* Выключить для сенсора приближения:</string>
+    <string name="THHardwareProximitySensorModeRow0">Пусть работает!</string>
+    <string name="THHardwareProximitySensorModeRow1">старт/стоп</string>
+    <string name="THHardwareProximitySensorModeRow2">черный экран</string>
     <string name="THChatLabelRow">Секция чатов</string>
     <string name="THGifLabelHDRow">Секция гифок</string>
     <string name="THVideoLabelMaxResolutionRow">* Максимальное разрешение видео</string>
@@ -47,6 +52,10 @@
     <string name="THDSMainActivityHint1">Здесь можно изменить %s для текущего аккаунта</string>
     <string name="THNotificationBackgroundNotice">Чтобы получать уведомления без GApps</string>
     <string name="THUILabelRow">Секция интерфейса</string>
+    <string name="THUIAppNotificationIconRow">* Иконка уведомлений</string>
+    <string name="THUIAppNotificationIconRow0">Голова</string>
+    <string name="THUIAppNotificationIconRow1">Глаза</string>
+    <string name="THUIAppNotificationIconRow2">Оригинальная</string>
     <string name="THUIUseCustomFontRegular">Выбрать обычный шрифт</string>
     <string name="THUIUseCustomFontBold">Выбрать жирный шрифт</string>
     <string name="THUIUseCustomFontItalic">Выбрать курсив</string>
