@@ -182,17 +182,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.7.4r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_arm64_v8a/Telegraher.8.7.4r1.arm64_v8a.apk)
-    * `x`  [Telegraher.8.7.4r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_arm64_v8a/Telegraher.8.7.4r1.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.74.2.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_arm64_v8a/Telegraher.8.74.2.arm64_v8a.apk)
+    * `x`  [Telegraher.8.74.2.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_arm64_v8a/Telegraher.8.74.2.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.7.4r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_armeabi_v7a/Telegraher.8.7.4r1.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.7.4r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_armeabi_v7a/Telegraher.8.7.4r1.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.74.2.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_armeabi_v7a/Telegraher.8.74.2.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.74.2.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_armeabi_v7a/Telegraher.8.74.2.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.7.4r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86/Telegraher.8.7.4r1.x86.apk)
-    * `x`  [Telegraher.8.7.4r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86/Telegraher.8.7.4r1.x86_sdk23.apk)
+    * `x`  [Telegraher.8.74.2.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_x86/Telegraher.8.74.2.x86.apk)
+    * `x`  [Telegraher.8.74.2.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_x86/Telegraher.8.74.2.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.7.4r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86_64/Telegraher.8.7.4r1.x86_64.apk)
-    * `x`  [Telegraher.8.7.4r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.7.4_r1_x86_64/Telegraher.8.7.4r1.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.74.2.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_x86_64/Telegraher.8.74.2.x86_64.apk)
+    * `x`  [Telegraher.8.74.2.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.2_x86_64/Telegraher.8.74.2.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -201,6 +201,17 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.74.2
+    * yes! our own versioning, 8.74.2 mean "made from vanilla 8.7.4, release 2"
+        * the API use vanilla 8.7.4
+        * it solve update & reinstall issues
+    * fixed bug with non working UI elements
+    * "delete also for.." is checked by default for messages, chats and the history wipe
+    * when you an admin and you wanna delete your own messages as an admin, you need to click 3
+      times on a checkbox "delete all from your_nickname" to activate it
+        * it's for security reasons, cause some folks wiped their own messages by mistakes
+    * new notification icon, thanks Wolfsschanze44 !
+        * the icon setup for new notifications, while background process still keep [xxx]-one
 * noshit_8.7.4_release1
     * the vanilla release as is (nearly)
     * disabled `needSendDebugLog` (from 8.7.0) for voice calls

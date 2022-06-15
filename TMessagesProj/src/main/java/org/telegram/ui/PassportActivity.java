@@ -7369,7 +7369,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 } else {
                     try {
                         PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                        String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+                        String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, pInfo.versionCode);
 
                         Intent mailer = new Intent(Intent.ACTION_SENDTO);
                         mailer.setData(Uri.parse("mailto:"));

@@ -1637,7 +1637,7 @@ public class AlertsCreator {
             textView.setText(LocaleController.formatPluralString("DeleteDays", days));
             messageTextView.setText(LocaleController.getString("DeleteHistoryByDaysMessage", R.string.DeleteHistoryByDaysMessage));
         }
-        final boolean[] deleteForAll = new boolean[]{false};
+        final boolean[] deleteForAll = new boolean[]{true};
 
         if (chat != null && canDeleteHistory && !TextUtils.isEmpty(chat.username)) {
             deleteForAll[0] = true;
@@ -1646,15 +1646,15 @@ public class AlertsCreator {
             cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
             cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
             if (chat != null) {
-                cell[0].setText(LocaleController.getString("DeleteMessagesOptionAlsoChat", R.string.DeleteMessagesOptionAlsoChat), "", false, false);
+                cell[0].setText(LocaleController.getString("DeleteMessagesOptionAlsoChat", R.string.DeleteMessagesOptionAlsoChat), "", deleteForAll[0], false);
             } else {
-                cell[0].setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", false, false);
+                cell[0].setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", deleteForAll[0], false);
             }
 
             cell[0].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
             frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
 
-            cell[0].setChecked(false, false);
+            cell[0].setChecked(deleteForAll[0], false);
             cell[0].setOnClickListener(v -> {
                 CheckBoxCell cell1 = (CheckBoxCell) v;
                 deleteForAll[0] = !deleteForAll[0];
@@ -4746,7 +4746,10 @@ public class AlertsCreator {
         }
 
         final boolean[] checks = new boolean[3];
-        final boolean[] deleteForAll = new boolean[1];
+        final boolean[] deleteForAll = new boolean[]{true};
+        final int[] clicknclick = new int[]{0};//some dirty stuff
+        final long[] idArray = new long[]{0L, 0L};
+        final int[] idIdid = new int[]{0};
         TLRPC.User actionUser = null;
         TLRPC.Chat actionChat = null;
         boolean canRevokeInbox = user != null && MessagesController.getInstance(currentAccount).canRevokePmInbox;
@@ -4817,6 +4820,7 @@ public class AlertsCreator {
 //            if ((actionUser != null && actionUser.id != UserConfig.getInstance(currentAccount).getClientUserId()) || (actionChat != null && !ChatObject.hasAdminRights(actionChat))) {
             if (actionUser != null || (actionChat != null && !ChatObject.hasAdminRights(actionChat))) {
                 long banFromId=UserConfig.getInstance(currentAccount).getClientUserId();
+                idArray[0]=banFromId;
                 if (loadParticipant == 1 && !chat.creator && actionUser != null) {
                     final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(activity, 3)};
 
@@ -4853,7 +4857,9 @@ public class AlertsCreator {
                 FrameLayout frameLayout = new FrameLayout(activity);
                 int num = 0;
                 String name = actionUser != null ? ContactsController.formatName(actionUser.first_name, actionUser.last_name) : actionChat.title;
+                if (actionUser != null) idArray[1] = actionUser.id;
                 for (int a = 0; a < 3; a++) {
+                    idIdid[0] = a;
                     if ((loadParticipant == 2 || !canBan) && a == 0) {
                         continue;
                     }
@@ -4882,7 +4888,15 @@ public class AlertsCreator {
                             }
                             CheckBoxCell cell13 = (CheckBoxCell) v;
                             Integer num1 = (Integer) cell13.getTag();
-                            checks[num1] = !checks[num1];
+                            if (idIdid[0] == 2 && idArray[0] == idArray[1]) {
+                                clicknclick[0]++;
+                                if (checks[num1] || clicknclick[0] > 2) {
+                                    clicknclick[0] = 0;
+                                    checks[num1] = !checks[num1];
+                                }
+                            } else {
+                                checks[num1] = !checks[num1];
+                            }
                             cell13.setChecked(checks[num1], true);
                         });
                         num++;
@@ -4954,12 +4968,13 @@ public class AlertsCreator {
                 CheckBoxCell cell = new CheckBoxCell(activity, 1, resourcesProvider);
                 cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                 if (canDeleteInbox) {
-                    cell.setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", false, false);
+                    cell.setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", deleteForAll[0], false);
                 } else if (chat != null && (hasNotOut || myMessagesCount == count)) {
-                    cell.setText(LocaleController.getString("DeleteForAll", R.string.DeleteForAll), "", false, false);
+                    cell.setText(LocaleController.getString("DeleteForAll", R.string.DeleteForAll), "", deleteForAll[0], false);
                 } else {
-                    cell.setText(LocaleController.getString("DeleteMessagesOption", R.string.DeleteMessagesOption), "", false, false);
+                    cell.setText(LocaleController.getString("DeleteMessagesOption", R.string.DeleteMessagesOption), "", deleteForAll[0], false);
                 }
+                cell.setChecked(deleteForAll[0], false);
                 cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
                 frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
                 cell.setOnClickListener(v -> {
