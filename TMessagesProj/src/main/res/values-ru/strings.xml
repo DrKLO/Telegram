@@ -52,6 +52,10 @@
     <string name="THDSMainActivityHint1">Здесь можно изменить %s для текущего аккаунта</string>
     <string name="THNotificationBackgroundNotice">Чтобы получать уведомления без GApps</string>
     <string name="THUILabelRow">Секция интерфейса</string>
+    <string name="THUIAppNotificationIconRow">* Иконка уведомлений</string>
+    <string name="THUIAppNotificationIconRow0">Голова</string>
+    <string name="THUIAppNotificationIconRow1">Глаза</string>
+    <string name="THUIAppNotificationIconRow2">Оригинальная</string>
     <string name="THUIUseCustomFontRegular">Выбрать обычный шрифт</string>
     <string name="THUIUseCustomFontBold">Выбрать жирный шрифт</string>
     <string name="THUIUseCustomFontItalic">Выбрать курсив</string>

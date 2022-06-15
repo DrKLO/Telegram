@@ -25,6 +25,7 @@ import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
@@ -90,6 +91,18 @@ public class ThePenisMightierThanTheSword {
                 return AndroidUtilities.getTypeface(font);
             default:
                 return Typeface.createFromFile(font);
+        }
+    }
+
+    public static int getNotificationIcon() {
+        switch (MessagesController.getGlobalTelegraherSettings().getInt("UIAppNotificationIconSelector", 0)) {
+            case 1:
+                return R.drawable.telegraher_eyez;
+            case 2:
+                return R.drawable.notification;
+            case 0:
+            default:
+                return R.drawable.telegraher_notification;
         }
     }
 }

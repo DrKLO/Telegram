@@ -80,6 +80,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int voipHDRow;
 
     private int uiLabelRow;
+    private int uiAppNotificationIconRow;
+    private int uiAppNotificationIconSelectorRow;
     private int uiSystemFontRegularRow;
     private int uiSystemFontBoldRow;
     private int uiSystemFontItalicRow;
@@ -130,7 +132,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         showLabelTelegraherMenuRow = rowCount++;
         showTelegraherMenuRow = rowCount++;
 
-//        uiLabelRow = rowCount++;
+        uiLabelRow = rowCount++;
+        uiAppNotificationIconRow = rowCount++;
+        uiAppNotificationIconSelectorRow = rowCount++;
 //        uiSystemFontRegularRow = rowCount++;//TODO WTF need the fuck make it work
 //        uiSystemFontBoldRow = rowCount++;
 //        uiSystemFontItalicRow = rowCount++;
@@ -420,6 +424,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         //durov relogin!
                     } else if (position == uiLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THUILabelRow));
+                    } else if (position == uiAppNotificationIconRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THUIAppNotificationIconRow));
                     } else if (position == voiceLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
@@ -596,6 +602,22 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                 editor.commit();
                             }
                         });
+                    } else if (position == uiAppNotificationIconSelectorRow) {
+                        String[] strings = new String[]{
+                                LocaleController.getString(R.string.THUIAppNotificationIconRow0),
+                                LocaleController.getString(R.string.THUIAppNotificationIconRow1),
+                                LocaleController.getString(R.string.THUIAppNotificationIconRow2)
+                        };
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("UIAppNotificationIconSelector", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("UIAppNotificationIconSelector", index);
+                                editor.commit();
+                            }
+                        });
                     }
                     break;
                 }
@@ -655,6 +677,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow
                             || position == videoMaxResolutionRow
                             || position == hardwareProximitySensorModeRow
+                            || position == uiAppNotificationIconSelectorRow
             ) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {
