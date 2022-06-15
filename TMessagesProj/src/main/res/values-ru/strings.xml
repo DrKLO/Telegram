@@ -6,7 +6,7 @@
     <string name="NonSecretChat">Незеленые чаты</string>
     <string name="NonSecretLinkPreviewAlert">Хотите ли вы включить предпросмотр ссылок в незеленых чатах? Важно, превью будет сгенерировано на серверах Telegram.</string>
     <string name="THSettingsLabel">Telegraher настройки 💦</string>
-    <string name="THEnableVoiceHD">* HD головые</string>
+    <string name="THEnableVoiceHD">* HD голосовые</string>
     <string name="THEnableVoiceBadman">* 🦇 голос бэтмена</string>
     <string name="THEnableVoIPHD">HD звонки</string>
     <string name="THEnableProfileUID">Показывать числовой ID</string>
