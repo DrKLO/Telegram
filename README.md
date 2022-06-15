@@ -201,7 +201,7 @@ Probably it's a good thing 😃
 
 ### Changes
 
-* 8.74.3
+* 8.74.3 
     * another custom icon
     * spellerror in russian translation
     * proximity sensor modes (requires app restart)
