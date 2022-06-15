@@ -1008,7 +1008,7 @@ public class LoginActivity extends BaseFragment {
         builder.setNeutralButton(LocaleController.getString("BotHelp", R.string.BotHelp), (dialog, which) -> {
             try {
                 PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+                String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, pInfo.versionCode);
 
                 Intent mailer = new Intent(Intent.ACTION_SENDTO);
                 mailer.setData(Uri.parse("mailto:"));
@@ -2988,7 +2988,7 @@ public class LoginActivity extends BaseFragment {
                             .setNeutralButton(LocaleController.getString(R.string.DidNotGetTheCodeHelpButton), (dialog, which)->{
                                 try {
                                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                                    String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+                                    String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, pInfo.versionCode);
 
                                     Intent mailer = new Intent(Intent.ACTION_SENDTO);
                                     mailer.setData(Uri.parse("mailto:"));
