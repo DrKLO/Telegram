@@ -388,17 +388,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private int folderId;
 
-    private final static int pin = 100;
-    private final static int read = 101;
-    private final static int delete = 102;
-    private final static int clear = 103;
-    private final static int mute = 104;
-    private final static int archive = 105;
-    private final static int block = 106;
-    private final static int archive2 = 107;
-    private final static int pin2 = 108;
-    private final static int add_to_folder = 109;
-    private final static int remove_from_folder = 110;
+    private static int menuTagCounter = 200;
+    private final static int pin = menuTagCounter++;
+    private final static int read = menuTagCounter++;
+    private final static int delete = menuTagCounter++;
+    private final static int clear = menuTagCounter++;
+    private final static int mute = menuTagCounter++;
+    private final static int archive = menuTagCounter++;
+    private final static int block = menuTagCounter++;
+    private final static int archive2 = menuTagCounter++;
+    private final static int pin2 = menuTagCounter++;
+    private final static int add_to_folder = menuTagCounter++;
+    private final static int remove_from_folder = menuTagCounter++;
 
     private final static int ARCHIVE_ITEM_STATE_PINNED = 0;
     private final static int ARCHIVE_ITEM_STATE_SHOWED = 1;

@@ -68,9 +68,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     private final static String actionModeTag = "search_view_pager";
 
-    public final static int gotoItemId = 200;
-    public final static int forwardItemId = 201;
-    public final static int deleteItemId = 202;
+    private static int menuTagCounter = 400;
+    public final static int gotoItemId = menuTagCounter++;
+    public final static int forwardItemId = menuTagCounter++;
+    public final static int deleteItemId = menuTagCounter++;
 
     private ActionBarMenuItem gotoItem;
     private ActionBarMenuItem forwardItem;
