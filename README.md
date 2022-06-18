@@ -182,17 +182,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.74.3.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_arm64_v8a/Telegraher.8.74.3.arm64_v8a.apk)
-    * `x`  [Telegraher.8.74.3.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_arm64_v8a/Telegraher.8.74.3.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.74.4.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_arm64_v8a/Telegraher.8.74.4.arm64_v8a.apk)
+    * `x`  [Telegraher.8.74.4.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_arm64_v8a/Telegraher.8.74.4.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.74.3.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_armeabi_v7a/Telegraher.8.74.3.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.74.3.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_armeabi_v7a/Telegraher.8.74.3.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.74.4.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_armeabi_v7a/Telegraher.8.74.4.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.74.4.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_armeabi_v7a/Telegraher.8.74.4.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.74.3.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_x86/Telegraher.8.74.3.x86.apk)
-    * `x`  [Telegraher.8.74.3.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_x86/Telegraher.8.74.3.x86_sdk23.apk)
+    * `x`  [Telegraher.8.74.4.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_x86/Telegraher.8.74.4.x86.apk)
+    * `x`  [Telegraher.8.74.4.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_x86/Telegraher.8.74.4.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.74.3.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_x86_64/Telegraher.8.74.3.x86_64.apk)
-    * `x`  [Telegraher.8.74.3.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.3_x86_64/Telegraher.8.74.3.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.74.4.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_x86_64/Telegraher.8.74.4.x86_64.apk)
+    * `x`  [Telegraher.8.74.4.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.4_x86_64/Telegraher.8.74.4.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -201,7 +201,11 @@ Probably it's a good thing 😃
 
 ### Changes
 
-* 8.74.3 
+* 8.74.4
+    * removed mltoolkit from google, 0 tracker app
+    * max account reduced from 128 to 80 as a temp fix for crash on armeabi-v7 devices
+        * need to change multiacc code cause too much old vanilla is here
+* 8.74.3
     * another custom icon
     * spellerror in russian translation
     * proximity sensor modes (requires app restart)

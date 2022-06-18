@@ -27,7 +27,6 @@ import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -442,8 +441,8 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 presentFragment(new RestrictedLanguagesSelectActivity());
                 update();
             });
-            doNotTranslateCell.setClickable(value && LanguageDetector.hasSupport());
-            doNotTranslateCell.setAlpha(value && LanguageDetector.hasSupport() ? 1f : 0f);
+            doNotTranslateCell.setClickable(value && false);
+            doNotTranslateCell.setAlpha(value && false ? 1f : 0f);
             addView(doNotTranslateCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             info = new TextInfoPrivacyCell(context);
@@ -482,7 +481,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         }
 
         public void update() {
-            boolean value = getValue() && LanguageDetector.hasSupport();
+            boolean value = getValue() && false;
 
             showButtonCheck.setChecked(getValue());
 

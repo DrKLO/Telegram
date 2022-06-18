@@ -29,7 +29,7 @@ import java.util.HashSet;
 public class UserConfig extends BaseController {
 
     public static int selectedAccount;
-    public final static int MAX_ACCOUNT_COUNT = 128;
+    public final static int MAX_ACCOUNT_COUNT = 80;
     public final static int ACC_TO_INIT = 3;
     public final static boolean TDBG = false;
 
