@@ -9,6 +9,8 @@
     <string name="THEnableVoiceHD">* HD голосовые</string>
     <string name="THEnableVoiceBadman">* 🦇 голос бэтмена</string>
     <string name="THEnableVoIPHD">HD звонки</string>
+    <string name="THVoipDisableStartBeep">* Выключить стартовую тональность</string>
+    <string name="THVoipDisableEndBeep">* Выключить бип при завершении</string>
     <string name="THEnableProfileUID">Показывать числовой ID</string>
     <string name="THEnableProfileDCID">Показывать DC ID</string>
     <string name="THEnableProfileSB">Показывать чекбокс Shadowban</string>

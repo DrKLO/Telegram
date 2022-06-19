@@ -78,6 +78,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     private int voipLabelRow;
     private int voipHDRow;
+    private int voipDisableStartBeep;
+    private int voipDisableEndBeep;
 
     private int uiLabelRow;
     private int uiAppNotificationIconRow;
@@ -146,7 +148,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         voiceHDRow = rowCount++;
         voiceBadmanRow = rowCount++;
 
-        voipLabelRow = -1;
+        voipLabelRow = rowCount++;
+        voipDisableStartBeep = rowCount++;
+        voipDisableEndBeep = rowCount++;
         voipHDRow = -1;
 
         hardwareLabelRow = rowCount++;
@@ -253,6 +257,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableVoIPHD", false);
                 editor.putBoolean("EnableVoIPHD", !enabled);
+                editor.commit();
+            } else if (position == voipDisableStartBeep) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("VoipDisableStartBeep", false);
+                editor.putBoolean("VoipDisableStartBeep", !enabled);
+                editor.commit();
+            } else if (position == voipDisableEndBeep) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("VoipDisableEndBeep", false);
+                editor.putBoolean("VoipDisableEndBeep", !enabled);
                 editor.commit();
             } else if (position == profileUIDRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
@@ -477,6 +493,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableVoiceBadman), globalPreps.getBoolean("EnableVoiceBadman", false), true);
                     } else if (position == voipHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableVoIPHD), localPreps.getBoolean("EnableVoIPHD", false), true);
+                    } else if (position == voipDisableStartBeep) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THVoipDisableStartBeep), globalPreps.getBoolean("VoipDisableStartBeep", false), true);
+                    } else if (position == voipDisableEndBeep) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THVoipDisableEndBeep), globalPreps.getBoolean("VoipDisableEndBeep", false), true);
                     } else if (position == profileUIDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileUID), localPreps.getBoolean("EnableProfileUID", true), true);
                     } else if (position == hardwareDisableVibroRow) {
@@ -673,7 +693,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             ) {
                 return 0;
             } else if (
-                    position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
+                    position == voiceHDRow || position == voiceBadmanRow
+                            || position == voipHDRow || position == voipDisableStartBeep || position == voipDisableEndBeep
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow

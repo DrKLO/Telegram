@@ -5222,6 +5222,8 @@
     <string name="THEnableVoiceHD">* HD Voice</string>
     <string name="THEnableVoiceBadman">* 🦇 Voice (slow)</string>
     <string name="THEnableVoIPHD">HD calls</string>
+    <string name="THVoipDisableStartBeep">* Disable start beep</string>
+    <string name="THVoipDisableEndBeep">* Disable end beep</string>
     <string name="THEnableProfileUID">Show numeric ID</string>
     <string name="THEnableProfileDCID">Show DC ID</string>
     <string name="THEnableProfileSB">Show Shadowban</string>
