@@ -5222,6 +5222,8 @@
     <string name="THEnableVoiceHD">* HD Voice</string>
     <string name="THEnableVoiceBadman">* 🦇 Voice (slow)</string>
     <string name="THEnableVoIPHD">HD calls</string>
+    <string name="THVoipDisableStartBeep">* Disable start beep</string>
+    <string name="THVoipDisableEndBeep">* Disable end beep</string>
     <string name="THEnableProfileUID">Show numeric ID</string>
     <string name="THEnableProfileDCID">Show DC ID</string>
     <string name="THEnableProfileSB">Show Shadowban</string>
@@ -5252,6 +5254,7 @@
     <string name="THHardwareProximitySensorModeRow0">Keep working!</string>
     <string name="THHardwareProximitySensorModeRow1">start/stop</string>
     <string name="THHardwareProximitySensorModeRow2">blackscreen</string>
+    <string name="THHardwareDisableVibroRow">* Disable vibro</string>
     <string name="THChatLabelRow">Chat section</string>
     <string name="THGifLabelHDRow">GIF section</string>
     <string name="THVideoLabelMaxResolutionRow">* Maximum video resolution</string>

@@ -207,7 +207,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
 
         if (bestView != null) {
             chatActivity.restartSticker(bestView);
-            if (!EmojiData.hasEmojiSupportVibration(bestView.getMessageObject().getStickerEmoji())) {
+            if (EmojiData.hasEmojiSupportVibration(bestView.getMessageObject().getStickerEmoji())) {
                 bestView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
             showAnimationForCell(bestView, animation, false, true);
@@ -269,7 +269,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             return;
         }
         boolean show = showAnimationForCell(view, -1, true, false);
-        if (show && !EmojiData.hasEmojiSupportVibration(view.getMessageObject().getStickerEmoji())) {
+        if (show && EmojiData.hasEmojiSupportVibration(view.getMessageObject().getStickerEmoji())) {
             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         }
 

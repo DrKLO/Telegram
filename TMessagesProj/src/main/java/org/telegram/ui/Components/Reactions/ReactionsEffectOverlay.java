@@ -634,7 +634,7 @@ public class ReactionsEffectOverlay {
             currentOverlay.started = true;
             if (currentOverlay.animationType == LONG_ANIMATION && System.currentTimeMillis() - lastHapticTime > 200) {
                 lastHapticTime = System.currentTimeMillis();
-                currentOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) currentOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
         } else {
             startShortAnimation();
@@ -649,7 +649,7 @@ public class ReactionsEffectOverlay {
             currentShortOverlay.started = true;
             if (currentShortOverlay.animationType == SHORT_ANIMATION && System.currentTimeMillis() - lastHapticTime > 200) {
                 lastHapticTime = System.currentTimeMillis();
-                currentShortOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) currentShortOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
         }
     }

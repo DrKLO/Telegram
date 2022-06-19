@@ -9,6 +9,8 @@
     <string name="THEnableVoiceHD">* HD голосовые</string>
     <string name="THEnableVoiceBadman">* 🦇 голос бэтмена</string>
     <string name="THEnableVoIPHD">HD звонки</string>
+    <string name="THVoipDisableStartBeep">* Выключить стартовую тональность</string>
+    <string name="THVoipDisableEndBeep">* Выключить бип при завершении</string>
     <string name="THEnableProfileUID">Показывать числовой ID</string>
     <string name="THEnableProfileDCID">Показывать DC ID</string>
     <string name="THEnableProfileSB">Показывать чекбокс Shadowban</string>
@@ -39,6 +41,7 @@
     <string name="THHardwareProximitySensorModeRow0">Пусть работает!</string>
     <string name="THHardwareProximitySensorModeRow1">старт/стоп</string>
     <string name="THHardwareProximitySensorModeRow2">черный экран</string>
+    <string name="THHardwareDisableVibroRow">* Выключить вибро</string>
     <string name="THChatLabelRow">Секция чатов</string>
     <string name="THGifLabelHDRow">Секция гифок</string>
     <string name="THVideoLabelMaxResolutionRow">* Максимальное разрешение видео</string>

@@ -14,6 +14,7 @@ import android.view.HapticFeedbackConstants;
 import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.data.StackLinearChartData;
 import org.telegram.ui.Charts.view_data.ChartHorizontalLinesData;
@@ -388,10 +389,10 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
             pieLegendView.setTranslationY(yl);
 
             boolean v = false;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                 v = performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             }
-            if (!v) {
+            if (!v && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                 performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             }
 

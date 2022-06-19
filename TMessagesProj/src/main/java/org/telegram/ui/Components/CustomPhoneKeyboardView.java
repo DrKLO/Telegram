@@ -25,6 +25,7 @@ import androidx.core.view.GestureDetectorCompat;
 import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -42,7 +43,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     private Runnable onBackButton = () -> {
         if (editText == null || editText.length() == 0 && !dispatchBackWhenEmpty) return;
 
-        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         playSoundEffect(SoundEffectConstants.CLICK);
         editText.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
         editText.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
@@ -104,7 +105,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
             views[i].setOnClickListener(v -> {
                 if (editText == null) return;
 
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 if (editText instanceof EditTextBoldCursor) {
                     ((EditTextBoldCursor) editText).setTextWatchersSuppressed(true, false);
                 }

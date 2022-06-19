@@ -53,6 +53,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -1017,12 +1018,12 @@ public class RecyclerListView extends RecyclerView {
                     View child = currentChildView;
                     if (onItemLongClickListener != null) {
                         if (onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
-                            child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                             child.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                         }
                     } else {
                         if (onItemLongClickListenerExtended.onItemClick(currentChildView, currentChildPosition, event.getX() - currentChildView.getX(), event.getY() - currentChildView.getY())) {
-                            child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                             child.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                             longPressCalled = true;
                         }

@@ -1461,7 +1461,7 @@ public class ActionBarLayout extends FrameLayout {
                 }
             });
             animatorSet.start();
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
 
             fragment.setInPreviewMode(false);
         }

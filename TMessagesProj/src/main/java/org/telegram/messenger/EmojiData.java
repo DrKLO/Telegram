@@ -530,6 +530,7 @@ public class EmojiData {
     }
 
     public static boolean hasEmojiSupportVibration(String emoji) {
+        if(MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) return false;
         return isHeartEmoji(emoji) || isPeachEmoji(emoji) || isCofinEmoji(emoji);
     }
 

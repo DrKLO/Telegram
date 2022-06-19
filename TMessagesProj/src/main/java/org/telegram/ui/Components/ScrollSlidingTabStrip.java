@@ -46,6 +46,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
@@ -129,7 +130,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 return;
             }
             if (p >= 0 && p < tabsContainer.getChildCount()) {
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 draggindViewDxOnScreen = 0f;
                 draggingViewOutProgress = 0f;
                 draggingView = tabsContainer.getChildAt(p);

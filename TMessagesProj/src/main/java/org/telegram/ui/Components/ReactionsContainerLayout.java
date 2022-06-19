@@ -634,7 +634,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         Runnable longPressRunnable = new Runnable() {
             @Override
             public void run() {
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 pressedReactionPosition = reactionsList.indexOf(currentReaction);
                 pressedReaction = currentReaction.reaction;
                 ReactionsContainerLayout.this.invalidate();

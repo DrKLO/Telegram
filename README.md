@@ -50,7 +50,7 @@ different)
     * ~~messages are elements too, you still can click but cannot save them into downloads~~ fixed
         * ~~however i do not recomment this~~
     * use it wisely
-* ~~6 accounts instead of 3~~ ~~32~~ 128 accounts
+* ~~6 accounts instead of 3~~ ~~32~~ ~~128~~ 80 accounts
     * to enbale more than 3 you need to activate "3+" option
     * ~~client support upto 6 accounts~~
         * ~~on the 1st run when you type phone number and continue it can throw an API error~~
@@ -148,6 +148,7 @@ different)
 * Device spoofing
 * Our menu NOW near the Kaboom button (but you can bring it back!)
 * Admins now can delete all own messages in a group chat
+* Check our menu cause this list is a bit outdated ^^
 * Bring it back and there are no vanilla links. ~~APP do not manage APKs anymore~~
     * because some folks have issues to install APKs from TG fork on Android10 and/or MIUI
         * ~~before it have a code and required install pkg permissions~~
@@ -182,17 +183,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.74.5.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_arm64_v8a/Telegraher.8.74.5.arm64_v8a.apk)
-    * `x`  [Telegraher.8.74.5.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_arm64_v8a/Telegraher.8.74.5.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.74.6.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_arm64_v8a/Telegraher.8.74.6.arm64_v8a.apk)
+    * `x`  [Telegraher.8.74.6.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_arm64_v8a/Telegraher.8.74.6.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.74.5.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_armeabi_v7a/Telegraher.8.74.5.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.74.5.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_armeabi_v7a/Telegraher.8.74.5.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.74.6.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_armeabi_v7a/Telegraher.8.74.6.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.74.6.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_armeabi_v7a/Telegraher.8.74.6.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.74.5.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_x86/Telegraher.8.74.5.x86.apk)
-    * `x`  [Telegraher.8.74.5.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_x86/Telegraher.8.74.5.x86_sdk23.apk)
+    * `x`  [Telegraher.8.74.6.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_x86/Telegraher.8.74.6.x86.apk)
+    * `x`  [Telegraher.8.74.6.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_x86/Telegraher.8.74.6.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.74.5.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_x86_64/Telegraher.8.74.5.x86_64.apk)
-    * `x`  [Telegraher.8.74.5.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.5_x86_64/Telegraher.8.74.5.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.74.6.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_x86_64/Telegraher.8.74.6.x86_64.apk)
+    * `x`  [Telegraher.8.74.6.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.74.6_x86_64/Telegraher.8.74.6.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -201,6 +202,16 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.74.6
+    * fixed version and codeversion for smooth updates
+    * probably fixed TG vibro
+      bug [9111e6](https://github.com/nikitasius/Telegraher/commit/9111e618b734bc9012c5ab4421bc7ed28e0950d7) (
+      or i not enough drunk to understand their flow)
+    * "Chudmin" (3511604) & "iMiKED" (1017942) are pidormoders from 4pda (tossing salads modership)
+    * added "Disable vibro" option to disable vibrations globally
+    * added "disable start beep" and "disable end beep", thats to disable beeps when you calling
+      someone via voip
+        * thats pretty annoying at least the endone
 * 8.74.5
     * still working on armeabi-v7 but in theory fixed crash on multiaccs
         * the vanilla shitcode loop which makes kind of pause was increased x10 times in previous

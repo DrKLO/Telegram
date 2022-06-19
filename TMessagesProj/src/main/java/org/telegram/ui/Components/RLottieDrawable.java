@@ -28,6 +28,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueuePool;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
@@ -1043,7 +1044,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             } else if (nextRenderingBitmap != null && (renderingBitmap == null || timeDiff >= timeCheck) && isCurrentParentViewMaster()) {
                 if (vibrationPattern != null && currentParentView != null) {
                     Integer force = vibrationPattern.get(currentFrame - 1);
-                    if (force != null) {
+                    if (force != null && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                         currentParentView.performHapticFeedback(force == 1 ? HapticFeedbackConstants.LONG_PRESS : HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     }
                 }
