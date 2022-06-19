@@ -91,6 +91,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int hardwareLabelRow;
     private int hardwareProximitySensorModeLabelRow;
     private int hardwareProximitySensorModeRow;
+    private int hardwareDisableVibroRow;
 
     private int profileLabelRow;
     private int profileUIDRow;
@@ -151,6 +152,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         hardwareLabelRow = rowCount++;
         hardwareProximitySensorModeLabelRow = rowCount++;
         hardwareProximitySensorModeRow = rowCount++;
+        hardwareDisableVibroRow = rowCount++;
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
@@ -305,6 +307,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("VideoRoundUseMainCamera", false);
                 editor.putBoolean("VideoRoundUseMainCamera", !enabled);
+                editor.commit();
+            } else if (position == hardwareDisableVibroRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("HardwareDisableVibro", false);
+                editor.putBoolean("HardwareDisableVibro", !enabled);
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
@@ -471,6 +479,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableVoIPHD), localPreps.getBoolean("EnableVoIPHD", false), true);
                     } else if (position == profileUIDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileUID), localPreps.getBoolean("EnableProfileUID", true), true);
+                    } else if (position == hardwareDisableVibroRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THHardwareDisableVibroRow), globalPreps.getBoolean("HardwareDisableVibro", false), true);
                     } else if (position == profileDCIDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileDCID), localPreps.getBoolean("EnableProfileDCID", true), true);
                     } else if (position == profileSBRow) {
@@ -665,6 +675,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
+                            || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {

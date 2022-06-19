@@ -39,6 +39,7 @@
     <string name="THHardwareProximitySensorModeRow0">Пусть работает!</string>
     <string name="THHardwareProximitySensorModeRow1">старт/стоп</string>
     <string name="THHardwareProximitySensorModeRow2">черный экран</string>
+    <string name="THHardwareDisableVibroRow">* Выключить вибро</string>
     <string name="THChatLabelRow">Секция чатов</string>
     <string name="THGifLabelHDRow">Секция гифок</string>
     <string name="THVideoLabelMaxResolutionRow">* Максимальное разрешение видео</string>

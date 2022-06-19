@@ -5252,6 +5252,7 @@
     <string name="THHardwareProximitySensorModeRow0">Keep working!</string>
     <string name="THHardwareProximitySensorModeRow1">start/stop</string>
     <string name="THHardwareProximitySensorModeRow2">blackscreen</string>
+    <string name="THHardwareDisableVibroRow">* Disable vibro</string>
     <string name="THChatLabelRow">Chat section</string>
     <string name="THGifLabelHDRow">GIF section</string>
     <string name="THVideoLabelMaxResolutionRow">* Maximum video resolution</string>
