@@ -78,7 +78,7 @@ public class ApplicationLoader extends Application {
     }
 
     public static File getFilesDirFixed() {
-        for (int a = 0; a < 100; a++) {
+        for (int a = 0; a < 10; a++) {
             File path = ApplicationLoader.applicationContext.getFilesDir();
             if (path != null) {
                 return path;
