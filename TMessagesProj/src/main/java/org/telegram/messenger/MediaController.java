@@ -3485,7 +3485,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         requestAudioFocus(true);
 
         try {
-            feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignore) {
 
         }
@@ -3674,7 +3674,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 stopRecordingInternal(0, false, 0);
             }
             try {
-                feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignore) {
 
             }

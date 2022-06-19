@@ -15,6 +15,8 @@ import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
+import org.telegram.messenger.MessagesController;
+
 public abstract class BaseCell extends ViewGroup {
 
     private final class CheckForTap implements Runnable {
@@ -33,7 +35,7 @@ public abstract class BaseCell extends ViewGroup {
         public void run() {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (onLongPress()) {
                     MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                     onTouchEvent(event);

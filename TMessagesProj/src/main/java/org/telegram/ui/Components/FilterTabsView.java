@@ -1707,7 +1707,7 @@ public class FilterTabsView extends FrameLayout {
                 TabView tabView = (TabView) listView.getChildAt(i);
                 if (tabView.currentTab.id == id) {
                     tabView.shakeLockIcon(1, 0);
-                    tabView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) tabView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     break;
                 }
             }

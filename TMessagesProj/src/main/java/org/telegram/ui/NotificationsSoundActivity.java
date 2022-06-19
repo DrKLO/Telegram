@@ -39,6 +39,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
@@ -390,7 +391,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             if (view instanceof ToneCell) {
                 ToneCell cell = (ToneCell) view;
                 checkSelection(cell.tone);
-                cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             }
             return false;
         });

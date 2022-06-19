@@ -41,6 +41,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -858,7 +859,7 @@ public class NumberPicker extends LinearLayout {
         int previous = mValue;
         mValue = current;
         updateInputTextView();
-        if (Math.abs(previous - current) > 0.9f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        if (Math.abs(previous - current) > 0.9f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
             try {
                 performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
             } catch (Exception ignore) {}

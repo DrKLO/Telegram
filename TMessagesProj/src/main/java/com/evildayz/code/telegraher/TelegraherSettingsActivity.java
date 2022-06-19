@@ -170,8 +170,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatSwapToNextChannelRow = rowCount++;
         chatTabsOnForwardRow = rowCount++;
 
-        accountLabelRow = rowCount++;
-        accountExtendVanillaRow = rowCount++;
+        accountLabelRow = -1;
+        accountExtendVanillaRow = -1;
 
         gifLabelHDRow = rowCount++;
         gifHDRow = rowCount++;

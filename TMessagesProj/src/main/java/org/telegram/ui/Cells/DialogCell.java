@@ -2385,7 +2385,7 @@ public class DialogCell extends BaseCell {
             drawRevealBackground = Math.abs(translationX) >= getMeasuredWidth() * 0.45f;
             if (prevValue != drawRevealBackground && archiveHidden == SharedConfig.archiveHidden) {
                 try {
-                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 } catch (Exception ignore) {
 
                 }

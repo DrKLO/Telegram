@@ -12,15 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.Utilities;
+import org.telegram.messenger.*;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -204,7 +196,7 @@ public class PremiumStickersPreviewRecycler extends RecyclerListView implements 
             checkEffect = false;
         } else if (oldSelectedView != sortedView.get(sortedView.size() - 1)) {
             oldSelectedView = sortedView.get(sortedView.size() - 1);
-            if (haptic) {
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false) && haptic) {
                 performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
         }

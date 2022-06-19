@@ -26,11 +26,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
+import org.telegram.messenger.*;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -219,7 +215,7 @@ public class LimitPreviewView extends LinearLayout {
                 float v = (float) animation.getAnimatedValue();
                 float moveValue = Math.min(1f, v);
                 if (v > 1f) {
-                    if (!wasHaptic) {
+                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false) && !wasHaptic) {
                         wasHaptic = true;
                         limitIcon.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     }

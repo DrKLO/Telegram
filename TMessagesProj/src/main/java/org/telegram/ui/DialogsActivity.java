@@ -1572,7 +1572,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 }
                                 if (!canShowHiddenArchive) {
                                     canShowHiddenArchive = true;
-                                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     if (parentPage.pullForegroundDrawable != null) {
                                         parentPage.pullForegroundDrawable.colorize(true);
                                     }
@@ -2896,7 +2896,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             if (canShowHiddenArchive != canShowInternal) {
                                 canShowHiddenArchive = canShowInternal;
                                 if (viewPage.archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
-                                    viewPage.listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) viewPage.listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     if (viewPage.pullForegroundDrawable != null) {
                                         viewPage.pullForegroundDrawable.colorize(canShowInternal);
                                     }
@@ -5472,7 +5472,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void onArchiveLongPress(View view) {
-        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
         final boolean hasUnread = getMessagesStorage().getArchiveUnreadCount() != 0;
 
@@ -5916,7 +5916,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         if (isOpen && afterSignup) {
             try {
-                fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignored) {}
             if (getParentActivity() instanceof LaunchActivity) {
                 ((LaunchActivity) getParentActivity()).getFireworksOverlay().start();
@@ -8188,7 +8188,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         int y = location[1] - layout.getMeasuredHeight() - AndroidUtilities.dp(2);
         sendPopupWindow.showAtLocation(view, Gravity.LEFT | Gravity.TOP, location[0] + view.getMeasuredWidth() - layout.getMeasuredWidth() + AndroidUtilities.dp(8), y);
         sendPopupWindow.dimBehind();
-        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
 
         return false;
     }

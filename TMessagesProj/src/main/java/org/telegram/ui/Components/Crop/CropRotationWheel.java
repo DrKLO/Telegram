@@ -17,6 +17,7 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -188,7 +189,7 @@ public class CropRotationWheel extends FrameLayout {
             float newAngle = this.rotation + (float)(delta / AndroidUtilities.density / Math.PI / 1.65f);
             newAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, newAngle));
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                 try {
                     if (Math.abs(newAngle - MAX_ANGLE) < 0.001f && Math.abs(this.rotation - MAX_ANGLE) >= 0.001f ||
                         Math.abs(newAngle - -MAX_ANGLE) < 0.001f && Math.abs(this.rotation - -MAX_ANGLE) >= 0.001f) {

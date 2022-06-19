@@ -43,6 +43,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.VideoEditedInfo;
@@ -1656,7 +1657,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     draggingCellFromWidth = draggingCellDrawingRect.width();
                     draggingCellFromHeight = draggingCellDrawingRect.height();
                     try {
-                        ChatAttachAlertPhotoLayoutPreview.this.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) ChatAttachAlertPhotoLayoutPreview.this.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     } catch (Exception ignore) {}
                 }, ViewConfiguration.getLongPressTimeout());
 
@@ -1718,7 +1719,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     }
 
                     try {
-                        ChatAttachAlertPhotoLayoutPreview.this.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_RELEASE, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) ChatAttachAlertPhotoLayoutPreview.this.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_RELEASE, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     } catch (Exception ignore) {}
 
                     updateGroups();

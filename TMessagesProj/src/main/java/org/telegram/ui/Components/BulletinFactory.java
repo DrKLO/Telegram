@@ -438,7 +438,7 @@ public final class BulletinFactory {
             hapticDelay = 300;
         }
         layout.textView.setText(text);
-        if (hapticDelay > 0) {
+        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false) && hapticDelay > 0) {
             layout.postDelayed(() -> {
                 layout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             }, hapticDelay);

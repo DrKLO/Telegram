@@ -4481,7 +4481,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         if (Math.abs(dx) >= AndroidUtilities.dp(50)) {
                             if (!wasTrackingVibrate) {
                                 try {
-                                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                 } catch (Exception ignore) {
 
                                 }
@@ -6536,7 +6536,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                     chatActivityEnterView.getEditField().setAllowDrawCursor(true);
                 }
             });
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             return true;
         });
 
@@ -6904,7 +6904,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                     chatActivityEnterView.getEditField().setAllowDrawCursor(true);
                 }
             });
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             return false;
         });
         reactionsMentiondownButton.setVisibility(View.INVISIBLE);
@@ -16019,10 +16019,10 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                             if (voters.chosen) {
                                 if (voters.correct) {
                                     fireworksOverlay.start();
-                                    pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                 } else {
                                     ((ChatMessageCell) pollView).shakeView();
-                                    pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     showPollSolution(cell.getMessageObject(), results);
                                     cell.showHintButton(false, true, 0);
                                 }
@@ -19369,7 +19369,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         if (botButton instanceof TLRPC.TL_keyboardButtonUrl) {
                             openClickableLink(null, botButton.url, true, null, buttonMessage);
                             try {
-                                buttonTextView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) buttonTextView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                             } catch (Exception ignore) {}
                             return true;
                         }
@@ -23132,7 +23132,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                     bulletin.show();
                     View view = bulletin.getLayout();
                     view.postDelayed(() -> {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     }, 550);
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -25222,7 +25222,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         if (button instanceof TLRPC.TL_keyboardButtonUrl) {
                             openClickableLink(null, button.url, true, cell, cell.getMessageObject());
                             try {
-                                cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                             } catch (Exception ignore) {}
                         }
                     }
@@ -25234,7 +25234,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         }
                         if (longpress) {
                             if (!ChatObject.isChannelAndNotMegaGroup(currentChat)) {
-                                cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                                 FrameLayout scrimPopupContainerLayout = new FrameLayout(getParentActivity()) {
                                     @Override
                                     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -25686,7 +25686,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                             return;
                         }
                         fireworksOverlay.start();
-                        fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     }
 
                     @Override

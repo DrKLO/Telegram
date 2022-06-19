@@ -38,6 +38,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.OneUIUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.lang.reflect.Method;
@@ -547,6 +548,7 @@ public class Switch extends View {
     private boolean semHaptics = false;
 
     private void vibrateChecked(boolean toCheck) {
+        if (MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) return;
         try {
             if (isHapticFeedbackEnabled() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                 final Vibrator vibrator = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);

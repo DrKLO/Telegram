@@ -56,6 +56,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
@@ -1446,7 +1447,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 if (!editTextFirstRow.getText().toString().equals(firstPassword) && currentType == TYPE_CREATE_PASSWORD_STEP_2) {
                     AndroidUtilities.shakeViewSpring(outlineTextFirstRow, 5);
                     try {
-                        outlineTextFirstRow.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) outlineTextFirstRow.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     } catch (Exception ignored) {}
                     try {
                         Toast.makeText(getParentActivity(), LocaleController.getString("PasswordDoNotMatch", R.string.PasswordDoNotMatch), Toast.LENGTH_SHORT).show();
@@ -2106,7 +2107,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
             return;
         }
         try {
-            field.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) field.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignored) {}
         if (clear) {
             field.setText("");

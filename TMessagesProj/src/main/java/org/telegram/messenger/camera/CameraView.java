@@ -56,6 +56,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.video.MP4Builder;
@@ -641,6 +642,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     }
 
     public void runHaptic() {
+        if (MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) return;
         long[] vibrationWaveFormDurationPattern = {0, 1};
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {

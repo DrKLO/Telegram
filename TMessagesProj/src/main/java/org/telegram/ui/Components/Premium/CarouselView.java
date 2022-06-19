@@ -14,6 +14,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.OverScroller;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
@@ -101,7 +102,7 @@ public class CarouselView extends View implements PagerHeaderView {
                                 toAngle = -(360 - toAngle);
                             }
                             scrollToInternal(offsetAngle + (float) toAngle);
-                            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                         }
                         return true;
                     }
@@ -156,7 +157,7 @@ public class CarouselView extends View implements PagerHeaderView {
         int selected = ((int) (offsetAngle / aStep));
         if (lastSelected != selected) {
             lastSelected = selected;
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         }
     }
 

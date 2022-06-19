@@ -2226,7 +2226,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (paymentForm.invoice.recurring && !recurrentAccepted) {
                         AndroidUtilities.shakeViewSpring(recurrentAcceptCell.getTextView(), 4.5f);
                         try {
-                            recurrentAcceptCell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) recurrentAcceptCell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                         } catch (Exception ignored) {}
                         return;
                     }
@@ -3163,7 +3163,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     presentFragment(new PremiumPreviewFragment(null).setForcePremium(), true);
                     if (getParentActivity() instanceof LaunchActivity) {
                         try {
-                            fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                         } catch (Exception ignored) {}
                         ((LaunchActivity) getParentActivity()).getFireworksOverlay().start();
                     }

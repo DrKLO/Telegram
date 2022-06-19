@@ -208,8 +208,8 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
 
         if (bestView != null) {
             chatActivity.restartSticker(bestView);
-            if (!EmojiData.hasEmojiSupportVibration(bestView.getMessageObject().getStickerEmoji())) {
-                bestView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (EmojiData.hasEmojiSupportVibration(bestView.getMessageObject().getStickerEmoji())) {
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) bestView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
             showAnimationForCell(bestView, animation, false, true);
         }
@@ -322,7 +322,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         boolean show = showAnimationForCell(view, -1, true, false);
 
         if (show && (!EmojiData.hasEmojiSupportVibration(view.getMessageObject().getStickerEmoji()) || view.getMessageObject().isPremiumSticker())) {
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         }
         if (view.getMessageObject().isPremiumSticker()) {
             view.getMessageObject().forcePlayEffect = false;

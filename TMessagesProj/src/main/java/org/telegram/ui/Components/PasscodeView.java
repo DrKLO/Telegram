@@ -56,6 +56,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FingerprintController;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -130,7 +131,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 return;
             }
             try {
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -251,7 +252,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 return false;
             }
             try {
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1236,7 +1237,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                     getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     imageView.setProgress(0);
                     imageView.playAnimation();
-                    AndroidUtilities.runOnUIThread(() -> imageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING), 350);
+                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) AndroidUtilities.runOnUIThread(() -> imageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING), 350);
                     AnimatorSet animatorSet = new AnimatorSet();
                     ArrayList<Animator> animators = new ArrayList<>();
                     int w = AndroidUtilities.displaySize.x;

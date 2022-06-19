@@ -182,7 +182,7 @@ public class ContentPreviewViewer {
                     showUnlockPremiumView();
                     menuVisible = true;
                     containerView.invalidate();
-                    containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     return;
                 }
                 final boolean inFavs = MediaDataController.getInstance(currentAccount).isStickerInFavorites(currentDocument);
@@ -324,7 +324,7 @@ public class ContentPreviewViewer {
                 }
                 popupWindow.showAtLocation(containerView, 0, (int) ((containerView.getMeasuredWidth() - previewMenu.getMeasuredWidth()) / 2f), y);
 
-                containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             } else if (delegate != null) {
                 menuVisible = true;
                 ArrayList<CharSequence> items = new ArrayList<>();
@@ -436,7 +436,7 @@ public class ContentPreviewViewer {
                 y += AndroidUtilities.dp(24) - moveY;
                 popupWindow.showAtLocation(containerView, 0, (int) ((containerView.getMeasuredWidth() - previewMenu.getMeasuredWidth()) / 2f), y);
 
-                containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 
                 if (moveY != 0) {
                     if (finalMoveY == 0) {
@@ -768,7 +768,7 @@ public class ContentPreviewViewer {
                             contextLinkCell.setScaled(true);
                         }
                     }
-                    currentPreviewCell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) currentPreviewCell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 };
                 AndroidUtilities.runOnUIThread(openPreviewRunnable, 200);
                 return true;

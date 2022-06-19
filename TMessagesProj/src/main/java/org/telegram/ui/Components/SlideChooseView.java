@@ -23,6 +23,7 @@ import androidx.core.math.MathUtils;
 
 import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SlideChooseView extends View {
@@ -176,7 +177,7 @@ public class SlideChooseView extends View {
     }
 
     private void setOption(int index) {
-        if (selectedIndex != index) {
+        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false) && selectedIndex != index) {
             try {
                 performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
             } catch (Exception ignore) {}

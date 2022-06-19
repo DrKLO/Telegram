@@ -172,7 +172,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         });
         recyclerListView.setOnItemLongClickListener((view, position) -> {
             recyclerListView.getOnItemClickListener().onItemClick(view, position);
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             return false;
         });
         premiumButtonView.buttonLayout.setOnClickListener(v -> {

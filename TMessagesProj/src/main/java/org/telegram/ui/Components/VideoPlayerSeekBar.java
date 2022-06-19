@@ -29,11 +29,7 @@ import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.Utilities;
+import org.telegram.messenger.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -578,7 +574,7 @@ public class VideoPlayerSeekBar {
 
         if (timestampIndex != currentTimestamp) {
             timestampLabel[1] = timestampLabel[0];
-            if (pressed) {
+            if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false) && pressed) {
                 try {
                     parentView.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                 } catch (Exception ignore) {}
