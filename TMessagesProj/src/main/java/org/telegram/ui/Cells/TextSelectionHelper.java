@@ -46,6 +46,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -236,7 +237,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 textY = maybeTextY;
 
                 selectedView = newView;
-                textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 showActions();
                 invalidate();
 
@@ -828,7 +829,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
                                     if (viewChanged || layoutOld != layoutNew || newSelectionLine != layoutNew.getLineForOffset(selectionStart) && newSelectionLine == nextWhitespaceLine) {
                                         jumpToLine(newSelection, nextWhitespace, viewChanged, layoutBlock.yOffset, oldYoffset, oldSelectedView);
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                                             textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE);
                                         }
                                         TextSelectionHelper.this.invalidate();
@@ -840,7 +841,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                                             selectionStart = k;
                                             movingHandleStart = false;
                                         }
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                                             textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE);
                                         }
                                         TextSelectionHelper.this.invalidate();
@@ -891,7 +892,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                                                 selectionStart = k;
                                                 movingHandleStart = false;
                                             }
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                                                 textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE);
                                             }
                                             TextSelectionHelper.this.invalidate();
@@ -929,7 +930,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
                                     if (viewChanged || layoutOld != layoutNew || newSelectionLine != layoutNew.getLineForOffset(selectionEnd) && newSelectionLine == nextWhitespaceLine) {
                                         jumpToLine(newSelection, nextWhitespace, viewChanged, layoutBlock.yOffset, oldYoffset, oldSelectedView);
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                                             textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE);
                                         }
                                         TextSelectionHelper.this.invalidate();
@@ -941,7 +942,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                                             selectionStart = k;
                                             movingHandleStart = true;
                                         }
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                                             textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE);
                                         }
                                         TextSelectionHelper.this.invalidate();
@@ -973,7 +974,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                                                 selectionStart = k;
                                                 movingHandleStart = true;
                                             }
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                                                 textSelectionOverlay.performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE);
                                             }
                                             TextSelectionHelper.this.invalidate();

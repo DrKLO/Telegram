@@ -691,7 +691,7 @@ public class CalendarActivity extends BaseFragment {
                     PeriodDay periodDay = getDayAtCoord(e.getX(), e.getY());
 
                     if (periodDay != null) {
-                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 
                         Bundle bundle = new Bundle();
                         if (dialogId > 0) {

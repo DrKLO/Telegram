@@ -33,6 +33,7 @@ import android.view.ViewParent;
 import android.view.animation.Interpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -678,7 +679,7 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
             mSelectedStartY = selected.itemView.getTop();
             mSelected = selected;
 
-            if (actionState == ACTION_STATE_DRAG) {
+            if (actionState == ACTION_STATE_DRAG && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                 mSelected.itemView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             }
         }

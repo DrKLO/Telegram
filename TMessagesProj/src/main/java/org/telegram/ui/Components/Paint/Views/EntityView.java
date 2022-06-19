@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Rect;
 
@@ -56,7 +57,7 @@ public class EntityView extends FrameLayout {
                 }
 
                 recognizedLongPress = true;
-                if (delegate != null) {
+                if (delegate != null && !MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     delegate.onEntityLongClicked(EntityView.this);
                 }
