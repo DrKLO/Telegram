@@ -40,8 +40,6 @@ dependencies {
     implementation 'com.android.billingclient:billing:5.0.0'
     implementation files('libs/libgsaverification-client.aar')
 
-    implementation "com.android.billingclient:billing:5.0.0"
-
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }
 
