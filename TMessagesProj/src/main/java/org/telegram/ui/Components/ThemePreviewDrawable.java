@@ -116,8 +116,9 @@ public class ThemePreviewDrawable extends BitmapDrawable {
 
             Bitmap patternBitmap = null;
             if (pattern != null) {
+                int W = 560, H = 678;
                 if ("application/x-tgwallpattern".equals(themeDocument.mime_type)) {
-                    patternBitmap = SvgHelper.getBitmap(pattern, 560, 678, false);
+                    patternBitmap = SvgHelper.getBitmap(pattern, W, H, false);
                 } else {
                     BitmapFactory.Options opts = new BitmapFactory.Options();
                     opts.inSampleSize = 1;
@@ -126,8 +127,8 @@ public class ThemePreviewDrawable extends BitmapDrawable {
                     float photoW = opts.outWidth;
                     float photoH = opts.outHeight;
                     float scaleFactor;
-                    int w_filter = 560;
-                    int h_filter = 678;
+                    int w_filter = W;
+                    int h_filter = H;
                     if (w_filter >= h_filter && photoW > photoH) {
                         scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
                     } else {
@@ -159,11 +160,11 @@ public class ThemePreviewDrawable extends BitmapDrawable {
                             backgroundPaint.setColorFilter(new PorterDuffColorFilter(patternColor, PorterDuff.Mode.SRC_IN));
                         }
                         backgroundPaint.setAlpha(255);
-                        float scale = Math.max(560.0f / patternBitmap.getWidth(), 678.0f / patternBitmap.getHeight());
+                        float scale = Math.max((float) W / patternBitmap.getWidth(), (float) H / patternBitmap.getHeight());
                         int w = (int) (patternBitmap.getWidth() * scale);
                         int h = (int) (patternBitmap.getHeight() * scale);
-                        int x = (560 - w) / 2;
-                        int y = (678 - h) / 2;
+                        int x = (W - w) / 2;
+                        int y = (H - h) / 2;
                         canvas.save();
                         canvas.translate(x, y);
                         canvas.scale(scale, scale);

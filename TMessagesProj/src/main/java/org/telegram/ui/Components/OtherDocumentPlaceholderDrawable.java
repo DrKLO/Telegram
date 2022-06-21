@@ -18,6 +18,7 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
@@ -266,7 +267,7 @@ public class OtherDocumentPlaceholderDrawable extends RecyclableDrawable impleme
             String fileName = null;
             File cacheFile;
             if (TextUtils.isEmpty(parentMessageObject.messageOwner.attachPath) || !(new File(parentMessageObject.messageOwner.attachPath).exists())) {
-                cacheFile = FileLoader.getPathToMessage(parentMessageObject.messageOwner);
+                cacheFile = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(parentMessageObject.messageOwner);
                 if (!cacheFile.exists()) {
                     fileName = FileLoader.getAttachFileName(parentMessageObject.getDocument());
                 }

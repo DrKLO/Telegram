@@ -39,6 +39,7 @@ typedef struct LottieInfo {
     volatile uint32_t maxFrameSize = 0;
     uint32_t imageSize = 0;
     uint32_t fileOffset = 0;
+    uint32_t fileFrame = 0;
     bool nextFrameIsCacheFrame = false;
 
     FILE *precacheFile = nullptr;
@@ -146,6 +147,7 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
                 info->maxFrameSize = maxFrameSize;
                 fread(&(info->imageSize), sizeof(uint32_t), 1, precacheFile);
                 info->fileOffset = 9;
+                info->fileFrame = 0;
                 utimensat(0, info->cacheFile.c_str(), nullptr, 0);
             }
             fclose(precacheFile);
@@ -161,6 +163,18 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
     }
     return (jlong) (intptr_t) info;
 }
+
+JNIEXPORT jstring Java_org_telegram_ui_Components_RLottieDrawable_getCacheFile(JNIEnv *env, jclass clazz, jlong ptr) {
+    if (!ptr) {
+        return NULL;
+    }
+    auto info = (LottieInfo *) (intptr_t) ptr;
+    if (info->precache) {
+        return env->NewStringUTF(info->cacheFile.c_str());
+    }
+    return NULL;
+}
+
 
 JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(JNIEnv *env, jclass clazz, jstring json, jstring name, jintArray data, jintArray colorReplacement) {
     std::map<int32_t, int32_t> *colors = nullptr;
@@ -271,6 +285,7 @@ void CacheWriteThreadProc() {
             if (task->firstFrame) {
                 task->firstFrameSize = size;
                 task->fileOffset = 9 + sizeof(uint32_t) + task->firstFrameSize;
+                task->fileFrame = 1;
             }
             task->maxFrameSize = MAX(task->maxFrameSize, size);
             fwrite(&size, sizeof(uint32_t), 1, task->precacheFile);
@@ -310,6 +325,7 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_createCache(JNIEn
         info->precacheFile = fopen(info->cacheFile.c_str(), "w+");
         if (info->precacheFile != nullptr) {
             fseek(info->precacheFile, info->fileOffset = 9, SEEK_SET);
+            info->fileFrame = 0;
             info->maxFrameSize = 0;
             info->bufferSize = w * h * 4;
             info->imageSize = (uint32_t) w * h * 4;
@@ -393,18 +409,32 @@ JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *
                     }
                     info->decompressBuffer = new uint8_t[info->decompressBufferSize];
                 }
+                int currentFrame = frame / framesPerUpdate;
+                if (info->fileFrame != frame) {
+                    info->fileOffset = 9;
+                    info->fileFrame = 0;
+                    while (info->fileFrame != currentFrame) {
+                        fseek(precacheFile, info->fileOffset, SEEK_SET);
+                        uint32_t frameSize;
+                        fread(&frameSize, sizeof(uint32_t), 1, precacheFile);
+                        info->fileOffset += 4 + frameSize;
+                        info->fileFrame++;
+                    }
+                }
                 fseek(precacheFile, info->fileOffset, SEEK_SET);
                 uint32_t frameSize;
                 fread(&frameSize, sizeof(uint32_t), 1, precacheFile);
                 if (frameSize > 0 && frameSize <= info->decompressBufferSize) {
                     fread(info->decompressBuffer, sizeof(uint8_t), frameSize, precacheFile);
                     info->fileOffset += 4 + frameSize;
+                    info->fileFrame = currentFrame + 1;
                     LZ4_decompress_safe((const char *) info->decompressBuffer, (char *) pixels, frameSize, w * h * 4);
                     loadedFromCache = true;
                 }
                 fclose(precacheFile);
                 if (frame + framesPerUpdate >= info->frameCount) {
                     info->fileOffset = 9;
+                    info->fileFrame = 0;
                 }
             }
         }

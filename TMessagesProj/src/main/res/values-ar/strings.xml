@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
     <string name="FilterChatsRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">وصلت الحد الأقصى</string>
-    <string name="FilterRemoveFromAlertFullText">عذرًا، لايمكنك إضافة أكثر من 100 محادثة إلى مجلد.</string>
     <string name="FilterAddToAlertFullText">عذرًا، لايمكنك استثناء أكثر من 100 محادثة من مجلد.</string>
     <!--passcode view-->
     <string name="Passcode">رمز القفل</string>

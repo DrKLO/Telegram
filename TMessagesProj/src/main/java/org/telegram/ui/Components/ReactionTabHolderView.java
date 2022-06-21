@@ -11,6 +11,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -42,6 +43,10 @@ public class ReactionTabHolderView extends FrameLayout {
     View overlaySelectorView;
     private float outlineProgress;
     Drawable drawable;
+
+    private int count;
+    private String reaction;
+
     public ReactionTabHolderView(@NonNull Context context) {
         super(context);
 
@@ -55,7 +60,9 @@ public class ReactionTabHolderView extends FrameLayout {
 
         reactView = new BackupImageView(context);
         addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.START | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
+
         counterView = new TextView(context);
+        counterView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         counterView.setTextColor(Theme.getColor(Theme.key_avatar_nameInMessageBlue));
         counterView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(counterView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 40, 0, 8, 0));
@@ -90,18 +97,22 @@ public class ReactionTabHolderView extends FrameLayout {
     }
 
     public void setCounter(int count) {
+        this.count = count;
         counterView.setText(String.format("%s", LocaleController.formatShortNumber(count, null)));
         iconView.setVisibility(VISIBLE);
         reactView.setVisibility(GONE);
     }
 
     public void setCounter(int currentAccount, TLRPC.TL_reactionCount counter) {
+        this.count = counter.count;
         counterView.setText(String.format("%s", LocaleController.formatShortNumber(counter.count, null)));
         String e = counter.reaction;
+        this.reaction = null;
         for (TLRPC.TL_availableReaction r : MediaDataController.getInstance(currentAccount).getReactionsList()) {
             if (r.reaction.equals(e)) {
                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-                reactView.setImage(ImageLocation.getForDocument(r.static_icon), "50_50", "webp", svgThumb, r);
+                this.reaction = r.reaction;
+                reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", svgThumb, r);
                 reactView.setVisibility(VISIBLE);
                 iconView.setVisibility(GONE);
                 break;
@@ -120,5 +131,20 @@ public class ReactionTabHolderView extends FrameLayout {
 //        float w = outlinePaint.getStrokeWidth();
 //        rect.set(w, w, getWidth() - w, getHeight() - w);
 //        canvas.drawRoundRect(rect, radius, radius, outlinePaint);
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
+        info.setClickable(true);
+        if (outlineProgress > .5) {
+            info.setSelected(true);
+        }
+        if (reaction != null) {
+            info.setText(LocaleController.formatPluralString("AccDescrNumberOfPeopleReactions", count, reaction));
+        } else {
+            info.setText(LocaleController.formatPluralString("AccDescrNumberOfReactions", count));
+        }
     }
 }

@@ -32,6 +32,8 @@ import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
+import android.text.style.URLSpan;
+import android.text.util.Linkify;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
@@ -54,8 +56,11 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.ChatThemeBottomSheet;
+import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersArchiveAlert;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -157,6 +162,7 @@ public class MediaDataController extends BaseController {
         }
 
         loadStickersByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME, false, true);
+        loadEmojiThemes();
         ringtoneDataStore = new RingtoneDataStore(currentAccount);
     }
 
@@ -180,6 +186,10 @@ public class MediaDataController extends BaseController {
     private String doubleTapReaction;
     private boolean isLoadingReactions;
     private int reactionsUpdateDate;
+
+    private TLRPC.TL_help_premiumPromo premiumPromo;
+    private boolean isLoadingPremiumPromo;
+    private int premiumPromoUpdateDate;
 
     private ArrayList<TLRPC.TL_messages_stickerSet>[] stickerSets = new ArrayList[]{new ArrayList<>(), new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(), new ArrayList<>()};
     private LongSparseArray<TLRPC.Document>[] stickersByIds = new LongSparseArray[]{new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>()};
@@ -225,6 +235,10 @@ public class MediaDataController extends BaseController {
 
     private TLRPC.Document greetingsSticker;
     public final RingtoneDataStore ringtoneDataStore;
+    public final ArrayList<ChatThemeBottomSheet.ChatThemeItem> defaultEmojiThemes = new ArrayList<>();
+
+    public final ArrayList<TLRPC.Document> premiumPreviewStickers = new ArrayList<>();
+    boolean previewStickersLoading;
 
     public void cleanup() {
         for (int a = 0; a < recentStickers.length; a++) {
@@ -308,6 +322,16 @@ public class MediaDataController extends BaseController {
         }
     }
 
+    public void checkPremiumPromo() {
+        if (!isLoadingPremiumPromo && Math.abs(System.currentTimeMillis() / 1000 - premiumPromoUpdateDate) >= 60 * 60) {
+            loadPremiumPromo(true);
+        }
+    }
+
+    public TLRPC.TL_help_premiumPromo getPremiumPromo() {
+        return premiumPromo;
+    }
+
     public TLRPC.TL_attachMenuBots getAttachMenuBots() {
         return attachMenuBots;
     }
@@ -358,7 +382,7 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    private void processLoadedMenuBots(TLRPC.TL_attachMenuBots bots, long hash, int date, boolean cache) {
+    public void processLoadedMenuBots(TLRPC.TL_attachMenuBots bots, long hash, int date, boolean cache) {
         if (bots != null && date != 0) {
             attachMenuBots = bots;
             menuBotsUpdateHash = hash;
@@ -395,6 +419,86 @@ public class MediaDataController extends BaseController {
                     SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE attach_menu_bots SET date = ?");
                     state.requery();
                     state.bindLong(1, date);
+                    state.step();
+                    state.dispose();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public void loadPremiumPromo(boolean cache) {
+        isLoadingPremiumPromo = true;
+        if (cache) {
+            getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                SQLiteCursor c = null;
+                int date = 0;
+                TLRPC.TL_help_premiumPromo premiumPromo = null;
+                try {
+                    c = getMessagesStorage().getDatabase().queryFinalized("SELECT data, date FROM premium_promo");
+                    if (c.next()) {
+                        NativeByteBuffer data = c.byteBufferValue(0);
+                        if (data != null) {
+                            premiumPromo = TLRPC.TL_help_premiumPromo.TLdeserialize(data, data.readInt32(false), true);
+                            data.reuse();
+                        }
+                        date = c.intValue(1);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e, false);
+                } finally {
+                    if (c != null) {
+                        c.dispose();
+                    }
+                }
+                if (premiumPromo != null) {
+                    processLoadedPremiumPromo(premiumPromo, date, true);
+                }
+            });
+        } else {
+            TLRPC.TL_help_getPremiumPromo req = new TLRPC.TL_help_getPremiumPromo();
+            getConnectionsManager().sendRequest(req, (response, error) -> {
+                int date = (int) (System.currentTimeMillis() / 1000);
+                if (response instanceof TLRPC.TL_help_premiumPromo) {
+                    TLRPC.TL_help_premiumPromo r = (TLRPC.TL_help_premiumPromo) response;
+                    processLoadedPremiumPromo(r, date, false);
+                }
+            });
+        }
+    }
+
+    private void processLoadedPremiumPromo(TLRPC.TL_help_premiumPromo premiumPromo, int date, boolean cache) {
+        this.premiumPromo = premiumPromo;
+        premiumPromoUpdateDate = date;
+        getMessagesController().putUsers(premiumPromo.users, cache);
+        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.premiumPromoUpdated));
+
+        if (!cache) {
+            putPremiumPromoToCache(premiumPromo, date);
+        } else if (Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60 * 24 || BuildVars.DEBUG_PRIVATE_VERSION) {
+            loadPremiumPromo(false);
+        }
+    }
+
+    private void putPremiumPromoToCache(TLRPC.TL_help_premiumPromo premiumPromo, int date) {
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            try {
+                if (premiumPromo != null) {
+                    getMessagesStorage().getDatabase().executeFast("DELETE FROM premium_promo").stepThis().dispose();
+                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO premium_promo VALUES(?, ?)");
+                    state.requery();
+                    NativeByteBuffer data = new NativeByteBuffer(premiumPromo.getObjectSize());
+                    premiumPromo.serializeToStream(data);
+                    state.bindByteBuffer(1, data);
+                    state.bindInteger(2, date);
+                    state.step();
+                    data.reuse();
+                    state.dispose();
+                } else {
+                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE premium_promo SET date = ?");
+                    state.requery();
+                    state.bindInteger(1, date);
                     state.step();
                     state.dispose();
                 }
@@ -456,7 +560,7 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    private void processLoadedReactions(List<TLRPC.TL_availableReaction> reactions, int hash, int date, boolean cache) {
+    public void processLoadedReactions(List<TLRPC.TL_availableReaction> reactions, int hash, int date, boolean cache) {
         if (reactions != null && date != 0) {
             reactionsList.clear();
             reactionsMap.clear();
@@ -477,29 +581,27 @@ public class MediaDataController extends BaseController {
                 for (int i = 0; i < reactions.size(); i++) {
                     ImageReceiver imageReceiver = new ImageReceiver();
                     TLRPC.TL_availableReaction reaction = reactions.get(i);
-                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.activate_animation), null, null, null, 0, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.activate_animation), null, null, null, 0, FileLoader.PRELOAD_CACHE_TYPE);
                     ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
 
                     imageReceiver = new ImageReceiver();
-                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.appear_animation), "60_60_nolimit", null, null, 0, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.appear_animation), "60_60_nolimit", null, null, 0, FileLoader.PRELOAD_CACHE_TYPE);
+                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
+
+                    int size = ReactionsEffectOverlay.sizeForBigReaction();
+                    imageReceiver = new ImageReceiver();
+                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.around_animation), size + "_" + size, null, null, 0, FileLoader.PRELOAD_CACHE_TYPE);
                     ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
 
                     imageReceiver = new ImageReceiver();
-                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.around_animation), null, null, null, 0, 1);
-                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
-
-                    imageReceiver = new ImageReceiver();
-                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.center_icon), null, null, null, 0, 1);
-                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
-
-                    imageReceiver = new ImageReceiver();
-                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.static_icon), null, null, null, 0, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.center_icon), null, null, null, 0, FileLoader.PRELOAD_CACHE_TYPE);
                     ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
                 }
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reactionsDidLoad);
             });
         }
 
+        isLoadingReactions = false;
         if (!cache) {
             putReactionsToCache(reactions, hash, date);
         } else if (Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60) {
@@ -571,6 +673,24 @@ public class MediaDataController extends BaseController {
         return false;
     }
 
+    public void clearRecentStickers() {
+        TLRPC.TL_messages_clearRecentStickers req = new TLRPC.TL_messages_clearRecentStickers();
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(()-> {
+            if (response instanceof TLRPC.TL_boolTrue) {
+                getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                    try {
+                        getMessagesStorage().getDatabase().executeFast("DELETE FROM web_recent_v3 WHERE type = " + 3).stepThis().dispose();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                });
+
+                recentStickers[TYPE_IMAGE].clear();
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recentDocumentsDidLoad, false, TYPE_IMAGE);
+            }
+        }));
+    }
+
     public void addRecentSticker(int type, Object parentObject, TLRPC.Document document, int date, boolean remove) {
         if (type == TYPE_GREETINGS || !MessageObject.isStickerDocument(document) && !MessageObject.isAnimatedStickerDocument(document, true)) {
             return;
@@ -595,7 +715,8 @@ public class MediaDataController extends BaseController {
             if (remove) {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_STICKER, document, StickerSetBulletinLayout.TYPE_REMOVED_FROM_FAVORITES);
             } else {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_STICKER, document, StickerSetBulletinLayout.TYPE_ADDED_TO_FAVORITES);
+                boolean replace = recentStickers[type].size() > getMessagesController().maxFaveStickersCount;
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_STICKER, document, replace ? StickerSetBulletinLayout.TYPE_REPLACED_TO_FAVORITES : StickerSetBulletinLayout.TYPE_ADDED_TO_FAVORITES);
             }
             TLRPC.TL_messages_faveSticker req = new TLRPC.TL_messages_faveSticker();
             req.id = new TLRPC.TL_inputDocument();
@@ -708,7 +829,7 @@ public class MediaDataController extends BaseController {
         return false;
     }
 
-    public void addRecentGif(TLRPC.Document document, int date) {
+    public void addRecentGif(TLRPC.Document document, int date, boolean showReplaceBulletin) {
         if (document == null) {
             return;
         }
@@ -725,7 +846,7 @@ public class MediaDataController extends BaseController {
         if (!found) {
             recentGifs.add(0, document);
         }
-        if (recentGifs.size() > getMessagesController().maxRecentGifsCount) {
+        if ((recentGifs.size() > getMessagesController().savedGifsLimitDefault && !UserConfig.getInstance(currentAccount).isPremium()) || recentGifs.size() > getMessagesController().savedGifsLimitPremium) {
             TLRPC.Document old = recentGifs.remove(recentGifs.size() - 1);
             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                 try {
@@ -734,6 +855,11 @@ public class MediaDataController extends BaseController {
                     FileLog.e(e);
                 }
             });
+            if (showReplaceBulletin) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_STICKER, document, StickerSetBulletinLayout.TYPE_REPLACED_TO_FAVORITES_GIFS);
+                });
+            }
         }
         ArrayList<TLRPC.Document> arrayList = new ArrayList<>();
         arrayList.add(document);
@@ -919,6 +1045,9 @@ public class MediaDataController extends BaseController {
     }
 
     public TLRPC.Document getEmojiAnimatedSticker(CharSequence message) {
+        if (message == null) {
+            return null;
+        }
         String emoji = message.toString().replace("\uFE0F", "");
         ArrayList<TLRPC.TL_messages_stickerSet> arrayList = getStickerSets(MediaDataController.TYPE_EMOJI);
         for (int a = 0, N = arrayList.size(); a < N; a++) {
@@ -986,6 +1115,34 @@ public class MediaDataController extends BaseController {
     public String getEmojiForSticker(long id) {
         String value = stickersByEmoji.get(id);
         return value != null ? value : "";
+    }
+
+    public static boolean canShowAttachMenuBotForTarget(TLRPC.TL_attachMenuBot bot, String target) {
+        for (TLRPC.AttachMenuPeerType peerType : bot.peer_types) {
+            if ((peerType instanceof TLRPC.TL_attachMenuPeerTypeSameBotPM || peerType instanceof TLRPC.TL_attachMenuPeerTypeBotPM) && target.equals("bots") ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypeBroadcast && target.equals("channels") ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypeChat && target.equals("groups") ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypePM && target.equals("users")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean canShowAttachMenuBot(TLRPC.TL_attachMenuBot bot, TLObject peer) {
+        TLRPC.User user = peer instanceof TLRPC.User ? (TLRPC.User) peer : null;
+        TLRPC.Chat chat = peer instanceof TLRPC.Chat ? (TLRPC.Chat) peer : null;
+
+        for (TLRPC.AttachMenuPeerType peerType : bot.peer_types) {
+            if (peerType instanceof TLRPC.TL_attachMenuPeerTypeSameBotPM && user != null && user.bot && user.id == bot.bot_id ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypeBotPM && user != null && user.bot && user.id != bot.bot_id ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypePM && user != null && !user.bot ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypeChat && chat != null && !ChatObject.isChannelAndNotMegaGroup(chat) ||
+                    peerType instanceof TLRPC.TL_attachMenuPeerTypeBroadcast && chat != null && ChatObject.isChannelAndNotMegaGroup(chat)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nullable
@@ -2033,7 +2190,7 @@ public class MediaDataController extends BaseController {
             }
         });
         Utilities.stageQueue.postRunnable(() -> {
-            if (cache && (res == null || Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60) || !cache && res == null && hash == 0) {
+            if (cache && (res == null || BuildVars.DEBUG_PRIVATE_VERSION || Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60) || !cache && res == null && hash == 0) {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (res != null && hash != 0) {
                         loadHash[type] = hash;
@@ -2942,10 +3099,11 @@ public class MediaDataController extends BaseController {
                 ArrayList<MessageObject> objects = new ArrayList<>();
                 for (int a = 0; a < res.messages.size(); a++) {
                     TLRPC.Message message = res.messages.get(a);
-                    MessageObject messageObject = new MessageObject(currentAccount, message, usersDict, true, true);
+                    MessageObject messageObject = new MessageObject(currentAccount, message, usersDict, true, false);
                     messageObject.createStrippedThumb();
                     objects.add(messageObject);
                 }
+                getFileLoader().checkMediaExistance(objects);
 
                 AndroidUtilities.runOnUIThread(() -> {
                     int totalCount = res.count;
@@ -3376,7 +3534,7 @@ public class MediaDataController extends BaseController {
                     Bitmap bitmap = null;
                     if (photo != null) {
                         try {
-                            File path = FileLoader.getPathToAttach(photo, true);
+                            File path = getFileLoader().getPathToAttach(photo, true);
                             bitmap = BitmapFactory.decodeFile(path.toString());
                             if (bitmap != null) {
                                 int size = AndroidUtilities.dp(48);
@@ -3850,7 +4008,7 @@ public class MediaDataController extends BaseController {
             if (overrideAvatar || photo != null) {
                 try {
                     if (!overrideAvatar) {
-                        File path = FileLoader.getPathToAttach(photo, true);
+                        File path = getFileLoader().getPathToAttach(photo, true);
                         bitmap = BitmapFactory.decodeFile(path.toString());
                     }
                     if (overrideAvatar || bitmap != null) {
@@ -5081,6 +5239,26 @@ public class MediaDataController extends BaseController {
                     }
                 }
             }
+
+            if (spannable instanceof Spannable) {
+                AndroidUtilities.addLinks((Spannable) spannable, Linkify.WEB_URLS);
+                URLSpan[] spansUrl = spannable.getSpans(0, message[0].length(), URLSpan.class);
+                if (spansUrl != null && spansUrl.length > 0) {
+                    if (entities == null) {
+                        entities = new ArrayList<>();
+                    }
+                    for (int b = 0; b < spansUrl.length; b++) {
+                        if (spansUrl[b] instanceof URLSpanReplacement || spansUrl[b] instanceof URLSpanUserMention) {
+                            continue;
+                        }
+                        TLRPC.TL_messageEntityUrl entity = new TLRPC.TL_messageEntityUrl();
+                        entity.offset = spannable.getSpanStart(spansUrl[b]);
+                        entity.length = Math.min(spannable.getSpanEnd(spansUrl[b]), message[0].length()) - entity.offset;
+                        entity.url = spansUrl[b].getURL();
+                        entities.add(entity);
+                    }
+                }
+            }
         }
 
         CharSequence cs = message[0];
@@ -5101,12 +5279,23 @@ public class MediaDataController extends BaseController {
         int offset = 0;
         while (m.find()) {
             String gr = m.group(1);
-            cs = cs.subSequence(0, m.start() - offset) + gr + cs.subSequence(m.end() - offset, cs.length());
+            boolean allowEntity = true;
+            if (cs instanceof Spannable) {
+                // check if it is inside a link: do not convert __ ** to styles inside links
+                URLSpan[] spansUrl = ((Spannable) cs).getSpans(m.start() - offset, m.end() - offset, URLSpan.class);
+                if (spansUrl != null && spansUrl.length > 0) {
+                    allowEntity = false;
+                }
+            }
 
-            TLRPC.MessageEntity entity = entityProvider.provide(null);
-            entity.offset = m.start() - offset;
-            entity.length = gr.length();
-            entities.add(entity);
+            if (allowEntity) {
+                cs = cs.subSequence(0, m.start() - offset) + gr + cs.subSequence(m.end() - offset, cs.length());
+
+                TLRPC.MessageEntity entity = entityProvider.provide(null);
+                entity.offset = m.start() - offset;
+                entity.length = gr.length();
+                entities.add(entity);
+            }
 
             offset += m.end() - m.start() - gr.length();
         }
@@ -5717,6 +5906,51 @@ public class MediaDataController extends BaseController {
         return true;
     }
 
+    public void preloadPremiumPreviewStickers() {
+        if (previewStickersLoading || !premiumPreviewStickers.isEmpty()) {
+            for (int i = 0; i < Math.min(premiumPreviewStickers.size(), 3); i++) {
+                TLRPC.Document document = premiumPreviewStickers.get(i == 2 ? premiumPreviewStickers.size() - 1 : i);
+                if (MessageObject.isPremiumSticker(document)) {
+                    ImageReceiver imageReceiver = new ImageReceiver();
+                    imageReceiver.setImage(ImageLocation.getForDocument(document), null, null, "webp", null, 1);
+                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
+
+                    imageReceiver = new ImageReceiver();
+                    imageReceiver.setImage(ImageLocation.getForDocument(MessageObject.getPremiumStickerAnimation(document), document), null, null, null, "tgs", null, 1);
+                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
+                }
+            }
+            return;
+        }
+        final TLRPC.TL_messages_getStickers req2 = new TLRPC.TL_messages_getStickers();
+        req2.emoticon = Emoji.fixEmoji("⭐") + Emoji.fixEmoji("⭐");
+        req2.hash = 0;
+        previewStickersLoading = true;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                return;
+            }
+            previewStickersLoading = false;
+            TLRPC.TL_messages_stickers res = (TLRPC.TL_messages_stickers) response;
+            premiumPreviewStickers.clear();
+            premiumPreviewStickers.addAll(res.stickers);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumStickersPreviewLoaded);
+        }));
+    }
+
+    public void chekAllMedia(boolean force) {
+        if (force) {
+            reactionsUpdateDate = 0;
+            loadFeaturedDate = 0;
+        }
+        loadRecents(MediaDataController.TYPE_FAVE, false, true, false);
+        loadRecents(MediaDataController.TYPE_GREETINGS, false, true, false);
+        checkFeaturedStickers();
+        checkReactions();
+        checkMenuBots();
+        checkPremiumPromo();
+    }
+
     //---------------- BOT END ----------------
 
     //---------------- EMOJI START ----------------
@@ -5993,6 +6227,82 @@ public class MediaDataController extends BaseController {
             } catch (Throwable ignore) {
 
             }
+        }
+    }
+
+
+    public void loadEmojiThemes() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("emojithemes_config_" + currentAccount, Context.MODE_PRIVATE);
+        int count = preferences.getInt("count", 0);
+        ArrayList<ChatThemeBottomSheet.ChatThemeItem> previewItems = new ArrayList<>();
+        previewItems.add(new ChatThemeBottomSheet.ChatThemeItem(EmojiThemes.createHomePreviewTheme()));
+        for (int i = 0; i < count; ++i) {
+            String value = preferences.getString("theme_" + i, "");
+            SerializedData serializedData = new SerializedData(Utilities.hexToBytes(value));
+            try {
+                TLRPC.TL_theme theme = TLRPC.Theme.TLdeserialize(serializedData, serializedData.readInt32(true), true);
+                EmojiThemes fullTheme = EmojiThemes.createPreviewFullTheme(theme);
+                if (fullTheme.items.size() >= 4) {
+                    previewItems.add(new ChatThemeBottomSheet.ChatThemeItem(fullTheme));
+                }
+
+                ChatThemeController.chatThemeQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (int i = 0; i < previewItems.size(); i++) {
+                            previewItems.get(i).chatTheme.loadPreviewColors(0);
+                        }
+                        AndroidUtilities.runOnUIThread(() -> {
+                            defaultEmojiThemes.clear();
+                            defaultEmojiThemes.addAll(previewItems);
+                        });
+                    }
+                });
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
+    }
+
+    public void generateEmojiPreviewThemes(final ArrayList<TLRPC.TL_theme> emojiPreviewThemes, int currentAccount) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("emojithemes_config_" + currentAccount, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("count", emojiPreviewThemes.size());
+        for (int i = 0; i < emojiPreviewThemes.size(); ++i) {
+            TLRPC.TL_theme tlChatTheme = emojiPreviewThemes.get(i);
+            SerializedData data = new SerializedData(tlChatTheme.getObjectSize());
+            tlChatTheme.serializeToStream(data);
+            editor.putString("theme_" + i, Utilities.bytesToHex(data.toByteArray()));
+        }
+        editor.apply();
+
+        if (!emojiPreviewThemes.isEmpty()) {
+            final ArrayList<ChatThemeBottomSheet.ChatThemeItem> previewItems = new ArrayList<>();
+            previewItems.add(new ChatThemeBottomSheet.ChatThemeItem(EmojiThemes.createHomePreviewTheme()));
+            for (int i = 0; i < emojiPreviewThemes.size(); i++) {
+                TLRPC.TL_theme theme = emojiPreviewThemes.get(i);
+                EmojiThemes chatTheme = EmojiThemes.createPreviewFullTheme(theme);
+                ChatThemeBottomSheet.ChatThemeItem item = new ChatThemeBottomSheet.ChatThemeItem(chatTheme);
+                if (chatTheme.items.size() >= 4) {
+                    previewItems.add(item);
+                }
+            }
+            ChatThemeController.chatThemeQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    for (int i = 0; i < previewItems.size(); i++) {
+                        previewItems.get(i).chatTheme.loadPreviewColors(currentAccount);
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        defaultEmojiThemes.clear();
+                        defaultEmojiThemes.addAll(previewItems);
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
+                    });
+                }
+            });
+        } else {
+            defaultEmojiThemes.clear();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
         }
     }
 

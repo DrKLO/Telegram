@@ -1,15 +1,27 @@
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.TimeInterpolator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.DashPathEffect;
+import android.graphics.Interpolator;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.TextPaint;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.animation.LinearInterpolator;
 
+import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
+
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -31,7 +43,6 @@ public class SlideChooseView extends View {
 
     private boolean moving;
     private boolean startMoving;
-    private float startX;
     private float xTouchDown;
     private float yTouchDown;
 
@@ -41,9 +52,14 @@ public class SlideChooseView extends View {
     private int[] optionsSizes;
 
     private int selectedIndex;
+    private float selectedIndexTouch;
+    private AnimatedFloat selectedIndexAnimatedHolder = new AnimatedFloat(this, 120, CubicBezierInterpolator.DEFAULT);
+    private AnimatedFloat movingAnimatedHolder = new AnimatedFloat(this, 150, CubicBezierInterpolator.DEFAULT);
 
     private Callback callback;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private boolean touchWasClose = false;
 
     public SlideChooseView(Context context) {
         this(context, null);
@@ -105,18 +121,18 @@ public class SlideChooseView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
+        float indexTouch = MathUtils.clamp((x - sideSide + circleSize / 2f) / (lineSize + gapSize * 2 + circleSize), 0, optionsStr.length - 1);
+        boolean isClose = Math.abs(indexTouch - Math.round(indexTouch)) < .35f;
+        if (isClose) {
+            indexTouch = Math.round(indexTouch);
+        }
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             xTouchDown = x;
             yTouchDown = y;
-            for (int a = 0; a < optionsStr.length; a++) {
-                int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                    startMoving = a == selectedIndex;
-                    startX = x;
-                    startMovingPreset = selectedIndex;
-                    break;
-                }
-            }
+            selectedIndexTouch = indexTouch;
+            startMovingPreset = selectedIndex;
+            startMoving = true;
+            invalidate();
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
             if (!moving) {
                 if (Math.abs(xTouchDown - x) > Math.abs(yTouchDown - y)) {
@@ -124,32 +140,24 @@ public class SlideChooseView extends View {
                 }
             }
             if (startMoving) {
-                if (Math.abs(startX - x) >= AndroidUtilities.getPixelsInCM(0.5f, true)) {
+                if (Math.abs(xTouchDown - x) >= AndroidUtilities.dp(2)) {
                     moving = true;
                     startMoving = false;
                 }
-            } else if (moving) {
-                for (int a = 0; a < optionsStr.length; a++) {
-                    int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                    int diff = lineSize / 2 + circleSize / 2 + gapSize;
-                    if (x > cx - diff && x < cx + diff) {
-                        if (selectedIndex != a) {
-                            setOption(a);
-                        }
-                        break;
-                    }
+            }
+            if (moving) {
+                selectedIndexTouch = indexTouch;
+                invalidate();
+                if (Math.round(selectedIndexTouch) != selectedIndex && isClose) {
+                    setOption(Math.round(selectedIndexTouch));
                 }
             }
+            invalidate();
         } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
             if (!moving) {
-                for (int a = 0; a < 5; a++) {
-                    int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                    if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                        if (selectedIndex != a) {
-                            setOption(a);
-                        }
-                        break;
-                    }
+                selectedIndexTouch = indexTouch;
+                if (Math.round(selectedIndexTouch) != selectedIndex) {
+                    setOption(Math.round(selectedIndexTouch));
                 }
             } else {
                 if (selectedIndex != startMovingPreset) {
@@ -161,12 +169,18 @@ public class SlideChooseView extends View {
             }
             startMoving = false;
             moving = false;
+            invalidate();
             getParent().requestDisallowInterceptTouchEvent(false);
         }
         return true;
     }
 
     private void setOption(int index) {
+        if (selectedIndex != index) {
+            try {
+                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+            } catch (Exception ignore) {}
+        }
         selectedIndex = index;
         if (callback != null) {
             callback.onOptionSelected(index);
@@ -185,15 +199,18 @@ public class SlideChooseView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        textPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        float selectedIndexAnimated = selectedIndexAnimatedHolder.set(selectedIndex);
+        float movingAnimated = movingAnimatedHolder.set(moving ? 1 : 0);
         int cy = getMeasuredHeight() / 2 + AndroidUtilities.dp(11);
 
         for (int a = 0; a < optionsStr.length; a++) {
             int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-            int color = a <= selectedIndex ? getThemedColor(Theme.key_switchTrackChecked) : getThemedColor(Theme.key_switchTrack);
+            float t = Math.max(0, 1f - Math.abs(a - selectedIndexAnimated));
+            float ut = MathUtils.clamp(selectedIndexAnimated - a + 1f, 0, 1);
+            int color = ColorUtils.blendARGB(getThemedColor(Theme.key_switchTrack), getThemedColor(Theme.key_switchTrackChecked), ut);
             paint.setColor(color);
             linePaint.setColor(color);
-            canvas.drawCircle(cx, cy, a == selectedIndex ? AndroidUtilities.dp(6) : circleSize / 2, paint);
+            canvas.drawCircle(cx, cy, AndroidUtilities.lerp(circleSize / 2, AndroidUtilities.dp(6), t), paint);
             if (a != 0) {
                 int x = cx - circleSize / 2 - gapSize - lineSize;
                 int width = lineSize;
@@ -208,18 +225,16 @@ public class SlideChooseView extends View {
                     }
                     canvas.drawLine(x + AndroidUtilities.dp(1), cy, x + width - AndroidUtilities.dp(1), cy, linePaint);
                 } else {
-                    if (a == selectedIndex || a == selectedIndex + 1) {
-                        width -= AndroidUtilities.dp(3);
-                    }
-                    if (a == selectedIndex + 1) {
-                        x += AndroidUtilities.dp(3);
-                    }
+                    float nt = MathUtils.clamp(1f - Math.abs(a - selectedIndexAnimated - 1), 0, 1);
+                    float nct = MathUtils.clamp(1f - Math.min(Math.abs(a - selectedIndexAnimated), Math.abs(a - selectedIndexAnimated - 1)), 0, 1);
+                    width -= AndroidUtilities.dp(3) * nct;
+                    x += AndroidUtilities.dp(3) * nt;
                     canvas.drawRect(x, cy - AndroidUtilities.dp(1), x + width, cy + AndroidUtilities.dp(1), paint);
                 }
             }
             int size = optionsSizes[a];
             String text = optionsStr[a];
-
+            textPaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundWhiteGrayText), getThemedColor(Theme.key_windowBackgroundWhiteBlueText), t));
             if (a == 0) {
                 canvas.drawText(text, AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
             } else if (a == optionsStr.length - 1) {
@@ -228,6 +243,12 @@ public class SlideChooseView extends View {
                 canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
             }
         }
+
+        float cx = sideSide + (lineSize + gapSize * 2 + circleSize) * selectedIndexAnimated + circleSize / 2;
+        paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_switchTrackChecked), 80));
+        canvas.drawCircle(cx, cy, AndroidUtilities.dp(12 * movingAnimated), paint);
+        paint.setColor(getThemedColor(Theme.key_switchTrackChecked));
+        canvas.drawCircle(cx, cy, AndroidUtilities.dp(6), paint);
     }
 
     @Override

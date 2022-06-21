@@ -13,8 +13,6 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -22,9 +20,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.Editable;
-import android.text.Layout;
-import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -37,8 +32,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
@@ -66,19 +65,16 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Cells.UserCell2;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ChatRightsEditActivity extends BaseFragment {
 
@@ -88,6 +84,7 @@ public class ChatRightsEditActivity extends BaseFragment {
 
     private FrameLayout addBotButtonContainer;
     private FrameLayout addBotButton;
+    private AnimatedTextView addBotButtonText;
     private PollEditTextCell rankEditTextCell;
     private CrossfadeDrawable doneDrawable;
 
@@ -184,6 +181,28 @@ public class ChatRightsEditActivity extends BaseFragment {
             myAdminRights = emptyAdminRights(currentType != TYPE_ADD_BOT || (currentChat != null && currentChat.creator));
         }
         if (type == TYPE_ADMIN || type == TYPE_ADD_BOT) {
+            if (type == TYPE_ADD_BOT) {
+                TLRPC.UserFull userFull = getMessagesController().getUserFull(userId);
+                if (userFull != null) {
+                    TLRPC.TL_chatAdminRights botDefaultRights = isChannel ? userFull.bot_broadcast_admin_rights : userFull.bot_group_admin_rights;
+                    if (botDefaultRights != null) {
+                        if (rightsAdmin == null) {
+                            rightsAdmin = botDefaultRights;
+                        } else {
+                            rightsAdmin.ban_users = rightsAdmin.ban_users || botDefaultRights.ban_users;
+                            rightsAdmin.add_admins = rightsAdmin.add_admins || botDefaultRights.add_admins;
+                            rightsAdmin.post_messages = rightsAdmin.post_messages || botDefaultRights.post_messages;
+                            rightsAdmin.pin_messages = rightsAdmin.pin_messages || botDefaultRights.pin_messages;
+                            rightsAdmin.delete_messages = rightsAdmin.delete_messages || botDefaultRights.delete_messages;
+                            rightsAdmin.change_info = rightsAdmin.change_info || botDefaultRights.change_info;
+                            rightsAdmin.anonymous = rightsAdmin.anonymous || botDefaultRights.anonymous;
+                            rightsAdmin.edit_messages = rightsAdmin.edit_messages || botDefaultRights.edit_messages;
+                            rightsAdmin.manage_call = rightsAdmin.manage_call || botDefaultRights.manage_call;
+                            rightsAdmin.other = rightsAdmin.other || botDefaultRights.other;
+                        }
+                    }
+                }
+            }
             if (rightsAdmin == null) {
                 initialAsAdmin = false;
                 if (type == TYPE_ADD_BOT) {
@@ -359,7 +378,9 @@ public class ChatRightsEditActivity extends BaseFragment {
 
         if (canEdit || !isChannel && currentChat.creator && UserObject.isUserSelf(currentUser)) {
             ActionBarMenu menu = actionBar.createMenu();
-            doneDrawable = new CrossfadeDrawable(context.getResources().getDrawable(R.drawable.ic_done), new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
+            Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
+            checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
+            doneDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
             menu.addItemWithWidth(done_button, 0, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
             menu.getItem(done_button).setIcon(doneDrawable);
         }
@@ -893,7 +914,11 @@ public class ChatRightsEditActivity extends BaseFragment {
                         }
                     }), ConnectionsManager.RequestFlagWithoutLogin);
                 } else if (error.text.equals("CHANNELS_TOO_MUCH")) {
-                    presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_EDIT));
+                    if (getParentActivity() != null && !AccountInstance.getInstance(currentAccount).getUserConfig().isPremium()) {
+                        showDialog(new LimitReachedBottomSheet(this, getParentActivity(), LimitReachedBottomSheet.TYPE_TO_MANY_COMMUNITIES, currentAccount));
+                    } else {
+                        presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_EDIT));
+                    }
                 } else {
                     if (passwordFragment != null) {
                         passwordFragment.needHideProgress();
@@ -1090,8 +1115,9 @@ public class ChatRightsEditActivity extends BaseFragment {
                         adminRights.other ? 1 : 0, adminRights, bannedRights, currentRank);
                     finishFragment();
                 }
-            }, () -> {
+            }, err -> {
                 setLoading(false);
+                return true;
             });
         } else if (currentType == TYPE_BANNED) {
             MessagesController.getInstance(currentAccount).setParticipantBannedRole(chatId, currentUser, null, bannedRights, isChannel, getFragmentForAlert(1));
@@ -1148,9 +1174,15 @@ public class ChatRightsEditActivity extends BaseFragment {
                     }
                 };
                 if (asAdmin || initialAsAdmin) {
-                    getMessagesController().setUserAdminRole(currentChat.id, currentUser, asAdmin ? adminRights : emptyAdminRights(false), currentRank, false, this, isAddingNew, asAdmin, botHash, onFinish, () -> setLoading(false));
+                    getMessagesController().setUserAdminRole(currentChat.id, currentUser, asAdmin ? adminRights : emptyAdminRights(false), currentRank, false, this, isAddingNew, asAdmin, botHash, onFinish, err -> {
+                        setLoading(false);
+                        return true;
+                    });
                 } else {
-                    getMessagesController().addUserToChat(currentChat.id, currentUser, 0, botHash, this, true, onFinish, () -> setLoading(false));
+                    getMessagesController().addUserToChat(currentChat.id, currentUser, 0, botHash, this, true, onFinish, err -> {
+                        setLoading(false);
+                        return true;
+                    });
                 }
             });
             showDialog(builder.create());
@@ -1373,69 +1405,15 @@ public class ChatRightsEditActivity extends BaseFragment {
                 case VIEW_TYPE_ADD_BOT_CELL:
                     addBotButtonContainer = new FrameLayout(mContext);
                     addBotButtonContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-                    addBotButton = new FrameLayout(mContext) {
-
-                        private TextPaint textPaint;
-                        private StaticLayout mainText;
-                        private StaticLayout asMemberText;
-                        private StaticLayout asAdminText; {
-                            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                            textPaint.setTextSize(AndroidUtilities.dp(14));
-                            textPaint.setColor(0xffffffff);
-                            mainText = new StaticLayout(LocaleController.getString("AddBotButton", R.string.AddBotButton) + " ", textPaint, 9999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
-                            asMemberText = new StaticLayout(LocaleController.getString("AddBotButtonAsMember", R.string.AddBotButtonAsMember), textPaint, 9999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
-                            asAdminText = new StaticLayout(LocaleController.getString("AddBotButtonAsAdmin", R.string.AddBotButtonAsAdmin), textPaint, 9999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
-                        }
-
-                        private long lastFrame;
-                        @Override
-                        protected void onDraw(Canvas canvas) {
-                            super.onDraw(canvas);
-
-                            float t = CubicBezierInterpolator.EASE_BOTH.getInterpolation(asAdminT);
-
-                            float mainWidth = mainText.getLineWidth(0);
-                            float asWidth;
-                            if (asAdminT <= 0) {
-                                asWidth = asMemberText.getLineWidth(0);
-                            } else if (asAdminT >= 1) {
-                                asWidth = asAdminText.getLineWidth(0);
-                            } else {
-                                asWidth = AndroidUtilities.lerp(asMemberText.getLineWidth(0), asAdminText.getLineWidth(0), t);
-                            }
-                            float width = mainWidth + asWidth;
-
-                            canvas.save();
-                            canvas.translate((getWidth() - width) / 2, (getHeight() - mainText.getHeight()) / 2);
-                            textPaint.setAlpha(255);
-                            mainText.draw(canvas);
-                            canvas.translate(mainWidth, 0);
-                            if (t <= 0) {
-                                asMemberText.draw(canvas);
-                            } else {
-                                canvas.save();
-                                canvas.translate(0, AndroidUtilities.dp(8) * t);
-                                canvas.scale(1, 1 - 0.2f * t);
-                                textPaint.setAlpha((int) (255 * (1f - t)));
-                                asMemberText.draw(canvas);
-                                canvas.restore();
-                            }
-                            if (t >= 1) {
-                                textPaint.setAlpha(255);
-                                asAdminText.draw(canvas);
-                            } else {
-                                canvas.save();
-                                canvas.translate(0, -AndroidUtilities.dp(8) * (1f - t));
-                                canvas.scale(1, 1 - 0.2f * (1f - t));
-                                textPaint.setAlpha((int) (255 * t));
-                                asAdminText.draw(canvas);
-                                canvas.restore();
-                            }
-                            canvas.restore();
-                        }
-                    };
-                    addBotButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), 0x40ffffff));
+                    addBotButton = new FrameLayout(mContext);
+                    addBotButtonText = new AnimatedTextView(mContext, true, false, false);
+                    addBotButtonText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    addBotButtonText.setTextColor(0xffffffff);
+                    addBotButtonText.setTextSize(AndroidUtilities.dp(14));
+                    addBotButtonText.setGravity(Gravity.CENTER);
+                    addBotButtonText.setText(LocaleController.getString("AddBotButton", R.string.AddBotButton) + " " + (asAdmin ? LocaleController.getString("AddBotButtonAsAdmin", R.string.AddBotButtonAsAdmin) : LocaleController.getString("AddBotButtonAsMember", R.string.AddBotButtonAsMember)));
+                    addBotButton.addView(addBotButtonText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                    addBotButton.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
                     addBotButton.setOnClickListener(e -> onDonePressed());
                     addBotButtonContainer.addView(addBotButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 14, 28, 14, 14));
                     addBotButtonContainer.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -1806,6 +1784,9 @@ public class ChatRightsEditActivity extends BaseFragment {
 //        }
         listViewAdapter.notifyDataSetChanged();
 
+        if (addBotButtonText != null) {
+            addBotButtonText.setText(LocaleController.getString("AddBotButton", R.string.AddBotButton) + " " + (asAdmin ? LocaleController.getString("AddBotButtonAsAdmin", R.string.AddBotButtonAsAdmin) : LocaleController.getString("AddBotButtonAsMember", R.string.AddBotButtonAsMember)), animated, asAdmin);
+        }
         if (asAdminAnimator != null) {
             asAdminAnimator.cancel();
             asAdminAnimator = null;

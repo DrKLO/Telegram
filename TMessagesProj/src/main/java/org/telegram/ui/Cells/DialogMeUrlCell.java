@@ -16,7 +16,6 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -42,9 +41,6 @@ public class DialogMeUrlCell extends BaseCell {
     private int nameLeft;
     private StaticLayout nameLayout;
     private boolean drawNameLock;
-    private boolean drawNameGroup;
-    private boolean drawNameBroadcast;
-    private boolean drawNameBot;
     private int nameMuteLeft;
     private int nameLockLeft;
     private int nameLockTop;
@@ -103,28 +99,18 @@ public class DialogMeUrlCell extends BaseCell {
         TextPaint currentNamePaint = Theme.dialogs_namePaint[0];
         TextPaint currentMessagePaint = Theme.dialogs_messagePaint[0];
 
-        drawNameGroup = false;
-        drawNameBroadcast = false;
         drawNameLock = false;
-        drawNameBot = false;
         drawVerified = false;
 
         if (recentMeUrl instanceof TLRPC.TL_recentMeUrlChat) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(recentMeUrl.chat_id);
-            if (chat.id < 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
-                drawNameBroadcast = true;
-                nameLockTop = AndroidUtilities.dp(16.5f);
-            } else {
-                drawNameGroup = true;
-                nameLockTop = AndroidUtilities.dp(17.5f);
-            }
             drawVerified = chat.verified;
 
             if (!LocaleController.isRTL) {
                 nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? Theme.dialogs_groupDrawable.getIntrinsicWidth() : Theme.dialogs_broadcastDrawable.getIntrinsicWidth());
+                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4);
             } else {
-                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline) - (drawNameGroup ? Theme.dialogs_groupDrawable.getIntrinsicWidth() : Theme.dialogs_broadcastDrawable.getIntrinsicWidth());
+                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                 nameLeft = AndroidUtilities.dp(14);
             }
             nameString = chat.title;
@@ -139,13 +125,12 @@ public class DialogMeUrlCell extends BaseCell {
             }
             if (user != null) {
                 if (user.bot) {
-                    drawNameBot = true;
                     nameLockTop = AndroidUtilities.dp(16.5f);
                     if (!LocaleController.isRTL) {
                         nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                        nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + Theme.dialogs_botDrawable.getIntrinsicWidth();
+                        nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4);
                     } else {
-                        nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline) - Theme.dialogs_botDrawable.getIntrinsicWidth();
+                        nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                         nameLeft = AndroidUtilities.dp(14);
                     }
                 }
@@ -172,33 +157,19 @@ public class DialogMeUrlCell extends BaseCell {
             if (recentMeUrl.chat_invite.chat != null) {
                 avatarDrawable.setInfo(recentMeUrl.chat_invite.chat);
                 nameString = recentMeUrl.chat_invite.chat.title;
-                if (recentMeUrl.chat_invite.chat.id < 0 || ChatObject.isChannel(recentMeUrl.chat_invite.chat) && !recentMeUrl.chat_invite.chat.megagroup) {
-                    drawNameBroadcast = true;
-                    nameLockTop = AndroidUtilities.dp(16.5f);
-                } else {
-                    drawNameGroup = true;
-                    nameLockTop = AndroidUtilities.dp(17.5f);
-                }
                 drawVerified = recentMeUrl.chat_invite.chat.verified;
                 avatarImage.setForUserOrChat(recentMeUrl.chat_invite.chat, avatarDrawable, recentMeUrl);
             } else {
                 nameString = recentMeUrl.chat_invite.title;
                 avatarDrawable.setInfo(5, recentMeUrl.chat_invite.title, null);
-                if (recentMeUrl.chat_invite.broadcast || recentMeUrl.chat_invite.channel) {
-                    drawNameBroadcast = true;
-                    nameLockTop = AndroidUtilities.dp(16.5f);
-                } else {
-                    drawNameGroup = true;
-                    nameLockTop = AndroidUtilities.dp(17.5f);
-                }
                 TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(recentMeUrl.chat_invite.photo.sizes, 50);
                 avatarImage.setImage(ImageLocation.getForPhoto(size, recentMeUrl.chat_invite.photo), "50_50", avatarDrawable, null, recentMeUrl, 0);
             }
             if (!LocaleController.isRTL) {
                 nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? Theme.dialogs_groupDrawable.getIntrinsicWidth() : Theme.dialogs_broadcastDrawable.getIntrinsicWidth());
+                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4);
             } else {
-                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline) - (drawNameGroup ? Theme.dialogs_groupDrawable.getIntrinsicWidth() : Theme.dialogs_broadcastDrawable.getIntrinsicWidth());
+                nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                 nameLeft = AndroidUtilities.dp(14);
             }
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlUnknown) {
@@ -227,12 +198,6 @@ public class DialogMeUrlCell extends BaseCell {
         }
         if (drawNameLock) {
             nameWidth -= AndroidUtilities.dp(4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
-        } else if (drawNameGroup) {
-            nameWidth -= AndroidUtilities.dp(4) + Theme.dialogs_groupDrawable.getIntrinsicWidth();
-        } else if (drawNameBroadcast) {
-            nameWidth -= AndroidUtilities.dp(4) + Theme.dialogs_broadcastDrawable.getIntrinsicWidth();
-        } else if (drawNameBot) {
-            nameWidth -= AndroidUtilities.dp(4) + Theme.dialogs_botDrawable.getIntrinsicWidth();
         }
 
         if (drawVerified) {
@@ -335,15 +300,6 @@ public class DialogMeUrlCell extends BaseCell {
         if (drawNameLock) {
             setDrawableBounds(Theme.dialogs_lockDrawable, nameLockLeft, nameLockTop);
             Theme.dialogs_lockDrawable.draw(canvas);
-        } else if (drawNameGroup) {
-            setDrawableBounds(Theme.dialogs_groupDrawable, nameLockLeft, nameLockTop);
-            Theme.dialogs_groupDrawable.draw(canvas);
-        } else if (drawNameBroadcast) {
-            setDrawableBounds(Theme.dialogs_broadcastDrawable, nameLockLeft, nameLockTop);
-            Theme.dialogs_broadcastDrawable.draw(canvas);
-        } else if (drawNameBot) {
-            setDrawableBounds(Theme.dialogs_botDrawable, nameLockLeft, nameLockTop);
-            Theme.dialogs_botDrawable.draw(canvas);
         }
 
         if (nameLayout != null) {

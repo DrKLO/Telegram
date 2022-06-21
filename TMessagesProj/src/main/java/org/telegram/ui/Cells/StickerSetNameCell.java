@@ -117,7 +117,11 @@ public class StickerSetNameCell extends FrameLayout {
     }
 
     public void setText(CharSequence text, int resId) {
-        setText(text, resId, 0, 0);
+        setText(text, resId, null, 0, 0);
+    }
+
+    public void setText(CharSequence text, int resId, CharSequence iconAccDescr) {
+        setText(text, resId, iconAccDescr, 0, 0);
     }
 
     public void setTitleColor(int color) {
@@ -125,6 +129,10 @@ public class StickerSetNameCell extends FrameLayout {
     }
 
     public void setText(CharSequence text, int resId, int index, int searchLength) {
+        setText(text, resId, null, index, searchLength);
+    }
+
+    public void setText(CharSequence text, int resId, CharSequence iconAccDescr, int index, int searchLength) {
         stickerSetName = text;
         stickerSetNameSearchIndex = index;
         stickerSetNameSearchLength = searchLength;
@@ -140,6 +148,7 @@ public class StickerSetNameCell extends FrameLayout {
             }
             if (resId != 0) {
                 buttonView.setImageResource(resId);
+                buttonView.setContentDescription(iconAccDescr);
                 buttonView.setVisibility(VISIBLE);
             } else {
                 buttonView.setVisibility(INVISIBLE);

@@ -252,8 +252,12 @@ public class PhotoViewerWebView extends FrameLayout {
         return progressBar.getVisibility() != View.VISIBLE;
     }
 
+    public boolean isInAppOnly() {
+        return isYouTube && "inapp".equals(MessagesController.getInstance(currentAccount).youtubePipType);
+    }
+
     public boolean openInPip() {
-        boolean inAppOnly = isYouTube && "inapp".equals(MessagesController.getInstance(currentAccount).youtubePipType);
+        boolean inAppOnly = isInAppOnly();
         if (!inAppOnly && !checkInlinePermissions()) {
             return false;
         }

@@ -14,7 +14,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private int currentAccount;
     private volatile boolean canceled;
     private final Object sync = new Object();
-    private int lastOffset;
+    private long lastOffset;
     private boolean waitingForLoad;
     private boolean preview;
     private boolean finishedLoadingFile;
@@ -48,10 +48,10 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
         if (readLength == 0) {
             return 0;
         } else {
-            int availableLength = 0;
+            long availableLength = 0;
             try {
                 while (availableLength == 0) {
-                    int[] result = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
+                    long[] result = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
                     availableLength = result[0];
                     if (!finishedLoadingFile && result[1] != 0) {
                         finishedLoadingFile = true;
@@ -79,7 +79,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
             } catch (Exception e) {
                 FileLog.e(e, false);
             }
-            return availableLength;
+            return (int) availableLength;
         }
     }
 

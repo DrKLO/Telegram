@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">**%2$s** 폴더에서 **%1$s** 대화가 삭제됨</string>
     <string name="FilterChatsRemovedFrom">**%2$s** 폴더에서 **%1$s** 대화가 삭제됨</string>
     <string name="FilterAddToAlertFullTitle">한계 도달</string>
-    <string name="FilterRemoveFromAlertFullText">죄송합니다, 폴더에 100 개 이상의 대화를 추가 할 수 없습니다.</string>
     <string name="FilterAddToAlertFullText">죄송합니다, 폴더에서 100개 이상의 대화를 제외할 수 없습니다.</string>
     <!--passcode view-->
     <string name="Passcode">암호 잠금</string>

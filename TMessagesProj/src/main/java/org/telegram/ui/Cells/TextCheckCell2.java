@@ -178,6 +178,5 @@ public class TextCheckCell2 extends FrameLayout {
         info.setClassName("android.widget.Switch");
         info.setCheckable(true);
         info.setChecked(checkBox.isChecked());
-        info.setContentDescription(checkBox.isChecked() ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
     }
 }

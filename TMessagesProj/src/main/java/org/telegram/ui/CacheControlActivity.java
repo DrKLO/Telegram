@@ -38,6 +38,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FilesMigrationService;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -131,10 +132,12 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 return;
             }
             documentsSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_DOCUMENT), 1);
+            documentsSize += getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_FILES), 1);
             if (canceled) {
                 return;
             }
             musicSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_DOCUMENT), 2);
+            musicSize += getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_FILES), 2);
             if (canceled) {
                 return;
             }
@@ -335,6 +338,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         Utilities.clearDir(file.getAbsolutePath(), documentsMusicType, Long.MAX_VALUE, false);
                     }
                 }
+                if (type == FileLoader.MEDIA_DIR_DOCUMENT) {
+                    file = FileLoader.checkDirectory(FileLoader.MEDIA_DIR_FILES);
+                    if (file != null) {
+                        Utilities.clearDir(file.getAbsolutePath(), documentsMusicType, Long.MAX_VALUE, false);
+                    }
+                }
+
                 if (type == FileLoader.MEDIA_DIR_CACHE) {
                     cacheSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), documentsMusicType);
                     imagesCleared = true;
@@ -343,8 +353,10 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 } else if (type == FileLoader.MEDIA_DIR_DOCUMENT) {
                     if (documentsMusicType == 1) {
                         documentsSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_DOCUMENT), documentsMusicType);
+                        documentsSize += getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_FILES), documentsMusicType);
                     } else {
                         musicSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_DOCUMENT), documentsMusicType);
+                        musicSize += getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_FILES), documentsMusicType);
                     }
                 } else if (type == FileLoader.MEDIA_DIR_IMAGE) {
                     imagesCleared = true;
@@ -404,8 +416,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 getMediaDataController().ringtoneDataStore.checkRingtoneSoundsLoaded();
                 cacheRemovedTooltip.setInfoText(LocaleController.formatString("CacheWasCleared", R.string.CacheWasCleared, AndroidUtilities.formatFileSize(finalClearedSize)));
                 cacheRemovedTooltip.showWithAction(0, UndoView.ACTION_CACHE_WAS_CLEARED, null, null);
-
-                getMediaDataController().loadAttachMenuBots(false, true);
+                MediaDataController.getInstance(currentAccount).chekAllMedia(true);
             });
         });
     }
@@ -455,6 +466,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         return false;
                     }
                 };
+                bottomSheet.fixNavigationBar();
                 bottomSheet.setAllowNestedScroll(true);
                 bottomSheet.setApplyBottomPadding(false);
                 LinearLayout linearLayout = new LinearLayout(getParentActivity());
@@ -749,7 +761,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
 
             if (actionTextView != null) {
-                actionTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+                actionTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
             }
         };
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();

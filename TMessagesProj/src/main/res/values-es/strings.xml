@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">Quitaste **%1$s** de **%2$s**</string>
     <string name="FilterChatsRemovedFrom">Quitaste **%1$s** de **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">Límite alcanzado</string>
-    <string name="FilterRemoveFromAlertFullText">No puedes añadir más de 100 chats a una carpeta.</string>
     <string name="FilterAddToAlertFullText">No puedes excluir más de 100 chats de una carpeta.</string>
     <!--passcode view-->
     <string name="Passcode">Código de bloqueo</string>

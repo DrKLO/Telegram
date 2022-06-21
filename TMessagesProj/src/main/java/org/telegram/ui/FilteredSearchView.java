@@ -324,7 +324,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 } else if (view instanceof DialogCell) {
                     if (!uiCallback.actionModeShowing()) {
                         if (((DialogCell) view).isPointInsideAvatar(x, y)) {
-                            chatPreviewDelegate.startChatPreview((DialogCell) view);
+                            chatPreviewDelegate.startChatPreview(recyclerListView, (DialogCell) view);
                             return true;
                         }
                     }
@@ -374,7 +374,9 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 int visibleItemCount = Math.abs(lastVisibleItem - firstVisibleItem) + 1;
                 int totalItemCount = recyclerView.getAdapter().getItemCount();
                 if (!isLoading && visibleItemCount > 0 && lastVisibleItem >= totalItemCount - 10 && !endReached) {
-                    search(currentSearchDialogId, currentSearchMinDate, currentSearchMaxDate, currentSearchFilter, currentIncludeFolder, lastMessagesSearchString, false);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        search(currentSearchDialogId, currentSearchMinDate, currentSearchMaxDate, currentSearchFilter, currentIncludeFolder, lastMessagesSearchString, false);
+                    });
                 }
 
                 if (adapter == sharedPhotoVideoAdapter) {
@@ -1728,7 +1730,6 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countGrayPaint, null, null, Theme.key_chats_unreadCounterMuted));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countTextPaint, null, null, Theme.key_chats_unreadCounterText));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_lockDrawable}, null, Theme.key_chats_secretIcon));
-        arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_groupDrawable, Theme.dialogs_broadcastDrawable, Theme.dialogs_botDrawable}, null, Theme.key_chats_nameIcon));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_scamDrawable, Theme.dialogs_fakeDrawable}, null, Theme.key_chats_draft));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_pinnedDrawable, Theme.dialogs_reorderDrawable}, null, Theme.key_chats_pinnedIcon));
         arrayList.add(new ThemeDescription(recyclerListView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Paint[]{Theme.dialogs_namePaint[0], Theme.dialogs_namePaint[1], Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name));

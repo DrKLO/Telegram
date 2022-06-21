@@ -106,7 +106,9 @@ public class RingtoneDataStore {
             }
         }
         if (notify) {
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onUserRingtonesUpdated);
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onUserRingtonesUpdated);
+            });
         }
     }
 
@@ -226,7 +228,7 @@ public class RingtoneDataStore {
                 if (!TextUtils.isEmpty(userRingtones.get(i).localUri)) {
                     return userRingtones.get(i).localUri;
                 }
-                return FileLoader.getPathToAttach(userRingtones.get(i).document).toString();
+                return FileLoader.getInstance(currentAccount).getPathToAttach(userRingtones.get(i).document).toString();
             }
         }
         return "NoSound";
@@ -241,6 +243,9 @@ public class RingtoneDataStore {
         Utilities.globalQueue.postRunnable(() -> {
             for (int i = 0; i < cachedTones.size(); i++) {
                 CachedTone tone = cachedTones.get(i);
+                if (tone == null) {
+                    continue;
+                }
                 if (!TextUtils.isEmpty(tone.localUri)) {
                     File file = new File(tone.localUri);
                     if (file.exists()) {
@@ -250,7 +255,7 @@ public class RingtoneDataStore {
 
                 if (tone.document != null) {
                     TLRPC.Document document = tone.document;
-                    File file = FileLoader.getPathToAttach(document);
+                    File file = FileLoader.getInstance(currentAccount).getPathToAttach(document);
                     if (file == null || !file.exists()) {
                         AndroidUtilities.runOnUIThread(() -> {
                             FileLoader.getInstance(currentAccount).loadFile(document, document, 0, 0);
@@ -303,10 +308,14 @@ public class RingtoneDataStore {
             loadFromPrefs(true);
             loaded = true;
         }
-        for (int i = 0; i < userRingtones.size(); i++) {
-            if (userRingtones.get(i).document != null && userRingtones.get(i).document.id == id) {
-                return userRingtones.get(i).document;
+        try {
+            for (int i = 0; i < userRingtones.size(); i++) {
+                if (userRingtones.get(i) != null && userRingtones.get(i).document != null && userRingtones.get(i).document.id == id) {
+                    return userRingtones.get(i).document;
+                }
             }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
         return null;
     }

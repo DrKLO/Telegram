@@ -295,6 +295,12 @@ public class TextCheckbox2Cell extends FrameLayout {
         info.setClassName("android.widget.checkbox");
         info.setCheckable(true);
         info.setChecked(checkbox.isChecked());
-        info.setContentDescription(checkbox.isChecked() ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
+        StringBuilder sb = new StringBuilder();
+        sb.append(textView.getText());
+        if (valueTextView != null) {
+            sb.append("\n");
+            sb.append(valueTextView.getText());
+        }
+        info.setText(sb);
     }
 }

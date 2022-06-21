@@ -43,7 +43,7 @@ public class FileUploadOperation {
     private static final int initialRequestsSlowNetworkCount = 1;
     private static final int maxUploadingKBytes = 1024 * 2;
     private static final int maxUploadingSlowNetworkKBytes = 32;
-    private static final int maxUploadParts = (int) (FileLoader.MAX_FILE_SIZE / 1024 / 512);
+
     private int maxRequestsCount;
     private int uploadChunkSize = 64 * 1024;
     private boolean slowNetwork;
@@ -69,7 +69,7 @@ public class FileUploadOperation {
     private boolean isBigFile;
     private boolean forceSmallFile;
     private String fileKey;
-    private int estimatedSize;
+    private long estimatedSize;
     private int uploadStartTime;
     private RandomAccessFile stream;
     private boolean started;
@@ -88,7 +88,7 @@ public class FileUploadOperation {
         void didChangedUploadProgress(FileUploadOperation operation, long uploadedSize, long totalSize);
     }
 
-    public FileUploadOperation(int instance, String location, boolean encrypted, int estimated, int type) {
+    public FileUploadOperation(int instance, String location, boolean encrypted, long estimated, int type) {
         currentAccount = instance;
         uploadingFilePath = location;
         isEncrypted = encrypted;
@@ -229,12 +229,12 @@ public class FileUploadOperation {
     private void calcTotalPartsCount() {
         if (uploadFirstPartLater) {
             if (isBigFile) {
-                totalPartsCount = 1 + (int) ((totalFileSize - uploadChunkSize) + uploadChunkSize - 1) / uploadChunkSize;
+                totalPartsCount = 1 + (int) (((totalFileSize - uploadChunkSize) + uploadChunkSize - 1) / uploadChunkSize);
             } else {
-                totalPartsCount = 1 + (int) ((totalFileSize - 1024) + uploadChunkSize - 1) / uploadChunkSize;
+                totalPartsCount = 1 + (int) (((totalFileSize - 1024) + uploadChunkSize - 1) / uploadChunkSize);
             }
         } else {
-            totalPartsCount = (int) (totalFileSize + uploadChunkSize - 1) / uploadChunkSize;
+            totalPartsCount = (int) ((totalFileSize + uploadChunkSize - 1) / uploadChunkSize);
         }
     }
 
@@ -282,7 +282,11 @@ public class FileUploadOperation {
                     isBigFile = true;
                 }
 
-                uploadChunkSize = (int) Math.max(slowNetwork ? minUploadChunkSlowNetworkSize : minUploadChunkSize, (totalFileSize + 1024 * maxUploadParts - 1) / (1024 * maxUploadParts));
+                long maxUploadParts = MessagesController.getInstance(currentAccount).uploadMaxFileParts;
+                if (AccountInstance.getInstance(currentAccount).getUserConfig().isPremium() && totalFileSize > FileLoader.DEFAULT_MAX_FILE_SIZE) {
+                    maxUploadParts = MessagesController.getInstance(currentAccount).uploadMaxFilePartsPremium;
+                }
+                uploadChunkSize = (int) Math.max(slowNetwork ? minUploadChunkSlowNetworkSize : minUploadChunkSize, (totalFileSize + 1024L * maxUploadParts - 1) / (1024L * maxUploadParts));
                 if (1024 % uploadChunkSize != 0) {
                     int chunkSize = 64;
                     while (uploadChunkSize > chunkSize) {

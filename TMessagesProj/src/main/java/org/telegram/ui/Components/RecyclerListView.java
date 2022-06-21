@@ -1439,6 +1439,10 @@ public class RecyclerListView extends RecyclerView {
         selectorDrawable.setCallback(this);
     }
 
+    public Drawable getSelectorDrawable() {
+        return selectorDrawable;
+    }
+
     public void checkSection(boolean force) {
         if ((scrollingByUser || force) && fastScroll != null || sectionsType != SECTIONS_TYPE_SIMPLE && sectionsAdapter != null) {
             LayoutManager layoutManager = getLayoutManager();

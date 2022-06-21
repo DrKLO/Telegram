@@ -22,6 +22,7 @@ import static androidx.core.view.ViewCompat.TYPE_NON_TOUCH;
 import static androidx.core.view.ViewCompat.TYPE_TOUCH;
 
 import android.animation.LayoutTransition;
+import android.animation.TimeInterpolator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
@@ -12714,7 +12715,16 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         private long mAddDuration = 120;
         private long mRemoveDuration = 120;
         private long mMoveDuration = 250;
-        private long mChangeDuration = 250;
+        private long mChangeAddDuration = 250;
+        private long mChangeRemoveDuration = 250;
+
+        private TimeInterpolator mMoveInterpolator = null;
+
+        private long mAddDelay = 0;
+        private long mRemoveDelay = 0;
+        private long mMoveDelay = 0;
+        private long mDelay = 0;
+        private long mChangeDelay = 0;
 
         /**
          * Gets the current duration for which all move animations will run.
@@ -12771,12 +12781,30 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         }
 
         /**
+         * Gets the current duration for which all change animations of item appearance
+         *
+         * @return The current change duration
+         */
+        public long getChangeAddDuration() {
+            return mChangeAddDuration;
+        }
+
+        /**
          * Gets the current duration for which all change animations will run.
          *
          * @return The current change duration
          */
         public long getChangeDuration() {
-            return mChangeDuration;
+            return Math.max(mChangeAddDuration, mChangeRemoveDuration);
+        }
+
+        /**
+         * Gets the current duration for which all change animations of item disappearance
+         *
+         * @return The current change duration
+         */
+        public long getChangeRemoveDuration() {
+            return mChangeRemoveDuration;
         }
 
         /**
@@ -12785,7 +12813,68 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * @param changeDuration The change duration
          */
         public void setChangeDuration(long changeDuration) {
-            mChangeDuration = changeDuration;
+            mChangeAddDuration = changeDuration;
+            mChangeRemoveDuration = changeDuration;
+        }
+
+        /**
+         * Sets the duration for which all change animations will run.
+         *
+         * @param changeNewDuration The duration of showing new view of change
+         * @param changeOldDuration The duration of hiding old view of change
+         */
+        public void setChangeDuration(long changeNewDuration, long changeOldDuration) {
+            mChangeAddDuration = changeNewDuration;
+            mChangeRemoveDuration = changeOldDuration;
+        }
+
+
+        public void setAddDelay(long addDelay) {
+            mAddDelay = addDelay;
+        }
+
+        public void setRemoveDelay(long removeDelay) {
+            mRemoveDelay = removeDelay;
+        }
+
+        public void setMoveDelay(long moveDelay) {
+            mMoveDelay = moveDelay;
+        }
+
+        public void setChangeDelay(long changeDelay) {
+            mChangeDelay = changeDelay;
+        }
+
+        public long getAddDelay() {
+            return mAddDelay;
+        }
+
+        public long getRemoveDelay() {
+            return mRemoveDelay;
+        }
+
+        public long getMoveDelay() {
+            return mMoveDelay;
+        }
+
+        public long getChangeDelay() {
+            return mChangeDelay;
+        }
+
+        public void setDurations(long duration) {
+            mAddDuration = duration;
+            mMoveDuration = duration;
+            mRemoveDuration = duration;
+            mChangeAddDuration = duration;
+            mChangeRemoveDuration = duration;
+        }
+
+        public void setMoveInterpolator(TimeInterpolator interpolator) {
+            mMoveInterpolator = interpolator;
+        }
+
+        public TimeInterpolator getMoveInterpolator() {
+            return mMoveInterpolator;
         }
 
         /**

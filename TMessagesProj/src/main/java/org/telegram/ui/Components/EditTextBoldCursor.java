@@ -16,6 +16,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Rect;
@@ -49,6 +50,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.ui.ActionBar.FloatingActionMode;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
@@ -1029,11 +1031,34 @@ public class EditTextBoldCursor extends EditTextEffects {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setClassName("android.widget.EditText");
         if (hintLayout != null) {
-            AccessibilityNodeInfoCompat.wrap(info).setHintText(hintLayout.getText());
+            if (getText().length() <= 0) {
+                info.setText(hintLayout.getText());
+            } else {
+                AccessibilityNodeInfoCompat.wrap(info).setHintText(hintLayout.getText());
+            }
         }
     }
 
     protected Theme.ResourcesProvider getResourcesProvider() {
         return null;
+    }
+
+    public void setHandlesColor(int color) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || XiaomiUtilities.isMIUI()) {
+            return;
+        }
+        try {
+            Drawable left = getTextSelectHandleLeft();
+            left.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            setTextSelectHandleLeft(left);
+
+            Drawable middle = getTextSelectHandle();
+            middle.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            setTextSelectHandle(middle);
+
+            Drawable right = getTextSelectHandleRight();
+            right.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            setTextSelectHandleRight(right);
+        } catch (Exception ignore) {}
     }
 }

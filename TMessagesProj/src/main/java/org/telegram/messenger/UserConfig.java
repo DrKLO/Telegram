@@ -21,7 +21,8 @@ import java.util.Arrays;
 public class UserConfig extends BaseController {
 
     public static int selectedAccount;
-    public final static int MAX_ACCOUNT_COUNT = 3;
+    public final static int MAX_ACCOUNT_DEFAULT_COUNT = 3;
+    public final static int MAX_ACCOUNT_COUNT = 4;
 
     private final Object sync = new Object();
     private boolean configLoaded;
@@ -90,6 +91,19 @@ public class UserConfig extends BaseController {
 
     public UserConfig(int instance) {
         super(instance);
+    }
+
+    public static boolean hasPremiumOnAccounts() {
+        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
+            if (AccountInstance.getInstance(a).getUserConfig().isClientActivated() && AccountInstance.getInstance(a).getUserConfig().getUserConfig().isPremium()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static int getMaxAccountCount() {
+        return hasPremiumOnAccounts() ? 5 : 3;
     }
 
     public int getNewMessageId() {
@@ -216,8 +230,22 @@ public class UserConfig extends BaseController {
 
     public void setCurrentUser(TLRPC.User user) {
         synchronized (sync) {
+            TLRPC.User oldUser = currentUser;
             currentUser = user;
             clientUserId = user.id;
+            checkPremium(oldUser, user);
+        }
+    }
+
+    private void checkPremium(TLRPC.User oldUser, TLRPC.User newUser) {
+        if (oldUser == null || (newUser != null && oldUser.premium != newUser.premium)) {
+            AndroidUtilities.runOnUIThread(() -> {
+                getMessagesController().updatePremium(newUser.premium);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.premiumStatusChangedGlobal);
+
+                getMediaDataController().loadPremiumPromo(false);
+            });
         }
     }
 
@@ -296,6 +324,7 @@ public class UserConfig extends BaseController {
                 }
             }
             if (currentUser != null) {
+                checkPremium(null, currentUser);
                 clientUserId = currentUser.id;
             }
             configLoaded = true;
@@ -430,5 +459,12 @@ public class UserConfig extends BaseController {
         editor.putLong("2dialogsLoadOffsetAccess" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetAccess);
         editor.putBoolean("hasValidDialogLoadIds", true);
         editor.commit();
+    }
+
+    public boolean isPremium() {
+        if (currentUser == null) {
+            return false;
+        }
+        return currentUser.premium;
     }
 }

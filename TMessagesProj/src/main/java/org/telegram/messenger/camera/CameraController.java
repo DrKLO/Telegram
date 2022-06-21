@@ -239,7 +239,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.cameraInitied);
                 });
             } catch (Exception e) {
-                FileLog.e(e);
+                FileLog.e(e, !"APP_PAUSED".equals(e.getMessage()));
                 AndroidUtilities.runOnUIThread(() -> {
                     onFinishCameraInitRunnables.clear();
                     loadingCameras = false;

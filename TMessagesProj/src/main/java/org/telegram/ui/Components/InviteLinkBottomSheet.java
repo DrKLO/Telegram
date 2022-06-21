@@ -116,6 +116,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
         this.chatId = chatId;
         this.permanent = permanent;
         this.isChannel = isChannel;
+        fixNavigationBar(getThemedColor(Theme.key_graySection));
 
         if (this.users == null) {
             this.users = new HashMap<>();
@@ -307,7 +308,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
         titleTextView.setSingleLine(true);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
-        titleTextView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
+        titleTextView.setPadding(AndroidUtilities.dp(23), 0, AndroidUtilities.dp(23), 0);
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         if (!permanent) {
@@ -331,8 +332,8 @@ public class InviteLinkBottomSheet extends BottomSheet {
             titleTextView.setText(builder);
         }
 
-        containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, !titleVisible ? 0 : 48, 0, 0));
-        containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, !titleVisible ? 48 : 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+        containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, !titleVisible ? 0 : 44, 0, 0));
+        containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, !titleVisible ? 44 : 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
 
         updateRows();
         loadUsers();
@@ -463,6 +464,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
         emptyView = rowCount++;
 
         boolean needUsers = invite.usage > 0 || invite.usage_limit > 0 || invite.requested > 0;
+        boolean needLoadUsers = invite.usage > joinedUsers.size() || invite.request_needed && invite.requested > requestedUsers.size();
         boolean usersLoaded = false;
         if (!joinedUsers.isEmpty()) {
             dividerRow = rowCount++;
@@ -482,7 +484,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
             emptyView3 = rowCount++;
             usersLoaded = true;
         }
-        if (needUsers) {
+        if (needUsers || needLoadUsers) {
             if (!usersLoaded) {
                 dividerRow = rowCount++;
                 loadingRow = rowCount++;

@@ -22,24 +22,26 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.ActionBar.SimpleTextView;
+import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.NotificationsSettingsActivity;
 
-public class UserCell extends FrameLayout {
+public class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
@@ -49,6 +51,7 @@ public class UserCell extends FrameLayout {
     private CheckBoxSquare checkBoxBig;
     private TextView adminTextView;
     private TextView addButton;
+    private Theme.ResourcesProvider resourcesProvider;
 
     private AvatarDrawable avatarDrawable;
     private Object currentObject;
@@ -73,20 +76,29 @@ public class UserCell extends FrameLayout {
     private boolean needDivider;
 
     public UserCell(Context context, int padding, int checkbox, boolean admin) {
-        this(context, padding, checkbox, admin, false);
+        this(context, padding, checkbox, admin, false, null);
+    }
+
+    public UserCell(Context context, int padding, int checkbox, boolean admin, Theme.ResourcesProvider resourcesProvider) {
+        this(context, padding, checkbox, admin, false, resourcesProvider);
     }
 
     public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton) {
+        this(context, padding, checkbox, admin, needAddButton, null);
+    }
+
+    public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         int additionalPadding;
         if (needAddButton) {
             addButton = new TextView(context);
             addButton.setGravity(Gravity.CENTER);
-            addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            addButton.setBackgroundDrawable(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
             addButton.setText(LocaleController.getString("Add", R.string.Add));
             addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
             addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 15, LocaleController.isRTL ? 0 : 14, 0));
@@ -95,8 +107,8 @@ public class UserCell extends FrameLayout {
             additionalPadding = 0;
         }
 
-        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
-        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
 
         avatarDrawable = new AvatarDrawable();
 
@@ -105,7 +117,7 @@ public class UserCell extends FrameLayout {
         addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 6, LocaleController.isRTL ? 7 + padding : 0, 0));
 
         nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -118,7 +130,7 @@ public class UserCell extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
@@ -128,14 +140,14 @@ public class UserCell extends FrameLayout {
         } else if (checkbox == 1) {
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
+            checkBox.setColor(Theme.getColor(Theme.key_checkbox, resourcesProvider), Theme.getColor(Theme.key_checkboxCheck, resourcesProvider));
             addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 40, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
 
         if (admin) {
             adminTextView = new TextView(context);
             adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
+            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon, resourcesProvider));
             addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 10, LocaleController.isRTL ? 0 : 23, 0));
         }
 
@@ -209,6 +221,11 @@ public class UserCell extends FrameLayout {
         }
         encryptedChat = ec;
         currentStatus = status;
+        try {
+            if (name != null && nameTextView != null) {
+                name = Emoji.replaceEmoji(name, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(18), false);
+            }
+        } catch (Exception ignore) {}
         currentName = name;
         currentObject = object;
         currentDrawable = resId;
@@ -447,7 +464,20 @@ public class UserCell extends FrameLayout {
             } else {
                 lastName = "";
             }
-            nameTextView.setText(lastName);
+            CharSequence name = lastName;
+            if (name != null) {
+                try {
+                    name = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(18), false);
+                } catch (Exception ignore) {}
+            }
+            nameTextView.setText(name);
+        }
+        if (currentUser != null && MessagesController.getInstance(currentAccount).isPremiumUser(currentUser)) {
+            nameTextView.setRightDrawable(PremiumGradient.getInstance().premiumStarDrawableMini);
+            nameTextView.setRightDrawableTopPadding(-AndroidUtilities.dp(0.5f));
+        } else {
+            nameTextView.setRightDrawable(null);
+            nameTextView.setRightDrawableTopPadding(0);
         }
         if (currentStatus != null) {
             statusTextView.setTextColor(statusColor);
@@ -485,9 +515,9 @@ public class UserCell extends FrameLayout {
             avatarImageView.setImageDrawable(avatarDrawable);
         }
 
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         if (adminTextView != null) {
-            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
+            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon, resourcesProvider));
         }
     }
 
@@ -519,5 +549,24 @@ public class UserCell extends FrameLayout {
             info.setChecked(checkBox.isChecked());
             info.setClassName("android.widget.CheckBox");
         }
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.emojiLoaded) {
+            nameTextView.invalidate();
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
     }
 }

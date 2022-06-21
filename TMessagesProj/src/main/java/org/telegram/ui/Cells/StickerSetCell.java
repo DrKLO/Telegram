@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -15,10 +17,12 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.os.Build;
+import android.text.SpannableString;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -37,12 +41,15 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.Easings;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class StickerSetCell extends FrameLayout {
+    private final static String LINK_PREFIX = "t.me/addstickers/";
 
     private final int option;
 
@@ -95,10 +102,13 @@ public class StickerSetCell extends FrameLayout {
             optionsButton = new ImageView(context);
             optionsButton.setFocusable(false);
             optionsButton.setScaleType(ImageView.ScaleType.CENTER);
-            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            if (option != 3) {
+                optionsButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            }
             if (option == 1) {
                 optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
                 optionsButton.setImageResource(R.drawable.msg_actions);
+                optionsButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
                 addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
 
                 reorderButton = new ImageView(context);
@@ -116,7 +126,7 @@ public class StickerSetCell extends FrameLayout {
                 addView(checkBox, LayoutHelper.createFrameRelatively(24, 24, Gravity.START, 34, 30, 0, 0));
             } else if (option == 3) {
                 optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
-                optionsButton.setImageResource(R.drawable.sticker_added);
+                optionsButton.setImageResource(R.drawable.floating_check);
                 addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? 10 : 0), 9, (LocaleController.isRTL ? 0 : 10), 0));
             }
         }
@@ -156,6 +166,28 @@ public class StickerSetCell extends FrameLayout {
     }
 
     public void setStickersSet(TLRPC.TL_messages_stickerSet set, boolean divider) {
+        setStickersSet(set, divider, false);
+    }
+
+    public void setSearchQuery(TLRPC.TL_messages_stickerSet tlSet, String query, Theme.ResourcesProvider resourcesProvider) {
+        TLRPC.StickerSet set = tlSet.set;
+        int titleIndex = set.title.toLowerCase(Locale.ROOT).indexOf(query);
+        if (titleIndex != -1) {
+            SpannableString spannableString = new SpannableString(set.title);
+            spannableString.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), titleIndex, titleIndex + query.length(), 0);
+            textView.setText(spannableString);
+        }
+        int linkIndex = set.short_name.toLowerCase(Locale.ROOT).indexOf(query);
+        if (linkIndex != -1) {
+            linkIndex += LINK_PREFIX.length();
+            SpannableString spannableString = new SpannableString(LINK_PREFIX + set.short_name);
+            spannableString.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), linkIndex, linkIndex + query.length(), 0);
+            valueTextView.setText(spannableString);
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void setStickersSet(TLRPC.TL_messages_stickerSet set, boolean divider, boolean groupSearch) {
         needDivider = divider;
         stickersSet = set;
 
@@ -211,10 +243,17 @@ public class StickerSetCell extends FrameLayout {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", 0));
             imageView.setImageDrawable(null);
         }
+        if (groupSearch) {
+            valueTextView.setText(LINK_PREFIX + set.set.short_name);
+        }
     }
 
     public void setChecked(boolean checked) {
         setChecked(checked, true);
+    }
+
+    public boolean isChecked() {
+        return option == 1 ? checkBox.isChecked() : option == 3 && optionsButton.getVisibility() == VISIBLE;
     }
 
     public void setChecked(boolean checked, boolean animated) {
@@ -223,7 +262,30 @@ public class StickerSetCell extends FrameLayout {
                 checkBox.setChecked(checked, animated);
                 break;
             case 3:
-                optionsButton.setVisibility(checked ? VISIBLE : INVISIBLE);
+                if (animated) {
+                    optionsButton.animate().cancel();
+                    optionsButton.animate().setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (!checked) {
+                                optionsButton.setVisibility(INVISIBLE);
+                            }
+                        }
+
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            if (checked) {
+                                optionsButton.setVisibility(VISIBLE);
+                            }
+                        }
+                    }).alpha(checked ? 1 : 0).scaleX(checked ? 1 : 0.1f).scaleY(checked ? 1 : 0.1f).setDuration(150).start();
+                } else {
+                    optionsButton.setVisibility(checked ? VISIBLE : INVISIBLE);
+                    if (!checked) {
+                        optionsButton.setScaleX(0.1f);
+                        optionsButton.setScaleY(0.1f);
+                    }
+                }
                 break;
         }
     }
@@ -308,7 +370,16 @@ public class StickerSetCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(71), getHeight() - 1, getWidth() - getPaddingRight() - (LocaleController.isRTL ? AndroidUtilities.dp(71) : 0), getHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (checkBox != null && checkBox.isChecked()) {
+            info.setCheckable(true);
+            info.setChecked(true);
         }
     }
 }

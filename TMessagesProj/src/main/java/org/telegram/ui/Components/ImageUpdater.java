@@ -161,7 +161,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         ArrayList<Integer> ids = new ArrayList<>();
 
         items.add(LocaleController.getString("ChooseTakePhoto", R.string.ChooseTakePhoto));
-        icons.add(R.drawable.menu_camera);
+        icons.add(R.drawable.msg_camera);
         ids.add(ID_TAKE_PHOTO);
 
         if (canSelectVideo) {
@@ -171,17 +171,17 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         }
 
         items.add(LocaleController.getString("ChooseFromGallery", R.string.ChooseFromGallery));
-        icons.add(R.drawable.profile_photos);
+        icons.add(R.drawable.msg_photos);
         ids.add(ID_UPLOAD_FROM_GALLERY);
 
         if (searchAvailable) {
             items.add(LocaleController.getString("ChooseFromSearch", R.string.ChooseFromSearch));
-            icons.add(R.drawable.menu_search);
+            icons.add(R.drawable.msg_search);
             ids.add(ID_SEARCH_WEB);
         }
         if (hasAvatar) {
             items.add(LocaleController.getString("DeletePhoto", R.string.DeletePhoto));
-            icons.add(R.drawable.chats_delete);
+            icons.add(R.drawable.msg_delete);
             ids.add(ID_REMOVE_PHOTO);
         }
 
@@ -468,10 +468,10 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 if (info.searchImage.photo != null) {
                     TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(info.searchImage.photo.sizes, AndroidUtilities.getPhotoSize());
                     if (photoSize != null) {
-                        File path = FileLoader.getPathToAttach(photoSize, true);
+                        File path = FileLoader.getInstance(currentAccount).getPathToAttach(photoSize, true);
                         finalPath = path.getAbsolutePath();
                         if (!path.exists()) {
-                            path = FileLoader.getPathToAttach(photoSize, false);
+                            path = FileLoader.getInstance(currentAccount).getPathToAttach(photoSize, false);
                             if (!path.exists()) {
                                 path = null;
                             }
@@ -733,7 +733,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         smallPhoto = ImageLoader.scaleAndSaveImage(bitmap, 150, 150, 80, false, 150, 150);
         if (smallPhoto != null) {
             try {
-                Bitmap b = BitmapFactory.decodeFile(FileLoader.getPathToAttach(smallPhoto, true).getAbsolutePath());
+                Bitmap b = BitmapFactory.decodeFile(FileLoader.getInstance(currentAccount).getPathToAttach(smallPhoto, true).getAbsolutePath());
                 String key = smallPhoto.location.volume_id + "_" + smallPhoto.location.local_id + "@50_50";
                 ImageLoader.getInstance().putImageToCache(new BitmapDrawable(b), key, true);
             } catch (Throwable ignore) {
@@ -749,6 +749,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     convertingVideo = avatarObject;
                     long startTime = avatarObject.videoEditedInfo.startTime < 0 ? 0 : avatarObject.videoEditedInfo.startTime;
                     videoTimestamp = (avatarObject.videoEditedInfo.avatarStartTime - startTime) / 1000000.0;
+                    avatarObject.videoEditedInfo.shouldLimitFps = false;
                     NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.filePreparingStarted);
                     NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.filePreparingFailed);
                     NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileNewChunkAvailable);
@@ -873,11 +874,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
                 Bitmap bitmap = SendMessagesHelper.createVideoThumbnailAtTime(finalPath, (long) (videoTimestamp * 1000), null, true);
                 if (bitmap != null) {
-                    File path = FileLoader.getPathToAttach(smallPhoto, true);
+                    File path = FileLoader.getInstance(currentAccount).getPathToAttach(smallPhoto, true);
                     if (path != null) {
                         path.delete();
                     }
-                    path = FileLoader.getPathToAttach(bigPhoto, true);
+                    path = FileLoader.getInstance(currentAccount).getPathToAttach(bigPhoto, true);
                     if (path != null) {
                         path.delete();
                     }
@@ -885,7 +886,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     smallPhoto = ImageLoader.scaleAndSaveImage(bitmap, 150, 150, 80, false, 150, 150);
                     if (smallPhoto != null) {
                         try {
-                            Bitmap b = BitmapFactory.decodeFile(FileLoader.getPathToAttach(smallPhoto, true).getAbsolutePath());
+                            Bitmap b = BitmapFactory.decodeFile(FileLoader.getInstance(currentAccount).getPathToAttach(smallPhoto, true).getAbsolutePath());
                             String key = smallPhoto.location.volume_id + "_" + smallPhoto.location.local_id + "@50_50";
                             ImageLoader.getInstance().putImageToCache(new BitmapDrawable(b), key, true);
                         } catch (Throwable ignore) {

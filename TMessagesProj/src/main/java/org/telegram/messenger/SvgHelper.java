@@ -102,6 +102,7 @@ public class SvgHelper {
 
         protected ArrayList<Object> commands = new ArrayList<>();
         protected HashMap<Object, Paint> paints = new HashMap<>();
+        private Paint overridePaint;
         protected int width;
         protected int height;
         private static int[] parentPosition = new int[2];
@@ -148,9 +149,7 @@ public class SvgHelper {
                 setupGradient(currentColorKey, colorAlpha);
             }
             Rect bounds = getBounds();
-            float scaleX = bounds.width() / (float) width;
-            float scaleY = bounds.height() / (float) height;
-            float scale = aspectFill ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+            float scale = getScale();
             canvas.save();
             canvas.translate(bounds.left, bounds.top);
             if (!aspectFill) {
@@ -165,7 +164,12 @@ public class SvgHelper {
                 } else if (object == null) {
                     canvas.restore();
                 } else {
-                    Paint paint = paints.get(object);
+                    Paint paint;
+                    if (overridePaint != null) {
+                        paint = overridePaint;
+                    } else {
+                        paint = paints.get(object);
+                    }
                     int originalAlpha = paint.getAlpha();
                     paint.setAlpha((int) (crossfadeAlpha * originalAlpha));
                     if (object instanceof Path) {
@@ -220,6 +224,13 @@ public class SvgHelper {
                     parentImageReceiver.invalidate();
                 }
             }
+        }
+
+        public float getScale() {
+            Rect bounds = getBounds();
+            float scaleX = bounds.width() / (float) width;
+            float scaleY = bounds.height() / (float) height;
+            return aspectFill ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
         }
 
         @Override
@@ -282,6 +293,10 @@ public class SvgHelper {
                     }
                 }
             }
+        }
+
+        public void setPaint(Paint paint) {
+            overridePaint = paint;
         }
     }
 

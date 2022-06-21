@@ -14,10 +14,12 @@ import android.text.style.URLSpan;
 import android.view.View;
 
 import org.telegram.messenger.browser.Browser;
+import org.telegram.ui.LaunchActivity;
 
 public class URLSpanReplacement extends URLSpan {
 
     private TextStyleSpan.TextStyleRun style;
+    private boolean navigateToPremiumBot;
 
     public URLSpanReplacement(String url) {
         this(url, null);
@@ -28,12 +30,19 @@ public class URLSpanReplacement extends URLSpan {
         style = run;
     }
 
+    public void setNavigateToPremiumBot(boolean navigateToPremiumBot) {
+        this.navigateToPremiumBot = navigateToPremiumBot;
+    }
+
     public TextStyleSpan.TextStyleRun getTextStyleRun() {
         return style;
     }
 
     @Override
     public void onClick(View widget) {
+        if (navigateToPremiumBot && widget.getContext() instanceof LaunchActivity) {
+            ((LaunchActivity) widget.getContext()).setNavigateToPremiumBot(true);
+        }
         Uri uri = Uri.parse(getURL());
         Browser.openUrl(widget.getContext(), uri);
     }

@@ -91,10 +91,15 @@ public class TimerDrawable extends Drawable {
                 } else if (timeString.length() > 2) {
                     timeString = "c";
                 }
-            } else {
+            } else if (time < 60 * 60 * 24 * 364){
                 timeString = "" + value / 60 / 60 / 24 / 30;
                 if (timeString.length() < 2) {
                     timeString += LocaleController.getString("SecretChatTimerMonths", R.string.SecretChatTimerMonths);
+                }
+            } else {
+                timeString = "" + value / 60 / 60 / 24 / 364;
+                if (timeString.length() < 2) {
+                    timeString += LocaleController.getString("SecretChatTimerYears", R.string.SecretChatTimerYears);
                 }
             }
 

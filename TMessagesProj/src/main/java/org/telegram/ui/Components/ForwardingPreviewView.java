@@ -589,7 +589,7 @@ public class ForwardingPreviewView extends FrameLayout {
 
         sendMessagesView = new ActionBarMenuSubItem(context, false, true, resourcesProvider);
         buttonsLayout2.addView(sendMessagesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
-        sendMessagesView.setTextAndIcon(LocaleController.getString("ForwardSendMessages", R.string.ForwardSendMessages), R.drawable.msg_forward_send);
+        sendMessagesView.setTextAndIcon(LocaleController.getString("ForwardSendMessages", R.string.ForwardSendMessages), R.drawable.msg_send);
 
         if (forwardingMessagesParams.hasSenders) {
             actionItems.add(showSendersNameView);

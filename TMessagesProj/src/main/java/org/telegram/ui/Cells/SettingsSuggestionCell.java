@@ -30,13 +30,15 @@ public class SettingsSuggestionCell extends LinearLayout {
     private TextView detailTextView;
     private TextView yesButton;
     private TextView noButton;
+    private Theme.ResourcesProvider resourcesProvider;
 
     private int currentType;
 
     private int currentAccount = UserConfig.selectedAccount;
 
-    public SettingsSuggestionCell(Context context) {
+    public SettingsSuggestionCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         setOrientation(VERTICAL);
 
         textView = new TextView(context);
@@ -44,14 +46,14 @@ public class SettingsSuggestionCell extends LinearLayout {
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
         addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 15, 21, 0));
 
         detailTextView = new TextView(context);
-        detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         detailTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        detailTextView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-        detailTextView.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+        detailTextView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+        detailTextView.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection, resourcesProvider));
         detailTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         detailTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(detailTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 21, 8, 21, 0));
@@ -62,13 +64,13 @@ public class SettingsSuggestionCell extends LinearLayout {
 
         for (int a = 0; a < 2; a++) {
             TextView textView = new TextView(context);
-            textView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            textView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
             textView.setLines(1);
             textView.setSingleLine(true);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity(Gravity.CENTER);
-            textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(textView, LayoutHelper.createLinear(0, 40, 0.5f, a == 0 ? 0 : 4, 0, a == 0 ? 4 : 0, 0));

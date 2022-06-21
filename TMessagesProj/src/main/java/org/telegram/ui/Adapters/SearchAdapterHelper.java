@@ -77,6 +77,7 @@ public class SearchAdapterHelper {
     private LongSparseArray<TLObject> phoneSearchMap = new LongSparseArray<>();
     private ArrayList<Object> phonesSearch = new ArrayList<>();
     private ArrayList<Object> localSearchResults;
+    private ArrayList<DialogsSearchAdapter.RecentSearchObject> localRecentResults;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -328,7 +329,7 @@ public class SearchAdapterHelper {
                     }
                     removeGroupSearchFromGlobal();
                     if (localSearchResults != null) {
-                        mergeResults(localSearchResults);
+                        mergeResults(localSearchResults, localRecentResults);
                     }
                     mergeExcludeResults();
                     delegate.onDataSetChanged(searchId);
@@ -415,13 +416,23 @@ public class SearchAdapterHelper {
     }
 
     public void mergeResults(ArrayList<Object> localResults) {
+        mergeResults(localResults, null);
+    }
+
+    public void mergeResults(ArrayList<Object> localResults, ArrayList<DialogsSearchAdapter.RecentSearchObject> recentResults) {
         localSearchResults = localResults;
-        if (globalSearchMap.size() == 0 || localResults == null) {
+        localRecentResults = recentResults;
+        if (globalSearchMap.size() == 0 || localResults == null && recentResults == null) {
             return;
         }
-        int count = localResults.size();
+        final int localResultsCount = localResults == null ? 0 : localResults.size();
+        final int recentResultsCount = recentResults == null ? 0 : recentResults.size();
+        int count = localResultsCount + recentResultsCount;
         for (int a = 0; a < count; a++) {
-            Object obj = localResults.get(a);
+            Object obj = a < localResultsCount ? localResults.get(a) : recentResults.get(a - localResultsCount);
+            if (obj instanceof DialogsSearchAdapter.RecentSearchObject) {
+                obj = ((DialogsSearchAdapter.RecentSearchObject) obj).object;
+            }
             if (obj instanceof ShareAlert.DialogSearchResult) {
                 ShareAlert.DialogSearchResult searchResult = (ShareAlert.DialogSearchResult) obj;
                 obj = searchResult.object;

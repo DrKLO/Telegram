@@ -191,7 +191,6 @@ public class StroageUsageView extends FrameLayout {
         this.totalDeviceFreeSize = totalDeviceFreeSize;
         this.totalDeviceSize = totalDeviceSize;
 
-
         freeSizeTextView.setText(LocaleController.formatString("TotalDeviceFreeSize", R.string.TotalDeviceFreeSize, AndroidUtilities.formatFileSize(totalDeviceFreeSize)));
         totlaSizeTextView.setText(LocaleController.formatString("TotalDeviceSize", R.string.TotalDeviceSize, AndroidUtilities.formatFileSize(totalDeviceSize - totalDeviceFreeSize)));
 
@@ -342,7 +341,7 @@ public class StroageUsageView extends FrameLayout {
 //                canvas.drawLine(AndroidUtilities.dp(24), AndroidUtilities.dp(20), getMeasuredWidth() - AndroidUtilities.dp(24), AndroidUtilities.dp(20), paintCalculcating);
                 AndroidUtilities.rectTmp.set(AndroidUtilities.dp(24), AndroidUtilities.dp(17), getMeasuredWidth() - AndroidUtilities.dp(24), AndroidUtilities.dp(23));
                 cellFlickerDrawable.setParentWidth(getMeasuredWidth());
-                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(3));
+                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(3), null);
             }
             int currentP = AndroidUtilities.dp(24);
             if (!calculating) {

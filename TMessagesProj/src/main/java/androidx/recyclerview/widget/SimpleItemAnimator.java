@@ -40,6 +40,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
 
     boolean mSupportsChangeAnimations = true;
     protected boolean alwaysCreateMoveAnimationIfPossible;
+    protected boolean disabledMoveAnimations;
 
     /**
      * Returns whether this ItemAnimator supports animations of change events.
@@ -93,7 +94,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
         View disappearingItemView = viewHolder.itemView;
         int newLeft = postLayoutInfo == null ? disappearingItemView.getLeft() : postLayoutInfo.left;
         int newTop = postLayoutInfo == null ? disappearingItemView.getTop() : postLayoutInfo.top;
-        if (!viewHolder.isRemoved() && (oldLeft != newLeft || oldTop != newTop)) {
+        if (!disabledMoveAnimations && !viewHolder.isRemoved() && (oldLeft != newLeft || oldTop != newTop)) {
             disappearingItemView.layout(newLeft, newTop,
                     newLeft + disappearingItemView.getWidth(),
                     newTop + disappearingItemView.getHeight());
@@ -114,7 +115,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder,
             @Nullable ItemHolderInfo preLayoutInfo, @NonNull ItemHolderInfo postLayoutInfo) {
-        if (preLayoutInfo != null && ((preLayoutInfo.left != postLayoutInfo.left
+        if (!disabledMoveAnimations && preLayoutInfo != null && ((preLayoutInfo.left != postLayoutInfo.left
                 || preLayoutInfo.top != postLayoutInfo.top) || alwaysCreateMoveAnimationIfPossible)) {
             // slide items in if before/after locations differ
             if (DEBUG) {
@@ -133,7 +134,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
     @Override
     public boolean animatePersistence(@NonNull RecyclerView.ViewHolder viewHolder,
             @NonNull ItemHolderInfo preInfo, @NonNull ItemHolderInfo postInfo) {
-        if (preInfo.left != postInfo.left || preInfo.top != postInfo.top) {
+        if (!disabledMoveAnimations && (preInfo.left != postInfo.left || preInfo.top != postInfo.top)) {
             if (DEBUG) {
                 Log.d(TAG, "PERSISTENT: " + viewHolder
                         + " with view " + viewHolder.itemView);

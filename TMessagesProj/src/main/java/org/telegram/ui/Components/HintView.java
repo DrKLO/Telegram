@@ -88,16 +88,16 @@ public class HintView extends FrameLayout {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
             textView.setGravity(Gravity.LEFT | Gravity.TOP);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 || currentType == 9 ? 6 : 3), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
-            if (currentType == TYPE_POLL_VOTE || currentType == 4) {
-                textView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(6), AndroidUtilities.dp(9), AndroidUtilities.dp(7));
-            } else if (currentType == 2) {
-                textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
-            } else if (currentType == 7 || currentType == 8 || currentType == 9) {
-                textView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-            } else {
-                textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
-            }
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6/*currentType == 7 || currentType == 8 || currentType == 9 ? 6 : 3*/), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
+//            if (currentType == TYPE_POLL_VOTE || currentType == 4) {
+//                textView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(6), AndroidUtilities.dp(9), AndroidUtilities.dp(7));
+//            } else if (currentType == 2) {
+//                textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+//            } else if (currentType == 7 || currentType == 8 || currentType == 9) {
+                textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 8), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+//            } else {
+//                textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
+//            }
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         }
 

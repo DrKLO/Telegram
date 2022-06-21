@@ -69,7 +69,16 @@ public class FileRefController extends BaseController {
     }
 
     public static String getKeyForParentObject(Object parentObject) {
-        if (parentObject instanceof MessageObject) {
+        if (parentObject instanceof TLRPC.TL_availableReaction) {
+            return "available_reaction_" + ((TLRPC.TL_availableReaction) parentObject).reaction;
+        } else if (parentObject instanceof TLRPC.BotInfo) {
+            TLRPC.BotInfo botInfo = (TLRPC.BotInfo) parentObject;
+            return "bot_info_" + botInfo.user_id;
+        } else if (parentObject instanceof TLRPC.TL_attachMenuBot) {
+            TLRPC.TL_attachMenuBot bot = (TLRPC.TL_attachMenuBot) parentObject;
+            long botId = bot.bot_id;
+            return "attach_menu_bot_" + botId;
+        } else if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
             long channelId = messageObject.getChannelId();
             return "message" + messageObject.getRealId() + "_" + channelId + "_" + messageObject.scheduled;
@@ -308,7 +317,21 @@ public class FileRefController extends BaseController {
     }
 
     private void requestReferenceFromServer(Object parentObject, String locationKey, String parentKey, Object[] args) {
-        if (parentObject instanceof MessageObject) {
+        if (parentObject instanceof TLRPC.TL_availableReaction) {
+            TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
+            req.hash = 0;
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true, false));
+        } else if (parentObject instanceof TLRPC.BotInfo) {
+            TLRPC.BotInfo botInfo = (TLRPC.BotInfo) parentObject;
+            TLRPC.TL_users_getFullUser req = new TLRPC.TL_users_getFullUser();
+            req.id = getMessagesController().getInputUser(botInfo.user_id);
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true, false));
+        } else if (parentObject instanceof TLRPC.TL_attachMenuBot) {
+            TLRPC.TL_attachMenuBot bot = (TLRPC.TL_attachMenuBot) parentObject;
+            TLRPC.TL_messages_getAttachMenuBot req = new TLRPC.TL_messages_getAttachMenuBot();
+            req.bot = getMessagesController().getInputUser(bot.bot_id);
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true, false));
+        } else if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
             long channelId = messageObject.getChannelId();
             if (messageObject.scheduled) {
@@ -725,11 +748,83 @@ public class FileRefController extends BaseController {
                         }
                     }
                     if (result == null) {
-                        getMessagesStorage().replaceMessageIfExists(res.messages.get(0), res.users, res.chats,true);
+                        getMessagesStorage().replaceMessageIfExists(res.messages.get(0), res.users, res.chats, true);
                         if (BuildVars.DEBUG_VERSION) {
                             FileLog.d("file ref not found in messages, replacing message");
                         }
                     }
+                }
+            } else if (response instanceof TLRPC.TL_messages_availableReactions) {
+                TLRPC.TL_messages_availableReactions availableReactions = (TLRPC.TL_messages_availableReactions) response;
+                getMediaDataController().processLoadedReactions(availableReactions.reactions, availableReactions.hash, (int) (System.currentTimeMillis() / 1000), false);
+
+                for (TLRPC.TL_availableReaction reaction : availableReactions.reactions) {
+                    result = getFileReference(reaction.static_icon, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                    result = getFileReference(reaction.appear_animation, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                    result = getFileReference(reaction.select_animation, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                    result = getFileReference(reaction.activate_animation, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                    result = getFileReference(reaction.effect_animation, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                    result = getFileReference(reaction.around_animation, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                    result = getFileReference(reaction.center_icon, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                }
+            } else if (response instanceof TLRPC.TL_users_userFull) {
+                TLRPC.TL_users_userFull usersFull = (TLRPC.TL_users_userFull) response;
+                getMessagesController().putUsers(usersFull.users, false);
+                getMessagesController().putChats(usersFull.chats, false);
+                TLRPC.UserFull userFull = usersFull.full_user;
+                TLRPC.BotInfo botInfo = userFull.bot_info;
+                if (botInfo != null) {
+                    getMessagesStorage().updateUserInfo(userFull, true);
+
+                    result = getFileReference(botInfo.description_document, requester.location, needReplacement, locationReplacement);
+
+                    if (result != null) {
+                        continue;
+                    }
+
+                    result = getFileReference(botInfo.description_photo, requester.location, needReplacement, locationReplacement);
+                }
+            } else if (response instanceof TLRPC.TL_attachMenuBotsBot) {
+                TLRPC.TL_attachMenuBot bot = ((TLRPC.TL_attachMenuBotsBot) response).bot;
+                for (TLRPC.TL_attachMenuBotIcon icon : bot.icons) {
+                    result = getFileReference(icon.icon, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
+                    }
+                }
+                if (cache) {
+                    TLRPC.TL_attachMenuBots bots = getMediaDataController().getAttachMenuBots();
+                    ArrayList<TLRPC.TL_attachMenuBot> newBotsList = new ArrayList<>(bots.bots);
+                    for (int i = 0; i < newBotsList.size(); i++) {
+                        TLRPC.TL_attachMenuBot wasBot = newBotsList.get(i);
+                        if (wasBot.bot_id == bot.bot_id) {
+                            newBotsList.set(i, bot);
+                            break;
+                        }
+                    }
+                    bots.bots = newBotsList;
+                    getMediaDataController().processLoadedMenuBots(bots, bots.hash, (int) (System.currentTimeMillis() / 1000), false);
                 }
             } else if (response instanceof TLRPC.TL_help_appUpdate) {
                 TLRPC.TL_help_appUpdate appUpdate = (TLRPC.TL_help_appUpdate) response;

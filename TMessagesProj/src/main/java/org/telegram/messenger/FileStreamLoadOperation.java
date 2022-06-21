@@ -57,7 +57,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         document = new TLRPC.TL_document();
         document.access_hash = Utilities.parseLong(uri.getQueryParameter("hash"));
         document.id = Utilities.parseLong(uri.getQueryParameter("id"));
-        document.size = Utilities.parseInt(uri.getQueryParameter("size"));
+        document.size = Utilities.parseLong(uri.getQueryParameter("size"));
         document.dc_id = Utilities.parseInt(uri.getQueryParameter("dc"));
         document.mime_type = uri.getQueryParameter("mime");
         document.file_reference = Utilities.hexToBytes(uri.getQueryParameter("reference"));
@@ -96,7 +96,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     readLength = (int) bytesRemaining;
                 }
                 while (availableLength == 0 && opened) {
-                    availableLength = loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
+                    availableLength = (int) loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
                     if (availableLength == 0) {
                         FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false);
                         countDownLatch = new CountDownLatch(1);

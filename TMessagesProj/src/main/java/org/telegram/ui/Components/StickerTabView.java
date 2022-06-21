@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -23,6 +22,11 @@ public class StickerTabView extends FrameLayout {
     public final static int STICKER_TYPE = 0;
     public final static int ICON_TYPE = 1;
     public final static int EMOJI_TYPE = 2;
+
+    public final static int SMALL_WIDTH = 38;
+    public final static int SMALL_HEIGHT = 36;
+
+    private final static int IMAGE_SMALL_SIZE = 26;
 
     public int type;
     public float dragOffset;
@@ -51,7 +55,7 @@ public class StickerTabView extends FrameLayout {
             imageView = new BackupImageView(getContext());
             imageView.setLayerNum(1);
             imageView.setAspectFit(false);
-            addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
+            addView(imageView, LayoutHelper.createFrame(IMAGE_SMALL_SIZE, IMAGE_SMALL_SIZE, Gravity.CENTER));
             visibleView = imageView;
         } else if (type == ICON_TYPE) {
             iconView = new ImageView(context);
@@ -62,7 +66,7 @@ public class StickerTabView extends FrameLayout {
             imageView = new BackupImageView(getContext());
             imageView.setLayerNum(1);
             imageView.setAspectFit(true);
-            addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+            addView(imageView, LayoutHelper.createFrame(IMAGE_SMALL_SIZE, IMAGE_SMALL_SIZE, Gravity.CENTER));
             visibleView = imageView;
         }
 
@@ -82,7 +86,7 @@ public class StickerTabView extends FrameLayout {
             return;
         }
         this.expanded = expanded;
-        float size = type == ICON_TYPE ? 24 : 30;
+        float size = type == ICON_TYPE ? 24 : IMAGE_SMALL_SIZE;
         float sizeExpanded = type == ICON_TYPE ? 38 : 56;
 
         visibleView.getLayoutParams().width = AndroidUtilities.dp(expanded ? sizeExpanded : size);
@@ -100,12 +104,12 @@ public class StickerTabView extends FrameLayout {
             return;
         }
         if (expanded) {
-            float size = type == ICON_TYPE ? 24 : 30;
+            float size = type == ICON_TYPE ? 24 : IMAGE_SMALL_SIZE;
             float sizeExpanded = type == ICON_TYPE ? 38 : 56;
-            float fromX = AndroidUtilities.dp(52 - size) / 2f;
-            float fromY = AndroidUtilities.dp(48 - size) / 2f;
+            float fromX = AndroidUtilities.dp(SMALL_WIDTH - size) / 2f;
+            float fromY = AndroidUtilities.dp(SMALL_HEIGHT - size) / 2f;
             float toX = AndroidUtilities.dp(86 - sizeExpanded) / 2f;
-            float toY = AndroidUtilities.dp(48 + 50 - sizeExpanded) / 2f;
+            float toY = AndroidUtilities.dp(SMALL_HEIGHT + 50 - sizeExpanded) / 2f;
 
             visibleView.setTranslationY((fromY - toY) * (1 - expandProgress) - AndroidUtilities.dp(8) * expandProgress);
             visibleView.setTranslationX((fromX - toX) * (1 - expandProgress));

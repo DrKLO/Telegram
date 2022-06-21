@@ -371,6 +371,11 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     messageText = getReactedText(loc_key, args);
                                 } else {
                                     switch (loc_key) {
+                                        case "MESSAGE_RECURRING_PAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageRecurringPay", R.string.NotificationMessageRecurringPay, args[0], args[1]);
+                                            message1 = LocaleController.getString("PaymentInvoice", R.string.PaymentInvoice);
+                                            break;
+                                        }
                                         case "MESSAGE_TEXT":
                                         case "CHANNEL_MESSAGE_TEXT": {
                                             messageText = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, args[0], args[1]);

@@ -79,6 +79,7 @@ public class BotCommandsMenuView extends View {
         backDrawable.setRoundCap();
         backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         backgroundDrawable.setCallback(this);
+        setContentDescription(LocaleController.getString("AccDescrBotMenu", R.string.AccDescrBotMenu));
     }
 
     public void setDrawBackgroundDrawable(boolean drawBackgroundDrawable) {
@@ -205,13 +206,15 @@ public class BotCommandsMenuView extends View {
 
     }
 
-    public void setMenuText(String menuText) {
+    public boolean setMenuText(String menuText) {
         if (menuText == null) {
             menuText = LocaleController.getString(R.string.BotsMenuTitle);
         }
+        boolean changed = this.menuText == null || !this.menuText.equals(menuText);
         this.menuText = menuText;
         menuTextLayout = null;
         requestLayout();
+        return changed;
     }
 
     public void setExpanded(boolean expanded, boolean animated) {

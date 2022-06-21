@@ -15,7 +15,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ResultCallback;
 import org.telegram.tgnet.TLRPC;
@@ -31,7 +30,7 @@ public class EmojiThemes {
     public boolean showAsDefaultStub;
     public String emoji;
     int currentIndex = 0;
-    ArrayList<ThemeItem> items = new ArrayList<>();
+    public ArrayList<ThemeItem> items = new ArrayList<>();
 
     private static final String[] previewColorKeys = new String[]{
             Theme.key_chat_inBubble,
@@ -364,14 +363,11 @@ public class EmojiThemes {
             }
             ImageLocation imageLocation = ImageLocation.getForDocument(wallPaper.document);
             ImageReceiver imageReceiver = new ImageReceiver();
+
             String imageFilter;
-            if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
-                int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-                int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-                imageFilter = (int) (w / AndroidUtilities.density) + "_" + (int) (h / AndroidUtilities.density) + "_f";
-            } else {
-                imageFilter = (int) (1080 / AndroidUtilities.density) + "_" + (int) (1920 / AndroidUtilities.density) + "_f";
-            }
+            int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            imageFilter = (int) (w / AndroidUtilities.density) + "_" + (int) (h / AndroidUtilities.density) + "_f";
 
             imageReceiver.setImage(imageLocation, imageFilter, null, ".jpg", wallPaper, 1);
             imageReceiver.setDelegate((receiver, set, thumb, memCache) -> {
@@ -424,13 +420,13 @@ public class EmojiThemes {
             }
             return;
         }
-        final TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(wallpaper.document.thumbs, 120);
+        final TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(wallpaper.document.thumbs, 140);
         ImageLocation imageLocation = ImageLocation.getForDocument(thumbSize, wallpaper.document);
         ImageReceiver imageReceiver = new ImageReceiver();
-        imageReceiver.setImage(imageLocation, "120_80", null, null, null, 1);
+        imageReceiver.setImage(imageLocation, "120_140", null, null, null, 1);
         imageReceiver.setDelegate((receiver, set, thumb, memCache) -> {
             ImageReceiver.BitmapHolder holder = receiver.getBitmapSafe();
-            if (!set || holder == null) {
+            if (!set || holder == null || holder.bitmap.isRecycled()) {
                 return;
             }
             Bitmap resultBitmap = holder.bitmap;

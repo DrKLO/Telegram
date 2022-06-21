@@ -29,7 +29,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -44,7 +43,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -582,7 +580,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             });
         }
         mapTypeButton.setBackgroundDrawable(drawable);
-        mapTypeButton.setIcon(R.drawable.location_type);
+        mapTypeButton.setIcon(R.drawable.msg_map_type);
         mapViewClip.addView(mapTypeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
         mapTypeButton.setOnClickListener(v -> mapTypeButton.toggleSubMenu());
         mapTypeButton.setDelegate(id -> {
@@ -620,7 +618,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             });
         }
         locationButton.setBackgroundDrawable(drawable);
-        locationButton.setImageResource(R.drawable.location_current);
+        locationButton.setImageResource(R.drawable.msg_current_location);
         locationButton.setScaleType(ImageView.ScaleType.CENTER);
         locationButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_actionActiveIcon), PorterDuff.Mode.MULTIPLY));
         locationButton.setTag(Theme.key_location_actionActiveIcon);

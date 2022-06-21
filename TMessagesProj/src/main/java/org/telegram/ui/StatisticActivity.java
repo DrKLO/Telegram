@@ -499,7 +499,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
                 items.add(LocaleController.getString("ViewMessage", R.string.ViewMessage));
                 actions.add(1);
-                icons.add(R.drawable.menu_chats);
+                icons.add(R.drawable.msg_msgbubble3);
 
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -2564,10 +2564,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             }
 
             items.add(LocaleController.getString("StatisticOpenProfile", R.string.StatisticOpenProfile));
-            icons.add(R.drawable.menu_private);
+            icons.add(R.drawable.msg_openprofile);
             actions.add(2);
             items.add(LocaleController.getString("StatisticSearchUserHistory", R.string.StatisticSearchUserHistory));
-            icons.add(R.drawable.menu_chats);
+            icons.add(R.drawable.msg_msgbubble3);
             actions.add(1);
 
             if (userIsPracticant && currentParticipant == null) {
@@ -2643,7 +2643,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (canEditAdmin) {
                     isAdmin = channelParticipant.admin_rights == null;
                     items.add(isAdmin ? LocaleController.getString("SetAsAdmin", R.string.SetAsAdmin) : LocaleController.getString("EditAdminRights", R.string.EditAdminRights));
-                    icons.add(isAdmin ? R.drawable.actions_addadmin : R.drawable.actions_permissions);
+                    icons.add(isAdmin ? R.drawable.msg_admins : R.drawable.msg_permissions);
                     actions.add(0);
                 }
             }

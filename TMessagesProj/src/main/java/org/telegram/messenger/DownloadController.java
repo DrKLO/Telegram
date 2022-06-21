@@ -82,14 +82,14 @@ public class DownloadController extends BaseController implements NotificationCe
 
     public static class Preset {
         public int[] mask = new int[4];
-        public int[] sizes = new int[4];
+        public long[] sizes = new long[4];
         public boolean preloadVideo;
         public boolean preloadMusic;
         public boolean lessCallData;
         public boolean enabled;
         public int maxVideoBitrate;
 
-        public Preset(int[] m, int p, int v, int f, boolean pv, boolean pm, boolean e, boolean l, int bitrate) {
+        public Preset(int[] m, long p, long v, long f, boolean pv, boolean pm, boolean e, boolean l, int bitrate) {
             System.arraycopy(m, 0, mask, 0, mask.length);
             sizes[PRESET_SIZE_NUM_PHOTO] = p;
             sizes[PRESET_SIZE_NUM_VIDEO] = v;
@@ -258,9 +258,9 @@ public class DownloadController extends BaseController implements NotificationCe
             int[] mobileDataDownloadMask = new int[4];
             int[] wifiDownloadMask = new int[4];
             int[] roamingDownloadMask = new int[4];
-            int[] mobileMaxFileSize = new int[7];
-            int[] wifiMaxFileSize = new int[7];
-            int[] roamingMaxFileSize = new int[7];
+            long[] mobileMaxFileSize = new long[7];
+            long[] wifiMaxFileSize = new long[7];
+            long[] roamingMaxFileSize = new long[7];
 
             for (int a = 0; a < 4; a++) {
                 String key = "mobileDataDownloadMask" + (a == 0 ? "" : a);
@@ -275,12 +275,12 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
 
-            mobileMaxFileSize[2] = preferences.getInt("mobileMaxDownloadSize" + 2, mediumPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
-            mobileMaxFileSize[3] = preferences.getInt("mobileMaxDownloadSize" + 3, mediumPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
-            wifiMaxFileSize[2] = preferences.getInt("wifiMaxDownloadSize" + 2, highPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
-            wifiMaxFileSize[3] = preferences.getInt("wifiMaxDownloadSize" + 3, highPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
-            roamingMaxFileSize[2] = preferences.getInt("roamingMaxDownloadSize" + 2, lowPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
-            roamingMaxFileSize[3] = preferences.getInt("roamingMaxDownloadSize" + 3, lowPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
+            mobileMaxFileSize[2] = preferences.getLong("mobileMaxDownloadSize" + 2, mediumPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
+            mobileMaxFileSize[3] = preferences.getLong("mobileMaxDownloadSize" + 3, mediumPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
+            wifiMaxFileSize[2] = preferences.getLong("wifiMaxDownloadSize" + 2, highPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
+            wifiMaxFileSize[3] = preferences.getLong("wifiMaxDownloadSize" + 3, highPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
+            roamingMaxFileSize[2] = preferences.getLong("roamingMaxDownloadSize" + 2, lowPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
+            roamingMaxFileSize[3] = preferences.getLong("roamingMaxDownloadSize" + 3, lowPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
 
             boolean globalAutodownloadEnabled = preferences.getBoolean("globalAutodownloadEnabled", true);
             mobilePreset = new Preset(mobileDataDownloadMask, mediumPreset.sizes[PRESET_SIZE_NUM_PHOTO], mobileMaxFileSize[2], mobileMaxFileSize[3], true, true, globalAutodownloadEnabled, false, 100);
@@ -582,7 +582,7 @@ public class DownloadController extends BaseController implements NotificationCe
         return canDownloadMedia(messageObject.messageOwner) == 1;
     }
 
-    public boolean canDownloadMedia(int type, int size) {
+    public boolean canDownloadMedia(int type, long size) {
         Preset preset;
         int networkType = ApplicationLoader.getAutodownloadNetworkType();
         if (networkType == StatsController.TYPE_WIFI) {
@@ -603,7 +603,7 @@ public class DownloadController extends BaseController implements NotificationCe
             preset = getCurrentMobilePreset();
         }
         int mask = preset.mask[1];
-        int maxSize = preset.sizes[typeToIndex(type)];
+        long maxSize = preset.sizes[typeToIndex(type)];
         return (type == AUTODOWNLOAD_TYPE_PHOTO || size != 0 && size <= maxSize) && (type == AUTODOWNLOAD_TYPE_AUDIO || (mask & type) != 0);
     }
 
@@ -674,13 +674,13 @@ public class DownloadController extends BaseController implements NotificationCe
             preset = getCurrentMobilePreset();
         }
         int mask = preset.mask[index];
-        int maxSize;
+        long maxSize;
         if (type == AUTODOWNLOAD_TYPE_AUDIO) {
             maxSize = Math.max(512 * 1024, preset.sizes[typeToIndex(type)]);
         } else {
             maxSize = preset.sizes[typeToIndex(type)];
         }
-        int size = MessageObject.getMessageSize(message);
+        long size = MessageObject.getMessageSize(message);
         if (isVideo && preset.preloadVideo && size > maxSize && maxSize > 2 * 1024 * 1024) {
             return (mask & type) != 0 ? 2 : 0;
         } else {
@@ -768,7 +768,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 break;
             }
         }
-        req.settings.photo_size_max = photo ? preset.sizes[PRESET_SIZE_NUM_PHOTO] : 0;
+        req.settings.photo_size_max = photo ? (int) preset.sizes[PRESET_SIZE_NUM_PHOTO] : 0;
         req.settings.video_size_max = video ? preset.sizes[PRESET_SIZE_NUM_VIDEO] : 0;
         req.settings.file_size_max = document ? preset.sizes[PRESET_SIZE_NUM_DOCUMENT] : 0;
         getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -1114,7 +1114,7 @@ public class DownloadController extends BaseController implements NotificationCe
             boolean contains = false;
 
             for (int i = 0; i < recentDownloadingFiles.size(); i++) {
-                if (recentDownloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                if (recentDownloadingFiles.get(i).getDocument() != null && recentDownloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
                     contains = true;
                     break;
                 }
@@ -1122,7 +1122,7 @@ public class DownloadController extends BaseController implements NotificationCe
 
             if (!contains) {
                 for (int i = 0; i < downloadingFiles.size(); i++) {
-                    if (downloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                    if (downloadingFiles.get(i).getDocument() != null && downloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
                         contains = true;
                         break;
                     }
@@ -1304,7 +1304,7 @@ public class DownloadController extends BaseController implements NotificationCe
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             ArrayList<MessageObject> downloadingMessages = new ArrayList<>();
             ArrayList<MessageObject> recentlyDownloadedMessages = new ArrayList<>();
-
+            ArrayList<MessageObject> newMessages = new ArrayList<>();
             try {
                 SQLiteCursor cursor2 = getMessagesStorage().getDatabase().queryFinalized("SELECT data, state FROM downloading_documents ORDER BY date DESC");
                 while (cursor2.next()) {
@@ -1314,10 +1314,11 @@ public class DownloadController extends BaseController implements NotificationCe
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         if (message != null) {
                             message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
-                            MessageObject messageObject = new MessageObject(currentAccount, message, false, true);
+                            MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
+                            newMessages.add(messageObject);
                             if (state == 0) {
                                 downloadingMessages.add(messageObject);
-                            } else if (messageObject.mediaExists) {
+                            } else {
                                 recentlyDownloadedMessages.add(messageObject);
                             }
                         }
@@ -1328,6 +1329,9 @@ public class DownloadController extends BaseController implements NotificationCe
             } catch (Exception e) {
                 FileLog.e(e);
             }
+
+            getFileLoader().checkMediaExistance(downloadingMessages);
+            getFileLoader().checkMediaExistance(recentlyDownloadedMessages);
 
             AndroidUtilities.runOnUIThread(() -> {
                 downloadingFiles.clear();
@@ -1386,7 +1390,7 @@ public class DownloadController extends BaseController implements NotificationCe
                     state.step();
 
                     try {
-                        File file = FileLoader.getPathToMessage(messageObjects.get(i).messageOwner);
+                        File file = FileLoader.getInstance(currentAccount).getPathToMessage(messageObjects.get(i).messageOwner);
                         file.delete();
                     } catch (Exception e) {
                         FileLog.e(e);

@@ -37,6 +37,7 @@ import org.telegram.ui.Components.LayoutHelper;
 
 public class UserCell2 extends FrameLayout {
 
+    private Theme.ResourcesProvider resourcesProvider;
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
     private SimpleTextView statusTextView;
@@ -62,10 +63,15 @@ public class UserCell2 extends FrameLayout {
     private int statusOnlineColor;
 
     public UserCell2(Context context, int padding, int checkbox) {
-        super(context);
+        this(context, padding, checkbox, null);
+    }
 
-        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
-        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+    public UserCell2(Context context, int padding, int checkbox, Theme.ResourcesProvider resourcesProvider) {
+        super(context);
+        this.resourcesProvider = resourcesProvider;
+
+        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
 
         avatarDrawable = new AvatarDrawable();
 
@@ -74,7 +80,7 @@ public class UserCell2 extends FrameLayout {
         addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 11, LocaleController.isRTL ? 7 + padding : 0, 0));
 
         nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nameTextView.setTextSize(17);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (68 + padding), 14.5f, LocaleController.isRTL ? (68 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
@@ -86,17 +92,17 @@ public class UserCell2 extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
         if (checkbox == 2) {
-            checkBoxBig = new CheckBoxSquare(context, false);
+            checkBoxBig = new CheckBoxSquare(context, false, resourcesProvider);
             addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
         } else if (checkbox == 1) {
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
+            checkBox.setColor(Theme.getColor(Theme.key_checkbox, resourcesProvider), Theme.getColor(Theme.key_checkboxCheck, resourcesProvider));
             addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 41, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
     }

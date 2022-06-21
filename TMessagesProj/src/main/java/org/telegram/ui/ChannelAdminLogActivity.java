@@ -1011,7 +1011,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         bottomOverlayChat.addView(bottomOverlayChatText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         bottomOverlayImage = new ImageView(context);
-        bottomOverlayImage.setImageResource(R.drawable.log_info);
+        bottomOverlayImage.setImageResource(R.drawable.msg_help);
         bottomOverlayImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_fieldOverlayText), PorterDuff.Mode.MULTIPLY));
         bottomOverlayImage.setScaleType(ImageView.ScaleType.CENTER);
         bottomOverlayChat.addView(bottomOverlayImage, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 3, 0, 0, 0));
@@ -1384,7 +1384,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = getFileLoader().getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 if (selectedObject.type == 3 || selectedObject.type == 1) {
                     if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -1405,7 +1405,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (locFile == null) {
-                    File f = FileLoader.getPathToMessage(selectedObject.messageOwner);
+                    File f = getFileLoader().getPathToMessage(selectedObject.messageOwner);
                     if (f.exists()) {
                         locFile = f;
                     }
@@ -1468,7 +1468,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = getFileLoader().getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType(selectedObject.getDocument().mime_type);
@@ -1494,7 +1494,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = getFileLoader().getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
@@ -1526,7 +1526,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = getFileLoader().getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 MediaController.saveFile(path, getParentActivity(), selectedObject.isMusic() ? 3 : 2, fileName, selectedObject.getDocument() != null ? selectedObject.getDocument().mime_type : "");
                 break;
@@ -1596,7 +1596,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (!canSave) {
-                    File f = FileLoader.getPathToMessage(messageObject.messageOwner);
+                    File f = getFileLoader().getPathToMessage(messageObject.messageOwner);
                     if (f.exists()) {
                         canSave = true;
                     }
@@ -2254,7 +2254,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                     f = new File(message.messageOwner.attachPath);
                                 }
                                 if (f == null || !f.exists()) {
-                                    f = FileLoader.getPathToMessage(message.messageOwner);
+                                    f = getFileLoader().getPathToMessage(message.messageOwner);
                                 }
                                 Intent intent = new Intent(Intent.ACTION_VIEW);
                                 if (Build.VERSION.SDK_INT >= 24) {
@@ -2284,7 +2284,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                     }
                                 }
                                 if (locFile == null) {
-                                    File f = FileLoader.getPathToMessage(message.messageOwner);
+                                    File f = getFileLoader().getPathToMessage(message.messageOwner);
                                     if (f.exists()) {
                                         locFile = f;
                                     }
@@ -2908,10 +2908,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[10][0], Theme.chat_photoStatesDrawables[11][0]}, null, Theme.key_chat_inLoaderPhotoIcon));
         themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[10][1], Theme.chat_photoStatesDrawables[11][1]}, null, Theme.key_chat_inLoaderPhotoSelected));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[10][1], Theme.chat_photoStatesDrawables[11][1]}, null, Theme.key_chat_inLoaderPhotoIconSelected));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[9][0]}, null, Theme.key_chat_outFileIcon));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[9][1]}, null, Theme.key_chat_outFileSelectedIcon));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[12][0]}, null, Theme.key_chat_inFileIcon));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_photoStatesDrawables[12][1]}, null, Theme.key_chat_inFileSelectedIcon));
         themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_contactDrawable[0]}, null, Theme.key_chat_inContactBackground));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_contactDrawable[0]}, null, Theme.key_chat_inContactIcon));
         themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_contactDrawable[1]}, null, Theme.key_chat_outContactBackground));
@@ -2936,9 +2932,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
         themeDescriptions.add(new ThemeDescription(progressView2, ThemeDescription.FLAG_SERVICEBACKGROUND, null, null, null, null, Theme.key_chat_serviceBackground));
         themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_SERVICEBACKGROUND, null, null, null, null, Theme.key_chat_serviceBackground));
-
-        themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_SERVICEBACKGROUND, new Class[]{ChatLoadingCell.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_serviceBackground));
-        themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_PROGRESSBAR, new Class[]{ChatLoadingCell.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_serviceText));
 
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTimeItem() : null, 0, null, null, null, null, Theme.key_chat_secretTimerBackground));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTimeItem() : null, 0, null, null, null, null, Theme.key_chat_secretTimerText));

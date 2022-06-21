@@ -20,12 +20,16 @@ public class CreationTextCell extends FrameLayout {
     public int startPadding = 70;
 
     public CreationTextCell(Context context) {
+        this(context, null);
+    }
+
+    public CreationTextCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         textView = new SimpleTextView(context);
         textView.setTextSize(16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider));
         textView.setTag(Theme.key_windowBackgroundWhiteBlueText2);
         addView(textView);
 

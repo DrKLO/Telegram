@@ -518,6 +518,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
+//            sizeBar.setSeparatorsCount(endFontSize - startFontSize);
             sizeBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
                 @Override
                 public void onSeekBarDrag(boolean stop, float progress) {
@@ -1281,7 +1282,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     popupWindow.dismiss();
                 }
             });
-            popupLayout.setShownFromBotton(false);
+            popupLayout.setShownFromBottom(false);
 
             deleteView = new TextView(parentActivity);
             deleteView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
@@ -3534,7 +3535,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         menuButton.addSubItem(search_item, R.drawable.msg_search, LocaleController.getString("Search", R.string.Search));
         menuButton.addSubItem(share_item, R.drawable.msg_share, LocaleController.getString("ShareFile", R.string.ShareFile));
         menuButton.addSubItem(open_item, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
-        menuButton.addSubItem(settings_item, R.drawable.menu_settings, LocaleController.getString("Settings", R.string.Settings));
+        menuButton.addSubItem(settings_item, R.drawable.msg_settings_old, LocaleController.getString("Settings", R.string.Settings));
         menuButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         menuButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
         menuContainer.addView(menuButton, LayoutHelper.createFrame(48, 56));
@@ -4847,13 +4848,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (photo != null) {
                     TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
                     if (sizeFull != null) {
-                        return FileLoader.getPathToAttach(sizeFull, true);
+                        return FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(sizeFull, true);
                     }
                 }
             } else if (block instanceof TLRPC.TL_pageBlockVideo) {
                 TLRPC.Document document = getDocumentWithId(page, ((TLRPC.TL_pageBlockVideo) block).video_id);
                 if (document != null) {
-                    return FileLoader.getPathToAttach(document, true);
+                    return FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
                 }
             }
             return null;
@@ -6129,7 +6130,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
                     if (isGif) {
                         autoDownload = DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, currentDocument.size);
-                        File path = FileLoader.getPathToAttach(currentDocument, true);
+                        File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument, true);
                         if (autoDownload || path.exists()) {
                             imageView.setStrippedLocation(null);
                             imageView.setImage(ImageLocation.getForDocument(currentDocument), ImageLoader.AUTOPLAY_FILTER, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
@@ -6227,7 +6228,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         public void updateButtonState(boolean animated) {
             String fileName = FileLoader.getAttachFileName(currentDocument);
-            File path = FileLoader.getPathToAttach(currentDocument, true);
+            File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument, true);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
                 radialProgress.setIcon(MediaActionDrawable.ICON_NONE, false, false);
@@ -6635,7 +6636,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         public void updateButtonState(boolean animated) {
             String fileName = FileLoader.getAttachFileName(currentDocument);
-            File path = FileLoader.getPathToAttach(currentDocument, true);
+            File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentDocument, true);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
                 radialProgress.setIcon(MediaActionDrawable.ICON_NONE, false, false);
@@ -9871,7 +9872,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             isFirst = first;
             channelCell.setVisibility(INVISIBLE);
             if (!TextUtils.isEmpty(currentBlock.url)) {
-                linkDrawable = getResources().getDrawable(R.drawable.instant_link);
+                linkDrawable = getResources().getDrawable(R.drawable.msg_instant_link);
             }
             if (currentBlock != null) {
                 TLRPC.Photo photo = parentAdapter.getPhotoWithId(currentBlock.photo_id);
@@ -10007,7 +10008,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     currentThumbFilter = "80_80_b";
 
                     autoDownload = (DownloadController.getInstance(currentAccount).getCurrentDownloadMask() & DownloadController.AUTODOWNLOAD_TYPE_PHOTO) != 0;
-                    File path = FileLoader.getPathToAttach(currentPhotoObject, true);
+                    File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentPhotoObject, true);
                     if (autoDownload || path.exists()) {
                         imageView.setStrippedLocation(null);
                         imageView.setImage(ImageLocation.getForPhoto(currentPhotoObject, currentPhoto), currentFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, currentPhoto), currentThumbFilter, currentPhotoObject.size, null, parentAdapter.currentPage, 1);
@@ -10123,7 +10124,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         public void updateButtonState(boolean animated) {
             String fileName = FileLoader.getAttachFileName(currentPhotoObject);
-            File path = FileLoader.getPathToAttach(currentPhotoObject, true);
+            File path = FileLoader.getInstance(currentAccount).getPathToAttach(currentPhotoObject, true);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
                 radialProgress.setIcon(MediaActionDrawable.ICON_NONE, false, false);

@@ -442,6 +442,7 @@ public class PollVotesAlert extends BottomSheet {
 
     public PollVotesAlert(ChatActivity parentFragment, MessageObject message) {
         super(parentFragment.getParentActivity(), true);
+        fixNavigationBar();
         messageObject = message;
         chatActivity = parentFragment;
         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media;

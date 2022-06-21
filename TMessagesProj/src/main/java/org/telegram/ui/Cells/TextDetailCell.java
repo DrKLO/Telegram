@@ -36,11 +36,18 @@ public class TextDetailCell extends FrameLayout {
     private boolean needDivider;
     private boolean contentDescriptionValueFirst;
 
+    private Theme.ResourcesProvider resourcesProvider;
+
     public TextDetailCell(Context context) {
+        this(context, null);
+    }
+
+    public TextDetailCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setLines(1);
@@ -51,7 +58,7 @@ public class TextDetailCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 8, 23, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -61,6 +68,7 @@ public class TextDetailCell extends FrameLayout {
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33, 23, 0));
 
         imageView = new ImageView(context);
+        imageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(imageView, LayoutHelper.createFrameRelatively(48, 48, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
     }
@@ -81,11 +89,19 @@ public class TextDetailCell extends FrameLayout {
     }
 
     public void setImage(Drawable drawable) {
+        setImage(drawable, null);
+    }
+
+    public void setImage(Drawable drawable, CharSequence imageContentDescription) {
         imageView.setImageDrawable(drawable);
+        imageView.setFocusable(drawable != null);
+        imageView.setContentDescription(imageContentDescription);
         if (drawable == null) {
             imageView.setBackground(null);
+            imageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         } else {
-            imageView.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(48), Color.TRANSPARENT, Theme.getColor(Theme.key_listSelector)));
+            imageView.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(48), Color.TRANSPARENT, Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+            imageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         }
         int margin = AndroidUtilities.dp(23) + (drawable == null ? 0 : AndroidUtilities.dp(48));
         if (LocaleController.isRTL) {
@@ -100,7 +116,7 @@ public class TextDetailCell extends FrameLayout {
         imageView.setOnClickListener(clickListener);
     }
 
-    public void setTextWithEmojiAndValue(String text, CharSequence value, boolean divider) {
+    public void setTextWithEmojiAndValue(CharSequence text, CharSequence value, boolean divider) {
         textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
         valueTextView.setText(value);
         needDivider = divider;
