@@ -15090,6 +15090,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         public static final int COMMENT = 496;
         public static final int POLL_HINT = 495;
         public static final int FORWARD = 494;
+        public static final int TRANSCRIBE = 493;
         private Path linkPath = new Path();
         private RectF rectF = new RectF();
         private Rect rect = new Rect();
@@ -15178,9 +15179,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         sb.append(title);
                     }
-                    if (currentMessageObject.messageOwner.media != null && !TextUtils.isEmpty(currentMessageObject.caption)) {
+                    if (currentMessageObject.isVoiceTranscriptionOpen()) {
                         sb.append("\n");
-                        sb.append(currentMessageObject.caption);
+                        sb.append(currentMessageObject.getVoiceTranscription());
+                    } else {
+                        if (currentMessageObject.messageOwner.media != null && !TextUtils.isEmpty(currentMessageObject.caption)) {
+                            sb.append("\n");
+                            sb.append(currentMessageObject.caption);
+                        }
                     }
                     if (documentAttach != null) {
                         if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
@@ -15341,6 +15347,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 if ((currentMessageObject.isVoice() || currentMessageObject.isRoundVideo() || currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
                     seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
+                }
+
+                if (useTranscribeButton && transcribeButton != null) {
+                    info.addChild(ChatMessageCell.this, TRANSCRIBE);
                 }
 
                 int i;
@@ -15666,6 +15676,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     rect.offset(pos[0], pos[1]);
                     info.setBoundsInScreen(rect);
                     info.setClickable(true);
+                } else if (virtualViewId == TRANSCRIBE) {
+                    info.setClassName("android.widget.Button");
+                    info.setEnabled(true);
+                    info.setText(currentMessageObject.isVoiceTranscriptionOpen() ? LocaleController.getString("AccActionCloseTranscription", R.string.AccActionCloseTranscription) : LocaleController.getString("AccActionOpenTranscription", R.string.AccActionOpenTranscription));
+                    info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    rect.set((int) transcribeX, (int) transcribeY, (int) (transcribeX + AndroidUtilities.dp(30)), (int) (transcribeY + AndroidUtilities.dp(30)));
+                    info.setBoundsInParent(rect);
+                    rect.offset(pos[0], pos[1]);
+                    info.setBoundsInScreen(rect);
+                    info.setClickable(true);
                 }
                 info.setFocusable(true);
                 info.setVisibleToUser(true);
@@ -15755,6 +15775,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 delegate.didPressCommentButton(ChatMessageCell.this);
                             }
                         }
+                    } else if (virtualViewId == TRANSCRIBE && transcribeButton != null) {
+                        transcribeButton.onTap();
                     }
                 } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
                     ClickableSpan link = getLinkById(virtualViewId, virtualViewId >= LINK_CAPTION_IDS_START);

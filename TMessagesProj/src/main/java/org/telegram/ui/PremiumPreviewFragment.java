@@ -235,7 +235,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         shadowDrawable.getPadding(padding);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            statusBarHeight = AndroidUtilities.statusBarHeight;
+            statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
         }
 
         contentView = new FrameLayout(context) {
@@ -269,7 +269,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     isLandscapeMode = false;
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    statusBarHeight = AndroidUtilities.statusBarHeight;
+                    statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
                 }
                 backgroundView.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
                 particlesView.getLayoutParams().height = backgroundView.getMeasuredHeight();
@@ -633,7 +633,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     NumberFormat numberFormat = NumberFormat.getCurrencyInstance();
                     numberFormat.setCurrency(currency);
 
-                    return LocaleController.formatString(R.string.SubscribeToPremium, numberFormat.format(premiumPromo.monthly_amount / 100f));
+                    return LocaleController.formatString(R.string.SubscribeToPremium, numberFormat.format(premiumPromo.monthly_amount / Math.pow(10, BillingController.getInstance().getCurrencyExp(premiumPromo.currency))));
                 }
             }
 

@@ -893,6 +893,9 @@ public class FileLoader extends BaseController {
             MessageObject messageObject = (MessageObject) parentObject;
             int flag;
             long dialogId = messageObject.getDialogId();
+            if (messageObject.isAnyKindOfSticker() || getMessagesController().isChatNoForwards(getMessagesController().getChat(-dialogId)) || messageObject.messageOwner.noforwards) {
+                return false;
+            }
             if (dialogId >= 0) {
                 flag = SharedConfig.SAVE_TO_GALLERY_FLAG_PEER;
             } else {

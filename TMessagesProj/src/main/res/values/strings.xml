@@ -4776,6 +4776,8 @@
     <string name="AccActionOpenForwardedOrigin">Forwarded origin</string>
     <string name="AccActionEnterSelectionMode">Enter selection mode</string>
     <string name="AccActionChatPreview">Chat Preview</string>
+    <string name="AccActionOpenTranscription">Open Voice Transcription</string>
+    <string name="AccActionCloseTranscription">Close Transcription</string>
     <string name="AccDescrEmojiButton">Emoji, stickers, and GIFs</string>
     <string name="AccDescrAttachButton">Attach media</string>
     <string name="AccDescrChanSilentOn">Send silently</string>
@@ -5446,4 +5448,5 @@
     <string name="PremiumPreviewAdvancedChatManagementDescription">Tools to set the default folder, auto-archive and hide new chats from non-contacts.</string>
     <string name="TelegramPremiumUserDialogSubtitle">Owners of **Telegram Premium** accounts have exclusive acces to multiple additional features.</string>
     <string name="PremiumPreviewNoAdsDescription2">Remove ads such as this one by subscribing to Telegram Premium.</string>
+    <string name="FeaturedStickersPremium">Trending Premium Stickers</string>
 </resources>

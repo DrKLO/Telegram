@@ -417,8 +417,8 @@ public class SharedConfig {
             configLoaded = true;
 
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    WebView.setWebContentsDebuggingEnabled(debugWebView);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && debugWebView) {
+                    WebView.setWebContentsDebuggingEnabled(true);
                 }
             } catch (Exception e) {
                 FileLog.e(e);

@@ -94,6 +94,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
             return child != aspectRatioFrameLayout && super.drawChild(canvas, child, drawingTime);
         }
+
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            centerImage.onAttachedToWindow();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            centerImage.onDetachedFromWindow();
+        }
     }
 
     private class SecretDeleteTimer extends FrameLayout {

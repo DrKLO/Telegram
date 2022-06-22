@@ -82,7 +82,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
 
-        premiumIconView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS);
+        premiumIconView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED);
         premiumIconView.setImageReceiver(imageView.getImageReceiver());
         premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
         premiumIconView.setImageReceiver(imageView.getImageReceiver());
@@ -213,18 +213,26 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
     }
 
     private void updatePremiumStatus(boolean animated) {
-        float alpha;
-        if (isPremiumSticker && !UserConfig.getInstance(currentAccount).isPremium()) {
-            alpha = 0.5f;
+        if (isPremiumSticker) {
             showPremiumLock = true;
         } else {
-            alpha = 1f;
             showPremiumLock = false;
         }
+        FrameLayout.LayoutParams layoutParams = (LayoutParams) premiumIconView.getLayoutParams();
+        if (!UserConfig.getInstance(currentAccount).isPremium()) {
+            layoutParams.height = layoutParams.width = AndroidUtilities.dp(24);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            layoutParams.bottomMargin = layoutParams.rightMargin = 0;
+            premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        } else {
+            layoutParams.height = layoutParams.width = AndroidUtilities.dp(16);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
+            layoutParams.bottomMargin = AndroidUtilities.dp(8);
+            layoutParams.rightMargin = AndroidUtilities.dp(8);
+            premiumIconView.setPadding(AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1));
+        }
+        premiumIconView.setLocked(!UserConfig.getInstance(currentAccount).isPremium());
         AndroidUtilities.updateViewVisibilityAnimated(premiumIconView, showPremiumLock, 0.9f, animated);
-//        if (!animated) {
-//            premiumAlpha = alpha;
-//        }
         invalidate();
     }
 

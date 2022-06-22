@@ -512,7 +512,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     }
 
     private void showStickerSetBulletin(TLRPC.TL_messages_stickerSet stickerSet, MessageObject messageObject) {
-        if (MessagesController.getInstance(currentAccount).premiumLocked) {
+        if (MessagesController.getInstance(currentAccount).premiumLocked || chatActivity.getParentActivity() == null) {
             return;
         }
         StickerSetBulletinLayout layout = new StickerSetBulletinLayout(contentLayout.getContext(), null, StickerSetBulletinLayout.TYPE_EMPTY, messageObject.getDocument(), chatActivity.getResourceProvider());

@@ -847,7 +847,8 @@ public class EditTextBoldCursor extends EditTextEffects {
                 }
             }
 
-            int bottom = (int) lineY;
+            int scrollHeight = (getLayout() == null ? 0 : getLayout().getHeight()) - getMeasuredHeight() + getPaddingBottom() + getPaddingTop();
+            int bottom = (int) lineY + getScrollY() + Math.min(Math.max(0, scrollHeight - getScrollY()), AndroidUtilities.dp(2));
             int centerX = lastTouchX < 0 ? getMeasuredWidth() / 2 : lastTouchX,
                 maxWidth = Math.max(centerX, getMeasuredWidth() - centerX) * 2;
             if (lineActiveness < 1f) {

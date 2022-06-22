@@ -226,6 +226,7 @@ public class MediaDataController extends BaseController {
 
     private long loadFeaturedHash;
     private int loadFeaturedDate;
+    public boolean loadFeaturedPremium;
     private ArrayList<TLRPC.StickerSetCovered> featuredStickerSets = new ArrayList<>();
     private LongSparseArray<TLRPC.StickerSetCovered> featuredStickerSetsById = new LongSparseArray<>();
     private ArrayList<Long> unreadStickerSets = new ArrayList<>();
@@ -1534,9 +1535,10 @@ public class MediaDataController extends BaseController {
                 ArrayList<Long> unread = new ArrayList<>();
                 int date = 0;
                 long hash = 0;
+                boolean premium = false;
                 SQLiteCursor cursor = null;
                 try {
-                    cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, unread, date, hash FROM stickers_featured WHERE 1");
+                    cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, unread, date, hash, premium FROM stickers_featured WHERE 1");
                     if (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
@@ -1558,6 +1560,7 @@ public class MediaDataController extends BaseController {
                         }
                         date = cursor.intValue(2);
                         hash = calcFeaturedStickersHash(newStickerArray);
+                        premium = cursor.intValue(4) == 1;
                     }
                 } catch (Throwable e) {
                     FileLog.e(e);
@@ -1566,7 +1569,7 @@ public class MediaDataController extends BaseController {
                         cursor.dispose();
                     }
                 }
-                processLoadedFeaturedStickers(newStickerArray, unread, true, date, hash);
+                processLoadedFeaturedStickers(newStickerArray, unread, premium, true, date, hash);
             });
         } else {
             TLRPC.TL_messages_getFeaturedStickers req = new TLRPC.TL_messages_getFeaturedStickers();
@@ -1574,15 +1577,15 @@ public class MediaDataController extends BaseController {
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (response instanceof TLRPC.TL_messages_featuredStickers) {
                     TLRPC.TL_messages_featuredStickers res = (TLRPC.TL_messages_featuredStickers) response;
-                    processLoadedFeaturedStickers(res.sets, res.unread, false, (int) (System.currentTimeMillis() / 1000), res.hash);
+                    processLoadedFeaturedStickers(res.sets, res.unread, res.premium,false, (int) (System.currentTimeMillis() / 1000), res.hash);
                 } else {
-                    processLoadedFeaturedStickers(null, null, false, (int) (System.currentTimeMillis() / 1000), req.hash);
+                    processLoadedFeaturedStickers(null, null, false, false, (int) (System.currentTimeMillis() / 1000), req.hash);
                 }
             }));
         }
     }
 
-    private void processLoadedFeaturedStickers(ArrayList<TLRPC.StickerSetCovered> res, ArrayList<Long> unreadStickers, boolean cache, int date, long hash) {
+    private void processLoadedFeaturedStickers(ArrayList<TLRPC.StickerSetCovered> res, ArrayList<Long> unreadStickers, boolean premium, boolean cache, int date, long hash) {
         AndroidUtilities.runOnUIThread(() -> {
             loadingFeaturedStickers = false;
             featuredStickersLoaded = true;
@@ -1611,7 +1614,7 @@ public class MediaDataController extends BaseController {
                     }
 
                     if (!cache) {
-                        putFeaturedStickersToCache(stickerSetsNew, unreadStickers, date, hash);
+                        putFeaturedStickersToCache(stickerSetsNew, unreadStickers, date, hash, premium);
                     }
                     AndroidUtilities.runOnUIThread(() -> {
                         unreadStickerSets = unreadStickers;
@@ -1619,6 +1622,7 @@ public class MediaDataController extends BaseController {
                         featuredStickerSets = stickerSetsNew;
                         loadFeaturedHash = hash;
                         loadFeaturedDate = date;
+                        loadFeaturedPremium = premium;
                         loadStickers(TYPE_FEATURED, true, false);
                         getNotificationCenter().postNotificationName(NotificationCenter.featuredStickersDidLoad);
                     });
@@ -1627,17 +1631,17 @@ public class MediaDataController extends BaseController {
                 }
             } else {
                 AndroidUtilities.runOnUIThread(() -> loadFeaturedDate = date);
-                putFeaturedStickersToCache(null, null, date, 0);
+                putFeaturedStickersToCache(null, null, date, 0, premium);
             }
         });
     }
 
-    private void putFeaturedStickersToCache(ArrayList<TLRPC.StickerSetCovered> stickers, ArrayList<Long> unreadStickers, int date, long hash) {
+    private void putFeaturedStickersToCache(ArrayList<TLRPC.StickerSetCovered> stickers, ArrayList<Long> unreadStickers, int date, long hash, boolean premium) {
         ArrayList<TLRPC.StickerSetCovered> stickersFinal = stickers != null ? new ArrayList<>(stickers) : null;
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 if (stickersFinal != null) {
-                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO stickers_featured VALUES(?, ?, ?, ?, ?)");
+                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO stickers_featured VALUES(?, ?, ?, ?, ?, ?)");
                     state.requery();
                     int size = 4;
                     for (int a = 0; a < stickersFinal.size(); a++) {
@@ -1658,6 +1662,7 @@ public class MediaDataController extends BaseController {
                     state.bindByteBuffer(3, data2);
                     state.bindInteger(4, date);
                     state.bindLong(5, hash);
+                    state.bindInteger(6, premium ? 1 : 0);
                     state.step();
                     data.reuse();
                     data2.reuse();
@@ -1707,7 +1712,7 @@ public class MediaDataController extends BaseController {
         unreadStickerSets.clear();
         loadFeaturedHash = calcFeaturedStickersHash(featuredStickerSets);
         getNotificationCenter().postNotificationName(NotificationCenter.featuredStickersDidLoad);
-        putFeaturedStickersToCache(featuredStickerSets, unreadStickerSets, loadFeaturedDate, loadFeaturedHash);
+        putFeaturedStickersToCache(featuredStickerSets, unreadStickerSets, loadFeaturedDate, loadFeaturedHash, loadFeaturedPremium);
         if (query) {
             TLRPC.TL_messages_readFeaturedStickers req = new TLRPC.TL_messages_readFeaturedStickers();
             getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -1743,7 +1748,7 @@ public class MediaDataController extends BaseController {
             readingStickerSets.remove(id);
             loadFeaturedHash = calcFeaturedStickersHash(featuredStickerSets);
             getNotificationCenter().postNotificationName(NotificationCenter.featuredStickersDidLoad);
-            putFeaturedStickersToCache(featuredStickerSets, unreadStickerSets, loadFeaturedDate, loadFeaturedHash);
+            putFeaturedStickersToCache(featuredStickerSets, unreadStickerSets, loadFeaturedDate, loadFeaturedHash, loadFeaturedPremium);
         }, 1000);
     }
 

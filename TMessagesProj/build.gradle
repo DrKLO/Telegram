@@ -40,8 +40,6 @@ dependencies {
     implementation 'com.android.billingclient:billing:5.0.0'
     implementation files('libs/libgsaverification-client.aar')
 
-    implementation "com.android.billingclient:billing:5.0.0"
-
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }
 
@@ -237,7 +235,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 2702
+    defaultConfig.versionCode = 2705
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -256,7 +254,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 30
-        versionName "8.8.2"
+        versionName "8.8.3"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

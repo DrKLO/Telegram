@@ -997,7 +997,7 @@ public class ImageLoader {
                 boolean needInvert = false;
                 int orientation = 0;
                 File cacheFileFinal = cacheImage.finalFilePath;
-                boolean inEncryptedFile = cacheImage.secureDocument != null || cacheImage.encryptionKeyPath != null && cacheFileFinal != null && cacheFileFinal.getAbsolutePath().endsWith(".enc");
+                boolean inEncryptedFile = cacheImage.secureDocument != null || cacheImage.encryptionKeyPath != null && cacheFileFinal != null && (cacheFileFinal.getAbsolutePath().endsWith(".enc") || cacheFileFinal.getAbsolutePath().endsWith(".64enc"));
                 SecureDocumentKey secureDocumentKey;
                 byte[] secureDocumentHash;
                 if (cacheImage.secureDocument != null) {

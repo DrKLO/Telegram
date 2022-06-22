@@ -7389,6 +7389,7 @@ public class TLRPC {
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
             flags = nopremium ? (flags | 8) : (flags &~ 8);
+            flags = document != null ? (flags | 1) : (flags &~ 1);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
                 document.serializeToStream(stream);
@@ -22949,7 +22950,6 @@ public class TLRPC {
         public static int constructor = 0x40699cd0;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            flags = stream.readInt32(exception);
             currency = stream.readString(exception);
             total_amount = stream.readInt64(exception);
         }
@@ -38596,7 +38596,7 @@ public class TLRPC {
         public TL_chatInviteExported invite;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            invite = (TL_chatInviteExported) ExportedChatInvite.TLdeserialize(stream, stream.readInt32(exception), exception);
+            invite = ExportedChatInvite.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
@@ -59977,6 +59977,10 @@ public class TLRPC {
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+
         }
     }
 

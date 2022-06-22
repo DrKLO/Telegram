@@ -19,7 +19,6 @@ public class FilePathDatabase {
 
     private SQLiteDatabase database;
     private File cacheFile;
-    private File walCacheFile;
     private File shmCacheFile;
 
     private final static int LAST_DB_VERSION = 1;
@@ -31,11 +30,11 @@ public class FilePathDatabase {
         this.currentAccount = currentAccount;
         dispatchQueue = new DispatchQueue("files_database_queue_" + currentAccount);
         dispatchQueue.postRunnable(() -> {
-            createDatabase(false);
+            createDatabase(0, false);
         });
     }
 
-    public void createDatabase(boolean fromBackup) {
+    public void createDatabase(int tryCount, boolean fromBackup) {
         File filesDir = ApplicationLoader.getFilesDirFixed();
         if (currentAccount != 0) {
             filesDir = new File(filesDir, "account" + currentAccount + "/");
@@ -46,6 +45,7 @@ public class FilePathDatabase {
 
 
         boolean createTable = false;
+
 
         if (!cacheFile.exists()) {
             createTable = true;
@@ -59,6 +59,13 @@ public class FilePathDatabase {
                 database.executeFast("CREATE TABLE paths(document_id INTEGER, dc_id INTEGER, type INTEGER, path TEXT, PRIMARY KEY(document_id, dc_id, type));").stepThis().dispose();
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
+                int version = database.executeInt("PRAGMA user_version");
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("current db version = " + version);
+                }
+                if (version == 0) {
+                    throw new Exception("malformed");
+                }
                 //migration
             }
             if (!fromBackup) {
@@ -66,12 +73,18 @@ public class FilePathDatabase {
             }
             FileLog.d("files db created from_backup= " + fromBackup);
         } catch (Exception e) {
-            if (!fromBackup && restoreBackup()) {
-                createDatabase(true);
-                return;
+            if (tryCount < 4) {
+                if (!fromBackup && restoreBackup()) {
+                    createDatabase(tryCount + 1, true);
+                    return;
+                } else {
+                    cacheFile.delete();
+                    shmCacheFile.delete();
+                    createDatabase(tryCount + 1, false);
+                }
             }
             if (BuildVars.DEBUG_VERSION) {
-                throw new RuntimeException(e);
+                FileLog.e(e);
             }
         }
     }
@@ -104,7 +117,7 @@ public class FilePathDatabase {
         try {
             return AndroidUtilities.copyFile(backupCacheFile, cacheFile);
         } catch (IOException e) {
-            e.printStackTrace();
+           FileLog.e(e);
         }
         return false;
     }
@@ -130,7 +143,7 @@ public class FilePathDatabase {
                     }
                     cursor.dispose();
                 } catch (SQLiteException e) {
-                    throw new RuntimeException(e);
+                    FileLog.e(e);
                 }
                 syncLatch.countDown();
             });
@@ -149,9 +162,7 @@ public class FilePathDatabase {
                 }
                 cursor.dispose();
             } catch (SQLiteException e) {
-                if (BuildVars.DEBUG_VERSION) {
-                    throw new RuntimeException(e);
-                }
+                FileLog.e(e);
             }
             return res;
         }
@@ -173,9 +184,7 @@ public class FilePathDatabase {
                     database.executeFast("DELETE FROM paths WHERE document_id = " + id + " AND dc_id = " + dc + " AND type = " + type).stepThis().dispose();
                 }
             } catch (SQLiteException e) {
-                if (BuildVars.DEBUG_VERSION) {
-                    throw new RuntimeException(e);
-                }
+                FileLog.e(e);
             }
         });
     }
@@ -203,7 +212,7 @@ public class FilePathDatabase {
         try {
             syncLatch.await();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            FileLog.e(e);
         }
 
         FileLog.d("checkMediaExistance size=" + messageObjects.size() + " time=" + (System.currentTimeMillis() - time));

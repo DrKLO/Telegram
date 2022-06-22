@@ -381,7 +381,9 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, true, false);
                 finishFragment();
             } else {
-                Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();
+                if (getParentActivity() != null) {
+                    Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();
+                }
             }
         }));
     }

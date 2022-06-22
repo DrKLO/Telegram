@@ -151,31 +151,7 @@ public class TranscribeButton {
     public boolean onTouch(int action, float x, float y) {
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (pressed && action == MotionEvent.ACTION_UP) {
-                boolean processClick, toOpen = !shouldBeOpen;
-                if (!shouldBeOpen) {
-                    processClick = !loading;
-                    if (premium && parent.getMessageObject().isSent()) {
-                        setLoading(true, true);
-                    }
-                } else {
-                    processClick = true;
-                    setOpen(false, true);
-                    setLoading(false, true);
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && selectorDrawable instanceof RippleDrawable) {
-                    selectorDrawable.setState(StateSet.NOTHING);
-                    parent.invalidate();
-                }
-                pressed = false;
-                if (processClick) {
-                    if (!premium && toOpen) {
-                        if (parent.getDelegate() != null) {
-                            parent.getDelegate().needShowPremiumFeatures(PremiumPreviewFragment.featureTypeToServerString(PremiumPreviewFragment.PREMIUM_FEATURE_VOICE_TO_TEXT));
-                        }
-                    } else {
-                        transcribePressed(parent.getMessageObject(), toOpen);
-                    }
-                }
+                onTap();
                 return true;
             }
             pressed = false;
@@ -193,6 +169,34 @@ public class TranscribeButton {
             parent.invalidate();
         }
         return true;
+    }
+
+    public void onTap() {
+        boolean processClick, toOpen = !shouldBeOpen;
+        if (!shouldBeOpen) {
+            processClick = !loading;
+            if (premium && parent.getMessageObject().isSent()) {
+                setLoading(true, true);
+            }
+        } else {
+            processClick = true;
+            setOpen(false, true);
+            setLoading(false, true);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && selectorDrawable instanceof RippleDrawable) {
+            selectorDrawable.setState(StateSet.NOTHING);
+            parent.invalidate();
+        }
+        pressed = false;
+        if (processClick) {
+            if (!premium && toOpen) {
+                if (parent.getDelegate() != null) {
+                    parent.getDelegate().needShowPremiumFeatures(PremiumPreviewFragment.featureTypeToServerString(PremiumPreviewFragment.PREMIUM_FEATURE_VOICE_TO_TEXT));
+                }
+            } else {
+                transcribePressed(parent.getMessageObject(), toOpen);
+            }
+        }
     }
 
     public void setColor(boolean isOut, int color, int grayColor) {

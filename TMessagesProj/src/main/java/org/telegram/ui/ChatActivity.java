@@ -250,6 +250,7 @@ import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.TextSelectionHint;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.ThemeEditorView;
+import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.Components.TranslateAlert;
 import org.telegram.ui.Components.TrendingStickersAlert;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -20938,6 +20939,9 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
         String restrictionReason = MessagesController.getRestrictionReason(messageObject.messageOwner.restriction_reason);
         if (!TextUtils.isEmpty(restrictionReason)) {
             return restrictionReason;
+        }
+        if (messageObject.isVoiceTranscriptionOpen() && !TranscribeButton.isTranscribing(messageObject)) {
+            return messageObject.getVoiceTranscription();
         }
         if (messageObject.caption != null) {
             return messageObject.caption;

@@ -26,6 +26,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -101,7 +102,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
         rowCount += premiumFeatures.size();
         featuresEndRow = rowCount;
         sectionRow = rowCount++;
-        buttonRow = rowCount++;
+        if (!UserConfig.getInstance(currentAccount).isPremium()) {
+            buttonRow = rowCount++;
+        }
         recyclerListView.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
         recyclerListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
@@ -154,10 +157,11 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
         buttonDivider.getLayoutParams().height = 1;
         AndroidUtilities.updateViewVisibilityAnimated(buttonDivider, true, 1f, false);
 
-        buttonContainer.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
-        buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-        containerView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 68, Gravity.BOTTOM));
-
+        if (!UserConfig.getInstance(currentAccount).isPremium()) {
+            buttonContainer.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
+            buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+            containerView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 68, Gravity.BOTTOM));
+        }
     }
 
     @Override

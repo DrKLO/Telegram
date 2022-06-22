@@ -3234,7 +3234,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             }
             case STEP_CHECKOUT:
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.paymentFinished);
-                if (botUser.username != null && botUser.username.equalsIgnoreCase(getMessagesController().premiumBotUsername) || Objects.equals(invoiceSlug, getMessagesController().premiumInvoiceSlug)) {
+                if (botUser.username != null && botUser.username.equalsIgnoreCase(getMessagesController().premiumBotUsername) || invoiceSlug != null && getMessagesController().premiumInvoiceSlug != null && Objects.equals(invoiceSlug, getMessagesController().premiumInvoiceSlug)) {
                     for (BaseFragment fragment : new ArrayList<>(getParentLayout().fragmentsStack)) {
                         if (fragment instanceof ChatActivity || fragment instanceof PremiumPreviewFragment) {
                             fragment.removeSelfFromStack();
