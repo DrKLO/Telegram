@@ -243,4 +243,9 @@ public class NumberTextView extends View {
          */
         void onTextWidthProgress(float fromWidth, float toWidth, float progress);
     }
+
+    @Override
+    public CharSequence getContentDescription() {
+if(currentNumber>0) return currentNumber+""; else return null;
+    }
 }

@@ -4889,6 +4889,103 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (!isFolderCell() && parentFragment != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_chat_preview, LocaleController.getString(R.string.AccActionChatPreview)));
             }
+            StringBuilder sb = new StringBuilder();
+            if (currentDialogFolderId == 1) {
+                sb.append(LocaleController.getString("ArchivedChats", R.string.ArchivedChats));
+                sb.append(". ");
+            } else {
+                if (encryptedChat != null) {
+                    sb.append(LocaleController.getString("AccDescrSecretChat", R.string.AccDescrSecretChat));
+                    sb.append(". ");
+                }
+                if (user != null) {
+                    if (UserObject.isReplyUser(user)) {
+                        sb.append(LocaleController.getString("RepliesTitle", R.string.RepliesTitle));
+                    } else {
+                        if (user.bot) {
+                            sb.append(LocaleController.getString("Bot", R.string.Bot));
+                            sb.append(". ");
+                        }
+                        if (user.self) {
+                            sb.append(LocaleController.getString("SavedMessages", R.string.SavedMessages));
+                        } else {
+                            sb.append(ContactsController.formatName(user.first_name, user.last_name));
+                        }
+                    }
+                    sb.append(". ");
+                } else if (chat != null) {
+                    if (chat.broadcast) {
+                        sb.append(LocaleController.getString("AccDescrChannel", R.string.AccDescrChannel));
+                    } else {
+                        sb.append(LocaleController.getString("AccDescrGroup", R.string.AccDescrGroup));
+                    }
+                    sb.append(". ");
+                    sb.append(chat.title);
+                    sb.append(". ");
+                }
+            }
+            if (drawVerified) {
+                sb.append(LocaleController.getString("AccDescrVerified", R.string.AccDescrVerified));
+                sb.append(". ");
+            }
+            if (unreadCount > 0) {
+                sb.append(LocaleController.formatPluralString("NewMessages", unreadCount));
+                sb.append(". ");
+            }
+            if (mentionCount > 0) {
+                sb.append(LocaleController.formatPluralString("AccDescrMentionCount", mentionCount));
+                sb.append(". ");
+            }
+            if (reactionMentionCount > 0) {
+                sb.append(LocaleController.getString("AccDescrMentionReaction", R.string.AccDescrMentionReaction));
+                sb.append(". ");
+            }
+            if (message == null || currentDialogFolderId != 0) {
+                info.setContentDescription(sb.toString());
+                return;
+            }
+            int lastDate = lastMessageDate;
+            if (lastMessageDate == 0) {
+                lastDate = message.messageOwner.date;
+            }
+            String date = LocaleController.formatDateAudio(lastDate, true);
+            if (message.isOut()) {
+                sb.append(LocaleController.formatString("AccDescrSentDate", R.string.AccDescrSentDate, date));
+            } else {
+                sb.append(LocaleController.formatString("AccDescrReceivedDate", R.string.AccDescrReceivedDate, date));
+            }
+            sb.append(". ");
+            if (chat != null && !message.isOut() && message.isFromUser() && message.messageOwner.action == null) {
+                TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id);
+                if (fromUser != null) {
+                    sb.append(ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                    sb.append(". ");
+                }
+            }
+            if (encryptedChat == null) {
+                StringBuilder messageString = new StringBuilder();
+                messageString.append(message.messageText);
+                if (!message.isMediaEmpty()) {
+                    if (!TextUtils.isEmpty(message.caption)) {
+                        messageString.append(". ");
+                        messageString.append(message.caption);
+                    }
+                }
+                int len = messageLayout == null ? -1 : messageLayout.getText().length();
+                if (len > 0) {
+                    int index = messageString.length(), b;
+                    if ((b = messageString.indexOf("\n", len)) < index && b >= 0)
+                        index = b;
+                    if ((b = messageString.indexOf("\t", len)) < index && b >= 0)
+                        index = b;
+                    if ((b = messageString.indexOf(" ", len)) < index && b >= 0)
+                        index = b;
+                    sb.append(messageString.substring(0, index));
+                } else {
+                    sb.append(messageString);
+                }
+            }
+            info.setContentDescription(sb.toString());
         }
         if (checkBox != null && checkBox.isChecked()) {
             info.setClassName("android.widget.CheckBox");
