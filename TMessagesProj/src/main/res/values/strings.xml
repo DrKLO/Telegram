@@ -1226,10 +1226,10 @@
     <string name="SendDice">SEND</string>
     <string name="PsaType_covid">PSA</string>
     <string name="PsaTypeDefault">PSA</string>
-    <string name="PsaInfo_covid">This message provides you with a public service announcement in relation to the ungoing Covid-19 pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfo_covid">This message provides you with a public service announcement in relation to the ongoing Covid-19 pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
     <string name="PsaInfoDefault">PSA info test</string>
     <string name="PsaMessage_covid">Covid-19 Notification</string>
-    <string name="PsaMessageInfo_covid">This message provides you with a public service announcement in relation to the ungoing Covid-19 pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageInfo_covid">This message provides you with a public service announcement in relation to the ongoing Covid-19 pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
     <string name="PsaMessageDefault">Important Notification</string>
     <string name="PsaMessageInfoDefault">This is an important notification.</string>
     <string name="PsaHideChatAlertTitle">Hide chat</string>
