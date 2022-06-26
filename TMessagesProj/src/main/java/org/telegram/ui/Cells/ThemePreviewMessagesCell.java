@@ -258,6 +258,9 @@ public class ThemePreviewMessagesCell extends LinearLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable newDrawable = Theme.getCachedWallpaperNonBlocking();
+        if (Theme.wallpaperLoadTask != null) {
+            invalidate();
+        }
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
                 oldBackgroundDrawable = backgroundDrawable;
@@ -274,11 +277,16 @@ public class ThemePreviewMessagesCell extends LinearLayout {
             if (drawable == null) {
                 continue;
             }
+            int alpha;
             if (a == 1 && oldBackgroundDrawable != null && parentLayout != null) {
-                drawable.setAlpha((int) (255 * themeAnimationValue));
+                alpha = (int) (255 * themeAnimationValue);
             } else {
-                drawable.setAlpha(255);
+                alpha = 255;
             }
+            if (alpha <= 0) {
+                continue;
+            }
+            drawable.setAlpha(alpha);
             if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
                 drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 if (drawable instanceof BackgroundGradientDrawable) {
@@ -289,6 +297,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                 }
             } else if (drawable instanceof BitmapDrawable) {
                 BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                bitmapDrawable.setFilterBitmap(true);
                 if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
                     canvas.save();
                     float scale = 2.0f / AndroidUtilities.density;

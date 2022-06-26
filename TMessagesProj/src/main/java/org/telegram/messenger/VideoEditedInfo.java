@@ -54,6 +54,7 @@ public class VideoEditedInfo {
     public boolean canceled;
     public boolean videoConvertFirstWrite;
     public boolean needUpdateProgress = false;
+    public boolean shouldLimitFps = true;
 
     public static class MediaEntity {
         public byte type;

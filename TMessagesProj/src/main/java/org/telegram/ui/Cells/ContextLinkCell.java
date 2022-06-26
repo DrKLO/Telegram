@@ -80,6 +80,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
     private LetterDrawable letterDrawable;
     private int currentAccount = UserConfig.selectedAccount;
     private Object parentObject;
+    private Theme.ResourcesProvider resourcesProvider;
 
     private boolean needDivider;
     private boolean buttonPressed;
@@ -128,25 +129,30 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
     private ContextLinkCellDelegate delegate;
 
     public ContextLinkCell(Context context) {
-        this(context, false);
+        this(context, false, null);
     }
 
     public ContextLinkCell(Context context, boolean needsCheckBox) {
+        this(context, needsCheckBox, null);
+    }
+
+    public ContextLinkCell(Context context, boolean needsCheckBox, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         linkImageView = new ImageReceiver(this);
         linkImageView.setLayerNum(1);
         linkImageView.setUseSharedAnimationQueue(true);
-        letterDrawable = new LetterDrawable();
+        letterDrawable = new LetterDrawable(resourcesProvider);
         radialProgress = new RadialProgress2(this);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setFocusable(true);
 
         if (needsCheckBox) {
             backgroundPaint = new Paint();
-            backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder));
+            backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder, resourcesProvider));
 
-            checkBox = new CheckBox2(context, 21);
+            checkBox = new CheckBox2(context, 21, resourcesProvider);
             checkBox.setVisibility(INVISIBLE);
             checkBox.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
             checkBox.setDrawUnchecked(false);
@@ -502,6 +508,10 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             documentAttachType = DOCUMENT_ATTACH_TYPE_GIF;
         }
         requestLayout();
+        fileName = null;
+        cacheFile = null;
+        fileExist = false;
+        resolvingFileName = false;
         updateButtonState(false, false);
     }
 
@@ -530,6 +540,10 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         setAttachType();
         documentAttachType = DOCUMENT_ATTACH_TYPE_GIF;
         requestLayout();
+        fileName = null;
+        cacheFile = null;
+        fileExist = false;
+        resolvingFileName = false;
         updateButtonState(false, false);
     }
 
@@ -717,7 +731,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         }
 
         if (descriptionLayout != null) {
-            Theme.chat_contextResult_descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            Theme.chat_contextResult_descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
             descriptionLayout.draw(canvas);
@@ -725,7 +739,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         }
 
         if (linkLayout != null) {
-            Theme.chat_contextResult_descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+            Theme.chat_contextResult_descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), linkY);
             linkLayout.draw(canvas);
@@ -739,7 +753,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 letterDrawable.setAlpha(255);
             }
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
-                radialProgress.setProgressColor(Theme.getColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
+                radialProgress.setProgressColor(Theme.getColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress, resourcesProvider));
                 radialProgress.draw(canvas);
             } else if (inlineResult != null && inlineResult.type.equals("file")) {
                 int w = Theme.chat_inlineResultFile.getIntrinsicWidth();
@@ -838,93 +852,126 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         return buttonState == 1 ? MediaActionDrawable.ICON_EMPTY : MediaActionDrawable.ICON_NONE;
     }
 
+    boolean resolvingFileName;
+    String fileName;
+    File cacheFile = null;
+    int resolveFileNameId;
+    boolean fileExist;
+    private static int resolveFileIdPointer;
+
     public void updateButtonState(boolean ifSame, boolean animated) {
-        String fileName = null;
-        File cacheFile = null;
-        if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
-            if (documentAttach != null) {
-                fileName = FileLoader.getAttachFileName(documentAttach);
-                cacheFile = FileLoader.getPathToAttach(documentAttach);
-            } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
-                fileName = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
-                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-            }
-        } else if (mediaWebpage) {
-            if (inlineResult != null) {
-                if (inlineResult.document instanceof TLRPC.TL_document) {
-                    fileName = FileLoader.getAttachFileName(inlineResult.document);
-                    cacheFile = FileLoader.getPathToAttach(inlineResult.document);
-                } else if (inlineResult.photo instanceof TLRPC.TL_photo) {
-                    currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(inlineResult.photo.sizes, AndroidUtilities.getPhotoSize(), true);
-                    fileName = FileLoader.getAttachFileName(currentPhotoObject);
-                    cacheFile = FileLoader.getPathToAttach(currentPhotoObject);
-                } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
-                    fileName = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, FileLoader.getMimeTypePart(inlineResult.content.mime_type));
-                    cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-                    if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF && inlineResult.thumb instanceof TLRPC.TL_webDocument && "video/mp4".equals(inlineResult.thumb.mime_type)) {
-                        fileName = null;
+        if (fileName == null && !resolvingFileName) {
+            resolvingFileName = true;
+            int localId = resolveFileNameId = resolveFileNameId++;
+            Utilities.searchQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    String fileName = null;
+                    File cacheFile = null;
+                    if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
+                        if (documentAttach != null) {
+                            fileName = FileLoader.getAttachFileName(documentAttach);
+                            cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(documentAttach);
+                        } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
+                            fileName = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
+                            cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                        }
+                    } else if (mediaWebpage) {
+                        if (inlineResult != null) {
+                            if (inlineResult.document instanceof TLRPC.TL_document) {
+                                fileName = FileLoader.getAttachFileName(inlineResult.document);
+                                cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(inlineResult.document);
+                            } else if (inlineResult.photo instanceof TLRPC.TL_photo) {
+                                currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(inlineResult.photo.sizes, AndroidUtilities.getPhotoSize(), true);
+                                fileName = FileLoader.getAttachFileName(currentPhotoObject);
+                                cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(currentPhotoObject);
+                            } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
+                                fileName = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, FileLoader.getMimeTypePart(inlineResult.content.mime_type));
+                                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                                if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF && inlineResult.thumb instanceof TLRPC.TL_webDocument && "video/mp4".equals(inlineResult.thumb.mime_type)) {
+                                    fileName = null;
+                                }
+                            } else if (inlineResult.thumb instanceof TLRPC.TL_webDocument) {
+                                fileName = Utilities.MD5(inlineResult.thumb.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.thumb.url, FileLoader.getMimeTypePart(inlineResult.thumb.mime_type));
+                                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                            }
+                        } else if (documentAttach != null) {
+                            fileName = FileLoader.getAttachFileName(documentAttach);
+                            cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(documentAttach);
+                        }
+
+                        if (documentAttach != null && documentAttachType == DOCUMENT_ATTACH_TYPE_GIF && MessageObject.getDocumentVideoThumb(documentAttach) != null) {
+                            fileName = null;
+                        }
                     }
-                } else if (inlineResult.thumb instanceof TLRPC.TL_webDocument) {
-                    fileName = Utilities.MD5(inlineResult.thumb.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.thumb.url, FileLoader.getMimeTypePart(inlineResult.thumb.mime_type));
-                    cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                    String fileNameFinal = fileName;
+                    File cacheFileFinal = cacheFile;
+                    boolean fileExist = !TextUtils.isEmpty(fileName) && cacheFile.exists();
+                    AndroidUtilities.runOnUIThread(() -> {
+                        resolvingFileName = false;
+                        if (resolveFileNameId == localId) {
+                            ContextLinkCell.this.fileName = fileNameFinal;
+                            if (ContextLinkCell.this.fileName == null) {
+                                ContextLinkCell.this.fileName = "";
+                            }
+                            ContextLinkCell.this.cacheFile = cacheFileFinal;
+                            ContextLinkCell.this.fileExist = fileExist;
+                        }
+                        updateButtonState(ifSame, true);
+                    });
                 }
-            } else if (documentAttach != null) {
-                fileName = FileLoader.getAttachFileName(documentAttach);
-                cacheFile = FileLoader.getPathToAttach(documentAttach);
-            }
-
-            if (documentAttach != null && documentAttachType == DOCUMENT_ATTACH_TYPE_GIF && MessageObject.getDocumentVideoThumb(documentAttach) != null) {
-                fileName = null;
-            }
-        }
-
-        if (TextUtils.isEmpty(fileName)) {
-            buttonState = -1;
+            });
             radialProgress.setIcon(MediaActionDrawable.ICON_NONE, ifSame, false);
-            return;
-        }
-        if (!cacheFile.exists()) {
-            DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, this);
-            if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
-                boolean isLoading;
-                if (documentAttach != null) {
-                    isLoading = FileLoader.getInstance(currentAccount).isLoadingFile(fileName);
-                } else {
-                    isLoading = ImageLoader.getInstance().isLoadingHttpFile(fileName);
-                }
-                if (!isLoading) {
-                    buttonState = 2;
-                } else {
-                    buttonState = 4;
-                    Float progress = ImageLoader.getInstance().getFileProgress(fileName);
-                    if (progress != null) {
-                        radialProgress.setProgress(progress, animated);
-                    } else {
-                        radialProgress.setProgress(0, animated);
-                    }
-                }
-            } else {
-                buttonState = 1;
-                Float progress = ImageLoader.getInstance().getFileProgress(fileName);
-                float setProgress = progress != null ? progress : 0;
-                radialProgress.setProgress(setProgress, false);
-            }
         } else {
-            DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
-            if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
-                boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
-                if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
-                    buttonState = 0;
+            if (TextUtils.isEmpty(fileName)) {
+                buttonState = -1;
+                radialProgress.setIcon(MediaActionDrawable.ICON_NONE, ifSame, false);
+                return;
+            }
+
+            boolean isLoading;
+            if (documentAttach != null) {
+                isLoading = FileLoader.getInstance(currentAccount).isLoadingFile(fileName);
+            } else {
+                isLoading = ImageLoader.getInstance().isLoadingHttpFile(fileName);
+            }
+            if (isLoading || !fileExist) {
+                DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, this);
+                if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
+                    if (!isLoading) {
+                        buttonState = 2;
+                    } else {
+                        buttonState = 4;
+                        Float progress = ImageLoader.getInstance().getFileProgress(fileName);
+                        if (progress != null) {
+                            radialProgress.setProgress(progress, animated);
+                        } else {
+                            radialProgress.setProgress(0, animated);
+                        }
+                    }
                 } else {
                     buttonState = 1;
+                    Float progress = ImageLoader.getInstance().getFileProgress(fileName);
+                    float setProgress = progress != null ? progress : 0;
+                    radialProgress.setProgress(setProgress, false);
                 }
-                radialProgress.setProgress(1, animated);
             } else {
-                buttonState = -1;
+                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+                if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
+                    boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
+                    if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
+                        buttonState = 0;
+                    } else {
+                        buttonState = 1;
+                    }
+                    radialProgress.setProgress(1, animated);
+                } else {
+                    buttonState = -1;
+                }
             }
+            radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
+            invalidate();
         }
-        radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
-        invalidate();
     }
 
     public void setDelegate(ContextLinkCellDelegate contextLinkCellDelegate) {
@@ -942,6 +989,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
     @Override
     public void onSuccessDownload(String fileName) {
+        fileExist = true;
         radialProgress.setProgress(1, true);
         updateButtonState(false, true);
     }

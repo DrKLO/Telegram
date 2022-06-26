@@ -191,14 +191,18 @@ public class ReactionsEffectOverlay {
         }
 
         int size;
+        int sizeForFilter;
         if (animationType == ONLY_MOVE_ANIMATION) {
             size = AndroidUtilities.dp(34);
+            sizeForFilter = (int) (2f * size / AndroidUtilities.density);
         } else if (animationType == SHORT_ANIMATION) {
             size = AndroidUtilities.dp(80);
+            sizeForFilter = (int) (2f * size / AndroidUtilities.density);
         } else {
             size = Math.round(Math.min(AndroidUtilities.dp(350), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) * 0.8f);
+            sizeForFilter = sizeForBigReaction();
         }
-        int sizeForFilter = (int) (2f * size / AndroidUtilities.density);
+
         int emojiSize = size >> 1;
         int emojiSizeForFilter = sizeForFilter >> 1;
 
@@ -415,6 +419,9 @@ public class ReactionsEffectOverlay {
                             particle.outProgress += 16f / 150f;
                             if (particle.outProgress > 1f) {
                                 particle.outProgress = 1f;
+                                avatars.remove(i);
+                                i--;
+                                continue;
                             }
                         }
                         float jumpProgress = progress < 0.5f ? (progress / 0.5f) : (1f - ((progress - 0.5f) / 0.5f));
@@ -534,7 +541,7 @@ public class ReactionsEffectOverlay {
             ((FrameLayout.LayoutParams) emojiImageView.getLayoutParams()).leftMargin = leftOffset;
 
             if (animationType != SHORT_ANIMATION) {
-                emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.static_icon), "40_40", null, "webp", availableReaction, 1);
+                emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastframe", null, "webp", availableReaction, 1);
             }
             container.addView(emojiStaticImageView);
             emojiStaticImageView.getLayoutParams().width = emojiSize;
@@ -709,6 +716,10 @@ public class ReactionsEffectOverlay {
         }
     }
 
+    public static int sizeForBigReaction() {
+        return (int) (Math.round(Math.min(AndroidUtilities.dp(350), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) * 0.7f) / AndroidUtilities.density);
+    }
+
     private class AvatarParticle {
         ImageReceiver imageReceiver;
 
@@ -725,6 +736,5 @@ public class ReactionsEffectOverlay {
         float currentRotation;
         boolean incrementRotation;
         float globalTranslationY;
-
     }
 }

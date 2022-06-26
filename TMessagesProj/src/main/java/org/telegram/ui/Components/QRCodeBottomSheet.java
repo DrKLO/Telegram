@@ -55,6 +55,7 @@ public class QRCodeBottomSheet extends BottomSheet {
 
     public QRCodeBottomSheet(Context context, String link, String helpMessage) {
         super(context, false);
+        fixNavigationBar();
 
         setTitle(LocaleController.getString("InviteByQRCode", R.string.InviteByQRCode), true);
         ImageView imageView = new ImageView(context) {

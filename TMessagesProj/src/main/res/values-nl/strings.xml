@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">**%1$s** verwijderd van **%2$s**</string>
     <string name="FilterChatsRemovedFrom">**%1$s** verwijderd van **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">Limiet bereikt</string>
-    <string name="FilterRemoveFromAlertFullText">Sorry, je kunt niet meer dan 100 chats aan een map toevoegen.</string>
     <string name="FilterAddToAlertFullText">Sorry, je kunt niet meer dan 100 chats uitsluiten van een map</string>
     <!--passcode view-->
     <string name="Passcode">Toegangscode-vergrendeling</string>

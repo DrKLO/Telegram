@@ -19,10 +19,13 @@
     <item name="acc_action_small_button" type="id"/>
     <item name="acc_action_msg_options" type="id"/>
     <item name="acc_action_open_photo" type="id"/>
+    <item name="acc_action_chat_preview" type="id"/>
+    <item name="acc_action_open_forwarded_origin" type="id"/>
 
     <item name="timeout_callback" type="id"/>
 
     <item name="menu_open_bot" type="id"/>
+    <item name="menu_settings" type="id"/>
     <item name="menu_reload_page" type="id"/>
     <item name="menu_delete_bot" type="id"/>
 

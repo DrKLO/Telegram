@@ -248,7 +248,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
         contentView.addView(buttonLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 64, Gravity.BOTTOM));
         buttonLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         buttonLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, 12, 16, 12));
@@ -410,7 +410,6 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         int inactiveChatsStartRow;
         int inactiveChatsEndRow;
         int endPaddingPosition;
-
 
         @Override
         public void notifyDataSetChanged() {
@@ -671,7 +670,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                 }
             }
 
-            buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
             progressBar.setProgressColor(Theme.getColor(Theme.key_progressCircle));
         };
 

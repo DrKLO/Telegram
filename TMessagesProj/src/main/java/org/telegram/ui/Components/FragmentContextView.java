@@ -264,8 +264,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
 
             @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
                 if (currentStyle == STYLE_INACTIVE_GROUP_CALL && timeLayout != null) {
                     int width = (int) Math.ceil(timeLayout.getLineWidth(0)) + AndroidUtilities.dp(24);
                     if (width != gradientWidth) {
@@ -290,12 +290,12 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     matrix.postTranslate(-gradientWidth * 0.7f * moveProgress, 0);
                     linearGradient.setLocalMatrix(matrix);
                     int x = getMeasuredWidth() - width - AndroidUtilities.dp(10);
-                    int y = AndroidUtilities.dp(12);
-                    rect.set(0, 0, width, AndroidUtilities.dp(24));
+                    int y = AndroidUtilities.dp(10);
+                    rect.set(0, 0, width, AndroidUtilities.dp(28));
                     canvas.save();
                     canvas.translate(x, y);
-                    canvas.drawRoundRect(rect, AndroidUtilities.dp(12), AndroidUtilities.dp(12), gradientPaint);
-                    canvas.translate(AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+                    canvas.drawRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), gradientPaint);
+                    canvas.translate(AndroidUtilities.dp(12), AndroidUtilities.dp(6));
                     timeLayout.draw(canvas);
                     canvas.restore();
                 }
@@ -391,7 +391,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
                 final int halfOutlineWidth = AndroidUtilities.dp(1);
                 AndroidUtilities.rectTmp.set(halfOutlineWidth, halfOutlineWidth, getWidth() - halfOutlineWidth, getHeight() - halfOutlineWidth);
-                joinButtonFlicker.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(16));
+                joinButtonFlicker.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(16), this);
                 if (joinButtonFlicker.getProgress() < 1f && !joinButtonFlicker.repeatEnabled) {
                     invalidate();
                 }
@@ -2105,7 +2105,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             return;
         }
         boolean clipped = false;
-        if ((currentStyle == STYLE_ACTIVE_GROUP_CALL || currentStyle == STYLE_CONNECTING_GROUP_CALL) && drawOverlay) {
+        if (currentStyle == STYLE_ACTIVE_GROUP_CALL || currentStyle == STYLE_CONNECTING_GROUP_CALL) {
             boolean mutedByAdmin = GroupCallActivity.groupCallInstance == null && Theme.getFragmentContextViewWavesDrawable().getState() == FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN;
             Theme.getFragmentContextViewWavesDrawable().updateState(wasDraw);
 

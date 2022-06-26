@@ -10,6 +10,8 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.os.Vibrator;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -27,6 +29,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SvgHelper;
@@ -35,10 +38,12 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
-public class StickerEmojiCell extends FrameLayout {
+public class StickerEmojiCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private BackupImageView imageView;
+    private PremiumLockIconView premiumIconView;
     private TLRPC.Document sticker;
     private SendMessagesHelper.ImportingSticker stickerPath;
     private Object parentObject;
@@ -54,6 +59,11 @@ public class StickerEmojiCell extends FrameLayout {
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
     private int currentAccount = UserConfig.selectedAccount;
     private boolean fromEmojiPanel;
+    private boolean isPremiumSticker;
+    private float premiumAlpha = 1f;
+    private boolean showPremiumLock;
+
+    int stickerColor;
 
     public StickerEmojiCell(Context context, boolean isEmojiPanel) {
         super(context);
@@ -67,7 +77,16 @@ public class StickerEmojiCell extends FrameLayout {
 
         emojiTextView = new TextView(context);
         emojiTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        addView(emojiTextView, LayoutHelper.createFrame(28, 28, Gravity.BOTTOM | Gravity.RIGHT));
+       // addView(emojiTextView, LayoutHelper.createFrame(28, 28, Gravity.BOTTOM | Gravity.RIGHT));
+
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+
+        premiumIconView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED);
+        premiumIconView.setImageReceiver(imageView.getImageReceiver());
+        premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        premiumIconView.setImageReceiver(imageView.getImageReceiver());
+        addView(premiumIconView, LayoutHelper.createFrame(24, 24, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0 ,0, 0, 0));
         setFocusable(true);
     }
 
@@ -120,6 +139,11 @@ public class StickerEmojiCell extends FrameLayout {
 
     public void setSticker(TLRPC.Document document, SendMessagesHelper.ImportingSticker path, Object parent, String emoji, boolean showEmoji) {
         currentEmoji = emoji;
+        isPremiumSticker = MessageObject.isPremiumSticker(document);
+        if (isPremiumSticker) {
+            premiumIconView.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            premiumIconView.setWaitingImage();
+        }
         if (path != null) {
             stickerPath = path;
             if (path.validated) {
@@ -184,13 +208,39 @@ public class StickerEmojiCell extends FrameLayout {
                 emojiTextView.setVisibility(INVISIBLE);
             }
         }
+        updatePremiumStatus(false);
+        imageView.getImageReceiver().setAlpha(alpha * premiumAlpha);
+    }
+
+    private void updatePremiumStatus(boolean animated) {
+        if (isPremiumSticker) {
+            showPremiumLock = true;
+        } else {
+            showPremiumLock = false;
+        }
+        FrameLayout.LayoutParams layoutParams = (LayoutParams) premiumIconView.getLayoutParams();
+        if (!UserConfig.getInstance(currentAccount).isPremium()) {
+            layoutParams.height = layoutParams.width = AndroidUtilities.dp(24);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            layoutParams.bottomMargin = layoutParams.rightMargin = 0;
+            premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        } else {
+            layoutParams.height = layoutParams.width = AndroidUtilities.dp(16);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
+            layoutParams.bottomMargin = AndroidUtilities.dp(8);
+            layoutParams.rightMargin = AndroidUtilities.dp(8);
+            premiumIconView.setPadding(AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1));
+        }
+        premiumIconView.setLocked(!UserConfig.getInstance(currentAccount).isPremium());
+        AndroidUtilities.updateViewVisibilityAnimated(premiumIconView, showPremiumLock, 0.9f, animated);
+        invalidate();
     }
 
     public void disable() {
         changingAlpha = true;
         alpha = 0.5f;
         time = 0;
-        imageView.getImageReceiver().setAlpha(alpha);
+        imageView.getImageReceiver().setAlpha(alpha * premiumAlpha);
         imageView.invalidate();
         lastUpdateTime = System.currentTimeMillis();
         invalidate();
@@ -221,6 +271,28 @@ public class StickerEmojiCell extends FrameLayout {
     }
 
     @Override
+    protected void dispatchDraw(Canvas canvas) {
+//        if (showPremiumLock && premiumAlpha > 0.5f) {
+//            premiumAlpha -= 16 / 150f;
+//            if (premiumAlpha < 0.5f) {
+//                premiumAlpha = 0.5f;
+//            }
+//            invalidate();
+//            imageView.invalidate();
+//        } else if (!showPremiumLock && premiumAlpha < 1f) {
+//            premiumAlpha += 16 / 150f;
+//            if (premiumAlpha > 1f) {
+//                premiumAlpha = 1f;
+//            }
+//            invalidate();
+//            imageView.invalidate();
+//        }
+        imageView.getImageReceiver().setAlpha(alpha * premiumAlpha);
+
+        super.dispatchDraw(canvas);
+    }
+
+    @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         boolean result = super.drawChild(canvas, child, drawingTime);
         if (child == imageView && (changingAlpha || scaled && scale != 0.8f || !scaled && scale != 1.0f)) {
@@ -237,7 +309,7 @@ public class StickerEmojiCell extends FrameLayout {
                     changingAlpha = false;
                     alpha = 1.0f;
                 }
-                imageView.getImageReceiver().setAlpha(alpha);
+                imageView.getImageReceiver().setAlpha(alpha * premiumAlpha);
             } else if (scaled && scale != 0.8f) {
                 scale -= dt / 400.0f;
                 if (scale < 0.8f) {
@@ -275,5 +347,34 @@ public class StickerEmojiCell extends FrameLayout {
         }
         info.setContentDescription(descr);
         info.setEnabled(true);
+    }
+
+    public void showRequirePremiumAnimation() {
+        if (premiumIconView != null) {
+            Vibrator v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+            if (v != null) {
+                v.vibrate(200);
+            }
+            AndroidUtilities.shakeView(premiumIconView, 2, 0);
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.currentUserPremiumStatusChanged) {
+            updatePremiumStatus(true);
+        }
     }
 }

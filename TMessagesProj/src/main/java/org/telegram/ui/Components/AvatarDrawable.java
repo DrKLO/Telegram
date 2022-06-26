@@ -120,24 +120,24 @@ public class AvatarDrawable extends Drawable {
         return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
     }
 
-    public static int getButtonColorForId(long id) {
-        return Theme.getColor(Theme.key_avatar_actionBarSelectorBlue);
+    public static int getButtonColorForId(long id, Theme.ResourcesProvider resourcesProvider) {
+        return Theme.getColor(Theme.key_avatar_actionBarSelectorBlue, resourcesProvider);
     }
 
-    public static int getIconColorForId(long id) {
-        return Theme.getColor(Theme.key_avatar_actionBarIconBlue);
+    public static int getIconColorForId(long id, Theme.ResourcesProvider resourcesProvider) {
+        return Theme.getColor(Theme.key_avatar_actionBarIconBlue, resourcesProvider);
     }
 
-    public static int getProfileColorForId(long id) {
-        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
+    public static int getProfileColorForId(long id, Theme.ResourcesProvider resourcesProvider) {
+        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)], resourcesProvider);
     }
 
-    public static int getProfileTextColorForId(long id) {
-        return Theme.getColor(Theme.key_avatar_subtitleInProfileBlue);
+    public static int getProfileTextColorForId(long id, Theme.ResourcesProvider resourcesProvider) {
+        return Theme.getColor(Theme.key_avatar_subtitleInProfileBlue, resourcesProvider);
     }
 
-    public static int getProfileBackColorForId(long id) {
-        return Theme.getColor(Theme.key_avatar_backgroundActionBarBlue);
+    public static int getProfileBackColorForId(long id, Theme.ResourcesProvider resourcesProvider) {
+        return Theme.getColor(Theme.key_avatar_backgroundActionBarBlue, resourcesProvider);
     }
 
     public static String getNameColorNameForId(long id) {

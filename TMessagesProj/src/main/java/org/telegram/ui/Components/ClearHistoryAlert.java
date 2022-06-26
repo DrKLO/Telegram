@@ -367,7 +367,6 @@ public class ClearHistoryAlert extends BottomSheet {
         linearLayout.addView(buttonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context, resourcesProvider);
-
         infoCell.setText(LocaleController.getString("AutoDeleteInfo", R.string.AutoDeleteInfo));
         buttonContainer.addView(infoCell);
 

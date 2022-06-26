@@ -529,7 +529,7 @@ public class SecretChatHelper extends BaseController {
                 size.location.local_id = file.key_fingerprint;
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                 File cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
-                File cacheFile2 = FileLoader.getPathToAttach(size);
+                File cacheFile2 = getFileLoader().getPathToAttach(size);
                 cacheFile.renameTo(cacheFile2);
                 ImageLoader.getInstance().replaceImageInCache(fileName, fileName2, ImageLocation.getForPhoto(size, newMsg.media.photo), true);
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
@@ -558,7 +558,7 @@ public class SecretChatHelper extends BaseController {
 
                 if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
                     File cacheFile = new File(newMsg.attachPath);
-                    File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.document);
+                    File cacheFile2 = getFileLoader().getPathToAttach(newMsg.media.document);
                     if (cacheFile.renameTo(cacheFile2)) {
                         newMsgObj.mediaExists = newMsgObj.attachPathExists;
                         newMsgObj.attachPathExists = false;
@@ -920,7 +920,7 @@ public class SecretChatHelper extends BaseController {
                     big.w = decryptedMessage.media.w;
                     big.h = decryptedMessage.media.h;
                     big.type = "x";
-                    big.size = file.size;
+                    big.size = (int) file.size;
                     big.location = new TLRPC.TL_fileEncryptedLocation();
                     big.location.key = decryptedMessage.media.key;
                     big.location.iv = decryptedMessage.media.iv;

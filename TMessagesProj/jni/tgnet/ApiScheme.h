@@ -49,6 +49,7 @@ public:
     bool tcpo_only;
     bool cdn;
     bool isStatic;
+    bool thisPortOnly;
     int32_t id;
     std::string ip_address;
     int32_t port;

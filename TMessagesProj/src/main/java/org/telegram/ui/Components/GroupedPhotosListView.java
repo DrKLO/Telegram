@@ -743,6 +743,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 }
             }
             receiver.setAlpha(drawAlpha);
+            receiver.setRoundRadius(AndroidUtilities.dp(2));
             receiver.draw(canvas);
         }
 

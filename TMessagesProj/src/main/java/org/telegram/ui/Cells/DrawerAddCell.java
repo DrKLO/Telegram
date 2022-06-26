@@ -38,8 +38,8 @@ public class DrawerAddCell extends FrameLayout {
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        textView.setCompoundDrawablePadding(AndroidUtilities.dp(34));
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 23, 0, 16, 0));
+        textView.setCompoundDrawablePadding(AndroidUtilities.dp(29));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19, 0, 16, 0));
     }
 
     @Override
@@ -52,7 +52,7 @@ public class DrawerAddCell extends FrameLayout {
         super.onAttachedToWindow();
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         textView.setText(LocaleController.getString("AddAccount", R.string.AddAccount));
-        Drawable drawable = getResources().getDrawable(R.drawable.account_add);
+        Drawable drawable = getResources().getDrawable(R.drawable.msg_add);
         if (drawable != null) {
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
         }

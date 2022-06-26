@@ -414,6 +414,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
         if (currentAddressNum + 1 < addresses->size()) {
             currentAddressNum++;
         } else {
+            repeatCheckingAddresses = true;
             currentAddressNum = 0;
         }
         currentPortNum = 0;
@@ -1475,6 +1476,12 @@ bool Datacenter::hasMediaAddress() {
 void Datacenter::resetInitVersion() {
     lastInitVersion = 0;
     lastInitMediaVersion = 0;
+}
+
+bool Datacenter::isRepeatCheckingAddresses() {
+    bool b = repeatCheckingAddresses;
+    repeatCheckingAddresses = false;
+    return b;
 }
 
 TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {

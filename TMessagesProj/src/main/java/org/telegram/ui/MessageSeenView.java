@@ -10,6 +10,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -247,7 +248,19 @@ public class MessageSeenView extends FrameLayout {
     }
 
     public RecyclerListView createListView() {
-        RecyclerListView recyclerListView = new RecyclerListView(getContext());
+        RecyclerListView recyclerListView = new RecyclerListView(getContext()) {
+            @Override
+            protected void onMeasure(int widthSpec, int heightSpec) {
+                int height = MeasureSpec.getSize(heightSpec);
+                int listViewTotalHeight = AndroidUtilities.dp(8) + AndroidUtilities.dp(44) * getAdapter().getItemCount();
+
+                if (listViewTotalHeight > height) {
+                    listViewTotalHeight = height;
+                }
+
+                super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(listViewTotalHeight, MeasureSpec.EXACTLY));
+            }
+        };
         recyclerListView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerListView.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
@@ -305,6 +318,7 @@ public class MessageSeenView extends FrameLayout {
             nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             nameView.setLines(1);
             nameView.setEllipsize(TextUtils.TruncateAt.END);
+            nameView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 59, 0, 13, 0));
 
             nameView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
@@ -322,6 +336,12 @@ public class MessageSeenView extends FrameLayout {
                 avatarImageView.setImage(imageLocation, "50_50", avatarDrawable, user);
                 nameView.setText(ContactsController.formatName(user.first_name, user.last_name));
             }
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setText(LocaleController.formatString("AccDescrPersonHasSeen", R.string.AccDescrPersonHasSeen, nameView.getText()));
         }
     }
 }

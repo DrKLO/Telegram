@@ -591,7 +591,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     }
                     cellFlickerDrawable.setParentWidth(getMeasuredWidth());
                     AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                    cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4));
+                    cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4), null);
                     invalidate();
                 }
             }
@@ -603,7 +603,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         int buttonRadiusDp = currentType == ACTION_TYPE_SET_PASSCODE || currentType == ACTION_TYPE_CHANGE_PHONE_NUMBER ? 6 : 4;
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(buttonRadiusDp), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, buttonRadiusDp));
         viewGroup.addView(buttonTextView);
         buttonTextView.setOnClickListener(v -> {
             if (getParentActivity() == null) {
@@ -660,7 +660,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("PhoneNumberChangeTitle", R.string.PhoneNumberChangeTitle));
                     builder.setMessage(LocaleController.getString("PhoneNumberAlert", R.string.PhoneNumberAlert));
-                    builder.setPositiveButton(LocaleController.getString("Change", R.string.Change), (dialogInterface, i) -> presentFragment(new ChangePhoneActivity(), true));
+                    builder.setPositiveButton(LocaleController.getString("Change", R.string.Change), (dialogInterface, i) -> presentFragment(new LoginActivity().changePhoneNumber(), true));
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
                     break;
@@ -682,6 +682,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
             case ACTION_TYPE_SET_PASSCODE: {
                 imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 imageView.setAnimation(R.raw.utyan_passcode, 200, 200);
+                imageView.setFocusable(false);
                 imageView.setOnClickListener(v -> {
                     if (!imageView.getAnimatedDrawable().isRunning()) {
                         imageView.getAnimatedDrawable().setCurrentFrame(0, false);

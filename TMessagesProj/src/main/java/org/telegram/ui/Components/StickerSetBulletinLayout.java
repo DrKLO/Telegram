@@ -1,20 +1,27 @@
 package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 
@@ -28,9 +35,12 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
     public static final int TYPE_REMOVED_FROM_RECENT = 3;
     public static final int TYPE_REMOVED_FROM_FAVORITES = 4;
     public static final int TYPE_ADDED_TO_FAVORITES = 5;
+    public static final int TYPE_REPLACED_TO_FAVORITES = 6;
+    public static final int TYPE_REPLACED_TO_FAVORITES_GIFS = 7;
 
-    @IntDef(value = {TYPE_EMPTY, TYPE_REMOVED, TYPE_ARCHIVED, TYPE_ADDED, TYPE_REMOVED_FROM_RECENT, TYPE_REMOVED_FROM_FAVORITES, TYPE_ADDED_TO_FAVORITES})
-    public @interface Type {}
+    @IntDef(value = {TYPE_EMPTY, TYPE_REMOVED, TYPE_ARCHIVED, TYPE_ADDED, TYPE_REMOVED_FROM_RECENT, TYPE_REMOVED_FROM_FAVORITES, TYPE_ADDED_TO_FAVORITES, TYPE_REPLACED_TO_FAVORITES})
+    public @interface Type {
+    }
 
     public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, @Type int type) {
         this(context, setObject, type, null, null);
@@ -89,7 +99,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 imageLocation = ImageLocation.getForSticker(thumb, sticker, thumbVersion);
             }
 
-            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true) ||  MessageObject.isVideoSticker(sticker)) {
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true) || MessageObject.isVideoSticker(sticker) || MessageObject.isGifDocument(sticker)) {
                 imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, setObject);
             } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, "50_50", "tgs", null, setObject);
@@ -135,6 +145,36 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
             case TYPE_ADDED_TO_FAVORITES:
                 titleTextView.setText(LocaleController.getString("AddedToFavorites", R.string.AddedToFavorites));
                 subtitleTextView.setVisibility(ViewPagerFixed.GONE);
+                break;
+            case TYPE_REPLACED_TO_FAVORITES:
+                if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && !MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked) {
+                    titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteStickers", R.string.LimitReachedFavoriteStickers, MessagesController.getInstance(UserConfig.selectedAccount).stickersFavedLimitDefault));
+                    CharSequence str = AndroidUtilities.replaceSingleTag(LocaleController.formatString("LimitReachedFavoriteStickersSubtitle", R.string.LimitReachedFavoriteStickersSubtitle, MessagesController.getInstance(UserConfig.selectedAccount).stickersFavedLimitPremium), () -> {
+                        Activity activity = AndroidUtilities.findActivity(context);
+                        if (activity instanceof LaunchActivity) {
+                            ((LaunchActivity) activity).presentFragment(new PremiumPreviewFragment(LimitReachedBottomSheet.limitTypeToServerString(LimitReachedBottomSheet.TYPE_STICKERS)));
+                        }
+                    });
+                    subtitleTextView.setText(str);
+                } else {
+                    titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteStickers", R.string.LimitReachedFavoriteStickers, MessagesController.getInstance(UserConfig.selectedAccount).stickersFavedLimitPremium));
+                    subtitleTextView.setText(LocaleController.formatString("LimitReachedFavoriteStickersSubtitlePremium", R.string.LimitReachedFavoriteStickersSubtitlePremium));
+                }
+                break;
+            case TYPE_REPLACED_TO_FAVORITES_GIFS:
+                if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && !MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked) {
+                    titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifs", R.string.LimitReachedFavoriteGifs, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitDefault));
+                    CharSequence str = AndroidUtilities.replaceSingleTag(LocaleController.formatString("LimitReachedFavoriteGifsSubtitle", R.string.LimitReachedFavoriteGifsSubtitle, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium), () -> {
+                        Activity activity = AndroidUtilities.findActivity(context);
+                        if (activity instanceof LaunchActivity) {
+                            ((LaunchActivity) activity).presentFragment(new PremiumPreviewFragment(LimitReachedBottomSheet.limitTypeToServerString(LimitReachedBottomSheet.TYPE_GIFS)));
+                        }
+                    });
+                    subtitleTextView.setText(str);
+                } else {
+                    titleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifs", R.string.LimitReachedFavoriteGifs, MessagesController.getInstance(UserConfig.selectedAccount).savedGifsLimitPremium));
+                    subtitleTextView.setText(LocaleController.formatString("LimitReachedFavoriteGifsSubtitlePremium", R.string.LimitReachedFavoriteGifsSubtitlePremium));
+                }
                 break;
             case TYPE_REMOVED_FROM_RECENT:
                 titleTextView.setText(LocaleController.getString("RemovedFromRecent", R.string.RemovedFromRecent));

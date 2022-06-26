@@ -447,7 +447,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 6));
         buttonTextView.setOnClickListener(v -> processNext());
 
         switch (currentType) {
@@ -1244,12 +1244,16 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (currentType == TYPE_ENTER_HINT && AndroidUtilities.isSmallScreen()) {
-            imageView.setVisibility(View.GONE);
-        } else if (!isIntro()) {
-            imageView.setVisibility(isLandscape() ? View.GONE : View.VISIBLE);
+        if (imageView != null) {
+            if (currentType == TYPE_ENTER_HINT && AndroidUtilities.isSmallScreen()) {
+                imageView.setVisibility(View.GONE);
+            } else if (!isIntro()) {
+                imageView.setVisibility(isLandscape() ? View.GONE : View.VISIBLE);
+            }
         }
-        keyboardView.setVisibility(isCustomKeyboardVisible() ? View.VISIBLE : View.GONE);
+        if (keyboardView != null) {
+            keyboardView.setVisibility(isCustomKeyboardVisible() ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void animateSuccess(Runnable callback) {

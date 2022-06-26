@@ -44,7 +44,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     private static final int RESULT_SIDE = 1280;
     private static final float MAX_SCALE = 30.0f;
 
-    private CropAreaView areaView;
+    public CropAreaView areaView;
     private ImageView imageView;
     private Matrix overlayMatrix;
     private PaintingOverlay paintingOverlay;
@@ -75,19 +75,19 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
     private int bitmapRotation;
 
-    private class CropState {
-        private float width;
-        private float height;
+    public class CropState {
+        public float width;
+        public float height;
 
-        private float x;
-        private float y;
-        private float scale;
-        private float minimumScale;
-        private float baseRotation;
-        private float orientation;
-        private float rotation;
-        private boolean mirrored;
-        private Matrix matrix;
+        public float x;
+        public float y;
+        public float scale;
+        public float minimumScale;
+        public float baseRotation;
+        public float orientation;
+        public float rotation;
+        public boolean mirrored;
+        public Matrix matrix;
 
         private CropState(int w, int h, int bRotation) {
             width = w;
@@ -202,9 +202,18 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
             y = 0.0f;
             rotation = 0.0f;
             orientation = orient;
+
             updateMinimumScale();
             scale = minimumScale;
+            matrix.postScale(scale, scale);
+        }
 
+        private void rotateToOrientation(float orientation) {
+            matrix.postScale(1f / scale, 1f / scale);
+            this.orientation = orientation;
+            float wasMinimumScale = minimumScale;
+            updateMinimumScale();
+            scale = scale / wasMinimumScale * minimumScale;
             matrix.postScale(scale, scale);
         }
 
@@ -231,7 +240,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         }
     }
 
-    private CropState state;
+    public CropState state;
 
     public interface CropViewListener {
         void onChange(boolean reset);
@@ -241,6 +250,18 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     private CropViewListener listener;
+
+    public float getStateOrientation() {
+        return state.orientation;
+    }
+
+    public float getStateFullOrientation() {
+        return state.baseRotation + state.orientation;
+    }
+
+    public boolean getStateMirror() {
+        return state.mirrored;
+    }
 
     public CropView(Context context) {
         super(context);
@@ -401,13 +422,17 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void reset() {
+        reset(false);
+    }
+
+    public void reset(boolean force) {
         areaView.resetAnimator();
         areaView.setBitmap(getCurrentWidth(), getCurrentHeight(), state.getBaseRotation() % 180 != 0, freeform);
         areaView.setLockedAspectRatio(freeform ? 0.0f : 1.0f);
         state.reset(areaView, 0, freeform);
         state.mirrored = false;
         areaView.getCropRect(initialAreaRect);
-        updateMatrix();
+        updateMatrix(force);
 
         resetRotationStartScale();
 
@@ -418,6 +443,10 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void updateMatrix() {
+        updateMatrix(false);
+    }
+
+    public void updateMatrix(boolean force) {
         overlayMatrix.reset();
         if (state.getBaseRotation() == 90 || state.getBaseRotation() == 270) {
             overlayMatrix.postTranslate(-state.getHeight() / 2, -state.getWidth() / 2);
@@ -427,7 +456,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         overlayMatrix.postRotate(state.getOrientationOnly());
         state.getConcatMatrix(overlayMatrix);
         overlayMatrix.postTranslate(areaView.getCropCenterX(), areaView.getCropCenterY());
-        if ((!freeform || isVisible)) {
+        if (!freeform || isVisible || force) {
             updateCropTransform();
             listener.onUpdate();
         }
@@ -685,6 +714,13 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         return bitmapRotation == 90 || bitmapRotation == 270 ? bitmap.getWidth() : bitmap.getHeight();
     }
 
+    public boolean isMirrored() {
+        if (state == null) {
+            return false;
+        }
+        return state.mirrored;
+    }
+
     public boolean mirror() {
         if (state == null) {
             return false;
@@ -698,7 +734,58 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         return state.mirrored;
     }
 
-    public boolean rotate90Degrees() {
+    public void maximize(boolean animated) {
+        final float toScale = state.minimumScale;
+        areaView.resetAnimator();
+        float aspectRatio;
+        if (state.getOrientation() % 180 != 0) {
+            aspectRatio = getCurrentHeight() / (float) getCurrentWidth();
+        } else {
+            aspectRatio = getCurrentWidth() / (float) getCurrentHeight();
+        }
+        if (!freeform) {
+            aspectRatio = 1.0f;
+        }
+        areaView.calculateRect(initialAreaRect, aspectRatio);
+        areaView.setLockedAspectRatio(freeform ? 0.0f : 1.0f);
+        resetRotationStartScale();
+
+        if (animated) {
+            ValueAnimator animator = ValueAnimator.ofFloat(0.0f, 1.0f);
+            RectF fromActualRect = new RectF(), animatedRect = new RectF();
+            areaView.getCropRect(fromActualRect);
+            final float fromX = state.x;
+            final float fromY = state.y;
+            final float fromScale = state.scale;
+            final float fromRot = state.rotation;
+            animator.addUpdateListener(animation -> {
+                float t = (float) animation.getAnimatedValue();
+                AndroidUtilities.lerp(fromActualRect, initialAreaRect, t, animatedRect);
+                areaView.setActualRect(animatedRect);
+                float dx = state.x - fromX * (1f - t),
+                      dy = state.y - fromY * (1f - t),
+                      dr = state.rotation - fromRot * (1f - t),
+                      ds = AndroidUtilities.lerp(fromScale, toScale, t) / state.scale;
+                state.translate(-dx, -dy);
+                state.scale(ds, 0, 0);
+                state.rotate(-dr, 0, 0);
+                fitContentInBounds(true, false, false);
+            });
+            animator.setInterpolator(areaView.getInterpolator());
+            animator.setDuration(250);
+            animator.start();
+        } else {
+            areaView.setActualRect(initialAreaRect);
+            state.translate(-state.x, -state.y);
+            state.scale(state.minimumScale / state.scale, 0, 0);
+            state.rotate(-state.rotation, 0, 0);
+            updateMatrix();
+
+            resetRotationStartScale();
+        }
+    }
+
+    public boolean rotate(float angle) {
         if (state == null) {
             return false;
         }
@@ -706,7 +793,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
         resetRotationStartScale();
 
-        float orientation = (state.getOrientation() - state.getBaseRotation() - 90.0f) % 360;
+        float orientation = (state.getOrientation() - state.getBaseRotation() + angle) % 360;
 
         boolean fform = freeform;
         if (freeform && areaView.getLockAspectRatio() > 0) {
@@ -714,7 +801,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
             areaView.setActualRect(areaView.getLockAspectRatio());
             fform = false;
         } else {
-            areaView.setBitmap(getCurrentWidth(), getCurrentHeight(),  (orientation + state.getBaseRotation()) % 180 != 0, freeform);
+            areaView.setBitmap(getCurrentWidth(), getCurrentHeight(), (orientation + state.getBaseRotation()) % 180 != 0, freeform);
         }
 
         state.reset(areaView, orientation, fform);
@@ -1102,6 +1189,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         editState.cropState.lockedAspectRatio = areaView.getLockAspectRatio();
 
         editState.cropState.initied = true;
+        return;
     }
 
     private void setLockedAspectRatio(float aspectRatio) {

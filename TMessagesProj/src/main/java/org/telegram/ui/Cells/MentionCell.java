@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -32,8 +33,9 @@ public class MentionCell extends LinearLayout {
     private TextView nameTextView;
     private TextView usernameTextView;
     private AvatarDrawable avatarDrawable;
+    private Theme.ResourcesProvider resourcesProvider;
 
-    public MentionCell(Context context) {
+    public MentionCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         setOrientation(HORIZONTAL);
@@ -46,7 +48,7 @@ public class MentionCell extends LinearLayout {
         addView(imageView, LayoutHelper.createLinear(28, 28, 12, 4, 0, 0));
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         nameTextView.setSingleLine(true);
         nameTextView.setGravity(Gravity.LEFT);
@@ -54,7 +56,7 @@ public class MentionCell extends LinearLayout {
         addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
 
         usernameTextView = new TextView(context);
-        usernameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+        usernameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         usernameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         usernameTextView.setSingleLine(true);
         usernameTextView.setGravity(Gravity.LEFT);
@@ -88,6 +90,23 @@ public class MentionCell extends LinearLayout {
         }
         imageView.setVisibility(VISIBLE);
         usernameTextView.setVisibility(VISIBLE);
+    }
+
+    private boolean needsDivider = false;
+    public void setDivider(boolean enabled) {
+        if (enabled != needsDivider) {
+            needsDivider = enabled;
+            setWillNotDraw(!needsDivider);
+            invalidate();
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (needsDivider) {
+            canvas.drawLine(AndroidUtilities.dp(52), getHeight() - 1, getWidth() - AndroidUtilities.dp(8), getHeight() - 1, Theme.dividerPaint);
+        }
     }
 
     public void setChat(TLRPC.Chat chat) {
@@ -157,8 +176,13 @@ public class MentionCell extends LinearLayout {
             nameTextView.setTextColor(0xffffffff);
             usernameTextView.setTextColor(0xffbbbbbb);
         } else {
-            nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            usernameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+            nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            usernameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

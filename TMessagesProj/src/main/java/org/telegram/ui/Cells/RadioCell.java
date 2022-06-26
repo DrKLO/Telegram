@@ -30,6 +30,7 @@ import java.util.ArrayList;
 
 public class RadioCell extends FrameLayout {
 
+    private Theme.ResourcesProvider resourcesProvider;
     private TextView textView;
     private RadioButton radioButton;
     private boolean needDivider;
@@ -38,14 +39,23 @@ public class RadioCell extends FrameLayout {
         this(context, false, 21);
     }
 
+    public RadioCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, false, 21, resourcesProvider);
+    }
+
     public RadioCell(Context context, boolean dialog, int padding) {
+        this(context, dialog, padding, null);
+    }
+
+    public RadioCell(Context context, boolean dialog, int padding, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         textView = new TextView(context);
         if (dialog) {
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         } else {
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         }
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
@@ -58,9 +68,9 @@ public class RadioCell extends FrameLayout {
         radioButton = new RadioButton(context);
         radioButton.setSize(AndroidUtilities.dp(20));
         if (dialog) {
-            radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+            radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground, resourcesProvider), Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider));
         } else {
-            radioButton.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
+            radioButton.setColor(Theme.getColor(Theme.key_radioBackground, resourcesProvider), Theme.getColor(Theme.key_radioBackgroundChecked, resourcesProvider));
         }
         addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? padding + 1 : 0), 14, (LocaleController.isRTL ? 0 : padding + 1), 0));
     }

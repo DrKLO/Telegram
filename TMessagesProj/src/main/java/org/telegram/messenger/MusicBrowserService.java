@@ -35,6 +35,8 @@ import android.os.SystemClock;
 import android.service.media.MediaBrowserService;
 import android.text.TextUtils;
 
+import androidx.collection.LongSparseArray;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -46,8 +48,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import androidx.collection.LongSparseArray;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class MusicBrowserService extends MediaBrowserService implements NotificationCenter.NotificationCenterDelegate {
@@ -297,7 +297,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                 }
                 Bitmap bitmap = null;
                 if (avatar != null) {
-                    bitmap = createRoundBitmap(FileLoader.getPathToAttach(avatar, true));
+                    bitmap = createRoundBitmap(FileLoader.getInstance(currentAccount).getPathToAttach(avatar, true));
                     if (bitmap != null) {
                         builder.setIconBitmap(bitmap);
                     }

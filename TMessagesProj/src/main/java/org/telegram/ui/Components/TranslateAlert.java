@@ -57,11 +57,13 @@ import org.json.JSONArray;
 import org.json.JSONTokener;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -77,6 +79,9 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 public class TranslateAlert extends Dialog {
+
+    public static volatile DispatchQueue translateQueue = new DispatchQueue("translateQueue", false);
+
     private FrameLayout bulletinContainer;
     private FrameLayout contentView;
     private FrameLayout container;
@@ -88,7 +93,6 @@ public class TranslateAlert extends Dialog {
     private ImageView backButton;
     private FrameLayout header;
     private FrameLayout headerShadowView;
-    private boolean scrollViewScrollable = false;
     private NestedScrollView scrollView;
     private TextBlocksLayout textsView;
     private TextView buttonTextView;
@@ -99,7 +103,6 @@ public class TranslateAlert extends Dialog {
 
     private FrameLayout.LayoutParams titleLayout;
     private FrameLayout.LayoutParams subtitleLayout;
-    private FrameLayout.LayoutParams backLayout;
     private FrameLayout.LayoutParams headerLayout;
     private FrameLayout.LayoutParams scrollViewLayout;
 
@@ -107,8 +110,6 @@ public class TranslateAlert extends Dialog {
     private ArrayList<CharSequence> textBlocks;
 
     private float containerOpenAnimationT = 0f;
-    private float openAnimationT = 0f;
-    private float epsilon = 0.001f;
     private void openAnimation(float t) {
         t = Math.min(Math.max(t, 0f), 1f);
         if (containerOpenAnimationT == t) {
@@ -225,17 +226,16 @@ public class TranslateAlert extends Dialog {
     }
 
     public interface OnLinkPress {
-        public void run(URLSpan urlSpan);
+        public boolean run(URLSpan urlSpan);
     }
 
     private boolean allowScroll = true;
-    private ValueAnimator scrollerToBottom = null;
     private String fromLanguage, toLanguage;
     private CharSequence text;
     private BaseFragment fragment;
     private boolean noforwards;
-    private OnLinkPress onLinkPress = null;
-    private Runnable onDismiss = null;
+    private OnLinkPress onLinkPress;
+    private Runnable onDismiss;
     public TranslateAlert(BaseFragment fragment, Context context, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
         this(fragment, context, -1, null, -1, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
     }
@@ -423,7 +423,7 @@ public class TranslateAlert extends Dialog {
         backButton.setClickable(false);
         backButton.setAlpha(0f);
         backButton.setOnClickListener(e -> dismiss());
-        header.addView(backButton, backLayout = LayoutHelper.createFrame(56, 56, Gravity.LEFT | Gravity.CENTER_HORIZONTAL));
+        header.addView(backButton, LayoutHelper.createFrame(56, 56, Gravity.LEFT | Gravity.CENTER_HORIZONTAL));
 
         headerShadowView = new FrameLayout(context);
         headerShadowView.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
@@ -494,7 +494,7 @@ public class TranslateAlert extends Dialog {
         allTextsView.setHighlightColor(Theme.getColor(Theme.key_chat_inTextSelectionHighlight));
         int handleColor = Theme.getColor(Theme.key_chat_TextSelectionCursor);
         try {
-            if (Build.VERSION.SDK_INT >= 29) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !XiaomiUtilities.isMIUI()) {
                 Drawable left = allTextsView.getTextSelectHandleLeft();
                 left.setColorFilter(handleColor, PorterDuff.Mode.SRC_IN);
                 allTextsView.setTextSelectHandleLeft(left);
@@ -504,6 +504,7 @@ public class TranslateAlert extends Dialog {
                 allTextsView.setTextSelectHandleRight(right);
             }
         } catch (Exception e) {}
+        allTextsView.setFocusable(true);
         allTextsView.setMovementMethod(new LinkMovementMethod());
 
         textsView = new TextBlocksLayout(context, dp(16), Theme.getColor(Theme.key_dialogTextBlack), allTextsView);
@@ -541,7 +542,8 @@ public class TranslateAlert extends Dialog {
         buttonTextView.setText(LocaleController.getString("CloseTranslation", R.string.CloseTranslation));
 
         buttonView = new FrameLayout(context);
-        buttonView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+//        buttonView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
+        buttonView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 4));
         buttonView.addView(buttonTextView);
         buttonView.setOnClickListener(e -> dismiss());
 
@@ -774,6 +776,10 @@ public class TranslateAlert extends Dialog {
         params.height = ViewGroup.LayoutParams.MATCH_PARENT;
         window.setAttributes(params);
 
+        int navigationbarColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+        AndroidUtilities.setNavigationBarColor(window, navigationbarColor);
+        AndroidUtilities.setLightNavigationBar(window, AndroidUtilities.computePerceivedBrightness(navigationbarColor) > .721);
+
         container.forceLayout();
     }
 
@@ -923,10 +929,8 @@ public class TranslateAlert extends Dialog {
             return false;
         }
 
-        CharSequence blockText = textBlocks.get(blockIndex);
-
         fetchTranslation(
-            blockText,
+            textBlocks.get(blockIndex),
             Math.min((blockIndex + 1) * 1000, 3500),
             (String translatedText, String sourceLanguage) -> {
                 loaded = true;
@@ -947,9 +951,10 @@ public class TranslateAlert extends Dialog {
                                 @Override
                                 public void onClick(@NonNull View view) {
                                     if (onLinkPress != null) {
-                                        onLinkPress.run(urlSpan);
-                                        fastHide = true;
-                                        dismiss();
+                                        if (onLinkPress.run(urlSpan)) {
+                                            fastHide = true;
+                                            dismiss();
+                                        }
                                     } else {
                                         AlertsCreator.showOpenUrlAlert(fragment, urlSpan.getURL(), false, false);
                                     }
@@ -1006,7 +1011,12 @@ public class TranslateAlert extends Dialog {
                     e.printStackTrace();
                 }
 
-                allTexts = new SpannableStringBuilder(allTexts == null ? "" : allTexts).append(blockIndex == 0 ? "" : "\n").append(spannable);
+                SpannableStringBuilder allTextsBuilder = new SpannableStringBuilder(allTexts == null ? "" : allTexts);
+                if (blockIndex != 0) {
+                    allTextsBuilder.append("\n");
+                }
+                allTextsBuilder.append(spannable);
+                allTexts = allTextsBuilder;
                 textsView.setWholeText(allTexts);
 
                 LoadingTextView2 block = textsView.getBlockAt(blockIndex);
@@ -1017,6 +1027,12 @@ public class TranslateAlert extends Dialog {
                 if (sourceLanguage != null) {
                     fromLanguage = sourceLanguage;
                     updateSourceLanguage();
+                }
+
+                if (blockIndex == 0 && AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+                    if (allTextsView != null) {
+                        allTextsView.requestFocus();
+                    }
                 }
 
                 blockIndex++;
@@ -1052,88 +1068,85 @@ public class TranslateAlert extends Dialog {
         public void run(boolean rateLimit);
     }
     private void fetchTranslation(CharSequence text, long minDuration, OnTranslationSuccess onSuccess, OnTranslationFail onFail) {
-        new Thread() {
-            @Override
-            public void run() {
-                String uri = "";
-                HttpURLConnection connection = null;
-                long start = SystemClock.elapsedRealtime();
+        if (!translateQueue.isAlive()) {
+            translateQueue.start();
+        }
+        translateQueue.postRunnable(() -> {
+            String uri = "";
+            HttpURLConnection connection = null;
+            long start = SystemClock.elapsedRealtime();
+            try {
+                uri = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=";
+                uri += Uri.encode(fromLanguage);
+                uri += "&tl=";
+                uri += Uri.encode(toLanguage);
+                uri += "&dt=t&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
+                uri += Uri.encode(text.toString());
+                connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36");
+                connection.setRequestProperty("Content-Type", "application/json");
+
+                StringBuilder textBuilder = new StringBuilder();
+                try (Reader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charset.forName("UTF-8")))) {
+                    int c = 0;
+                    while ((c = reader.read()) != -1) {
+                        textBuilder.append((char) c);
+                    }
+                }
+                String jsonString = textBuilder.toString();
+
+                JSONTokener tokener = new JSONTokener(jsonString);
+                JSONArray array = new JSONArray(tokener);
+                JSONArray array1 = array.getJSONArray(0);
+                String sourceLanguage = null;
                 try {
-                    uri = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=";
-                    uri += Uri.encode(fromLanguage);
-                    uri += "&tl=";
-                    uri += Uri.encode(toLanguage);
-                    uri += "&dt=t&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
-                    uri += Uri.encode(text.toString());
-                    connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36");
-                    connection.setRequestProperty("Content-Type", "application/json");
-
-                    StringBuilder textBuilder = new StringBuilder();
-                    try (Reader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charset.forName("UTF-8")))) {
-                        int c = 0;
-                        while ((c = reader.read()) != -1) {
-                            textBuilder.append((char) c);
-                        }
+                    sourceLanguage = array.getString(2);
+                } catch (Exception e2) {}
+                if (sourceLanguage != null && sourceLanguage.contains("-")) {
+                    sourceLanguage = sourceLanguage.substring(0, sourceLanguage.indexOf("-"));
+                }
+                StringBuilder result = new StringBuilder();
+                for (int i = 0; i < array1.length(); ++i) {
+                    String blockText = array1.getJSONArray(i).getString(0);
+                    if (blockText != null && !blockText.equals("null")) {
+                        result.append(blockText);
                     }
-                    String jsonString = textBuilder.toString();
+                }
+                if (text.length() > 0 && text.charAt(0) == '\n') {
+                    result.insert(0, "\n");
+                }
+                final String finalResult = result.toString();
+                final String finalSourceLanguage = sourceLanguage;
 
-                    JSONTokener tokener = new JSONTokener(jsonString);
-                    JSONArray array = new JSONArray(tokener);
-                    JSONArray array1 = array.getJSONArray(0);
-                    String sourceLanguage = null;
+                long elapsed = SystemClock.elapsedRealtime() - start;
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (onSuccess != null) {
+                        onSuccess.run(finalResult, finalSourceLanguage);
+                    }
+                }, Math.max(0, minDuration - elapsed));
+            } catch (Exception e) {
+                try {
+                    Log.e("translate", "failed to translate a text " + (connection != null ? connection.getResponseCode() : null) + " " + (connection != null ? connection.getResponseMessage() : null));
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+                e.printStackTrace();
+
+                if (onFail != null && !dismissed) {
                     try {
-                        sourceLanguage = array.getString(2);
-                    } catch (Exception e2) {}
-                    if (sourceLanguage != null && sourceLanguage.contains("-")) {
-                        sourceLanguage = sourceLanguage.substring(0, sourceLanguage.indexOf("-"));
-                    }
-                    String result = "";
-                    for (int i = 0; i < array1.length(); ++i) {
-                        String blockText = array1.getJSONArray(i).getString(0);
-                        if (blockText != null && !blockText.equals("null")) {
-                            result += /*(i > 0 ? "\n" : "") +*/ blockText;
-                        }
-                    }
-                    if (text.length() > 0 && text.charAt(0) == '\n') {
-                        result = "\n" + result;
-                    }
-                    final String finalResult = result;
-                    final String finalSourceLanguage = sourceLanguage;
-
-                    long elapsed = SystemClock.elapsedRealtime() - start;
-                    if (elapsed < minDuration) {
-                        sleep(minDuration - elapsed);
-                    }
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (onSuccess != null) {
-                            onSuccess.run(finalResult, finalSourceLanguage);
-                        }
-                    });
-                } catch (Exception e) {
-                    try {
-                        Log.e("translate", "failed to translate a text " + (connection != null ? connection.getResponseCode() : null) + " " + (connection != null ? connection.getResponseMessage() : null));
-                    } catch (IOException ioException) {
-                        ioException.printStackTrace();
-                    }
-                    e.printStackTrace();
-
-                    if (onFail != null && !dismissed) {
-                        try {
-                            final boolean rateLimit = connection != null && connection.getResponseCode() == 429;
-                            AndroidUtilities.runOnUIThread(() -> {
-                                onFail.run(rateLimit);
-                            });
-                        } catch (Exception e2) {
-                            AndroidUtilities.runOnUIThread(() -> {
-                                onFail.run(false);
-                            });
-                        }
+                        final boolean rateLimit = connection != null && connection.getResponseCode() == 429;
+                        AndroidUtilities.runOnUIThread(() -> {
+                            onFail.run(rateLimit);
+                        });
+                    } catch (Exception e2) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            onFail.run(false);
+                        });
                     }
                 }
             }
-        }.start();
+        });
     }
     private static void translateText(int currentAccount, TLRPC.InputPeer peer, int msg_id, String from_lang, String to_lang) {
         TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
@@ -1150,9 +1163,7 @@ public class TranslateAlert extends Dialog {
         req.to_lang = to_lang;
 
         try {
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (error, res) -> {
-                // TODO
-            });
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (error, res) -> {});
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1209,6 +1220,7 @@ public class TranslateAlert extends Dialog {
 
         public LoadingTextView2 addBlock(CharSequence fromText) {
             LoadingTextView2 textView = new LoadingTextView2(getContext(), fromText, getBlocksCount() > 0, fontSize, textColor);
+            textView.setFocusable(false);
             addView(textView);
             if (wholeTextView != null) {
                 wholeTextView.bringToFront();
@@ -1283,7 +1295,7 @@ public class TranslateAlert extends Dialog {
 
         @Override
         protected void onLayout(boolean changed, int l, int t, int r, int b) {
-            int y = 0, height = 0;
+            int y = 0;
             final int count = getBlocksCount();
             for (int i = 0; i < count; ++i) {
                 LoadingTextView2 block = getBlockAt(i);
@@ -1294,7 +1306,6 @@ public class TranslateAlert extends Dialog {
                 if (i > 0 && i < count - 1) {
                     y += gap;
                 }
-                height += blockHeight;
             }
 
             wholeTextView.measure(
@@ -1309,7 +1320,6 @@ public class TranslateAlert extends Dialog {
             );
         }
     }
-
 
     public static class InlineLoadingTextView extends ViewGroup {
 
@@ -1345,6 +1355,8 @@ public class TranslateAlert extends Dialog {
             fromTextView.setMaxLines(1);
             fromTextView.setSingleLine(true);
             fromTextView.setEllipsize(null);
+            fromTextView.setFocusable(false);
+            fromTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(fromTextView);
 
             toTextView = new TextView(context) {
@@ -1359,6 +1371,7 @@ public class TranslateAlert extends Dialog {
             toTextView.setMaxLines(1);
             toTextView.setSingleLine(true);
             toTextView.setEllipsize(null);
+            toTextView.setFocusable(true);
             addView(toTextView);
 
             int c1 = Theme.getColor(Theme.key_dialogBackground),
@@ -1560,6 +1573,7 @@ public class TranslateAlert extends Dialog {
             setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
             setClipChildren(false);
             setWillNotDraw(false);
+            setFocusable(false);
 
             fromTextView = new TextView(context) {
                 @Override
@@ -1574,6 +1588,8 @@ public class TranslateAlert extends Dialog {
             fromTextView.setMaxLines(0);
             fromTextView.setSingleLine(false);
             fromTextView.setEllipsize(null);
+            fromTextView.setFocusable(false);
+            fromTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(fromTextView);
 
             toTextView = new TextView(context) {
@@ -1588,6 +1604,8 @@ public class TranslateAlert extends Dialog {
             toTextView.setMaxLines(0);
             toTextView.setSingleLine(false);
             toTextView.setEllipsize(null);
+            toTextView.setFocusable(false);
+            toTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(toTextView);
 
             int c1 = Theme.getColor(Theme.key_dialogBackground),
@@ -1705,23 +1723,6 @@ public class TranslateAlert extends Dialog {
         }
 
         private RectF fetchedPathRect = new RectF();
-        private Path fetchPath = new Path() {
-            private boolean got = false;
-
-            @Override
-            public void reset() {
-                super.reset();
-                got = false;
-            }
-
-            @Override
-            public void addRect(float left, float top, float right, float bottom, @NonNull Direction dir) {
-                if (!got) {
-                    fetchedPathRect.set(left - paddingHorizontal, top - paddingVertical, right + paddingHorizontal, bottom + paddingVertical);
-                    got = true;
-                }
-            }
-        };
         private void updateLoadingPath() {
             if (fromTextView != null && fromTextView.getMeasuredWidth() > 0) {
                 loadingPath.reset();
@@ -1731,9 +1732,9 @@ public class TranslateAlert extends Dialog {
                     final int lineCount = loadingLayout.getLineCount();
                     for (int i = 0; i < lineCount; ++i) {
                         float s = loadingLayout.getLineLeft(i),
-                                e = loadingLayout.getLineRight(i),
-                                l = Math.min(s, e),
-                                r = Math.max(s, e);
+                              e = loadingLayout.getLineRight(i),
+                              l = Math.min(s, e),
+                              r = Math.max(s, e);
                         int start = loadingLayout.getLineStart(i),
                               end = loadingLayout.getLineEnd(i);
                         boolean hasNonEmptyChar = false;

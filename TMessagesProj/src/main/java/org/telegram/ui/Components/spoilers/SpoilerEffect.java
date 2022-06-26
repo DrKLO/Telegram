@@ -698,8 +698,7 @@ public class SpoilerEffect extends Drawable {
 
     /**
      * Optimized version of text layout double-render
-     *
-     * @param v                        View to use as a parent view
+     *  @param v                        View to use as a parent view
      * @param invalidateSpoilersParent Set to invalidate parent or not
      * @param spoilersColor            Spoilers' color
      * @param verticalOffset           Additional vertical offset
@@ -707,10 +706,11 @@ public class SpoilerEffect extends Drawable {
      * @param textLayout               Layout to render
      * @param spoilers                 Spoilers list to render
      * @param canvas                   Canvas to render
+     * @param useParentWidth
      */
     @SuppressLint("WrongConstant")
     @MainThread
-    public static void renderWithRipple(View v, boolean invalidateSpoilersParent, int spoilersColor, int verticalOffset, AtomicReference<Layout> patchedLayoutRef, Layout textLayout, List<SpoilerEffect> spoilers, Canvas canvas) {
+    public static void renderWithRipple(View v, boolean invalidateSpoilersParent, int spoilersColor, int verticalOffset, AtomicReference<Layout> patchedLayoutRef, Layout textLayout, List<SpoilerEffect> spoilers, Canvas canvas, boolean useParentWidth) {
         if (spoilers.isEmpty()) {
             textLayout.draw(canvas);
             return;
@@ -789,7 +789,11 @@ public class SpoilerEffect extends Drawable {
 
             boolean useAlphaLayer = spoilers.get(0).rippleProgress != -1;
             if (useAlphaLayer) {
-                canvas.saveLayer(0, 0, v.getMeasuredWidth(), v.getMeasuredHeight(), null, canvas.ALL_SAVE_FLAG);
+                int w = v.getMeasuredWidth();
+                if (useParentWidth && v.getParent() instanceof View) {
+                    w = ((View) v.getParent()).getMeasuredWidth();
+                }
+                canvas.saveLayer(0, 0, w, v.getMeasuredHeight(), null, canvas.ALL_SAVE_FLAG);
             } else {
                 canvas.save();
             }

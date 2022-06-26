@@ -28,14 +28,11 @@ import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.ExtractedText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -44,10 +41,10 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -60,7 +57,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private final ImageView doneButton;
 
     public int getCaptionLimitOffset() {
-        return captionMaxLength - codePointCount;
+        return MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() - codePointCount;
     }
 
     public interface PhotoViewerCaptionEnterViewDelegate {
@@ -100,7 +97,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private boolean innerTextChange;
     private boolean popupAnimating;
 
-    private int captionMaxLength = 1024;
     private int codePointCount;
 
     private PhotoViewerCaptionEnterViewDelegate delegate;
@@ -114,6 +110,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private TextPaint lengthTextPaint;
     private String lengthText;
     private final Theme.ResourcesProvider resourcesProvider;
+    public int currentAccount = UserConfig.selectedAccount;
 
     public PhotoViewerCaptionEnterView(Context context, SizeNotifierFrameLayoutPhoto parent, final View window, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -275,7 +272,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
             @Override
             public void afterTextChanged(Editable editable) {
-                int charactersLeft = captionMaxLength - messageEditText.length();
+                int charactersLeft = MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() - messageEditText.length();
                 if (charactersLeft <= 128) {
                     lengthText = String.format("%d", charactersLeft);
                 } else {
@@ -296,7 +293,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 int beforeLimit;
                 codePointCount = Character.codePointCount(editable, 0, editable.length());
                 boolean sendButtonEnabledLocal = true;
-                if (captionMaxLength > 0 && (beforeLimit = captionMaxLength - codePointCount) <= 100) {
+                if (MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() > 0 && (beforeLimit = MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() - codePointCount) <= 100) {
                     if (beforeLimit < -9999) {
                         beforeLimit = -9999;
                     }
@@ -351,7 +348,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         doneButton.setImageDrawable(combinedDrawable);
         textFieldContainer.addView(doneButton, LayoutHelper.createLinear(48, 48, Gravity.BOTTOM));
         doneButton.setOnClickListener(view -> {
-            if (captionMaxLength - codePointCount < 0) {
+            if (MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() - codePointCount < 0) {
                 AndroidUtilities.shakeView(captionLimitView, 2, 0);
                 Vibrator v = (Vibrator) captionLimitView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
@@ -370,6 +367,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         captionLimitView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         captionLimitView.setCenterAlign(true);
         addView(captionLimitView, LayoutHelper.createFrame(48, 20, Gravity.BOTTOM | Gravity.RIGHT, 3, 0, 3, 48));
+        currentAccount = UserConfig.selectedAccount;
     }
 
     private void onLineCountChanged(int lineCountOld, int lineCountNew) {
@@ -496,6 +494,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     public void onCreate() {
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         sizeNotifierLayout.setDelegate(this);
     }
 
@@ -506,6 +505,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         }
         keyboardVisible = false;
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         if (sizeNotifierLayout != null) {
             sizeNotifierLayout.setDelegate(null);
         }
@@ -524,7 +524,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         if (delegate != null) {
             delegate.onTextChanged(messageEditText.getText());
         }
-        captionMaxLength = MessagesController.getInstance(UserConfig.selectedAccount).maxCaptionLength;
     }
 
     public int getSelectionLength() {

@@ -28,6 +28,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -40,9 +43,6 @@ import org.telegram.ui.Cells.PhotoEditToolCell;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 @SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout implements FilterShaders.FilterShadersDelegate {
@@ -442,7 +442,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         tuneItem = new ImageView(context);
         tuneItem.setScaleType(ImageView.ScaleType.CENTER);
-        tuneItem.setImageResource(R.drawable.photo_tools);
+        tuneItem.setImageResource(R.drawable.msg_photo_settings);
         tuneItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
         tuneItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(tuneItem, LayoutHelper.createLinear(56, 48));
@@ -456,7 +456,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         blurItem = new ImageView(context);
         blurItem.setScaleType(ImageView.ScaleType.CENTER);
-        blurItem.setImageResource(R.drawable.tool_blur);
+        blurItem.setImageResource(R.drawable.msg_photo_blur);
         blurItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(blurItem, LayoutHelper.createLinear(56, 48));
         blurItem.setOnClickListener(v -> {
@@ -472,7 +472,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         curveItem = new ImageView(context);
         curveItem.setScaleType(ImageView.ScaleType.CENTER);
-        curveItem.setImageResource(R.drawable.tool_curve);
+        curveItem.setImageResource(R.drawable.msg_photo_curve);
         curveItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(curveItem, LayoutHelper.createLinear(56, 48));
         curveItem.setOnClickListener(v -> {
@@ -624,35 +624,35 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
     private void updateSelectedBlurType() {
         if (blurType == 0) {
-            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.blur_off).mutate();
+            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.msg_blur_off).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
             blurOffButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurOffButton.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));
 
-            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
+            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.msg_blur_radial, 0, 0);
             blurRadialButton.setTextColor(0xffffffff);
 
-            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
+            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.msg_blur_linear, 0, 0);
             blurLinearButton.setTextColor(0xffffffff);
         } else if (blurType == 1) {
-            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off, 0, 0);
+            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.msg_blur_off, 0, 0);
             blurOffButton.setTextColor(0xffffffff);
 
-            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.blur_radial).mutate();
+            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.msg_blur_radial).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
             blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurRadialButton.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));
 
-            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
+            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.msg_blur_linear, 0, 0);
             blurLinearButton.setTextColor(0xffffffff);
         } else if (blurType == 2) {
-            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off, 0, 0);
+            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.msg_blur_off, 0, 0);
             blurOffButton.setTextColor(0xffffffff);
 
-            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
+            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.msg_blur_radial, 0, 0);
             blurRadialButton.setTextColor(0xffffffff);
 
-            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.blur_linear).mutate();
+            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.msg_blur_linear).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
             blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurLinearButton.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));

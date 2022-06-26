@@ -25,7 +25,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessagesController;
@@ -977,7 +976,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                     needProgress = true;
                     String filter;
                     if (isProfileFragment && videoLocation != null && videoLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
-                        filter = ImageLoader.AUTOPLAY_FILTER;
+                        filter = "avatar";
                     } else {
                         filter = null;
                     }

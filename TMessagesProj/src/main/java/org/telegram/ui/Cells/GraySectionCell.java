@@ -21,6 +21,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -29,7 +31,7 @@ import java.util.List;
 public class GraySectionCell extends FrameLayout {
 
     private TextView textView;
-    private TextView rightTextView;
+    private AnimatedTextView rightTextView;
     private final Theme.ResourcesProvider resourcesProvider;
 
     public GraySectionCell(Context context) {
@@ -49,15 +51,17 @@ public class GraySectionCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
 
-        rightTextView = new TextView(getContext()) {
+        rightTextView = new AnimatedTextView(getContext(), true, true, true) {
             @Override
             public CharSequence getAccessibilityClassName() {
                 return Button.class.getName();
             }
         };
-        rightTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        rightTextView.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(2), 0);
+        rightTextView.setAnimationProperties(1f, 0, 400, CubicBezierInterpolator.EASE_OUT_QUINT);
+        rightTextView.setTextSize(AndroidUtilities.dp(14));
         rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
-        rightTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+        rightTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
 
         ViewCompat.setAccessibilityHeading(this, true);
@@ -74,15 +78,29 @@ public class GraySectionCell extends FrameLayout {
         rightTextView.setTextColor(color);
     }
 
+    public CharSequence getText() {
+        return textView.getText();
+    }
+
     public void setText(String text) {
         textView.setText(text);
         rightTextView.setVisibility(GONE);
+        rightTextView.setOnClickListener(null);
     }
 
     public void setText(String left, String right, OnClickListener onClickListener) {
         textView.setText(left);
-        rightTextView.setText(right);
+        rightTextView.setText(right, false);
         rightTextView.setOnClickListener(onClickListener);
+        rightTextView.setVisibility(VISIBLE);
+    }
+
+    public void setRightText(String right) {
+        setRightText(right, true);
+    }
+
+    public void setRightText(String right, boolean moveDown) {
+        rightTextView.setText(right, true, moveDown);
         rightTextView.setVisibility(VISIBLE);
     }
 

@@ -709,7 +709,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             ActionBarMenuSubItem addCell = new ActionBarMenuSubItem(context, true, false);
             addCell.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
             addCell.setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider));
-            addCell.setTextAndIcon(isChannel ? LocaleController.getString("AddToChannel", R.string.AddToChannel) : LocaleController.getString("AddToGroup", R.string.AddToGroup), R.drawable.actions_requests);
+            addCell.setTextAndIcon(isChannel ? LocaleController.getString("AddToChannel", R.string.AddToChannel) : LocaleController.getString("AddToGroup", R.string.AddToGroup), R.drawable.msg_requests);
             addCell.setOnClickListener((v) -> {
                 if (importer != null) {
                     onAddClicked(importer);
@@ -738,7 +738,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             ActionBarMenuSubItem dismissCell = new ActionBarMenuSubItem(context, false, true);
             dismissCell.setColors(Theme.getColor(Theme.key_dialogTextRed2, resourcesProvider), Theme.getColor(Theme.key_dialogRedIcon, resourcesProvider));
             dismissCell.setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider));
-            dismissCell.setTextAndIcon(LocaleController.getString("DismissRequest", R.string.DismissRequest), R.drawable.actions_remove_user);
+            dismissCell.setTextAndIcon(LocaleController.getString("DismissRequest", R.string.DismissRequest), R.drawable.msg_remove);
             dismissCell.setOnClickListener((v) -> {
                 if (importer != null) {
                     onDismissClicked(importer);

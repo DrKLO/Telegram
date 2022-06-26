@@ -43,6 +43,11 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 
+import androidx.annotation.Keep;
+import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -66,14 +71,10 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.annotation.Keep;
-import androidx.collection.LongSparseArray;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class FilterUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, View.OnClickListener {
 
@@ -683,7 +684,10 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                     GroupCreateSpan span = selectedContacts.get(id);
                     spansContainer.removeSpan(span);
                 } else {
-                    if (!(object instanceof String) && selectedCount >= 100) {
+                    if (!(object instanceof String) && (!getUserConfig().isPremium() && selectedCount >= MessagesController.getInstance(currentAccount).dialogFiltersChatsLimitDefault) || selectedCount >= MessagesController.getInstance(currentAccount).dialogFiltersChatsLimitPremium) {
+                        LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount);
+                        limitReachedBottomSheet.setCurrentValue(selectedCount);
+                        showDialog(limitReachedBottomSheet);
                         return;
                     }
                     if (object instanceof TLRPC.User) {
@@ -944,10 +948,11 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
     }
 
     private void updateHint() {
+        int limit = getUserConfig().isPremium() ? getMessagesController().dialogFiltersChatsLimitPremium : getMessagesController().dialogFiltersChatsLimitDefault;
         if (selectedCount == 0) {
-            actionBar.setSubtitle(LocaleController.formatString("MembersCountZero", R.string.MembersCountZero, LocaleController.formatPluralString("Chats", 100)));
+            actionBar.setSubtitle(LocaleController.formatString("MembersCountZero", R.string.MembersCountZero, LocaleController.formatPluralString("Chats", limit)));
         } else {
-            actionBar.setSubtitle(String.format(LocaleController.getPluralString("MembersCountSelected", selectedCount), selectedCount, 100));
+            actionBar.setSubtitle(String.format(LocaleController.getPluralString("MembersCountSelected", selectedCount), selectedCount, limit));
         }
     }
 

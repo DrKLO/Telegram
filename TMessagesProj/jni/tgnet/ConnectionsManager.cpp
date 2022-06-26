@@ -143,9 +143,15 @@ ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
             static ConnectionsManager instance1(1);
             return instance1;
         case 2:
-        default:
             static ConnectionsManager instance2(2);
             return instance2;
+        case 3:
+            static ConnectionsManager instance3(3);
+            return instance3;
+        case 4:
+        default:
+            static ConnectionsManager instance4(4);
+            return instance4;
     }
 }
 
@@ -3005,8 +3011,13 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround) {
                     if (dcOption->secret != nullptr) {
                         secret = std::string((const char *) dcOption->secret->bytes, dcOption->secret->length);
                     }
-                    if (LOGS_ENABLED) DEBUG_D("getConfig add %s:%d to dc%d, flags %d, has secret = %d[%d]", dcOption->ip_address.c_str(), dcOption->port, dcOption->id, dcOption->flags, dcOption->secret != nullptr ? 1 : 0, dcOption->secret != nullptr ? dcOption->secret->length : 0);
-                    addresses->push_back(TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
+                    if (LOGS_ENABLED) DEBUG_D("getConfig add %s:%d to dc%d, flags %d, has_secret = %d[%d], try_this_port_only = %d", dcOption->ip_address.c_str(), dcOption->port, dcOption->id, dcOption->flags, dcOption->secret != nullptr ? 1 : 0, dcOption->secret != nullptr ? dcOption->secret->length : 0, dcOption->thisPortOnly ? 1 : 0);
+                    if (dcOption->thisPortOnly) {
+                        addresses->insert(addresses->begin(), TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
+                    } else {
+                        addresses->push_back(TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
+                    }
+
                 }
             };
 

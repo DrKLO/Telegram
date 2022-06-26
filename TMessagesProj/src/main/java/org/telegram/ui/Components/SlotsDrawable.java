@@ -8,6 +8,7 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -218,7 +219,7 @@ public class SlotsDrawable extends RLottieDrawable {
                     num = 2;
                 }
                 TLRPC.Document document = stickerSet.documents.get(num);
-                File path = FileLoader.getPathToAttach(document, true);
+                File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
                 String json = readRes(path, 0);
                 if (TextUtils.isEmpty(json)) {
                     loading = true;
@@ -328,7 +329,7 @@ public class SlotsDrawable extends RLottieDrawable {
                     }
                 }
                 TLRPC.Document document = stickerSet.documents.get(num);
-                File path = FileLoader.getPathToAttach(document, true);
+                File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
                 String json = readRes(path, 0);
                 if (TextUtils.isEmpty(json)) {
                     loading = true;

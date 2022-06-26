@@ -6,6 +6,7 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
@@ -13,7 +14,9 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -23,10 +26,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -47,7 +52,7 @@ public class ReactedUsersListView extends FrameLayout {
     private MessageObject message;
     private String filter;
 
-    private RecyclerListView listView;
+    public RecyclerListView listView;
     private RecyclerView.Adapter adapter;
 
     private FlickerLoadingView loadingView;
@@ -55,7 +60,7 @@ public class ReactedUsersListView extends FrameLayout {
     private List<TLRPC.TL_messagePeerReaction> userReactions = new ArrayList<>();
     private LongSparseArray<TLRPC.TL_messagePeerReaction> peerReactionMap = new LongSparseArray<>();
     private String offset;
-    private boolean isLoading, isLoaded, canLoadMore = true;
+    public boolean isLoading, isLoaded, canLoadMore = true;
     private boolean onlySeenNow;
 
     private OnHeightChangedListener onHeightChangedListener;
@@ -120,7 +125,7 @@ public class ReactedUsersListView extends FrameLayout {
         loadingView = new FlickerLoadingView(context, resourcesProvider);
         loadingView.setViewType(FlickerLoadingView.REACTED_TYPE);
         loadingView.setIsSingleCell(true);
-        loadingView.setItemsCount(reactionCount == null ? VISIBLE_ITEMS : reactionCount.count);
+        loadingView.setItemsCount(predictiveCount);
         addView(loadingView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
     }
 
@@ -271,6 +276,7 @@ public class ReactedUsersListView extends FrameLayout {
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
             titleView.setEllipsize(TextUtils.TruncateAt.END);
+            titleView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 58, 0, 44, 0));
 
             reactView = new BackupImageView(context);
@@ -288,24 +294,36 @@ public class ReactedUsersListView extends FrameLayout {
             }
             avatarDrawable.setInfo(u);
             titleView.setText(UserObject.getUserName(u));
-            avatarView.setImage(ImageLocation.getForUser(u, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, u);
+            Drawable thumb = avatarDrawable;
+            if (u.photo != null && u.photo.strippedBitmap != null) {
+                thumb = u.photo.strippedBitmap;
+            }
+            avatarView.setImage(ImageLocation.getForUser(u, ImageLocation.TYPE_SMALL), "50_50", thumb, u);
 
             if (reaction.reaction != null) {
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction.reaction);
                 if (r != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
-                    reactView.setImage(ImageLocation.getForDocument(r.static_icon), "50_50", "webp", svgThumb, r);
+                    reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", svgThumb, r);
                 } else {
                     reactView.setImageDrawable(null);
                 }
+                setContentDescription(LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, UserObject.getUserName(u), reaction.reaction));
             } else {
                 reactView.setImageDrawable(null);
+                setContentDescription(LocaleController.formatString("AccDescrPersonHasSeen", R.string.AccDescrPersonHasSeen, UserObject.getUserName(u)));
             }
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(ITEM_HEIGHT_DP), MeasureSpec.EXACTLY));
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setEnabled(true);
         }
     }
 
@@ -325,5 +343,61 @@ public class ReactedUsersListView extends FrameLayout {
 
     public interface OnProfileSelectedListener {
         void onProfileSelected(ReactedUsersListView view, long userId);
+    }
+
+    public void setPredictiveCount(int predictiveCount) {
+        this.predictiveCount = predictiveCount;
+        loadingView.setItemsCount(predictiveCount);
+    }
+
+    public static class ContainerLinerLayout extends LinearLayout {
+
+        public boolean hasHeader;
+
+        public ContainerLinerLayout(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int maxWidth = 0;
+            RecyclerListView listView = null;
+            if (!hasHeader) {
+                for (int k = 0; k < getChildCount(); k++) {
+                    if (getChildAt(k) instanceof ReactedUsersListView) {
+                        listView = ((ReactedUsersListView) getChildAt(k)).listView;
+                        if (listView.getAdapter().getItemCount() == listView.getChildCount()) {
+                            int count = listView.getChildCount();
+                            for (int i = 0; i < count; i++) {
+                                listView.getChildAt(i).measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.UNSPECIFIED), heightMeasureSpec);
+                                if (listView.getChildAt(i).getMeasuredWidth() > maxWidth) {
+                                    maxWidth = listView.getChildAt(i).getMeasuredWidth();
+                                }
+                            }
+                            maxWidth += AndroidUtilities.dp(16);
+                        }
+                    }
+                }
+            }
+            int size = MeasureSpec.getSize(widthMeasureSpec);
+            if (size < AndroidUtilities.dp(240)) {
+                size = AndroidUtilities.dp(240);
+            }
+            if (size > AndroidUtilities.dp(280)) {
+                size = AndroidUtilities.dp(280);
+            }
+            if (size < 0) {
+                size = 0;
+            }
+            if (maxWidth != 0 && maxWidth < size) {
+                size = maxWidth;
+            }
+            if (listView != null) {
+                for (int i = 0; i < listView.getChildCount(); i++) {
+                    listView.getChildAt(i).measure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), heightMeasureSpec);
+                }
+            }
+            super.onMeasure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), heightMeasureSpec);
+        }
     }
 }

@@ -85,7 +85,7 @@ public class HintDialogCell extends FrameLayout {
                 invalidate();
             });
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, 42, 0, 0));
-            checkBox.setChecked(true, false);
+            checkBox.setChecked(false, false);
             setWillNotDraw(false);
         }
     }
@@ -130,6 +130,12 @@ public class HintDialogCell extends FrameLayout {
         }
     }
 
+    public void setColors(String textColorKey, String backgroundColorKey) {
+        nameTextView.setTextColor(Theme.getColor(textColorKey));
+        this.backgroundColorKey = backgroundColorKey;
+        checkBox.setColor(Theme.key_dialogRoundCheckBox, backgroundColorKey, Theme.key_dialogRoundCheckBoxCheck);
+    }
+
     public void setDialog(long uid, boolean counter, CharSequence name) {
         if (dialogId != uid) {
             wasDraw = false;
@@ -165,6 +171,8 @@ public class HintDialogCell extends FrameLayout {
         }
     }
 
+    private String backgroundColorKey = Theme.key_windowBackgroundWhite;
+
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         boolean result = super.drawChild(canvas, child, drawingTime);
@@ -191,7 +199,7 @@ public class HintDialogCell extends FrameLayout {
                 int left = AndroidUtilities.dp(59);
                 canvas.save();
                 canvas.scale(showOnlineProgress, showOnlineProgress, left, top);
-                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(backgroundColorKey));
                 canvas.drawCircle(left, top, AndroidUtilities.dp(7), Theme.dialogs_onlineCirclePaint);
                 Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
                 canvas.drawCircle(left, top, AndroidUtilities.dp(5), Theme.dialogs_onlineCirclePaint);

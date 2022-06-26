@@ -420,6 +420,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 frameLayout.addView(innerLinearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
                 lockImageView = new RLottieImageView(context);
+                lockImageView.setFocusable(false);
                 lockImageView.setAnimation(R.raw.tsv_setup_intro, 120, 120);
                 lockImageView.setAutoRepeat(false);
                 lockImageView.playAnimation();

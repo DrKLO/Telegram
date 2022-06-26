@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -43,7 +44,7 @@ public class AvailableReactionCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity(LayoutHelper.getAbsoluteGravityStart() | Gravity.CENTER_VERTICAL);
-        addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 81, 0, 91, 0));
+        addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 81, 0, 61, 0));
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
@@ -85,7 +86,7 @@ public class AvailableReactionCell extends FrameLayout {
         this.react = react;
         textView.setText(react.title);
         SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(react.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-        imageView.setImage(ImageLocation.getForDocument(react.static_icon), "50_50", "webp", svgThumb, react);
+        imageView.setImage(ImageLocation.getForDocument(react.center_icon), "40_40_lastframe", "webp", svgThumb, react);
         setChecked(checked, animated);
     }
 
@@ -111,6 +112,16 @@ public class AvailableReactionCell extends FrameLayout {
         }
     }
 
+    public boolean isChecked() {
+        if (switchView != null) {
+            return switchView.isChecked();
+        }
+        if (checkBox != null) {
+            return checkBox.isChecked();
+        }
+        return false;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -124,5 +135,20 @@ public class AvailableReactionCell extends FrameLayout {
         }
 
         canvas.drawLine(getPaddingLeft() + l, getHeight() - w, getWidth() - getPaddingRight() - r, getHeight() - w, Theme.dividerPaint);
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setEnabled(true);
+        info.setClickable(true);
+        if (switchView != null) {
+            info.setCheckable(true);
+            info.setChecked(isChecked());
+            info.setClassName("android.widget.Switch");
+        } else if (isChecked()) {
+            info.setSelected(true);
+        }
+        info.setContentDescription(textView.getText());
     }
 }

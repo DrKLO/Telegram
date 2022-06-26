@@ -36,14 +36,18 @@ public class LetterDrawable extends Drawable {
     private StringBuilder stringBuilder = new StringBuilder(5);
 
     public LetterDrawable() {
+        this(null);
+    }
+
+    public LetterDrawable(Theme.ResourcesProvider resourcesProvider) {
         super();
 
         if (namePaint == null) {
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         }
         namePaint.setTextSize(AndroidUtilities.dp(28));
-        paint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholder));
-        namePaint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholderText));
+        paint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholder, resourcesProvider));
+        namePaint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholderText, resourcesProvider));
     }
 
     public void setBackgroundColor(int value) {

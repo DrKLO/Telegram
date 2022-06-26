@@ -27,6 +27,7 @@ import android.text.StaticLayout;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
+import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -80,13 +81,19 @@ public class AboutLinkCell extends FrameLayout {
     private LinkPath urlPath = new LinkPath(true);
 
     private BaseFragment parentFragment;
+    private Theme.ResourcesProvider resourcesProvider;
 
     private FrameLayout container;
     private Drawable rippleBackground;
 
     public AboutLinkCell(Context context, BaseFragment fragment) {
+        this(context, fragment, null);
+    }
+
+    public AboutLinkCell(Context context, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
+        this.resourcesProvider = resourcesProvider;
         parentFragment = fragment;
 
         container = new FrameLayout(context) {
@@ -139,24 +146,26 @@ public class AboutLinkCell extends FrameLayout {
                 return result || super.onTouchEvent(event);
             }
         };
+        container.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         links = new LinkSpanDrawable.LinkCollector(container);
         container.setClickable(true);
-        rippleBackground = Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector), 0, 0);
+        rippleBackground = Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0);
 
         valueTextView = new TextView(context);
         valueTextView.setVisibility(GONE);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        valueTextView.setFocusable(false);
         container.addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 23, 0, 23, 10));
 
         bottomShadow = new FrameLayout(context);
         Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.gradient_bottom).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.SRC_ATOP));
+        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), PorterDuff.Mode.SRC_ATOP));
         bottomShadow.setBackground(shadowDrawable);
         addView(bottomShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 12, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
 
@@ -187,7 +196,7 @@ public class AboutLinkCell extends FrameLayout {
                 super.onDraw(canvas);
             }
         };
-        showMoreTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+        showMoreTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
         showMoreTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         showMoreTextView.setLines(1);
         showMoreTextView.setMaxLines(1);
@@ -199,7 +208,7 @@ public class AboutLinkCell extends FrameLayout {
         showMoreTextView.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(2), 0);
         showMoreTextBackgroundView = new FrameLayout(context);
         showMoreBackgroundDrawable = context.getResources().getDrawable(R.drawable.gradient_left).mutate();
-        showMoreBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.MULTIPLY));
+        showMoreBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         showMoreTextBackgroundView.setBackground(showMoreBackgroundDrawable);
         showMoreTextBackgroundView.setPadding(
             showMoreTextBackgroundView.getPaddingLeft() + AndroidUtilities.dp(4),
@@ -209,7 +218,7 @@ public class AboutLinkCell extends FrameLayout {
         );
         showMoreTextBackgroundView.addView(showMoreTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         addView(showMoreTextBackgroundView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 22 - showMoreTextBackgroundView.getPaddingLeft() / AndroidUtilities.density, 0, 22 - showMoreTextBackgroundView.getPaddingRight() / AndroidUtilities.density, 6));
-        backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
 
         setWillNotDraw(false);
     }
@@ -420,7 +429,7 @@ public class AboutLinkCell extends FrameLayout {
             if (left <= x && left + textLayout.getLineWidth(line) >= x && y >= 0 && y <= textLayout.getHeight()) {
                 Spannable buffer = (Spannable) textLayout.getText();
                 ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                if (link.length != 0) {
+                if (link.length != 0 && !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
                     resetPressedLink();
                     pressedLink = new LinkSpanDrawable(link[0], parentFragment.getResourceProvider(), ex, ey);
                     links.addLink(pressedLink);
@@ -466,7 +475,7 @@ public class AboutLinkCell extends FrameLayout {
     private static final int COLLAPSED_HEIGHT = AndroidUtilities.dp(8 + 20 * 3 + 8);
     private static final int MAX_OPEN_HEIGHT = COLLAPSED_HEIGHT;// + AndroidUtilities.dp(20);
 
-    private class SpringInterpolator {
+    public class SpringInterpolator {
         public float tension;
         public float friction;
         public SpringInterpolator(float tension, float friction) {
@@ -712,8 +721,9 @@ public class AboutLinkCell extends FrameLayout {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         if (textLayout != null) {
-            final CharSequence text = textLayout.getText();
+            final CharSequence text = stringBuilder;
             final CharSequence valueText = valueTextView.getText();
+            info.setClassName("android.widget.TextView");
             if (TextUtils.isEmpty(valueText)) {
                 info.setText(text);
             } else {

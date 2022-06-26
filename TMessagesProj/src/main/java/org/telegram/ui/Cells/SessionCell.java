@@ -15,6 +15,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -35,9 +36,11 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -50,10 +53,12 @@ public class SessionCell extends FrameLayout {
     private TextView onlineTextView;
     private TextView detailTextView;
     private TextView detailExTextView;
+    private BackupImageView placeholderImageView;
     private BackupImageView imageView;
     private AvatarDrawable avatarDrawable;
     private boolean needDivider;
     private boolean showStub;
+    private AnimatedFloat showStubValue = new AnimatedFloat(this);
     FlickerLoadingView globalGradient;
     LinearLayout linearLayout;
 
@@ -71,10 +76,15 @@ public class SessionCell extends FrameLayout {
 
             avatarDrawable = new AvatarDrawable();
             avatarDrawable.setTextSize(AndroidUtilities.dp(10));
+
             imageView = new BackupImageView(context);
             imageView.setRoundRadius(AndroidUtilities.dp(10));
             addView(imageView, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 21), 13, (LocaleController.isRTL ? 21 : 0), 0));
         } else {
+            placeholderImageView = new BackupImageView(context);
+            placeholderImageView.setRoundRadius(AndroidUtilities.dp(10));
+            addView(placeholderImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 13, (LocaleController.isRTL ? 16 : 0), 0));
+
             imageView = new BackupImageView(context);
             imageView.setRoundRadius(AndroidUtilities.dp(10));
             addView(imageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 13, (LocaleController.isRTL ? 16 : 0), 0));
@@ -134,6 +144,30 @@ public class SessionCell extends FrameLayout {
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, 59, rightMargin, 0));
+    }
+
+    private void setContentAlpha(float alpha) {
+        if (detailExTextView != null) {
+            detailExTextView.setAlpha(alpha);
+        }
+        if (detailTextView != null) {
+            detailTextView.setAlpha(alpha);
+        }
+        if (nameTextView != null) {
+            nameTextView.setAlpha(alpha);
+        }
+        if (onlineTextView != null) {
+            onlineTextView.setAlpha(alpha);
+        }
+        if (imageView != null) {
+            imageView.setAlpha(alpha);
+        }
+        if (placeholderImageView != null) {
+            placeholderImageView.setAlpha(1f - alpha);
+        }
+        if (linearLayout != null) {
+            linearLayout.setAlpha(alpha);
+        }
     }
 
     @Override
@@ -302,7 +336,13 @@ public class SessionCell extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (showStub && globalGradient != null) {
+        float stubAlpha = showStubValue.set(showStub ? 1 : 0);
+        setContentAlpha(1f - stubAlpha);
+        if (stubAlpha > 0 && globalGradient != null) {
+            if (stubAlpha < 1f) {
+                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+                canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) (255 * stubAlpha), Canvas.ALL_SAVE_FLAG);
+            }
             globalGradient.updateColors();
             globalGradient.updateGradient();
             if (getParent() != null) {
@@ -327,6 +367,10 @@ public class SessionCell extends FrameLayout {
             AndroidUtilities.rectTmp.set(x, y - AndroidUtilities.dp(4), x + getMeasuredWidth() * 0.3f, y + AndroidUtilities.dp(4));
             canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), globalGradient.getPaint());
             invalidate();
+
+            if (stubAlpha < 1f) {
+                canvas.restore();
+            }
         }
         if (needDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
@@ -340,7 +384,11 @@ public class SessionCell extends FrameLayout {
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, AndroidUtilities.isTablet() ?  R.drawable.device_tablet_android : R.drawable.device_phone_android).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
         CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(Theme.key_avatar_backgroundGreen)), iconDrawable);
-        imageView.setImageDrawable(combinedDrawable);
+        if (placeholderImageView != null) {
+            placeholderImageView.setImageDrawable(combinedDrawable);
+        } else {
+            imageView.setImageDrawable(combinedDrawable);
+        }
         invalidate();
     }
 

@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">**%1$s** rimossa da **%2$s**</string>
     <string name="FilterChatsRemovedFrom">**%1$s** rimosse da **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">Limite raggiunto</string>
-    <string name="FilterRemoveFromAlertFullText">Spiacenti, non puoi aggiungere più di 100 chat a una cartella.</string>
     <string name="FilterAddToAlertFullText">Spiacenti, non puoi escludere più di 100 chat da una cartella.</string>
     <!--passcode view-->
     <string name="Passcode">Codice di blocco</string>

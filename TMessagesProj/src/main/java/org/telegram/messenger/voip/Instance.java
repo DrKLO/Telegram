@@ -204,8 +204,9 @@ public final class Instance {
         public final boolean stun;
         public final String username;
         public final String password;
+        public final boolean tcp;
 
-        public Endpoint(boolean isRtc, long id, String ipv4, String ipv6, int port, int type, byte[] peerTag, boolean turn, boolean stun, String username, String password) {
+        public Endpoint(boolean isRtc, long id, String ipv4, String ipv6, int port, int type, byte[] peerTag, boolean turn, boolean stun, String username, String password, boolean tcp) {
             this.isRtc = isRtc;
             this.id = id;
             this.ipv4 = ipv4;
@@ -217,6 +218,7 @@ public final class Instance {
             this.stun = stun;
             this.username = username;
             this.password = password;
+            this.tcp = tcp;
         }
 
         @Override
@@ -232,6 +234,7 @@ public final class Instance {
                     ", stun=" + stun +
                     ", username=" + username +
                     ", password=" + password +
+                    ", tcp=" + tcp +
                     '}';
         }
     }

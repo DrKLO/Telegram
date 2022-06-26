@@ -316,7 +316,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             }
         }
         if (cacheFile == null) {
-            cacheFile = FileLoader.getPathToAttach(currentMessageObject.getDocument());
+            cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(currentMessageObject.getDocument());
         }
         if (TextUtils.isEmpty(fileName)) {
             return;

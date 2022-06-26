@@ -42,7 +42,7 @@ public class BackButtonMenu {
         int filterId;
     }
 
-    public static ActionBarPopupWindow show(BaseFragment thisFragment, View backButton, long currentDialogId) {
+    public static ActionBarPopupWindow show(BaseFragment thisFragment, View backButton, long currentDialogId, Theme.ResourcesProvider resourcesProvider) {
         if (thisFragment == null) {
             return null;
         }
@@ -57,11 +57,11 @@ public class BackButtonMenu {
             return null;
         }
 
-        ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
+        ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, resourcesProvider);
         android.graphics.Rect backgroundPaddings = new Rect();
         Drawable shadowDrawable = thisFragment.getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
         shadowDrawable.getPadding(backgroundPaddings);
-        layout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+        layout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
 
         AtomicReference<ActionBarPopupWindow> scrimPopupWindowRef = new AtomicReference<>();
 
@@ -79,18 +79,25 @@ public class BackButtonMenu {
             TextView titleView = new TextView(context);
             titleView.setLines(1);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+            titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             cell.addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 59, 0, 12, 0));
 
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setSmallSize(true);
+            Drawable thumb = avatarDrawable;
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
-                imageView.setImage(ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, chat);
+                if (chat.photo != null && chat.photo.strippedBitmap != null) {
+                    thumb = chat.photo.strippedBitmap;
+                }
+                imageView.setImage(ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL), "50_50", thumb, chat);
                 titleView.setText(chat.title);
             } else if (user != null) {
                 String name;
+                if (user.photo != null && user.photo.strippedBitmap != null) {
+                    thumb = user.photo.strippedBitmap;
+                }
                 if (pDialog.activity == ChatActivity.class && UserObject.isUserSelf(user)) {
                     name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
@@ -106,12 +113,12 @@ public class BackButtonMenu {
                 } else {
                     name = UserObject.getUserName(user);
                     avatarDrawable.setInfo(user);
-                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, user);
+                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
                 }
                 titleView.setText(name);
             }
 
-            cell.setBackground(Theme.getSelectorDrawable(Theme.getColor(Theme.key_listSelector), false));
+            cell.setBackground(Theme.getSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), false));
             cell.setOnClickListener(e2 -> {
                 if (scrimPopupWindowRef.get() != null) {
                     scrimPopupWindowRef.getAndSet(null).dismiss();
@@ -175,9 +182,9 @@ public class BackButtonMenu {
         int popupY = (int) (backButton.getBottom() - backgroundPaddings.top - AndroidUtilities.dp(8));
         scrimPopupWindow.showAtLocation(fragmentView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
 
-        try {
-            fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-        } catch (Exception ignore) {}
+//        try {
+//            fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+//        } catch (Exception ignore) {}
 
         return scrimPopupWindow;
     }
@@ -270,7 +277,9 @@ public class BackButtonMenu {
             }
         }
         if (pulledDialogs != null) {
-            for (PulledDialog pulledDialog : pulledDialogs) {
+            int count = pulledDialogs.size();
+            for (int i = count - 1; i >= 0; --i) {
+                PulledDialog pulledDialog = pulledDialogs.get(i);
                 if (pulledDialog.dialogId == ignoreDialogId) {
                     continue;
                 }

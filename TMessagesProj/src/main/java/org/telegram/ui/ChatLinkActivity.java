@@ -21,6 +21,9 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
@@ -46,14 +49,12 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.JoinToSendSettingsView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LoadingStickerDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ChatLinkActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -74,6 +75,8 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     private boolean waitingForChatCreate;
     private boolean chatsLoaded;
 
+    private JoinToSendSettingsView joinToSendSettings;
+
     private long currentChatId;
 
     private int helpRow;
@@ -82,6 +85,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     private int chatEndRow;
     private int removeChatRow;
     private int detailRow;
+    private int joinToSendRow;
     private int rowCount;
 
     private boolean searchWas;
@@ -179,6 +183,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         chatEndRow = -1;
         removeChatRow = -1;
         detailRow = -1;
+        joinToSendRow = -1;
 
         helpRow = rowCount++;
         if (isChannel) {
@@ -198,6 +203,12 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             createChatRow = rowCount++;
         }
         detailRow = rowCount++;
+        if (!isChannel || chats.size() > 0 && info.linked_chat_id != 0) {
+            TLRPC.Chat chat = isChannel ? chats.get(0) : currentChat;
+            if (chat != null && (TextUtils.isEmpty(chat.username) || isChannel) && (chat.creator || chat.admin_rights != null && chat.admin_rights.ban_users)) {
+                joinToSendRow = rowCount++;
+            }
+        }
 
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
@@ -211,6 +222,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
         loadChats();
         return true;
     }
@@ -219,7 +231,11 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
     }
+
+    private boolean joinToSendProgress = false;
+    private boolean joinRequestProgress = false;
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
@@ -238,6 +254,29 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 waitingForFullChatProgressAlert = null;
                 showLinkAlert(waitingForFullChat, false);
                 waitingForFullChat = null;
+            }
+        } else if (id == NotificationCenter.updateInterfaces) {
+            int updateMask = (Integer) args[0];
+            if ((updateMask & MessagesController.UPDATE_MASK_CHAT) != 0 && currentChat != null) {
+                TLRPC.Chat newCurrentChat = getMessagesController().getChat(currentChat.id);
+                if (newCurrentChat != null) {
+                    currentChat = newCurrentChat;
+                }
+                if (chats.size() > 0) {
+                    TLRPC.Chat linkedChat = getMessagesController().getChat(chats.get(0).id);
+                    if (linkedChat != null) {
+                        chats.set(0, linkedChat);
+                    }
+                }
+                final TLRPC.Chat chat = isChannel ? (chats.size() > 0 ? chats.get(0) : null) : currentChat;
+                if (chat != null && joinToSendSettings != null) {
+                    if (!joinRequestProgress) {
+                        joinToSendSettings.setJoinRequest(chat.join_request);
+                    }
+                    if (!joinToSendProgress) {
+                        joinToSendSettings.setJoinToSend(chat.join_to_send);
+                    }
+                }
             }
         }
     }
@@ -501,7 +540,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         imageView.setForUserOrChat(chat, avatarDrawable);
         builder.setPositiveButton(LocaleController.getString("DiscussionLinkGroup", R.string.DiscussionLinkGroup), (dialogInterface, i) -> {
             if (chatFull.hidden_prehistory) {
-                getMessagesController().toogleChannelInvitesHistory(chat.id, false);
+                getMessagesController().toggleChannelInvitesHistory(chat.id, false);
             }
             linkChat(chat, null);
         });
@@ -516,7 +555,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         if (!ChatObject.isChannel(chat)) {
             getMessagesController().convertToMegaGroup(getParentActivity(), chat.id, this, param -> {
                 if (param != 0) {
-                    getMessagesController().toogleChannelInvitesHistory(param, false);
+                    getMessagesController().toggleChannelInvitesHistory(param, false);
                     linkChat(getMessagesController().getChat(param), createFragment);
                 }
             });
@@ -827,6 +866,83 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     view = new ManageChatTextCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
+                case 4:
+                    final TLRPC.Chat chat = isChannel ? chats.get(0) : currentChat;
+                    view = joinToSendSettings = new JoinToSendSettingsView(mContext, chat) {
+                        private void migrateIfNeeded(Runnable onError, Runnable onSuccess) {
+                            if (!ChatObject.isChannel(currentChat)) {
+                                getMessagesController().convertToMegaGroup(getParentActivity(), chat.id, ChatLinkActivity.this, param -> {
+                                    if (param != 0) {
+                                        if (isChannel) {
+                                            chats.set(0, getMessagesController().getChat(param));
+                                        } else {
+                                            currentChatId = param;
+                                            currentChat = getMessagesController().getChat(param);
+                                        }
+                                        onSuccess.run();
+                                    }
+                                }, onError);
+                            } else {
+                                onSuccess.run();
+                            }
+                        }
+
+                        @Override
+                        public boolean onJoinRequestToggle(boolean newValue, Runnable cancel) {
+                            if (joinRequestProgress) {
+                                return false;
+                            }
+                            joinRequestProgress = true;
+                            migrateIfNeeded(overrideCancel(cancel), () -> {
+                                chat.join_request = newValue;
+                                getMessagesController().toggleChatJoinRequest(chat.id, newValue, () -> {
+                                    joinRequestProgress = false;
+                                }, () -> {
+                                    joinRequestProgress = false;
+                                    cancel.run();
+                                });
+                            });
+                            return true;
+                        }
+
+                        private Runnable overrideCancel(Runnable cancel) {
+                            return () -> {
+                                joinToSendProgress = false;
+                                joinRequestProgress = false;
+                                cancel.run();
+                            };
+                        }
+
+                        @Override
+                        public boolean onJoinToSendToggle(boolean newValue, Runnable cancel) {
+                            if (joinToSendProgress) {
+                                return false;
+                            }
+                            joinToSendProgress = true;
+                            migrateIfNeeded(overrideCancel(cancel), () -> {
+                                chat.join_to_send = newValue;
+                                getMessagesController().toggleChatJoinToSend(chat.id, newValue, () -> {
+                                    joinToSendProgress = false;
+                                    if (!newValue && chat.join_request) {
+                                        chat.join_request = false;
+                                        joinRequestProgress = true;
+                                        getMessagesController().toggleChatJoinRequest(chat.id, false, () -> {
+                                            joinRequestProgress = false;
+                                        }, () -> {
+                                            chat.join_request = true;
+                                            isJoinRequest = true;
+                                            joinRequestCell.setChecked(true);
+                                        });
+                                    }
+                                }, () -> {
+                                    joinToSendProgress = false;
+                                    cancel.run();
+                                });
+                            });
+                            return true;
+                        }
+                    };
+                    break;
                 case 3:
                 default:
                     view = new HintInnerCell(mContext);
@@ -859,14 +975,14 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     if (isChannel) {
                         if (info.linked_chat_id != 0) {
                             actionCell.setColors(Theme.key_windowBackgroundWhiteRedText5, Theme.key_windowBackgroundWhiteRedText5);
-                            actionCell.setText(LocaleController.getString("DiscussionUnlinkGroup", R.string.DiscussionUnlinkGroup), null, R.drawable.actions_remove_user, false);
+                            actionCell.setText(LocaleController.getString("DiscussionUnlinkGroup", R.string.DiscussionUnlinkGroup), null, R.drawable.msg_remove, false);
                         } else {
                             actionCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
-                            actionCell.setText(LocaleController.getString("DiscussionCreateGroup", R.string.DiscussionCreateGroup), null, R.drawable.menu_groups, true);
+                            actionCell.setText(LocaleController.getString("DiscussionCreateGroup", R.string.DiscussionCreateGroup), null, R.drawable.msg_groups, true);
                         }
                     } else {
                         actionCell.setColors(Theme.key_windowBackgroundWhiteRedText5, Theme.key_windowBackgroundWhiteRedText5);
-                        actionCell.setText(LocaleController.getString("DiscussionUnlinkChannel", R.string.DiscussionUnlinkChannel), null, R.drawable.actions_remove_user, false);
+                        actionCell.setText(LocaleController.getString("DiscussionUnlinkChannel", R.string.DiscussionUnlinkChannel), null, R.drawable.msg_remove, false);
                     }
                     break;
             }
@@ -887,6 +1003,8 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 return 2;
             } else if (position >= chatStartRow && position < chatEndRow) {
                 return 0;
+            } else if (position == joinToSendRow) {
+                return 4;
             }
             return 1;
         }

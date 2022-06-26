@@ -17,6 +17,8 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -289,11 +291,31 @@ public class GroupCallRecordAlert extends BottomSheet {
         public Object instantiateItem(ViewGroup container, int position) {
             View view;
 
-            ImageView imageView = new ImageView(getContext());
+            ImageView imageView = new ImageView(getContext()) {
+                @Override
+                public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+                    super.onInitializeAccessibilityEvent(event);
+                    if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+                        viewPager.setCurrentItem(position, true);
+                    }
+                }
+            };
+            imageView.setOnClickListener((e) -> {
+                onStartRecord(position);
+                dismiss();
+            });
+            imageView.setFocusable(true);
             imageView.setTag(position);
             imageView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             imageView.setScaleType(ImageView.ScaleType.FIT_XY);
             imageView.setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(200), ViewGroup.LayoutParams.MATCH_PARENT));
+            if (position == 0) {
+                imageView.setContentDescription(LocaleController.getString("VoipRecordAudio", R.string.VoipRecordAudio));
+            } else if (position == 1) {
+                imageView.setContentDescription(LocaleController.getString("VoipRecordPortrait", R.string.VoipRecordPortrait));
+            } else {
+                imageView.setContentDescription(LocaleController.getString("VoipRecordLandscape", R.string.VoipRecordLandscape));
+            }
             view = imageView;
             int res;
             if (position == 0) {

@@ -90,7 +90,6 @@ import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -2348,7 +2347,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			final Instance.Endpoint[] endpoints = new Instance.Endpoint[privateCall.connections.size()];
 			for (int i = 0; i < endpoints.length; i++) {
 				final TLRPC.PhoneConnection connection = privateCall.connections.get(i);
-				endpoints[i] = new Instance.Endpoint(connection instanceof TLRPC.TL_phoneConnectionWebrtc, connection.id, connection.ip, connection.ipv6, connection.port, endpointType, connection.peer_tag, connection.turn, connection.stun, connection.username, connection.password);
+				endpoints[i] = new Instance.Endpoint(connection instanceof TLRPC.TL_phoneConnectionWebrtc, connection.id, connection.ip, connection.ipv6, connection.port, endpointType, connection.peer_tag, connection.turn, connection.stun, connection.username, connection.password, connection.tcp);
 			}
 			if (forceTcp) {
 				AndroidUtilities.runOnUIThread(() -> Toast.makeText(VoIPService.this, "This call uses TCP which will degrade its quality.", Toast.LENGTH_SHORT).show());
@@ -3408,60 +3407,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			req.peer = new TLRPC.TL_inputPhoneCall();
 			req.peer.access_hash = privateCall.access_hash;
 			req.peer.id = privateCall.id;
-
-			File file = new File(VoIPHelper.getLogFilePath(privateCall.id, true));
-			String cachedFile = MediaController.copyFileToCache(Uri.fromFile(file), "log");
-
 			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.d("Sent debug logs, response = " + response);
 				}
-				try {
-					if (response instanceof TLRPC.TL_boolFalse) {
-						AndroidUtilities.runOnUIThread(() -> {
-							uploadLogFile(cachedFile);
-						});
-					} else {
-						File cacheFile = new File(cachedFile);
-						cacheFile.delete();
-					}
-				} catch (Exception e) {
-					FileLog.e(e);
-				}
 			});
 			needSendDebugLog = false;
 		}
-	}
-
-	private void uploadLogFile(String filePath) {
-		NotificationCenter.NotificationCenterDelegate uploadDelegate = new NotificationCenter.NotificationCenterDelegate() {
-			@Override
-			public void didReceivedNotification(int id, int account, Object... args) {
-				if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
-					final String location = (String) args[0];
-					if (location.equals(filePath)) {
-						if (id == NotificationCenter.fileUploaded) {
-							TLRPC.TL_phone_saveCallLog req = new TLRPC.TL_phone_saveCallLog();
-							final TLRPC.InputFile file = (TLRPC.InputFile) args[1];
-							req.file = file;
-							req.peer = new TLRPC.TL_inputPhoneCall();
-							req.peer.access_hash = privateCall.access_hash;
-							req.peer.id = privateCall.id;
-							ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-								if (BuildVars.LOGS_ENABLED) {
-									FileLog.d("Sent debug file log, response = " + response);
-								}
-							});
-						}
-						NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
-						NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadFailed);
-					}
-				}
-			}
-		};
-		NotificationCenter.getInstance(currentAccount).addObserver(uploadDelegate, NotificationCenter.fileUploaded);
-		NotificationCenter.getInstance(currentAccount).addObserver(uploadDelegate, NotificationCenter.fileUploadFailed);
-		FileLoader.getInstance(currentAccount).uploadFile(filePath, false, true, ConnectionsManager.FileTypeFile);
 	}
 
 	private void initializeAccountRelatedThings() {
@@ -3901,7 +3853,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						try {
 							BitmapFactory.Options opts = new BitmapFactory.Options();
 							opts.inMutable = true;
-							bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(user.photo.photo_small, true).toString(), opts);
+							bitmap = BitmapFactory.decodeFile(FileLoader.getInstance(currentAccount).getPathToAttach(user.photo.photo_small, true).toString(), opts);
 						} catch (Throwable e) {
 							FileLog.e(e);
 						}
@@ -3917,7 +3869,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						try {
 							BitmapFactory.Options opts = new BitmapFactory.Options();
 							opts.inMutable = true;
-							bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(chat.photo.photo_small, true).toString(), opts);
+							bitmap = BitmapFactory.decodeFile(FileLoader.getInstance(currentAccount).getPathToAttach(chat.photo.photo_small, true).toString(), opts);
 						} catch (Throwable e) {
 							FileLog.e(e);
 						}

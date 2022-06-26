@@ -22,6 +22,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -126,7 +127,17 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.MULTIPLY));
 
-        darkThemeView = new RLottieImageView(getContext());
+        darkThemeView = new RLottieImageView(getContext()){
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                if (forceDark) {
+                    info.setText(LocaleController.getString("AccDescrSwitchToDayTheme", R.string.AccDescrSwitchToDayTheme));
+                } else {
+                    info.setText(LocaleController.getString("AccDescrSwitchToNightTheme", R.string.AccDescrSwitchToNightTheme));
+                }
+            }
+        };
         darkThemeView.setAnimation(darkThemeDrawable);
         darkThemeView.setScaleType(ImageView.ScaleType.CENTER);
         darkThemeView.setOnClickListener(view -> {
@@ -696,6 +707,10 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 animated = false;
             }
 
+            view.setFocusable(true);
+            view.setEnabled(true);
+
+            view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
             view.setItem(newItem, animated);
             view.setSelected(position == selectedItemPosition, animated);
             if (position == selectedItemPosition) {

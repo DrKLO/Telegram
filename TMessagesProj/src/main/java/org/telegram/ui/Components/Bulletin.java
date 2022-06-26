@@ -16,6 +16,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -63,8 +64,10 @@ public class Bulletin {
     public static final int TYPE_BIO_CHANGED = 2;
     public static final int TYPE_NAME_CHANGED = 3;
     public static final int TYPE_ERROR_SUBTITLE = 4;
+    public static final int TYPE_APP_ICON = 5;
 
     public int tag;
+    public int hash;
 
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
         return new Bulletin(containerLayout, contentLayout, duration);
@@ -155,6 +158,11 @@ public class Bulletin {
     public Bulletin show() {
         if (!showing && containerLayout != null) {
             showing = true;
+
+            CharSequence text = layout.getAccessibilityText();
+            if (text != null) {
+                AndroidUtilities.makeAccessibilityAnnouncement(text);
+            }
 
             if (layout.getParent() != parentLayout) {
                 throw new IllegalStateException("Layout has incorrect parent");
@@ -600,6 +608,10 @@ public class Bulletin {
             }
         }
 
+        protected CharSequence getAccessibilityText() {
+            return null;
+        }
+
         public Bulletin getBulletin() {
             return bulletin;
         }
@@ -931,6 +943,10 @@ public class Bulletin {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
         }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
+        }
     }
 
     @SuppressLint("ViewConstructor")
@@ -949,6 +965,10 @@ public class Bulletin {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setTypeface(Typeface.SANS_SERIF);
             addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
+        }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
         }
     }
 
@@ -980,11 +1000,16 @@ public class Bulletin {
             subtitleTextView = new TextView(context);
             subtitleTextView.setMaxLines(2);
             subtitleTextView.setTextColor(undoInfoColor);
+            subtitleTextView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
+            subtitleTextView.setMovementMethod(new LinkMovementMethod());
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
         }
 
+        public CharSequence getAccessibilityText() {
+            return titleTextView.getText() + ".\n" + subtitleTextView.getText();
+        }
     }
 
     public static class TwoLineLottieLayout extends ButtonLayout {
@@ -1041,6 +1066,10 @@ public class Bulletin {
             for (String layer : layers) {
                 imageView.setLayerColor(layer + ".**", textColor);
             }
+        }
+
+        public CharSequence getAccessibilityText() {
+            return titleTextView.getText() + ".\n" + subtitleTextView.getText();
         }
     }
 
@@ -1101,6 +1130,10 @@ public class Bulletin {
         public void setIconPaddingBottom(int paddingBottom) {
             imageView.setLayoutParams(LayoutHelper.createFrameRelatively(56, 48 - paddingBottom, Gravity.START | Gravity.CENTER_VERTICAL, 0, 0, 0, paddingBottom));
         }
+
+        public CharSequence getAccessibilityText() {
+            return textView.getText();
+        }
     }
     //endregion
 
@@ -1153,6 +1186,7 @@ public class Bulletin {
         private Runnable delayedAction;
 
         private Bulletin bulletin;
+        private TextView undoTextView;
         private boolean isUndone;
 
         public UndoButton(@NonNull Context context, boolean text) {
@@ -1166,7 +1200,7 @@ public class Bulletin {
             final int undoCancelColor = getThemedColor(Theme.key_undo_cancelColor);
 
             if (text) {
-                TextView undoTextView = new TextView(context);
+                undoTextView = new TextView(context);
                 undoTextView.setOnClickListener(v -> undo());
                 final int leftInset = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
                 final int rightInset = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
@@ -1187,6 +1221,13 @@ public class Bulletin {
                 ViewHelper.setPaddingRelative(undoImageView, 0, 12, 0, 12);
                 addView(undoImageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.CENTER_VERTICAL));
             }
+        }
+
+        public UndoButton setText(CharSequence text) {
+            if (undoTextView != null) {
+                undoTextView.setText(text);
+            }
+            return this;
         }
 
         public void undo() {

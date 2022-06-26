@@ -69,7 +69,7 @@ public class ChatNotificationsPopupWrapper {
         ActionBarMenuSubItem item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_mute_period, LocaleController.getString("MuteForPopup", R.string.MuteForPopup), false, resourcesProvider);
         item.setOnClickListener(view -> {
             dismiss();
-            AlertsCreator.createMuteForPickerDialog(context, (notify, inSecond) -> {
+            AlertsCreator.createMuteForPickerDialog(context, resourcesProvider, (notify, inSecond) -> {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (inSecond != 0) {
                         SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
@@ -220,7 +220,7 @@ public class ChatNotificationsPopupWrapper {
     }
 
     public interface Callback {
-        void dismiss();
+        default void dismiss() {}
 
         void toggleSound();
 

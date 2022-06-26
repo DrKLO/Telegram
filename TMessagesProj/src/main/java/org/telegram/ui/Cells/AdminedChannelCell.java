@@ -14,12 +14,10 @@ import android.graphics.PorterDuffColorFilter;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -29,6 +27,7 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -42,35 +41,47 @@ public class AdminedChannelCell extends FrameLayout {
     private TLRPC.Chat currentChannel;
     private boolean isLast;
     private int currentAccount = UserConfig.selectedAccount;
+    CheckBox2 checkBox;
 
-    public AdminedChannelCell(Context context, View.OnClickListener onClickListener) {
+    public AdminedChannelCell(Context context, OnClickListener onClickListener, boolean needCheck, int padding) {
         super(context);
 
         avatarDrawable = new AvatarDrawable();
-
         avatarImageView = new BackupImageView(context);
         avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
-        addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 12, LocaleController.isRTL ? 12 : 0, 0));
+        addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12 + padding, 6, LocaleController.isRTL ? 12 + padding : 0, 6));
 
+        if (needCheck) {
+            checkBox = new CheckBox2(context, 21);
+            checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(3);
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 42 + padding,  32, LocaleController.isRTL ? 42 + padding: 0, 0));
+        }
+
+        int leftPadding = onClickListener == null ? 24 : 62;
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(17);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 62 : 73, 15.5f, LocaleController.isRTL ? 73 : 62, 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? leftPadding : 73 + padding, 9.5f, LocaleController.isRTL ? 73 + padding: leftPadding, 0));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(14);
         statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         statusTextView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 62 : 73, 38.5f, LocaleController.isRTL ? 73 : 62, 0));
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? leftPadding : 73 + padding, 32.5f, LocaleController.isRTL ? 73 + padding : leftPadding, 6));
 
-        deleteButton = new ImageView(context);
-        deleteButton.setScaleType(ImageView.ScaleType.CENTER);
-        deleteButton.setImageResource(R.drawable.msg_panel_clear);
-        deleteButton.setOnClickListener(onClickListener);
-        deleteButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
-        addView(deleteButton, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 7 : 0, 12, LocaleController.isRTL ? 0 : 7, 0));
+        if (onClickListener != null) {
+            deleteButton = new ImageView(context);
+            deleteButton.setScaleType(ImageView.ScaleType.CENTER);
+            deleteButton.setImageResource(R.drawable.msg_panel_clear);
+            deleteButton.setOnClickListener(onClickListener);
+            deleteButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+            deleteButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
+            addView(deleteButton, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 7 : 0, 6, LocaleController.isRTL ? 0 : 7, 0));
+        }
     }
 
     public void setChannel(TLRPC.Chat channel, boolean last) {
@@ -114,5 +125,9 @@ public class AdminedChannelCell extends FrameLayout {
 
     public ImageView getDeleteButton() {
         return deleteButton;
+    }
+
+    public void setChecked(boolean checked, boolean animated) {
+        checkBox.setChecked(checked, animated);
     }
 }
