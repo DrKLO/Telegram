@@ -1689,7 +1689,7 @@ public class LocaleController {
                 if (madeShorter != null) {
                     madeShorter[0] = true;
                     if (hour <= 6 && dateHour > 18 && is24HourFormat) {
-                        return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, getInstance().formatterDay.format(new Date(date)));
+                        return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().formatterDay.format(new Date(date))));
                     }
                     return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date)));
                 } else {
