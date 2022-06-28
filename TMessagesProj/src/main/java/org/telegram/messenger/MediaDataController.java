@@ -101,11 +101,17 @@ public class MediaDataController extends BaseController {
     public static String SHORTCUT_CATEGORY = "org.telegram.messenger.SHORTCUT_SHARE";
 
     private static volatile MediaDataController[] Instance = new MediaDataController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final Object[] lockObjects = new Object[UserConfig.MAX_ACCOUNT_COUNT];
+    static {
+        for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
+            lockObjects[i] = new Object();
+        }
+    }
 
     public static MediaDataController getInstance(int num) {
         MediaDataController localInstance = Instance[num];
         if (localInstance == null) {
-            synchronized (MediaDataController.class) {
+            synchronized (lockObjects) {
                 localInstance = Instance[num];
                 if (localInstance == null) {
                     Instance[num] = localInstance = new MediaDataController(num);

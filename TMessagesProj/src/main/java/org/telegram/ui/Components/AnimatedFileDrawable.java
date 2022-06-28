@@ -146,6 +146,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     public int repeatCount;
 
     private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(8, new ThreadPoolExecutor.DiscardPolicy());
+    private static ScheduledThreadPoolExecutor generateCache = new ScheduledThreadPoolExecutor(4, new ThreadPoolExecutor.DiscardPolicy());
 
     private Runnable uiRunnableNoFrame = new Runnable() {
         @Override

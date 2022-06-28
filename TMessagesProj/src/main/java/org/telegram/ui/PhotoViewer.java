@@ -68,6 +68,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.util.FloatProperty;
+import android.util.Log;
 import android.util.Property;
 import android.util.Range;
 import android.util.SparseArray;
@@ -11984,12 +11985,21 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (!exists && f1Final != null) {
                     exists = f1Final.exists();
                 }
+
                 File f2Local = f2Final;
+                File f3Local = null;
                 if (f2Local == null && finalF2Resolver != null) {
                     f2Local = finalF2Resolver.getFile();
+                } else if (finalF2Resolver != null) {
+                    f3Local = finalF2Resolver.getFile();
                 }
+
                 if (!exists && f2Local != null) {
                     exists = f2Local.exists();
+                }
+
+                if (!exists && f3Local != null) {
+                    exists = f3Local.exists();
                 }
                 if (!exists && a != 0 && messageObjectFinal != null && canStreamFinal) {
                     if (DownloadController.getInstance(currentAccount).canDownloadMedia(messageObjectFinal.messageOwner) != 0) {

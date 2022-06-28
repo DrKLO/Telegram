@@ -61,7 +61,7 @@ public class FilePathDatabase {
             } else {
                 int version = database.executeInt("PRAGMA user_version");
                 if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("current db version = " + version);
+                    FileLog.d("current files db version = " + version);
                 }
                 if (version == 0) {
                     throw new Exception("malformed");
@@ -140,6 +140,9 @@ public class FilePathDatabase {
                     cursor = database.queryFinalized("SELECT path FROM paths WHERE document_id = " + documentId + " AND dc_id = " + dc + " AND type = " + type);
                     if (cursor.next()) {
                         res[0] = cursor.stringValue(0);
+                        if (BuildVars.DEBUG_VERSION) {
+                            FileLog.d("get file path id=" + documentId + " dc=" + dc + " type=" + type + " path=" + res[0]);
+                        }
                     }
                     cursor.dispose();
                 } catch (SQLiteException e) {
@@ -159,6 +162,9 @@ public class FilePathDatabase {
                 cursor = database.queryFinalized("SELECT path FROM paths WHERE document_id = " + documentId + " AND dc_id = " + dc + " AND type = " + type);
                 if (cursor.next()) {
                     res = cursor.stringValue(0);
+                    if (BuildVars.DEBUG_VERSION) {
+                        FileLog.d("get file path id=" + documentId + " dc=" + dc + " type=" + type + " path=" + res);
+                    }
                 }
                 cursor.dispose();
             } catch (SQLiteException e) {
@@ -170,6 +176,9 @@ public class FilePathDatabase {
 
     public void putPath(long id, int dc, int type, String path) {
         dispatchQueue.postRunnable(() -> {
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("put file path id=" + id + " dc=" + dc + " type=" + type + " path=" + path);
+            }
             SQLitePreparedStatement state = null;
             try {
                 if (path != null) {
@@ -222,6 +231,16 @@ public class FilePathDatabase {
                 FileLog.e(new Exception("warning, not allowed in main thread"));
             }
         }
+    }
+
+    public void clear() {
+        dispatchQueue.postRunnable(() -> {
+            try {
+                database.executeFast("DELETE FROM paths WHERE 1").stepThis().dispose();
+            } catch (SQLiteException e) {
+                FileLog.e(e);
+            }
+        });
     }
 
     public static class PathData {

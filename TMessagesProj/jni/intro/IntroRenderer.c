@@ -36,6 +36,7 @@ static Shape cloud_extra_mask1;
 static Shape cloud_extra_mask2;
 static Shape cloud_extra_mask3;
 static Shape cloud_extra_mask4;
+static int surfaceCreated = 0;
 
 static Shape cloud_cover;
 
@@ -1706,6 +1707,11 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_setBackgroundColor(JNIEnv *env,
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass class, jint deltaMs) {
+    if (surfaceCreated == 0) {
+        glClearColor(background_color[0], background_color[1], background_color[2], background_color[3]);
+        glClear(GL_COLOR_BUFFER_BIT);
+        return;
+    }
     time_local += (float) deltaMs / 1000;
 
     if (current_page != prev_page) {
@@ -2826,6 +2832,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
 
     vec4 cloud_color = {42 / 255.0f, 180 / 255.0f, 247 / 255.0f, 1};
     cloud_bg = create_rectangle(CSizeMake(160 * 2, 160 * 2), cloud_color);
+    surfaceCreated = 1;
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceChanged(JNIEnv *env, jclass class, int32_t a_width_px, int32_t a_height_px, float a_scale_factor, int32_t a1) {

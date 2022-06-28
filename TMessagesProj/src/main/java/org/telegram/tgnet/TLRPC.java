@@ -31865,6 +31865,9 @@ public class TLRPC {
                 case 0xdc7b1140:
                     result = new TL_messageEntityMentionName();
                     break;
+                case 0xd4a00ed5:
+                    result = new TL_messageEntityCustomEmoji();
+                    break;
             }
             if (result == null && exception) {
                 throw new RuntimeException(String.format("can't parse magic %x in MessageEntity", constructor));
@@ -60294,6 +60297,30 @@ public class TLRPC {
             user_id.serializeToStream(stream);
             stream.writeString(recurring_init_charge);
             invoice_media.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_messageEntityCustomEmoji extends MessageEntity {
+        public static int constructor = 0xd4a00ed5;
+
+        public int offset;
+        public int length;
+        public InputStickerSet stickerset;
+        public long document_id;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            offset = stream.readInt32(exception);
+            length = stream.readInt32(exception);
+            stickerset = InputStickerSet.TLdeserialize(stream, stream.readInt32(exception), exception);
+            document_id = stream.readInt64(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(offset);
+            stream.writeInt32(length);
+            stickerset.serializeToStream(stream);
+            stream.writeInt64(document_id);
         }
     }
     //functions

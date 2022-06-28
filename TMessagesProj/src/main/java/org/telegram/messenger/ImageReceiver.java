@@ -359,20 +359,21 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (user.photo != null) {
                 strippedBitmap = user.photo.strippedBitmap;
                 hasStripped = user.photo.stripped_thumb != null;
-                if (MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video && animationEnabled) {
+                if (animationEnabled && MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video) {
                     final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(user.id);
                     if (userFull == null) {
                         MessagesController.getInstance(currentAccount).loadFullUser(user, currentGuid, false);
-                    }
-                    if (userFull != null && userFull.profile_photo != null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
-                        TLRPC.VideoSize videoSize = userFull.profile_photo.video_sizes.get(0);
-                        for (int i = 0; i < userFull.profile_photo.video_sizes.size(); i++) {
-                            if ("p".equals(userFull.profile_photo.video_sizes.get(i).type)) {
-                                videoSize = userFull.profile_photo.video_sizes.get(i);
-                                break;
+                    } else {
+                        if (userFull.profile_photo != null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
+                            TLRPC.VideoSize videoSize = userFull.profile_photo.video_sizes.get(0);
+                            for (int i = 0; i < userFull.profile_photo.video_sizes.size(); i++) {
+                                if ("p".equals(userFull.profile_photo.video_sizes.get(i).type)) {
+                                    videoSize = userFull.profile_photo.video_sizes.get(i);
+                                    break;
+                                }
                             }
+                            videoLocation = ImageLocation.getForPhoto(videoSize, userFull.profile_photo);
                         }
-                        videoLocation = ImageLocation.getForPhoto(videoSize, userFull.profile_photo);
                     }
                 }
             }

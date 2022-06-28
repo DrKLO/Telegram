@@ -7443,7 +7443,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             avatarsViewPager.setHasActiveVideo(hasAttachedRenderer);
             avatarsViewPager.setData(peerId, true);
             avatarsViewPager.setCreateThumbFromParent(true);
-            avatarsViewPager.initIfEmpty(imageLocation, thumbLocation);
+            avatarsViewPager.initIfEmpty(imageLocation, thumbLocation, true);
             if (scrimRenderer != null) {
                 scrimRenderer.setShowingAsScrimView(true, true);
             }
@@ -8428,7 +8428,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                     thumb = thumbLocation;
                                 }
                                 avatarsViewPager.setCreateThumbFromParent(false);
-                                avatarsViewPager.initIfEmpty(imageLocation, thumb);
+                                avatarsViewPager.initIfEmpty(imageLocation, thumb, true);
                                 avatar = null;
                                 avatarBig = null;
                                 AndroidUtilities.updateVisibleRows(listView);
@@ -8456,7 +8456,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                 thumb = thumbLocation;
                             }
                             avatarsViewPager.setCreateThumbFromParent(false);
-                            avatarsViewPager.initIfEmpty(imageLocation, thumb);
+                            avatarsViewPager.initIfEmpty(imageLocation, thumb, true);
                             avatar = null;
                             avatarBig = null;
                             AndroidUtilities.updateVisibleRows(listView);
