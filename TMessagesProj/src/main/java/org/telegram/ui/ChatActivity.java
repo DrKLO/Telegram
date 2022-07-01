@@ -61,7 +61,6 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -543,6 +542,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
     private boolean allowContextBotPanel;
     private boolean allowContextBotPanelSecond = true;
     private AnimatorSet runningAnimation;
+    private int runningAnimationIndex = -1;
 
     private MessageObject selectedObjectToEditCaption;
     private MessageObject selectedObject;
@@ -6543,7 +6543,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
         reactionsMentiondownButton = new FrameLayout(context);
         contentView.addView(reactionsMentiondownButton, LayoutHelper.createFrame(46, 61, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 7, 5));
 
-        mentionContainer = new MentionsContainerView(context, dialog_id, threadMessageId, contentView, themeDelegate) {
+        mentionContainer = new MentionsContainerView(context, dialog_id, threadMessageId, ChatActivity.this, themeDelegate) {
 
             @Override
             protected boolean canOpen() {
@@ -10023,9 +10023,11 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         ObjectAnimator.ofFloat(stickersPanel, View.ALPHA, show ? 0.0f : 1.0f, show ? 1.0f : 0.0f)
                 );
                 runningAnimation.setDuration(150);
+                runningAnimationIndex = getNotificationCenter().setAnimationInProgress(runningAnimationIndex, null);
                 runningAnimation.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
+                        getNotificationCenter().onAnimationFinish(runningAnimationIndex);
                         if (runningAnimation != null && runningAnimation.equals(animation)) {
                             if (!show) {
                                 stickersAdapter.clearSearch();

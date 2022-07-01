@@ -22,6 +22,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -219,6 +220,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             for (int i = 0; i < drawingObjects.size(); i++) {
                 DrawingObject drawingObject = drawingObjects.get(i);
                 drawingObject.viewFound = false;
+                float childY = 0;
                 for (int k = 0; k < listView.getChildCount(); k++) {
                     View child = listView.getChildAt(k);
                     if (child instanceof ChatMessageCell) {
@@ -227,10 +229,10 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                             drawingObject.viewFound = true;
                             float viewX = listView.getX() + child.getX();
                             float viewY = listView.getY() + child.getY();
+                            childY = child.getY();
                             if (drawingObject.isPremiumSticker) {
                                 drawingObject.lastX = viewX + cell.getPhotoImage().getImageX();
                                 drawingObject.lastY = viewY + cell.getPhotoImage().getImageY();
-                                ;
                             } else {
                                 viewX += cell.getPhotoImage().getImageX();
                                 viewY += cell.getPhotoImage().getImageY();
@@ -248,6 +250,16 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                             break;
                         }
                     }
+                }
+
+                if (!drawingObject.viewFound || childY + drawingObject.lastH < chatActivity.getChatListViewPadding() || childY > listView.getMeasuredHeight() - chatActivity.blurredViewBottomOffset) {
+                    drawingObject.removing = true;
+                }
+
+                if (drawingObject.removing && drawingObject.removeProgress != 1f) {
+                    drawingObject.removeProgress = Utilities.clamp(drawingObject.removeProgress + 16 / 150f, 1f, 0);
+                    drawingObject.imageReceiver.setAlpha(1f - drawingObject.removeProgress);
+                    chatActivity.contentView.invalidate();
                 }
 
                 if (drawingObject.isPremiumSticker) {
@@ -279,7 +291,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                         drawingObject.imageReceiver.draw(canvas);
                     }
                 }
-                if (drawingObject.wasPlayed && drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().getCurrentFrame() == drawingObject.imageReceiver.getLottieAnimation().getFramesCount() - 2) {
+                if (drawingObject.removeProgress == 1f || (drawingObject.wasPlayed && drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().getCurrentFrame() == drawingObject.imageReceiver.getLottieAnimation().getFramesCount() - 2)) {
                     drawingObjects.remove(i);
                     i--;
                 } else if (drawingObject.imageReceiver.getLottieAnimation() != null && drawingObject.imageReceiver.getLottieAnimation().isRunning()) {
@@ -627,6 +639,8 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         public boolean isPremiumSticker;
         boolean wasPlayed;
         boolean isOut;
+        boolean removing;
+        float removeProgress;
         int messageId;
         TLRPC.Document document;
         ImageReceiver imageReceiver = new ImageReceiver();

@@ -120,7 +120,8 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     private static ThreadLocal<byte[]> bufferLocal = new ThreadLocal<>();
 
     private ArrayList<WeakReference<View>> parentViews = new ArrayList<>();
-    private static DispatchQueuePool loadFrameRunnableQueue = new DispatchQueuePool(4);
+    private static final DispatchQueuePool loadFrameRunnableQueue = new DispatchQueuePool(2);
+    private static final DispatchQueuePool largeSizeLoadFrameRunnableQueue  = new DispatchQueuePool(4);
     private static ThreadPoolExecutor lottieCacheGenerateQueue;
     private static HashSet<String> generatingCacheFiles = new HashSet<>();
 
@@ -130,6 +131,8 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
     private Runnable onAnimationEndListener;
     private Runnable onFrameReadyRunnable;
+
+    private DispatchQueuePool loadFrameQueue = loadFrameRunnableQueue;
 
     protected Runnable uiRunnableNoFrame = new Runnable() {
         @Override
@@ -392,6 +395,11 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         if (precache && lottieCacheGenerateQueue == null) {
             lottieCacheGenerateQueue = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         }
+        if (w > AndroidUtilities.dp(120) || h > AndroidUtilities.dp(120)) {
+            loadFrameQueue = largeSizeLoadFrameRunnableQueue;
+        } else {
+            loadFrameQueue = loadFrameRunnableQueue;
+        }
         if (nativePtr == 0) {
             file.delete();
         }
@@ -422,6 +430,11 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             shouldLimitFps = false;
         }
         timeBetweenFrames = Math.max(shouldLimitFps ? 33 : 16, (int) (1000.0f / metaData[1]));
+        if (w > AndroidUtilities.dp(100) || w > AndroidUtilities.dp(100)) {
+            loadFrameQueue = largeSizeLoadFrameRunnableQueue;
+        } else {
+            loadFrameQueue = loadFrameRunnableQueue;
+        }
     }
 
     public RLottieDrawable(int rawRes, String name, int w, int h) {
@@ -826,7 +839,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             pendingReplaceColors = newReplaceColors;
             newReplaceColors = null;
         }
-        loadFrameRunnableQueue.execute(loadFrameTask = loadFrameRunnable);
+        loadFrameQueue.execute(loadFrameTask = loadFrameRunnable);
         return true;
     }
 

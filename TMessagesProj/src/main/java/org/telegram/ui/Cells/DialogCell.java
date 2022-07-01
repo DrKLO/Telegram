@@ -32,7 +32,6 @@ import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
-import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -2064,31 +2063,29 @@ public class DialogCell extends BaseCell {
             if (isDialogCell) {
                 TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(currentDialogId);
                 if (dialog != null) {
-                    if (mask == 0) {
-                        clearingDialog = MessagesController.getInstance(currentAccount).isClearingDialog(dialog.id);
-                        message = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
-                        lastUnreadState = message != null && message.isUnread();
-                        if (dialog instanceof TLRPC.TL_dialogFolder) {
-                            unreadCount = MessagesStorage.getInstance(currentAccount).getArchiveUnreadCount();
-                            mentionCount = 0;
-                            reactionMentionCount = 0;
-                        } else {
-                            unreadCount = dialog.unread_count;
-                            mentionCount = dialog.unread_mentions_count;
-                            reactionMentionCount = dialog.unread_reactions_count;
-                        }
-                        markUnread = dialog.unread_mark;
-                        currentEditDate = message != null ? message.messageOwner.edit_date : 0;
-                        lastMessageDate = dialog.last_message_date;
-                        if (dialogsType == 7 || dialogsType == 8) {
-                            MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
-                            drawPin = filter != null && filter.pinnedDialogs.indexOfKey(dialog.id) >= 0;
-                        } else {
-                            drawPin = currentDialogFolderId == 0 && dialog.pinned;
-                        }
-                        if (message != null) {
-                            lastSendState = message.messageOwner.send_state;
-                        }
+                    clearingDialog = MessagesController.getInstance(currentAccount).isClearingDialog(dialog.id);
+                    message = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
+                    lastUnreadState = message != null && message.isUnread();
+                    if (dialog instanceof TLRPC.TL_dialogFolder) {
+                        unreadCount = MessagesStorage.getInstance(currentAccount).getArchiveUnreadCount();
+                        mentionCount = 0;
+                        reactionMentionCount = 0;
+                    } else {
+                        unreadCount = dialog.unread_count;
+                        mentionCount = dialog.unread_mentions_count;
+                        reactionMentionCount = dialog.unread_reactions_count;
+                    }
+                    markUnread = dialog.unread_mark;
+                    currentEditDate = message != null ? message.messageOwner.edit_date : 0;
+                    lastMessageDate = dialog.last_message_date;
+                    if (dialogsType == 7 || dialogsType == 8) {
+                        MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+                        drawPin = filter != null && filter.pinnedDialogs.indexOfKey(dialog.id) >= 0;
+                    } else {
+                        drawPin = currentDialogFolderId == 0 && dialog.pinned;
+                    }
+                    if (message != null) {
+                        lastSendState = message.messageOwner.send_state;
                     }
                 } else {
                     unreadCount = 0;

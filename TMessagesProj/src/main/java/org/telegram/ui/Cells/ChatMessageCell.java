@@ -199,6 +199,57 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             setSpoilersSuppressed(false);
         } else if (id == NotificationCenter.stopSpoilers) {
             setSpoilersSuppressed(true);
+        } else if (id == NotificationCenter.userInfoDidLoad) {
+            if (currentUser != null) {
+                Long uid = (Long) args[0];
+                if (currentUser.id == uid) {
+                    setAvatar(currentMessageObject);
+                }
+            }
+        }
+    }
+
+    private void setAvatar(MessageObject messageObject) {
+        if (messageObject == null) {
+            return;
+        }
+        if (isAvatarVisible) {
+            if (messageObject.customAvatarDrawable != null) {
+                avatarImage.setImageBitmap(messageObject.customAvatarDrawable);
+            } else if (currentUser != null) {
+                if (currentUser.photo != null) {
+                    currentPhoto = currentUser.photo.photo_small;
+                } else {
+                    currentPhoto = null;
+                }
+                avatarDrawable.setInfo(currentUser);
+                avatarImage.setForUserOrChat(currentUser, avatarDrawable, null, true);
+            } else if (currentChat != null) {
+                if (currentChat.photo != null) {
+                    currentPhoto = currentChat.photo.photo_small;
+                } else {
+                    currentPhoto = null;
+                }
+                avatarDrawable.setInfo(currentChat);
+                avatarImage.setForUserOrChat(currentChat, avatarDrawable);
+            } else if (messageObject != null && messageObject.isSponsored()) {
+                if (messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null) {
+                    avatarDrawable.setInfo(messageObject.sponsoredChatInvite.chat);
+                    avatarImage.setForUserOrChat(messageObject.sponsoredChatInvite.chat, avatarDrawable);
+                } else {
+                    avatarDrawable.setInfo(messageObject.sponsoredChatInvite);
+                    TLRPC.Photo photo = messageObject.sponsoredChatInvite.photo;
+                    if (photo != null) {
+                        avatarImage.setImage(ImageLocation.getForPhoto(photo.sizes.get(0), photo), "50_50", avatarDrawable, null, null, 0);
+                    }
+                }
+            } else {
+                currentPhoto = null;
+                avatarDrawable.setInfo(messageObject.getFromChatId(), null, null);
+                avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
+            }
+        } else {
+            currentPhoto = null;
         }
     }
 
@@ -3356,6 +3407,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.startSpoilers);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopSpoilers);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.userInfoDidLoad);
 
         cancelShakeAnimation();
         if (animationRunning) {
@@ -3423,6 +3475,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.startSpoilers);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopSpoilers);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
 
         if (currentMessageObject != null) {
             currentMessageObject.animateComments = false;
@@ -3456,6 +3509,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         videoRadialProgress.onAttachedToWindow();
         avatarImage.setParentView((View) getParent());
         avatarImage.onAttachedToWindow();
+        if (currentMessageObject != null) {
+            setAvatar(currentMessageObject);
+        }
         if (pollAvatarImages != null) {
             for (int a = 0; a < pollAvatarImages.length; a++) {
                 pollAvatarImages[a].onAttachedToWindow();
@@ -10646,46 +10702,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         updateCurrentUserAndChat();
-
-        if (isAvatarVisible) {
-            if (messageObject.customAvatarDrawable != null) {
-                avatarImage.setImageBitmap(messageObject.customAvatarDrawable);
-            } else if (currentUser != null) {
-                if (currentUser.photo != null) {
-                    currentPhoto = currentUser.photo.photo_small;
-                } else {
-                    currentPhoto = null;
-                }
-                avatarDrawable.setInfo(currentUser);
-                avatarImage.setForUserOrChat(currentUser, avatarDrawable, null, true);
-            } else if (currentChat != null) {
-                if (currentChat.photo != null) {
-                    currentPhoto = currentChat.photo.photo_small;
-                } else {
-                    currentPhoto = null;
-                }
-                avatarDrawable.setInfo(currentChat);
-                avatarImage.setForUserOrChat(currentChat, avatarDrawable);
-            } else if (messageObject != null && messageObject.isSponsored()) {
-                if (messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null) {
-                    avatarDrawable.setInfo(messageObject.sponsoredChatInvite.chat);
-                    avatarImage.setForUserOrChat(messageObject.sponsoredChatInvite.chat, avatarDrawable);
-                } else {
-                    avatarDrawable.setInfo(messageObject.sponsoredChatInvite);
-                    TLRPC.Photo photo = messageObject.sponsoredChatInvite.photo;
-                    if (photo != null) {
-                        avatarImage.setImage(ImageLocation.getForPhoto(photo.sizes.get(0), photo), "50_50", avatarDrawable, null, null, 0);
-                    }
-                }
-            } else {
-                currentPhoto = null;
-                avatarDrawable.setInfo(messageObject.getFromChatId(), null, null);
-                avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
-            }
-        } else {
-            currentPhoto = null;
-        }
-
+        setAvatar(messageObject);
 
         measureTime(messageObject);
 

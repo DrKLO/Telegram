@@ -283,8 +283,12 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         Utilities.globalQueue.postRunnable(() -> {
             boolean imagesCleared = false;
             long clearedSize = 0;
+            boolean allItemsClear = true;
             for (int a = 0; a < 7; a++) {
                 if (clearViewData[a] == null || !clearViewData[a].clear) {
+                    if (clearViewData[a] != null) {
+                        allItemsClear = false;
+                    }
                     continue;
                 }
                 int type = -1;
@@ -398,6 +402,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             totalDeviceFreeSize = availableBlocks * blockSize;
             long finalClearedSize = clearedSize;
 
+            if (allItemsClear) {
+                FileLoader.getInstance(currentAccount).clearFilePaths();
+            }
             FileLoader.getInstance(currentAccount).checkCurrentDownloadsFiles();
 
             AndroidUtilities.runOnUIThread(() -> {

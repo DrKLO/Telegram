@@ -12,6 +12,9 @@ import android.graphics.Shader;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
+import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.io.BufferedReader;
@@ -143,7 +146,26 @@ public class Star3DIcon {
         GLES20.glVertexAttribPointer(0, 3, GLES20.GL_FLOAT, false, 0, mVertices);
         GLES20.glEnableVertexAttribArray(0);
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+
+        Bitmap bitmap = SvgHelper.getBitmap(R.raw.start_texture, 80, 80, Color.WHITE);
+        Utilities.stackBlurBitmap(bitmap, 3);
+
+        final int[] texture = new int[1];
+        GLES20.glGenTextures(1, texture, 0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
+
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+        bitmap.recycle();
+
+        final int[] textureDatHandle = new int[1];
+        GLES20.glGenTextures(1, textureDatHandle, 0);
+        mTextureDataHandle = textureDatHandle[0];
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureDatHandle[0]);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureDataHandle);
 
         Bitmap bitmap1 = getBitmapFromAsset(context, "flecks.png");
@@ -166,6 +188,9 @@ public class Star3DIcon {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
 
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
+        GLES20.glUniform1i(mTextureUniformHandle, 0);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, normalMap[0]);

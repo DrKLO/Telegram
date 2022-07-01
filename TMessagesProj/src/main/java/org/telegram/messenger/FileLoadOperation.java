@@ -46,6 +46,8 @@ public class FileLoadOperation {
         }
     }
 
+    private static final Object lockObject = new Object();
+
     private static class PreloadRange {
         private long fileOffset;
         private long length;
@@ -182,7 +184,7 @@ public class FileLoadOperation {
 
     private void updateParams() {
         if (MessagesController.getInstance(currentAccount).getfileExperimentalParams) {
-            downloadChunkSizeBig = 1024 * 512;
+            downloadChunkSizeBig = 1024 * 128;
             maxDownloadRequests = 8;
             maxDownloadRequestsBig = 8;
         } else {
@@ -770,7 +772,11 @@ public class FileLoadOperation {
             TLRPC.TL_theme theme = (TLRPC.TL_theme) parentObject;
             cacheFileFinal = new File(ApplicationLoader.getFilesDirFixed(), "remote" + theme.id + ".attheme");
         } else {
-            cacheFileFinal = new File(storePath, storeFileName);
+            if (!encryptFile) {
+                cacheFileFinal = new File(storePath, storeFileName);
+            } else {
+                cacheFileFinal = new File(storePath, fileNameFinal);
+            }
         }
         boolean finalFileExist = cacheFileFinal.exists();
         if (finalFileExist && (parentObject instanceof TLRPC.TL_theme || totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length())) {
@@ -1253,18 +1259,20 @@ public class FileLoadOperation {
                     } else {
                         try {
                             if (pathSaveData != null) {
-                                cacheFileFinal = new File(storePath, storeFileName);
-                                int count = 1;
-                                while (cacheFileFinal.exists()) {
-                                    int lastDotIndex = storeFileName.lastIndexOf('.');
-                                    String newFileName;
-                                    if (lastDotIndex > 0) {
-                                        newFileName = storeFileName.substring(0, lastDotIndex) + " (" + count + ")" + storeFileName.substring(lastDotIndex);
-                                    } else {
-                                        newFileName = storeFileName + " (" + count + ")";
+                                synchronized (lockObject) {
+                                    cacheFileFinal = new File(storePath, storeFileName);
+                                    int count = 1;
+                                    while (cacheFileFinal.exists()) {
+                                        int lastDotIndex = storeFileName.lastIndexOf('.');
+                                        String newFileName;
+                                        if (lastDotIndex > 0) {
+                                            newFileName = storeFileName.substring(0, lastDotIndex) + " (" + count + ")" + storeFileName.substring(lastDotIndex);
+                                        } else {
+                                            newFileName = storeFileName + " (" + count + ")";
+                                        }
+                                        cacheFileFinal = new File(storePath, newFileName);
+                                        count++;
                                     }
-                                    cacheFileFinal = new File(storePath, newFileName);
-                                    count++;
                                 }
                             }
                             renameResult = cacheFileTemp.renameTo(cacheFileFinal);
@@ -1290,13 +1298,14 @@ public class FileLoadOperation {
                             return;
                         }
                         cacheFileFinal = cacheFileTemp;
+                    } else {
+                        if (pathSaveData != null && cacheFileFinal.exists()) {
+                            delegate.saveFilePath(pathSaveData, cacheFileFinal);
+                        }
                     }
                 } else {
                     onFail(false, 0);
                     return;
-                }
-                if (pathSaveData != null && cacheFileFinal.exists()) {
-                    delegate.saveFilePath(pathSaveData, cacheFileFinal);
                 }
             }
             if (BuildVars.LOGS_ENABLED) {

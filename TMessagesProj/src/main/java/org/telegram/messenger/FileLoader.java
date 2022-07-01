@@ -629,6 +629,9 @@ public class FileLoader extends BaseController {
         }
 
         FileLoadOperation operation = loadOperationPaths.get(fileName);
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation);
+        }
         if (operation != null) {
             if (cacheType != 10 && operation.isPreloadVideoOperation()) {
                 operation.setIsPreloadVideoOperation(false);
@@ -675,7 +678,6 @@ public class FileLoader extends BaseController {
         int type = MEDIA_DIR_CACHE;
         long documentId = 0;
         int dcId = 0;
-        String lastKnownPath = null;
 
         if (secureDocument != null) {
             operation = new FileLoadOperation(secureDocument);
@@ -687,14 +689,20 @@ public class FileLoader extends BaseController {
             type = MEDIA_DIR_IMAGE;
         } else if (document != null) {
             operation = new FileLoadOperation(document, parentObject);
-            documentId = document.id;
-            dcId = document.dc_id;
             if (MessageObject.isVoiceDocument(document)) {
                 type = MEDIA_DIR_AUDIO;
             } else if (MessageObject.isVideoDocument(document)) {
                 type = MEDIA_DIR_VIDEO;
+                documentId = document.id;
+                dcId = document.dc_id;
             } else {
                 type = MEDIA_DIR_DOCUMENT;
+                documentId = document.id;
+                dcId = document.dc_id;
+            }
+            if (MessageObject.isRoundVideoDocument(document)) {
+                documentId = 0;
+                dcId = 0;
             }
         } else if (webDocument != null) {
             operation = new FileLoadOperation(currentAccount, webDocument);
@@ -831,33 +839,34 @@ public class FileLoader extends BaseController {
         operation.setPriority(priority);
 
         boolean started;
+        int maxCount, count;
         if (queueType == QUEUE_TYPE_PRELOAD) {
-            int maxCount = priority > 0 ? 6 : 2;
-            int count = preloadingLoadOperationsCount.get(datacenterId);
+            maxCount = priority > 0 ? 6 : 2;
+            count = preloadingLoadOperationsCount.get(datacenterId);
             if (started = (stream != null || count < maxCount)) {
                 if (operation.start(stream, streamOffset, streamPriority)) {
                     preloadingLoadOperationsCount.put(datacenterId, count + 1);
                 }
             }
         } else if (queueType == QUEUE_TYPE_AUDIO) {
-            int maxCount = priority > 0 ? 3 : 1;
-            int count = audioLoadOperationsCount.get(datacenterId);
+            maxCount = priority > 0 ? 3 : 1;
+            count = audioLoadOperationsCount.get(datacenterId);
             if (started = (stream != null || count < maxCount)) {
                 if (operation.start(stream, streamOffset, streamPriority)) {
                     audioLoadOperationsCount.put(datacenterId, count + 1);
                 }
             }
         } else if (queueType == QUEUE_TYPE_IMAGE) {
-            int maxCount = priority > 0 ? 6 : 2;
-            int count = imageLoadOperationsCount.get(datacenterId);
+            maxCount = priority > 0 ? 6 : 2;
+            count = imageLoadOperationsCount.get(datacenterId);
             if (started = (stream != null || count < maxCount)) {
                 if (operation.start(stream, streamOffset, streamPriority)) {
                     imageLoadOperationsCount.put(datacenterId, count + 1);
                 }
             }
         } else {
-            int maxCount = priority > 0 ? 4 : 1;
-            int count = fileLoadOperationsCount.get(datacenterId);
+            maxCount = priority > 0 ? 4 : 1;
+            count = fileLoadOperationsCount.get(datacenterId);
             if (started = (stream != null || count < maxCount)) {
                 if (operation.start(stream, streamOffset, streamPriority)) {
                     fileLoadOperationsCount.put(datacenterId, count + 1);
@@ -868,6 +877,11 @@ public class FileLoader extends BaseController {
                 }
             }
         }
+
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("loadFileInternal fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " queueType=" + queueType + " maxCount=" + maxCount + " count=" + count);
+        }
+
         if (!started) {
             addOperationToQueue(operation, getLoadOperationQueue(datacenterId, queueType));
         }
@@ -893,7 +907,7 @@ public class FileLoader extends BaseController {
             MessageObject messageObject = (MessageObject) parentObject;
             int flag;
             long dialogId = messageObject.getDialogId();
-            if (messageObject.isAnyKindOfSticker() || getMessagesController().isChatNoForwards(getMessagesController().getChat(-dialogId)) || messageObject.messageOwner.noforwards) {
+            if (messageObject.isRoundVideo() || messageObject.isVoice() || messageObject.isAnyKindOfSticker() || getMessagesController().isChatNoForwards(getMessagesController().getChat(-dialogId)) || messageObject.messageOwner.noforwards) {
                 return false;
             }
             if (dialogId >= 0) {
@@ -1162,17 +1176,22 @@ public class FileLoader extends BaseController {
                 if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize) {
                     dir = null;
                 } else if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0 || photoSize.size < 0) {
-                    dir = getDirectory(MEDIA_DIR_CACHE);
+                    dir = getDirectory(type = MEDIA_DIR_CACHE);
                 } else {
-                    dir = getDirectory(MEDIA_DIR_IMAGE);
+                    dir = getDirectory(type = MEDIA_DIR_IMAGE);
                 }
+                documentId = photoSize.location.volume_id;
+                dcId = photoSize.location.dc_id;
+
             } else if (attach instanceof TLRPC.TL_videoSize) {
                 TLRPC.TL_videoSize videoSize = (TLRPC.TL_videoSize) attach;
                 if (videoSize.location == null || videoSize.location.key != null || videoSize.location.volume_id == Integer.MIN_VALUE && videoSize.location.local_id < 0 || videoSize.size < 0) {
-                    dir = getDirectory(MEDIA_DIR_CACHE);
+                    dir = getDirectory(type = MEDIA_DIR_CACHE);
                 } else {
-                    dir = getDirectory(MEDIA_DIR_IMAGE);
+                    dir = getDirectory(type = MEDIA_DIR_IMAGE);
                 }
+                documentId = videoSize.location.volume_id;
+                dcId = videoSize.location.dc_id;
             } else if (attach instanceof TLRPC.FileLocation) {
                 TLRPC.FileLocation fileLocation = (TLRPC.FileLocation) attach;
                 if (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
@@ -1612,6 +1631,10 @@ public class FileLoader extends BaseController {
 
     public void clearRecentDownloadedFiles() {
         getDownloadController().clearRecentDownloadedFiles();
+    }
+
+    public void clearFilePaths() {
+        filePathDatabase.clear();
     }
 
     public static boolean checkUploadFileSize(int currentAccount, long length) {

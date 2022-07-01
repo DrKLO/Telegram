@@ -31,9 +31,11 @@ import java.util.ArrayList;
 
 public class StarParticlesView extends View {
 
+
     public Drawable drawable;
     int size;
-    boolean distributionAlgorithm;
+    public final static int TYPE_APP_ICON_REACT = 1001;
+    public static final int TYPE_APP_ICON_STAR_PREMIUM = 1002;
 
     public StarParticlesView(Context context) {
         super(context);
@@ -136,6 +138,7 @@ public class StarParticlesView extends View {
         public boolean roundEffect = true;
         public int type = -1;
         public String colorKey = Theme.key_premiumStartSmallStarsColor;
+        public boolean svg;
 
         public final static int TYPE_SETTINGS = 101;
 
@@ -191,9 +194,9 @@ public class StarParticlesView extends View {
                         res = R.raw.premium_object_settings;
                     }
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
+                    svg = true;
                     continue;
-                }
-                if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
+                }else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
                     int res;
                     if (i == 0) {
                         res = R.raw.premium_object_adsbubble;
@@ -203,9 +206,9 @@ public class StarParticlesView extends View {
                         res = R.raw.premium_object_noads;
                     }
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
+                    svg = true;
                     continue;
-                }
-                if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS) {
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS) {
                     int res;
                     if (i == 0) {
                         res = R.raw.premium_object_video2;
@@ -215,6 +218,15 @@ public class StarParticlesView extends View {
                         res = R.raw.premium_object_user;
                     }
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
+                    svg = true;
+                    continue;
+                } else if (type == TYPE_APP_ICON_REACT) {
+                    stars[i] = SvgHelper.getBitmap(R.raw.premium_object_fire, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
+                    svg = true;
+                    continue;
+                } else if (type == TYPE_APP_ICON_STAR_PREMIUM) {
+                    stars[i] = SvgHelper.getBitmap(R.raw.premium_object_star2, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
+                    svg = true;
                     continue;
                 }
 
@@ -255,7 +267,11 @@ public class StarParticlesView extends View {
                     if (roundEffect) {
                         paint1.setPathEffect(new CornerPathEffect(AndroidUtilities.dpf2(size1 / 5f)));
                     }
-                    paint1.setAlpha(120);
+                    if (useBlur) {
+                        paint1.setAlpha(60);
+                    } else {
+                        paint1.setAlpha(120);
+                    }
                     canvas.drawPath(path, paint1);
                     paint1.setPathEffect(null);
                     paint1.setAlpha(255);
@@ -475,7 +491,7 @@ public class StarParticlesView extends View {
                 double a = Math.atan2(x - rect.centerX(), y - rect.centerY());
                 vecX = (float) Math.sin(a);
                 vecY = (float) Math.cos(a);
-                if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS) {
+                if (svg) {
                     alpha = (int) (120 * ((50 + Utilities.fastRandom.nextInt(50)) / 100f));
                 } else {
                     alpha = (int) (255 * ((50 + Utilities.fastRandom.nextInt(50)) / 100f));

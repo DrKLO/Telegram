@@ -2,20 +2,15 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
@@ -26,12 +21,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Adapters.PaddedListAdapter;
-import org.telegram.ui.Cells.AboutLinkCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ContentPreviewViewer;
 
 public class MentionsContainerView extends BlurredFrameLayout {
@@ -45,12 +42,14 @@ public class MentionsContainerView extends BlurredFrameLayout {
 
     private PaddedListAdapter paddedAdapter;
     private MentionsAdapter adapter;
+    ChatActivity chatActivity;
 
     private float containerTop, containerBottom, containerPadding, listViewPadding;
 
-    public MentionsContainerView(@NonNull Context context, long dialogId, int threadMessageId, SizeNotifierFrameLayout sizeNotifierFrameLayout, Theme.ResourcesProvider resourcesProvider) {
-        super(context, sizeNotifierFrameLayout);
-        this.sizeNotifierFrameLayout = sizeNotifierFrameLayout;
+    public MentionsContainerView(@NonNull Context context, long dialogId, int threadMessageId, ChatActivity chatActivity, Theme.ResourcesProvider resourcesProvider) {
+        super(context, chatActivity.contentView);
+        this.chatActivity = chatActivity;
+        this.sizeNotifierFrameLayout = chatActivity.contentView;
         this.resourcesProvider = resourcesProvider;
         this.drawBlur = false;
         this.isTopView = false;
@@ -180,7 +179,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
             public void onItemCountUpdate(int oldCount, int newCount) {
                 if (listView.getLayoutManager() != gridLayoutManager && shown) {
                     AndroidUtilities.cancelRunOnUIThread(updateVisibilityRunnable);
-                    AndroidUtilities.runOnUIThread(updateVisibilityRunnable);
+                    AndroidUtilities.runOnUIThread(updateVisibilityRunnable, chatActivity.fragmentOpened ? 0 : 100);
                 }
             }
 
@@ -397,7 +396,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
         if (listViewTranslationAnimator != null) {
             listViewTranslationAnimator.cancel();
         }
-        AndroidUtilities.runOnUIThread(updateVisibilityRunnable);
+        AndroidUtilities.runOnUIThread(updateVisibilityRunnable, chatActivity.fragmentOpened ? 0 : 100);
         if (show) {
             onOpen();
         } else {
@@ -410,6 +409,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
     }
 
     private SpringAnimation listViewTranslationAnimator;
+    private int animationIndex = -1;
     private boolean listViewHiding = false;
     private float hideT = 0;
     private boolean switchLayoutManagerOnEnd = false;
@@ -451,6 +451,8 @@ public class MentionsContainerView extends BlurredFrameLayout {
                     updateVisibility(shown = true);
                 }
             } else {
+                int account = UserConfig.selectedAccount;
+                animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
                 listViewTranslationAnimator =
                     new SpringAnimation(new FloatValueHolder(fromTranslation))
                         .setSpring(
@@ -478,6 +480,9 @@ public class MentionsContainerView extends BlurredFrameLayout {
                         }
                     });
                 }
+                listViewTranslationAnimator.addEndListener((animation, canceled, value, velocity) -> {
+                    NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
+                });
                 listViewTranslationAnimator.start();
             }
         } else {
