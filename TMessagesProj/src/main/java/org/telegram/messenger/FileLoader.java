@@ -88,7 +88,7 @@ public class FileLoader extends BaseController {
 
     private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<>();
     private ArrayList<FileLoadOperation> activeFileLoadOperation = new ArrayList<>();
-    private ConcurrentHashMap<String, Boolean> loadOperationPathsUI = new ConcurrentHashMap<>(10, 1, 2);
+    private ConcurrentHashMap<String, LoadOperationUIObject> loadOperationPathsUI = new ConcurrentHashMap<>(10, 1, 2);
     private HashMap<String, Long> uploadSizes = new HashMap<>();
 
     private HashMap<String, Boolean> loadingVideos = new HashMap<>();
@@ -513,7 +513,12 @@ public class FileLoader extends BaseController {
         } else {
             fileName = name;
         }
-        boolean removed = loadOperationPathsUI.remove(fileName) != null;
+        LoadOperationUIObject uiObject = loadOperationPathsUI.remove(fileName);
+        Runnable runnable = uiObject != null ? uiObject.loadInternalRunnable : null;
+        boolean removed = uiObject != null;
+        if (runnable != null) {
+            fileLoaderQueue.cancelRunnable(runnable);
+        }
         fileLoaderQueue.postRunnable(() -> {
             FileLoadOperation operation = loadOperationPaths.remove(fileName);
             if (operation != null) {
@@ -621,7 +626,7 @@ public class FileLoader extends BaseController {
             return null;
         }
         if (cacheType != 10 && !TextUtils.isEmpty(fileName) && !fileName.contains("" + Integer.MIN_VALUE)) {
-            loadOperationPathsUI.put(fileName, true);
+            loadOperationPathsUI.put(fileName, new LoadOperationUIObject());
         }
 
         if (document != null && parentObject instanceof MessageObject && ((MessageObject) parentObject).putInDownloadsStore && !((MessageObject) parentObject).isAnyKindOfSticker()) {
@@ -830,6 +835,11 @@ public class FileLoader extends BaseController {
             public void saveFilePath(FilePathDatabase.PathData pathSaveData, File cacheFileFinal) {
                 getFileDatabase().putPath(pathSaveData.id, pathSaveData.dc, pathSaveData.type, cacheFileFinal != null ? cacheFileFinal.toString() : null);
             }
+
+            @Override
+            public boolean hasAnotherRefOnFile(String path) {
+                return getFileDatabase().hasAnotherRefOnFile(path);
+            }
         };
         operation.setDelegate(fileLoadOperationDelegate);
 
@@ -955,10 +965,13 @@ public class FileLoader extends BaseController {
         } else {
             fileName = null;
         }
+        Runnable runnable = () -> loadFileInternal(document, secureDocument, webDocument, location, imageLocation, parentObject, locationExt, locationSize, priority, null, 0, false, cacheType);
         if (cacheType != 10 && !TextUtils.isEmpty(fileName) && !fileName.contains("" + Integer.MIN_VALUE)) {
-            loadOperationPathsUI.put(fileName, true);
+            LoadOperationUIObject uiObject = new FileLoader.LoadOperationUIObject();
+            uiObject.loadInternalRunnable = runnable;
+            loadOperationPathsUI.put(fileName, uiObject);
         }
-        fileLoaderQueue.postRunnable(() -> loadFileInternal(document, secureDocument, webDocument, location, imageLocation, parentObject, locationExt, locationSize, priority, null, 0, false, cacheType));
+        fileLoaderQueue.postRunnable(runnable);
     }
 
     protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final int offset, final boolean priority) {
@@ -1643,5 +1656,9 @@ public class FileLoader extends BaseController {
             return true;
         }
         return false;
+    }
+
+    private static class LoadOperationUIObject {
+        Runnable loadInternalRunnable;
     }
 }

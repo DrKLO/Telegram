@@ -48,8 +48,8 @@ public class Star3DIcon {
     int trianglesCount;
     float enterAlpha = 0f;
 
-    public float spec1 = 0f;
-    public float spec2 = 0f;
+    public float spec1 = 2f;
+    public float spec2 = 0.13f;
     public float diffuse = 1f;
     public int gradientColor1;
     public int gradientColor2;

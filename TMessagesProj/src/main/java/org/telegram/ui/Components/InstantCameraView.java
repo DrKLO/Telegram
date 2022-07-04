@@ -981,7 +981,11 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
         }
         if (sortedSizes.isEmpty() || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
-            return CameraController.chooseOptimalSize(previewSizes, 480, 270, aspectRatio);
+            if (!sortedSizes.isEmpty()) {
+                return CameraController.chooseOptimalSize(sortedSizes, 480, 270, aspectRatio);
+            } else {
+                return CameraController.chooseOptimalSize(previewSizes, 480, 270, aspectRatio);
+            }
         }
         Collections.sort(sortedSizes, (o1, o2) -> {
             float a1 = Math.abs(1f - Math.min(o1.mHeight, o1.mWidth) / (float) Math.max(o1.mHeight, o1.mWidth));
