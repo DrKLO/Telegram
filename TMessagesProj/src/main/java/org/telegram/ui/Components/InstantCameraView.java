@@ -3486,7 +3486,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
                     "   float t = clamp(d, 0.0, 1.0);\n" +
                     "   vec3 color = mix(textColor.rgb, vec3(1, 1, 1), t);\n" +
-                    "   gl_FragColor = vec4(color * alpha, alpha);\n" +
+                    "   gl_FragColor = vec4(texture2D(sTexture, vTextureCoord).rgb * alpha, alpha);\n" +
                     "}\n";
         }
         //apply bilinear filtering
@@ -3499,30 +3499,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
                 "uniform samplerExternalOES sTexture;\n" +
                 "void main() {\n" +
-                "   vec2 coord = resolution * 0.5;\n" +
-                "   float radius = 0.51 * resolution.x;\n" +
-                "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
-                "   float t = clamp(d, 0.0, 1.0);\n" +
-                "   if (t == 0.0) {\n" +
-                "       vec2 c_textureSize = preview;\n" +
-                "       vec2 c_onePixel = (1.0 / c_textureSize);\n" +
-                "       vec2 uv = vTextureCoord;\n" +
-                "       vec2 pixel = uv * c_textureSize + 0.5;\n" +
-
-                "       vec2 frac = fract(pixel);\n" +
-                "       pixel = (floor(pixel) / c_textureSize) - vec2(c_onePixel);\n" +
-
-                "       vec4 tl = texture2D(sTexture, pixel + vec2(0.0         , 0.0));\n" +
-                "       vec4 tr = texture2D(sTexture, pixel + vec2(c_onePixel.x, 0.0));\n" +
-                "       vec4 bl = texture2D(sTexture, pixel + vec2(0.0         , c_onePixel.y));\n" +
-                "       vec4 br = texture2D(sTexture, pixel + vec2(c_onePixel.x, c_onePixel.y));\n" +
-
-                "       vec4 x1 = mix(tl, tr, frac.x);\n" +
-                "       vec4 x2 = mix(bl, br, frac.x);\n" +
-                "       gl_FragColor = mix(x1, x2, frac.y) * alpha;" +
-                "   } else {\n" +
-                "       gl_FragColor = vec4(1, 1, 1, alpha);\n" +
-                "   }\n" +
+                "   gl_FragColor = vec4(texture2D(sTexture, vTextureCoord).rgb * alpha, alpha);\n" +
                 "}\n";
     }
 
