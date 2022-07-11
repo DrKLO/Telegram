@@ -1004,7 +1004,7 @@
     <string name="EncryptedDescription1">Use end-to-end encryption</string>
     <string name="EncryptedDescription2">Leave no trace on our servers</string>
     <string name="EncryptedDescription3">Have a self-destruct timer</string>
-    <string name="EncryptedDescription4">Do not allow forwarding</string>
+    <string name="EncryptedDescription4">Do not allow forwarding and screenshotting</string>
     <string name="YouWereKicked">you were removed</string>
     <string name="YouLeft">You left this group</string>
     <string name="DeleteThisGroup">Delete this group</string>
