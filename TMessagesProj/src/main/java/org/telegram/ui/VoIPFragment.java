@@ -319,6 +319,31 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     return false;
                 }
                 final int keyCode = event.getKeyCode();
+                if(event.getAction() ==KeyEvent.ACTION_DOWN &&keyCode ==KeyEvent.KEYCODE_CALL) event.startTracking();
+                if(event.getAction() ==KeyEvent.ACTION_UP &&(keyCode ==KeyEvent.KEYCODE_CALL ||keyCode ==KeyEvent.KEYCODE_F1 ||keyCode ==KeyEvent.KEYCODE_MENU) &&VoIPService.getSharedInstance() !=null) {
+                    /*KeyEvent e=new KeyEvent(KeyEvent.ACTION_DOWN,KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                    Intent i=new Intent(Intent.ACTION_MEDIA_BUTTON);
+                    i.putExtra(Intent.EXTRA_KEY_EVENT,e);
+                    getContext().sendBroadcast(i);*/
+                    //VoIPService.getSharedInstance().onMediaButtonEvent(e);
+                    VoIPService s=VoIPService.getSharedInstance();
+                    if(keyCode ==KeyEvent.KEYCODE_CALL) {
+                        if (s.getCallState() == VoIPService.STATE_WAITING_INCOMING) {
+                            s.acceptIncomingCall();
+                        } else {
+                            s.setMicMute(!s.isMicMute(), false, true);
+                            announceForAccessibility(s.isMicMute() ? LocaleController.getString("AccDescrVoipMicOff", R.string.AccDescrVoipMicOff) : LocaleController.getString("AccDescrVoipMicOn", R.string.AccDescrVoipMicOn));
+                        }
+                    }
+                    else if(keyCode ==KeyEvent.KEYCODE_F1) {
+                        if (s.getCallState() == VoIPService.STATE_WAITING_INCOMING) s.hangUp(); else if (s.getCallState() != VoIPService.STATE_BUSY) s.declineIncomingCall();
+//finish();
+                    }
+                    else if(keyCode==KeyEvent.KEYCODE_MENU) {
+                        s.toggleSpeakerphoneOrShowRouteSheet(getContext(), false);
+                    }
+                    return true;
+                }
                 if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP && !fragment.lockOnScreen) {
                     fragment.onBackPressed();
                     return true;

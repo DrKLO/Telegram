@@ -80,10 +80,10 @@ public class AvatarPreviewer {
     private Layout layout;
     private boolean visible;
 
-    public void show(ViewGroup parentContainer, Theme.ResourcesProvider resourcesProvider, Data data, Callback callback) {
-        Objects.requireNonNull(parentContainer);
-        Objects.requireNonNull(data);
-        Objects.requireNonNull(callback);
+public void show(ViewGroup parentContainer, Data data, boolean accessibility,Callback callback) {
+        Preconditions.checkNotNull(parentContainer);
+        Preconditions.checkNotNull(data);
+        Preconditions.checkNotNull(callback);
 
         final Context context = parentContainer.getContext();
 
@@ -125,13 +125,19 @@ public class AvatarPreviewer {
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                         WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
             }
+            if(!accessibility) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, layout, layoutParams);
-            windowManager.addView(layout, layoutParams);
-            parentContainer.requestDisallowInterceptTouchEvent(true);
-            visible = true;
+                windowManager.addView(layout, layoutParams);
+                parentContainer.requestDisallowInterceptTouchEvent(true);
+                visible = true;
+            }
+            else layout.showBottomSheet();
         }
     }
 
+    public void show(ViewGroup parentContainer, Data data, Callback callback) {
+show(parentContainer,data,false,callback);
+    }
     public void close() {
         if (visible) {
             this.layout.setShowing(false);
