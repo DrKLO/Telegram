@@ -107,6 +107,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, DownloadController.FileDownloadProgressListener {
+    
+    private TextView forwardButton;
+    private TextView backwardButton;
 
     private ActionBar actionBar;
     private View actionBarShadow;
@@ -753,14 +756,52 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         FrameLayout bottomView = new FrameLayout(context) {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                int dist = ((right - left) - AndroidUtilities.dp(8 + 48 * 5)) / 4;
-                for (int a = 0; a < 5; a++) {
+                int dist = ((right - left) - AndroidUtilities.dp(8 + 48 * 7)) / 4;
+                int forkButtonsLayouted = 0;
+                for (int a = 0; a < 7; a++) {
                     int l = AndroidUtilities.dp(4 + 48 * a) + dist * a;
                     int t = AndroidUtilities.dp(9);
-                    buttons[a].layout(l, t, l + buttons[a].getMeasuredWidth(), t + buttons[a].getMeasuredHeight());
+                    if (a == 1) {
+                        backwardButton.layout(l, t, l + backwardButton.getMeasuredWidth(), t + backwardButton.getMeasuredHeight());
+                        forkButtonsLayouted++;
+                    } else if (a == 5) {
+                        forwardButton.layout(l, t, l + forwardButton.getMeasuredWidth(), t + forwardButton.getMeasuredHeight());
+                        forkButtonsLayouted++;
+                    } else {
+                        int i = a - forkButtonsLayouted;
+                        buttons[i].layout(l, t, l + buttons[i].getMeasuredWidth(), t + buttons[i].getMeasuredHeight());
+                    }
                 }
             }
         };
+
+        {
+            final int s = 5;
+            final int color = getThemedColor(Theme.key_listSelector);
+            final FrameLayout.LayoutParams frame = LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP);
+            forwardButton = new TextView(context);
+            forwardButton.setText("+" + s + "s");
+            forwardButton.setGravity(Gravity.CENTER);
+            bottomView.addView(forwardButton, frame);
+
+            backwardButton = new TextView(context);
+            backwardButton.setText("–" + s + "s");
+            backwardButton.setGravity(Gravity.CENTER);
+            bottomView.addView(backwardButton, frame);
+
+            if (Build.VERSION.SDK_INT >= 21) {
+                forwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(color, 1, AndroidUtilities.dp(24)));
+                backwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(color, 1, AndroidUtilities.dp(24)));
+            }
+
+            forwardButton.setOnClickListener(view -> {
+                MediaController.getInstance().seekShift(s * 1000);
+            });
+            backwardButton.setOnClickListener(view -> {
+                MediaController.getInstance().seekShift(-s * 1000);
+            });
+        }
+
         playerLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.TOP | Gravity.LEFT, 0, 111, 0, 0));
 
         buttons[0] = repeatButton = new ActionBarMenuItem(context, null, 0, 0, false, resourcesProvider);
