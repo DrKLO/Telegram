@@ -70,8 +70,12 @@ public class FileLoadOperation {
     private int cdnChunkCheckSize = 1024 * 128;
     private int maxDownloadRequests = 4;
     private int maxDownloadRequestsBig = 4;
-    private int bigFileSizeFrom = 1024 * 1024;
+    private int bigFileSizeFrom = 10 * 1024 * 1024;
     private int maxCdnParts = (int) (FileLoader.DEFAULT_MAX_FILE_SIZE / downloadChunkSizeBig);
+
+    //load small parts for stream
+    private int downloadChunkSizeAnimation = 1024 * 128;
+    private int maxDownloadRequestsAnimation = 4;
 
     private final static int preloadMaxBytes = 2 * 1024 * 1024;
 
@@ -136,7 +140,7 @@ public class FileLoadOperation {
 
     private HashMap<Long, TLRPC.TL_fileHash> cdnHashes;
 
-    private boolean forceBig;
+    private boolean isStream;
 
     private byte[] encryptKey;
     private byte[] encryptIv;
@@ -174,17 +178,19 @@ public class FileLoadOperation {
 
     private int currentType;
     public FilePathDatabase.PathData pathSaveData;
+    private long startTime;
 
     public interface FileLoadOperationDelegate {
         void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
         void didFailedLoadingFile(FileLoadOperation operation, int state);
         void didChangedLoadProgress(FileLoadOperation operation, long uploadedSize, long totalSize);
         void saveFilePath(FilePathDatabase.PathData pathSaveData, File cacheFileFinal);
+        boolean hasAnotherRefOnFile(String path);
     }
 
     private void updateParams() {
         if (MessagesController.getInstance(currentAccount).getfileExperimentalParams) {
-            downloadChunkSizeBig = 1024 * 128;
+            downloadChunkSizeBig = 1024 * 512;
             maxDownloadRequests = 8;
             maxDownloadRequestsBig = 8;
         } else {
@@ -198,7 +204,7 @@ public class FileLoadOperation {
     public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, long size) {
         updateParams();
         parentObject = parent;
-        forceBig = imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION;
+        isStream = imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION;
         if (imageLocation.isEncrypted()) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = imageLocation.location.volume_id;
@@ -632,10 +638,15 @@ public class FileLoadOperation {
     }
 
     public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean steamPriority) {
+        startTime = System.currentTimeMillis();
         updateParams();
         if (currentDownloadChunkSize == 0) {
-            currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom || forceBig ? downloadChunkSizeBig : downloadChunkSize;
-            currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom || forceBig ? maxDownloadRequestsBig : maxDownloadRequests;
+            if (isStream) {
+                currentDownloadChunkSize = downloadChunkSizeAnimation;
+                currentMaxDownloadRequests = maxDownloadRequestsAnimation;
+            }
+            currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom || isStream ? downloadChunkSizeBig : downloadChunkSize;
+            currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom || isStream ? maxDownloadRequestsBig : maxDownloadRequests;
         }
         final boolean alreadyStarted = state != stateIdle;
         final boolean wasPaused = paused;
@@ -780,7 +791,9 @@ public class FileLoadOperation {
         }
         boolean finalFileExist = cacheFileFinal.exists();
         if (finalFileExist && (parentObject instanceof TLRPC.TL_theme || totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length())) {
-            cacheFileFinal.delete();
+            if (!delegate.hasAnotherRefOnFile(cacheFileFinal.toString())) {
+                cacheFileFinal.delete();
+            }
             finalFileExist = false;
         }
 
@@ -1309,7 +1322,7 @@ public class FileLoadOperation {
                 }
             }
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("finished downloading file to " + cacheFileFinal);
+                FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime));
             }
             if (increment) {
                 if (currentType == ConnectionsManager.FileTypeAudio) {
@@ -1433,7 +1446,7 @@ public class FileLoadOperation {
     protected boolean processRequestResult(RequestInfo requestInfo, TLRPC.TL_error error) {
         if (state != stateDownloading) {
             if (BuildVars.DEBUG_VERSION) {
-                FileLog.d("trying to write to finished file " + cacheFileFinal + " offset " + requestInfo.offset);
+                FileLog.e(new Exception("trying to write to finished file " + cacheFileFinal + " offset " + requestInfo.offset));
             }
             return false;
         }

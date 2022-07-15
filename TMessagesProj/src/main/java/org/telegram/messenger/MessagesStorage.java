@@ -27,7 +27,6 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
-import org.telegram.messenger.ringtone.RingtoneDataStore;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
@@ -2359,6 +2358,11 @@ public class MessagesStorage extends BaseController {
                     }
                 } else {
                     data.reuse();
+                }
+            }
+            if (!DialogObject.isEncryptedDialog(dialogId)) {
+                if (dialog.read_inbox_max_id > dialog.top_message) {
+                    dialog.read_inbox_max_id = 0;
                 }
             }
             if (DialogObject.isEncryptedDialog(dialogId)) {
@@ -9292,15 +9296,22 @@ public class MessagesStorage extends BaseController {
                     if (!(message.action instanceof TLRPC.TL_messageActionHistoryClear) && (!MessageObject.isOut(message) || message.from_scheduled) && (message.id > 0 || MessageObject.isUnread(message))) {
                         int currentMaxId = dialogsReadMax.get(message.dialog_id, -1);
                         if (currentMaxId == -1) {
-                            SQLiteCursor cursor = database.queryFinalized("SELECT inbox_max FROM dialogs WHERE did = " + message.dialog_id);
+                            SQLiteCursor cursor = database.queryFinalized("SELECT last_mid, inbox_max FROM dialogs WHERE did = " + message.dialog_id);
                             if (cursor.next()) {
-                                currentMaxId = cursor.intValue(0);
+                                int lastMessageId = cursor.intValue(0);
+                                int inboxMax = cursor.intValue(1);
+                                if (inboxMax > lastMessageId) {
+                                    currentMaxId = 0;
+                                } else {
+                                    currentMaxId = inboxMax;
+                                }
                             } else {
                                 currentMaxId = 0;
                             }
                             cursor.dispose();
                             dialogsReadMax.put(message.dialog_id, currentMaxId);
                         }
+                        FileLog.d("update messageRead currentMaxId = " + currentMaxId);
                         if (message.id < 0 || currentMaxId < message.id) {
                             StringBuilder messageIds = messageIdsMap.get(message.dialog_id);
                             if (messageIds == null) {
@@ -9318,6 +9329,7 @@ public class MessagesStorage extends BaseController {
                                 dialogMessagesIdsMap.put(message.dialog_id, ids);
                             }
                             ids.add(messageId);
+                            FileLog.d("addMessage = " + messageId);
                         }
                     }
                     if (MediaDataController.canAddMessageToMedia(message)) {
@@ -10666,6 +10678,11 @@ public class MessagesStorage extends BaseController {
 
                     addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
                 }
+                if (!DialogObject.isEncryptedDialog(dialogId)) {
+                    if (dialog.read_inbox_max_id > dialog.top_message) {
+                        dialog.read_inbox_max_id = 0;
+                    }
+                }
                 if (DialogObject.isEncryptedDialog(dialogId)) {
                     int encryptedChatId = DialogObject.getEncryptedChatId(dialogId);
                     if (!encryptedToLoad.contains(encryptedChatId)) {
@@ -11801,6 +11818,12 @@ public class MessagesStorage extends BaseController {
                             }
                         }
 
+                        if (!DialogObject.isEncryptedDialog(dialogId)) {
+                            if (dialog.read_inbox_max_id > dialog.top_message) {
+                                dialog.read_inbox_max_id = 0;
+                            }
+                        }
+
                         if (DialogObject.isEncryptedDialog(dialogId)) {
                             int encryptedChatId = DialogObject.getEncryptedChatId(dialogId);
                             if (!encryptedToLoad.contains(encryptedChatId)) {
@@ -12382,11 +12405,20 @@ public class MessagesStorage extends BaseController {
             try {
                 if (outbox) {
                     cursor = database.queryFinalized("SELECT outbox_max FROM dialogs WHERE did = " + dialog_id);
+                    if (cursor.next()) {
+                        max[0] = cursor.intValue(0);
+                    }
                 } else {
-                    cursor = database.queryFinalized("SELECT inbox_max FROM dialogs WHERE did = " + dialog_id);
-                }
-                if (cursor.next()) {
-                    max[0] = cursor.intValue(0);
+                    cursor = database.queryFinalized("SELECT last_mid, inbox_max FROM dialogs WHERE did = " + dialog_id);
+                    if (cursor.next()) {
+                        int lastMid = cursor.intValue(0);
+                        int inboxMax = cursor.intValue(1);
+                        if (inboxMax > lastMid) {
+                            max[0] = 0;
+                        } else {
+                            max[0] = inboxMax;
+                        }
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);

@@ -86,6 +86,13 @@ public class AboutLinkCell extends FrameLayout {
     private FrameLayout container;
     private Drawable rippleBackground;
 
+    private StaticLayout firstThreeLinesLayout;
+    private StaticLayout[] nextLinesLayouts = null;
+    private int lastInlineLine = -1;
+    private Point[] nextLinesLayoutsPositions;
+    private boolean needSpace = false;
+    private boolean moreButtonDisabled;
+
     public AboutLinkCell(Context context, BaseFragment fragment) {
         this(context, fragment, null);
     }
@@ -626,12 +633,10 @@ public class AboutLinkCell extends FrameLayout {
         }
     }
 
-    private StaticLayout firstThreeLinesLayout;
-    private StaticLayout[] nextLinesLayouts = null;
-    private int lastInlineLine = -1;
-    private Point[] nextLinesLayoutsPositions;
-    private boolean needSpace = false;
     private void checkTextLayout(int maxWidth, boolean force) {
+        if (moreButtonDisabled) {
+            shouldExpand = false;
+        }
         if (stringBuilder != null && (maxWidth != lastMaxWidth || force)) {
             textLayout = makeTextLayout(stringBuilder, maxWidth);
             shouldExpand = textLayout.getLineCount() >= 4; // && valueTextView.getVisibility() != View.VISIBLE;
@@ -730,5 +735,9 @@ public class AboutLinkCell extends FrameLayout {
                 info.setText(valueText + ": " + text);
             }
         }
+    }
+
+    public void setMoreButtonDisabled(boolean moreButtonDisabled) {
+        this.moreButtonDisabled = moreButtonDisabled;
     }
 }

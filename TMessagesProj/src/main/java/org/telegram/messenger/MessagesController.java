@@ -28,6 +28,8 @@ import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.util.Consumer;
@@ -8839,6 +8841,15 @@ public class MessagesController extends BaseController implements NotificationCe
                 for (int a = 0; a < dialogsToUpdate.size(); a++) {
                     long dialogId = dialogsToUpdate.keyAt(a);
                     TLRPC.Dialog currentDialog = dialogs_dict.get(dialogId);
+                    if (currentDialog == null) {
+                        for (int i = 0; i < allDialogs.size(); i++) {
+                            if (allDialogs.get(i).id == dialogId) {
+                                dialogs_dict.put(dialogId, allDialogs.get(i));
+                                currentDialog = allDialogs.get(i);
+                                break;
+                            }
+                        }
+                    }
                     if (currentDialog != null) {
                         int prevCount = currentDialog.unread_count;
                         currentDialog.unread_count = dialogsToUpdate.valueAt(a);
@@ -9075,6 +9086,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 Integer value = dialogs_read_inbox_max.get(d.id);
                 if (value == null) {
                     value = 0;
+                }
+                if (d.read_inbox_max_id > d.top_message) {
+                    d.read_inbox_max_id = d.top_message;
+                }
+                if (value > d.top_message) {
+                    value = d.top_message;
                 }
                 dialogs_read_inbox_max.put(d.id, Math.max(value, d.read_inbox_max_id));
 
@@ -12072,6 +12089,7 @@ public class MessagesController extends BaseController implements NotificationCe
             TLRPC.User user3 = null;
             TLRPC.Chat channel = null;
 
+            FileLog.d("update message short userId = " + userId);
             if (user == null || user.min) {
                 user = getMessagesStorage().getUserSync(userId);
                 if (user != null && user.min) {

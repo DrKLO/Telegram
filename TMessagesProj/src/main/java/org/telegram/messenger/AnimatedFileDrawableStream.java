@@ -6,7 +6,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class AnimatedFileDrawableStream implements FileLoadOperationStream {
 
-    private FileLoadOperation loadOperation;
+    private final FileLoadOperation loadOperation;
     private CountDownLatch countDownLatch;
     private TLRPC.Document document;
     private ImageLocation location;
@@ -19,8 +19,6 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private boolean preview;
     private boolean finishedLoadingFile;
     private String finishedFilePath;
-
-    private boolean ignored;
 
     public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev) {
         document = d;
@@ -63,6 +61,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                         }
                         synchronized (sync) {
                             if (canceled) {
+                                FileLoader.getInstance(currentAccount).cancelLoadFile(document);
                                 return 0;
                             }
                             countDownLatch = new CountDownLatch(1);

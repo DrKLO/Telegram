@@ -21,7 +21,7 @@ public class FilePathDatabase {
     private File cacheFile;
     private File shmCacheFile;
 
-    private final static int LAST_DB_VERSION = 1;
+    private final static int LAST_DB_VERSION = 2;
 
     private final static String DATABASE_NAME = "file_to_path";
     private final static String DATABASE_BACKUP_NAME = "file_to_path_backup";
@@ -57,6 +57,7 @@ public class FilePathDatabase {
 
             if (createTable) {
                 database.executeFast("CREATE TABLE paths(document_id INTEGER, dc_id INTEGER, type INTEGER, path TEXT, PRIMARY KEY(document_id, dc_id, type));").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS path_in_paths ON paths(path);").stepThis().dispose();
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
                 int version = database.executeInt("PRAGMA user_version");
@@ -66,6 +67,7 @@ public class FilePathDatabase {
                 if (version == 0) {
                     throw new Exception("malformed");
                 }
+                migrateDatabase(version);
                 //migration
             }
             if (!fromBackup) {
@@ -86,6 +88,14 @@ public class FilePathDatabase {
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.e(e);
             }
+        }
+    }
+
+    private void migrateDatabase(int version) throws SQLiteException {
+        if (version == 1) {
+            database.executeFast("CREATE INDEX IF NOT EXISTS path_in_paths ON paths(path);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = " + 2).stepThis().dispose();
+            version = 2;
         }
     }
 
@@ -117,7 +127,7 @@ public class FilePathDatabase {
         try {
             return AndroidUtilities.copyFile(backupCacheFile, cacheFile);
         } catch (IOException e) {
-           FileLog.e(e);
+            FileLog.e(e);
         }
         return false;
     }
@@ -182,6 +192,7 @@ public class FilePathDatabase {
             SQLitePreparedStatement state = null;
             try {
                 if (path != null) {
+                    database.executeFast("DELETE FROM paths WHERE path = '" + path + "'");
                     state = database.executeFast("REPLACE INTO paths VALUES(?, ?, ?, ?)");
                     state.requery();
                     state.bindLong(1, id);
@@ -241,6 +252,29 @@ public class FilePathDatabase {
                 FileLog.e(e);
             }
         });
+    }
+
+    public boolean hasAnotherRefOnFile(String path) {
+        CountDownLatch syncLatch = new CountDownLatch(1);
+        boolean[] res = new boolean[]{false};
+        dispatchQueue.postRunnable(() -> {
+            try {
+                SQLiteCursor cursor = database.queryFinalized("SELECT document_id FROM paths WHERE path = '" + path + "'");
+                if (cursor.next()) {
+                    res[0] = true;
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            syncLatch.countDown();
+        });
+
+        try {
+            syncLatch.await();
+        } catch (InterruptedException e) {
+            FileLog.e(e);
+        }
+        return res[0];
     }
 
     public static class PathData {
