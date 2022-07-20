@@ -68,15 +68,6 @@ import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.wallet.AutoResolveHelper;
-import com.google.android.gms.wallet.IsReadyToPayRequest;
-import com.google.android.gms.wallet.PaymentData;
-import com.google.android.gms.wallet.PaymentDataRequest;
-import com.google.android.gms.wallet.PaymentsClient;
-import com.google.android.gms.wallet.Wallet;
-import com.google.android.gms.wallet.WalletConstants;
 import com.stripe.android.Stripe;
 import com.stripe.android.TokenCallback;
 import com.stripe.android.exception.APIConnectionException;
@@ -196,8 +187,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private HashMap<String, String> countriesMap = new HashMap<>();
     private HashMap<String, String> codesMap = new HashMap<>();
     private HashMap<String, String> phoneFormatMap = new HashMap<>();
-
-    private PaymentsClient paymentsClient;
 
     private EditTextBoldCursor[] inputFields;
     private RadioCell[] radioCells;
@@ -2661,8 +2650,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         googlePayContainer.setVisibility(View.GONE);
 
         googlePayButton = new FrameLayout(context);
-        googlePayButton.setClickable(true);
-        googlePayButton.setFocusable(true);
+        googlePayButton.setClickable(false);
+        googlePayButton.setFocusable(false);
         googlePayButton.setBackgroundResource(R.drawable.googlepay_button_no_shadow_background);
         if (googlePayPublicKey == null) {
             googlePayButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(2), AndroidUtilities.dp(10), AndroidUtilities.dp(2));
@@ -2726,10 +2715,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 shippingAddressParameters.put("allowedCountryCodes", allowedCountryCodes);
                 paymentDataRequest.put("shippingAddressParameters", shippingAddressParameters);*/
 
-                PaymentDataRequest request = PaymentDataRequest.fromJson(paymentDataRequest.toString());
+                /*PaymentDataRequest request = PaymentDataRequest.fromJson(paymentDataRequest.toString());
                 if (request != null) {
                     AutoResolveHelper.resolveTask(paymentsClient.loadPaymentData(request), getParentActivity(), LOAD_PAYMENT_DATA_REQUEST_CODE);
-                }
+                }*/
             } catch (JSONException e) {
                 FileLog.e(e);
             }
@@ -2915,7 +2904,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         if (Build.VERSION.SDK_INT < 19 || getParentActivity() == null) {
             return;
         }
-        Wallet.WalletOptions walletOptions = new Wallet.WalletOptions.Builder()
+       /* Wallet.WalletOptions walletOptions = new Wallet.WalletOptions.Builder()
                 .setEnvironment(paymentForm.invoice.test ? WalletConstants.ENVIRONMENT_TEST : WalletConstants.ENVIRONMENT_PRODUCTION)
                 .setTheme(WalletConstants.THEME_LIGHT)
                 .build();
@@ -2940,7 +2929,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     } else {
                         FileLog.e("isReadyToPay failed", task1.getException());
                     }
-                });
+                });*/
     }
 
     private String getTotalPriceString(ArrayList<TLRPC.TL_labeledPrice> prices) {
@@ -3090,7 +3079,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (requestCode == LOAD_PAYMENT_DATA_REQUEST_CODE) {
             AndroidUtilities.runOnUIThread(() -> {
-                if (resultCode == Activity.RESULT_OK) {
+               /* if (resultCode == Activity.RESULT_OK) {
                     PaymentData paymentData = PaymentData.getFromIntent(data);
                     if (paymentData == null) {
                         return;
@@ -3130,10 +3119,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         Status status = AutoResolveHelper.getStatusFromIntent(data);
                         FileLog.e("android pay error " + (status != null ? status.getStatusMessage() : ""));
                     }
-                }
+                }*/
                 showEditDoneProgress(true, false);
                 setDonePressed(false);
-                googlePayButton.setClickable(true);
+                googlePayButton.setClickable(false);
             });
         }
     }

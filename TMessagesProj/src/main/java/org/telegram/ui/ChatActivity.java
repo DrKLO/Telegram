@@ -122,7 +122,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ForwardingMessagesParams;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
@@ -22035,7 +22034,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         };
                         TLRPC.InputPeer inputPeer = getMessagesController().getInputPeer(dialog_id);
                         int messageId = selectedObject.messageOwner.id;
-                        if (LanguageDetector.hasSupport()) {
+                        /*if (LanguageDetector.hasSupport()) {
                             final String[] fromLang = {null};
                             cell.setVisibility(View.GONE);
                             waitForLangDetection.set(true);
@@ -22077,7 +22076,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                                     onLangDetectionDone.getAndSet(null).run();
                                 }
                             }, 250);
-                        } else if (translateButtonEnabled) {
+                        } else */if (translateButtonEnabled) {
                             cell.setOnClickListener(e -> {
                                 if (selectedObject == null || i >= options.size() || getParentActivity() == null) {
                                     return;

@@ -30,13 +30,10 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
@@ -47,6 +44,7 @@ import org.telegram.ui.LauncherIconController;
 import java.io.File;
 
 public class ApplicationLoader extends Application {
+    private static PendingIntent pendingIntent;
 
     @SuppressLint("StaticFieldLeak")
     public static volatile Context applicationContext;
@@ -168,7 +166,6 @@ public class ApplicationLoader extends Application {
         }
 
         ApplicationLoader app = (ApplicationLoader) ApplicationLoader.applicationContext;
-        app.initPlayServices();
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("app initied");
         }
@@ -179,7 +176,7 @@ public class ApplicationLoader extends Application {
             DownloadController.getInstance(a);
         }
         ChatThemeController.init();
-        BillingController.getInstance().startConnection();
+//        BillingController.getInstance().startConnection();
     }
 
     public ApplicationLoader() {
@@ -225,6 +222,9 @@ public class ApplicationLoader extends Application {
         AndroidUtilities.runOnUIThread(ApplicationLoader::startPushService);
 
         LauncherIconController.tryFixLauncherIconIfNeeded();
+
+        org.osmdroid.config.Configuration.getInstance().setUserAgentValue("Telegram-FOSS(F-Droid) "+BuildConfig.VERSION_NAME);
+        org.osmdroid.config.Configuration.getInstance().setOsmdroidBasePath(new File(getCacheDir(),"osmdroid"));
     }
 
     public static void startPushService() {
@@ -233,13 +233,36 @@ public class ApplicationLoader extends Application {
         if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
         } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", true);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("pushService", enabled);
+            editor.putBoolean("pushConnection", enabled);
+            editor.commit();
+            SharedPreferences preferencesCA = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
+            SharedPreferences.Editor editorCA = preferencesCA.edit();
+            editorCA.putBoolean("pushConnection", enabled);
+            editorCA.putBoolean("pushService", enabled);
+            editorCA.commit();
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(true);
         }
         if (enabled) {
-            try {
-                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-            } catch (Throwable ignore) {
+            Log.d("Telegraher", "Trying to start push service every minute");
+            // Telegram-FOSS: unconditionally enable push service
+            AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+            Intent i = new Intent(applicationContext, NotificationsService.class);
+            pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, i, 0);
 
+            am.cancel(pendingIntent);
+            am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+            try {
+                Log.d("Telegraher", "Starting push service...");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    applicationContext.startForegroundService(new Intent(applicationContext, NotificationsService.class));
+                } else {
+                    applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+                }
+            } catch (Throwable e) {
+                Log.d("Telegraher", "Failed to start push service");
             }
         } else {
             applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
@@ -247,6 +270,9 @@ public class ApplicationLoader extends Application {
             PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
             AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
             alarm.cancel(pintent);
+	        if (pendingIntent != null) {
+	            alarm.cancel(pendingIntent);
+	        }
         }
     }
 
@@ -262,61 +288,6 @@ public class ApplicationLoader extends Application {
         }
     }
 
-    private void initPlayServices() {
-        AndroidUtilities.runOnUIThread(() -> {
-            if (hasPlayServices = checkPlayServices()) {
-                final String currentPushString = SharedConfig.pushString;
-                if (!TextUtils.isEmpty(currentPushString)) {
-                    if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
-                        FileLog.d("GCM regId = " + currentPushString);
-                    }
-                } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("GCM Registration not found.");
-                    }
-                }
-                Utilities.globalQueue.postRunnable(() -> {
-                    try {
-                        SharedConfig.pushStringGetTimeStart = SystemClock.elapsedRealtime();
-                        FirebaseMessaging.getInstance().getToken()
-                                .addOnCompleteListener(task -> {
-                                    SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
-                                    if (!task.isSuccessful()) {
-                                        if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.d("Failed to get regid");
-                                        }
-                                        SharedConfig.pushStringStatus = "__FIREBASE_FAILED__";
-                                        GcmPushListenerService.sendRegistrationToServer(null);
-                                        return;
-                                    }
-                                    String token = task.getResult();
-                                    if (!TextUtils.isEmpty(token)) {
-                                        GcmPushListenerService.sendRegistrationToServer(token);
-                                    }
-                                });
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                });
-            } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("No valid Google Play Services APK found.");
-                }
-                SharedConfig.pushStringStatus = "__NO_GOOGLE_PLAY_SERVICES__";
-                GcmPushListenerService.sendRegistrationToServer(null);
-            }
-        }, 1000);
-    }
-
-    private boolean checkPlayServices() {
-        try {
-            int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-            return resultCode == ConnectionResult.SUCCESS;
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return true;
-    }
 
     private static void ensureCurrentNetworkGet(boolean force) {
         if (force || currentNetworkInfo == null) {

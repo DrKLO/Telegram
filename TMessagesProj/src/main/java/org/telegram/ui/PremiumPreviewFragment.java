@@ -38,13 +38,8 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.BillingFlowParams;
-import com.android.billingclient.api.ProductDetails;
-
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -555,7 +550,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             fragment.showDialog(new PremiumNotAvailableBottomSheet(fragment));
             return;
         }
-
+/*
         PremiumPreviewFragment.sentPremiumButtonClick();
 
         if (BuildVars.useInvoiceBilling()) {
@@ -617,14 +612,15 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     AlertsCreator.processError(fragment.getCurrentAccount(), error, fragment, req);
                 }
             });
-        });
+        });*/
     }
 
     public static String getPremiumButtonText(int currentAccount) {
         if (BuildVars.IS_BILLING_UNAVAILABLE) {
             return LocaleController.getString(R.string.SubscribeToPremiumNotAvailable);
         }
-
+        return LocaleController.getString(R.string.SubscribeToPremiumNotAvailable);
+/*
         if (BuildVars.useInvoiceBilling()) {
             TLRPC.TL_help_premiumPromo premiumPromo = MediaDataController.getInstance(currentAccount).getPremiumPromo();
             if (premiumPromo != null) {
@@ -659,6 +655,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         }
 
         return LocaleController.formatString(R.string.SubscribeToPremium, price);
+        */
     }
 
     private void measureGradient(int w, int h) {
