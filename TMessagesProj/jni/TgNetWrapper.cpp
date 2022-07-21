@@ -568,7 +568,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_ConnectionsManager_onRequestNewServerIpAndPort == 0) {
         return JNI_FALSE;
     }
-    jclass_ConnectionsManager_onProxyError = env->GetStaticMethodID(jclass_ConnectionsManager, "onProxyError", "()V");
+    jclass_ConnectionsManager_onProxyError = env->GetStaticMethodID(jclass_ConnectionsManager, "onProxyError", "(I)V");
     if (jclass_ConnectionsManager_onProxyError == 0) {
         return JNI_FALSE;
     }
