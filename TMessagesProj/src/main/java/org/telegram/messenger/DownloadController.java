@@ -218,16 +218,16 @@ public class DownloadController extends BaseController implements NotificationCe
     public int currentMobilePreset;
     public int currentWifiPreset;
     public int currentRoamingPreset;
-    
-    private static volatile DownloadController[] Instance = new DownloadController[UserConfig.MAX_ACCOUNT_COUNT];
+
+    private static SparseArray<DownloadController> Instance = new SparseArray<>();
 
     public static DownloadController getInstance(int num) {
-        DownloadController localInstance = Instance[num];
+        DownloadController localInstance = Instance.get(num);
         if (localInstance == null) {
             synchronized (DownloadController.class) {
-                localInstance = Instance[num];
+                localInstance = Instance.get(num);
                 if (localInstance == null) {
-                    Instance[num] = localInstance = new DownloadController(num);
+                    Instance.put(num, localInstance = new DownloadController(num));
                 }
             }
         }

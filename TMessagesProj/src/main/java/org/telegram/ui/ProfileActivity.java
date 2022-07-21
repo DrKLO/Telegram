@@ -2713,7 +2713,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             editor.putInt("notify2_" + did, 0);
                         }
                         getMessagesStorage().setDialogFlags(did, 0);
-                        editor.commit();
+                        editor.apply();
                         TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(did);
                         if (dialog != null) {
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
@@ -2732,7 +2732,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         getNotificationsController().removeNotificationsForDialog(did);
                         getMessagesStorage().setDialogFlags(did, flags);
-                        editor.commit();
+                        editor.apply();
                         TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(did);
                         if (dialog != null) {
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
@@ -2898,7 +2898,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     SharedConfig.pushAuthKey = null;
                     SharedConfig.pushAuthKeyId = null;
                     SharedConfig.saveConfig();
-                    getConnectionsManager().switchBackend(true);
+                    ConnectionsManager.getInstance(currentAccount).switchBackend(false);
                 });
                 builder1.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 showDialog(builder1.create());
@@ -5109,7 +5109,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat) args[0];
                     Bundle args2 = new Bundle();
                     args2.putInt("enc_id", encryptedChat.id);
-                    presentFragment(new ChatActivity(args2), true);
+                    if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args2, ProfileActivity.this)) {
+                        presentFragment(new ChatActivity(args2), true);
+                    }
                 });
             }
         } else if (id == NotificationCenter.encryptedChatUpdated) {
@@ -8074,10 +8076,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 new SearchResult(500, LocaleController.getString("EditName", R.string.EditName), 0, () -> presentFragment(new ChangeNameActivity(resourcesProvider))),
                 new SearchResult(501, LocaleController.getString("ChangePhoneNumber", R.string.ChangePhoneNumber), 0, () -> presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER))),
                 new SearchResult(502, LocaleController.getString("AddAnotherAccount", R.string.AddAnotherAccount), 0, () -> {
-                    int freeAccount = -1;
-                    for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                        if (!UserConfig.getInstance(a).isClientActivated()) {
-                            freeAccount = a;
+                    int freeAccount;
+                    for (int account = 0; ; account++) {
+                        if (!SharedConfig.activeAccounts.contains(account)) {
+                            freeAccount = account;
                             break;
                         }
                     }
@@ -8514,10 +8516,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         if (stringBuilder != null && i == searchArgs.length - 1) {
                             if (result.guid == 502) {
-                                int freeAccount = -1;
-                                for (int b = 0; b < UserConfig.MAX_ACCOUNT_COUNT; b++) {
-                                    if (!UserConfig.getInstance(a).isClientActivated()) {
-                                        freeAccount = b;
+                                int freeAccount;
+                                for (int account = 0; ; account++) {
+                                    if (!SharedConfig.activeAccounts.contains(account)) {
+                                        freeAccount = account;
                                         break;
                                     }
                                 }

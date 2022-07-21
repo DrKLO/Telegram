@@ -81,26 +81,20 @@ public class MessagesStorage extends BaseController {
 
     private CountDownLatch openSync = new CountDownLatch(1);
 
-    private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
-    private static final Object[] lockObjects = new Object[UserConfig.MAX_ACCOUNT_COUNT];
-    static {
-        for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
-            lockObjects[i] = new Object();
-        }
-    }
-
+    private static SparseArray<MessagesStorage> Instance = new SparseArray();
+    private static final Object lockObject = new Object();
     private final static int LAST_DB_VERSION = 98;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
 
 
     public static MessagesStorage getInstance(int num) {
-        MessagesStorage localInstance = Instance[num];
+        MessagesStorage localInstance = Instance.get(num);
         if (localInstance == null) {
-            synchronized (lockObjects[num]) {
-                localInstance = Instance[num];
+            synchronized (lockObject) {
+                localInstance = Instance.get(num);
                 if (localInstance == null) {
-                    Instance[num] = localInstance = new MessagesStorage(num);
+                    Instance.put(num, localInstance = new MessagesStorage(num));
                 }
             }
         }

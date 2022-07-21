@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
+import android.util.SparseArray;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.ResultCallback;
@@ -175,16 +176,16 @@ public class ChatThemeController extends BaseController {
     }
 
 
-    private static final ChatThemeController[] instances = new ChatThemeController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final SparseArray<ChatThemeController> instances = new SparseArray<>();
 
     public static ChatThemeController getInstance(int accountNum) {
-        ChatThemeController local = instances[accountNum];
+        ChatThemeController local = instances.get(accountNum);
         if (local == null) {
             synchronized (ChatThemeController.class) {
-                local = instances[accountNum];
+                local = instances.get(accountNum);
                 if (local == null) {
                     local = new ChatThemeController(accountNum);
-                    instances[accountNum] = local;
+                    instances.put(accountNum, local);
                 }
             }
         }

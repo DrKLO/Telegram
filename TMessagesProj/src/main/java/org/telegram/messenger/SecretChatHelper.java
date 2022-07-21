@@ -66,7 +66,7 @@ public class SecretChatHelper extends BaseController {
         }
     }
 
-    public static int CURRENT_SECRET_CHAT_LAYER = 101;
+    public static final int CURRENT_SECRET_CHAT_LAYER = 101;
 
     private ArrayList<Integer> sendingNotifyLayer = new ArrayList<>();
     private SparseArray<ArrayList<TL_decryptedMessageHolder>> secretHolesQueue = new SparseArray<>();
@@ -77,15 +77,15 @@ public class SecretChatHelper extends BaseController {
     private ArrayList<Long> pendingEncMessagesToDelete = new ArrayList<>();
     private boolean startingSecretChat = false;
 
-    private static volatile SecretChatHelper[] Instance = new SecretChatHelper[UserConfig.MAX_ACCOUNT_COUNT];
+    private static SparseArray<SecretChatHelper> Instance = new SparseArray<>();
 
     public static SecretChatHelper getInstance(int num) {
-        SecretChatHelper localInstance = Instance[num];
+        SecretChatHelper localInstance = Instance.get(num);
         if (localInstance == null) {
             synchronized (SecretChatHelper.class) {
-                localInstance = Instance[num];
+                localInstance = Instance.get(num);
                 if (localInstance == null) {
-                    Instance[num] = localInstance = new SecretChatHelper(num);
+                    Instance.put(num, localInstance = new SecretChatHelper(num));
                 }
             }
         }

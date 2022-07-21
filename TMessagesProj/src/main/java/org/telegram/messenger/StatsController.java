@@ -10,6 +10,7 @@ package org.telegram.messenger;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.SparseArray;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -103,15 +104,15 @@ public class StatsController extends BaseController {
         }
     };
 
-    private static volatile StatsController[] Instance = new StatsController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static SparseArray<StatsController> Instance = new SparseArray<>();
 
     public static StatsController getInstance(int num) {
-        StatsController localInstance = Instance[num];
+        StatsController localInstance = Instance.get(num);
         if (localInstance == null) {
             synchronized (StatsController.class) {
-                localInstance = Instance[num];
+                localInstance = Instance.get(num);
                 if (localInstance == null) {
-                    Instance[num] = localInstance = new StatsController(num);
+                    Instance.put(num, localInstance = new StatsController(num));
                 }
             }
         }

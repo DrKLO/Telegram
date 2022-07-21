@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Base64;
+import android.util.SparseArray;
 
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
@@ -21,8 +22,6 @@ import java.util.Arrays;
 public class UserConfig extends BaseController {
 
     public static int selectedAccount;
-    public final static int MAX_ACCOUNT_DEFAULT_COUNT = 3;
-    public final static int MAX_ACCOUNT_COUNT = 4;
 
     private final Object sync = new Object();
     private boolean configLoaded;
@@ -65,14 +64,15 @@ public class UserConfig extends BaseController {
     public volatile byte[] savedSaltedPassword;
     public volatile long savedPasswordTime;
 
-    private static volatile UserConfig[] Instance = new UserConfig[UserConfig.MAX_ACCOUNT_COUNT];
+    private static SparseArray<UserConfig> Instance = new SparseArray<>();
+
     public static UserConfig getInstance(int num) {
-        UserConfig localInstance = Instance[num];
+        UserConfig localInstance = Instance.get(num);
         if (localInstance == null) {
             synchronized (UserConfig.class) {
-                localInstance = Instance[num];
+                localInstance = Instance.get(num);
                 if (localInstance == null) {
-                    Instance[num] = localInstance = new UserConfig(num);
+                    Instance.put(num, localInstance = new UserConfig(num));
                 }
             }
         }
@@ -81,8 +81,8 @@ public class UserConfig extends BaseController {
 
     public static int getActivatedAccountsCount() {
         int count = 0;
-        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
-            if (AccountInstance.getInstance(a).getUserConfig().isClientActivated()) {
+        for (int a : SharedConfig.activeAccounts) {
+            if (getInstance(a).isClientActivated()) {
                 count++;
             }
         }
@@ -94,7 +94,7 @@ public class UserConfig extends BaseController {
     }
 
     public static boolean hasPremiumOnAccounts() {
-        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
+        for (int a : SharedConfig.activeAccounts)  {
             if (AccountInstance.getInstance(a).getUserConfig().isClientActivated() && AccountInstance.getInstance(a).getUserConfig().getUserConfig().isPremium()) {
                 return true;
             }
@@ -144,6 +144,9 @@ public class UserConfig extends BaseController {
                     editor.putBoolean("hasValidDialogLoadIds", hasValidDialogLoadIds);
                     editor.putInt("sharingMyLocationUntil", sharingMyLocationUntil);
                     editor.putInt("lastMyLocationShareTime", lastMyLocationShareTime);
+//                    editor.putString("dsBrand", "Nokia");
+//                    editor.putString("dsModel", "3310");
+
                     editor.putBoolean("filtersLoaded", filtersLoaded);
 
                     editor.putInt("6migrateOffsetId", migrateOffsetId);
@@ -192,7 +195,7 @@ public class UserConfig extends BaseController {
                         editor.remove("user");
                     }
 
-                    editor.commit();
+                    editor.apply();
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -201,7 +204,7 @@ public class UserConfig extends BaseController {
     }
 
     public static boolean isValidAccount(int num) {
-         return num >= 0 && num < UserConfig.MAX_ACCOUNT_COUNT && getInstance(num).isClientActivated();
+        return num >= 0 && SharedConfig.activeAccounts.contains(num) && getInstance(num).isClientActivated();
     }
 
     public boolean isClientActivated() {
@@ -403,7 +406,7 @@ public class UserConfig extends BaseController {
         lastHintsSyncTime = (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60;
         resetSavedPassword();
         boolean hasActivated = false;
-        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
+        for (int a : SharedConfig.activeAccounts) {
             if (AccountInstance.getInstance(a).getUserConfig().isClientActivated()) {
                 hasActivated = true;
                 break;

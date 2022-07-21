@@ -39,7 +39,7 @@ public class LocationSharingService extends Service implements NotificationCente
         runnable = () -> {
             handler.postDelayed(runnable, 1000);
             Utilities.stageQueue.postRunnable(() -> {
-                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                for (int a : SharedConfig.activeAccounts) {
                     LocationController.getInstance(a).update();
                 }
             });
@@ -79,7 +79,7 @@ public class LocationSharingService extends Service implements NotificationCente
 
     private ArrayList<LocationController.SharingLocationInfo> getInfos() {
         ArrayList<LocationController.SharingLocationInfo> infos = new ArrayList<>();
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+        for (int a : SharedConfig.activeAccounts) {
             ArrayList<LocationController.SharingLocationInfo> arrayList = LocationController.getInstance(a).sharingLocationsUI;
             if (!arrayList.isEmpty()) {
                 infos.addAll(arrayList);

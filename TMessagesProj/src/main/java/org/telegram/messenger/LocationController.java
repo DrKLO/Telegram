@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 
 import androidx.collection.LongSparseArray;
@@ -71,15 +72,15 @@ public class LocationController extends BaseController implements NotificationCe
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyUsers = new ArrayList<>();
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyChats = new ArrayList<>();
 
-    private static volatile LocationController[] Instance = new LocationController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static SparseArray<LocationController> Instance = new SparseArray<>();
 
     public static LocationController getInstance(int num) {
-        LocationController localInstance = Instance[num];
+        LocationController localInstance = Instance.get(num);
         if (localInstance == null) {
             synchronized (LocationController.class) {
-                localInstance = Instance[num];
+                localInstance = Instance.get(num);
                 if (localInstance == null) {
-                    Instance[num] = localInstance = new LocationController(num);
+                    Instance.put(num, localInstance = new LocationController(num));
                 }
             }
         }
@@ -870,7 +871,7 @@ public class LocationController extends BaseController implements NotificationCe
 
     public static int getLocationsCount() {
         int count = 0;
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+        for (int a : SharedConfig.activeAccounts) {
             count += LocationController.getInstance(a).sharingLocationsUI.size();
         }
         return count;
