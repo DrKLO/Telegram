@@ -92,7 +92,7 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        return new File("/data/data/com.evildayz.code.telegraher/files");
+        return new File("/data/data/com.evildayz.code.telegraher_beta/files");
     }
 
     public static void postInitApplication() {
