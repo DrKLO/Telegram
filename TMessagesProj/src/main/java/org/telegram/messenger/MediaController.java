@@ -4881,8 +4881,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         if (framerate == 0) {
             framerate = 25;
-        } else if (framerate > 59) {
-            framerate = 59;
         }
 
         if (rotationValue == 90 || rotationValue == 270) {
@@ -4989,12 +4987,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             compressFactor = 1f;
             minCompressFactor = 1f;
         } else if (Math.min(height, width) >= 720) {
-            maxBitrate = 2600_000;
+            maxBitrate = 3200_000;
             compressFactor = 1f;
             minCompressFactor = 1f;
         } else if (Math.min(height, width) >= 480) {
             maxBitrate = 1000_000;
-            compressFactor = 0.75f;
+            compressFactor = 0.8f;
             minCompressFactor = 0.9f;
         } else {
             maxBitrate = 750_000;

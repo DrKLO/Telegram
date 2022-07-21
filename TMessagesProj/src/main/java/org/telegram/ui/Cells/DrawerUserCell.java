@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
@@ -36,6 +37,7 @@ import org.telegram.ui.Components.Premium.PremiumGradient;
 public class DrawerUserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private SimpleTextView textView;
+    private SimpleTextView phoneTextView;
     private BackupImageView imageView;
     private AvatarDrawable avatarDrawable;
     private GroupCreateCheckBox checkBox;
@@ -60,6 +62,13 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         textView.setMaxLines(1);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 60, 0));
+
+        phoneTextView = new SimpleTextView(context);
+        phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
+        phoneTextView.setTextSize(15);
+        phoneTextView.setMaxLines(1);
+        phoneTextView.setGravity(Gravity.LEFT);
+        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 60, 0));
 
         checkBox = new GroupCreateCheckBox(context);
         checkBox.setChecked(true, false);
@@ -118,6 +127,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
             text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
         } catch (Exception ignore) {}
         textView.setText(text);
+        phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         if (MessagesController.getInstance(account).isPremiumUser(user)) {
             textView.setDrawablePadding(AndroidUtilities.dp(6));
             textView.setRightDrawable(PremiumGradient.getInstance().premiumStarDrawableMini);

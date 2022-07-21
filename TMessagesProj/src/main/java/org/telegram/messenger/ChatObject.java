@@ -1537,7 +1537,8 @@ public class ChatObject {
     }
 
     public static boolean isNotInChat(TLRPC.Chat chat) {
-        return chat == null || chat instanceof TLRPC.TL_chatEmpty || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || chat.left || chat.kicked || chat.deactivated;
+//        return chat == null || chat instanceof TLRPC.TL_chatEmpty || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || chat.left || chat.kicked || chat.deactivated;
+        return chat == null || chat.left;
     }
 
     public static boolean canSendAsPeers(TLRPC.Chat chat) {
@@ -1579,6 +1580,10 @@ public class ChatObject {
 
     public static boolean canBlockUsers(TLRPC.Chat chat) {
         return canUserDoAction(chat, ACTION_BLOCK_USERS);
+    }
+
+    public static boolean canDeleteMessages(TLRPC.Chat chat) {
+        return canUserDoAction(chat, ACTION_DELETE_MESSAGES);
     }
 
     public static boolean canManageCalls(TLRPC.Chat chat) {

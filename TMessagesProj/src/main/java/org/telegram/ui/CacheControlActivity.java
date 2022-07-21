@@ -8,6 +8,10 @@
 
 package org.telegram.ui;
 
+import static android.content.Context.ACTIVITY_SERVICE;
+import static org.webrtc.ContextUtils.getApplicationContext;
+
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -76,6 +80,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     AlertDialog progressDialog;
 
     private int databaseRow;
+    private int kaboomButton;
     private int databaseInfoRow;
     private int keepMediaHeaderRow;
     private int keepMediaInfoRow;
@@ -214,6 +219,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         cacheInfoRow = rowCount++;
         databaseRow = rowCount++;
+        kaboomButton = rowCount++;
         databaseInfoRow = rowCount++;
     }
 
@@ -463,6 +469,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 }
             } else if (position == databaseRow) {
                 clearDatabase();
+            } else if (position == kaboomButton) {
+                kaboomDurov(context);
             } else if (position == storageUsageRow) {
                 if (totalSize <= 0 || getParentActivity() == null) {
                     return;
@@ -586,6 +594,29 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         FilesMigrationService.checkBottomSheet(this);
     }
 
+    private void kaboomDurov(Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Kaboom");
+        builder.setMessage("Kaboom??");
+        builder.setPositiveButton("Kaboom!", (dialogInterface, i) -> {
+            try {
+                if (Build.VERSION_CODES.KITKAT <= Build.VERSION.SDK_INT) {
+                    ((ActivityManager) context.getSystemService(ACTIVITY_SERVICE)).clearApplicationUserData();
+                } else {
+                    Runtime.getRuntime().exec("pm clear " + getApplicationContext().getPackageName());
+                }
+            } catch (Exception durovrelogin) {
+                durovrelogin.printStackTrace();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
+    }
     private void clearDatabase() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("LocalDatabaseClearTextTitle", R.string.LocalDatabaseClearTextTitle));
@@ -646,7 +677,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == migrateOldFolderRow || position == databaseRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
+            return position == migrateOldFolderRow || position == databaseRow || position == kaboomButton || (position == storageUsageRow && (totalSize > 0) && !calculating);
         }
 
         @Override
@@ -710,6 +741,10 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == databaseRow) {
                         textCell.setTextAndValue(LocaleController.getString("ClearLocalDatabase", R.string.ClearLocalDatabase), AndroidUtilities.formatFileSize(databaseSize), false);
+                    } else if (position == kaboomButton) {
+                        textCell.setCanDisable(false);
+                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                        textCell.setText("Kaboom", false);
                     } else if (position == migrateOldFolderRow) {
                         textCell.setTextAndValue(LocaleController.getString("MigrateOldFolder", R.string.MigrateOldFolder), null, false);
                     }
