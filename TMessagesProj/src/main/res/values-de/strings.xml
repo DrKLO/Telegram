@@ -23,7 +23,7 @@
     <!--code enter view-->
     <string name="YourCode">Nummer verifizieren</string>
     <string name="SentSmsCode">Wir haben dir eine SMS mit Aktivierungscode an **%1$s** gesendet.</string>
-    <string name="SentAppCode">Code wurde dir per **Telegram** an deine aktive App geschickt.</string>
+    <string name="SentAppCode">Code wurde dir per **Telegraher** an deine aktive App geschickt.</string>
     <string name="SentAppCodeTitle">Prüfe deine Telegram-Nachrichten</string>
     <string name="SentSmsCodeTitle">Code eingeben</string>
     <string name="SentCallCode">Wir rufen dich jetzt unter **%1$s** an.\n\nBitte den Anruf nicht annehmen, Telegram kümmert sich um alles.</string>
@@ -199,7 +199,7 @@
     <string name="DisappearingPhoto">Geheimes Bild</string>
     <string name="DisappearingVideo">Geheimes Video</string>
     <string name="DisappearingGif">Geheimes GIF</string>
-    <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Bilder in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Bilder mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
+    <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegraher, sodass Bilder in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Bilder mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
     <string name="SearchMessages">Nachrichten</string>
     <string name="Search">Suche</string>
     <string name="MuteNotifications">Stummschalten</string>
@@ -237,7 +237,7 @@
     <string name="Strike">Durchstreichen</string>
     <string name="Underline">Unterstreichen</string>
     <string name="Regular">Normal</string>
-    <string name="ContactsPermissionAlert">**Telegram** benötigt Zugriff auf deine Kontakte, damit du dich mit Freunden auf all deinen Geräten verbinden kannst. Deine Kontakte werden durchgehend mit den stark verschlüsselten Cloud-Servern von Telegram synchronisiert.</string>
+    <string name="ContactsPermissionAlert">**Telegraher** benötigt Zugriff auf deine Kontakte, damit du dich mit Freunden auf all deinen Geräten verbinden kannst. Deine Kontakte werden durchgehend mit den stark verschlüsselten Cloud-Servern von Telegram synchronisiert.</string>
     <string name="ContactsPermissionAlertNotNow">JETZT NICHT</string>
     <string name="ContactsPermissionAlertContinue">WEITER</string>
     <string name="YourContacts">Deine Kontakte bei Telegram</string>
@@ -297,7 +297,7 @@
     <string name="ImportedInfo">Diese Nachricht wurde von einer anderen App importiert. Wir können nicht garantieren, dass sie echt ist.</string>
     <string name="ImportUploading">Importiere Nachrichten und Medien... **%d%%**</string>
     <string name="ImportImportingTitle">Importiere Chats</string>
-    <string name="ImportImportingInfo">Bitte lass Telegram offen, bis \ndie Importierung abgeschlossen ist.</string>
+    <string name="ImportImportingInfo">Bitte lass Telegraher offen, bis \ndie Importierung abgeschlossen ist.</string>
     <string name="ImportCount">%1$s von %2$s</string>
     <string name="ImportDone">Fertig</string>
     <string name="ImportDoneTitle">Importierung erfolgreich!</string>
@@ -1275,8 +1275,8 @@
     <string name="NotificationGroupFew">%1$s hat %3$s an die Gruppe %2$s gesendet</string>
     <string name="NotificationGroupAlbum">%1$s hat ein Album an die Gruppe %2$s gesendet</string>
     <string name="NotificationGroupForwardedFew">%1$s hat %3$s an die Gruppe %2$s weitergeleitet</string>
-    <string name="NotificationHiddenName">Telegram</string>
-    <string name="NotificationHiddenChatName">Telegram</string>
+    <string name="NotificationHiddenName">Telegraher</string>
+    <string name="NotificationHiddenChatName">Telegraher</string>
     <string name="NotificationHiddenChatUserName">Nutzer</string>
     <string name="NotificationHiddenMessage">Neue Nachricht</string>
     <string name="Reply">Antworten</string>
@@ -1341,7 +1341,7 @@
     <string name="NotificationActionPinnedGeoLiveUser">%1$s hat einen Live-Standort angeheftet</string>
     <string name="NotificationActionPinnedGifUser">%1$s hat ein GIF angeheftet</string>
     <string name="NotificationActionPinnedMusicUser">%1$s hat eine Audiodatei angeheftet</string>
-    <string name="SecretChatName">Telegram</string>
+    <string name="SecretChatName">Telegraher</string>
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="SelectContacts">Kontakte auswählen</string>
@@ -2027,7 +2027,7 @@
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Große Emoji</string>
     <string name="EmojiUseDefault">Benutze System-Emoji</string>
-    <string name="TelegramVersion">Telegram für Android %1$s</string>
+    <string name="TelegramVersion">Telegraher für Android %1$s</string>
     <string name="DebugMenu">Debug-Menü</string>
     <string name="DebugSendLogs">Protokolldateien senden</string>
     <string name="DebugSendLastLogs">Letzte Protokolldateien senden</string>
@@ -3372,12 +3372,12 @@
     <string name="Page4Title">Sicher</string>
     <string name="Page5Title">Leistungsstark</string>
     <string name="Page6Title">Cloud-basiert</string>
-    <string name="Page1Message">Die **schnellste** Messaging App der Welt.\n**Kostenlos** und **sicher**.</string>
-    <string name="Page2Message">**Telegram** übermittelt Nachrichten\nschneller als jede andere Anwendung.</string>
-    <string name="Page3Message">**Telegram** bleibt immer gratis.\nKeine Werbung. Keine Abo-Gebühren.</string>
-    <string name="Page4Message">**Telegram** schützt deine Nachrichten\nvor Hacker-Angriffen.</string>
-    <string name="Page5Message">**Telegram** begrenzt die Größe\ndeiner Medien und Chats nicht.</string>
-    <string name="Page6Message">**Telegram** kannst du vom Handy,\nTablet oder auch Computer\nsynchronisiert benutzen.</string>
+    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source.</string>
+    <string name="Page2Message">Remember, that Telegram have access to all your messages except the GREEN CHATS.</string>
+    <string name="Page3Message">Remember, that Telegram use GEO bans and CONTENT bans and coop with GOVs.</string>
+    <string name="Page4Message">Remember, that Telegram\'s database isn\'t encrypted on your device.</string>
+    <string name="Page5Message">Remember, that once you sent something it\'s not private anymore.</string>
+    <string name="Page6Message">Remember, that there are many open-source apps which are much more secure and safe than Telegram.</string>
     <string name="StartMessaging">JETZT BEGINNEN</string>
     <!-- VoIP -->
     <string name="AccountSettings">Kontoeinstellungen</string>

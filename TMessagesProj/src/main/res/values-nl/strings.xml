@@ -23,7 +23,7 @@
     <!--code enter view-->
     <string name="YourCode">Telefoonverificatie</string>
     <string name="SentSmsCode">Een SMS met activatiecode is verzonden naar **%1$s**.</string>
-    <string name="SentAppCode">We hebben de code naar je andere  **Telegram**-app gestuurd.</string>
+    <string name="SentAppCode">We hebben de code naar je andere  **Telegraher**-app gestuurd.</string>
     <string name="SentAppCodeTitle">Controleer je Telegramberichten</string>
     <string name="SentSmsCodeTitle">Code invoeren</string>
     <string name="SentCallCode">We bellen je op nummer **%1$s**.\n\nNeem niet op, Telegram verwerkt alles automatisch.</string>
@@ -199,7 +199,7 @@
     <string name="DisappearingPhoto">Geheime foto</string>
     <string name="DisappearingVideo">Tijdelijke video</string>
     <string name="DisappearingGif">Geheime GIF</string>
-    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafdruk maakt.</string>
+    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegraher, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafdruk maakt.</string>
     <string name="SearchMessages">Berichten</string>
     <string name="Search">Zoeken</string>
     <string name="MuteNotifications">Meldingen stil</string>
@@ -237,7 +237,7 @@
     <string name="Strike">Doorstrepen</string>
     <string name="Underline">Onderstrepen</string>
     <string name="Regular">Normaal</string>
-    <string name="ContactsPermissionAlert">**Telegram** heeft toegang tot je contacten nodig zodat je makkelijk contact kunt opnemen met je vrienden vanaf al je apparaten. Telegram synchroniseert je contacten continu naar onze zwaar versleutelde Cloud-servers.</string>
+    <string name="ContactsPermissionAlert">**Telegraher** heeft toegang tot je contacten nodig zodat je makkelijk contact kunt opnemen met je vrienden vanaf al je apparaten. Telegram synchroniseert je contacten continu naar onze zwaar versleutelde Cloud-servers.</string>
     <string name="ContactsPermissionAlertNotNow">NU NIET</string>
     <string name="ContactsPermissionAlertContinue">DOORGAAN</string>
     <string name="YourContacts">Je contacten op Telegram</string>
@@ -297,7 +297,7 @@
     <string name="ImportedInfo">Dit bericht is geïmporteerd uit een andere app en kan daarom nep zijn.</string>
     <string name="ImportUploading">Berichten en media importeren... **%d%%**</string>
     <string name="ImportImportingTitle">Chat importeren</string>
-    <string name="ImportImportingInfo">Hou Telegram open\ntotdat de import klaar is</string>
+    <string name="ImportImportingInfo">Hou Telegraher open\ntotdat de import klaar is</string>
     <string name="ImportCount">%1$s van %2$s</string>
     <string name="ImportDone">Klaar</string>
     <string name="ImportDoneTitle">Chat geïmporteerd</string>
@@ -1275,8 +1275,8 @@
     <string name="NotificationGroupFew">%1$s heeft %3$s naar de groep %2$s gestuurd</string>
     <string name="NotificationGroupAlbum">%1$s heeft een album naar de groep %2$s gestuurd</string>
     <string name="NotificationGroupForwardedFew">%1$s heeft %3$s naar de groep %2$s doorgestuurd</string>
-    <string name="NotificationHiddenName">Telegram</string>
-    <string name="NotificationHiddenChatName">Telegram</string>
+    <string name="NotificationHiddenName">Telegraher</string>
+    <string name="NotificationHiddenChatName">Telegraher</string>
     <string name="NotificationHiddenChatUserName">Gebruiker</string>
     <string name="NotificationHiddenMessage">Nieuw bericht</string>
     <string name="Reply">Antwoord</string>
@@ -1341,7 +1341,7 @@
     <string name="NotificationActionPinnedGeoLiveUser">\n%1$s zette een Live-locatie vast</string>
     <string name="NotificationActionPinnedGifUser">\n%1$s zette een GIF vast</string>
     <string name="NotificationActionPinnedMusicUser">\n%1$s zette een audiobestand vast</string>
-    <string name="SecretChatName">Telegram</string>
+    <string name="SecretChatName">Telegraher</string>
     <!--contacts view-->
     <string name="SelectContact">Contact kiezen</string>
     <string name="SelectContacts">Kies contacten</string>
@@ -2027,7 +2027,7 @@
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Grote emoji</string>
     <string name="EmojiUseDefault">Systeem-emoji gebruiken</string>
-    <string name="TelegramVersion">Telegram voor Android %1$s</string>
+    <string name="TelegramVersion">Telegraher voor Android %1$s</string>
     <string name="DebugMenu">Debug-menu</string>
     <string name="DebugSendLogs">Logbestanden versturen</string>
     <string name="DebugSendLastLogs">Send Last Logs</string>
@@ -3372,12 +3372,12 @@
     <string name="Page4Title">Veilig</string>
     <string name="Page5Title">Krachtig</string>
     <string name="Page6Title">In de cloud</string>
-    <string name="Page1Message">\'s Werelds **snelste** berichtendienst.\nHet is **gratis** en **veilig**.</string>
-    <string name="Page2Message">**Telegram** bezorgt berichten sneller dan\nelke andere applicatie.</string>
-    <string name="Page3Message">**Telegram** is altijd gratis. Geen advertenties.\nGeen abonnementskosten.</string>
-    <string name="Page4Message">**Telegram** beveiligt je berichten\ntegen aanvallen van hackers.</string>
-    <string name="Page5Message">**Telegram** beperkt je niet in de grootte van\nje media of chats.</string>
-    <string name="Page6Message">**Telegram** biedt toegang tot je berichten\nvanaf meerdere apparaten.</string>
+    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source.</string>
+    <string name="Page2Message">Remember, that Telegram have access to all your messages except the GREEN CHATS.</string>
+    <string name="Page3Message">Remember, that Telegram use GEO bans and CONTENT bans and coop with GOVs.</string>
+    <string name="Page4Message">Remember, that Telegram\'s database isn\'t encrypted on your device.</string>
+    <string name="Page5Message">Remember, that once you sent something it\'s not private anymore.</string>
+    <string name="Page6Message">Remember, that there are many open-source apps which are much more secure and safe than Telegram.</string>
     <string name="StartMessaging">Begin met chatten</string>
     <!-- VoIP -->
     <string name="AccountSettings">Accountinstellingen</string>

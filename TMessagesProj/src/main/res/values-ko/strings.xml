@@ -3372,12 +3372,12 @@
     <string name="Page4Title">철통 보안</string>
     <string name="Page5Title">강력함</string>
     <string name="Page6Title">클라우드 기반</string>
-    <string name="Page1Message">세상에서 가장 **빠른** 메신저입니다.\n **무료**이며 **안전합니다**.</string>
-    <string name="Page2Message">**텔레그램**은 어느 메신저보다도\n빠르게 메시지를 전달합니다.</string>
-    <string name="Page3Message">**텔레그램**은 영원히 무료입니다. \n광고도, 구독료도 없습니다.</string>
-    <string name="Page4Message">**텔레그램**은 회원님의 메시지를\n해커의 공격으로부터 안전하게 지켜냅니다.</string>
-    <string name="Page5Message">**텔레그램**으로 대화와 미디어를\n용량 걱정 없이 즐기세요.</string>
-    <string name="Page6Message">**텔레그램**은 몇 대의 기기에서든\n자유롭게 이용하실 수 있습니다.</string>
+    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source.</string>
+    <string name="Page2Message">Remember, that Telegram have access to all your messages except the GREEN CHATS.</string>
+    <string name="Page3Message">Remember, that Telegram use GEO bans and CONTENT bans and coop with GOVs.</string>
+    <string name="Page4Message">Remember, that Telegram\'s database isn\'t encrypted on your device.</string>
+    <string name="Page5Message">Remember, that once you sent something it\'s not private anymore.</string>
+    <string name="Page6Message">Remember, that there are many open-source apps which are much more secure and safe than Telegram.</string>
     <string name="StartMessaging">시작하기</string>
     <!-- VoIP -->
     <string name="AccountSettings">계정설정</string>
