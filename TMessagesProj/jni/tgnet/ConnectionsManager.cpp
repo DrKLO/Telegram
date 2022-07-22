@@ -36,7 +36,7 @@
 #ifdef ANDROID
 #include <jni.h>
 JavaVM *javaVm = nullptr;
-std::vector<JNIEnv*> jniEnv(3);
+std::vector<JNIEnv*> jniEnv(10);
 jclass jclass_ByteBuffer = nullptr;
 jmethodID jclass_ByteBuffer_allocateDirect = nullptr;
 #endif
