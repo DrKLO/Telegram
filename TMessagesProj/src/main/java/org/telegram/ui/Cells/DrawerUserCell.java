@@ -68,7 +68,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         phoneTextView.setTextSize(15);
         phoneTextView.setMaxLines(1);
         phoneTextView.setGravity(Gravity.LEFT);
-        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 60, 0));
+        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 72, 0, 60, 0));
 
         checkBox = new GroupCreateCheckBox(context);
         checkBox.setChecked(true, false);
