@@ -202,10 +202,12 @@ Probably it's a good thing 😃
 
 ### Changes
 
-* 8.85.2
+* 8.85.3
     * unlimited multiacc from nekox w/o chinese bloatware
     * software have package with `_beta` on it, for testing purposes only
     * porting features from Telegraher on 8.8.5 base
+    * SharedPrerefences use async `apply()` instead of sync `commit()`
+    * fixed glitch with name/number field at left menu
 * 8.74.6
     * fixed version and codeversion for smooth updates
     * probably fixed TG vibro
