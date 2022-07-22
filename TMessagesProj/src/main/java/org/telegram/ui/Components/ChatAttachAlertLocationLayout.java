@@ -1163,7 +1163,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 int lastTime = preferences.getInt("backgroundloc", 0);
                 if (Math.abs(System.currentTimeMillis() / 1000 - lastTime) > 24 * 60 * 60 && activity.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    preferences.edit().putInt("backgroundloc", (int) (System.currentTimeMillis() / 1000)).commit();
+                    preferences.edit().putInt("backgroundloc", (int) (System.currentTimeMillis() / 1000)).apply();
                     AlertsCreator.createBackgroundLocationPermissionDialog(activity, getMessagesController().getUser(getUserConfig().getClientUserId()), this::openShareLiveLocation, resourcesProvider).show();
                     return;
                 }

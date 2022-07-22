@@ -898,7 +898,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 hintView.hide();
             }
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-            preferences.edit().putInt("proximityhint", 3).commit();
+            preferences.edit().putInt("proximityhint", 3).apply();
             LocationController.SharingLocationInfo info = getLocationController().getSharingLocationInfo(dialogId);
             if (canUndo) {
                 undoView[0].hide(true, 1);
@@ -1533,7 +1533,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 int lastTime = preferences.getInt("backgroundloc", 0);
                 if (Math.abs(System.currentTimeMillis() / 1000 - lastTime) > 24 * 60 * 60 && activity.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    preferences.edit().putInt("backgroundloc", (int) (System.currentTimeMillis() / 1000)).commit();
+                    preferences.edit().putInt("backgroundloc", (int) (System.currentTimeMillis() / 1000)).apply();
                     AlertsCreator.createBackgroundLocationPermissionDialog(activity, getMessagesController().getUser(getUserConfig().getClientUserId()), () -> openShareLiveLocation(askWithRadius), null).show();
                     return;
                 }
@@ -2046,7 +2046,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         int val = preferences.getInt("proximityhint", 0);
         if (val < 3) {
-            preferences.edit().putInt("proximityhint", ++val).commit();
+            preferences.edit().putInt("proximityhint", ++val).apply();
             if (DialogObject.isUserDialog(dialogId)) {
                 TLRPC.User user = getMessagesController().getUser(dialogId);
                 hintView.setOverrideText(LocaleController.formatString("ProximityTooltioUser", R.string.ProximityTooltioUser, UserObject.getFirstName(user)));

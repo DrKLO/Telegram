@@ -60,7 +60,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("apply channel " + channelId + " state");
             }
-            preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_CHANNEL), state ? Integer.MAX_VALUE : 0).commit();
+            preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_CHANNEL), state ? Integer.MAX_VALUE : 0).apply();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_CHANNEL);
         } else if (args[1].startsWith("groups")) {
             String currentChannel = preferences.getString("groups", null);
@@ -70,7 +70,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("apply channel " + channelId + " state");
             }
-            preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_GROUP), state ? Integer.MAX_VALUE : 0).commit();
+            preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_GROUP), state ? Integer.MAX_VALUE : 0).apply();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_GROUP);
         } else if (args[1].startsWith("private")) {
             String currentChannel = preferences.getString("private", null);
@@ -80,7 +80,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("apply channel " + channelId + " state");
             }
-            preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_PRIVATE), state ? Integer.MAX_VALUE : 0).commit();
+            preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_PRIVATE), state ? Integer.MAX_VALUE : 0).apply();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_PRIVATE);
         } else {
             long dialogId = Utilities.parseLong(args[1]);
@@ -99,7 +99,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (!state) {
                 editor.remove("notifyuntil_" + dialogId);
             }
-            editor.commit();
+            editor.apply();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(dialogId, true);
         }
         AccountInstance.getInstance(account).getConnectionsManager().resumeNetworkMaybe();

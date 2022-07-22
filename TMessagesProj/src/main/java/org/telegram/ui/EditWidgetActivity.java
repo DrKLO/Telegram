@@ -806,7 +806,7 @@ public class EditWidgetActivity extends BaseFragment {
                     SharedPreferences.Editor editor = preferences.edit();
                     editor.putInt("account" + currentWidgetId, currentAccount);
                     editor.putInt("type" + currentWidgetId, widgetType);
-                    editor.commit();
+                    editor.apply();
 
                     AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(getParentActivity());
                     if (widgetType == TYPE_CHATS) {

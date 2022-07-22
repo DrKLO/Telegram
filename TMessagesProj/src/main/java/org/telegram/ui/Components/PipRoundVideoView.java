@@ -496,7 +496,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
                 editor.putFloat("py", (windowLayoutParams.y - startY) / (float) (endY - startY));
                 editor.putInt("sidey", 2);
             }
-            editor.commit();
+            editor.apply();
         }
         if (animators != null) {
             if (decelerateInterpolator == null) {

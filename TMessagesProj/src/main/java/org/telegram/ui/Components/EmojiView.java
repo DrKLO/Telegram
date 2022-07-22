@@ -3174,7 +3174,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
         if (currentPage != newPage) {
             currentPage = newPage;
-            MessagesController.getGlobalEmojiSettings().edit().putInt("selected_page", newPage).commit();
+            MessagesController.getGlobalEmojiSettings().edit().putInt("selected_page", newPage).apply();
         }
     }
 
@@ -4353,7 +4353,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
                         ArrayList<TLRPC.StickerSetCovered> featured = mediaDataController.getFeaturedStickerSets();
                         if (!featured.isEmpty()) {
-                            MessagesController.getEmojiSettings(currentAccount).edit().putLong("featured_hidden", featured.get(0).set.id).commit();
+                            MessagesController.getEmojiSettings(currentAccount).edit().putLong("featured_hidden", featured.get(0).set.id).apply();
                             if (stickersGridAdapter != null) {
                                 stickersGridAdapter.notifyItemRangeRemoved(1, 2);
                             }

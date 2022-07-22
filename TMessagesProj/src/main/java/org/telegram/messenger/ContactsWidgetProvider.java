@@ -48,7 +48,7 @@ public class ContactsWidgetProvider extends AppWidgetProvider {
             editor.remove("type" + appWidgetIds[a]);
             editor.remove("deleted" + appWidgetIds[a]);
         }
-        editor.commit();
+        editor.apply();
     }
 
     @Override
@@ -83,7 +83,7 @@ public class ContactsWidgetProvider extends AppWidgetProvider {
             if (accountId == -1) {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putInt("account" + appWidgetId, UserConfig.selectedAccount);
-                editor.putInt("type" + appWidgetId, EditWidgetActivity.TYPE_CHATS).commit();
+                editor.putInt("type" + appWidgetId, EditWidgetActivity.TYPE_CHATS).apply();
             }
             ArrayList<Long> selectedDialogs = new ArrayList<>();
             if (accountId >= 0) {

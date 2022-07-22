@@ -244,12 +244,12 @@ public class ApplicationLoader extends Application {
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean("pushService", enabled);
             editor.putBoolean("pushConnection", enabled);
-            editor.commit();
+            editor.apply();
             SharedPreferences preferencesCA = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
             SharedPreferences.Editor editorCA = preferencesCA.edit();
             editorCA.putBoolean("pushConnection", enabled);
             editorCA.putBoolean("pushService", enabled);
-            editorCA.commit();
+            editorCA.apply();
             ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(true);
         }
         if (enabled) {

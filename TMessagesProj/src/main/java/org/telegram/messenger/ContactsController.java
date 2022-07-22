@@ -298,7 +298,7 @@ public class ContactsController extends BaseController {
                             SharedPreferences.Editor editor = preferences1.edit();
                             editor.putString("invitelink", inviteLink = res.message);
                             editor.putInt("invitelinktime", (int) (System.currentTimeMillis() / 1000));
-                            editor.commit();
+                            editor.apply();
                         });
                     }
                 }
@@ -1624,7 +1624,7 @@ public class ContactsController extends BaseController {
     private void saveContactsLoadTime() {
         try {
             SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
-            preferences.edit().putLong("lastReloadStatusTime", System.currentTimeMillis()).commit();
+            preferences.edit().putLong("lastReloadStatusTime", System.currentTimeMillis()).apply();
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1845,7 +1845,7 @@ public class ContactsController extends BaseController {
             final SharedPreferences settings = MessagesController.getMainSettings(currentAccount);
             final boolean forceUpdate = !settings.getBoolean("contacts_updated_v7", false);
             if (forceUpdate) {
-                settings.edit().putBoolean("contacts_updated_v7", true).commit();
+                settings.edit().putBoolean("contacts_updated_v7", true).apply();
             }
             final ContentResolver contentResolver = ApplicationLoader.applicationContext.getContentResolver();
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, Long.valueOf(UserConfig.getInstance(currentAccount).getClientUserId()).toString()).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, "org.telegram.messenger").build();
@@ -2301,12 +2301,12 @@ public class ContactsController extends BaseController {
         getMessagesController().clearFullUsers();
         SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
         final SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean("needGetStatuses", true).commit();
+        editor.putBoolean("needGetStatuses", true).apply();
         TLRPC.TL_contacts_getStatuses req = new TLRPC.TL_contacts_getStatuses();
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 AndroidUtilities.runOnUIThread(() -> {
-                    editor.remove("needGetStatuses").commit();
+                    editor.remove("needGetStatuses").apply();
                     TLRPC.Vector vector = (TLRPC.Vector) response;
                     if (!vector.objects.isEmpty()) {
                         ArrayList<TLRPC.User> dbUsersStatus = new ArrayList<>();

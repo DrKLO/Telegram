@@ -6777,7 +6777,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (preferences.getBoolean("reminderhint", false)) {
             return;
         }
-        preferences.edit().putBoolean("reminderhint", true).commit();
+        preferences.edit().putBoolean("reminderhint", true).apply();
         if (reminderHintView == null) {
             reminderHintView = new HintView(getContext(), 8);
             reminderHintView.setAlpha(0.0f);

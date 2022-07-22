@@ -128,7 +128,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         user.last_name = lastNameField.getText().toString();
                         getContactsController().addContact(user, checkBoxCell != null && checkBoxCell.isChecked());
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        preferences.edit().putInt("dialog_bar_vis3" + user_id, 3).commit();
+                        preferences.edit().putInt("dialog_bar_vis3" + user_id, 3).apply();
                         getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
                         getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, user_id);
                         finishFragment();

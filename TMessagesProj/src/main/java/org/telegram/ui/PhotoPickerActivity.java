@@ -1313,7 +1313,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         for (int a = 0, N = recentSearches.size(); a < N; a++) {
             editor.putString("recent" + a, recentSearches.get(a));
         }
-        editor.commit();
+        editor.apply();
     }
 
     private void loadRecentSearch() {

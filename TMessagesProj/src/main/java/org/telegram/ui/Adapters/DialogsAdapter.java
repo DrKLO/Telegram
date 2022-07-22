@@ -123,7 +123,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (folderId == 1) {
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             showArchiveHint = preferences.getBoolean("archivehint", true);
-            preferences.edit().putBoolean("archivehint", false).commit();
+            preferences.edit().putBoolean("archivehint", false).apply();
         }
         if (folder == 0) {
             this.preloader = new DialogsPreloader();
@@ -444,7 +444,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 textView.setOnClickListener(view1 -> {
                     MessagesController.getInstance(currentAccount).hintDialogs.clear();
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                    preferences.edit().remove("installReferer").commit();
+                    preferences.edit().remove("installReferer").apply();
                     notifyDataSetChanged();
                 });
 

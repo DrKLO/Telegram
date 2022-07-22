@@ -2310,7 +2310,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					hashes.remove(oldest);
 				}
 			}
-			nprefs.edit().putStringSet("calls_access_hashes", hashes).commit();
+			nprefs.edit().putStringSet("calls_access_hashes", hashes).apply();
 
 			boolean sysAecAvailable = false, sysNsAvailable = false;
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -3332,7 +3332,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (error == null) {
 				String data = ((TLRPC.TL_dataJSON) response).data;
 				Instance.setGlobalServerConfig(data);
-				preferences.edit().putString("voip_server_config", data).commit();
+				preferences.edit().putString("voip_server_config", data).apply();
 			}
 		});
 	}
@@ -3929,7 +3929,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 					nm.deleteNotificationChannel("incoming_calls3" + chanIndex);
 					chanIndex++;
-					nprefs.edit().putInt("calls_notification_channel", chanIndex).commit();
+					nprefs.edit().putInt("calls_notification_channel", chanIndex).apply();
 				} else {
 					needCreate = false;
 				}

@@ -278,7 +278,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                             editor.putString("proxy_user", SharedConfig.currentProxy.username);
                             editor.putInt("proxy_port", SharedConfig.currentProxy.port);
                             editor.putString("proxy_secret", SharedConfig.currentProxy.secret);
-                            editor.commit();
+                            editor.apply();
                         }
                     } else {
                         presentFragment(new ProxySettingsActivity());
@@ -302,7 +302,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
                 editor.putBoolean("proxy_enabled", useProxySettings);
-                editor.commit();
+                editor.apply();
 
                 ConnectionsManager.setProxySettings(useProxySettings, SharedConfig.currentProxy.address, SharedConfig.currentProxy.port, SharedConfig.currentProxy.username, SharedConfig.currentProxy.password, SharedConfig.currentProxy.secret);
                 NotificationCenter.getGlobalInstance().removeObserver(ProxyListActivity.this, NotificationCenter.proxySettingsChanged);
@@ -323,7 +323,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 textCheckCell.setChecked(useProxyForCalls);
                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
                 editor.putBoolean("proxy_enabled_calls", useProxyForCalls);
-                editor.commit();
+                editor.apply();
             } else if (position >= proxyStartRow && position < proxyEndRow) {
                 SharedConfig.ProxyInfo info = SharedConfig.proxyList.get(position - proxyStartRow);
                 useProxySettings = true;
@@ -338,7 +338,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     useProxyForCalls = false;
                     editor.putBoolean("proxy_enabled_calls", false);
                 }
-                editor.commit();
+                editor.apply();
                 SharedConfig.currentProxy = info;
                 for (int a = proxyStartRow; a < proxyEndRow; a++) {
                     RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForAdapterPosition(a);

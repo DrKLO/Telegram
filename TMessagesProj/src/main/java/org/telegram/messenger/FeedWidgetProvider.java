@@ -33,7 +33,7 @@ public class FeedWidgetProvider extends AppWidgetProvider {
         super.onDeleted(context, appWidgetIds);
         for (int a = 0; a < appWidgetIds.length; a++) {
             SharedPreferences preferences = context.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
-            preferences.edit().remove("account" + appWidgetIds[a]).remove("dialogId" + appWidgetIds[a]).commit();
+            preferences.edit().remove("account" + appWidgetIds[a]).remove("dialogId" + appWidgetIds[a]).apply();
         }
     }
 

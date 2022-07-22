@@ -3493,7 +3493,7 @@ public class AndroidUtilities {
                 editor.putString("proxy_secret", secret);
                 info = new SharedConfig.ProxyInfo(address, p, "", "", secret);
             }
-            editor.commit();
+            editor.apply();
 
             SharedConfig.currentProxy = SharedConfig.addProxy(info);
 

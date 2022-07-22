@@ -38,7 +38,7 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putInt("account" + creatingAppWidgetId, fragment1.getCurrentAccount());
                 editor.putLong("dialogId" + creatingAppWidgetId, dids.get(0));
-                editor.commit();
+                editor.apply();
 
                 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(FeedWidgetConfigActivity.this);
                 FeedWidgetProvider.updateWidget(FeedWidgetConfigActivity.this, appWidgetManager, creatingAppWidgetId);

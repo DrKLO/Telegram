@@ -234,7 +234,7 @@ public class ColorPicker extends FrameLayout {
                 SharedPreferences.Editor editor = getContext().getSharedPreferences("paint", Activity.MODE_PRIVATE).edit();
                 editor.putFloat("last_color_location", location);
                 editor.putFloat("last_color_weight", weight);
-                editor.commit();
+                editor.apply();
             }
             interacting = false;
             wasChangingWeight = changingWeight;

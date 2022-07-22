@@ -241,7 +241,7 @@ public class DataSettingsActivity extends BaseFragment {
                     SharedPreferences.Editor editor = MessagesController.getMainSettings(currentAccount).edit();
                     editor.putString(key, preset.toString());
                     editor.putInt(key2, 3);
-                    editor.commit();
+                    editor.apply();
 
                     cell.setChecked(!checked);
                     RecyclerView.ViewHolder holder = listView.findContainingViewHolder(view);
@@ -298,7 +298,7 @@ public class DataSettingsActivity extends BaseFragment {
                         editor.putInt("currentRoamingPreset", DownloadController.getInstance(currentAccount).currentRoamingPreset = 3);
                         editor.putString(key, preset.toString());
                     }
-                    editor.commit();
+                    editor.apply();
                     DownloadController.getInstance(currentAccount).checkAutodownloadSettings();
                     for (int a = 0; a < 3; a++) {
                         DownloadController.getInstance(currentAccount).savePresetToServer(a);
@@ -353,7 +353,7 @@ public class DataSettingsActivity extends BaseFragment {
                                     break;
                             }
                             if (val != -1) {
-                                preferences.edit().putInt("VoipDataSaving", val).commit();
+                                preferences.edit().putInt("VoipDataSaving", val).apply();
                             }
                             if (listAdapter != null) {
                                 listAdapter.notifyItemChanged(position);

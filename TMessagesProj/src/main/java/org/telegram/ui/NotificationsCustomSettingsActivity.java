@@ -428,7 +428,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                         }
                     }
-                    editor.commit();
+                    editor.apply();
                     for (int a = 0, N = exceptions.size(); a < N; a++) {
                         NotificationsSettingsActivity.NotificationException exception = exceptions.get(a);
                         getNotificationsController().updateServerNotificationsSettings(exception.did, false);
@@ -501,7 +501,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     enabled = preferences.getBoolean("EnablePreviewChannel", true);
                     editor.putBoolean("EnablePreviewChannel", !enabled);
                 }
-                editor.commit();
+                editor.apply();
                 getNotificationsController().updateServerNotificationsSettings(currentType);
             } else if (position == messageSoundRow) {
                 if (!view.isEnabled()) {
@@ -924,7 +924,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 }
             }
             getNotificationsController().deleteNotificationChannelGlobal(currentType);
-            editor.commit();
+            editor.apply();
             getNotificationsController().updateServerNotificationsSettings(currentType);
             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(requestCode);
             if (holder != null) {

@@ -205,7 +205,7 @@ public class SecretChatHelper extends BaseController {
                 if (dialog.folder_id == 1) {
                     SharedPreferences.Editor editor = MessagesController.getNotificationsSettings(currentAccount).edit();
                     editor.putBoolean("dialog_bar_archived" + dialog_id, true);
-                    editor.commit();
+                    editor.apply();
                 }
                 getMessagesController().dialogs_dict.put(dialog.id, dialog);
                 getMessagesController().allDialogs.add(dialog);

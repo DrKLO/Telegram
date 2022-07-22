@@ -2287,7 +2287,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         String botKey = "payment_warning_" + botUser.id;
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                         if (!preferences.getBoolean(botKey, false)) {
-                            preferences.edit().putBoolean(botKey, true).commit();
+                            preferences.edit().putBoolean(botKey, true).apply();
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(LocaleController.getString("PaymentWarning", R.string.PaymentWarning));
                             builder.setMessage(LocaleController.formatString("PaymentWarningText", R.string.PaymentWarningText, currentBotName, providerName));

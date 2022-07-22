@@ -4244,7 +4244,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                         SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
                         editor.putBoolean("proxy_enabled", false);
                         editor.putBoolean("proxy_enabled_calls", false);
-                        editor.commit();
+                        editor.apply();
                         ConnectionsManager.setProxySettings(false, "", 1080, "", "", "");
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
                         proxyErrorDialog = null;
@@ -5442,7 +5442,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                         freeSpace = statFs.getAvailableBlocksLong() * statFs.getBlockSizeLong();
                     }
                     if (freeSpace < 1024 * 1024 * 100) {
-                        preferences.edit().putLong("last_space_check", System.currentTimeMillis()).commit();
+                        preferences.edit().putLong("last_space_check", System.currentTimeMillis()).apply();
                         AndroidUtilities.runOnUIThread(() -> {
                             try {
                                 AlertsCreator.createFreeSpaceDialog(LaunchActivity.this).show();

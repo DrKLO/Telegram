@@ -6298,9 +6298,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         if (req.settings.allow_app_hash) {
-            preferences.edit().putString("sms_hash", BuildVars.SMS_HASH).commit();
+            preferences.edit().putString("sms_hash", BuildVars.SMS_HASH).apply();
         } else {
-            preferences.edit().remove("sms_hash").commit();
+            preferences.edit().remove("sms_hash").apply();
         }
         req.settings.current_number = true;
         if (false) {

@@ -1116,7 +1116,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                         lastSaveTime = SystemClock.elapsedRealtime();
                                         Utilities.globalQueue.postRunnable(() -> {
                                             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("media_saved_pos", Activity.MODE_PRIVATE).edit();
-                                            editor.putFloat(saveFor, value).commit();
+                                            editor.putFloat(saveFor, value).apply();
                                         });
                                     }
                                     NotificationCenter.getInstance(currentPlayingMessageObject.currentAccount).postNotificationName(NotificationCenter.messagePlayingProgressDidChanged, currentPlayingMessageObject.getId(), value);
@@ -2557,7 +2557,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         MessagesController.getGlobalMainSettings().edit()
                 .putFloat(music ? "musicPlaybackSpeed" : "playbackSpeed", speed)
-                .putFloat(music ? "fastMusicPlaybackSpeed" : "fastPlaybackSpeed", music ? fastMusicPlaybackSpeed : fastPlaybackSpeed).commit();
+                .putFloat(music ? "fastMusicPlaybackSpeed" : "fastPlaybackSpeed", music ? fastMusicPlaybackSpeed : fastPlaybackSpeed).apply();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.messagePlayingSpeedChanged);
     }
 

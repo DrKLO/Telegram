@@ -127,7 +127,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             if (info != null) {
                 SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
                 editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || info.isDark() ? "lastDarkTheme" : "lastDayTheme", info.getKey());
-                editor.commit();
+                editor.apply();
             }
 
         });
@@ -420,7 +420,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         if (currentType != ThemeActivity.THEME_TYPE_OTHER) {
             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
             editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || themeInfo.isDark() ? "lastDarkTheme" : "lastDayTheme", themeInfo.getKey());
-            editor.commit();
+            editor.apply();
         }
         if (currentType == ThemeActivity.THEME_TYPE_NIGHT) {
             if (themeInfo == Theme.getCurrentNightTheme()) {

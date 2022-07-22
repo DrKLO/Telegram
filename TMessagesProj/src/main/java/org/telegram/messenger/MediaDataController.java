@@ -1431,18 +1431,18 @@ public class MediaDataController extends BaseController {
                 if (gif) {
                     loadingRecentGifs = false;
                     recentGifsLoaded = true;
-                    editor.putLong("lastGifLoadTime", System.currentTimeMillis()).commit();
+                    editor.putLong("lastGifLoadTime", System.currentTimeMillis()).apply();
                 } else {
                     loadingRecentStickers[type] = false;
                     recentStickersLoaded[type] = true;
                     if (type == TYPE_IMAGE) {
-                        editor.putLong("lastStickersLoadTime", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTime", System.currentTimeMillis()).apply();
                     } else if (type == TYPE_MASK) {
-                        editor.putLong("lastStickersLoadTimeMask", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeMask", System.currentTimeMillis()).apply();
                     } else if (type == TYPE_GREETINGS) {
-                        editor.putLong("lastStickersLoadTimeGreet", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeGreet", System.currentTimeMillis()).apply();
                     } else {
-                        editor.putLong("lastStickersLoadTimeFavs", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeFavs", System.currentTimeMillis()).apply();
                     }
                 }
                 if (documents != null) {
@@ -1846,7 +1846,7 @@ public class MediaDataController extends BaseController {
                     TLRPC.TL_messages_archivedStickers res = (TLRPC.TL_messages_archivedStickers) response;
                     archivedStickersCount[type] = res.count;
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                    preferences.edit().putInt("archivedStickersCount" + type, res.count).commit();
+                    preferences.edit().putInt("archivedStickersCount" + type, res.count).apply();
                     getNotificationCenter().postNotificationName(NotificationCenter.archivedStickersCountDidLoad, type);
                 }
             }));
@@ -3449,7 +3449,7 @@ public class MediaDataController extends BaseController {
             try {
                 if (SharedConfig.directShareHash == null) {
                     SharedConfig.directShareHash = UUID.randomUUID().toString();
-                    ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putString("directShareHash2", SharedConfig.directShareHash).commit();
+                    ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putString("directShareHash2", SharedConfig.directShareHash).apply();
                 }
 
                 List<ShortcutInfoCompat> currentShortcuts = ShortcutManagerCompat.getDynamicShortcuts(ApplicationLoader.applicationContext);
@@ -5448,7 +5448,7 @@ public class MediaDataController extends BaseController {
             if (threadId == 0) {
                 draftPreferences.edit().remove("" + dialogId).remove("r_" + dialogId).apply();
             } else {
-                draftPreferences.edit().remove("t_" + dialogId + "_" + threadId).remove("rt_" + dialogId + "_" + threadId).commit();
+                draftPreferences.edit().remove("t_" + dialogId + "_" + threadId).remove("rt_" + dialogId + "_" + threadId).apply();
             }
             messagesController.removeDraftDialogIfNeed(dialogId);
         } else {
@@ -5624,7 +5624,7 @@ public class MediaDataController extends BaseController {
                 getMessagesController().sortDialogs(null);
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
             } else {
-                draftPreferences.edit().remove("t_" + dialogId + "_" + threadId).remove("rt_" + dialogId + "_" + threadId).commit();
+                draftPreferences.edit().remove("t_" + dialogId + "_" + threadId).remove("rt_" + dialogId + "_" + threadId).apply();
             }
         } else if (draftMessage.reply_to_msg_id != 0) {
             draftMessage.reply_to_msg_id = 0;
