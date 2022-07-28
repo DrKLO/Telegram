@@ -924,7 +924,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
                 proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
                 PowerManager powerManager = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-                proximityWakeLock = powerManager.newWakeLock(0x00000020, "telegram:proximity_lock");
+                proximityWakeLock = (MessagesController.getGlobalTelegraherSettings().getInt("HardwareProximitySensorMode", 0) > 1) ? null : powerManager.newWakeLock(0x00000020, "telegram:proximity_lock");
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1441,6 +1441,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     private boolean isNearToSensor(float value) {
+        if (MessagesController.getGlobalTelegraherSettings().getInt("HardwareProximitySensorMode", 0) > 0) return false;
         return value < 5.0f && value != proximitySensor.getMaximumRange();
     }
 
@@ -4988,16 +4989,29 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         float compressFactor;
         float minCompressFactor;
         int maxBitrate;
-        if (Math.min(height, width) >= 1080) {
-            maxBitrate = 6800_000;
+        int videoMaxResolution = MessagesController.getGlobalTelegraherSettings().getInt("VideoMaxResolution", 0);
+        if (Math.min(height, width) >= 4320 && videoMaxResolution > 2) {
+            maxBitrate = 186_000_000;
+            compressFactor = 1f;
+            minCompressFactor = 1f;
+        } else if (Math.min(height, width) >= 2160 && videoMaxResolution > 1) {
+            maxBitrate = 62_000_000;
+            compressFactor = 1f;
+            minCompressFactor = 1f;
+        } else if (Math.min(height, width) >= 1440 && videoMaxResolution > 0) {
+            maxBitrate = 24_000_000;
+            compressFactor = 1f;
+            minCompressFactor = 1f;
+        } else if (Math.min(height, width) >= 1080) {
+            maxBitrate = 12_000_000;
             compressFactor = 1f;
             minCompressFactor = 1f;
         } else if (Math.min(height, width) >= 720) {
-            maxBitrate = 3200_000;
+            maxBitrate = 7_500_000;
             compressFactor = 1f;
             minCompressFactor = 1f;
         } else if (Math.min(height, width) >= 480) {
-            maxBitrate = 1000_000;
+            maxBitrate = 4_000_000;
             compressFactor = 0.8f;
             minCompressFactor = 0.9f;
         } else {
@@ -5006,6 +5020,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             minCompressFactor = 0.7f;
         }
         int remeasuredBitrate = (int) (originalBitrate / (Math.min(originalHeight / (float) (height), originalWidth / (float) (width))));
+        if (remeasuredBitrate == 0) remeasuredBitrate = maxBitrate;
         remeasuredBitrate *= compressFactor;
         int minBitrate = (int) (getVideoBitrateWithFactor(minCompressFactor) / (1280f * 720f / (width * height)));
         if (originalBitrate < minBitrate) {

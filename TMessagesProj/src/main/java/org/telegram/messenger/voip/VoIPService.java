@@ -2438,6 +2438,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (spPlayId != 0) {
 				soundPool.stop(spPlayId);
 			}
+			if (MessagesController.getGlobalTelegraherSettings().getBoolean("VoipDisableStartBeep", false)) return;
 			spPlayId = soundPool.play(spConnectingId, 1, 1, 0, -1, 1);
 			if (spPlayId == 0) {
 				AndroidUtilities.runOnUIThread(connectingSoundRunnable = new Runnable() {
@@ -3572,7 +3573,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			WebRtcAudioTrack.setAudioStreamType(hasRtmpStream() ? AudioManager.USE_DEFAULT_STREAM_TYPE : AudioManager.STREAM_VOICE_CALL);
 		}
 
-		needPlayEndSound = true;
+		needPlayEndSound = !MessagesController.getGlobalTelegraherSettings().getBoolean("VoipDisableEndBeep", false);
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		if (!USE_CONNECTION_SERVICE) {
 			Utilities.globalQueue.postRunnable(() -> {
