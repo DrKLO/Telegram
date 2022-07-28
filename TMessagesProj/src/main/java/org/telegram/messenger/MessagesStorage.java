@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Base64;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -22,6 +23,7 @@ import android.util.SparseIntArray;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 
+import com.google.android.exoplayer2.util.Log;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
@@ -37,14 +39,7 @@ import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.EditWidgetActivity;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -84,6 +79,7 @@ public class MessagesStorage extends BaseController {
     private static SparseArray<MessagesStorage> Instance = new SparseArray();
     private static final Object lockObject = new Object();
     private final static int LAST_DB_VERSION = 98;
+    private final static int DUROV_RELOGIN = 1;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
 
@@ -402,8 +398,19 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE premium_promo(data BLOB, date INTEGER);").stepThis().dispose();
                 //version
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
+                database.executeFast("CREATE TABLE telegraher_init(durov_relogin INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE telegraher_message_history(mid INTEGER, uid INTEGER, date INTEGER, message TEXT, PRIMARY KEY(mid, uid, date));").stepThis().dispose();
+                database.executeFast("CREATE INDEX mid_uid ON telegraher_message_history (mid, uid);").stepThis().dispose();
+                database.executeFast("CREATE TABLE telegraher_message_deletions(mid INTEGER, uid INTEGER, isdel INTEGER, PRIMARY KEY(mid, uid));").stepThis().dispose();
+                database.executeFast(String.format(Locale.US, "INSERT INTO telegraher_init VALUES(%d);", DUROV_RELOGIN)).stepThis().dispose();
             } else {
                 int version = database.executeInt("PRAGMA user_version");
+                int durovRelogin = 0;
+                try {
+                    durovRelogin = database.executeInt("select durov_relogin from telegraher_init");
+                } catch (SQLiteException wtfdurov) {
+                    //HelloWorld
+                }
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("current db version = " + version);
                 }
@@ -441,9 +448,9 @@ public class MessagesStorage extends BaseController {
                         FileLog.e(e2);
                     }
                 }
-                if (version < LAST_DB_VERSION) {
+                if ((version < LAST_DB_VERSION) || (durovRelogin < DUROV_RELOGIN)) {
                     try {
-                        updateDbToLastVersion(version);
+                        updateDbToLastVersion(version, durovRelogin);
                     } catch (Exception e) {
                         if (BuildVars.DEBUG_PRIVATE_VERSION) {
                             throw e;
@@ -499,7 +506,7 @@ public class MessagesStorage extends BaseController {
         return databaseMigrationInProgress;
     }
 
-    private void updateDbToLastVersion(int currentVersion) throws Exception {
+    private void updateDbToLastVersion(int currentVersion, int durovRelogin) throws Exception {
         AndroidUtilities.runOnUIThread(() -> {
             databaseMigrationInProgress = true;
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onDatabaseMigration, true);
@@ -1592,6 +1599,21 @@ public class MessagesStorage extends BaseController {
             database.executeFast("PRAGMA user_version = 98").stepThis().dispose();
             version = 98;
         }
+
+        if (durovRelogin < 1) {
+//            System.out.println("durov_relogin<1 " + durovRelogin);
+            database.executeFast("CREATE TABLE telegraher_init(durov_relogin INTEGER);").stepThis().dispose();
+            database.executeFast("INSERT INTO telegraher_init VALUES(1);").stepThis().dispose();
+            database.executeFast("CREATE TABLE telegraher_message_history(mid INTEGER, uid INTEGER, date INTEGER, message TEXT, PRIMARY KEY(mid, uid, date));").stepThis().dispose();
+            database.executeFast("CREATE INDEX mid_uid ON telegraher_message_history (mid, uid);").stepThis().dispose();
+            database.executeFast("CREATE TABLE telegraher_message_deletions(mid INTEGER, uid INTEGER, isdel INTEGER, PRIMARY KEY(mid, uid));").stepThis().dispose();
+        }
+
+//        if (durovRelogin < 2) {
+//            System.out.println("durov_relogin<2 " + durovRelogin);
+//            database.executeFast("UPDATE telegraher_init SET durov_relogin = 2;").stepThis().dispose();
+//            database.executeFast("ALTER TABLE unread_push_messages ADD COLUMN isdel INTEGER default 0;").stepThis().dispose();
+//        }
 
         FileLog.d("MessagesStorage db migration finished");
         AndroidUtilities.runOnUIThread(() -> {
@@ -10213,6 +10235,34 @@ public class MessagesStorage extends BaseController {
         }
     }
 
+    public void saveThHistory(long uid, long mid, long date, String message) {
+        try {
+            String query = String.format(Locale.US,
+                    "insert into telegraher_message_history values(%d,%d,%d,'%s');"
+                    , mid
+                    , uid
+                    , date
+                    , android.util.Base64.encodeToString(message.getBytes(), Base64.DEFAULT)
+            );
+            database.executeFast(query).stepThis().dispose();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public Map<Long, String> loadThHistory(long uid, long mid) {
+        Map<Long, String> map = new LinkedHashMap<>();
+        try {
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "select mid,uid,date,message from telegraher_message_history where uid=%d and mid=%d order by date desc;", uid, mid));
+            while (cursor.next()) {
+                map.put(cursor.longValue(2), cursor.stringValue(3));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return map;
+    }
+
     public void markMessagesContentAsRead(long dialogId, ArrayList<Integer> mids, int date) {
         if (isEmpty(mids)) {
             return;
@@ -11278,6 +11328,10 @@ public class MessagesStorage extends BaseController {
                                 if (data != null) {
                                     TLRPC.Message oldMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                     oldMessage.readAttachPath(data, getUserConfig().clientUserId);
+                                    if (!oldMessage.message.equals(message.message) && message.from_id != null) {
+                                        saveThHistory(message.dialog_id, message.id, getConnectionsManager().getCurrentTime(), oldMessage.message);
+//                                        message.message = String.format("%s\n\n`%s`\n%s", message.message, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME), oldMessage.message);
+                                    }
                                     data.reuse();
                                     int send_state = cursor.intValue(5);
                                     if (send_state != 3) {

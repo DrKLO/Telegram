@@ -29,7 +29,6 @@ dependencies {
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
     implementation 'com.google.android.gms:play-services-vision:20.1.3'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
-    implementation 'com.stripe:stripe-android:2.0.2'
 
     implementation 'org.osmdroid:osmdroid-android:6.1.10'
     implementation files('libs/libgsaverification-client.aar')

@@ -36,6 +36,7 @@ import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.TelegraherSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -81,6 +82,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
     private int databaseRow;
     private int kaboomButton;
+    private int telegraherRow = -1;
     private int databaseInfoRow;
     private int keepMediaHeaderRow;
     private int keepMediaInfoRow;
@@ -221,6 +223,12 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         databaseRow = rowCount++;
         kaboomButton = rowCount++;
         databaseInfoRow = rowCount++;
+        switch (MessagesController.getTelegraherSettings(currentAccount).getInt("ShowTelegraherMenu2", 0)) {
+            case 0:
+            case 2:
+                telegraherRow = rowCount++;
+                break;
+        }
     }
 
     private void updateStorageUsageRow() {
@@ -471,6 +479,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 clearDatabase();
             } else if (position == kaboomButton) {
                 kaboomDurov(context);
+            } else if (position == telegraherRow) {
+                presentFragment(new TelegraherSettingsActivity());
             } else if (position == storageUsageRow) {
                 if (totalSize <= 0 || getParentActivity() == null) {
                     return;
@@ -677,7 +687,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == migrateOldFolderRow || position == databaseRow || position == kaboomButton || (position == storageUsageRow && (totalSize > 0) && !calculating);
+            return position == migrateOldFolderRow || position == databaseRow || position == kaboomButton || position == telegraherRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
         }
 
         @Override
@@ -745,6 +755,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         textCell.setCanDisable(false);
                         textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textCell.setText("Kaboom", false);
+                    } else if (position == telegraherRow) {
+                        textCell.setTextAndIcon("\uD83C\uDCCF \uD83D\uDD1E \uD83D\uDC6F", R.drawable.msg_report_xxx, true);
                     } else if (position == migrateOldFolderRow) {
                         textCell.setTextAndValue(LocaleController.getString("MigrateOldFolder", R.string.MigrateOldFolder), null, false);
                     }

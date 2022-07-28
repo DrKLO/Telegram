@@ -2018,8 +2018,10 @@
     <string name="SmartNotificationsAlert">Anzahl Benachrichtigungen</string>
     <string name="SmartNotificationsDetail">%1$s innerhalb %2$s</string>
     <string name="SecretWebPage">Linkvorschau</string>
+    <string name="NonSecretWebPage">Linkvorschau</string>
     <string name="SecretWebPageInfo">Die Linkvorschau wird auf den Servern von Telegram generiert. Wir speichern keine Daten über die von dir gesendeten Links.</string>
     <string name="SecretChat">Geheime Chats</string>
+    <string name="NonSecretChat">Nicht Geheime Chats</string>
     <string name="ChromeCustomTabs">In-App Browser</string>
     <string name="ChromeCustomTabsInfo">Externe Links innerhalb der App öffnen</string>
     <string name="DirectShare">Direktes Teilen</string>
@@ -3243,6 +3245,7 @@
     <string name="NoUsernameFound">Kein Konto mit diesem Benutzernamen</string>
     <string name="BotCantJoinGroups">Keine Gruppen mit diesem Bot möglich</string>
     <string name="SecretLinkPreviewAlert">Möchtest du die erweiterte Linkvorschau in Geheimen Chats aktivieren? Die Vorschau wird auf den Telegram Servern generiert.</string>
+    <string name="NonSecretLinkPreviewAlert">Möchtest du die erweiterte Linkvorschau in nicht Geheimen Chats aktivieren? Die Vorschau wird auf den Telegram Servern generiert.</string>
     <string name="SecretChatContextBotAlert">Inline Bots werden von Drittentwicklern erstellt. Symbole, die du nach dem Botnamen eingibst, werden an den jeweiligen Entwickler geschickt, damit der Bot funktioniert.</string>
     <string name="EditMessageError">Du kannst diese Nachricht nicht bearbeiten.</string>
     <string name="AllowReadCall">Bitte erlaube Telegram den Zugriff auf Anrufe, so dass wir den Code automatisch in der App eingeben können.</string>

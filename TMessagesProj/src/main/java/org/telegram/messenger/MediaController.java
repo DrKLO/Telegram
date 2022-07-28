@@ -102,9 +102,9 @@ import java.util.concurrent.CountDownLatch;
 
 public class MediaController implements AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate, SensorEventListener {
 
-    private native int startRecord(String path, int sampleRate);
+    private native int startRecord(String path, int sampleRate, int opusBitrate);
 
-    private native int writeFrame(ByteBuffer frame, int len);
+    private native int writeFrame(ByteBuffer frame, int len, int frameSize);
 
     private native void stopRecord();
 
@@ -595,8 +595,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private ArrayList<ByteBuffer> recordBuffers = new ArrayList<>();
     private ByteBuffer fileBuffer;
-    public int recordBufferSize = 1280;
-    public int sampleRate = 48000;
+    public int recordBufferSize = 3840;
+//    public int sampleRate = 48000;
     private int sendAfterDone;
     private boolean sendAfterDoneNotify;
     private int sendAfterDoneScheduleDate;
@@ -661,6 +661,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     final ByteBuffer finalBuffer = buffer;
                     final boolean flush = len != buffer.capacity();
                     fileEncodingQueue.postRunnable(() -> {
+                        int sampleRate = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableVoiceHD", false) ? 48_000 : 16_000;
+                        int frameSize = 960;
                         while (finalBuffer.hasRemaining()) {
                             int oldLimit = -1;
                             if (finalBuffer.remaining() > fileBuffer.remaining()) {
@@ -669,7 +671,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             }
                             fileBuffer.put(finalBuffer);
                             if (fileBuffer.position() == fileBuffer.limit() || flush) {
-                                if (writeFrame(fileBuffer, !flush ? fileBuffer.limit() : finalBuffer.position()) != 0) {
+                                if (writeFrame(fileBuffer, !flush ? fileBuffer.limit() : finalBuffer.position(), frameSize) != 0) {
                                     fileBuffer.rewind();
                                     recordTimeCount += fileBuffer.limit() / 2 / (sampleRate / 1000);
                                 }
@@ -886,10 +888,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         recordQueue.postRunnable(() -> {
             try {
-                sampleRate = 48000;
-                int minBuferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                int sampleRate = 48_000;
+                int channelMode = AudioFormat.CHANNEL_IN_MONO;
+                int minBuferSize = AudioRecord.getMinBufferSize(sampleRate, channelMode, AudioFormat.ENCODING_PCM_16BIT);
                 if (minBuferSize <= 0) {
-                    minBuferSize = 1280;
+                    minBuferSize = 3840;
                 }
                 recordBufferSize = minBuferSize;
 
@@ -3510,7 +3513,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             recordingAudioFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), FileLoader.getAttachFileName(recordingAudio));
 
             try {
-                if (startRecord(recordingAudioFile.getAbsolutePath(), sampleRate) == 0) {
+                int sampleRate = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableVoiceHD", false) ? 48_000 : 16_000;
+                int channelMode = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableVoiceBadman", false) ? AudioFormat.CHANNEL_IN_STEREO : AudioFormat.CHANNEL_IN_MONO;
+                int opusBitrate = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableVoiceHD", false) ? (60 * 1024) : (30 * 1024);
+                if (startRecord(recordingAudioFile.getAbsolutePath(), sampleRate, opusBitrate) == 0) {
                     AndroidUtilities.runOnUIThread(() -> {
                         recordStartRunnable = null;
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStartError, guid);
@@ -3518,7 +3524,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     return;
                 }
 
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
+                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, channelMode, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
                 recordStartTime = System.currentTimeMillis();
                 recordTimeCount = 0;
                 samplesCount = 0;

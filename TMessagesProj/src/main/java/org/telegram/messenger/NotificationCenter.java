@@ -254,6 +254,8 @@ public class NotificationCenter {
 
     public static final int accountLogin = totalEvents++;
 
+    public static final int telegraherSettingsUpdated = totalEvents++;
+
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> addAfterBroadcast = new SparseArray<>();

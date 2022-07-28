@@ -2018,8 +2018,10 @@
     <string name="SmartNotificationsAlert">Aantal geluidsmeldingen</string>
     <string name="SmartNotificationsDetail">%1$s binnen %2$s</string>
     <string name="SecretWebPage">Link-voorbeelden</string>
+    <string name="NonSecretWebPage">Link-voorbeelden</string>
     <string name="SecretWebPageInfo">Link-voorvertoningen worden gegenereerd op de servers van Telegram. We slaan geen data op over de verstuurde links</string>
     <string name="SecretChat">Geheime chats</string>
+    <string name="NonSecretChat">Niet-Geheime chats</string>
     <string name="ChromeCustomTabs">In-app browser</string>
     <string name="ChromeCustomTabsInfo">Externe links in de app openen</string>
     <string name="DirectShare">Snel delen</string>
@@ -3243,6 +3245,7 @@
     <string name="NoUsernameFound">Er is geen Telegram-account met deze gebruikersnaam.</string>
     <string name="BotCantJoinGroups">Deze bot kan geen groepslid worden.</string>
     <string name="SecretLinkPreviewAlert">Wil je uitgebreide link-voorbeelden inschakelen voor geheime chats? Let op: deze worden gegenereerd op onze servers.</string>
+    <string name="NonSecretLinkPreviewAlert">Wil je uitgebreide link-voorbeelden inschakelen voor niet-geheime chats? Let op: deze worden gegenereerd op onze servers.</string>
     <string name="SecretChatContextBotAlert">Let op: inline-bots worden aangeboden door externe ontwikkelaars. Voor de werking van de bot worden de karakters die je na de botnaam typt naar deze ontwikkelaar verstuurd.</string>
     <string name="EditMessageError">Je mag dit bericht niet wijzigen.</string>
     <string name="AllowReadCall">Sta het ontvangen van oproepen toe zodat we automatisch je inlogcode kunnen invoeren.</string>

@@ -253,6 +253,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private int nextTosCheckTime;
 
     public int secretWebpagePreview;
+
+    public int nonsecretWebpagePreview;
     public boolean suggestContacts = true;
 
     private volatile static long lastThemeCheckTime;
@@ -342,6 +344,9 @@ public class MessagesController extends BaseController implements NotificationCe
     public int ringtoneDurationMax;
     public int ringtoneSizeMax;
 
+//    public int configThisDc;
+//    public int configWebfileDcId;
+//    public String configDcTxtDomainName;
     public int channelsLimitDefault;
     public int channelsLimitPremium;
     public int savedGifsLimitDefault;
@@ -370,6 +375,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
     private SharedPreferences emojiPreferences;
+
+    private SharedPreferences telegraherSettings;
 
     public volatile boolean ignoreSetOnline;
     public boolean premiumLocked;
@@ -890,6 +897,14 @@ public class MessagesController extends BaseController implements NotificationCe
         return localInstance;
     }
 
+    public static SharedPreferences getTelegraherSettings(int account) {
+        return getInstance(account).telegraherSettings;
+    }
+
+    public static SharedPreferences getGlobalTelegraherSettings() {
+        return getInstance(0).telegraherSettings;
+    }
+
     public static SharedPreferences getNotificationsSettings(int account) {
         return getInstance(account).notificationsPreferences;
     }
@@ -933,15 +948,18 @@ public class MessagesController extends BaseController implements NotificationCe
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+            telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings", Activity.MODE_PRIVATE);
         } else {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications" + currentAccount, Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji" + currentAccount, Activity.MODE_PRIVATE);
+            telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings" + currentAccount, Activity.MODE_PRIVATE);
         }
 
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
         remoteConfigLoaded = mainPreferences.getBoolean("remoteConfigLoaded", false);
         secretWebpagePreview = mainPreferences.getInt("secretWebpage2", 2);
+        nonsecretWebpagePreview = mainPreferences.getInt("nonsecretWebpage2", 2);
         maxGroupCount = mainPreferences.getInt("maxGroupCount", 200);
         maxMegagroupCount = mainPreferences.getInt("maxMegagroupCount", 10000);
         maxRecentGifsCount = mainPreferences.getInt("maxRecentGifsCount", 200);
@@ -1969,7 +1987,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             break;
                         }
-                        case "round_video_encoding": {
+                        case "round_video_encoding:P": {
                             if (value.value instanceof TLRPC.TL_jsonObject) {
                                 TLRPC.TL_jsonObject jsonObject = (TLRPC.TL_jsonObject) value.value;
                                 for (int b = 0, N2 = jsonObject.value.size(); b < N2; b++) {
@@ -2487,6 +2505,9 @@ public class MessagesController extends BaseController implements NotificationCe
             getDownloadController().loadAutoDownloadConfig(false);
             loadAppConfig();
             remoteConfigLoaded = true;
+//            configThisDc = config.this_dc;
+//            configWebfileDcId = config.webfile_dc_id;
+//            configDcTxtDomainName = config.dc_txt_domain_name;
             maxMegagroupCount = config.megagroup_size_max;
             maxGroupCount = config.chat_size_max;
             maxEditTime = config.edit_time_limit;
@@ -3133,6 +3154,8 @@ public class MessagesController extends BaseController implements NotificationCe
         editor.putLong("lastGifLoadTime", 0).putLong("lastStickersLoadTime", 0).putLong("lastStickersLoadTimeMask", 0).putLong("lastStickersLoadTimeFavs", 0).apply();
         editor = mainPreferences.edit();
         editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("gifhint").remove("reminderhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").remove("showFiltersTooltip").apply();
+        editor = telegraherSettings.edit();
+        editor.clear().apply();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         SharedPreferences.Editor widgetEditor = null;

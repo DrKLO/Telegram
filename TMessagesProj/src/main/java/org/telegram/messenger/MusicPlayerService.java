@@ -85,7 +85,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     @Override
     public void onCreate() {
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.accountLogin);
+//        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.accountLogin);
         for (int a : SharedConfig.activeAccounts) {
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
@@ -507,7 +507,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mediaSession.release();
         }
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.accountLogin);
+//        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.accountLogin);
         for (int a : SharedConfig.activeAccounts) {
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);

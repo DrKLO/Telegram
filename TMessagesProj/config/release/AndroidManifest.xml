@@ -24,36 +24,6 @@
         android:supportsRtl="false"
         android:requestLegacyExternalStorage="true"
         tools:replace="android:supportsRtl">
-
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
-
-        <service
-            android:name=".GcmPushListenerService">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
-        <uses-library android:name="com.google.android.maps" android:required="false"/>
-
-<!--        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />-->
-<!--        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />-->
-
-<!--        <receiver-->
-<!--            tools:replace="android:enabled"-->
-<!--            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"-->
-<!--            android:enabled="false">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="com.google.android.gms.measurement.UPLOAD" />-->
-<!--            </intent-filter>-->
-<!--        </receiver>-->
-
-<!--        <service-->
-<!--            tools:replace="android:enabled"-->
-<!--            android:name="com.google.android.gms.measurement.AppMeasurementService"-->
-<!--            android:enabled="false"-->
-<!--            android:exported="false" />-->
-
     </application>
 
 </manifest>
