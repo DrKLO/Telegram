@@ -68,7 +68,6 @@ public class ThShadowbanManager extends BaseFragment implements NotificationCent
 
     @Override
     public boolean onFragmentCreate() {
-        rowCount = rowCount;
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
         return super.onFragmentCreate();
     }
@@ -83,7 +82,7 @@ public class ThShadowbanManager extends BaseFragment implements NotificationCent
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle("Message history");
+        actionBar.setTitle(LocaleController.getString(R.string.THChatSBManager));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {

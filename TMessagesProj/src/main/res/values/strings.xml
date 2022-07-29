@@ -5520,4 +5520,6 @@
     <string name="ThIdCopied">ID copied to clipboard</string>
     <string name="ThDCCopied">DC copied to clipboard</string>
     <string name="THChatSBManager">Shadowban manager</string>
+    <string name="THAccountSessionManager">Session manager</string>
+    <string name="THMessageHistory">Message history</string>
 </resources>

@@ -4,7 +4,9 @@
     <string name="DeletedMessage">удалено</string>
     <string name="NonSecretWebPage">Предпросмотр ссылок</string>
     <string name="NonSecretChat">Незеленые чаты</string>
-    <string name="NonSecretLinkPreviewAlert">Хотите ли вы включить предпросмотр ссылок в незеленых чатах? Важно, превью будет сгенерировано на серверах Telegram.</string>
+    <string name="NonSecretLinkPreviewAlert">Хотите ли вы включить предпросмотр ссылок в незеленых чатах? Важно, превью
+        будет сгенерировано на серверах Telegram.
+    </string>
     <string name="THSettingsLabel">Telegraher настройки 💦</string>
     <string name="THEnableVoiceHD">* HD голосовые</string>
     <string name="THEnableVoiceBadman">* 🦇 голос бэтмена</string>
@@ -70,4 +72,6 @@
     <string name="ThIdCopied">ID скопирован в буфер</string>
     <string name="ThDCCopied">DC скопирован в буфер</string>
     <string name="THChatSBManager">Shadowban менеджер</string>
+    <string name="THAccountSessionManager">Менеджер сессий</string>
+    <string name="THMessageHistory">История сообщений</string>
 </resources>
