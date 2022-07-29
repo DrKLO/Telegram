@@ -689,15 +689,19 @@ public class ConnectionsManager extends BaseController {
             secret = "";
         }
 
+        int ac = 0;
         for (int a : SharedConfig.activeAccounts) {
             if (enabled && !TextUtils.isEmpty(address)) {
                 native_setProxySettings(a, address, port, username, password, secret);
             } else {
                 native_setProxySettings(a, "", 1080, "", "", "");
             }
-            AccountInstance accountInstance = AccountInstance.getInstance(a);
-            if (accountInstance.getUserConfig().isClientActivated()) {
-                accountInstance.getMessagesController().checkPromoInfo(true);
+            if (ac < Math.min(3, SharedConfig.activeAccounts.size())) {
+                ac++;
+                AccountInstance accountInstance = AccountInstance.getInstance(a);
+                if (accountInstance.getUserConfig().isClientActivated()) {
+                    accountInstance.getMessagesController().checkPromoInfo(true);
+                }
             }
         }
     }
