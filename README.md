@@ -202,6 +202,12 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.85.5
+    * new message history
+    * reworked DC information on profile page
+    * added copy-into-clipboard for ID, DC & messages from history
+    * tabs on forward now can be enabled or disabled via TH menu
+    * removed option "3+" for multiacc cause we have multiacc
 * 8.85.4
     * unlimited multiacc from nekox w/o chinese bloatware
     * software have package with `_beta` on it, for testing purposes only
