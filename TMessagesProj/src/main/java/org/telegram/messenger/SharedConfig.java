@@ -24,6 +24,8 @@ import android.webkit.WebView;
 import androidx.annotation.IntDef;
 import androidx.core.content.pm.ShortcutManagerCompat;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -35,6 +37,7 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
@@ -163,6 +166,8 @@ public class SharedConfig {
     public static CopyOnWriteArraySet<Integer> activeAccounts;
     public static int loginingAccount = -1;
 
+    public static HashMap<Long, String> shadowBannedHM;
+
     static {
         loadConfig();
     }
@@ -237,6 +242,13 @@ public class SharedConfig {
                 editor.putBoolean("forwardingOptionsHintShown", forwardingOptionsHintShown);
                 editor.putInt("lockRecordAudioVideoHint", lockRecordAudioVideoHint);
                 editor.putString("storageCacheDir", !TextUtils.isEmpty(storageCacheDir) ? storageCacheDir : "");
+
+                SharedPreferences preferencesTH = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editorTH = preferencesTH.edit();
+                editorTH.putString("shadowBannedHM", new Gson().toJson(shadowBannedHM));
+//                System.out.printf("SAVE `%s`%n", new Gson().toJson(shadowBannedHM));
+                editorTH.apply();
+//                System.out.println("preferencesTH saved!");
 
                 if (pendingAppUpdate != null) {
                     try {
@@ -431,6 +443,13 @@ public class SharedConfig {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
 
+            preferences = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Activity.MODE_PRIVATE);
+            Type lhm = new TypeToken<HashMap<Long, String>>() {
+            }.getType();
+            shadowBannedHM = new Gson().fromJson(preferences.getString("shadowBannedHM", "{}"), lhm);
+//            System.out.printf("LOAD `%s`%n", preferences.getString("shadowBannedHM", "[]"));
+//            System.out.println("preferencesTH loaded!");
+
             configLoaded = true;
 
             try {
@@ -481,6 +500,50 @@ public class SharedConfig {
         passportConfigHash = hash;
         saveConfig();
         getCountryLangs();
+    }
+
+    public static HashMap<Long, String> getShadowBannedHM() {
+        if (shadowBannedHM == null) shadowBannedHM = new HashMap<>();
+        return shadowBannedHM;
+    }
+
+    public static boolean isShadowBanned(TLRPC.Message m) {
+//        System.out.printf("isShadowBanned `%s`%n", "the message");
+        if (shadowBannedHM == null) {
+            shadowBannedHM = new HashMap<>();
+            return false;
+        }
+        return isShadowBanned(m.from_id.channel_id) || isShadowBanned(m.from_id.chat_id) || isShadowBanned(m.from_id.user_id);
+    }
+
+    public static boolean isShadowBanned(TLRPC.Updates m) {
+//        System.out.printf("isShadowBanned `%s`%n", "the Updates");
+        if (shadowBannedHM == null) {
+            shadowBannedHM = new HashMap<>();
+            return false;
+        }
+        return m instanceof TLRPC.TL_updateShortChatMessage ? isShadowBanned(m.from_id) : isShadowBanned(m.user_id);
+    }
+
+    public static boolean isShadowBanned(long id) {
+//        System.out.printf("isShadowBanned `%d`%n", id);
+        if (shadowBannedHM == null) {
+            shadowBannedHM = new HashMap<>();
+            return false;
+        }
+        return shadowBannedHM.containsKey(id < 0L ? -id : id);
+    }
+
+    public static void addShadowBanned(long id, String name) {
+//        System.out.printf("addShadowBanned `%d`%n", id);
+        if (shadowBannedHM == null) shadowBannedHM = new HashMap<>();
+        shadowBannedHM.put(id < 0L ? -id : id, name);
+    }
+
+    public static void delShadowBanned(long id) {
+//        System.out.printf("delShadowBanned `%d`%n", id);
+        if (shadowBannedHM == null) shadowBannedHM = new HashMap<>();
+        shadowBannedHM.remove(id < 0L ? -id : id);
     }
 
     public static HashMap<String, String> getCountryLangs() {

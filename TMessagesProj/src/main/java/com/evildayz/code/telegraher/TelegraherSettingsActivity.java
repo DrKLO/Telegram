@@ -35,6 +35,8 @@ import androidx.recyclerview.widget.RecyclerView;
 //import com.evildayz.code.telegraher.devicespoofing.DSMainActivity;
 //import com.evildayz.code.telegraher.ui.UIFontActivity;
 
+import com.evildayz.code.telegraher.ui.ThMessageHistory;
+import com.evildayz.code.telegraher.ui.ThShadowbanManager;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -103,6 +105,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatLabelRow;
     private int chatDeleteMarkRow;
     private int chatSBFullRow;
+    private int chatSBManagerRow;
     private int chatSwapToNextChannelRow;
     private int chatTabsOnForwardRow;
 
@@ -167,6 +170,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatLabelRow = rowCount++;
         chatDeleteMarkRow = rowCount++;
         chatSBFullRow = rowCount++;
+        chatSBManagerRow = rowCount++;
         chatSwapToNextChannelRow = rowCount++;
         chatTabsOnForwardRow = rowCount++;
 
@@ -340,6 +344,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 editor.apply();
             } else if (position == killMeLabelRow) {
                 killThatApp();
+            } else if (position == chatSBManagerRow) {
+                presentFragment(new ThShadowbanManager());
 //            } else if (position == uiSystemFontRegularRow) {
 //                presentFragment(new UIFontActivity("fonts/rmedium.ttf", "regular"));
 //            } else if (position == uiSystemFontBoldRow) {
@@ -538,6 +544,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textSettingsCell.setText(LocaleController.getString(R.string.THKillTheAPP), false);
+                    } else if (position == chatSBManagerRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THChatSBManager), false);
                     } else if (position == uiSystemFontRegularRow) {
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontRegular), false);
@@ -711,7 +720,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;
-            } else if (position == killMeLabelRow
+            } else if (position == killMeLabelRow || position == chatSBManagerRow
                     || position == uiSystemFontRegularRow || position == uiSystemFontBoldRow || position == uiSystemFontItalicRow || position == uiSystemFontBoldItalicRow || position == uiSystemFontMonoRow
             ) {
                 return 5;

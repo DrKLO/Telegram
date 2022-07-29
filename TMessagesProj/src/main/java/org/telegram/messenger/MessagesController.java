@@ -12861,6 +12861,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (message instanceof TLRPC.TL_messageEmpty) {
                     continue;
                 }
+
+                if (SharedConfig.isShadowBanned(message)) continue;
+
                 TLRPC.Chat chat = null;
                 long chatId = 0;
                 long userId = 0;

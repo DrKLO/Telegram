@@ -5519,4 +5519,5 @@
     <string name="THEnableTabsOnForward">Tabs on forward</string>
     <string name="ThIdCopied">ID copied to clipboard</string>
     <string name="ThDCCopied">DC copied to clipboard</string>
+    <string name="THChatSBManager">Shadowban manager</string>
 </resources>
