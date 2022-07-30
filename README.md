@@ -202,6 +202,11 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.85.6
+    * session manager
+        * simple ON/OFF session manager in TH menu. So apply the settings you need to kill the app (via the button in
+          the menu or manually).
+        * if you disable actual account, then you will get on start empty chatlist until you swap the account.
 * 8.85.5
     * new message history
     * reworked DC information on profile page
