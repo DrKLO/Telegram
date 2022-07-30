@@ -73,5 +73,5 @@
     <string name="ThDCCopied">DC скопирован в буфер</string>
     <string name="THChatSBManager">Shadowban менеджер</string>
     <string name="THAccountSessionManager">Менеджер сессий</string>
-    <string name="THMessageHistory">История сообщений</string>
+    <string name="THHistory">История</string>
 </resources>

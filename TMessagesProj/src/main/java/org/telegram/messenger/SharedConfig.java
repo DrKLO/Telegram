@@ -24,10 +24,12 @@ import android.webkit.WebView;
 import androidx.annotation.IntDef;
 import androidx.core.content.pm.ShortcutManagerCompat;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
@@ -41,6 +43,8 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
+
+import static java.util.Optional.ofNullable;
 
 public class SharedConfig {
     public final static int PASSCODE_TYPE_PIN = 0,
@@ -164,6 +168,7 @@ public class SharedConfig {
     public static boolean dontAskManageStorage;
 
     public static CopyOnWriteArraySet<Integer> activeAccounts;
+    public static Map<Integer, Map<String, Object>> thAccounts;
     public static int loginingAccount = -1;
 
     public static HashMap<Long, String> shadowBannedHM;
@@ -245,8 +250,8 @@ public class SharedConfig {
 
                 SharedPreferences preferencesTH = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editorTH = preferencesTH.edit();
-                editorTH.putString("shadowBannedHM", new Gson().toJson(shadowBannedHM));
-//                System.out.printf("SAVE `%s`%n", new Gson().toJson(shadowBannedHM));
+                editorTH.putString("shadowBannedHM", ThePenisMightierThanTheSword.toJson(shadowBannedHM));
+//                editorTH.putString("thAccounts", ThePenisMightierThanTheSword.toJsonThAccounts(thAccounts));
                 editorTH.apply();
 //                System.out.println("preferencesTH saved!");
 
@@ -285,6 +290,31 @@ public class SharedConfig {
         FileLog.e("Save accounts: " + activeAccounts, new Exception());
         ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit()
                 .putString("active_accounts", StringUtils.join(activeAccounts, ","))
+                .apply();
+        saveTHAccounts();
+    }
+
+    public static void saveTHAccounts() {
+        if (thAccounts == null || thAccounts.isEmpty()) {
+            Type thmhm = new TypeToken<Map<Integer, Map<String, Object>>>() {
+            }.getType();
+            thAccounts = new Gson().fromJson(ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Activity.MODE_PRIVATE).getString("thAccounts", "{}"), thmhm);
+        }
+
+        for (int a : activeAccounts) {
+            if(!thAccounts.containsKey(a)){
+                thAccounts.put(a, new HashMap<String, Object>() {{
+                    put("userId", UserConfig.getInstance(a).clientUserId);
+                    put("userPhone", PhoneFormat.getInstance().format("+" + UserConfig.getInstance(a).getUserConfig().getCurrentUser().phone));
+                    put("userFName", ofNullable(UserConfig.getInstance(a).getUserConfig().getCurrentUser().first_name).orElse(""));
+                    put("userLName", ofNullable(UserConfig.getInstance(a).getUserConfig().getCurrentUser().last_name).orElse(""));
+                    put("userName", ofNullable(UserConfig.getInstance(a).getUserConfig().getCurrentUser().username).orElse("--idk"));
+                }});
+            }
+        }
+
+        ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE).edit()
+                .putString("thAccounts", ThePenisMightierThanTheSword.toJsonThAccounts(thAccounts))
                 .apply();
     }
 
@@ -443,12 +473,11 @@ public class SharedConfig {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
 
-            preferences = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Activity.MODE_PRIVATE);
-            Type lhm = new TypeToken<HashMap<Long, String>>() {
-            }.getType();
+            preferences = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE);
+            Type lhm = new TypeToken<HashMap<Long, String>>() {}.getType();
             shadowBannedHM = new Gson().fromJson(preferences.getString("shadowBannedHM", "{}"), lhm);
-//            System.out.printf("LOAD `%s`%n", preferences.getString("shadowBannedHM", "[]"));
-//            System.out.println("preferencesTH loaded!");
+            Type thmhm = new TypeToken<Map<Integer, Map<String, Object>>>() {}.getType();
+            thAccounts=new Gson().fromJson(preferences.getString("thAccounts","{}"),thmhm);
 
             configLoaded = true;
 

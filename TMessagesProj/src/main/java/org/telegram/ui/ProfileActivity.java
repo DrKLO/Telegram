@@ -2808,10 +2808,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 String shadowName = null;
                 if (userId != 0) {
                     TLRPC.User user = getMessagesController().getUser(userId);
-                    shadowName = String.format("%s %s(@%s)", ofNullable(user.last_name).orElse(""), ofNullable(user.first_name).orElse(""), ofNullable(user.username).orElse("--unknown"));
+                    shadowName = String.format("%s %s(@%s)", ofNullable(user.last_name).orElse(""), ofNullable(user.first_name).orElse(""), ofNullable(user.username).orElse("--idk"));
                 } else if (chatId != 0) {
                     TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                    shadowName = String.format("[c]:%s(@%s)", ofNullable(chat.title).orElse("--unknown"), ofNullable(chat.username).orElse("--unknown"));
+                    shadowName = String.format("[c]:%s(@%s)", ofNullable(chat.title).orElse("--idk"), ofNullable(chat.username).orElse("--idk"));
                 }
                 if (shadowName != null) {
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) view;

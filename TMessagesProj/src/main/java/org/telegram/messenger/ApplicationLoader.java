@@ -124,6 +124,8 @@ public class ApplicationLoader extends Application {
                         FileLoader.getInstance(a).onNetworkChanged(isSlow);
                     }
 
+                    SharedConfig.saveTHAccounts();
+
                     if (SharedConfig.loginingAccount != -1) {
                         ConnectionsManager.getInstance(SharedConfig.loginingAccount).checkConnection();
                         FileLoader.getInstance(SharedConfig.loginingAccount).onNetworkChanged(isSlow);

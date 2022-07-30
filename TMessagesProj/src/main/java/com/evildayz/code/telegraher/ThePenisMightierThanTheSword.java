@@ -20,15 +20,16 @@ package com.evildayz.code.telegraher;
 
 import android.graphics.Typeface;
 
-import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import org.telegram.messenger.*;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
 
 public class ThePenisMightierThanTheSword {
 
@@ -104,5 +105,29 @@ public class ThePenisMightierThanTheSword {
             default:
                 return R.drawable.telegraher_notification;
         }
+    }
+
+    public static String toJson(Object o) {
+        return new GsonBuilder().disableHtmlEscaping().create().toJson(o);
+    }
+
+    public static String toJsonThAccounts(Map<Integer, Map<String, Object>> map) {
+        final Gson gson = new Gson();
+        final JsonObject jsonObject = new JsonObject();
+        for (Integer i : map.keySet()) {
+            jsonObject.add(i.toString(), gson.toJsonTree(map.get(i), Map.class));
+        }
+        return jsonObject.toString();
+    }
+
+    public static int getMaxInternalAccountId(Map<Integer, Map<String, Object>> map) {//SharedConfig.thAccounts
+        Integer[] ids;
+        if (map == null || map.isEmpty()) {
+            if (SharedConfig.activeAccounts != null && !SharedConfig.activeAccounts.isEmpty())
+                ids = SharedConfig.activeAccounts.stream().toArray(Integer[]::new);
+            else return 0;
+        } else ids = map.keySet().stream().toArray(Integer[]::new);
+        Arrays.sort(ids);
+        return ids[ids.length - 1];
     }
 }
