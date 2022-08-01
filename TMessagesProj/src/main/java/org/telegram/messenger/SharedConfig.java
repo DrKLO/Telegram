@@ -361,42 +361,6 @@ public class SharedConfig {
                 passcodeSalt = new byte[0];
             }
             lastUpdateCheckTime = preferences.getLong("appUpdateCheckTime", System.currentTimeMillis());
-            try {
-                String update = preferences.getString("appUpdate", null);
-                if (update != null) {
-                    pendingAppUpdateBuildVersion = preferences.getInt("appUpdateBuild", BuildVars.BUILD_VERSION);
-                    byte[] arr = Base64.decode(update, Base64.DEFAULT);
-                    if (arr != null) {
-                        SerializedData data = new SerializedData(arr);
-                        pendingAppUpdate = (TLRPC.TL_help_appUpdate) TLRPC.help_AppUpdate.TLdeserialize(data, data.readInt32(false), false);
-                        data.cleanup();
-                    }
-                }
-                if (pendingAppUpdate != null) {
-                    long updateTime = 0;
-                    int updateVersion = 0;
-                    String updateVersionString = null;
-                    try {
-                        PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                        updateVersion = packageInfo.versionCode / 100;
-                        updateVersionString = BuildVars.BUILD_VERSION_STRING;
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    if (updateVersion == 0) {
-                        updateVersion = BuildVars.BUILD_VERSION;
-                    }
-                    if (updateVersionString == null) {
-                        updateVersionString = BuildVars.BUILD_VERSION_STRING;
-                    }
-                    if (pendingAppUpdateBuildVersion != updateVersion || pendingAppUpdate.version == null || updateVersionString.compareTo(pendingAppUpdate.version) >= 0) {
-                        pendingAppUpdate = null;
-                        AndroidUtilities.runOnUIThread(SharedConfig::saveConfig);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             boolean saveToGalleryLegacy = preferences.getBoolean("save_gallery", false);
@@ -593,6 +557,7 @@ public class SharedConfig {
     }
 
     public static boolean isAppUpdateAvailable() {
+        if (true) return false;
         if (pendingAppUpdate == null || pendingAppUpdate.document == null || !BuildVars.isStandaloneApp()) {
             return false;
         }
@@ -608,6 +573,7 @@ public class SharedConfig {
     }
 
     public static boolean setNewAppVersionAvailable(TLRPC.TL_help_appUpdate update) {
+        if (true) return false;
         String updateVersionString = null;
         int versionCode = 0;
         try {
