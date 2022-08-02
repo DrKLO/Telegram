@@ -21,6 +21,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.LocaleController;
@@ -114,13 +115,13 @@ public class LogoutActivity extends BaseFragment {
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (position == addAccountRow) {
-                int freeAccount;
-                for (int account = 0;; account++) {
-                    if (!SharedConfig.activeAccounts.contains(account)) {
-                        freeAccount = account;
-                        break;
-                    }
-                }
+                int freeAccount = ThePenisMightierThanTheSword.getMaxInternalAccountId(SharedConfig.thAccounts) + 1;
+//                for (int account = 0;; account++) {
+//                    if (!SharedConfig.activeAccounts.contains(account)) {
+//                        freeAccount = account;
+//                        break;
+//                    }
+//                }
                 if (freeAccount >= 0) {
                     presentFragment(new LoginActivity(freeAccount));
                 }

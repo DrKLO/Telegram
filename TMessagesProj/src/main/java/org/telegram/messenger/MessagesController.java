@@ -10609,6 +10609,7 @@ public class MessagesController extends BaseController implements NotificationCe
         cleanup();
         getContactsController().deleteUnknownAppAccounts();
         SharedConfig.activeAccounts.remove(currentAccount);
+        if (SharedConfig.thAccounts != null) SharedConfig.thAccounts.remove(currentAccount);
         SharedConfig.saveAccounts();
     }
 
