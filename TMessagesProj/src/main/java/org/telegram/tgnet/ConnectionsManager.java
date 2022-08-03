@@ -185,7 +185,7 @@ public class ConnectionsManager extends BaseController {
         try {
             systemLangCode = LocaleController.getSystemLocaleStringIso639().toLowerCase();
             langCode = LocaleController.getLocaleStringIso639().toLowerCase();
-            deviceModel = Build.MANUFACTURER + Build.MODEL;
+            deviceModel = SharedConfig.thDeviceSpoofing.get(instance).get("deviceBrand").toString() + SharedConfig.thDeviceSpoofing.get(instance).get("deviceModel").toString();
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             appVersion = BuildVars.BUILD_VERSION_STRING + " (" + (pInfo.versionCode / 100) + ")";
             if (BuildVars.DEBUG_PRIVATE_VERSION) {
@@ -193,7 +193,7 @@ public class ConnectionsManager extends BaseController {
             } else if (BuildVars.DEBUG_VERSION) {
                 appVersion += " beta";
             }
-            systemVersion = "SDK " + Build.VERSION.SDK_INT;
+            systemVersion = "SDK " + SharedConfig.thDeviceSpoofing.get(instance).get("deviceSDK");
         } catch (Exception e) {
             systemLangCode = "en";
             langCode = "";

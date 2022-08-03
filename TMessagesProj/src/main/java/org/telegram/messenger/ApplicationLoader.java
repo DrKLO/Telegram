@@ -102,6 +102,7 @@ public class ApplicationLoader extends Application {
         applicationInited = true;
 
         SharedConfig.loadConfig();
+        SharedConfig.saveTHDeviceSpoofing();
         SharedPrefsHelper.init(applicationContext);
         UserConfig.getInstance(0).loadConfig();
 

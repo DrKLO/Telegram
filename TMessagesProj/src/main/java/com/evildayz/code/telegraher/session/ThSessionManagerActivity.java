@@ -17,58 +17,53 @@
  * along with Telegraher.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.evildayz.code.telegraher.ui;
+package com.evildayz.code.telegraher.session;
+
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.evildayz.code.telegraher.ui.ThTextCheckShadowbanCell;
+import com.evildayz.code.telegraher.ui.ThTextDetailCell;
 import org.telegram.messenger.*;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.ActionBar.*;
 import org.telegram.ui.Cells.*;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.QrActivity;
 
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
-public class ThMessageHistory extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class ThSessionManagerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private RecyclerListView listView;
-    private final Map<Integer, ThHistoryMessage> messageMap;
-    private final MessageObject messageObject;
 
-    private com.evildayz.code.telegraher.ui.ThMessageHistory.ListAdapter adapter;
+    private ThSessionManagerActivity.ListAdapter adapter;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
+    private Map<Integer, Long> map;
+    private Map<Integer, Integer> accs;
+    private final static String[] EMOJIS = {"\uD83C\uDF1A", "\uD83C\uDF1E"};
 
-    public ThMessageHistory(MessageObject messageObject) {
-        Map<Long, String> map = getAccountInstance().getMessagesStorage().loadThHistory(messageObject.messageOwner.dialog_id, messageObject.messageOwner.id);
-        this.messageObject = messageObject;
-        messageMap = new LinkedHashMap<>();
-        int counter = 0;
-        for (Map.Entry<Long, String> e : map.entrySet()) {
-            messageMap.put(counter++, new ThHistoryMessage(e.getKey(), e.getValue()));
+    public ThSessionManagerActivity() {
+        rowCount = 0;
+        accs = new HashMap<>();
+        for (int a : SharedConfig.thAccounts.keySet()) {
+            accs.put(rowCount++, a);
         }
     }
 
-    private int rowCount = 0;
+    private int rowCount;
 
     @Override
     public boolean onFragmentCreate() {
-        rowCount = messageMap.size();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
         return super.onFragmentCreate();
     }
@@ -83,7 +78,7 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle("Message history");
+        actionBar.setTitle(LocaleController.getString(R.string.THAccountSessionManager));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -108,7 +103,7 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
         });
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        listView.setAdapter(adapter = new com.evildayz.code.telegraher.ui.ThMessageHistory.ListAdapter(context));
+        listView.setAdapter(adapter = new ThSessionManagerActivity.ListAdapter(context));
         listView.setOnItemClickListener((view, position, x, y) -> {
             boolean enabled = false;
             if (getParentActivity() == null) {
@@ -116,12 +111,31 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
             }
             if (false) {
                 //durov relogin!
-            } else if (position >= 0 && position < messageMap.size()) {
-                BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("MessageCopied", R.string.MessageCopied), parentLayout.getLastFragment().getResourceProvider()).show();
-                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                android.content.ClipData clip = android.content.ClipData.newPlainText("thMessageHistory", ((ThTextDetailCell) view).getValue());
-                clipboard.setPrimaryClip(clip);
+            } else if (position >= 0 && position < rowCount) {
+                if (((ThTextDetailCell) view).isChecked()) {
+                    SharedConfig.activeAccounts.remove(accs.get(position));
+                } else {
+                    SharedConfig.activeAccounts.add(accs.get(position));
+                }
+                SharedConfig.saveAccounts();
+                ((ThTextDetailCell) view).setChecked(!((ThTextDetailCell) view).isChecked());
+                ((ThTextDetailCell) view).setText(String.format("%s %s ",
+                        ((ThTextDetailCell) view).isChecked() ? EMOJIS[1] : EMOJIS[0],
+                        SharedConfig.thAccounts.get(accs.get(position)).get("userPhone").toString()));
             }
+        });
+
+        listView.setOnItemLongClickListener((view, position, x, y) -> {
+            boolean enabled = false;
+            if (getParentActivity() == null) {
+                return enabled;
+            }
+            if (false) {
+                //durov relogin!
+            } else if (position >= 0 && position < rowCount) {
+                presentFragment(new THSessionInfoActivity(accs.get(position)));
+            }
+            return enabled;
         });
 
         return fragmentView;
@@ -130,9 +144,9 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
-//        if (adapter != null) {
-//            adapter.notifyDataSetChanged();
-//        }
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -172,7 +186,7 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 1:
-                    view = new TextCheckCell(mContext);
+                    view = new ThTextCheckShadowbanCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 2:
@@ -221,15 +235,10 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
                     break;
                 }
                 case 1: {
-                    TextCheckCell checkCell = (TextCheckCell) holder.itemView;
-//                    SharedPreferences localPreps = MessagesController.getTelegraherSettings(currentAccount);
-//                    SharedPreferences globalPreps = MessagesController.getGlobalTelegraherSettings();
-//                    if (false) {
-//                        //durov relogin!
-//                    } else if (position >= 0 && position < messageMap.size()) {
-//                        checkCell.setTextAndCheck(new String(android.util.Base64.decode(messageMap.get(position).message, Base64.DEFAULT)), false, false);
-//                        checkCell.setId(position);
-//                    }
+                    ThTextCheckShadowbanCell checkCell = (ThTextCheckShadowbanCell) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    }
                     break;
                 }
                 case 5: {
@@ -244,11 +253,23 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
                     ThTextDetailCell thTextDetailCell = (ThTextDetailCell) holder.itemView;
                     if (false) {
                         //durov relogin!
-                    } else if (position >= 0 && position < messageMap.size()) {
+                    } else if (position >= 0 && position < rowCount) {
+                        thTextDetailCell.setChecked(SharedConfig.activeAccounts.contains(accs.get(position)));
                         thTextDetailCell.setTextAndValue(
-                                LocaleController.formatDateAudio(messageMap.get(position).date, false)
-                                , new String(android.util.Base64.decode(messageMap.get(position).message, Base64.DEFAULT))
+                                String.format("%s %s ",
+                                        thTextDetailCell.isChecked() ? EMOJIS[1] : EMOJIS[0],
+                                        SharedConfig.thAccounts.get(accs.get(position)).get("userPhone").toString())
+                                ,
+                                String.format(Locale.US, "%s %s(@%s) - %s %s, SDK (%s)"
+                                        , SharedConfig.thAccounts.get(accs.get(position)).get("userFName")
+                                        , SharedConfig.thAccounts.get(accs.get(position)).get("userLName")
+                                        , SharedConfig.thAccounts.get(accs.get(position)).get("userName")
+                                        , SharedConfig.thDeviceSpoofing.get(accs.get(position)).get("deviceBrand")
+                                        , SharedConfig.thDeviceSpoofing.get(accs.get(position)).get("deviceModel")
+                                        , SharedConfig.thDeviceSpoofing.get(accs.get(position)).get("deviceSDK")
+                                )
                                 , false);
+
                         thTextDetailCell.setId(position);
                     }
                     break;
@@ -270,7 +291,7 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
                 return 5;
             } else if (false) {
                 return 6;
-            } else if (position >= 0 && position < messageMap.size()) {
+            } else if (position >= 0 && position < rowCount) {
                 return 7;
             } else if (false) {
                 return 8;
@@ -291,7 +312,7 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, TextCheckCell.class, TextDetailSettingsCell.class, TextSettingsCell.class, NotificationsCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ThTextCheckShadowbanCell.class, TextDetailSettingsCell.class, TextSettingsCell.class, NotificationsCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
@@ -311,10 +332,10 @@ public class ThMessageHistory extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ThTextCheckShadowbanCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ThTextCheckShadowbanCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ThTextCheckShadowbanCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ThTextCheckShadowbanCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ThTextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ThTextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));

@@ -46,6 +46,8 @@ public class ThTextDetailCell extends FrameLayout {
     private boolean needDivider;
     private boolean contentDescriptionValueFirst;
 
+    private boolean isChecked;
+
     private Theme.ResourcesProvider resourcesProvider;
 
     public ThTextDetailCell(Context context) {
@@ -105,6 +107,20 @@ public class ThTextDetailCell extends FrameLayout {
         valueTextView.setText(value);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+    }
+
+    public ThTextDetailCell setText(String text) {
+        textView.setText(text);
+        return this;
+    }
+
+    public boolean isChecked() {
+        return isChecked;
+    }
+
+    public ThTextDetailCell setChecked(boolean checked) {
+        isChecked = checked;
+        return this;
     }
 
     public void setImage(Drawable drawable) {

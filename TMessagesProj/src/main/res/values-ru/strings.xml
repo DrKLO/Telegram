@@ -4,9 +4,7 @@
     <string name="DeletedMessage">удалено</string>
     <string name="NonSecretWebPage">Предпросмотр ссылок</string>
     <string name="NonSecretChat">Незеленые чаты</string>
-    <string name="NonSecretLinkPreviewAlert">Хотите ли вы включить предпросмотр ссылок в незеленых чатах? Важно, превью
-        будет сгенерировано на серверах Telegram.
-    </string>
+    <string name="NonSecretLinkPreviewAlert">Хотите ли вы включить предпросмотр ссылок в незеленых чатах? Важно, превью будет сгенерировано на серверах Telegram.</string>
     <string name="THSettingsLabel">Telegraher настройки 💦</string>
     <string name="THEnableVoiceHD">* HD голосовые</string>
     <string name="THEnableVoiceBadman">* 🦇 голос бэтмена</string>
@@ -28,7 +26,7 @@
     <string name="THMenuPositionTheVoid">Бездна</string>
     <string name="THDSBrandCurrentText">Brand устройства для текущего аккаунта `%s`</string>
     <string name="THDSModelCurrentText">Model устройства для текущего аккаунта `%s`</string>
-    <string name="THDSOSCurrentText">OS устройства для текущего аккаунта `%s`</string>
+    <string name="THDSSDKCurrentText">SDK устройства для текущего аккаунта `%s`</string>
     <string name="THDSLabel">Подмена устройства</string>
     <string name="THDSOverrideLabel">Подменить %s?</string>
     <string name="THDSOverrideGlobal">Общие</string>
@@ -51,9 +49,9 @@
     <string name="THVideoLabelRoundSizeRow">* Размер кружочков</string>
     <string name="THAccountLabelRow">Секция аккаунтов</string>
     <string name="THDeviceSpoofingLabelRow">Секция подмены устройства</string>
-    <string name="THDeviceSpoofingResetGlobalLabelRow">Сбросить общие значения до значений по умолчанию</string>
+    <string name="THDeviceSpoofingResetDefaultLabelRow">Сбросить базовые значения до значений по умолчанию</string>
     <string name="THShowLabelTelegraherMenuRow">* Показать меню Telegraher</string>
-    <string name="THDSMainActivityHint0">Здесь можно изменить %s глобально</string>
+    <string name="THDSMainActivityHint0">Здесь можно изменить %s по-умолчанию</string>
     <string name="THDSMainActivityHint1">Здесь можно изменить %s для текущего аккаунта</string>
     <string name="THNotificationBackgroundNotice">Чтобы получать уведомления без GApps</string>
     <string name="THUILabelRow">Секция интерфейса</string>
@@ -73,5 +71,9 @@
     <string name="ThDCCopied">DC скопирован в буфер</string>
     <string name="THChatSBManager">Shadowban менеджер</string>
     <string name="THAccountSessionManager">Менеджер сессий</string>
+    <string name="THAccountSessionInfo">Информация о сессии</string>
     <string name="THHistory">История</string>
+    <string name="THDSBrandLabel">Марка</string>
+    <string name="THDSModelLabel">Модель</string>
+    <string name="THDSSDKLabel">SDK</string>
 </resources>

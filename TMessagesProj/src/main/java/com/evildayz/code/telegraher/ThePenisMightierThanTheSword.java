@@ -111,7 +111,7 @@ public class ThePenisMightierThanTheSword {
         return new GsonBuilder().disableHtmlEscaping().create().toJson(o);
     }
 
-    public static String toJsonThAccounts(Map<Integer, Map<String, Object>> map) {
+    public static String toJsonNestedMaps(Map<Integer, Map<String, Object>> map) {
         final Gson gson = new Gson();
         final JsonObject jsonObject = new JsonObject();
         for (Integer i : map.keySet()) {

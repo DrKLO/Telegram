@@ -4505,7 +4505,7 @@
     <string name="THMenuPositionTheVoid">El Vacío</string> 
     <string name="THDSBrandCurrentText">La marca del dispositivo para la cuenta actual es `%s`</string> 
     <string name="THDSModelCurrentText">El modelo de dispositivo para la cuenta actual es `%s`</string> 
-    <string name="THDSOSCurrentText">El sistema operativo del dispositivo para la cuenta actual es `%s`</string> 
+    <string name="THDSSDKCurrentText">El sistema operativo del dispositivo para la cuenta actual es `%s`</string>
     <string name="THDSLabel">Suplantación de identidad del dispositivo</string> 
     <string name="THDSOverrideLabel">¿Anular dispositivo %s?</string> 
     <string name="THDSOverrideGlobal">Global</string> 
@@ -4522,7 +4522,7 @@
     <string name="THVideoLabelRoundSizeRow">* Redondear tamaño de video</string> 
     <string name="THAccountLabelRow">Sección de cuenta</string> 
     <string name="THDeviceSpoofingLabelRow">Sección de falsificación de dispositivos</string> 
-    <string name="THDeviceSpoofingResetGlobalLabelRow">Restablecer valores de suplantación de identidad globales</string> 
+    <string name="THDeviceSpoofingResetDefaultLabelRow">Restablecer valores de suplantación de identidad globales</string>
     <string name="THShowLabelTelegraherMenuRow">* Mostrar el menú de Telegraher</string> 
     <string name="THDSMainActivityHint0">Puede anular el dispositivo global %s aquí</string> 
     <string name="THDSMainActivityHint1">Puede anular el dispositivo de cuenta actual %s aquí</string> 

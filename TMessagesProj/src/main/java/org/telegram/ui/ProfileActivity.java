@@ -2808,10 +2808,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 String shadowName = null;
                 if (userId != 0) {
                     TLRPC.User user = getMessagesController().getUser(userId);
-                    shadowName = String.format("%s %s(@%s)", ofNullable(user.last_name).orElse(""), ofNullable(user.first_name).orElse(""), ofNullable(user.username).orElse("--idk"));
+                    shadowName = String.format("%s %s(@%s)", ofNullable(user.last_name).orElse(""), ofNullable(user.first_name).orElse(""), ofNullable(user.username).orElse("\uD83E\uDD21"));
                 } else if (chatId != 0) {
                     TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                    shadowName = String.format("[c]:%s(@%s)", ofNullable(chat.title).orElse("--idk"), ofNullable(chat.username).orElse("--idk"));
+                    shadowName = String.format("[c]:%s(@%s)", ofNullable(chat.title).orElse("\uD83E\uDD21"), ofNullable(chat.username).orElse("\uD83E\uDD21"));
                 }
                 if (shadowName != null) {
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
@@ -2981,7 +2981,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 "Reset suggestions",
                                 LocaleController.getString(SharedConfig.forceRtmpStream ? R.string.DebugMenuDisableForceRtmpStreamFlag : R.string.DebugMenuEnableForceRtmpStreamFlag),
                                 LocaleController.getString(R.string.DebugMenuClearWebViewCache) ,
-                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? LocaleController.getString(SharedConfig.debugWebView ? R.string.DebugMenuDisableWebViewDebug : R.string.DebugMenuEnableWebViewDebug) : null
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? LocaleController.getString(SharedConfig.debugWebView ? R.string.DebugMenuDisableWebViewDebug : R.string.DebugMenuEnableWebViewDebug) : null,
+                                "Reset session manager & device spoofing"
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -3061,6 +3062,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             } else if (which == 19) {
                                 SharedConfig.toggleDebugWebView();
                                 Toast.makeText(getParentActivity(), LocaleController.getString(SharedConfig.debugWebView ? R.string.DebugMenuWebViewDebugEnabled : R.string.DebugMenuWebViewDebugDisabled), Toast.LENGTH_SHORT).show();
+                            } else if (which == 20) {
+                                SharedConfig.saveTHAccounts(true);
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

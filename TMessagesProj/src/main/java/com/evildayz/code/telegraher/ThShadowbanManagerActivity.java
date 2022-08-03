@@ -17,23 +17,23 @@
  * along with Telegraher.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.evildayz.code.telegraher.ui;
+package com.evildayz.code.telegraher;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.evildayz.code.telegraher.ui.ThTextCheckShadowbanCell;
+import com.evildayz.code.telegraher.ui.ThTextDetailCell;
 import org.telegram.messenger.*;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.*;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
@@ -41,19 +41,18 @@ import org.telegram.ui.QrActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class ThShadowbanManager extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class ThShadowbanManagerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private RecyclerListView listView;
 
-    private ThShadowbanManager.ListAdapter adapter;
+    private ThShadowbanManagerActivity.ListAdapter adapter;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
     private Map<Integer, Long> map;
     private Map<Long, String> mFuckers;
 
-    public ThShadowbanManager() {
+    public ThShadowbanManagerActivity() {
         map = new HashMap<>();
         mFuckers = new HashMap<>();
         mFuckers.putAll(SharedConfig.getShadowBannedHM());
@@ -107,7 +106,7 @@ public class ThShadowbanManager extends BaseFragment implements NotificationCent
         });
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        listView.setAdapter(adapter = new ThShadowbanManager.ListAdapter(context));
+        listView.setAdapter(adapter = new ThShadowbanManagerActivity.ListAdapter(context));
         listView.setOnItemClickListener((view, position, x, y) -> {
             boolean enabled = false;
             if (getParentActivity() == null) {

@@ -5476,12 +5476,12 @@
     <string name="THMenuPositionTheVoid">The Void</string>
     <string name="THDSBrandCurrentText">Device Brand for current account is `%s`</string>
     <string name="THDSModelCurrentText">Device Model for current account is `%s`</string>
-    <string name="THDSOSCurrentText">Device OS for current account is `%s`</string>
+    <string name="THDSSDKCurrentText">Device SDK for current account is `%s`</string>
     <string name="THDSLabel">Device spoofing</string>
     <string name="THDSOverrideLabel">Override Device %s?</string>
     <string name="THDSOverrideGlobal">Global</string>
     <string name="THDSOverrideCurrent">Currect account</string>
-    <string name="THDSResetAlert">Reset global values to the vanilla ones?</string>
+    <string name="THDSResetAlert">Reset default values to the vanilla ones?</string>
     <string name="THYesYesYes">Yes!</string>
     <string name="THVoiceLabelRow">Voice message section</string>
     <string name="THVoipLabelRow">VoIP calls section</string>
@@ -5499,9 +5499,9 @@
     <string name="THVideoLabelRoundSizeRow">* Round video size</string>
     <string name="THAccountLabelRow">Account section</string>
     <string name="THDeviceSpoofingLabelRow">Device spoofing section</string>
-    <string name="THDeviceSpoofingResetGlobalLabelRow">Reset global spoofing values</string>
+    <string name="THDeviceSpoofingResetDefaultLabelRow">Reset default spoofing values</string>
     <string name="THShowLabelTelegraherMenuRow">* Show Telegraher menu</string>
-    <string name="THDSMainActivityHint0">You can override global device %s here</string>
+    <string name="THDSMainActivityHint0">You can override default device %s here</string>
     <string name="THDSMainActivityHint1">You can override currect account device %s here</string>
     <string name="THNotificationBackgroundNotice">To let you receive push notifications w/o GApps</string>
     <string name="THUILabelRow">UI section</string>
@@ -5521,5 +5521,9 @@
     <string name="ThDCCopied">DC copied to clipboard</string>
     <string name="THChatSBManager">Shadowban manager</string>
     <string name="THAccountSessionManager">Session manager</string>
+    <string name="THAccountSessionInfo">Session information</string>
     <string name="THHistory">History</string>
+    <string name="THDSBrandLabel">Brand</string>
+    <string name="THDSModelLabel">Model</string>
+    <string name="THDSSDKLabel">SDK</string>
 </resources>
