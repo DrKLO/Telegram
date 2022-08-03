@@ -202,6 +202,24 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.85.8
+    * device spoofing stuff
+        * main th menu
+            * click on default device params to change them
+            * you can also reset them to real phone values
+                * these params doesn't affect existing accounts
+        * session manager
+            * single click enable/disable account
+                * long press will open a menu
+                * single click on name enable/disable
+                * single click on device properties will edit them for current account
+                * long press will edit the default params (same is single click on params in main telegraher menu)
+        * sure, you need to kill the app to apply changes
+        * if you had another betas with device spoofing, enable ALL accounts in session manager, go to debug menu and
+          reset
+          ThAccounts and ThDeviceSpoofing and restart the app
+        * we use 8.8.6 as a version and all apps have codeversion 2 (store bundle)
+* ~~8.85.7~~
 * 8.85.6
     * session manager
         * simple ON/OFF session manager in TH menu. So apply the settings you need to kill the app (via the button in
