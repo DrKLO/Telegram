@@ -183,9 +183,13 @@ public class ConnectionsManager extends BaseController {
         getUserConfig().loadConfig();
 
         try {
+            int id = -1;
+            if (SharedConfig.thDeviceSpoofing != null && !SharedConfig.thDeviceSpoofing.isEmpty()) {
+                id = SharedConfig.thDeviceSpoofing.containsKey(instance) ? instance : -1;
+            }
             systemLangCode = LocaleController.getSystemLocaleStringIso639().toLowerCase();
             langCode = LocaleController.getLocaleStringIso639().toLowerCase();
-            deviceModel = SharedConfig.thDeviceSpoofing.get(instance).get("deviceBrand").toString() + SharedConfig.thDeviceSpoofing.get(instance).get("deviceModel").toString();
+            deviceModel = SharedConfig.thDeviceSpoofing.get(id).get("deviceBrand").toString() + SharedConfig.thDeviceSpoofing.get(id).get("deviceModel").toString();
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             appVersion = BuildVars.BUILD_VERSION_STRING + " (" + (pInfo.versionCode / 100) + ")";
             if (BuildVars.DEBUG_PRIVATE_VERSION) {
@@ -193,7 +197,7 @@ public class ConnectionsManager extends BaseController {
             } else if (BuildVars.DEBUG_VERSION) {
                 appVersion += " beta";
             }
-            systemVersion = "SDK " + SharedConfig.thDeviceSpoofing.get(instance).get("deviceSDK");
+            systemVersion = "SDK " + SharedConfig.thDeviceSpoofing.get(id).get("deviceSDK");
         } catch (Exception e) {
             systemLangCode = "en";
             langCode = "";
