@@ -674,15 +674,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         //durov relogin!
                     } else if (position == deviceSpoofingBrand) {
                         textDetailCell.setContentDescriptionValueFirst(true);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceBrand").toString(), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceBrand").toString()), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceBrand").toString(), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceBrand").toString() : "-"), false);
                     } else if (position == deviceSpoofingModel) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceModel").toString(), String.format(LocaleController.getString(R.string.THDSModelCurrentText), SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceModel").toString()), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceModel").toString(), String.format(LocaleController.getString(R.string.THDSModelCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceModel").toString() : "-"), false);
                     } else if (position == deviceSpoofingSDK) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceSDK").toString(), String.format(LocaleController.getString(R.string.THDSSDKCurrentText), SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceSDK").toString()), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceSDK").toString(), String.format(LocaleController.getString(R.string.THDSSDKCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceSDK").toString() : "-"), false);
                     }
                     break;
                 }

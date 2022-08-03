@@ -202,6 +202,8 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.85.9
+    * fixed crash on empty app
 * 8.85.8
     * device spoofing stuff
         * main th menu
