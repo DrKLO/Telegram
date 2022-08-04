@@ -180,20 +180,15 @@ It's very simple
 
 ### APKs & sha256
 
-* **sdk23** mean for android 6+, the other are working from 4.1+
-    * so if you have android 6 or higher, you should download **sdk23** version
+* for android >=4.1
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.85.2.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_arm64_v8a/Telegraher.8.85.2.arm64_v8a.apk)
-    * `x`  [Telegraher.8.85.2.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_arm64_v8a/Telegraher.8.85.2.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.85.11.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.11_arm64_v8a/Telegraher.8.85.11.arm64_v8a.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.85.2.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_armeabi_v7a/Telegraher.8.85.2.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.85.2.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_armeabi_v7a/Telegraher.8.85.2.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.85.11.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.11_armeabi_v7a/Telegraher.8.85.11.armeabi_v7a.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.85.2.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_x86/Telegraher.8.85.2.x86.apk)
-    * `x`  [Telegraher.8.85.2.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_x86/Telegraher.8.85.2.x86_sdk23.apk)
+    * `x`  [Telegraher.8.85.11.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.11_x86/Telegraher.8.85.11.x86.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.85.2.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_x86_64/Telegraher.8.85.2.x86_64.apk)
-    * `x`  [Telegraher.8.85.2.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.2_x86_64/Telegraher.8.85.2.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.85.11.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.11_x86_64/Telegraher.8.85.11.x86_64.apk)
 
 ### Issues/Wishlist
 
@@ -202,6 +197,14 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.85.11
+    * added to menu delete downloaded file
+      files which you download can be deleted directly from message w/o going to "download menu".
+      UI normally udpates well, but if you wiped your file and UI still show it's here, just re-enter the chat or
+      channel.
+    * session manager now track well name/surname & username changes
+* 8.85.10
+    * fixed issue on 1st connection
 * 8.85.9
     * fixed crash on empty app
 * 8.85.8
