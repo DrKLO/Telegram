@@ -21561,6 +21561,12 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                 icons.add(R.drawable.msg_log);
             }
 
+            if (message != null && message.isDocument()) {
+                items.add(LocaleController.getString(R.string.THDDeleteDownloadedFile));
+                options.add(420_002);
+                icons.add(R.drawable.msg_delete_filled);
+            }
+
             if (!(options.contains(4) || options.contains(7))
                     && (selectedObject.isSecretMedia() || selectedObject.isGif() || selectedObject.isNewGif() || selectedObject.isPhoto() || selectedObject.isRoundVideo() || selectedObject.isVideo())) {
                 items.add(LocaleController.getString("SaveToGallery", R.string.SaveToGallery));
@@ -22759,6 +22765,28 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
 //                presentFragment(new ThMessageHistory(getAccountInstance().getMessagesStorage().loadThHistory(selectedObject.messageOwner.dialog_id, selectedObject.messageOwner.id)));
                 presentFragment(new ThMessageHistoryActivity(selectedObject));
 //                Log.d("420_001",getAccountInstance().getMessagesStorage().loadThHistory(selectedObject.messageOwner.dialog_id, selectedObject.messageOwner.id).toString());
+                break;
+            }
+            case 420_002: {
+                selectedObject.mediaExists = false;
+                ChatMessageCell messageCell = null;
+                int count = chatListView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = chatListView.getChildAt(a);
+                    if (child instanceof ChatMessageCell) {
+                        ChatMessageCell cell = (ChatMessageCell) child;
+                        if (cell.getMessageObject() == selectedObject) {
+                            messageCell = cell;
+                            break;
+                        }
+                    }
+                }
+                getDownloadController().deleteRecentFiles(new ArrayList<MessageObject>() {{
+                    add(selectedObject);
+                }});
+                if (messageCell != null) {
+                    messageCell.updateButtonState(false, true, false);
+                }
                 break;
             }
             case OPTION_RETRY: {

@@ -76,4 +76,5 @@
     <string name="THDSBrandLabel">Марка</string>
     <string name="THDSModelLabel">Модель</string>
     <string name="THDSSDKLabel">SDK</string>
+    <string name="THDDeleteDownloadedFile">Удалить скачанный файл</string>
 </resources>
