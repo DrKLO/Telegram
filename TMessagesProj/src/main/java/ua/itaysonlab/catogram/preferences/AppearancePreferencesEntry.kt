@@ -15,6 +15,7 @@ import ua.itaysonlab.catogram.preferences.ktx.*
 import ua.itaysonlab.extras.CatogramExtras
 import ua.itaysonlab.extras.IconExtras
 import ua.itaysonlab.tgkit.preference.types.TGKitTextIconRow
+import org.nift4.catox.EarlyConfig
 
 
 class AppearancePreferencesEntry : BasePreferencesEntry {
@@ -220,9 +221,9 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                 title = LocaleController.getString("CX_ShowSeconds", R.string.CX_ShowSeconds)
 
                 contract({
-                    return@contract CatogramConfig.showSeconds
+                    return@contract EarlyConfig.showSeconds
                 }) {
-                    CatogramConfig.showSeconds = it
+                    EarlyConfig.showSeconds = it
                 }
             }
             

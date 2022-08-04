@@ -265,6 +265,19 @@ android {
         }
     }
 
+    sourceSets.debuggableRelease {
+        manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
+        java.srcDirs += ['src/play/java']
+
+        dependencies {
+            implementation 'com.google.firebase:firebase-messaging:23.0.0'
+            implementation 'com.google.firebase:firebase-config:21.0.1'
+            implementation 'com.google.firebase:firebase-datatransport:18.1.1'
+            implementation 'com.google.firebase:firebase-appindexing:20.0.0'
+            implementation 'com.google.mlkit:language-id:17.0.3'
+        }
+    }
+
     sourceSets.foss {
         manifest.srcFile 'config/release/AndroidManifest_foss.xml'
         java.srcDirs += ['src/foss/java']

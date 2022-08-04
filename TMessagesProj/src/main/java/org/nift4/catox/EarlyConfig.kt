@@ -10,4 +10,5 @@ object EarlyConfig {
 	private val sharedPreferences: SharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("earlyconfig", Activity.MODE_PRIVATE)
 	var enableSaf by sharedPreferences.boolean("cx_enable_saf", false)
 	var alwaysShowDoubleBottom by sharedPreferences.boolean("cx_force_double_bottom", false)
+	var showSeconds by sharedPreferences.boolean("cx_show_seconds", false)
 }
