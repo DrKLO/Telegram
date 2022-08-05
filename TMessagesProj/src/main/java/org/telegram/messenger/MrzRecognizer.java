@@ -8,12 +8,6 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.text.TextUtils;
-import android.util.Base64;
-import android.util.SparseArray;
-
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -42,92 +36,6 @@ public class MrzRecognizer {
 	}
 
 	private static Result recognizeBarcode(Bitmap bitmap) {
-		BarcodeDetector detector = new BarcodeDetector.Builder(ApplicationLoader.applicationContext)/*.setBarcodeFormats(Barcode.PDF417)*/.build();
-		if (bitmap.getWidth() > 1500 || bitmap.getHeight() > 1500) {
-			float scale = 1500f / Math.max(bitmap.getWidth(), bitmap.getHeight());
-			bitmap = Bitmap.createScaledBitmap(bitmap, Math.round(bitmap.getWidth() * scale), Math.round(bitmap.getHeight() * scale), true);
-		}
-		SparseArray<Barcode> barcodes = detector.detect(new Frame.Builder().setBitmap(bitmap).build());
-		for (int i = 0; i < barcodes.size(); i++) {
-			Barcode code = barcodes.valueAt(i);
-			if (code.valueFormat == Barcode.DRIVER_LICENSE && code.driverLicense != null) { // BarcodeDetector has built-in support for North American driver licenses/IDs
-				Result res = new Result();
-				res.type = "ID".equals(code.driverLicense.documentType) ? Result.TYPE_ID : Result.TYPE_DRIVER_LICENSE;
-				switch (code.driverLicense.issuingCountry) {
-					case "USA":
-						res.nationality = res.issuingCountry = "US";
-						break;
-					case "CAN":
-						res.nationality = res.issuingCountry = "CA";
-						break;
-				}
-				res.firstName = capitalize(code.driverLicense.firstName);
-				res.lastName = capitalize(code.driverLicense.lastName);
-				res.middleName = capitalize(code.driverLicense.middleName);
-				res.number = code.driverLicense.licenseNumber;
-				if (code.driverLicense.gender != null) {
-					switch (code.driverLicense.gender) {
-						case "1":
-							res.gender = Result.GENDER_MALE;
-							break;
-						case "2":
-							res.gender = Result.GENDER_FEMALE;
-							break;
-					}
-				}
-				int yearOffset, monthOffset, dayOffset;
-				if ("USA".equals(res.issuingCountry)) {
-					yearOffset = 4;
-					dayOffset = 2;
-					monthOffset = 0;
-				} else {
-					yearOffset = 0;
-					monthOffset = 4;
-					dayOffset = 6;
-				}
-				try {
-					if (code.driverLicense.birthDate != null && code.driverLicense.birthDate.length() == 8) {
-						res.birthYear = Integer.parseInt(code.driverLicense.birthDate.substring(yearOffset, yearOffset + 4));
-						res.birthMonth = Integer.parseInt(code.driverLicense.birthDate.substring(monthOffset, monthOffset + 2));
-						res.birthDay = Integer.parseInt(code.driverLicense.birthDate.substring(dayOffset, dayOffset + 2));
-					}
-					if (code.driverLicense.expiryDate != null && code.driverLicense.expiryDate.length() == 8) {
-						res.expiryYear = Integer.parseInt(code.driverLicense.expiryDate.substring(yearOffset, yearOffset + 4));
-						res.expiryMonth = Integer.parseInt(code.driverLicense.expiryDate.substring(monthOffset, monthOffset + 2));
-						res.expiryDay = Integer.parseInt(code.driverLicense.expiryDate.substring(dayOffset, dayOffset + 2));
-					}
-				} catch (NumberFormatException ignore) {
-				}
-
-				return res;
-			} else if (code.valueFormat == Barcode.TEXT && code.format == Barcode.PDF417) { // Russian driver licenses (new-ish ones) use a non-very-much-documented format
-				// base64(number|issue date|expiry date|last name|first name|middle/father name|birth date|categories|???|???)
-				// all dates are YYYYMMDD, names are capital cyrillic letters in Windows-1251, categories are comma separated
-				if (code.rawValue.matches("^[A-Za-z0-9=]+$")) {
-					try {
-						byte[] _data = Base64.decode(code.rawValue, 0);
-						String[] data = new String(_data, "windows-1251").split("\\|");
-						if (data.length >= 10) {
-							Result res = new Result();
-							res.type = Result.TYPE_DRIVER_LICENSE;
-							res.nationality = res.issuingCountry = "RU";
-							res.number = data[0];
-							res.expiryYear = Integer.parseInt(data[2].substring(0, 4));
-							res.expiryMonth = Integer.parseInt(data[2].substring(4, 6));
-							res.expiryDay = Integer.parseInt(data[2].substring(6));
-							res.lastName = capitalize(cyrillicToLatin(data[3]));
-							res.firstName = capitalize(cyrillicToLatin(data[4]));
-							res.middleName = capitalize(cyrillicToLatin(data[5]));
-							res.birthYear = Integer.parseInt(data[6].substring(0, 4));
-							res.birthMonth = Integer.parseInt(data[6].substring(4, 6));
-							res.birthDay = Integer.parseInt(data[6].substring(6));
-							return res;
-						}
-					} catch (Exception ignore) {
-					}
-				}
-			}
-		}
 		return null;
 	}
 

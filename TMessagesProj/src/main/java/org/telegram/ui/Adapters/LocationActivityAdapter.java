@@ -46,8 +46,6 @@ import java.util.Locale;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.vision.Frame;
-
 public class LocationActivityAdapter extends BaseLocationAdapter implements LocationController.LocationFetchCallback {
 
     private int currentAccount = UserConfig.selectedAccount;

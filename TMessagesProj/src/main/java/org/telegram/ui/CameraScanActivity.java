@@ -15,7 +15,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -48,15 +47,7 @@ import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.LuminanceSource;
-import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.RGBLuminanceSource;
-import com.google.zxing.Result;
-import com.google.zxing.ResultPoint;
+import com.google.zxing.*;
 import com.google.zxing.common.GlobalHistogramBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
@@ -130,7 +121,6 @@ public class CameraScanActivity extends BaseFragment {
     private boolean qrLoaded = false;
 
     private QRCodeReader qrReader = null;
-    private BarcodeDetector visionQrReader = null;
 
     private boolean needGalleryButton;
 
@@ -221,7 +211,6 @@ public class CameraScanActivity extends BaseFragment {
         if (isQr()) {
             Utilities.globalQueue.postRunnable(() -> {
                 qrReader = new QRCodeReader();
-                visionQrReader = new BarcodeDetector.Builder(ApplicationLoader.applicationContext).setBarcodeFormats(Barcode.QR_CODE).build();
             });
         }
 
@@ -244,9 +233,6 @@ public class CameraScanActivity extends BaseFragment {
         destroy(false, null);
         if (getParentActivity() != null) {
             getParentActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-        }
-        if (visionQrReader != null) {
-            visionQrReader.release();
         }
     }
 
@@ -1021,77 +1007,47 @@ public class CameraScanActivity extends BaseFragment {
             String text;
             RectF bounds = new RectF();
             int width = 1, height = 1;
-            if (visionQrReader != null && visionQrReader.isOperational()) {
-                Frame frame;
-                if (bitmap != null) {
-                    frame = new Frame.Builder().setBitmap(bitmap).build();
-                    width = bitmap.getWidth();
-                    height = bitmap.getHeight();
-                } else {
-                    frame = new Frame.Builder().setImageData(ByteBuffer.wrap(data), size.getWidth(), size.getHeight(), ImageFormat.NV21).build();
-                    width = size.getWidth();
-                    height = size.getWidth();
-                }
-                SparseArray<Barcode> codes = visionQrReader.detect(frame);
-                if (codes != null && codes.size() > 0) {
-                    Barcode code = codes.valueAt(0);
-                    text = code.rawValue;
-                    if (code.cornerPoints == null || code.cornerPoints.length == 0) {
-                        bounds = null;
-                    } else {
-//                        bounds.set(code.getBoundingBox());
-                        float minX = Float.MAX_VALUE,
-                              maxX = Float.MIN_VALUE,
-                              minY = Float.MAX_VALUE,
-                              maxY = Float.MIN_VALUE;
-                        for (Point point : code.cornerPoints) {
-                            minX = Math.min(minX, point.x);
-                            maxX = Math.max(maxX, point.x);
-                            minY = Math.min(minY, point.y);
-                            maxY = Math.max(maxY, point.y);
-                        }
-                        bounds.set(minX, minY, maxX, maxY);
-                    }
-                } else {
-                    text = null;
-                }
-            } else if (qrReader != null) {
-                LuminanceSource source;
-                if (bitmap != null) {
-                    int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
-                    bitmap.getPixels(intArray, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-                    source = new RGBLuminanceSource(bitmap.getWidth(), bitmap.getHeight(), intArray);
-                    width = bitmap.getWidth();
-                    height = bitmap.getWidth();
-                } else {
-                    source = new PlanarYUVLuminanceSource(data, size.getWidth(), size.getHeight(), x, y, side, side, false);
-                    width = size.getWidth();
-                    height = size.getHeight();
-                }
-
-                Result result = qrReader.decode(new BinaryBitmap(new GlobalHistogramBinarizer(source)));
-                if (result == null) {
-                    onNoQrFound();
-                    return null;
-                }
-                text = result.getText();
-                if (result.getResultPoints() == null || result.getResultPoints().length == 0) {
-                    bounds = null;
-                } else {
-                    float minX = Float.MAX_VALUE,
-                          maxX = Float.MIN_VALUE,
-                          minY = Float.MAX_VALUE,
-                          maxY = Float.MIN_VALUE;
-                    for (ResultPoint point : result.getResultPoints()) {
-                        minX = Math.min(minX, point.getX());
-                        maxX = Math.max(maxX, point.getX());
-                        minY = Math.min(minY, point.getY());
-                        maxY = Math.max(maxY, point.getY());
-                    }
-                    bounds.set(minX, minY, maxX, maxY);
-                }
+            LuminanceSource source;
+            if (bitmap != null) {
+                int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
+                bitmap.getPixels(intArray, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+                source = new RGBLuminanceSource(bitmap.getWidth(), bitmap.getHeight(), intArray);
+                width = bitmap.getWidth();
+                height = bitmap.getWidth();
             } else {
-                text = null;
+                source = new PlanarYUVLuminanceSource(data, size.getWidth(), size.getHeight(), x, y, side, side, false);
+                width = size.getWidth();
+                height = size.getHeight();
+            }
+
+            Result result = null;
+            try {
+                result = qrReader.decode(new BinaryBitmap(new GlobalHistogramBinarizer(source)));
+            } catch (NotFoundException e) {
+                try {
+                    result = qrReader.decode(new BinaryBitmap(new GlobalHistogramBinarizer(source.invert())));
+                } catch (NotFoundException ignore) {
+                }
+            }
+            if (result == null) {
+                onNoQrFound();
+                return null;
+            }
+            text = result.getText();
+            if (result.getResultPoints() == null || result.getResultPoints().length == 0) {
+                bounds = null;
+            } else {
+                float minX = Float.MAX_VALUE,
+                        maxX = Float.MIN_VALUE,
+                        minY = Float.MAX_VALUE,
+                        maxY = Float.MIN_VALUE;
+                for (ResultPoint point : result.getResultPoints()) {
+                    minX = Math.min(minX, point.getX());
+                    maxX = Math.max(maxX, point.getX());
+                    minY = Math.min(minY, point.getY());
+                    maxY = Math.max(maxY, point.getY());
+                }
+                bounds.set(minX, minY, maxX, maxY);
             }
             if (TextUtils.isEmpty(text)) {
                 onNoQrFound();

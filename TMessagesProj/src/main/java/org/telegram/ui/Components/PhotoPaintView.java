@@ -25,13 +25,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.FaceDetector;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Bitmaps;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -40,7 +35,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -48,7 +42,6 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.Components.Paint.PhotoFace;
 import org.telegram.ui.Components.Paint.Views.EntitiesContainerView;
 import org.telegram.ui.Components.Paint.Views.EntityView;
 import org.telegram.ui.Components.Paint.Views.StickerView;
@@ -121,7 +114,6 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
     private Animator colorPickerAnimator;
 
     private DispatchQueue queue;
-    private ArrayList<PhotoFace> faces;
 
     private boolean ignoreLayout;
 
@@ -454,9 +446,6 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
     public void init() {
         entitiesView.setVisibility(VISIBLE);
         renderView.setVisibility(View.VISIBLE);
-        if (facesBitmap != null) {
-            detectFaces();
-        }
     }
 
     public void shutdown() {
@@ -1512,74 +1501,6 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         popupWindow.startAnimation();
     }
 
-    private int getFrameRotation() {
-        switch (originalBitmapRotation) {
-            case 90: {
-                return Frame.ROTATION_90;
-            }
-
-            case 180: {
-                return Frame.ROTATION_180;
-            }
-
-            case 270: {
-                return Frame.ROTATION_270;
-            }
-
-            default: {
-                return Frame.ROTATION_0;
-            }
-        }
-    }
-
-    private boolean isSidewardOrientation() {
-        return originalBitmapRotation % 360 == 90 || originalBitmapRotation % 360 == 270;
-    }
-
-    private void detectFaces() {
-        queue.postRunnable(() -> {
-            FaceDetector faceDetector = null;
-            try {
-                faceDetector = new FaceDetector.Builder(getContext())
-                        .setMode(FaceDetector.ACCURATE_MODE)
-                        .setLandmarkType(FaceDetector.ALL_LANDMARKS)
-                        .setTrackingEnabled(false).build();
-                if (!faceDetector.isOperational()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("face detection is not operational");
-                    }
-                    return;
-                }
-
-                Frame frame = new Frame.Builder().setBitmap(facesBitmap).setRotation(getFrameRotation()).build();
-                SparseArray<Face> faces;
-                try {
-                    faces = faceDetector.detect(frame);
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                    return;
-                }
-                ArrayList<PhotoFace> result = new ArrayList<>();
-                Size targetSize = getPaintingSize();
-                for (int i = 0; i < faces.size(); i++) {
-                    int key = faces.keyAt(i);
-                    Face f = faces.get(key);
-                    PhotoFace face = new PhotoFace(f, facesBitmap, targetSize, isSidewardOrientation());
-                    if (face.isSufficient()) {
-                        result.add(face);
-                    }
-                }
-                PhotoPaintView.this.faces = result;
-            } catch (Exception e) {
-                FileLog.e(e);
-            } finally {
-                if (faceDetector != null) {
-                    faceDetector.release();
-                }
-            }
-        });
-    }
-
     private StickerPosition calculateStickerPosition(TLRPC.Document document) {
         TLRPC.TL_maskCoords maskCoords = null;
 
@@ -1601,84 +1522,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             baseScale = 0.75f;
         }
         StickerPosition defaultPosition = new StickerPosition(centerPositionForEntity(), baseScale, rotation);
-        if (maskCoords == null || faces == null || faces.size() == 0) {
-            return defaultPosition;
-        } else {
-            int anchor = maskCoords.n;
-
-            PhotoFace face = getRandomFaceWithVacantAnchor(anchor, document.id, maskCoords);
-            if (face == null) {
-                return defaultPosition;
-            }
-
-            Point referencePoint = face.getPointForAnchor(anchor);
-            float referenceWidth = face.getWidthForAnchor(anchor);
-            float angle = face.getAngle();
-            Size baseSize = baseStickerSize();
-
-            float scale = (float) (referenceWidth / baseSize.width * maskCoords.zoom);
-
-            float radAngle = (float) Math.toRadians(angle);
-            float xCompX = (float) (Math.sin(Math.PI / 2.0f - radAngle) * referenceWidth * maskCoords.x);
-            float xCompY = (float) (Math.cos(Math.PI / 2.0f - radAngle) * referenceWidth * maskCoords.x);
-
-            float yCompX = (float) (Math.cos(Math.PI / 2.0f + radAngle) * referenceWidth * maskCoords.y);
-            float yCompY = (float) (Math.sin(Math.PI / 2.0f + radAngle) * referenceWidth * maskCoords.y);
-
-            float x = referencePoint.x + xCompX + yCompX;
-            float y = referencePoint.y + xCompY + yCompY;
-
-            return new StickerPosition(new Point(x, y), scale, angle);
-        }
-    }
-
-    private PhotoFace getRandomFaceWithVacantAnchor(int anchor, long documentId, TLRPC.TL_maskCoords maskCoords) {
-        if (anchor < 0 || anchor > 3 || faces.isEmpty()) {
-            return null;
-        }
-
-        int count = faces.size();
-        int randomIndex = Utilities.random.nextInt(count);
-        int remaining = count;
-
-        PhotoFace selectedFace = null;
-        for (int i = randomIndex; remaining > 0; i = (i + 1) % count, remaining--) {
-            PhotoFace face = faces.get(i);
-            if (!isFaceAnchorOccupied(face, anchor, documentId, maskCoords)) {
-                return face;
-            }
-        }
-
-        return selectedFace;
-    }
-
-    private boolean isFaceAnchorOccupied(PhotoFace face, int anchor, long documentId, TLRPC.TL_maskCoords maskCoords) {
-        Point anchorPoint = face.getPointForAnchor(anchor);
-        if (anchorPoint == null) {
-            return true;
-        }
-
-        float minDistance = face.getWidthForAnchor(0) * 1.1f;
-
-        for (int index = 0; index < entitiesView.getChildCount(); index++) {
-            View view = entitiesView.getChildAt(index);
-            if (!(view instanceof StickerView)) {
-                continue;
-            }
-
-            StickerView stickerView = (StickerView) view;
-            if (stickerView.getAnchor() != anchor) {
-                continue;
-            }
-
-            Point location = stickerView.getPosition();
-            float distance = (float)Math.hypot(location.x - anchorPoint.x, location.y - anchorPoint.y);
-            if ((documentId == stickerView.getSticker().id || faces.size() > 1) && distance < minDistance) {
-                return true;
-            }
-        }
-
-        return false;
+        return defaultPosition;
     }
 
     private int getThemedColor(String key) {
