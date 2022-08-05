@@ -116,6 +116,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int accountSessionManagerRow;
     private int accountExtendVanillaRow;
 
+    private int graheriumLabelRow;
+    private int graheriumSpeedUp;
+
     private int deviceSpoofingLabelRow;
     private int deviceSpoofingBrand;
     private int deviceSpoofingModel;
@@ -169,6 +172,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         accountLabelRow = rowCount++;
         accountSessionManagerRow = rowCount++;
         accountExtendVanillaRow = -1;
+        graheriumLabelRow = rowCount++;
+        graheriumSpeedUp = rowCount++;
 
         gifLabelHDRow = rowCount++;
         gifHDRow = rowCount++;
@@ -316,6 +321,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
                 editor.putBoolean("EnableAccountExtendVanilla", !enabled);
+                editor.apply();
+            } else if (position == graheriumSpeedUp) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableGraheriumSpeedUp", false);
+                editor.putBoolean("EnableGraheriumSpeedUp", !enabled);
                 editor.apply();
             } else if (position == gifHDRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -481,6 +492,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THVideoLabelRoundSizeRow));
                     } else if (position == accountLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THAccountLabelRow));
+                    } else if (position == graheriumLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THDGraheriumLabelRow));
                     } else if (position == deviceSpoofingLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THDeviceSpoofingLabelRow));
                     } else if (position == deviceSpoofingResetDefaultLabelRow) {
@@ -518,6 +531,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(String.format(LocaleController.getString(R.string.THEnableChatDeleteMark), LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
                     } else if (position == accountExtendVanillaRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableAccountExtendVanilla), globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
+                    } else if (position == graheriumSpeedUp) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUp), globalPreps.getBoolean("EnableGraheriumSpeedUp", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableChatSBFull), localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == chatSwapToNextChannelRow) {
@@ -702,6 +717,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == chatLabelRow
                             || position == gifLabelHDRow
                             || position == accountLabelRow
+                            || position == graheriumLabelRow
                             || position == deviceSpoofingLabelRow
                             || position == deviceSpoofingResetDefaultLabelRow
                             || position == videoLabelMaxResolutionRow
@@ -715,6 +731,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow
+                            || position == graheriumSpeedUp
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;

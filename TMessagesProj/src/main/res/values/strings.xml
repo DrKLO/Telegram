@@ -5527,4 +5527,6 @@
     <string name="THDSModelLabel">Model</string>
     <string name="THDSSDKLabel">SDK</string>
     <string name="THDDeleteDownloadedFile">Delete downloaded file</string>
+    <string name="THDGraheriumLabelRow">Graherium 🍒</string>
+    <string name="THDGraheriumSpeedUp">Speed-Up!</string>
 </resources>
