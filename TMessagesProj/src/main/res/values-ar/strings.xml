@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">الرسالة السابقة</string>
     <string name="PinnedPoll">استفتاء مثبت</string>
     <string name="EditedMessage">معدلة</string>
+    <string name="DeletedMessage">تم الحذف</string>
     <string name="EditMessage">تعديل الرسالة</string>
     <string name="EditCaption">تعديل الوصف</string>
     <string name="EditMessageMedia">انقر لتعديل الوسائط</string>

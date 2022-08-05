@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">Vorig bericht</string>
     <string name="PinnedPoll">Vastgezette poll</string>
     <string name="EditedMessage">gewijzigd</string>
+    <string name="DeletedMessage">slettet</string>
     <string name="EditMessage">Bericht wijzigen</string>
     <string name="EditCaption">Wijzig onderschrift</string>
     <string name="EditMessageMedia">Media vervangen</string>

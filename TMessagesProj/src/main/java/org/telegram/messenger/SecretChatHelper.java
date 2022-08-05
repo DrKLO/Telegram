@@ -115,7 +115,8 @@ public class SecretChatHelper extends BaseController {
                 for (int a = 0; a < pendingEncMessagesToDeleteCopy.size(); a++) {
                     MessageObject messageObject = getMessagesController().dialogMessagesByRandomIds.get(pendingEncMessagesToDeleteCopy.get(a));
                     if (messageObject != null) {
-                        messageObject.deleted = true;
+//                        messageObject.deleted = true;
+                        messageObject.messageOwner.isDeleted=true;
                     }
                 }
             });
@@ -1142,20 +1143,21 @@ public class SecretChatHelper extends BaseController {
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
                     long did = DialogObject.makeEncryptedDialogId(chat.id);
                     AndroidUtilities.runOnUIThread(() -> {
-                        TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(did);
-                        if (dialog != null) {
-                            dialog.unread_count = 0;
-                            getMessagesController().dialogMessage.remove(dialog.id);
-                        }
-                        getMessagesStorage().getStorageQueue().postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
-                            getNotificationsController().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
-                            LongSparseIntArray dialogsToUpdate = new LongSparseIntArray(1);
-                            dialogsToUpdate.put(did, 0);
-                            getNotificationsController().processDialogsUpdateRead(dialogsToUpdate);
-                        }));
-                        getMessagesStorage().deleteDialog(did, 1);
-                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-                        getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
+//                        TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(did);
+//                        if (dialog != null) {
+//                            dialog.unread_count = 0;
+//                            getMessagesController().dialogMessage.remove(dialog.id);
+//                        }
+//                        getMessagesStorage().getStorageQueue().postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
+//                            getNotificationsController().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
+//                            LongSparseIntArray dialogsToUpdate = new LongSparseIntArray(1);
+//                            dialogsToUpdate.put(did, 0);
+//                            getNotificationsController().processDialogsUpdateRead(dialogsToUpdate);
+//                        }));
+//                        getMessagesStorage().deleteDialog(did, 1);
+//                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+//                        getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
+//                        getMessagesStorage().markEcryptedMessagesIsDeleted(did, 1);//TODO REFAIRE - whole dialog wipe green chats
                     });
                     return null;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionDeleteMessages) {
@@ -1388,7 +1390,7 @@ public class SecretChatHelper extends BaseController {
                 for (int a = sSeq; a <= endSeq; a += 2) {
                     messagesToResend.put(a, null);
                 }
-                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, r.random_id, s.seq_in, s.seq_out, m.ttl, s.mid FROM messages_seq as s LEFT JOIN randoms_v2 as r ON r.mid = s.mid LEFT JOIN messages_v2 as m ON m.mid = s.mid WHERE m.uid = %d AND m.out = 1 AND s.seq_out >= %d AND s.seq_out <= %d ORDER BY seq_out ASC", dialog_id, sSeq, endSeq));
+                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, r.random_id, s.seq_in, s.seq_out, m.ttl, s.mid, tmd.isdel FROM messages_seq as s LEFT JOIN randoms_v2 as r ON r.mid = s.mid LEFT JOIN messages_v2 as m ON m.mid = s.mid LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.uid = %d AND m.out = 1 AND s.seq_out >= %d AND s.seq_out <= %d ORDER BY seq_out ASC", dialog_id, sSeq, endSeq));
                 while (cursor.next()) {
                     TLRPC.Message message;
                     long random_id = cursor.longValue(1);
@@ -1405,6 +1407,7 @@ public class SecretChatHelper extends BaseController {
                         message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
                         message.random_id = random_id;
+                        message.isDeleted = !cursor.isNull(6);
                         message.dialog_id = dialog_id;
                         message.seq_in = seq_in;
                         message.seq_out = seq_out;
