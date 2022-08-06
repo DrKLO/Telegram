@@ -4274,7 +4274,7 @@ public class MediaDataController extends BaseController {
 
             long selfUserId = getUserConfig().clientUserId;
 
-            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, tmd.isdel FROM messages_v2 LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE mid IN (%s) AND uid = %d", longIds, dialogId));
+            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid IN (%s) AND m.uid = %d", longIds, dialogId));
             while (cursor.next()) {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
                 if (data != null) {
@@ -4616,7 +4616,7 @@ public class MediaDataController extends BaseController {
                         if (scheduled) {
                             cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
                         } else {
-                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, tmd.isdel FROM messages_v2 LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, m.uid, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid IN(%s) AND m.uid = %d", TextUtils.join(",", ids), dialogId));
                         }
                         while (cursor.next()) {
                             NativeByteBuffer data = cursor.byteBufferValue(0);
