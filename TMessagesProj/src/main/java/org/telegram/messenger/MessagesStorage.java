@@ -10641,9 +10641,13 @@ public class MessagesStorage extends BaseController {
                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND is_channel = 0", ids));
             }
             while (cursor.next()) {
-                long did = cursor.longValue(0);
-                int mid = cursor.intValue(1);
-                database.executeFast(String.format(Locale.US, "INSERT INTO telegraher_message_deletions values (%d,%d,1);", mid, did)).stepThis().dispose();
+                try {
+                    long did = cursor.longValue(0);
+                    int mid = cursor.intValue(1);
+                    database.executeFast(String.format(Locale.US, "INSERT INTO telegraher_message_deletions values (%d,%d,1);", mid, did)).stepThis().dispose();
+                } catch (Exception e) {
+                    //we don't care, made to ignore unique key errors
+                }
             }
             cursor.dispose();
             updateWidgets(dialogsToUpdate);
