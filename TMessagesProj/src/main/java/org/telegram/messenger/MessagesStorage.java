@@ -2403,7 +2403,7 @@ public class MessagesStorage extends BaseController {
             for (int a = 0, N = replyMessageOwners.size(); a < N; a++) {
                 long dialogId = replyMessageOwners.keyAt(a);
                 TLRPC.Message ownerMessage = replyMessageOwners.valueAt(a);
-                SQLiteCursor replyCursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, tmd.isdel FROM messages_v2 LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE mid = %d and uid = %d", ownerMessage.id, dialogId));
+                SQLiteCursor replyCursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, m.uid, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid = %d and m.uid = %d", ownerMessage.id, dialogId));
                 while (replyCursor.next()) {
                     NativeByteBuffer data = replyCursor.byteBufferValue(0);
                     if (data != null) {
@@ -3468,7 +3468,7 @@ public class MessagesStorage extends BaseController {
             if (scheduled) {
                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
             } else {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, tmd.isdel FROM messages_v2 LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, m.uid, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid IN(%s) AND m.uid = %d", TextUtils.join(",", ids), dialogId));
             }
             while (cursor.next()) {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
@@ -3551,7 +3551,7 @@ public class MessagesStorage extends BaseController {
                 ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
                 int maxDate = 0;
                 if (ids.length() > 0) {
-                    cursor = database.queryFinalized("SELECT read_state, data, send_state, mid, date, uid, replydata, tmd.isdel FROM messages_v2 LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE uid IN (" + ids.toString() + ") AND out = 0 AND read_state IN(0,2) ORDER BY date DESC LIMIT 50");
+                    cursor = database.queryFinalized("SELECT m.read_state, m.data, m.send_state, m.mid, m.date, m.uid, m.replydata, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.uid IN (" + ids.toString() + ") AND m.out = 0 AND m.read_state IN(0,2) ORDER BY m.date DESC LIMIT 50");
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(1);
                         if (data != null) {
@@ -3603,7 +3603,7 @@ public class MessagesStorage extends BaseController {
                     cursor.dispose();
 
                     database.executeFast("DELETE FROM unread_push_messages WHERE date <= " + maxDate).stepThis().dispose();
-                    cursor = database.queryFinalized("SELECT data, mid, date, uid, random, fm, name, uname, flags, tmd.isdel FROM unread_push_messages LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE 1 ORDER BY date DESC LIMIT 50");
+                    cursor = database.queryFinalized("SELECT m.data, m.mid, m.date, m.uid, m.random, m.fm, m.name, m.uname, m.flags, tmd.isdel FROM unread_push_messages as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE 1 ORDER BY m.date DESC LIMIT 50");
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
@@ -8859,7 +8859,7 @@ public class MessagesStorage extends BaseController {
                     for (int b = 0, N2 = dialogs.size(); b < N2; b++) {
                         long dialogId = dialogs.keyAt(b);
                         ArrayList<Integer> mids = dialogs.valueAt(b);
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, data, tmd.isdel FROM messages_v2 LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=mid AND tmd.uid=uid WHERE mid IN (%s) AND uid = %d", TextUtils.join(",", mids), dialogId));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.mid, m.data, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid IN (%s) AND m.uid = %d", TextUtils.join(",", mids), dialogId));
                         while (cursor.next()) {
                             int mid = cursor.intValue(0);
                             NativeByteBuffer data = cursor.byteBufferValue(1);
