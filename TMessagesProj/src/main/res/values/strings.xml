@@ -5520,7 +5520,7 @@
     <string name="ThIdCopied">ID copied to clipboard</string>
     <string name="ThDCCopied">DC copied to clipboard</string>
     <string name="THChatSBManager">Shadowban manager</string>
-    <string name="THAccountSessionManager">Session manager</string>
+    <string name="THAccountSessionManager">Session manager (🌞 %d / 🌚 %d)</string>
     <string name="THAccountSessionInfo">Session information</string>
     <string name="THHistory">History</string>
     <string name="THDSBrandLabel">Brand</string>

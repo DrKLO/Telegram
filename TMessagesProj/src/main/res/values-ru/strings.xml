@@ -70,7 +70,7 @@
     <string name="ThIdCopied">ID скопирован в буфер</string>
     <string name="ThDCCopied">DC скопирован в буфер</string>
     <string name="THChatSBManager">Shadowban менеджер</string>
-    <string name="THAccountSessionManager">Менеджер сессий</string>
+    <string name="THAccountSessionManager">Менеджер сессий (🌞 %d / 🌚 %d)</string>
     <string name="THAccountSessionInfo">Информация о сессии</string>
     <string name="THHistory">История</string>
     <string name="THDSBrandLabel">Марка</string>

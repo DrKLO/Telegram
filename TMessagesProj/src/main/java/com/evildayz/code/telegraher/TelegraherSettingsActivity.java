@@ -559,7 +559,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         textSettingsCell.setText(LocaleController.getString(R.string.THChatSBManager), false);
                     } else if (position == accountSessionManagerRow) {
                         textSettingsCell.setCanDisable(false);
-                        textSettingsCell.setText(LocaleController.getString(R.string.THAccountSessionManager), false);
+                        int activeAccountsNumber = SharedConfig.activeAccounts == null ? 0 : SharedConfig.activeAccounts.size();
+                        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber);
+                        textSettingsCell.setText(String.format(LocaleController.getString(R.string.THAccountSessionManager)
+                                , activeAccountsNumber
+                                , offlineAccountsNumber
+                        ), false);
                     } else if (position == uiSystemFontRegularRow) {
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontRegular), false);
