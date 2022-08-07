@@ -5530,4 +5530,5 @@
     <string name="THDGraheriumLabelRow">Graherium 🍒</string>
     <string name="THDGraheriumSpeedUp">Speed-Up!</string>
     <string name="THDMessageTTL">TTL %d″</string>
+    <string name="THGraheriumAnimateEveryAvatar">Animate every avatar</string>
 </resources>
