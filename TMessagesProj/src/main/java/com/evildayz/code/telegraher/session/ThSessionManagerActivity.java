@@ -78,7 +78,7 @@ public class ThSessionManagerActivity extends BaseFragment implements Notificati
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString(R.string.THAccountSessionManager));
+        updateTheTitle();
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -123,6 +123,7 @@ public class ThSessionManagerActivity extends BaseFragment implements Notificati
                         ((ThTextDetailCell) view).isChecked() ? EMOJIS[1] : EMOJIS[0],
                         SharedConfig.thAccounts.get(accs.get(position)).get("userPhone").toString()));
             }
+            updateTheTitle();
         });
 
         listView.setOnItemLongClickListener((view, position, x, y) -> {
@@ -139,6 +140,15 @@ public class ThSessionManagerActivity extends BaseFragment implements Notificati
         });
 
         return fragmentView;
+    }
+
+    private void updateTheTitle() {
+        int activeAccountsNumber = SharedConfig.activeAccounts == null ? 0 : SharedConfig.activeAccounts.size();
+        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber);
+        actionBar.setTitle(String.format(LocaleController.getString(R.string.THAccountSessionManager)
+                , activeAccountsNumber
+                , offlineAccountsNumber
+        ));
     }
 
     @Override
