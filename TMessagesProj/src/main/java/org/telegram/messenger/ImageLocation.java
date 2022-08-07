@@ -124,7 +124,7 @@ public class ImageLocation {
         }
         if (type == TYPE_VIDEO_THUMB) {
             int currentAccount = UserConfig.selectedAccount;
-            if (MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video) {
+            if (user.photo.has_video && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimateEveryAvatar", false)) {
                 final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(user.id);
                 if (userFull != null && userFull.profile_photo !=null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
                     TLRPC.VideoSize videoSize = userFull.profile_photo.video_sizes.get(0);
