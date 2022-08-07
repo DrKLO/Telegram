@@ -81,4 +81,5 @@
     <string name="THDGraheriumSpeedUp">Шустрее!</string>
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Анимировать все авы</string>
+    <string name="THGraheriumAnimatedStickerOverlays">Анимированные подложки стикеров</string>
 </resources>

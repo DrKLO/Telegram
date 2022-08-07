@@ -119,6 +119,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int graheriumLabelRow;
     private int graheriumSpeedUp;
     private int graheriumAnimateEveryAvatar;
+    private int graheriumAnimatedStickerOverlays;
 
     private int deviceSpoofingLabelRow;
     private int deviceSpoofingBrand;
@@ -176,6 +177,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         graheriumLabelRow = rowCount++;
         graheriumSpeedUp = rowCount++;
         graheriumAnimateEveryAvatar = rowCount++;
+        graheriumAnimatedStickerOverlays = rowCount++;
 
         gifLabelHDRow = rowCount++;
         gifHDRow = rowCount++;
@@ -335,6 +337,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableGraheriumAnimateEveryAvatar", false);
                 editor.putBoolean("EnableGraheriumAnimateEveryAvatar", !enabled);
+                editor.apply();
+            } else if (position == graheriumAnimatedStickerOverlays) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableGraheriumAnimatedStickerOverlays", false);
+                editor.putBoolean("EnableGraheriumAnimatedStickerOverlays", !enabled);
                 editor.apply();
             } else if (position == gifHDRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -543,6 +551,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUp), globalPreps.getBoolean("EnableGraheriumSpeedUp", false), true);
                     } else if (position == graheriumAnimateEveryAvatar) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THGraheriumAnimateEveryAvatar), globalPreps.getBoolean("EnableGraheriumAnimateEveryAvatar", false), true);
+                    } else if (position == graheriumAnimatedStickerOverlays) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THGraheriumAnimatedStickerOverlays), globalPreps.getBoolean("EnableGraheriumAnimatedStickerOverlays", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableChatSBFull), localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == chatSwapToNextChannelRow) {
@@ -746,7 +756,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow
-                            || position == graheriumSpeedUp || position == graheriumAnimateEveryAvatar
+                            || position == graheriumSpeedUp || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;

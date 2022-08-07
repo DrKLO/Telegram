@@ -5531,4 +5531,5 @@
     <string name="THDGraheriumSpeedUp">Speed-Up!</string>
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Animate every avatar</string>
+    <string name="THGraheriumAnimatedStickerOverlays">Animated sticker overlays</string>
 </resources>
