@@ -28,8 +28,6 @@ import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.util.Consumer;
@@ -64,6 +62,8 @@ import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10611,8 +10611,36 @@ public class MessagesController extends BaseController implements NotificationCe
         SharedConfig.activeAccounts.remove(currentAccount);
         if (SharedConfig.thAccounts != null) SharedConfig.thAccounts.remove(currentAccount);
         if (SharedConfig.thDeviceSpoofing != null) SharedConfig.thDeviceSpoofing.remove(currentAccount);
+        //fucking wipe account folder
+        //don't let the data for pigs
+        if (currentAccount != 0) {
+            try {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    Files.walk(new File(ApplicationLoader.getAccountPath(currentAccount)).toPath())
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                } else {
+                    deleteDirectoryRecursionJavaOldSDK(new File(ApplicationLoader.getAccountPath(currentAccount)));
+                }
+            } catch (Exception e) {
+                //durov relogin!
+            }
+        }
         SharedConfig.saveAccounts();
     }
+
+    public static void deleteDirectoryRecursionJavaOldSDK(File file) {
+        if (file.isDirectory()) {
+            File[] entries = file.listFiles();
+            if (entries != null) {
+                for (File entry : entries) {
+                    deleteDirectoryRecursionJavaOldSDK(entry);
+                }
+            }
+        }
+    }
+
 
     public static ArrayList<TLRPC.TL_auth_loggedOut> getSavedLogOutTokens() {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("saved_tokens", Context.MODE_PRIVATE);

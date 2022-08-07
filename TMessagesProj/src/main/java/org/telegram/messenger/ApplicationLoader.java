@@ -42,7 +42,6 @@ import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.LauncherIconController;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.LinkedList;
 
 public class ApplicationLoader extends Application {
@@ -93,6 +92,10 @@ public class ApplicationLoader extends Application {
             FileLog.e(e);
         }
         return new File("/data/data/com.evildayz.code.telegraher_beta/files");
+    }
+
+    public static String getAccountPath(int accountId) {
+        return new File(getFilesDirFixed(), "account" + accountId).getPath();
     }
 
     public static void postInitApplication() {
