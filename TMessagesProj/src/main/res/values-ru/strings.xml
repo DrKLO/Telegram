@@ -79,4 +79,5 @@
     <string name="THDDeleteDownloadedFile">Удалить скачанный файл</string>
     <string name="THDGraheriumLabelRow">ГраХЕРиум 🍒</string>
     <string name="THDGraheriumSpeedUp">Шустрее!</string>
+    <string name="THDMessageTTL">TTL %d″</string>
 </resources>

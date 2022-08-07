@@ -1107,7 +1107,7 @@ public class FileLoader extends BaseController {
             }
         } else {
             if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                return getPathToAttach(message.media.document, null, message.media.ttl_seconds != 0, useFileDatabaseQueue);
+                return getPathToAttach(message.media.document, null, false, useFileDatabaseQueue);
             } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
                 if (sizes.size() > 0) {
