@@ -182,13 +182,13 @@ It's very simple
 
 * for android >=4.1
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.85.15.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.15_arm64_v8a/Telegraher.8.85.15.arm64_v8a.apk)
+    * `x`  [Telegraher.8.85.19.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.19_arm64_v8a/Telegraher.8.85.19.arm64_v8a.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.85.15.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.15_armeabi_v7a/Telegraher.8.85.15.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.85.19.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.19_armeabi_v7a/Telegraher.8.85.19.armeabi_v7a.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.85.15.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.15_x86/Telegraher.8.85.15.x86.apk)
+    * `x`  [Telegraher.8.85.19.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.19_x86/Telegraher.8.85.19.x86.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.85.15.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.15_x86_64/Telegraher.8.85.15.x86_64.apk)
+    * `x`  [Telegraher.8.85.19.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.85.19_x86_64/Telegraher.8.85.19.x86_64.apk)
 
 ### Issues/Wishlist
 
@@ -197,6 +197,14 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* 8.85.19
+    * medias with timers are fixed, so send "ok, i read that" click on TTL button after the media is fully loaded on
+      your client. It will wipe it for the sender (but not for you)
+    * fixed issue with notification icon
+    * fixed online/offline account indication for session manager
+    * graherium
+        * animated avatars for everyone or disable it also for everyone
+        * enable/disable sticker overlays
 * 8.85.15
     * fixed issues related to deletion marks (missing aliases for queries which crashed sqlite3)
         * fixed issue w/ not loading dialogs
