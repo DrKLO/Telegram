@@ -316,7 +316,8 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (chatActivity.isSecretChat() || view.getMessageObject() == null || view.getMessageObject().getId() < 0) {
             return false;
         }
-        if (!view.getMessageObject().isPremiumSticker() && chatActivity.currentUser == null) {
+        if ((!view.getMessageObject().isPremiumSticker() || !MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false))
+                && chatActivity.currentUser == null) {
             return false;
         }
         boolean show = showAnimationForCell(view, -1, true, false);
@@ -324,7 +325,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (show && (!EmojiData.hasEmojiSupportVibration(view.getMessageObject().getStickerEmoji()) || view.getMessageObject().isPremiumSticker())) {
             if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         }
-        if (view.getMessageObject().isPremiumSticker()) {
+        if (view.getMessageObject().isSticker() && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false)) {
             view.getMessageObject().forcePlayEffect = false;
             view.getMessageObject().messageOwner.premiumEffectWasPlayed = true;
             chatActivity.getMessagesStorage().updateMessageCustomParams(dialogId, view.getMessageObject().messageOwner);
@@ -382,7 +383,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         }
 
         emoji = unwrapEmoji(emoji);
-        boolean isPremiumSticker = messageObject.isPremiumSticker();
+        boolean isPremiumSticker = messageObject.isPremiumSticker() && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false);
 
         if (supportedEmoji.contains(emoji) || isPremiumSticker) {
             ArrayList<TLRPC.Document> arrayList = emojiInteractionsStickersMap.get(emoji);
