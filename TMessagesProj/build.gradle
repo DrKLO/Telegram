@@ -182,6 +182,14 @@ android {
                 abiVersionCode = 2
             }
         }
+        bundle {
+            ndk {
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            }
+            ext {
+                abiVersionCode = 2
+            }
+        }
         afat {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
