@@ -32,6 +32,7 @@ import com.evildayz.code.telegraher.ui.ThTextDetailCell;
 import org.telegram.messenger.*;
 import org.telegram.ui.ActionBar.*;
 import org.telegram.ui.Cells.*;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
@@ -52,11 +53,12 @@ public class THSessionInfoActivity extends BaseFragment implements NotificationC
     private int accountId;
 
     public THSessionInfoActivity(int accountId) {
-        //status - name surname username
+        //status
+        //username name surname
         //brand
         //device
         //sdk
-        rowCount = 4;
+        rowCount = 5;
         this.accountId = accountId;
     }
 
@@ -123,16 +125,16 @@ public class THSessionInfoActivity extends BaseFragment implements NotificationC
                             SharedConfig.thAccounts.get(accountId).get("userPhone").toString()));
                     break;
                 }
-                case 1: {
-                    presentFragment(new THDeviceSpoofingEditActivity(position - 1, accountId));
-                    break;
-                }
                 case 2: {
-                    presentFragment(new THDeviceSpoofingEditActivity(position - 1, accountId));
+                    presentFragment(new THDeviceSpoofingEditActivity(position - 2, accountId));
                     break;
                 }
                 case 3: {
-                    presentFragment(new THDeviceSpoofingEditActivity(position - 1, accountId));
+                    presentFragment(new THDeviceSpoofingEditActivity(position - 2, accountId));
+                    break;
+                }
+                case 4: {
+                    presentFragment(new THDeviceSpoofingEditActivity(position - 2, accountId));
                     break;
                 }
             }
@@ -144,16 +146,30 @@ public class THSessionInfoActivity extends BaseFragment implements NotificationC
                 return enabled;
             }
             switch (position) {
+                case 0: {
+                    BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("PhoneCopied", R.string.PhoneCopied), parentLayout.getLastFragment().getResourceProvider()).show();
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("thSessionUserPhone", SharedConfig.thAccounts.get(accountId).get("userPhone").toString());
+                    clipboard.setPrimaryClip(clip);
+                    break;
+                }
                 case 1: {
-                    presentFragment(new THDeviceSpoofingEditActivity(position - 1, -1));
+                    BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("UsernameCopied", R.string.UsernameCopied), parentLayout.getLastFragment().getResourceProvider()).show();
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("thSessionUserName", "@" + SharedConfig.thAccounts.get(accountId).get("userName"));
+                    clipboard.setPrimaryClip(clip);
                     break;
                 }
                 case 2: {
-                    presentFragment(new THDeviceSpoofingEditActivity(position - 1, -1));
+                    presentFragment(new THDeviceSpoofingEditActivity(position - 2, -1));
                     break;
                 }
                 case 3: {
-                    presentFragment(new THDeviceSpoofingEditActivity(position - 1, -1));
+                    presentFragment(new THDeviceSpoofingEditActivity(position - 2, -1));
+                    break;
+                }
+                case 4: {
+                    presentFragment(new THDeviceSpoofingEditActivity(position - 2, -1));
                     break;
                 }
             }
@@ -282,29 +298,36 @@ public class THSessionInfoActivity extends BaseFragment implements NotificationC
                                             thTextDetailCell.isChecked() ? EMOJIS[1] : EMOJIS[0],
                                             SharedConfig.thAccounts.get(accountId).get("userPhone").toString())
                                     ,
-                                    String.format(Locale.US, "%s %s(@%s)"
-                                            , SharedConfig.thAccounts.get(accountId).get("userFName")
-                                            , SharedConfig.thAccounts.get(accountId).get("userLName")
-                                            , SharedConfig.thAccounts.get(accountId).get("userName")
-                                    )
+                                    null
                                     , false);
                             break;
                         }
                         case 1: {
+                            thTextDetailCell.setTextAndValue(
+                                    String.format("@%s", SharedConfig.thAccounts.get(accountId).get("userName"))
+                                    ,
+                                    String.format(Locale.US, "%s %s"
+                                            , SharedConfig.thAccounts.get(accountId).get("userFName")
+                                            , SharedConfig.thAccounts.get(accountId).get("userLName")
+                                    )
+                                    , false);
+                            break;
+                        }
+                        case 2: {
                             thTextDetailCell.setTextAndValue(
                                     LocaleController.getString(R.string.THDSBrandLabel)
                                     , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceBrand").toString()
                                     , false);
                             break;
                         }
-                        case 2: {
+                        case 3: {
                             thTextDetailCell.setTextAndValue(
                                     LocaleController.getString(R.string.THDSModelLabel)
                                     , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceModel").toString()
                                     , false);
                             break;
                         }
-                        case 3: {
+                        case 4: {
                             thTextDetailCell.setTextAndValue(
                                     LocaleController.getString(R.string.THDSSDKLabel)
                                     , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceSDK").toString()
