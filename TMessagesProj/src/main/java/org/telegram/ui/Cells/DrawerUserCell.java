@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -128,7 +129,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         } catch (Exception ignore) {}
         textView.setText(text);
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
-        if (MessagesController.getInstance(account).isPremiumUser(user)) {
+        if (ThePenisMightierThanTheSword.starrMark(MessagesController.getInstance(account).isPremiumUser(user))) {
             textView.setDrawablePadding(AndroidUtilities.dp(6));
             textView.setRightDrawable(PremiumGradient.getInstance().premiumStarDrawableMini);
         } else {

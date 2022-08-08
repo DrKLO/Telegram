@@ -38,6 +38,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
@@ -837,7 +838,7 @@ public class DialogCell extends BaseCell {
                         } else {
                             drawVerified = user.verified;
                         }
-                        drawPremium = MessagesController.getInstance(currentAccount).isPremiumUser(user) && UserConfig.getInstance(currentAccount).clientUserId != user.id && user.id != 0;
+                        drawPremium = ThePenisMightierThanTheSword.starrMark(MessagesController.getInstance(currentAccount).isPremiumUser(user)) && UserConfig.getInstance(currentAccount).clientUserId != user.id && user.id != 0;
                     }
                 }
             }

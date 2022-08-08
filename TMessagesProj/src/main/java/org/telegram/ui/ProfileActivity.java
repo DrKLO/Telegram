@@ -6404,7 +6404,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (user.verified) {
                         rightIcon = getVerifiedCrossfadeDrawable();
                         nameTextViewRightDrawableContentDescription = LocaleController.getString("AccDescrVerified", R.string.AccDescrVerified);
-                    } else if (getMessagesController().isPremiumUser(user)) {
+                    } else if (ThePenisMightierThanTheSword.starrMark(getMessagesController().isPremiumUser(user))) {
                         rightIconIsPremium = true;
                         rightIcon = getPremiumCrossfadeDrawable();
                         nameTextViewRightDrawableContentDescription = LocaleController.getString("AccDescrPremium", R.string.AccDescrPremium);
@@ -6419,7 +6419,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     rightIcon = getScamDrawable(user.scam ? 0 : 1);
                 } else if (user.verified) {
                     rightIcon = getVerifiedCrossfadeDrawable();
-                } else if (getMessagesController().isPremiumUser(user)) {
+                } else if (ThePenisMightierThanTheSword.starrMark(getMessagesController().isPremiumUser(user))) {
                     rightIconIsPremium = true;
                     rightIcon = getPremiumCrossfadeDrawable();
                 }
@@ -6428,7 +6428,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (a == 0) {
                     nameTextView[a].setCanHideRightDrawable(rightIconIsPremium);
                 }
-                if (!user.self && getMessagesController().isPremiumUser(user)) {
+                if (!user.self && ThePenisMightierThanTheSword.starrMark(getMessagesController().isPremiumUser(user))) {
                     final SimpleTextView textView = nameTextView[a];
                     nameTextView[a].setRightDrawableOnClick(v -> {
                         PremiumPreviewBottomSheet premiumPreviewBottomSheet = new PremiumPreviewBottomSheet(ProfileActivity.this, currentAccount, user);

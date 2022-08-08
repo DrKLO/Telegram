@@ -82,4 +82,8 @@
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Анимировать все авы</string>
     <string name="THGraheriumAnimatedStickerOverlays">Анимированные подложки стикеров</string>
+    <string name="THGraheriumStarrLabel">Звезду..</string>
+    <string name="THGraheriumStarrNoone">Никому</string>
+    <string name="THGraheriumStarrEveryone">Всем!</string>
+    <string name="THGraheriumStarrPeperemiumOnly">Лишь пеперемиумам</string>
 </resources>

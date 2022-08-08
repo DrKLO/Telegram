@@ -5532,4 +5532,8 @@
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Animate every avatar</string>
     <string name="THGraheriumAnimatedStickerOverlays">Animated sticker overlays</string>
+    <string name="THGraheriumStarrLabel">Starr for..</string>
+    <string name="THGraheriumStarrNoone">Noone</string>
+    <string name="THGraheriumStarrEveryone">Everyone!</string>
+    <string name="THGraheriumStarrPeperemiumOnly">Peperemium only</string>
 </resources>

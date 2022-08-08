@@ -130,4 +130,15 @@ public class ThePenisMightierThanTheSword {
         Arrays.sort(ids);
         return ids[ids.length - 1];
     }
+
+    public static boolean starrMark(boolean bool) {
+        switch (MessagesController.getGlobalTelegraherSettings().getInt("GraheriumStarrMark", 0)) {
+            case 0:
+                return false;
+            case 1:
+                return true;
+            default:
+                return bool;
+        }
+    }
 }

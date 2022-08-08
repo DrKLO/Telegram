@@ -103,6 +103,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.evildayz.code.telegraher.ThMessageHistoryActivity;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.zxing.common.detector.MathUtils;
 
@@ -13419,10 +13420,10 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                 if (!TextUtils.isEmpty(currentUser.phone)) {
                     avatarContainer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
                 } else {
-                    avatarContainer.setTitle(UserObject.getUserName(currentUser), currentUser.scam, currentUser.fake, currentUser.verified, getMessagesController().isPremiumUser(currentUser));
+                    avatarContainer.setTitle(UserObject.getUserName(currentUser), currentUser.scam, currentUser.fake, currentUser.verified, ThePenisMightierThanTheSword.starrMark(getMessagesController().isPremiumUser(currentUser)));
                 }
             } else {
-                avatarContainer.setTitle(UserObject.getUserName(currentUser), currentUser.scam, currentUser.fake, currentUser.verified,  getMessagesController().isPremiumUser(currentUser));
+                avatarContainer.setTitle(UserObject.getUserName(currentUser), currentUser.scam, currentUser.fake, currentUser.verified,  ThePenisMightierThanTheSword.starrMark(getMessagesController().isPremiumUser(currentUser)));
             }
         }
         setParentActivityTitle(avatarContainer.getTitleTextView().getText());

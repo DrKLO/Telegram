@@ -20,6 +20,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -472,7 +473,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             }
             nameTextView.setText(name);
         }
-        if (currentUser != null && MessagesController.getInstance(currentAccount).isPremiumUser(currentUser)) {
+        if (currentUser != null && ThePenisMightierThanTheSword.starrMark(MessagesController.getInstance(currentAccount).isPremiumUser(currentUser))) {
             nameTextView.setRightDrawable(PremiumGradient.getInstance().premiumStarDrawableMini);
             nameTextView.setRightDrawableTopPadding(-AndroidUtilities.dp(0.5f));
         } else {
