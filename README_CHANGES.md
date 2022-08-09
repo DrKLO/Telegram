@@ -1,5 +1,7 @@
 # Changes
 
+* 8.85.21
+    * copy phone & username on long click from session manager (from the details)
 * 8.85.20
     * fixed sticker overlays
     * graherium: star for everyone, noone or just for peperemium folks
