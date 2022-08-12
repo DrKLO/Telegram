@@ -26,11 +26,11 @@ dependencies {
     implementation "com.google.code.gson:gson:2.9.1"
 
 
-    compileOnly 'org.checkerframework:checker-qual:3.16.0'
+    compileOnly 'org.checkerframework:checker-qual:3.21.4'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.5'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
 
-    implementation 'org.osmdroid:osmdroid-android:6.1.10'
+    implementation 'org.osmdroid:osmdroid-android:6.1.11'
     implementation files('libs/libgsaverification-client.aar')
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
@@ -211,7 +211,7 @@ android {
     }
 //    2636001 mean 2636 0 01 where 2636 is vanilla code version, and 01 is the release one
 //    defaultConfig.versionCode = 2721
-    defaultConfig.versionCode = 2725021
+    defaultConfig.versionCode = 2725032
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -230,7 +230,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 30
-        versionName "8.85.21"
+        versionName "8.85.32"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
