@@ -111,7 +111,7 @@ public class StarParticlesView extends View {
         public boolean startFromCenter;
         private Paint paint = new Paint();
 
-        ArrayList<Particle> particles = new ArrayList<>();
+        public ArrayList<Particle> particles = new ArrayList<>();
         public float speedScale = 1f;
 
         public final int count;
@@ -139,6 +139,12 @@ public class StarParticlesView extends View {
         public int type = -1;
         public String colorKey = Theme.key_premiumStartSmallStarsColor;
         public boolean svg;
+
+        public long pausedTime;
+
+        float a;
+        float a1;
+        float a2;
 
         public final static int TYPE_SETTINGS = 101;
 
@@ -196,7 +202,19 @@ public class StarParticlesView extends View {
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
                     svg = true;
                     continue;
-                }else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
+                    int res;
+                    if (i == 0) {
+                        res = R.raw.premium_object_smile1;
+                    } else if (i == 1) {
+                        res = R.raw.premium_object_smile2;
+                    } else {
+                        res = R.raw.premium_object_like;
+                    }
+                    stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
+                    svg = true;
+                    continue;
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
                     int res;
                     if (i == 0) {
                         res = R.raw.premium_object_adsbubble;
@@ -300,10 +318,6 @@ public class StarParticlesView extends View {
             }
         }
 
-        float a;
-        float a1;
-        float a2;
-
         public void onDraw(Canvas canvas) {
             onDraw(canvas, 1f);
         }
@@ -354,15 +368,14 @@ public class StarParticlesView extends View {
             }
         }
 
-        long pausedTime;
+        public class Particle {
+            public long lifeTime;
 
-        private class Particle {
             private float x, y;
             private float x2, y2;
             private float drawingX, drawingY;
             private float vecX, vecY;
             private int starIndex;
-            private long lifeTime;
             private int alpha;
             private float randomRotate;
             float inProgress;
@@ -496,7 +509,12 @@ public class StarParticlesView extends View {
                 } else {
                     alpha = (int) (255 * ((50 + Utilities.fastRandom.nextInt(50)) / 100f));
                 }
-                if ((type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE && (starIndex == 1 || starIndex == 2)) || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS) {
+                if ((type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE && (starIndex == 1 || starIndex == 2)) ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI
+                ) {
                     randomRotate = (int) (45 * ((Utilities.fastRandom.nextInt() % 100) / 100f));
                 }
                 if (type != TYPE_SETTINGS) {

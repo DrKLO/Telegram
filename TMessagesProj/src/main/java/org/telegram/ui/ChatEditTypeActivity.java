@@ -431,6 +431,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         linearLayout.addView(manageLinksInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         joinContainer = new JoinToSendSettingsView(context, currentChat);
+        joinContainer.showJoinToSend(info != null && info.linked_chat_id != 0);
         linearLayout.addView(joinContainer);
 
         saveContainer = new LinearLayout(context);
@@ -701,6 +702,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         usernameTextView.clearFocus();
         if (joinContainer != null) {
             joinContainer.setVisibility(!isChannel && !isPrivate ? View.VISIBLE : View.GONE);
+            joinContainer.showJoinToSend(info != null && info.linked_chat_id != 0);
         }
         checkDoneButton();
     }

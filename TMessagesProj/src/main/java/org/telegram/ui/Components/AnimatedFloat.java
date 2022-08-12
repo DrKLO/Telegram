@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 
 import android.animation.TimeInterpolator;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
 
 import androidx.core.math.MathUtils;
@@ -12,6 +13,7 @@ import org.telegram.messenger.AndroidUtilities;
 public class AnimatedFloat {
 
     private View parent;
+    private Runnable invalidate;
     private float value;
     private float targetValue;
     private boolean firstSet;
@@ -55,8 +57,35 @@ public class AnimatedFloat {
         this.firstSet = true;
     }
 
+    public AnimatedFloat(View parentToInvalidate, long transitionDelay, long transitionDuration, TimeInterpolator transitionInterpolator) {
+        this.parent = parentToInvalidate;
+        this.transitionDelay = transitionDelay;
+        this.transitionDuration = transitionDuration;
+        this.transitionInterpolator = transitionInterpolator;
+        this.firstSet = true;
+    }
+
+
+    public AnimatedFloat(Runnable invalidate) {
+        this.invalidate = invalidate;
+        this.firstSet = true;
+    }
+
+    public AnimatedFloat(Runnable invalidate, long transitionDuration, TimeInterpolator transitionInterpolator) {
+        this.invalidate = invalidate;
+        this.transitionDuration = transitionDuration;
+        this.transitionInterpolator = transitionInterpolator;
+        this.firstSet = true;
+    }
+
     public AnimatedFloat(float initialValue, View parentToInvalidate) {
         this.parent = parentToInvalidate;
+        this.value = targetValue = initialValue;
+        this.firstSet = false;
+    }
+
+    public AnimatedFloat(float initialValue, Runnable invalidate) {
+        this.invalidate = invalidate;
         this.value = targetValue = initialValue;
         this.firstSet = false;
     }
@@ -70,9 +99,21 @@ public class AnimatedFloat {
         this.firstSet = false;
     }
 
+    public AnimatedFloat(float initialValue, Runnable invalidate, long transitionDelay, long transitionDuration, TimeInterpolator transitionInterpolator) {
+        this.invalidate = invalidate;
+        this.value = targetValue = initialValue;
+        this.transitionDelay = transitionDelay;
+        this.transitionDuration = transitionDuration;
+        this.transitionInterpolator = transitionInterpolator;
+        this.firstSet = false;
+    }
+
     public float get() {
         return value;
     }
+
+    // set() must be called inside onDraw/dispatchDraw
+    // the main purpose of AnimatedFloat is to interpolate between abrupt changing states
 
     public float set(float mustBe) {
         return this.set(mustBe, false);
@@ -93,15 +134,40 @@ public class AnimatedFloat {
         if (transition) {
             final float t = MathUtils.clamp((now - transitionStart - transitionDelay) / (float) transitionDuration, 0, 1);
             if (now - transitionStart >= transitionDelay) {
-                value = AndroidUtilities.lerp(startValue, targetValue, transitionInterpolator.getInterpolation(t));
+                if (transitionInterpolator == null) {
+                    value = AndroidUtilities.lerp(startValue, targetValue, t);
+                } else {
+                    value = AndroidUtilities.lerp(startValue, targetValue, transitionInterpolator.getInterpolation(t));
+                }
             }
             if (t >= 1f) {
                 transition = false;
-            } else if (parent != null) {
-                parent.invalidate();
+            } else {
+                if (parent != null) {
+                    parent.invalidate();
+                }
+                if (invalidate != null) {
+                    invalidate.run();
+                }
             }
         }
         return value;
+    }
+
+    public float getTransitionProgress() {
+        if (!transition) {
+            return 0;
+        }
+        final long now = SystemClock.elapsedRealtime();
+        return MathUtils.clamp((now - transitionStart - transitionDelay) / (float) transitionDuration, 0, 1);
+    }
+
+    public float getTransitionProgressInterpolated() {
+        if (transitionInterpolator != null) {
+            return transitionInterpolator.getInterpolation(getTransitionProgress());
+        } else {
+            return getTransitionProgress();
+        }
     }
 
     public void setParent(View parent) {

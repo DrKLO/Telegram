@@ -97,7 +97,7 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
             File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(size);
             if (f.exists()) {
                 rv.setViewVisibility(R.id.feed_widget_item_image, View.VISIBLE);
-                Uri uri = FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID + ".provider", f);
+                Uri uri = FileProvider.getUriForFile(mContext, ApplicationLoader.getApplicationId() + ".provider", f);
                 grantUriAccessToWidget(mContext, uri);
                 rv.setImageViewUri(R.id.feed_widget_item_image, uri);
             } else {

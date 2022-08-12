@@ -32,6 +32,7 @@ import androidx.dynamicanimation.animation.SpringForce;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -46,6 +47,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -120,6 +122,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private boolean mainButtonWasVisible, mainButtonProgressWasVisible;
     private TextView mainButton;
     private RadialProgressView radialProgressView;
+
+    private boolean needCloseConfirmation;
 
     private VerticalPositionAutoAnimator mainButtonAutoAnimator, radialProgressAutoAnimator;
 
@@ -196,6 +200,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
 
             @Override
+            public void onWebAppSetupClosingBehavior(boolean needConfirmation) {
+                BotWebViewSheet.this.needCloseConfirmation = needConfirmation;
+            }
+
+            @Override
             public void onSendWebViewData(String data) {
                 if (queryId != 0 || sentWebViewData) {
                     return;
@@ -267,7 +276,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     OverlayActionBarLayoutDialog overlayActionBarLayoutDialog = new OverlayActionBarLayoutDialog(context, resourcesProvider);
                     overlayActionBarLayoutDialog.show();
                     paymentFormActivity.setPaymentFormCallback(status -> {
-                        overlayActionBarLayoutDialog.dismiss();
+                        if (status != PaymentFormActivity.InvoiceStatus.PENDING) {
+                            overlayActionBarLayoutDialog.dismiss();
+                        }
 
                         webViewContainer.onInvoiceStatusUpdate(slug, status.name().toLowerCase(Locale.ROOT));
                     });
@@ -388,7 +399,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             public boolean onTouchEvent(MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN && (event.getY() <= AndroidUtilities.lerp(swipeContainer.getTranslationY() + AndroidUtilities.dp(24), 0, actionBarTransitionProgress) ||
                         event.getX() > swipeContainer.getRight() || event.getX() < swipeContainer.getLeft())) {
-                    dismiss();
+                    onCheckDismissByUser();
                     return true;
                 }
                 return super.onTouchEvent(event);
@@ -461,7 +472,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    dismiss();
+                    onCheckDismissByUser();
                 }
             }
         });
@@ -517,7 +528,11 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             lastSwipeTime = System.currentTimeMillis();
         });
         swipeContainer.setScrollEndListener(()-> webViewContainer.invalidateViewPortHeight(true));
-        swipeContainer.setDelegate(this::dismiss);
+        swipeContainer.setDelegate(() -> {
+            if (!onCheckDismissByUser()) {
+                swipeContainer.stickTo(0);
+            }
+        });
         swipeContainer.setTopActionBarOffsetY(ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - AndroidUtilities.dp(24));
         swipeContainer.setIsKeyboardVisible(obj -> frameLayout.getKeyboardHeight() >= AndroidUtilities.dp(20));
 
@@ -645,7 +660,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             public void onItemClick(int id) {
                 if (id == -1) {
                     if (!webViewContainer.onBackPressed()) {
-                        dismiss();
+                        onCheckDismissByUser();
                     }
                 } else if (id == R.id.menu_open_bot) {
                     Bundle bundle = new Bundle();
@@ -813,12 +828,36 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         if (webViewContainer.onBackPressed()) {
             return;
         }
-        super.onBackPressed();
+        onCheckDismissByUser();
     }
 
     @Override
     public void dismiss() {
         dismiss(null);
+    }
+
+    public boolean onCheckDismissByUser() {
+        if (needCloseConfirmation) {
+            String botName = null;
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(botId);
+            if (user != null) {
+                botName = ContactsController.formatName(user.first_name, user.last_name);
+            }
+
+            AlertDialog dialog = new AlertDialog.Builder(getContext())
+                    .setTitle(botName)
+                    .setMessage(LocaleController.getString(R.string.BotWebViewChangesMayNotBeSaved))
+                    .setPositiveButton(LocaleController.getString(R.string.BotWebViewCloseAnyway), (dialog2, which) -> dismiss())
+                    .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                    .create();
+            dialog.show();
+            TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            textView.setTextColor(getColor(Theme.key_dialogTextRed));
+            return false;
+        } else {
+            dismiss();
+            return true;
+        }
     }
 
     public void dismiss(Runnable callback) {

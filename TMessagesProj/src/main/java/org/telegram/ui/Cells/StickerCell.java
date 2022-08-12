@@ -27,11 +27,13 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
 public class StickerCell extends FrameLayout {
 
@@ -44,6 +46,10 @@ public class StickerCell extends FrameLayout {
     private long time = 0;
     private boolean clearsInputField;
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
+    private PremiumLockIconView premiumIconView;
+    private float premiumAlpha = 1f;
+    private boolean showPremiumLock;
+    private boolean isPremiumSticker;
 
     public StickerCell(Context context) {
         super(context);
@@ -53,6 +59,11 @@ public class StickerCell extends FrameLayout {
         imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(66, 66, Gravity.CENTER_HORIZONTAL, 0, 5, 0, 0));
         setFocusable(true);
+
+        premiumIconView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED);
+        premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        premiumIconView.setImageReceiver(imageView.getImageReceiver());
+        addView(premiumIconView, LayoutHelper.createFrame(24, 24, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0 ,0, 0, 0));
     }
 
     @Override
@@ -79,6 +90,11 @@ public class StickerCell extends FrameLayout {
 
     public void setSticker(TLRPC.Document document, Object parent) {
         parentObject = parent;
+        isPremiumSticker = MessageObject.isPremiumSticker(document);
+        if (isPremiumSticker) {
+            premiumIconView.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            premiumIconView.setWaitingImage();
+        }
         if (document != null) {
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundGray, 1.0f);
@@ -108,6 +124,7 @@ public class StickerCell extends FrameLayout {
             background.setAlpha(230);
             background.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_stickersHintPanel), PorterDuff.Mode.MULTIPLY));
         }
+        updatePremiumStatus(false);
     }
 
     public TLRPC.Document getSticker() {
@@ -186,5 +203,29 @@ public class StickerCell extends FrameLayout {
         else
             info.setText(LocaleController.getString("AttachSticker", R.string.AttachSticker));
         info.setEnabled(true);
+    }
+
+    private void updatePremiumStatus(boolean animated) {
+        if (isPremiumSticker) {
+            showPremiumLock = true;
+        } else {
+            showPremiumLock = false;
+        }
+        FrameLayout.LayoutParams layoutParams = (LayoutParams) premiumIconView.getLayoutParams();
+        if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+            layoutParams.height = layoutParams.width = AndroidUtilities.dp(24);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            layoutParams.bottomMargin = layoutParams.rightMargin = 0;
+            premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        } else {
+            layoutParams.height = layoutParams.width = AndroidUtilities.dp(16);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
+            layoutParams.bottomMargin = AndroidUtilities.dp(8);
+            layoutParams.rightMargin = AndroidUtilities.dp(8);
+            premiumIconView.setPadding(AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1));
+        }
+        premiumIconView.setLocked(!UserConfig.getInstance(UserConfig.selectedAccount).isPremium());
+        AndroidUtilities.updateViewVisibilityAnimated(premiumIconView, showPremiumLock, 0.9f, animated);
+        invalidate();
     }
 }

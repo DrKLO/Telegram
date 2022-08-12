@@ -101,7 +101,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
                 notifyDataSetChanged();
                 delegate.needChangePanelVisibility(visible = !param.isEmpty());
             }
-        });
+        }, true);
         if (keywordResults == null || keywordResults.isEmpty()) {
             AndroidUtilities.runOnUIThread(searchRunnable, 1000);
         } else {

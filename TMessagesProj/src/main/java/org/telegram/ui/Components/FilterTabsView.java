@@ -70,6 +70,16 @@ public class FilterTabsView extends FrameLayout {
         return positionToStableId.get(selectedType, -1);
     }
 
+    public void selectTabWithStableId(int stableId) {
+        for (int i = 0; i < tabs.size(); i++) {
+            if (positionToStableId.get(i, -1) == stableId) {
+                currentPosition = i;
+                selectedTabId = positionToId.get(i);
+                break;
+            }
+        }
+    }
+
     public interface FilterTabsViewDelegate {
         void onPageSelected(Tab tab, boolean forward);
 

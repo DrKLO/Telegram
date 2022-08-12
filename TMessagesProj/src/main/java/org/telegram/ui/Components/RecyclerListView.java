@@ -19,6 +19,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
@@ -45,6 +46,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.IntDef;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -165,6 +167,8 @@ public class RecyclerListView extends RecyclerView {
     HashSet<Integer> selectedPositions;
     RecyclerItemsEnterAnimator itemsEnterAnimator;
 
+    Consumer<Canvas> selectorTransformer;
+
     protected final Theme.ResourcesProvider resourcesProvider;
 
     private boolean accessibilityEnabled = true;
@@ -178,6 +182,10 @@ public class RecyclerListView extends RecyclerView {
             }
         }
     };
+
+    public void setSelectorTransformer(Consumer<Canvas> transformer) {
+        selectorTransformer = transformer;
+    }
 
     public FastScroll getFastScroll() {
         return fastScroll;
@@ -2210,6 +2218,10 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
+    public Rect getSelectorRect() {
+        return selectorRect;
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (itemsEnterAnimator != null) {
@@ -2218,12 +2230,22 @@ public class RecyclerListView extends RecyclerView {
 
         if (drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
+            canvas.save();
+            if (selectorTransformer != null) {
+                selectorTransformer.accept(canvas);
+            }
             selectorDrawable.draw(canvas);
+            canvas.restore();
         }
         super.dispatchDraw(canvas);
         if (!drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
+            canvas.save();
+            if (selectorTransformer != null) {
+                selectorTransformer.accept(canvas);
+            }
             selectorDrawable.draw(canvas);
+            canvas.restore();
         }
         if (overlayContainer != null) {
             overlayContainer.draw(canvas);

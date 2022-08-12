@@ -213,11 +213,9 @@ public class ReactionsLayoutInBubble {
                 }
             }
             int last = reactionButtons.size() - 1;
-            if (fromP != last) {
-                int lineOffset = availableWidth - (reactionButtons.get(last).x + reactionButtons.get(last).width);
-                for (int k = fromP; k <= last; k++) {
-                    reactionButtons.get(k).x += lineOffset;
-                }
+            int lineOffset = availableWidth - (reactionButtons.get(last).x + reactionButtons.get(last).width);
+            for (int k = fromP; k <= last; k++) {
+                reactionButtons.get(k).x += lineOffset;
             }
         }
         lastLineX = currentX;

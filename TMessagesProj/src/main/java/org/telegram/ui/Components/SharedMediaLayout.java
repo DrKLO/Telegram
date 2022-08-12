@@ -5635,7 +5635,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             for (int a = 0; a < mediaPages.length; a++) {
                                 if (mediaPages[a].selectedType == currentType) {
                                     if (searchesInProgress == 0 && count == 0) {
-                                        mediaPages[a].emptyView.title.setText(LocaleController.formatString(R.string.NoResultFoundFor, "NoResultFoundFor", query));
+                                        mediaPages[a].emptyView.title.setText(LocaleController.formatString("NoResultFoundFor", R.string.NoResultFoundFor, query));
                                         mediaPages[a].emptyView.showProgress(false, true);
                                     } else if (oldItemCounts == 0) {
                                         animateItemsEnter(mediaPages[a].listView, 0, null);

@@ -2,8 +2,6 @@ package org.telegram.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
@@ -78,7 +76,6 @@ import org.telegram.ui.Cells.SettingsSearchCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.HideViewAfterAnimation;
@@ -626,7 +623,7 @@ public class QrActivity extends BaseFragment {
         animationSettings.afterStartDescriptionsAddedRunnable = () -> {
             resourcesProvider.initColors(currentTheme, isCurrentThemeDark);
         };
-        parentLayout.animateThemedValues(animationSettings);
+        parentLayout.animateThemedValues(animationSettings, null);
     }
 
     private void performShare() {
@@ -670,7 +667,12 @@ public class QrActivity extends BaseFragment {
                 ex.printStackTrace();
             }
         }
-        AndroidUtilities.runOnUIThread(() -> themesViewController.shareButton.setClickable(true), 500);
+        AndroidUtilities.runOnUIThread(() -> {
+            if (themesViewController == null) {
+                return;
+            }
+            themesViewController.shareButton.setClickable(true);
+        }, 500);
     }
 
     @Override

@@ -90,16 +90,14 @@ public class BotCommandsMenuView extends View {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-
-        webViewAnimation.addParentView(this);
+        webViewAnimation.setMasterParent(this);
         webViewAnimation.setCurrentParentView(this);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-
-        webViewAnimation.removeParentView(this);
+        webViewAnimation.setMasterParent(this);
     }
 
     public void setWebView(boolean webView) {
@@ -299,9 +297,6 @@ public class BotCommandsMenuView extends View {
         if (isWebView) {
             if (isWebViewOpened != opened) {
                 RLottieDrawable drawable = webViewAnimation;
-                if (!drawable.hasParentView()) {
-                    drawable.addParentView(this);
-                }
                 drawable.stop();
                 drawable.setPlayInDirectionOfCustomEndFrame(true);
                 drawable.setCustomEndFrame(opened ? drawable.getFramesCount() : 1);

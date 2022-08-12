@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
@@ -23,17 +24,6 @@ import android.util.SparseIntArray;
 
 import androidx.collection.LongSparseArray;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -45,7 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+@SuppressLint("MissingPermission")
+public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, ILocationServiceProvider.IAPIConnectionCallbacks, ILocationServiceProvider.IAPIOnConnectionFailedListener {
 
     private LongSparseArray<SharingLocationInfo> sharingLocationsMap = new LongSparseArray<>();
     private ArrayList<SharingLocationInfo> sharingLocations = new ArrayList<>();
@@ -58,10 +49,10 @@ public class LocationController extends BaseController implements NotificationCe
     private FusedLocationListener fusedLocationListener = new FusedLocationListener();
     private Location lastKnownLocation;
     private long lastLocationSendTime;
-    private boolean locationSentSinceLastGoogleMapUpdate = true;
+    private boolean locationSentSinceLastMapUpdate = true;
     private long lastLocationStartTime;
     private boolean started;
-    private boolean lastLocationByGoogleMaps;
+    private boolean lastLocationByMaps;
     private SparseIntArray requests = new SparseIntArray();
     private LongSparseArray<Boolean> cacheRequests = new LongSparseArray<>();
     private long locationEndWatchTime;
@@ -72,9 +63,9 @@ public class LocationController extends BaseController implements NotificationCe
     public ArrayList<SharingLocationInfo> sharingLocationsUI = new ArrayList<>();
     private LongSparseArray<SharingLocationInfo> sharingLocationsMapUI = new LongSparseArray<>();
 
-    private Boolean playServicesAvailable;
+    private Boolean servicesAvailable;
     private boolean wasConnectedToPlayServices;
-    private GoogleApiClient googleApiClient;
+    private ILocationServiceProvider.IMapApiClient apiClient;
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private final static long UPDATE_INTERVAL = 1000, FASTEST_INTERVAL = 1000;
     private final static int BACKGROUD_UPDATE_TIME = 30 * 1000;
@@ -86,7 +77,7 @@ public class LocationController extends BaseController implements NotificationCe
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyUsers = new ArrayList<>();
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyChats = new ArrayList<>();
 
-    private LocationRequest locationRequest;
+    private ILocationServiceProvider.ILocationRequest locationRequest;
 
     private static volatile LocationController[] Instance = new LocationController[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -147,7 +138,7 @@ public class LocationController extends BaseController implements NotificationCe
         }
     }
 
-    private class FusedLocationListener implements com.google.android.gms.location.LocationListener {
+    private class FusedLocationListener implements ILocationServiceProvider.ILocationListener {
 
         @Override
         public void onLocationChanged(Location location) {
@@ -162,13 +153,10 @@ public class LocationController extends BaseController implements NotificationCe
         super(instance);
 
         locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
-        googleApiClient = new GoogleApiClient.Builder(ApplicationLoader.applicationContext).
-                addApi(LocationServices.API).
-                addConnectionCallbacks(this).
-                addOnConnectionFailedListener(this).build();
+        apiClient = ApplicationLoader.getLocationServiceProvider().onCreateLocationServicesAPI(ApplicationLoader.applicationContext, this, this);
 
-        locationRequest = new LocationRequest();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest = ApplicationLoader.getLocationServiceProvider().onCreateLocationRequest();
+        locationRequest.setPriority(ILocationServiceProvider.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(UPDATE_INTERVAL);
         locationRequest.setFastestInterval(FASTEST_INTERVAL);
 
@@ -288,30 +276,25 @@ public class LocationController extends BaseController implements NotificationCe
         wasConnectedToPlayServices = true;
         try {
             if (Build.VERSION.SDK_INT >= 21) {
-                LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
-                PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
-                result.setResultCallback(locationSettingsResult -> {
-                    final Status status = locationSettingsResult.getStatus();
-                    switch (status.getStatusCode()) {
-                        case LocationSettingsStatusCodes.SUCCESS:
+                ApplicationLoader.getLocationServiceProvider().checkLocationSettings(locationRequest, status -> {
+                    switch (status) {
+                        case ILocationServiceProvider.STATUS_SUCCESS:
                             startFusedLocationRequest(true);
                             break;
-                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        case ILocationServiceProvider.STATUS_RESOLUTION_REQUIRED:
                             Utilities.stageQueue.postRunnable(() -> {
                                 if (lookingForPeopleNearby || !sharingLocations.isEmpty()) {
                                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needShowPlayServicesAlert, status));
                                 }
                             });
                             break;
-                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        case ILocationServiceProvider.STATUS_SETTINGS_CHANGE_UNAVAILABLE:
                             Utilities.stageQueue.postRunnable(() -> {
-                                playServicesAvailable = false;
+                                servicesAvailable = false;
                                 try {
-                                    googleApiClient.disconnect();
+                                    apiClient.disconnect();
                                     start();
-                                } catch (Throwable ignore) {
-
-                                }
+                                } catch (Throwable ignore) {}
                             });
                             break;
                     }
@@ -327,13 +310,13 @@ public class LocationController extends BaseController implements NotificationCe
     public void startFusedLocationRequest(boolean permissionsGranted) {
         Utilities.stageQueue.postRunnable(() -> {
             if (!permissionsGranted) {
-                playServicesAvailable = false;
+                servicesAvailable = false;
             }
             if (shareMyCurrentLocation || lookingForPeopleNearby || !sharingLocations.isEmpty()) {
                 if (permissionsGranted) {
                     try {
-                        setLastKnownLocation(LocationServices.FusedLocationApi.getLastLocation(googleApiClient));
-                        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, fusedLocationListener);
+                        ApplicationLoader.getLocationServiceProvider().getLastLocation(this::setLastKnownLocation);
+                        ApplicationLoader.getLocationServiceProvider().requestLocationUpdates(locationRequest, fusedLocationListener);
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }
@@ -350,24 +333,22 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
+    public void onConnectionFailed() {
         if (wasConnectedToPlayServices) {
             return;
         }
-        playServicesAvailable = false;
+        servicesAvailable = false;
         if (started) {
             started = false;
             start();
         }
     }
 
-    private boolean checkPlayServices() {
-        if (playServicesAvailable == null) {
-            GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-            int resultCode = apiAvailability.isGooglePlayServicesAvailable(ApplicationLoader.applicationContext);
-            playServicesAvailable = resultCode == ConnectionResult.SUCCESS;
+    private boolean checkServices() {
+        if (servicesAvailable == null) {
+            servicesAvailable = ApplicationLoader.getLocationServiceProvider().checkServices();
         }
-        return playServicesAvailable;
+        return servicesAvailable;
     }
 
     private void broadcastLastKnownLocation(boolean cancelCurrent) {
@@ -519,9 +500,9 @@ public class LocationController extends BaseController implements NotificationCe
         }
         if (started) {
             long newTime = SystemClock.elapsedRealtime();
-            if (lastLocationByGoogleMaps || Math.abs(lastLocationStartTime - newTime) > LOCATION_ACQUIRE_TIME || shouldSendLocationNow()) {
-                lastLocationByGoogleMaps = false;
-                locationSentSinceLastGoogleMapUpdate = true;
+            if (lastLocationByMaps || Math.abs(lastLocationStartTime - newTime) > LOCATION_ACQUIRE_TIME || shouldSendLocationNow()) {
+                lastLocationByMaps = false;
+                locationSentSinceLastMapUpdate = true;
                 boolean cancelAll = (SystemClock.elapsedRealtime() - lastLocationSendTime) > 2 * 1000;
                 lastLocationStartTime = newTime;
                 lastLocationSendTime = SystemClock.elapsedRealtime();
@@ -678,7 +659,7 @@ public class LocationController extends BaseController implements NotificationCe
                     NativeByteBuffer data = cursor.byteBufferValue(4);
                     if (data != null) {
                         info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false, false);
-                        MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad);
+                        MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad, null);
                         data.reuse();
                     }
                     result.add(info);
@@ -846,17 +827,17 @@ public class LocationController extends BaseController implements NotificationCe
         });
     }
 
-    public void setGoogleMapLocation(Location location, boolean first) {
+    public void setMapLocation(Location location, boolean first) {
         if (location == null) {
             return;
         }
-        lastLocationByGoogleMaps = true;
+        lastLocationByMaps = true;
         if (first || lastKnownLocation != null && lastKnownLocation.distanceTo(location) >= 20) {
             lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME;
-            locationSentSinceLastGoogleMapUpdate = false;
-        } else if (locationSentSinceLastGoogleMapUpdate) {
+            locationSentSinceLastMapUpdate = false;
+        } else if (locationSentSinceLastMapUpdate) {
             lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + FOREGROUND_UPDATE_TIME;
-            locationSentSinceLastGoogleMapUpdate = false;
+            locationSentSinceLastMapUpdate = false;
         }
         setLastKnownLocation(location);
     }
@@ -868,9 +849,9 @@ public class LocationController extends BaseController implements NotificationCe
         lastLocationStartTime = SystemClock.elapsedRealtime();
         started = true;
         boolean ok = false;
-        if (checkPlayServices()) {
+        if (checkServices()) {
             try {
-                googleApiClient.connect();
+                apiClient.connect();
                 ok = true;
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -910,10 +891,10 @@ public class LocationController extends BaseController implements NotificationCe
             return;
         }
         started = false;
-        if (checkPlayServices()) {
+        if (checkServices()) {
             try {
-                LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, fusedLocationListener);
-                googleApiClient.disconnect();
+                ApplicationLoader.getLocationServiceProvider().removeLocationUpdates(fusedLocationListener);
+                apiClient.disconnect();
             } catch (Throwable e) {
                 FileLog.e(e, false);
             }

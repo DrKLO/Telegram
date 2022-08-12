@@ -551,7 +551,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         stickersTab.setIndicatorColor(0xff6ebaed);
         stickersTab.setUnderlineColor(0xff0B0B0B);
         stickersTab.setBackgroundColor(0xff252525);
-        containerView.addView(stickersTab, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
+        containerView.addView(stickersTab, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP));
         stickersTab.setDelegate(page -> {
             int scrollToPosition;
             if (page == recentTabBum) {
@@ -1312,7 +1312,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                             clear();
                             notifyDataSetChanged();
                         }
-                    });
+                    }, false);
                 }
                 ArrayList<TLRPC.TL_messages_stickerSet> local = MediaDataController.getInstance(currentAccount).getStickerSets(currentType);
                 int index;

@@ -104,6 +104,10 @@ public class TextSettingsCell extends FrameLayout {
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
     }
 
+    public ImageView getValueImageView() {
+        return valueImageView;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
@@ -124,6 +128,15 @@ public class TextSettingsCell extends FrameLayout {
         if (valueTextView.getVisibility() == VISIBLE) {
             valueTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
             width = availableWidth - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(8);
+
+            if (valueImageView.getVisibility() == VISIBLE) {
+                MarginLayoutParams params = (MarginLayoutParams) valueImageView.getLayoutParams();
+                if (LocaleController.isRTL) {
+                    params.leftMargin = AndroidUtilities.dp(padding + 4) + valueTextView.getMeasuredWidth();
+                } else {
+                    params.rightMargin = AndroidUtilities.dp(padding + 4) + valueTextView.getMeasuredWidth();
+                }
+            }
         } else {
             width = availableWidth;
         }

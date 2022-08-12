@@ -27,7 +27,6 @@ import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,6 +35,8 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
@@ -112,6 +113,9 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private boolean maybeClick;
     private float touchDownX, touchDownY;
 
+    private AnimatedEmojiSpan.EmojiGroupedSpans emojiStack;
+    private boolean attachedToWindow;
+
     public SimpleTextView(Context context) {
         super(context);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -129,8 +133,17 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        attachedToWindow = true;
+        emojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, emojiStack, layout);
+    }
+
+    @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        attachedToWindow = false;
+        AnimatedEmojiSpan.release(this, emojiStack);
         wasLayout = false;
     }
 
@@ -334,7 +347,6 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 if (layout != null && layout.getText() instanceof Spannable) {
                     SpoilerEffect.addSpoilers(this, layout, spoilersPool, spoilers);
                 }
-
                 calcOffset(width);
             } catch (Exception ignore) {
 
@@ -343,6 +355,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
             layout = null;
             textWidth = 0;
             textHeight = 0;
+        }
+        AnimatedEmojiSpan.release(this, emojiStack);
+        if (attachedToWindow) {
+            emojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, emojiStack, layout);
         }
         invalidate();
         return true;
@@ -750,17 +766,25 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
             canvas.save();
             clipOutSpoilers(canvas);
+            if (emojiStack != null) {
+                emojiStack.clearPositions();
+            }
             layout.draw(canvas);
             canvas.restore();
 
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, emojiStack, 0, null, 0, 0, 0, 1f);
             drawSpoilers(canvas);
             canvas.restore();
         } else {
             canvas.save();
             clipOutSpoilers(canvas);
+            if (emojiStack != null) {
+                emojiStack.clearPositions();
+            }
             layout.draw(canvas);
             canvas.restore();
 
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, emojiStack, 0, null, 0, 0, 0, 1f);
             drawSpoilers(canvas);
         }
     }

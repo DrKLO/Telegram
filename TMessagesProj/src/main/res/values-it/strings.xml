@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">Rimuovi utente</string>
     <string name="DeleteReportSpam">Segnala come spam</string>
     <string name="DeleteAllFrom">Elimina tutto da %1$s</string>
-    <string name="ClearRecentEmoji">Cancellare le emoji recenti?</string>
+    <string name="ClearRecentEmojiTitle">Cancellare le emoji recenti</string>
     <string name="Emoji1">Emoticon e persone</string>
     <string name="Emoji2">Animali e natura</string>
     <string name="Emoji3">Cibo e bevande</string>

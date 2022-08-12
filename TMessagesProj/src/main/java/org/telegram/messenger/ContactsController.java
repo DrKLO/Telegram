@@ -69,6 +69,7 @@ public class ContactsController extends BaseController {
     private ArrayList<TLRPC.PrivacyRule> forwardsPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> phonePrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> addedByPhonePrivacyRules;
+    private ArrayList<TLRPC.PrivacyRule> voiceMessagesRules;
     private TLRPC.TL_globalPrivacySettings globalPrivacySettings;
 
     public final static int PRIVACY_RULES_TYPE_LASTSEEN = 0;
@@ -79,8 +80,9 @@ public class ContactsController extends BaseController {
     public final static int PRIVACY_RULES_TYPE_FORWARDS = 5;
     public final static int PRIVACY_RULES_TYPE_PHONE = 6;
     public final static int PRIVACY_RULES_TYPE_ADDED_BY_PHONE = 7;
+    public final static int PRIVACY_RULES_TYPE_VOICE_MESSAGES = 8;
 
-    public final static int PRIVACY_RULES_TYPE_COUNT = 8;
+    public final static int PRIVACY_RULES_TYPE_COUNT = 9;
 
     private class MyContentObserver extends ContentObserver {
 
@@ -2386,6 +2388,9 @@ public class ContactsController extends BaseController {
                 case PRIVACY_RULES_TYPE_PHONE:
                     req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
                     break;
+                case PRIVACY_RULES_TYPE_VOICE_MESSAGES:
+                    req.key = new TLRPC.TL_inputPrivacyKeyVoiceMessages();
+                    break;
                 case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
                 default:
                     req.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
@@ -2420,6 +2425,9 @@ public class ContactsController extends BaseController {
                         case PRIVACY_RULES_TYPE_PHONE:
                             phonePrivacyRules = rules.rules;
                             break;
+                        case PRIVACY_RULES_TYPE_VOICE_MESSAGES:
+                            voiceMessagesRules = rules.rules;
+                            break;
                         case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
                         default:
                             addedByPhonePrivacyRules = rules.rules;
@@ -2451,7 +2459,7 @@ public class ContactsController extends BaseController {
         return loadingGlobalSettings != 2;
     }
 
-    public boolean getLoadingPrivicyInfo(int type) {
+    public boolean getLoadingPrivacyInfo(int type) {
         return loadingPrivacyInfo[type] != 2;
     }
 
@@ -2477,6 +2485,8 @@ public class ContactsController extends BaseController {
                 return phonePrivacyRules;
             case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
                 return addedByPhonePrivacyRules;
+            case PRIVACY_RULES_TYPE_VOICE_MESSAGES:
+                return voiceMessagesRules;
         }
         return null;
     }
@@ -2506,6 +2516,9 @@ public class ContactsController extends BaseController {
                 break;
             case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
                 addedByPhonePrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_VOICE_MESSAGES:
+                voiceMessagesRules = rules;
                 break;
         }
         getNotificationCenter().postNotificationName(NotificationCenter.privacyRulesUpdated);

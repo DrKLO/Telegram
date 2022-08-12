@@ -137,6 +137,10 @@ public class TextStyleSpan extends MetricAffectingSpan {
         return (style.flags & FLAG_STYLE_SPOILER) > 0;
     }
 
+    public boolean isSpoilerRevealed() {
+        return (style.flags & FLAG_STYLE_SPOILER_REVEALED) > 0;
+    }
+
     public void setSpoilerRevealed(boolean b) {
         if (b)
             style.flags |= FLAG_STYLE_SPOILER_REVEALED;

@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -33,6 +34,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.List;
 
 public class StickerSetNameCell extends FrameLayout {
+    public int position;
 
     private TextView textView;
     private TextView urlTextView;
@@ -58,7 +60,7 @@ public class StickerSetNameCell extends FrameLayout {
 
         isEmoji = emoji;
 
-        FrameLayout.LayoutParams lp;
+        LayoutParams lp;
 
         textView = new TextView(context);
         textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
@@ -66,10 +68,16 @@ public class StickerSetNameCell extends FrameLayout {
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setSingleLine(true);
+        if (emoji) {
+            textView.setGravity(Gravity.CENTER);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                textView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
+            }
+        }
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, emoji ? 15 : 17, 2, 57, 0);
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,  Gravity.START | Gravity.TOP, emoji ? 5 : 17, emoji ? 10 : 2, emoji ? 15 : 57, 0);
         } else {
-            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, emoji ? 15 : 17, 2, 57, 0);
+            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, emoji ? 5 : 17, emoji ? 10 : 2, emoji ? 15 : 57, 0);
         }
         addView(textView, lp);
 
@@ -80,9 +88,9 @@ public class StickerSetNameCell extends FrameLayout {
         urlTextView.setSingleLine(true);
         urlTextView.setVisibility(INVISIBLE);
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.END, 17, 6, 17, 0);
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.END, 12, 6, 17, 0);
         } else {
-            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 17, 6, 17, 0);
+            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 12, 6, 17, 0);
         }
         addView(urlTextView, lp);
 
@@ -90,9 +98,9 @@ public class StickerSetNameCell extends FrameLayout {
         buttonView.setScaleType(ImageView.ScaleType.CENTER);
         buttonView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelStickerSetNameIcon), PorterDuff.Mode.MULTIPLY));
         if (supportRtl) {
-            lp = LayoutHelper.createFrameRelatively(24, 24, Gravity.TOP | Gravity.END, 0, 0, 16, 0);
+            lp = LayoutHelper.createFrameRelatively(24, 24, Gravity.TOP | Gravity.END, 0, 0, 11, 0);
         } else {
-            lp = LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.RIGHT, 0, 0, 16, 0);
+            lp = LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.RIGHT, 0, 0, 11, 0);
         }
         addView(buttonView, lp);
     }
@@ -141,6 +149,7 @@ public class StickerSetNameCell extends FrameLayout {
             textView.setText("");
             buttonView.setVisibility(INVISIBLE);
         } else {
+            empty = false;
             if (searchLength != 0) {
                 updateTextSearchSpan();
             } else {
@@ -182,7 +191,7 @@ public class StickerSetNameCell extends FrameLayout {
         if (empty) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(1, MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(isEmoji ? 28 : 24), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(isEmoji ? 32 : 24), MeasureSpec.EXACTLY));
         }
     }
 
@@ -210,5 +219,9 @@ public class StickerSetNameCell extends FrameLayout {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    public TextView getTextView() {
+        return textView;
     }
 }

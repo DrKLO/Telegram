@@ -42,11 +42,14 @@ import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -55,7 +58,9 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
@@ -70,13 +75,18 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BotWebViewContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
     private final static String DURGER_KING_USERNAME = "DurgerKingBot";
     private final static int REQUEST_CODE_WEB_VIEW_FILE = 3000, REQUEST_CODE_WEB_PERMISSION = 4000;
+    private final static int DIALOG_SEQUENTIAL_COOLDOWN_TIME = 3000;
+    private final static boolean ENABLE_REQUEST_PHONE = false;
 
     private final static List<String> WHITELISTED_SCHEMES = Arrays.asList("http", "https");
 
@@ -119,6 +129,11 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     private boolean isViewPortByMeasureSuppressed;
 
     private String currentPaymentSlug;
+
+    private AlertDialog currentDialog;
+    private int dialogSequentialOpenTimes;
+    private long lastDialogClosed;
+    private long lastDialogCooldownTime;
 
     public BotWebViewContainer(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor) {
         super(context);
@@ -844,6 +859,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 removeView(webView);
             }
             webView.destroy();
+            isPageLoaded = false;
         }
     }
 
@@ -909,11 +925,161 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 delegate.onCloseRequested(null);
                 break;
             }
+            case "web_app_request_phone": {
+                if (currentDialog != null || !ENABLE_REQUEST_PHONE) {
+                    break;
+                }
+
+                AtomicBoolean notifiedPhone = new AtomicBoolean(false);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext())
+                        .setTitle(LocaleController.getString(R.string.ShareYouPhoneNumberTitle))
+                        .setMessage(LocaleController.getString(R.string.AreYouSureShareMyContactInfoBot))
+                        .setPositiveButton(LocaleController.getString("ShareContact", R.string.ShareContact), (dialogInterface, i) -> {
+                            TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
+                            if (currentUser != null) {
+                                try {
+                                    notifyEvent("phone_requested", new JSONObject().put("phone_number", currentUser.phone));
+                                } catch (JSONException e) {
+                                    FileLog.e(e);
+                                }
+                                notifiedPhone.set(true);
+                            }
+                        }).setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                        .setOnDismissListener(dialog1 -> {
+                            if (!notifiedPhone.get()) {
+                                notifyEvent("phone_requested", new JSONObject());
+                            }
+                            currentDialog = null;
+                        });
+                currentDialog = builder.show();
+
+                break;
+            }
+            case "web_app_open_popup": {
+                try {
+                    if (currentDialog != null) {
+                        break;
+                    }
+
+                    if (System.currentTimeMillis() - lastDialogClosed <= 150) {
+                        dialogSequentialOpenTimes++;
+
+                        if (dialogSequentialOpenTimes >= 3) {
+                            dialogSequentialOpenTimes = 0;
+                            lastDialogCooldownTime = System.currentTimeMillis();
+                            break;
+                        }
+                    }
+
+                    if (System.currentTimeMillis() - lastDialogCooldownTime <= DIALOG_SEQUENTIAL_COOLDOWN_TIME) {
+                        break;
+                    }
+
+                    JSONObject jsonObject = new JSONObject(eventData);
+                    String title = jsonObject.optString("title", null);
+                    String message = jsonObject.getString("message");
+                    JSONArray buttons = jsonObject.getJSONArray("buttons");
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext())
+                            .setTitle(title)
+                            .setMessage(message);
+
+                    List<PopupButton> buttonsList = new ArrayList<>();
+                    for (int i = 0; i < buttons.length(); i++) {
+                        buttonsList.add(new PopupButton(buttons.getJSONObject(i)));
+                    }
+                    if (buttonsList.size() > 3) {
+                        break;
+                    }
+
+                    AtomicBoolean notifiedClose = new AtomicBoolean();
+                    if (buttonsList.size() >= 1) {
+                        PopupButton btn = buttonsList.get(0);
+                        builder.setPositiveButton(btn.text, (dialog, which) -> {
+                            dialog.dismiss();
+                            try {
+                                notifyEvent("popup_closed", new JSONObject().put("button_id", btn.id));
+                                notifiedClose.set(true);
+                            } catch (JSONException e) {
+                                FileLog.e(e);
+                            }
+                        });
+                    }
+
+                    if (buttonsList.size() >= 2) {
+                        PopupButton btn = buttonsList.get(1);
+                        builder.setNegativeButton(btn.text, (dialog, which) -> {
+                            dialog.dismiss();
+                            try {
+                                notifyEvent("popup_closed", new JSONObject().put("button_id", btn.id));
+                                notifiedClose.set(true);
+                            } catch (JSONException e) {
+                                FileLog.e(e);
+                            }
+                        });
+                    }
+
+                    if (buttonsList.size() == 3) {
+                        PopupButton btn = buttonsList.get(2);
+                        builder.setNeutralButton(btn.text, (dialog, which) -> {
+                            dialog.dismiss();
+                            try {
+                                notifyEvent("popup_closed", new JSONObject().put("button_id", btn.id));
+                                notifiedClose.set(true);
+                            } catch (JSONException e) {
+                                FileLog.e(e);
+                            }
+                        });
+                    }
+                    builder.setOnDismissListener(dialog -> {
+                        if (!notifiedClose.get()) {
+                            notifyEvent("popup_closed", new JSONObject());
+                        }
+                        currentDialog = null;
+                        lastDialogClosed = System.currentTimeMillis();
+                    });
+
+                    currentDialog = builder.show();
+                    if (buttonsList.size() >= 1) {
+                        PopupButton btn = buttonsList.get(0);
+                        if (btn.textColorKey != null) {
+                            TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                            textView.setTextColor(getColor(btn.textColorKey));
+                        }
+                    }
+                    if (buttonsList.size() >= 2) {
+                        PopupButton btn = buttonsList.get(1);
+                        if (btn.textColorKey != null) {
+                            TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                            textView.setTextColor(getColor(btn.textColorKey));
+                        }
+                    }
+                    if (buttonsList.size() == 3) {
+                        PopupButton btn = buttonsList.get(2);
+                        if (btn.textColorKey != null) {
+                            TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                            textView.setTextColor(getColor(btn.textColorKey));
+                        }
+                    }
+                } catch (JSONException e) {
+                    FileLog.e(e);
+                }
+                break;
+            }
+            case "web_app_setup_closing_behavior": {
+                try {
+                    JSONObject jsonObject = new JSONObject(eventData);
+                    delegate.onWebAppSetupClosingBehavior(jsonObject.optBoolean("need_confirmation"));
+                } catch (JSONException e) {
+                    FileLog.e(e);
+                }
+                break;
+            }
             case "web_app_set_background_color": {
                 try {
                     JSONObject jsonObject = new JSONObject(eventData);
-                    delegate.onWebAppSetBackgroundColor(Color.parseColor(jsonObject.optString("color")) | 0xFF000000);
-                } catch (JSONException e) {
+                    delegate.onWebAppSetBackgroundColor(Color.parseColor(jsonObject.optString("color", "#ffffff")) | 0xFF000000);
+                } catch (JSONException | IllegalArgumentException e) {
                     FileLog.e(e);
                 }
                 break;
@@ -1188,6 +1354,13 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         void onCloseRequested(@Nullable Runnable callback);
 
         /**
+         * Called when WebView requests to change closing behavior
+         *
+         * @param needConfirmation  If confirmation popup should be shown
+         */
+        void onWebAppSetupClosingBehavior(boolean needConfirmation);
+
+        /**
          * Called when WebView requests to send custom data
          *
          * @param data  Custom data to send
@@ -1235,5 +1408,46 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
          * Called when WebView is ready (Called web_app_ready or page load finished)
          */
         default void onWebAppReady() {}
+    }
+
+    public final static class PopupButton {
+        public String id;
+        public String text;
+        @Nullable
+        public String textColorKey;
+
+        public PopupButton(JSONObject obj) throws JSONException {
+            id = obj.getString("id");
+            String type = obj.getString("type");
+            boolean textRequired = false;
+            switch (type) {
+                default:
+                case "default": {
+                    textRequired = true;
+                    break;
+                }
+                case "ok": {
+                    text = LocaleController.getString(R.string.OK);
+                    break;
+                }
+                case "close": {
+                    text = LocaleController.getString(R.string.Close);
+                    break;
+                }
+                case "cancel": {
+                    text = LocaleController.getString(R.string.Cancel);
+                    break;
+                }
+                case "destructive": {
+                    textRequired = true;
+                    textColorKey = Theme.key_dialogTextRed;
+                    break;
+                }
+            }
+
+            if (textRequired) {
+                text = obj.getString("text");
+            }
+        }
     }
 }

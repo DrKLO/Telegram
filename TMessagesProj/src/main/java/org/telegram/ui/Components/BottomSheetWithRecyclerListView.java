@@ -233,6 +233,10 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         return false;
     }
 
+    public BaseFragment getBaseFragment() {
+        return baseFragment;
+    }
+
     private void updateStatusBar() {
         if (actionBar != null && actionBar.getTag() != null) {
             AndroidUtilities.setLightStatusBar(getWindow(), isLightStatusBar());

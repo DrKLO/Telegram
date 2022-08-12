@@ -14,9 +14,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
-import androidx.viewpager.widget.ViewPager;
-import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
-
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.view.View;
@@ -26,6 +23,9 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -147,7 +147,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         };
         tab.setFocusable(true);
         if (Build.VERSION.SDK_INT >= 21) {
-            RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(getThemedColor(Theme.key_chat_emojiBottomPanelIcon));
+            RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(getThemedColor(Theme.key_chat_emojiBottomPanelIcon), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(18));
             Theme.setRippleDrawableForceSoftware(rippleDrawable);
             tab.setBackground(rippleDrawable);
         }
@@ -193,7 +193,11 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         if (tabCount == 0) {
             return;
         }
-        int newScrollX = tabsContainer.getChildAt(position).getLeft() + offset;
+        View child = tabsContainer.getChildAt(position);
+        if (child == null) {
+            return;
+        }
+        int newScrollX = child.getLeft() + offset;
         if (position > 0 || offset > 0) {
             newScrollX -= scrollOffset;
         }
@@ -219,21 +223,23 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         }
 
         View currentTab = tabsContainer.getChildAt(currentPosition);
-        float lineLeft = currentTab.getLeft();
-        float lineRight = currentTab.getRight();
+        if (currentTab != null) {
+            float lineLeft = currentTab.getLeft();
+            float lineRight = currentTab.getRight();
 
-        if (currentPositionOffset > 0f && currentPosition < tabCount - 1) {
-            View nextTab = tabsContainer.getChildAt(currentPosition + 1);
-            final float nextTabLeft = nextTab.getLeft();
-            final float nextTabRight = nextTab.getRight();
+            if (currentPositionOffset > 0f && currentPosition < tabCount - 1) {
+                View nextTab = tabsContainer.getChildAt(currentPosition + 1);
+                final float nextTabLeft = nextTab.getLeft();
+                final float nextTabRight = nextTab.getRight();
 
-            lineLeft = (currentPositionOffset * nextTabLeft + (1f - currentPositionOffset) * lineLeft);
-            lineRight = (currentPositionOffset * nextTabRight + (1f - currentPositionOffset) * lineRight);
-        }
+                lineLeft = (currentPositionOffset * nextTabLeft + (1f - currentPositionOffset) * lineLeft);
+                lineRight = (currentPositionOffset * nextTabRight + (1f - currentPositionOffset) * lineRight);
+            }
 
-        if (indicatorHeight != 0) {
-            rectPaint.setColor(indicatorColor);
-            canvas.drawRect(lineLeft, height - indicatorHeight, lineRight, height, rectPaint);
+            if (indicatorHeight != 0) {
+                rectPaint.setColor(indicatorColor);
+                canvas.drawRect(lineLeft, height - indicatorHeight, lineRight, height, rectPaint);
+            }
         }
     }
 
@@ -243,10 +249,13 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             currentPosition = position;
             currentPositionOffset = positionOffset;
-            scrollToChild(position, (int) (positionOffset * tabsContainer.getChildAt(position).getWidth()));
-            invalidate();
-            if (delegatePageListener != null) {
-                delegatePageListener.onPageScrolled(position, positionOffset, positionOffsetPixels);
+            View child = tabsContainer.getChildAt(position);
+            if (child != null) {
+                scrollToChild(position, (int) (positionOffset * tabsContainer.getChildAt(position).getWidth()));
+                invalidate();
+                if (delegatePageListener != null) {
+                    delegatePageListener.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                }
             }
         }
 
