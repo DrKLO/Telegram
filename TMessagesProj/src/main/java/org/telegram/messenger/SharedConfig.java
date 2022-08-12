@@ -329,10 +329,7 @@ public class SharedConfig {
                 put("thAccountVersion", "1");
             }});
         } else {
-            Integer nextId = Integer.valueOf(thAccounts.get(-1).get("nextAccountId").toString());
-            if (nextId.compareTo(ThePenisMightierThanTheSword.getMaxInternalAccountId(thAccounts)) < 0) {
-                thAccounts.get(-1).put("nextAccountId", String.valueOf(ThePenisMightierThanTheSword.getMaxInternalAccountId(thAccounts) + 1));
-            }
+            ThePenisMightierThanTheSword.getMaxInternalAccountId(thAccounts);
         }
 
         ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE).edit()

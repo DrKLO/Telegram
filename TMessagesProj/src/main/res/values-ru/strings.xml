@@ -72,6 +72,11 @@
     <string name="THChatSBManager">Shadowban менеджер</string>
     <string name="THAccountSessionManager">Менеджер сессий (🌞 %d / 🌚 %d)</string>
     <string name="THAccountSessionInfo">Информация о сессии</string>
+    <string name="THAccountSessionDeleteDescription">Удалить навсегда оффлайн сессию</string>
+    <string name="THAccountSessionDeleteError1">Сессия онлайн, выключите ее, затем убейте апку и запустите снова.</string>
+    <string name="THAccountSessionDeleteError2">Ебаный трактор! Сессия онлайн, блять!</string>
+    <string name="THAccountSessionDeleteSuccessful">Сессия успешно удалена!</string>
+    <string name="THDeleteThatBitch">Удалить</string>
     <string name="THHistory">История</string>
     <string name="THDSBrandLabel">Марка</string>
     <string name="THDSModelLabel">Модель</string>
