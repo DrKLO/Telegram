@@ -136,18 +136,13 @@ ConnectionsManager::~ConnectionsManager() {
 
 std::vector<ConnectionsManager*> ConnectionsManager::_instances = std::vector<ConnectionsManager*>(10);
 ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
-    static std::mutex _new_mutex;
-
+    static std::mutex the_mutexInst;
+    the_mutexInst.lock();
     if (instanceNum >= _instances.capacity()) {
         _instances.resize(instanceNum + 10, nullptr);
     }
-
-    if(_instances[instanceNum] == nullptr) {
-        _new_mutex.lock();
-        if(_instances[instanceNum] == nullptr)
-            _instances[instanceNum] = new ConnectionsManager(instanceNum);
-        _new_mutex.unlock();
-    }
+    if(_instances[instanceNum] == nullptr) _instances[instanceNum] = new ConnectionsManager(instanceNum);
+    the_mutexInst.unlock();
     return *_instances[instanceNum];
 }
 
