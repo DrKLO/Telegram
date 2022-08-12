@@ -1,5 +1,7 @@
 # Changes
 
+* 8.85.36
+    * crash fix for `getMaxInternalAccountId()`
 * 8.85.35
     * improved multiacc (the C part) with the vector, that fix remove crashes when you have 40+ accounts
     * gradle libs updates

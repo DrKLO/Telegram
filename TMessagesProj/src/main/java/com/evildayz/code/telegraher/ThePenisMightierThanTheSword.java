@@ -133,7 +133,7 @@ public class ThePenisMightierThanTheSword {
             ids = map.keySet().stream().toArray(Integer[]::new);
         }
         Arrays.sort(ids);
-        if (nextId.compareTo(ids[ids.length - 1]) <= 0) {
+        if (map.containsKey(-1) && nextId.compareTo(ids[ids.length - 1]) <= 0) {
             nextId = ids[ids.length - 1] + 1;
             map.get(-1).put("nextAccountId", nextId.toString());
             ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE).edit()
