@@ -1,5 +1,14 @@
 # Changes
 
+* 8.85.35
+    * improved multiacc (the C part) with the vector, that fix remove crashes when you have 40+ accounts
+    * gradle libs updates
+    * settings to hide numbers on a left panel
+    * session manager updates (new code for IDs), also i recommend you to do "reset sesssion manager & device spoofing"
+      from the debug menu
+    * added "kill that app" in a settings menu, see the effect after simple reload (no need to kill, simple re-render)
+    * you can delete OFFLINE sessions in a session manager (they are offline when you disabled them AND restarted the
+      app)
 * 8.85.21
     * copy phone & username on long click from session manager (from the details)
 * 8.85.20

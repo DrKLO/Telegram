@@ -539,7 +539,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                 switchToAccount(((DrawerUserCell) view).getAccountNumber(), true);
                 drawerLayoutContainer.closeDrawer(false);
             } else if (view instanceof DrawerAddCell) {
-                int freeAccount = ThePenisMightierThanTheSword.getMaxInternalAccountId(SharedConfig.thAccounts) + 1; //session manager purposes
+                int freeAccount = ThePenisMightierThanTheSword.getMaxInternalAccountId(SharedConfig.thAccounts); //session manager purposes
 //                for (int account = 0; ; account++) {
 //                    if (!SharedConfig.activeAccounts.contains(account)) {
 //                        freeAccount = account;

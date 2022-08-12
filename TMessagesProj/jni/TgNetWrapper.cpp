@@ -426,9 +426,13 @@ void setJava(JNIEnv *env, jclass c, jboolean useJavaByteBuffers) {
 }
 
 void setJava1(JNIEnv *env, jclass c, jint instanceNum) {
+    //problematic code from original multiacc which fuckups all on small increments
+    static std::mutex the_mutexEnv;
+    the_mutexEnv.lock();
     if (instanceNum >= jniEnv.capacity()) {
-        jniEnv.resize(instanceNum + 10, nullptr);
+        jniEnv.resize(instanceNum + 128, nullptr);
     }
+    the_mutexEnv.unlock();
     ConnectionsManager::getInstance(instanceNum).setDelegate(new Delegate());
 }
 

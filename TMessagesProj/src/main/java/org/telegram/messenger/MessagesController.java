@@ -10611,6 +10611,11 @@ public class MessagesController extends BaseController implements NotificationCe
         SharedConfig.activeAccounts.remove(currentAccount);
         if (SharedConfig.thAccounts != null) SharedConfig.thAccounts.remove(currentAccount);
         if (SharedConfig.thDeviceSpoofing != null) SharedConfig.thDeviceSpoofing.remove(currentAccount);
+        wipeTheFolder(currentAccount);
+        SharedConfig.saveAccounts();
+    }
+
+    public static void wipeTheFolder(int currentAccount){
         //fucking wipe account folder
         //don't let the data for pigs
         if (currentAccount != 0) {
@@ -10627,7 +10632,6 @@ public class MessagesController extends BaseController implements NotificationCe
                 //durov relogin!
             }
         }
-        SharedConfig.saveAccounts();
     }
 
     public static void deleteDirectoryRecursionJavaOldSDK(File file) {

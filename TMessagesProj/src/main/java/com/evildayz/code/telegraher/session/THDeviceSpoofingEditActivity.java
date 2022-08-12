@@ -179,7 +179,7 @@ public class THDeviceSpoofingEditActivity extends BaseFragment {
                 , DS_LABEL[labelId]));
         linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
-        textField.setText(SharedConfig.thDeviceSpoofing.get(accountId).get("device" + DS_LABEL[labelId]).toString());
+        textField.setText(SharedConfig.thDeviceSpoofing.get(accountId).get("device" + DS_LABEL[labelId]));
         textField.setSelection(textField.length());
 
         return fragmentView;

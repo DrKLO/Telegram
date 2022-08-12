@@ -77,6 +77,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int uiLabelRow;
     private int uiAppNotificationIconRow;
     private int uiAppNotificationIconSelectorRow;
+    private int uiAppHidePhoneNumberOnLeftPanelRow;
     private int uiSystemFontRegularRow;
     private int uiSystemFontBoldRow;
     private int uiSystemFontItalicRow;
@@ -141,6 +142,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         uiLabelRow = rowCount++;
         uiAppNotificationIconRow = rowCount++;
         uiAppNotificationIconSelectorRow = rowCount++;
+        uiAppHidePhoneNumberOnLeftPanelRow = rowCount++;
         uiSystemFontRegularRow = -1;//TODO WTF need the fuck make it work
         uiSystemFontBoldRow = -1;
         uiSystemFontItalicRow = -1;
@@ -354,6 +356,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableGifHD", false);
                 editor.putBoolean("EnableGifHD", !enabled);
                 editor.apply();
+            } else if (position == uiAppHidePhoneNumberOnLeftPanelRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("HidePhoneNumberOnLeftPanel", false);
+                editor.putBoolean("HidePhoneNumberOnLeftPanel", !enabled);
+                editor.apply();
             } else if (position == videoRoundUseMainCameraRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
@@ -559,6 +567,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THGraheriumAnimateEveryAvatar), globalPreps.getBoolean("EnableGraheriumAnimateEveryAvatar", false), true);
                     } else if (position == graheriumAnimatedStickerOverlays) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THGraheriumAnimatedStickerOverlays), globalPreps.getBoolean("EnableGraheriumAnimatedStickerOverlays", false), true);
+                    } else if (position == uiAppHidePhoneNumberOnLeftPanelRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THHidePhoneNumberOnLeftPanel), globalPreps.getBoolean("HidePhoneNumberOnLeftPanel", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableChatSBFull), localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == chatSwapToNextChannelRow) {
@@ -586,7 +596,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == accountSessionManagerRow) {
                         textSettingsCell.setCanDisable(false);
                         int activeAccountsNumber = SharedConfig.activeAccounts == null ? 0 : SharedConfig.activeAccounts.size();
-                        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber);
+                        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber - 1);
                         textSettingsCell.setText(String.format(LocaleController.getString(R.string.THAccountSessionManager)
                                 , activeAccountsNumber
                                 , offlineAccountsNumber
@@ -732,15 +742,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         //durov relogin!
                     } else if (position == deviceSpoofingBrand) {
                         textDetailCell.setContentDescriptionValueFirst(true);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceBrand").toString(), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceBrand").toString() : "-"), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceBrand"), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceBrand") : "-"), false);
                     } else if (position == deviceSpoofingModel) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceModel").toString(), String.format(LocaleController.getString(R.string.THDSModelCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceModel").toString() : "-"), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceModel"), String.format(LocaleController.getString(R.string.THDSModelCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceModel") : "-"), false);
                     } else if (position == deviceSpoofingSDK) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceSDK").toString(), String.format(LocaleController.getString(R.string.THDSSDKCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceSDK").toString() : "-"), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceSDK"), String.format(LocaleController.getString(R.string.THDSSDKCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceSDK") : "-"), false);
                     }
                     break;
                 }
@@ -777,6 +787,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow
                             || position == graheriumSpeedUp || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
+                            || position == uiAppHidePhoneNumberOnLeftPanelRow
             ) {
                 return 1;
             } else if (position == killMeLabelRow || position == chatSBManagerRow || position == accountSessionManagerRow
@@ -868,7 +879,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         builder.setPositiveButton(LocaleController.getString(R.string.THYesYesYes), (dialogInterface, i) -> {
             try {
                 SharedConfig.thDeviceSpoofing.put(-1,
-                        new HashMap<String, Object>() {{
+                        new HashMap<String, String>() {{
                             put("deviceBrand", Build.MANUFACTURER);
                             put("deviceModel", Build.MODEL);
                             put("deviceSDK", Integer.valueOf(Build.VERSION.SDK_INT).toString());
