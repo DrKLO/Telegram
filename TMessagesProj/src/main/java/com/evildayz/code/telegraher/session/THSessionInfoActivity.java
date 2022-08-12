@@ -316,21 +316,21 @@ public class THSessionInfoActivity extends BaseFragment implements NotificationC
                         case 2: {
                             thTextDetailCell.setTextAndValue(
                                     LocaleController.getString(R.string.THDSBrandLabel)
-                                    , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceBrand").toString()
+                                    , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceBrand")
                                     , false);
                             break;
                         }
                         case 3: {
                             thTextDetailCell.setTextAndValue(
                                     LocaleController.getString(R.string.THDSModelLabel)
-                                    , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceModel").toString()
+                                    , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceModel")
                                     , false);
                             break;
                         }
                         case 4: {
                             thTextDetailCell.setTextAndValue(
                                     LocaleController.getString(R.string.THDSSDKLabel)
-                                    , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceSDK").toString()
+                                    , SharedConfig.thDeviceSpoofing.get(accountId).get("deviceSDK")
                                     , false);
                             break;
                         }

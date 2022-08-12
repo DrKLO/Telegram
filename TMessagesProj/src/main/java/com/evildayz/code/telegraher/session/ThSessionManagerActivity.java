@@ -56,7 +56,7 @@ public class ThSessionManagerActivity extends BaseFragment implements Notificati
         rowCount = 0;
         accs = new HashMap<>();
         for (int a : SharedConfig.thAccounts.keySet()) {
-            accs.put(rowCount++, a);
+            if (a != -1) accs.put(rowCount++, a);
         }
     }
 
@@ -144,7 +144,7 @@ public class ThSessionManagerActivity extends BaseFragment implements Notificati
 
     private void updateTheTitle() {
         int activeAccountsNumber = SharedConfig.activeAccounts == null ? 0 : SharedConfig.activeAccounts.size();
-        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber);
+        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber - 1);
         actionBar.setTitle(String.format(LocaleController.getString(R.string.THAccountSessionManager)
                 , activeAccountsNumber
                 , offlineAccountsNumber

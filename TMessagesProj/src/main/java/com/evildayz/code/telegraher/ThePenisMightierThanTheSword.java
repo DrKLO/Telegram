@@ -111,7 +111,7 @@ public class ThePenisMightierThanTheSword {
         return new GsonBuilder().disableHtmlEscaping().create().toJson(o);
     }
 
-    public static String toJsonNestedMaps(Map<Integer, Map<String, Object>> map) {
+    public static String toJsonNestedMaps(Map<Integer, Map<String, String>> map) {
         final Gson gson = new Gson();
         final JsonObject jsonObject = new JsonObject();
         for (Integer i : map.keySet()) {
@@ -120,13 +120,17 @@ public class ThePenisMightierThanTheSword {
         return jsonObject.toString();
     }
 
-    public static int getMaxInternalAccountId(Map<Integer, Map<String, Object>> map) {//SharedConfig.thAccounts
+    public static int getMaxInternalAccountId(Map<Integer, Map<String, String>> map) {//SharedConfig.thAccounts
         Integer[] ids;
         if (map == null || map.isEmpty()) {
             if (SharedConfig.activeAccounts != null && !SharedConfig.activeAccounts.isEmpty())
                 ids = SharedConfig.activeAccounts.stream().toArray(Integer[]::new);
             else return 0;
-        } else ids = map.keySet().stream().toArray(Integer[]::new);
+        } else {
+            if (map.containsKey(-1))
+                return Integer.valueOf(map.get(-1).get("nextAccountId"));
+            else ids = map.keySet().stream().toArray(Integer[]::new);
+        }
         Arrays.sort(ids);
         return ids[ids.length - 1];
     }

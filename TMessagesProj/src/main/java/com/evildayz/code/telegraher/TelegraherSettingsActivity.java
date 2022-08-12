@@ -596,7 +596,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == accountSessionManagerRow) {
                         textSettingsCell.setCanDisable(false);
                         int activeAccountsNumber = SharedConfig.activeAccounts == null ? 0 : SharedConfig.activeAccounts.size();
-                        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber);
+                        int offlineAccountsNumber = SharedConfig.thAccounts == null ? 0 : (SharedConfig.thAccounts.size() - activeAccountsNumber - 1);
                         textSettingsCell.setText(String.format(LocaleController.getString(R.string.THAccountSessionManager)
                                 , activeAccountsNumber
                                 , offlineAccountsNumber
@@ -742,15 +742,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         //durov relogin!
                     } else if (position == deviceSpoofingBrand) {
                         textDetailCell.setContentDescriptionValueFirst(true);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceBrand").toString(), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceBrand").toString() : "-"), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceBrand"), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceBrand") : "-"), false);
                     } else if (position == deviceSpoofingModel) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceModel").toString(), String.format(LocaleController.getString(R.string.THDSModelCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceModel").toString() : "-"), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceModel"), String.format(LocaleController.getString(R.string.THDSModelCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceModel") : "-"), false);
                     } else if (position == deviceSpoofingSDK) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceSDK").toString(), String.format(LocaleController.getString(R.string.THDSSDKCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceSDK").toString() : "-"), false);
+                        textDetailCell.setTextAndValue(SharedConfig.thDeviceSpoofing.get(-1).get("deviceSDK"), String.format(LocaleController.getString(R.string.THDSSDKCurrentText), SharedConfig.thDeviceSpoofing.containsKey(currentAccount) ? SharedConfig.thDeviceSpoofing.get(currentAccount).get("deviceSDK") : "-"), false);
                     }
                     break;
                 }
@@ -879,7 +879,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         builder.setPositiveButton(LocaleController.getString(R.string.THYesYesYes), (dialogInterface, i) -> {
             try {
                 SharedConfig.thDeviceSpoofing.put(-1,
-                        new HashMap<String, Object>() {{
+                        new HashMap<String, String>() {{
                             put("deviceBrand", Build.MANUFACTURER);
                             put("deviceModel", Build.MODEL);
                             put("deviceSDK", Integer.valueOf(Build.VERSION.SDK_INT).toString());
