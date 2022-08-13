@@ -149,6 +149,16 @@ public class JoinToSendSettingsView extends LinearLayout {
         requestLayout();
     }
 
+    public void showJoinToSend(boolean show) {
+        joinToSendCell.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (!show) {
+            isJoinToSend = true;
+            joinRequestCell.setVisibility(View.VISIBLE);
+            updateToggleValue(1);
+        }
+        requestLayout();
+    }
+
     public void setJoinRequest(boolean newJoinRequest) {
         isJoinRequest = newJoinRequest;
         joinRequestCell.setChecked(newJoinRequest);
@@ -184,7 +194,9 @@ public class JoinToSendSettingsView extends LinearLayout {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int y = 0;
         joinHeaderCell.layout(0, y, r - l, y += joinHeaderCell.getMeasuredHeight());
-        joinToSendCell.layout(0, y, r - l, y += joinToSendCell.getMeasuredHeight());
+        if (joinToSendCell.getVisibility() == View.VISIBLE) {
+            joinToSendCell.layout(0, y, r - l, y += joinToSendCell.getMeasuredHeight());
+        }
         joinRequestCell.layout(0, y, r - l, y += joinRequestCell.getMeasuredHeight());
         joinToSendInfoCell.layout(0, y, r - l, y + joinToSendInfoCell.getMeasuredHeight());
         joinRequestInfoCell.layout(0, y, r - l, y + joinRequestInfoCell.getMeasuredHeight());
@@ -194,10 +206,12 @@ public class JoinToSendSettingsView extends LinearLayout {
 
     private int calcHeight() {
         return (int) (
-                joinHeaderCell.getMeasuredHeight() +
-                        joinToSendCell.getMeasuredHeight() +
-                        joinRequestCell.getMeasuredHeight() * toggleValue +
-                        AndroidUtilities.lerp(joinToSendInfoCell.getMeasuredHeight(), joinRequestInfoCell.getMeasuredHeight(), toggleValue)
+            joinHeaderCell.getMeasuredHeight() +
+            (joinToSendCell.getVisibility() == View.VISIBLE ?
+                joinToSendCell.getMeasuredHeight() + joinRequestCell.getMeasuredHeight() * toggleValue :
+                joinRequestCell.getMeasuredHeight()
+            ) +
+            AndroidUtilities.lerp(joinToSendInfoCell.getMeasuredHeight(), joinRequestInfoCell.getMeasuredHeight(), toggleValue)
         );
     }
 
@@ -208,11 +222,6 @@ public class JoinToSendSettingsView extends LinearLayout {
         joinRequestCell.measure(widthMeasureSpec, MAXSPEC);
         joinToSendInfoCell.measure(widthMeasureSpec, MAXSPEC);
         joinRequestInfoCell.measure(widthMeasureSpec, MAXSPEC);
-        super.onMeasure(widthMeasureSpec,
-                MeasureSpec.makeMeasureSpec(
-                        calcHeight(),
-                        MeasureSpec.EXACTLY
-                )
-        );
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(calcHeight(), MeasureSpec.EXACTLY));
     }
 }

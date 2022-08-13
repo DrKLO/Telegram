@@ -133,18 +133,24 @@ public class PremiumGradient {
         Matrix matrix = new Matrix();
         public final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        final String colorKey1, colorKey2, colorKey3, colorKey4;
-        final int colors[] = new int[4];
+        final String colorKey1, colorKey2, colorKey3, colorKey4, colorKey5;
+        final int colors[] = new int[5];
         public boolean exactly;
 
         public float x1 = 0f, y1 = 1f, x2 = 1.5f, y2 = 0f;
 
         public GradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4) {
+            this(colorKey1, colorKey2, colorKey3, colorKey4, null);
+        }
+
+        public GradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4, String colorKey5) {
             this.colorKey1 = colorKey1;
             this.colorKey2 = colorKey2;
             this.colorKey3 = colorKey3;
             this.colorKey4 = colorKey4;
+            this.colorKey5 = colorKey5;
         }
+
 
         public void gradientMatrix(int x, int y, int x1, int y1, float xOffset, float yOffset) {
             chekColors();
@@ -176,17 +182,21 @@ public class PremiumGradient {
             int c2 = Theme.getColor(colorKey2);
             int c3 = colorKey3 == null ? 0 : Theme.getColor(colorKey3);
             int c4 = colorKey4 == null ? 0 : Theme.getColor(colorKey4);
-            if (colors[0] != c1 || colors[1] != c2 || colors[2] != c3 || colors[3] != c4) {
+            int c5 = colorKey5 == null ? 0 : Theme.getColor(colorKey5);
+            if (colors[0] != c1 || colors[1] != c2 || colors[2] != c3 || colors[3] != c4 || colors[4] != c5) {
                 colors[0] = c1;
                 colors[1] = c2;
                 colors[2] = c3;
                 colors[3] = c4;
+                colors[4] = c5;
                 if (c3 == 0) {
                     shader = new LinearGradient(size * x1, size * y1, size * x2, size * y2, new int[]{colors[0], colors[1]}, new float[]{0, 1f}, Shader.TileMode.CLAMP);
                 } else if (c4 == 0) {
                     shader = new LinearGradient(size * x1, size * y1, size * x2, size * y2, new int[]{colors[0], colors[1], colors[2]}, new float[]{0, 0.5f, 1f}, Shader.TileMode.CLAMP);
-                } else {
+                } else if (c5 == 0) {
                     shader = new LinearGradient(size * x1, size * y1, size * x2, size * y2, new int[]{colors[0], colors[1], colors[2], colors[3]}, new float[]{0, 0.5f, 0.78f, 1f}, Shader.TileMode.CLAMP);
+                } else {
+                    shader = new LinearGradient(size * x1, size * y1, size * x2, size * y2, new int[]{colors[0], colors[1], colors[2], colors[3], colors[4]}, new float[]{0, 0.425f, 0.655f, 0.78f, 1f}, Shader.TileMode.CLAMP);
                 }
                 shader.setLocalMatrix(matrix);
                 paint.setShader(shader);

@@ -1155,13 +1155,14 @@ public class DownloadController extends BaseController implements NotificationCe
     }
 
     public void onDownloadComplete(MessageObject parentObject) {
-        if (parentObject == null) {
+        if (parentObject == null || parentObject.getDocument() == null) {
             return;
         }
+        TLRPC.Document document = parentObject.getDocument();
         AndroidUtilities.runOnUIThread(() -> {
             boolean removed = false;
             for (int i = 0; i < downloadingFiles.size(); i++) {
-                if (downloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                if (downloadingFiles.get(i).getDocument() != null && downloadingFiles.get(i).getDocument().id == document.id) {
                     downloadingFiles.remove(i);
                     removed = true;
                     break;
@@ -1171,7 +1172,7 @@ public class DownloadController extends BaseController implements NotificationCe
             if (removed) {
                 boolean contains = false;
                 for (int i = 0; i < recentDownloadingFiles.size(); i++) {
-                    if (recentDownloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                    if (recentDownloadingFiles.get(i).getDocument() != null && recentDownloadingFiles.get(i).getDocument().id == document.id) {
                         contains = true;
                         break;
                     }
@@ -1401,5 +1402,14 @@ public class DownloadController extends BaseController implements NotificationCe
                 FileLog.e(e);
             }
         });
+    }
+
+    public boolean isDownloading(int messageId) {
+        for (int i = 0; i < downloadingFiles.size(); i++) {
+            if (downloadingFiles.get(i).messageOwner.id == messageId) {
+                return true;
+            }
+        }
+        return false;
     }
 }

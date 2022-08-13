@@ -633,7 +633,7 @@ public class TextureRenderer {
                             entity.ptr = RLottieDrawable.create(entity.text, null, 512, 512, entity.metadata, false, null, false, 0);
                             entity.framesPerDraw = entity.metadata[1] / videoFps;
                         } else if ((entity.subType & 4) != 0) {
-                            entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512);
+                            entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512, null);
                             entity.framesPerDraw = videoFps / 30f;
                             entity.currentFrame = 0;
                         } else {

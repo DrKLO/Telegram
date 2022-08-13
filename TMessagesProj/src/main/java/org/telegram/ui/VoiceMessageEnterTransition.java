@@ -131,10 +131,11 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         int clipBottom = 0;
         if (container.getMeasuredHeight() > 0) {
             clipBottom = (int) (container.getMeasuredHeight() * (1f - progress) + listViewBottom * progress);
-            canvas.saveLayerAlpha(0, container.getMeasuredHeight() - AndroidUtilities.dp(400), container.getMeasuredWidth(), container.getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
-        } else {
-            canvas.save();
         }
+//            canvas.saveLayerAlpha(0, container.getMeasuredHeight() - AndroidUtilities.dp(400), container.getMeasuredWidth(), container.getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+//        } else {
+//            canvas.save();
+//        }
 
         circlePaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), getThemedColor(messageView.getRadialProgress().getCircleColorKey()), progress));
 
@@ -158,11 +159,11 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         if (container.getMeasuredHeight() > 0) {
             gradientMatrix.setTranslate(0, clipBottom);
             gradientShader.setLocalMatrix(gradientMatrix);
-            canvas.drawRect(0, clipBottom, container.getMeasuredWidth(), container.getMeasuredHeight(), gradientPaint);
+//            canvas.drawRect(0, clipBottom, container.getMeasuredWidth(), container.getMeasuredHeight(), gradientPaint);
         }
 
         //restore clipRect
-        canvas.restore();
+//        canvas.restore();
 
         recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
     }

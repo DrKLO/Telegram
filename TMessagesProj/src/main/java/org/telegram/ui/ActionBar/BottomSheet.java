@@ -16,6 +16,7 @@ import android.animation.ValueAnimator;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Insets;
 import android.graphics.Paint;
@@ -331,7 +332,7 @@ public class BottomSheet extends Dialog {
                 startedTrackingX = (int) ev.getX();
                 startedTrackingY = (int) ev.getY();
                 if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
-                    dismiss();
+                    onDismissWithTouchOutside();
                     return true;
                 }
                 onScrollUpBegin(y);
@@ -940,6 +941,14 @@ public class BottomSheet extends Dialog {
                 super.dispatchDraw(canvas);
                 mainContainerDispatchDraw(canvas);
             }
+
+            @Override
+            protected void onConfigurationChanged(Configuration newConfig) {
+                lastInsets = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    container.requestApplyInsets();
+                }
+            }
         };
         container.setBackgroundDrawable(backDrawable);
         focusable = needFocus;
@@ -1274,6 +1283,10 @@ public class BottomSheet extends Dialog {
         return false;
     }
 
+    protected void onDismissWithTouchOutside() {
+        dismiss();
+    }
+
     protected boolean canDismissWithTouchOutside() {
         return true;
     }
@@ -1525,7 +1538,7 @@ public class BottomSheet extends Dialog {
                 }
             });
             currentSheetAnimation.playTogether(
-                ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)),
+                containerView == null ? null : ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)),
                 ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
                 navigationBarAnimation
             );

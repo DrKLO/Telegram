@@ -44,24 +44,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.MapsInitializer;
-import com.google.android.gms.maps.Projection;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.CircleOptions;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MapStyleOptions;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.IMapsProvider;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessagesController;
@@ -92,10 +83,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.RecyclerView;
-
 public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private ImageView locationButton;
@@ -108,9 +95,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     private ActionBarMenuItem searchItem;
     private MapOverlayView overlayView;
 
-    private GoogleMap googleMap;
-    private MapView mapView;
-    private CameraUpdate forceUpdate;
+    private IMapsProvider.IMap map;
+    private IMapsProvider.IMapView mapView;
+    private IMapsProvider.ICameraUpdate forceUpdate;
     private float yOffset;
 
     private boolean ignoreLayout;
@@ -144,7 +131,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
     private AnimatorSet animatorSet;
 
-    private Marker lastPressedMarker;
+    private IMapsProvider.IMarker lastPressedMarker;
     private VenueLocation lastPressedVenue;
     private FrameLayout lastPressedMarkerView;
 
@@ -166,7 +153,6 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     private boolean userLocationMoved;
     private boolean searchedForCustomLocations;
     private boolean firstWas;
-    private CircleOptions circleOptions;
     private LocationActivityDelegate delegate;
 
     private int locationType;
@@ -185,7 +171,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
     public static class VenueLocation {
         public int num;
-        public Marker marker;
+        public IMapsProvider.IMarker marker;
         public TLRPC.TL_messageMediaVenue venue;
     }
 
@@ -194,7 +180,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         public TLRPC.Message object;
         public TLRPC.User user;
         public TLRPC.Chat chat;
-        public Marker marker;
+        public IMapsProvider.IMarker marker;
     }
 
     private static class SearchButton extends TextView {
@@ -229,13 +215,13 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
     public class MapOverlayView extends FrameLayout {
 
-        private HashMap<Marker, View> views = new HashMap<>();
+        private HashMap<IMapsProvider.IMarker, View> views = new HashMap<>();
 
         public MapOverlayView(Context context) {
             super(context);
         }
 
-        public void addInfoView(Marker marker) {
+        public void addInfoView(IMapsProvider.IMarker marker) {
             VenueLocation location = (VenueLocation) marker.getTag();
             if (lastPressedVenue == location) {
                 return;
@@ -340,10 +326,10 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
             views.put(marker, frameLayout);
 
-            googleMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()), 300, null);
+            map.animateCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(marker.getPosition()), 300, null);
         }
 
-        public void removeInfoView(Marker marker) {
+        public void removeInfoView(IMapsProvider.IMarker marker) {
             View view = views.get(marker);
             if (view != null) {
                 removeView(view);
@@ -352,12 +338,12 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         }
 
         public void updatePositions() {
-            if (googleMap == null) {
+            if (map == null) {
                 return;
             }
-            Projection projection = googleMap.getProjection();
-            for (HashMap.Entry<Marker, View> entry : views.entrySet()) {
-                Marker marker = entry.getKey();
+            IMapsProvider.IProjection projection = map.getProjection();
+            for (HashMap.Entry<IMapsProvider.IMarker, View> entry : views.entrySet()) {
+                IMapsProvider.IMarker marker = entry.getKey();
                 View view = entry.getValue();
                 Point point = projection.toScreenLocation(marker.getPosition());
                 view.setTranslationX(point.x - view.getMeasuredWidth() / 2);
@@ -584,15 +570,15 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         mapViewClip.addView(mapTypeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
         mapTypeButton.setOnClickListener(v -> mapTypeButton.toggleSubMenu());
         mapTypeButton.setDelegate(id -> {
-            if (googleMap == null) {
+            if (map == null) {
                 return;
             }
             if (id == map_list_menu_map) {
-                googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                map.setMapType(IMapsProvider.MAP_TYPE_NORMAL);
             } else if (id == map_list_menu_satellite) {
-                googleMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                map.setMapType(IMapsProvider.MAP_TYPE_SATELLITE);
             } else if (id == map_list_menu_hybrid) {
-                googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                map.setMapType(IMapsProvider.MAP_TYPE_HYBRID);
             }
         });
 
@@ -635,13 +621,13 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                     }
                 }
             }
-            if (myLocation != null && googleMap != null) {
+            if (myLocation != null && map != null) {
                 locationButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_actionActiveIcon), PorterDuff.Mode.MULTIPLY));
                 locationButton.setTag(Theme.key_location_actionActiveIcon);
                 adapter.setCustomLocation(null);
                 userLocationMoved = false;
                 showSearchPlacesButton(false);
-                googleMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(myLocation.getLatitude(), myLocation.getLongitude())));
+                map.animateCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(new IMapsProvider.LatLng(myLocation.getLatitude(), myLocation.getLongitude())));
                 if (searchedForCustomLocations) {
                     if (myLocation != null) {
                         adapter.searchPlacesWithQuery(null, myLocation, true, true);
@@ -792,7 +778,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                     }
                 } else if (object instanceof LiveLocation) {
                     LiveLocation liveLocation = (LiveLocation) object;
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(liveLocation.marker.getPosition(), googleMap.getMaxZoomLevel() - 4));
+                    map.animateCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLngZoom(new IMapsProvider.LatLng(liveLocation.marker.getPosition().latitude, liveLocation.marker.getPosition().longitude), map.getMaxZoomLevel() - 4));
                 }
             }
         });
@@ -801,61 +787,56 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
         addView(mapViewClip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
-        mapView = new MapView(context) {
-
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent ev) {
-                MotionEvent eventToRecycle = null;
-                if (yOffset != 0) {
-                    ev = eventToRecycle = MotionEvent.obtain(ev);
-                    eventToRecycle.offsetLocation(0, -yOffset / 2);
-                }
-                boolean result = super.dispatchTouchEvent(ev);
-                if (eventToRecycle != null) {
-                    eventToRecycle.recycle();
-                }
-                return result;
+        mapView = ApplicationLoader.getMapsProvider().onCreateMapView(context);
+        mapView.setOnDispatchTouchEventInterceptor((ev, origMethod) -> {
+            MotionEvent eventToRecycle = null;
+            if (yOffset != 0) {
+                ev = eventToRecycle = MotionEvent.obtain(ev);
+                eventToRecycle.offsetLocation(0, -yOffset / 2);
             }
-
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent ev) {
-                if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-                    if (animatorSet != null) {
-                        animatorSet.cancel();
-                    }
-                    animatorSet = new AnimatorSet();
-                    animatorSet.setDuration(200);
-                    animatorSet.playTogether(ObjectAnimator.ofFloat(markerImageView, View.TRANSLATION_Y, markerTop - AndroidUtilities.dp(10)));
-                    animatorSet.start();
-                } else if (ev.getAction() == MotionEvent.ACTION_UP) {
-                    if (animatorSet != null) {
-                        animatorSet.cancel();
-                    }
-                    yOffset = 0;
-                    animatorSet = new AnimatorSet();
-                    animatorSet.setDuration(200);
-                    animatorSet.playTogether(ObjectAnimator.ofFloat(markerImageView, View.TRANSLATION_Y, markerTop));
-                    animatorSet.start();
-                    adapter.fetchLocationAddress();
-                }
-                if (ev.getAction() == MotionEvent.ACTION_MOVE) {
-                    if (!userLocationMoved) {
-                        locationButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
-                        locationButton.setTag(Theme.key_location_actionIcon);
-                        userLocationMoved = true;
-                    }
-                    if (googleMap != null) {
-                        if (userLocation != null) {
-                            userLocation.setLatitude(googleMap.getCameraPosition().target.latitude);
-                            userLocation.setLongitude(googleMap.getCameraPosition().target.longitude);
-                        }
-                    }
-                    adapter.setCustomLocation(userLocation);
-                }
-                return super.onInterceptTouchEvent(ev);
+            boolean result = origMethod.call(ev);
+            if (eventToRecycle != null) {
+                eventToRecycle.recycle();
             }
-        };
-        final MapView map = mapView;
+            return result;
+        });
+        mapView.setOnInterceptTouchEventInterceptor((ev, origMethod) -> {
+            if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+                if (animatorSet != null) {
+                    animatorSet.cancel();
+                }
+                animatorSet = new AnimatorSet();
+                animatorSet.setDuration(200);
+                animatorSet.playTogether(ObjectAnimator.ofFloat(markerImageView, View.TRANSLATION_Y, markerTop - AndroidUtilities.dp(10)));
+                animatorSet.start();
+            } else if (ev.getAction() == MotionEvent.ACTION_UP) {
+                if (animatorSet != null) {
+                    animatorSet.cancel();
+                }
+                yOffset = 0;
+                animatorSet = new AnimatorSet();
+                animatorSet.setDuration(200);
+                animatorSet.playTogether(ObjectAnimator.ofFloat(markerImageView, View.TRANSLATION_Y, markerTop));
+                animatorSet.start();
+                adapter.fetchLocationAddress();
+            }
+            if (ev.getAction() == MotionEvent.ACTION_MOVE) {
+                if (!userLocationMoved) {
+                    locationButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
+                    locationButton.setTag(Theme.key_location_actionIcon);
+                    userLocationMoved = true;
+                }
+                if (map != null) {
+                    if (userLocation != null) {
+                        userLocation.setLatitude(map.getCameraPosition().target.latitude);
+                        userLocation.setLongitude(map.getCameraPosition().target.longitude);
+                    }
+                }
+                adapter.setCustomLocation(userLocation);
+            }
+            return origMethod.call(ev);
+        });
+        final IMapsProvider.IMapView map = mapView;
         new Thread(() -> {
             try {
                 map.onCreate(null);
@@ -866,17 +847,17 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 if (mapView != null && getParentActivity() != null) {
                     try {
                         map.onCreate(null);
-                        MapsInitializer.initialize(ApplicationLoader.applicationContext);
+                        ApplicationLoader.getMapsProvider().initializeMaps(ApplicationLoader.applicationContext);
                         mapView.getMapAsync(map1 -> {
-                            googleMap = map1;
-                            googleMap.setOnMapLoadedCallback(() -> AndroidUtilities.runOnUIThread(() -> {
+                            this.map = map1;
+                            this.map.setOnMapLoadedCallback(() -> AndroidUtilities.runOnUIThread(() -> {
                                 loadingMapView.setTag(1);
                                 loadingMapView.animate().alpha(0.0f).setDuration(180).start();
                             }));
                             if (isActiveThemeDark()) {
                                 currentMapStyleDark = true;
-                                MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
-                                googleMap.setMapStyle(style);
+                                IMapsProvider.IMapStyleOptions style = ApplicationLoader.getMapsProvider().loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
+                                this.map.setMapStyle(style);
                             }
                             onMapInit();
                         });
@@ -964,14 +945,14 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.locationPermissionDenied);
         try {
-            if (googleMap != null) {
-                googleMap.setMyLocationEnabled(false);
+            if (map != null) {
+                map.setMyLocationEnabled(false);
             }
         } catch (Exception e) {
             FileLog.e(e);
         }
         if (mapView != null) {
-            mapView.setTranslationY(-AndroidUtilities.displaySize.y * 3);
+            mapView.getView().setTranslationY(-AndroidUtilities.displaySize.y * 3);
         }
         try {
             if (mapView != null) {
@@ -1204,14 +1185,14 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         for (int a = 0, N = places.size(); a < N; a++) {
             TLRPC.TL_messageMediaVenue venue = places.get(a);
             try {
-                MarkerOptions options = new MarkerOptions().position(new LatLng(venue.geo.lat, venue.geo._long));
-                options.icon(BitmapDescriptorFactory.fromBitmap(createPlaceBitmap(a)));
+                IMapsProvider.IMarkerOptions options = ApplicationLoader.getMapsProvider().onCreateMarkerOptions().position(new IMapsProvider.LatLng(venue.geo.lat, venue.geo._long));
+                options.icon(createPlaceBitmap(a));
                 options.anchor(0.5f, 0.5f);
                 options.title(venue.title);
                 options.snippet(venue.address);
                 VenueLocation venueLocation = new VenueLocation();
                 venueLocation.num = a;
-                venueLocation.marker = googleMap.addMarker(options);
+                venueLocation.marker = map.addMarker(options);
                 venueLocation.venue = venue;
                 venueLocation.marker.setTag(venueLocation);
                 placeMarkers.add(venueLocation);
@@ -1238,7 +1219,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     private void onMapInit() {
-        if (googleMap == null) {
+        if (map == null) {
             return;
         }
 
@@ -1247,15 +1228,15 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         userLocation.setLongitude(-11.406250);
 
         try {
-            googleMap.setMyLocationEnabled(true);
+            map.setMyLocationEnabled(true);
         } catch (Exception e) {
             FileLog.e(e);
         }
-        googleMap.getUiSettings().setMyLocationButtonEnabled(false);
-        googleMap.getUiSettings().setZoomControlsEnabled(false);
-        googleMap.getUiSettings().setCompassEnabled(false);
-        googleMap.setOnCameraMoveStartedListener(reason -> {
-            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+        map.getUiSettings().setMyLocationButtonEnabled(false);
+        map.getUiSettings().setZoomControlsEnabled(false);
+        map.getUiSettings().setCompassEnabled(false);
+        map.setOnCameraMoveStartedListener(reason -> {
+            if (reason == IMapsProvider.OnCameraMoveStartedListener.REASON_GESTURE) {
                 showSearchPlacesButton(true);
                 removeInfoView();
 
@@ -1267,8 +1248,8 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                             int min = locationType == LOCATION_TYPE_SEND ? 0 : AndroidUtilities.dp(66);
                             int top = view.getTop();
                             if (top < -min) {
-                                CameraPosition cameraPosition = googleMap.getCameraPosition();
-                                forceUpdate = CameraUpdateFactory.newLatLngZoom(cameraPosition.target, cameraPosition.zoom);
+                                IMapsProvider.CameraPosition cameraPosition = map.getCameraPosition();
+                                forceUpdate = ApplicationLoader.getMapsProvider().newCameraUpdateLatLngZoom(cameraPosition.target, cameraPosition.zoom);
                                 listView.smoothScrollBy(0, top + min);
                             }
                         }
@@ -1276,15 +1257,15 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 }
             }
         });
-        googleMap.setOnMyLocationChangeListener(location -> {
+        map.setOnMyLocationChangeListener(location -> {
             if (parentAlert == null || parentAlert.baseFragment == null) {
                 return;
             }
             positionMarker(location);
-            getLocationController().setGoogleMapLocation(location, isFirstLocation);
+            getLocationController().setMapLocation(location, isFirstLocation);
             isFirstLocation = false;
         });
-        googleMap.setOnMarkerClickListener(marker -> {
+        map.setOnMarkerClickListener(marker -> {
             if (!(marker.getTag() instanceof VenueLocation)) {
                 return true;
             }
@@ -1297,7 +1278,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             overlayView.addInfoView(marker);
             return true;
         });
-        googleMap.setOnCameraMoveListener(() -> {
+        map.setOnCameraMoveListener(() -> {
             if (overlayView != null) {
                 overlayView.updatePositions();
             }
@@ -1383,18 +1364,18 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) mapViewClip.getLayoutParams();
         if (layoutParams != null) {
             if (height <= 0) {
-                if (mapView.getVisibility() == View.VISIBLE) {
-                    mapView.setVisibility(INVISIBLE);
+                if (mapView.getView().getVisibility() == View.VISIBLE) {
+                    mapView.getView().setVisibility(INVISIBLE);
                     mapViewClip.setVisibility(INVISIBLE);
                     if (overlayView != null) {
                         overlayView.setVisibility(INVISIBLE);
                     }
                 }
-                mapView.setTranslationY(top);
+                mapView.getView().setTranslationY(top);
                 return;
             }
-            if (mapView.getVisibility() == View.INVISIBLE) {
-                mapView.setVisibility(VISIBLE);
+            if (mapView.getView().getVisibility() == View.INVISIBLE) {
+                mapView.getView().setVisibility(VISIBLE);
                 mapViewClip.setVisibility(VISIBLE);
                 if (overlayView != null) {
                     overlayView.setVisibility(VISIBLE);
@@ -1410,13 +1391,13 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             }
             clipSize = (int) (maxClipSize * moveProgress);
 
-            mapView.setTranslationY(trY);
+            mapView.getView().setTranslationY(trY);
             nonClipSize = maxClipSize - clipSize;
             mapViewClip.invalidate();
 
             mapViewClip.setTranslationY(top - nonClipSize);
-            if (googleMap != null) {
-                googleMap.setPadding(0, AndroidUtilities.dp(6), 0, clipSize + AndroidUtilities.dp(6));
+            if (map != null) {
+                map.setPadding(0, AndroidUtilities.dp(6), 0, clipSize + AndroidUtilities.dp(6));
             }
             if (overlayView != null) {
                 overlayView.setTranslationY(trY);
@@ -1427,18 +1408,18 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             locationButton.setTranslationY(-clipSize);
             markerImageView.setTranslationY(markerTop = (mapHeight - clipSize) / 2 - AndroidUtilities.dp(48) + trY);
             if (prevClipSize != clipSize) {
-                LatLng location;
+                IMapsProvider.LatLng location;
                 if (lastPressedMarker != null) {
-                    location = lastPressedMarker.getPosition();
+                    location = new IMapsProvider.LatLng(lastPressedMarker.getPosition().latitude, lastPressedMarker.getPosition().longitude);
                 } else if (userLocationMoved) {
-                    location = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
+                    location = new IMapsProvider.LatLng(userLocation.getLatitude(), userLocation.getLongitude());
                 } else if (myLocation != null) {
-                    location = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+                    location = new IMapsProvider.LatLng(myLocation.getLatitude(), myLocation.getLongitude());
                 } else {
                     location = null;
                 }
                 if (location != null) {
-                    googleMap.moveCamera(CameraUpdateFactory.newLatLng(location));
+                    map.moveCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(location));
                 }
             }
 
@@ -1494,10 +1475,10 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         searchListView.setLayoutParams(layoutParams);
 
         adapter.setOverScrollHeight(locationDenied && isTypeSend() ? overScrollHeight - listView.getPaddingTop() : overScrollHeight);
-        layoutParams = (FrameLayout.LayoutParams) mapView.getLayoutParams();
+        layoutParams = (FrameLayout.LayoutParams) mapView.getView().getLayoutParams();
         if (layoutParams != null) {
             layoutParams.height = mapHeight + AndroidUtilities.dp(10);
-            mapView.setLayoutParams(layoutParams);
+            mapView.getView().setLayoutParams(layoutParams);
         }
         if (overlayView != null) {
             layoutParams = (FrameLayout.LayoutParams) overlayView.getLayoutParams();
@@ -1511,6 +1492,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         updateClipView();
     }
 
+    @SuppressLint("MissingPermission")
     private Location getLastLocation() {
         LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
         List<String> providers = lm.getProviders(true);
@@ -1530,8 +1512,8 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         }
         myLocation = new Location(location);
 
-        if (googleMap != null) {
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        if (map != null) {
+            IMapsProvider.LatLng latLng = new IMapsProvider.LatLng(location.getLatitude(), location.getLongitude());
             if (adapter != null) {
                 if (!searchedForCustomLocations) {
                     adapter.searchPlacesWithQuery(null, myLocation, true);
@@ -1541,12 +1523,12 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             if (!userLocationMoved) {
                 userLocation = new Location(location);
                 if (firstWas) {
-                    CameraUpdate position = CameraUpdateFactory.newLatLng(latLng);
-                    googleMap.animateCamera(position);
+                    IMapsProvider.ICameraUpdate position = ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(latLng);
+                    map.animateCamera(position);
                 } else {
                     firstWas = true;
-                    CameraUpdate position = CameraUpdateFactory.newLatLngZoom(latLng, googleMap.getMaxZoomLevel() - 4);
-                    googleMap.moveCamera(position);
+                    IMapsProvider.ICameraUpdate position = ApplicationLoader.getMapsProvider().newCameraUpdateLatLngZoom(latLng, map.getMaxZoomLevel() - 4);
+                    map.moveCamera(position);
                 }
             }
         } else {
@@ -1561,9 +1543,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             if (adapter != null) {
                 adapter.setMyLocationDenied(locationDenied);
             }
-            if (googleMap != null) {
+            if (map != null) {
                 try {
-                    googleMap.setMyLocationEnabled(true);
+                    map.setMyLocationEnabled(true);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -1593,8 +1575,8 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     @Override
     void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         parentAlert.actionBar.setTitle(LocaleController.getString("ShareLocation", R.string.ShareLocation));
-        if (mapView.getParent() == null) {
-            mapViewClip.addView(mapView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, overScrollHeight + AndroidUtilities.dp(10), Gravity.TOP | Gravity.LEFT));
+        if (mapView.getView().getParent() == null) {
+            mapViewClip.addView(mapView.getView(), 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, overScrollHeight + AndroidUtilities.dp(10), Gravity.TOP | Gravity.LEFT));
             mapViewClip.addView(overlayView, 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, overScrollHeight + AndroidUtilities.dp(10), Gravity.TOP | Gravity.LEFT));
             mapViewClip.addView(loadingMapView, 2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
@@ -1608,9 +1590,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             }
         }
         onResumeCalled = true;
-        if (googleMap != null) {
+        if (map != null) {
             try {
-                googleMap.setMyLocationEnabled(true);
+                map.setMyLocationEnabled(true);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1648,17 +1630,17 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             mapTypeButton.setPopupItemsColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), true);
             mapTypeButton.setPopupItemsColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), false);
 
-            if (googleMap != null) {
+            if (map != null) {
                 if (isActiveThemeDark()) {
                     if (!currentMapStyleDark) {
                         currentMapStyleDark = true;
-                        MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
-                        googleMap.setMapStyle(style);
+                        IMapsProvider.IMapStyleOptions style = ApplicationLoader.getMapsProvider().loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
+                        map.setMapStyle(style);
                     }
                 } else {
                     if (currentMapStyleDark) {
                         currentMapStyleDark = false;
-                        googleMap.setMapStyle(null);
+                        map.setMapStyle(null);
                     }
                 }
             }

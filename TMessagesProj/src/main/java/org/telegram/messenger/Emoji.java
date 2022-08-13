@@ -24,26 +24,18 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
-import android.util.Pair;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
-
-import java.io.File;
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class Emoji {
 
@@ -52,7 +44,16 @@ public class Emoji {
     private static int bigImgSize;
     private static boolean inited = false;
     private static Paint placeholderPaint;
-    private static int[] emojiCounts = new int[]{1906, 199, 123, 332, 128, 222, 292, 259};
+    private static int[] emojiCounts = new int[]{
+        EmojiData.data[0].length,
+        EmojiData.data[1].length,
+        EmojiData.data[2].length,
+        EmojiData.data[3].length,
+        EmojiData.data[4].length,
+        EmojiData.data[5].length,
+        EmojiData.data[6].length,
+        EmojiData.data[7].length
+    };
     private static Bitmap[][] emojiBmp = new Bitmap[8][];
     private static boolean[][] loadingEmoji = new boolean[8][];
 
@@ -234,7 +235,7 @@ public class Emoji {
         private boolean fullSize = false;
         private static Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
         private static Rect rect = new Rect();
-        public int placeholderColor = 0x20000000;
+        public int placeholderColor = 0x10000000;
 
         public EmojiDrawable(DrawableInfo i) {
             info = i;
@@ -404,7 +405,7 @@ public class Emoji {
                     startIndex = -1;
                     startLength = 0;
                     doneEmoji = false;
-                } else if (c != 0xfe0f) {
+                } else if (c != 0xfe0f && c != '\n' && c != ' ' && c != '\t') {
                     notOnlyEmoji = true;
                 }
                 if (doneEmoji && i + 2 < length) {
@@ -419,7 +420,7 @@ public class Emoji {
                     } else if (emojiCode.length() >= 2 && emojiCode.charAt(0) == 0xD83C && emojiCode.charAt(1) == 0xDFF4 && next == 0xDB40) {
                         i++;
                         while (true) {
-                            emojiCode.append(cs.subSequence(i, i + 2));
+                            emojiCode.append(cs.charAt(i)).append(cs.charAt(i + 1));
                             startLength += 2;
                             i += 2;
                             if (i >= cs.length() || cs.charAt(i) != 0xDB40) {
@@ -427,7 +428,6 @@ public class Emoji {
                                 break;
                             }
                         }
-
                     }
                 }
                 previousGoodIndex = i;
@@ -487,19 +487,14 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew) {
-        return replaceEmoji(cs, fontMetrics, size, createNew, null, false, null);
-    }
-
-    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, boolean allowAnimated, AtomicReference<WeakReference<View>> viewRef) {
-        return replaceEmoji(cs, fontMetrics, size, createNew, null, allowAnimated, viewRef);
+        return replaceEmoji(cs, fontMetrics, size, createNew, null);
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly) {
-        return replaceEmoji(cs, fontMetrics, size, createNew, emojiOnly, false, null);
+        return replaceEmoji(cs, fontMetrics, size, createNew, emojiOnly, false);
     }
 
-    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly, boolean allowAnimated, AtomicReference<WeakReference<View>> viewRef) {
-        allowAnimated = false;
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly, boolean limit) {
         if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
             return cs;
         }
@@ -511,21 +506,36 @@ public class Emoji {
         }
         ArrayList<EmojiSpanRange> emojis = parseEmojis(s, emojiOnly);
 
+        AnimatedEmojiSpan[] animatedEmojiSpans = s.getSpans(0, s.length(), AnimatedEmojiSpan.class);
         EmojiSpan span;
         Drawable drawable;
         for (int i = 0; i < emojis.size(); ++i) {
-            EmojiSpanRange emojiRange = emojis.get(i);
-
             try {
+                EmojiSpanRange emojiRange = emojis.get(i);
+                if (animatedEmojiSpans != null) {
+                    boolean hasAnimated = false;
+                    for (int j = 0; j < animatedEmojiSpans.length; ++j) {
+                        AnimatedEmojiSpan animatedSpan = animatedEmojiSpans[j];
+                        if (animatedSpan != null && s.getSpanStart(animatedSpan) == emojiRange.start && s.getSpanEnd(animatedSpan) == emojiRange.end) {
+                            hasAnimated = true;
+                            break;
+                        }
+                    }
+                    if (hasAnimated) {
+                        continue;
+                    }
+                }
                 drawable = Emoji.getEmojiDrawable(emojiRange.code);
                 if (drawable != null) {
                     span = new EmojiSpan(drawable, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
+                    span.emoji = emojiRange.code == null ? null : emojiRange.code.toString();
                     s.setSpan(span, emojiRange.start, emojiRange.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            if ((Build.VERSION.SDK_INT < 23 || Build.VERSION.SDK_INT >= 29) && !BuildVars.DEBUG_PRIVATE_VERSION && (i + 1) >= 50) {
+            int limitCount = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50;
+            if ((Build.VERSION.SDK_INT < 23 || Build.VERSION.SDK_INT >= 29)/* && !BuildVars.DEBUG_PRIVATE_VERSION*/ && (i + 1) >= limitCount) {
                 break;
             }
         }
@@ -533,8 +543,9 @@ public class Emoji {
     }
 
     public static class EmojiSpan extends ImageSpan {
-        private Paint.FontMetricsInt fontMetrics;
-        private int size = AndroidUtilities.dp(20);
+        public Paint.FontMetricsInt fontMetrics;
+        public int size = AndroidUtilities.dp(20);
+        public String emoji;
 
         public EmojiSpan(Drawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
             super(d, verticalAlignment);
@@ -585,8 +596,15 @@ public class Emoji {
             }
         }
 
+        public boolean drawn;
+        public float lastDrawX, lastDrawY;
+
         @Override
         public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+            lastDrawX = x + size / 2f;
+            lastDrawY = top + (bottom - top) / 2f;
+            drawn = true;
+
             boolean restoreAlpha = false;
             if (paint.getAlpha() != 255 && emojiDrawingUseAlpha) {
                 restoreAlpha = true;
@@ -610,7 +628,7 @@ public class Emoji {
         @Override
         public void updateDrawState(TextPaint ds) {
             if (getDrawable() instanceof EmojiDrawable) {
-                ((EmojiDrawable) getDrawable()).placeholderColor = 0x20ffffff & ds.getColor();
+                ((EmojiDrawable) getDrawable()).placeholderColor = 0x10ffffff & ds.getColor();
             }
             super.updateDrawState(ds);
         }

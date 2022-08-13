@@ -62,6 +62,8 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DialogsAdapter;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -244,6 +246,7 @@ public class DialogCell extends BaseCell {
 
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
     private List<SpoilerEffect> spoilers = new ArrayList<>();
+    private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiStack;
 
     private int messageNameTop;
     private int messageNameLeft;
@@ -493,6 +496,7 @@ public class DialogCell extends BaseCell {
         if (preloader != null) {
             preloader.remove(currentDialogId);
         }
+        AnimatedEmojiSpan.release(this, animatedEmojiStack);
     }
 
     @Override
@@ -501,6 +505,7 @@ public class DialogCell extends BaseCell {
         avatarImage.onAttachedToWindow();
         thumbImage.onAttachedToWindow();
         resetPinnedArchiveState();
+        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiStack, messageLayout);
     }
 
     public void resetPinnedArchiveState() {
@@ -901,6 +906,9 @@ public class DialogCell extends BaseCell {
                         }
                         Spannable messSpan = new SpannableStringBuilder(mess);
                         MediaDataController.addTextStyleRuns(draftMessage, messSpan, TextStyleSpan.FLAG_STYLE_SPOILER);
+                        if (draftMessage != null && draftMessage.entities != null) {
+                            MediaDataController.addAnimatedEmojiSpans(draftMessage.entities, messSpan, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
+                        }
 
                         SpannableStringBuilder stringBuilder = AndroidUtilities.formatSpannable(messageFormat, AndroidUtilities.replaceNewLines(messSpan), messageNameString);
                         if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout) {
@@ -1083,6 +1091,9 @@ public class DialogCell extends BaseCell {
                                         }
                                         SpannableStringBuilder msgBuilder = new SpannableStringBuilder(mess);
                                         MediaDataController.addTextStyleRuns(message.messageOwner.entities, mess, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER);
+                                        if (message != null && message.messageOwner != null) {
+                                            MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, msgBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
+                                        }
                                         stringBuilder = AndroidUtilities.formatSpannable(messageFormat, new SpannableStringBuilder(emoji).append(AndroidUtilities.replaceNewLines(msgBuilder)), messageNameString);
                                     }
                                 } else if (message.messageOwner.media != null && !message.isMediaEmpty()) {
@@ -1143,6 +1154,9 @@ public class DialogCell extends BaseCell {
                                     }
                                     mess = new SpannableStringBuilder(mess);
                                     MediaDataController.addTextStyleRuns(message, (Spannable) mess, TextStyleSpan.FLAG_STYLE_SPOILER);
+                                    if (message != null && message.messageOwner != null) {
+                                        MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, mess, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
+                                    }
                                     stringBuilder = AndroidUtilities.formatSpannable(messageFormat, mess, messageNameString);
                                 } else {
                                     stringBuilder = SpannableStringBuilder.valueOf("");
@@ -1217,7 +1231,10 @@ public class DialogCell extends BaseCell {
                                         messageString = emoji + str;
                                     } else {
                                         SpannableStringBuilder msgBuilder = new SpannableStringBuilder(message.caption);
-                                        MediaDataController.addTextStyleRuns(message.messageOwner.entities, message.caption, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER);
+                                        if (message != null && message.messageOwner != null) {
+                                            MediaDataController.addTextStyleRuns(message.messageOwner.entities, message.caption, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER);
+                                            MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, msgBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
+                                        }
                                         messageString = new SpannableStringBuilder(emoji).append(msgBuilder);
                                     }
                                 } else {
@@ -1241,6 +1258,9 @@ public class DialogCell extends BaseCell {
                                         } else {
                                             SpannableStringBuilder stringBuilder = new SpannableStringBuilder(msgText);
                                             MediaDataController.addTextStyleRuns(message, stringBuilder, TextStyleSpan.FLAG_STYLE_SPOILER);
+                                            if (message != null && message.messageOwner != null) {
+                                                MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, stringBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
+                                            }
                                             messageString = stringBuilder;
                                         }
                                         AndroidUtilities.highlightText(messageString, message.highlightedWords, resourcesProvider);
@@ -1741,6 +1761,7 @@ public class DialogCell extends BaseCell {
             spoilersPool.addAll(spoilers);
             spoilers.clear();
             SpoilerEffect.addSpoilers(this, messageLayout, spoilersPool, spoilers);
+            animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiStack, messageLayout);
         } catch (Exception e) {
             messageLayout = null;
             FileLog.e(e);
@@ -2710,6 +2731,7 @@ public class DialogCell extends BaseCell {
                     canvas.save();
                     SpoilerEffect.clipOutCanvas(canvas, spoilers);
                     messageLayout.draw(canvas);
+                    AnimatedEmojiSpan.drawAnimatedEmojis(canvas, messageLayout, animatedEmojiStack, -.075f, spoilers, 0, 0, 0, 1f);
                     canvas.restore();
 
                     for (int i = 0; i < spoilers.size(); i++) {
@@ -2722,6 +2744,7 @@ public class DialogCell extends BaseCell {
                 }
             } else {
                 messageLayout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, messageLayout, animatedEmojiStack, -.075f, null, 0, 0, 0, 1f);
             }
             canvas.restore();
 

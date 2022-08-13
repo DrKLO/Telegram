@@ -526,7 +526,7 @@ public class SpoilerEffect extends Drawable {
         int w = textLayout.getWidth();
         int h = textLayout.getHeight();
 
-        if (w == 0 || h == 0)
+        if (w <= 0 || h <= 0)
             return Collections.emptyList();
 
         Bitmap measureBitmap = Bitmap.createBitmap(Math.round(w), Math.round(h), Bitmap.Config.ARGB_4444); // We can use 4444 as we don't need accuracy here

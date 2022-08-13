@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Static library version of {@link android.util.LruCache}. Used to write apps
@@ -254,5 +256,9 @@ public class LruCache<T> {
      */
     public synchronized final int maxSize() {
         return maxSize;
+    }
+
+    public synchronized final Set<Map.Entry<String, T>> entrySet() {
+        return map.entrySet();
     }
 }

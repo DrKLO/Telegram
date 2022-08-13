@@ -104,7 +104,11 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
         if (type == PremiumPreviewFragment.PREMIUM_FEATURE_UPLOAD_LIMIT) {
             matrixParticlesDrawable = new MatrixParticlesDrawable();
             matrixParticlesDrawable.init();
-        } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS) {
+        } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE ||
+                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
+                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
+                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
             starDrawable = new StarParticlesView.Drawable(40);
             starDrawable.speedScale = 3;
             starDrawable.type = type;
@@ -147,7 +151,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             starDrawable.init();
         }
 
-        if (type == PremiumPreviewFragment.PREMIUM_FEATURE_UPLOAD_LIMIT || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
+        if (type == PremiumPreviewFragment.PREMIUM_FEATURE_UPLOAD_LIMIT || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
             fromTop = true;
         }
 
@@ -288,7 +292,11 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 matrixParticlesDrawable.excludeRect.inset(AndroidUtilities.dp(16), AndroidUtilities.dp(16));
             }
             if (starDrawable != null) {
-                if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT || type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS) {
+                if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
                     starDrawable.rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     starDrawable.rect.inset(AndroidUtilities.dp(30), AndroidUtilities.dp(30));
                 } else {

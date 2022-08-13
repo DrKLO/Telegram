@@ -17,6 +17,7 @@ import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.math.MathUtils;
@@ -28,6 +29,7 @@ import androidx.recyclerview.widget.ChatListItemAnimator;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
@@ -42,6 +44,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -77,6 +80,8 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
 
     private boolean hasCustomBackground;
     private int customBackground;
+
+    private boolean needCloseConfirmation;
 
     private boolean destroyed;
     private Runnable pollRunnable = () -> {
@@ -128,8 +133,8 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (!onBackPressed()) {
-                        parentAlert.dismiss();
+                    if (!webViewContainer.onBackPressed()) {
+                        onCheckDismissByUser();
                     }
                 } else if (id == R.id.menu_open_bot) {
                     Bundle bundle = new Bundle();
@@ -187,7 +192,11 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
             lastSwipeTime = System.currentTimeMillis();
         });
         swipeContainer.setScrollEndListener(()-> webViewContainer.invalidateViewPortHeight(true));
-        swipeContainer.setDelegate(() -> parentAlert.dismiss());
+        swipeContainer.setDelegate(() -> {
+            if (!onCheckDismissByUser()) {
+                swipeContainer.stickTo(0);
+            }
+        });
         swipeContainer.setIsKeyboardVisible(obj -> parentAlert.sizeNotifierFrameLayout.getKeyboardHeight() >= AndroidUtilities.dp(20));
 
         addView(swipeContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -212,6 +221,39 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         });
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+    }
+
+    public void setNeedCloseConfirmation(boolean needCloseConfirmation) {
+        this.needCloseConfirmation = needCloseConfirmation;
+    }
+
+    @Override
+    boolean onDismissWithTouchOutside() {
+        onCheckDismissByUser();
+        return false;
+    }
+
+    public boolean onCheckDismissByUser() {
+        if (needCloseConfirmation) {
+            String botName = null;
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(botId);
+            if (user != null) {
+                botName = ContactsController.formatName(user.first_name, user.last_name);
+            }
+            AlertDialog dialog = new AlertDialog.Builder(getContext())
+                    .setTitle(botName)
+                    .setMessage(LocaleController.getString(R.string.BotWebViewChangesMayNotBeSaved))
+                    .setPositiveButton(LocaleController.getString(R.string.BotWebViewCloseAnyway), (dialog2, which) -> parentAlert.dismiss())
+                    .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                    .create();
+            dialog.show();
+            TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            textView.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+            return false;
+        } else {
+            parentAlert.dismiss();
+            return true;
+        }
     }
 
     public void setCustomBackground(int customBackground) {
@@ -522,7 +564,11 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
 
     @Override
     boolean onBackPressed() {
-        return webViewContainer.onBackPressed();
+        if (webViewContainer.onBackPressed()) {
+            return true;
+        }
+        onCheckDismissByUser();
+        return true;
     }
 
     @Override

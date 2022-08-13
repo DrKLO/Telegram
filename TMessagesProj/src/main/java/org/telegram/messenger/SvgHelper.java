@@ -39,7 +39,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.SystemClock;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.xml.sax.Attributes;
@@ -71,7 +70,7 @@ public class SvgHelper {
         }
     }
 
-    private static class Circle {
+    public static class Circle {
         float x1, y1, rad;
 
         public Circle(float x1, float y1, float rad) {
@@ -103,22 +102,24 @@ public class SvgHelper {
         protected ArrayList<Object> commands = new ArrayList<>();
         protected HashMap<Object, Paint> paints = new HashMap<>();
         private Paint overridePaint;
+        private Paint backgroundPaint;
         protected int width;
         protected int height;
         private static int[] parentPosition = new int[2];
 
-        private Bitmap backgroundBitmap;
-        private Canvas backgroundCanvas;
-        private LinearGradient placeholderGradient;
-        private Matrix placeholderMatrix;
+        private Bitmap[] backgroundBitmap = new Bitmap[2];
+        private Canvas[] backgroundCanvas = new Canvas[2];
+        private LinearGradient[] placeholderGradient = new LinearGradient[2];
+        private Matrix[] placeholderMatrix = new Matrix[2];
         private static float totalTranslation;
         private static float gradientWidth;
         private static long lastUpdateTime;
         private static Runnable shiftRunnable;
         private static WeakReference<Drawable> shiftDrawable;
         private ImageReceiver parentImageReceiver;
-        private int currentColor;
+        private int[] currentColor = new int[2];
         private String currentColorKey;
+        private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
 
@@ -145,27 +146,93 @@ public class SvgHelper {
 
         @Override
         public void draw(Canvas canvas) {
+            drawInternal(canvas, false, System.currentTimeMillis(), getBounds().left, getBounds().top, getBounds().width(), getBounds().height());
+        }
+
+        public void drawInternal(Canvas canvas, boolean drawInBackground, long time, float x, float y, float w, float h) {
             if (currentColorKey != null) {
-                setupGradient(currentColorKey, colorAlpha);
+                setupGradient(currentColorKey, currentResourcesProvider, colorAlpha, drawInBackground);
             }
-            Rect bounds = getBounds();
-            float scale = getScale();
+
+            float scale = getScale((int) w, (int) h);
+            if (placeholderGradient != null) {
+                if (drawInBackground) {
+                    long dt = time - lastUpdateTime;
+                    if (dt > 64) {
+                        dt = 64;
+                    }
+                    if (dt > 0) {
+                        lastUpdateTime = time;
+                        totalTranslation += dt * gradientWidth / 1800.0f;
+                        while (totalTranslation >= gradientWidth * 2) {
+                            totalTranslation -= gradientWidth * 2;
+                        }
+                    }
+                } else {
+                    if (shiftRunnable == null || shiftDrawable.get() == this) {
+                        long dt = time - lastUpdateTime;
+                        if (dt > 64) {
+                            dt = 64;
+                        }
+                        if (dt < 0) {
+                            dt = 0;
+                        }
+                        lastUpdateTime = time;
+                        totalTranslation += dt * gradientWidth / 1800.0f;
+                        while (totalTranslation >= gradientWidth / 2) {
+                            totalTranslation -= gradientWidth;
+                        }
+                        shiftDrawable = new WeakReference<>(this);
+                        if (shiftRunnable != null) {
+                            AndroidUtilities.cancelRunOnUIThread(shiftRunnable);
+                        }
+                        AndroidUtilities.runOnUIThread(shiftRunnable = () -> shiftRunnable = null, (int) (1000 / AndroidUtilities.screenRefreshRate) - 1);
+                    }
+                }
+                int offset;
+                if (parentImageReceiver != null && !drawInBackground) {
+                    parentImageReceiver.getParentPosition(parentPosition);
+                    offset = parentPosition[0];
+                } else {
+                    offset = 0;
+                }
+
+                int index = drawInBackground ? 1 : 0;
+                if (placeholderMatrix[index] != null) {
+                    placeholderMatrix[index].reset();
+                    if (drawInBackground) {
+                        placeholderMatrix[index].postTranslate(-offset + totalTranslation - x, 0);
+                    } else {
+                        placeholderMatrix[index].postTranslate(-offset + totalTranslation - x, 0);
+                    }
+
+                    placeholderMatrix[index].postScale(1.0f / scale, 1.0f / scale);
+                    placeholderGradient[index].setLocalMatrix(placeholderMatrix[index]);
+
+                    if (parentImageReceiver != null && !drawInBackground) {
+                        parentImageReceiver.invalidate();
+                    }
+                }
+            }
+
             canvas.save();
-            canvas.translate(bounds.left, bounds.top);
+            canvas.translate(x, y);
             if (!aspectFill) {
-                canvas.translate((bounds.width() - width * scale) / 2, (bounds.height() - height * scale) / 2);
+                canvas.translate((w - width * scale) / 2, (h - height * scale) / 2);
             }
             canvas.scale(scale, scale);
             for (int a = 0, N = commands.size(); a < N; a++) {
                 Object object = commands.get(a);
                 if (object instanceof Matrix) {
                     canvas.save();
-                    canvas.concat((Matrix) object);
+                //    canvas.concat((Matrix) object);
                 } else if (object == null) {
                     canvas.restore();
                 } else {
                     Paint paint;
-                    if (overridePaint != null) {
+                    if (drawInBackground) {
+                        paint = backgroundPaint;
+                    } else if (overridePaint != null) {
                         paint = overridePaint;
                     } else {
                         paint = paints.get(object);
@@ -195,41 +262,11 @@ public class SvgHelper {
                 }
             }
             canvas.restore();
-            if (placeholderGradient != null) {
-                if (shiftRunnable == null || shiftDrawable.get() == this) {
-                    long newUpdateTime = SystemClock.elapsedRealtime();
-                    long dt = Math.abs(lastUpdateTime - newUpdateTime);
-                    if (dt > 17) {
-                        dt = 16;
-                    }
-                    lastUpdateTime = newUpdateTime;
-                    totalTranslation += dt * gradientWidth / 1800.0f;
-                    while (totalTranslation >= gradientWidth / 2) {
-                        totalTranslation -= gradientWidth;
-                    }
-                    shiftDrawable = new WeakReference<>(this);
-                    if (shiftRunnable != null) {
-                        AndroidUtilities.cancelRunOnUIThread(shiftRunnable);
-                    }
-                    AndroidUtilities.runOnUIThread(shiftRunnable = () -> shiftRunnable = null, (int) (1000 / AndroidUtilities.screenRefreshRate) - 1);
-                }
-                if (parentImageReceiver != null) {
-                    parentImageReceiver.getParentPosition(parentPosition);
-                }
-                placeholderMatrix.reset();
-                placeholderMatrix.postTranslate(-parentPosition[0] + totalTranslation - bounds.left, 0);
-                placeholderMatrix.postScale(1.0f / scale, 1.0f / scale);
-                placeholderGradient.setLocalMatrix(placeholderMatrix);
-                if (parentImageReceiver != null) {
-                    parentImageReceiver.invalidate();
-                }
-            }
         }
 
-        public float getScale() {
-            Rect bounds = getBounds();
-            float scaleX = bounds.width() / (float) width;
-            float scaleY = bounds.height() / (float) height;
+        public float getScale(int viewWidth, int viewHeight) {
+            float scaleX = viewWidth / (float) width;
+            float scaleY = viewHeight / (float) height;
             return aspectFill ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
         }
 
@@ -261,35 +298,52 @@ public class SvgHelper {
             parentImageReceiver = imageReceiver;
         }
 
-        public void setupGradient(String colorKey, float alpha) {
-            int color = Theme.getColor(colorKey);
-            if (currentColor != color) {
+        public void setupGradient(String colorKey, float alpha, boolean drawInBackground) {
+            setupGradient(colorKey, null, alpha, drawInBackground);
+        }
+
+        public void setupGradient(String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
+            int color = Theme.getColor(colorKey, resourcesProvider);
+            int index = drawInBackground ? 1 : 0;
+            currentResourcesProvider = resourcesProvider;
+            if (currentColor[index] != color) {
                 colorAlpha = alpha;
                 currentColorKey = colorKey;
-                currentColor = color;
+                currentColor[index] = color;
                 gradientWidth = AndroidUtilities.displaySize.x * 2;
                 float w = AndroidUtilities.dp(180) / gradientWidth;
                 color = Color.argb((int) (Color.alpha(color) / 2 * colorAlpha), Color.red(color), Color.green(color), Color.blue(color));
                 float centerX = (1.0f - w) / 2;
-                placeholderGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{0x00000000, 0x00000000, color, 0x00000000, 0x00000000}, new float[]{0.0f, centerX - w / 2.0f, centerX, centerX + w / 2.0f, 1.0f}, Shader.TileMode.REPEAT);
+                placeholderGradient[index] = new LinearGradient(0, 0, gradientWidth, 0, new int[]{0x00000000, 0x00000000, color, 0x00000000, 0x00000000}, new float[]{0.0f, centerX - w / 2.0f, centerX, centerX + w / 2.0f, 1.0f}, Shader.TileMode.REPEAT);
                 Shader backgroundGradient;
                 if (Build.VERSION.SDK_INT >= 28) {
                     backgroundGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{color, color}, null, Shader.TileMode.REPEAT);
                 } else {
-                    if (backgroundBitmap == null) {
-                        backgroundBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
-                        backgroundCanvas = new Canvas(backgroundBitmap);
+                    if (backgroundBitmap[index] == null) {
+                        backgroundBitmap[index] = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+                        backgroundCanvas[index] = new Canvas(backgroundBitmap[index]);
                     }
-                    backgroundCanvas.drawColor(color);
-                    backgroundGradient = new BitmapShader(backgroundBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+                    backgroundCanvas[index].drawColor(color);
+                    backgroundGradient = new BitmapShader(backgroundBitmap[index], Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
                 }
-                placeholderMatrix = new Matrix();
-                placeholderGradient.setLocalMatrix(placeholderMatrix);
-                for (Paint paint : paints.values()) {
+                placeholderMatrix[index] = new Matrix();
+                placeholderGradient[index].setLocalMatrix(placeholderMatrix[index]);
+                if (drawInBackground) {
+                    if (backgroundPaint == null) {
+                        backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    }
                     if (Build.VERSION.SDK_INT <= 22) {
-                        paint.setShader(backgroundGradient);
+                        backgroundPaint.setShader(backgroundGradient);
                     } else {
-                        paint.setShader(new ComposeShader(placeholderGradient, backgroundGradient, PorterDuff.Mode.ADD));
+                        backgroundPaint.setShader(new ComposeShader(placeholderGradient[index], backgroundGradient, PorterDuff.Mode.ADD));
+                    }
+                } else {
+                    for (Paint paint : paints.values()) {
+                        if (Build.VERSION.SDK_INT <= 22) {
+                            paint.setShader(backgroundGradient);
+                        } else {
+                            paint.setShader(new ComposeShader(placeholderGradient[index], backgroundGradient, PorterDuff.Mode.ADD));
+                        }
                     }
                 }
             }

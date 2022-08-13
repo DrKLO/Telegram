@@ -1977,139 +1977,161 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public void animateThemedValues(Theme.ThemeInfo theme, int accentId, boolean nightTheme, boolean instant) {
-        animateThemedValues(new ThemeAnimationSettings(theme, accentId, nightTheme, instant));
+        animateThemedValues(new ThemeAnimationSettings(theme, accentId, nightTheme, instant), null);
     }
 
-    public void animateThemedValues(ThemeAnimationSettings settings) {
+    public void animateThemedValues(Theme.ThemeInfo theme, int accentId, boolean nightTheme, boolean instant, Runnable onDone) {
+        animateThemedValues(new ThemeAnimationSettings(theme, accentId, nightTheme, instant), onDone);
+    }
+
+    public void animateThemedValues(ThemeAnimationSettings settings, Runnable onDone) {
         if (transitionAnimationInProgress || startedTracking) {
             animateThemeAfterAnimation = true;
             animateSetThemeAfterAnimation = settings.theme;
             animateSetThemeNightAfterAnimation = settings.nightTheme;
             animateSetThemeAccentIdAfterAnimation = settings.accentId;
+            if (onDone != null) {
+                onDone.run();
+            }
             return;
         }
         if (themeAnimatorSet != null) {
             themeAnimatorSet.cancel();
             themeAnimatorSet = null;
         }
-        boolean startAnimation = false;
-        int fragmentCount = settings.onlyTopFragment ? 1 : fragmentsStack.size();
-        for (int i = 0; i < fragmentCount; i++) {
-            BaseFragment fragment;
-            if (i == 0) {
-                fragment = getLastFragment();
-            } else {
-                if (!inPreviewMode && !transitionAnimationPreviewMode || fragmentsStack.size() <= 1) {
-                    continue;
-                }
-                fragment = fragmentsStack.get(fragmentsStack.size() - 2);
-            }
-            if (fragment != null) {
-                startAnimation = true;
-                if (settings.resourcesProvider != null) {
-                    if (messageDrawableOutStart == null) {
-                        messageDrawableOutStart = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, false, startColorsProvider);
-                        messageDrawableOutStart.isCrossfadeBackground = true;
-                        messageDrawableOutMediaStart = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, true, false, startColorsProvider);
-                        messageDrawableOutMediaStart.isCrossfadeBackground = true;
-                    }
-                    startColorsProvider.saveColors(settings.resourcesProvider);
-                }
-                ArrayList<ThemeDescription> descriptions = fragment.getThemeDescriptions();
-                addStartDescriptions(descriptions);
-                if (fragment.visibleDialog instanceof BottomSheet) {
-                    BottomSheet sheet = (BottomSheet) fragment.visibleDialog;
-                    addStartDescriptions(sheet.getThemeDescriptions());
-                } else if (fragment.visibleDialog instanceof AlertDialog) {
-                    AlertDialog dialog = (AlertDialog) fragment.visibleDialog;
-                    addStartDescriptions(dialog.getThemeDescriptions());
-                }
+        final int fragmentCount = settings.onlyTopFragment ? 1 : fragmentsStack.size();
+        Runnable next = () -> {
+            boolean startAnimation = false;
+            for (int i = 0; i < fragmentCount; i++) {
+                BaseFragment fragment;
                 if (i == 0) {
-                    if (settings.applyTheme) {
-                        if (settings.accentId != -1 && settings.theme != null) {
-                            settings.theme.setCurrentAccentId(settings.accentId);
-                            Theme.saveThemeAccents(settings.theme, true, false, true, false);
+                    fragment = getLastFragment();
+                } else {
+                    if (!inPreviewMode && !transitionAnimationPreviewMode || fragmentsStack.size() <= 1) {
+                        continue;
+                    }
+                    fragment = fragmentsStack.get(fragmentsStack.size() - 2);
+                }
+                if (fragment != null) {
+                    startAnimation = true;
+                    if (settings.resourcesProvider != null) {
+                        if (messageDrawableOutStart == null) {
+                            messageDrawableOutStart = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, false, startColorsProvider);
+                            messageDrawableOutStart.isCrossfadeBackground = true;
+                            messageDrawableOutMediaStart = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, true, false, startColorsProvider);
+                            messageDrawableOutMediaStart.isCrossfadeBackground = true;
                         }
-                        Theme.applyTheme(settings.theme, settings.nightTheme);
+                        startColorsProvider.saveColors(settings.resourcesProvider);
                     }
-                    if (settings.afterStartDescriptionsAddedRunnable != null) {
-                        settings.afterStartDescriptionsAddedRunnable.run();
+                    ArrayList<ThemeDescription> descriptions = fragment.getThemeDescriptions();
+                    addStartDescriptions(descriptions);
+                    if (fragment.visibleDialog instanceof BottomSheet) {
+                        BottomSheet sheet = (BottomSheet) fragment.visibleDialog;
+                        addStartDescriptions(sheet.getThemeDescriptions());
+                    } else if (fragment.visibleDialog instanceof AlertDialog) {
+                        AlertDialog dialog = (AlertDialog) fragment.visibleDialog;
+                        addStartDescriptions(dialog.getThemeDescriptions());
                     }
-                }
-                addEndDescriptions(descriptions);
-                if (fragment.visibleDialog instanceof BottomSheet) {
-                    addEndDescriptions(((BottomSheet) fragment.visibleDialog).getThemeDescriptions());
-                } else if (fragment.visibleDialog instanceof AlertDialog) {
-                    addEndDescriptions(((AlertDialog) fragment.visibleDialog).getThemeDescriptions());
-                }
-            }
-        }
-        if (startAnimation) {
-            if (!settings.onlyTopFragment) {
-                int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
-                for (int a = 0; a < count; a++) {
-                    BaseFragment fragment = fragmentsStack.get(a);
-                    fragment.clearViews();
-                    fragment.setParentLayout(this);
-                }
-            }
-            if (settings.instant) {
-                setThemeAnimationValue(1.0f);
-                themeAnimatorDescriptions.clear();
-                animateStartColors.clear();
-                animateEndColors.clear();
-                themeAnimatorDelegate.clear();
-                presentingFragmentDescriptions = null;
-                if (settings.afterAnimationRunnable != null) {
-                    settings.afterAnimationRunnable.run();
-                }
-                return;
-            }
-            Theme.setAnimatingColor(true);
-            if (settings.beforeAnimationRunnable != null) {
-                settings.beforeAnimationRunnable.run();
-            }
-            animationProgressListener = settings.animationProgress;
-            if (animationProgressListener != null) {
-                animationProgressListener.setProgress(0);
-            }
-            themeAnimatorSet = new AnimatorSet();
-            themeAnimatorSet.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (animation.equals(themeAnimatorSet)) {
-                        themeAnimatorDescriptions.clear();
-                        animateStartColors.clear();
-                        animateEndColors.clear();
-                        themeAnimatorDelegate.clear();
-                        Theme.setAnimatingColor(false);
-                        presentingFragmentDescriptions = null;
-                        themeAnimatorSet = null;
-                        if (settings.afterAnimationRunnable != null) {
-                            settings.afterAnimationRunnable.run();
+                    if (i == 0) {
+                        if (settings.afterStartDescriptionsAddedRunnable != null) {
+                            settings.afterStartDescriptionsAddedRunnable.run();
                         }
                     }
+                    addEndDescriptions(descriptions);
+                    if (fragment.visibleDialog instanceof BottomSheet) {
+                        addEndDescriptions(((BottomSheet) fragment.visibleDialog).getThemeDescriptions());
+                    } else if (fragment.visibleDialog instanceof AlertDialog) {
+                        addEndDescriptions(((AlertDialog) fragment.visibleDialog).getThemeDescriptions());
+                    }
                 }
+            }
+            if (startAnimation) {
+                if (!settings.onlyTopFragment) {
+                    int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
+                    for (int a = 0; a < count; a++) {
+                        BaseFragment fragment = fragmentsStack.get(a);
+                        fragment.clearViews();
+                        fragment.setParentLayout(this);
+                    }
+                }
+                if (settings.instant) {
+                    setThemeAnimationValue(1.0f);
+                    themeAnimatorDescriptions.clear();
+                    animateStartColors.clear();
+                    animateEndColors.clear();
+                    themeAnimatorDelegate.clear();
+                    presentingFragmentDescriptions = null;
+                    if (settings.afterAnimationRunnable != null) {
+                        settings.afterAnimationRunnable.run();
+                    }
+                    if (onDone != null) {
+                        onDone.run();
+                    }
+                    return;
+                }
+                Theme.setAnimatingColor(true);
+                if (settings.beforeAnimationRunnable != null) {
+                    settings.beforeAnimationRunnable.run();
+                }
+                animationProgressListener = settings.animationProgress;
+                if (animationProgressListener != null) {
+                    animationProgressListener.setProgress(0);
+                }
+                themeAnimatorSet = new AnimatorSet();
+                themeAnimatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (animation.equals(themeAnimatorSet)) {
+                            themeAnimatorDescriptions.clear();
+                            animateStartColors.clear();
+                            animateEndColors.clear();
+                            themeAnimatorDelegate.clear();
+                            Theme.setAnimatingColor(false);
+                            presentingFragmentDescriptions = null;
+                            themeAnimatorSet = null;
+                            if (settings.afterAnimationRunnable != null) {
+                                settings.afterAnimationRunnable.run();
+                            }
+                        }
+                    }
 
-                @Override
-                public void onAnimationCancel(Animator animation) {
-                    if (animation.equals(themeAnimatorSet)) {
-                        themeAnimatorDescriptions.clear();
-                        animateStartColors.clear();
-                        animateEndColors.clear();
-                        themeAnimatorDelegate.clear();
-                        Theme.setAnimatingColor(false);
-                        presentingFragmentDescriptions = null;
-                        themeAnimatorSet = null;
-                        if (settings.afterAnimationRunnable != null) {
-                            settings.afterAnimationRunnable.run();
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        if (animation.equals(themeAnimatorSet)) {
+                            themeAnimatorDescriptions.clear();
+                            animateStartColors.clear();
+                            animateEndColors.clear();
+                            themeAnimatorDelegate.clear();
+                            Theme.setAnimatingColor(false);
+                            presentingFragmentDescriptions = null;
+                            themeAnimatorSet = null;
+                            if (settings.afterAnimationRunnable != null) {
+                                settings.afterAnimationRunnable.run();
+                            }
                         }
                     }
-                }
-            });
-            themeAnimatorSet.playTogether(ObjectAnimator.ofFloat(this, "themeAnimationValue", 0.0f, 1.0f));
-            themeAnimatorSet.setDuration(settings.duration);
-            themeAnimatorSet.start();
+                });
+                themeAnimatorSet.playTogether(ObjectAnimator.ofFloat(this, "themeAnimationValue", 0.0f, 1.0f));
+                themeAnimatorSet.setDuration(settings.duration);
+                themeAnimatorSet.start();
+            }
+            if (onDone != null) {
+                onDone.run();
+            }
+        };
+        if (fragmentCount >= 1 && settings.applyTheme) {
+            if (settings.accentId != -1 && settings.theme != null) {
+                settings.theme.setCurrentAccentId(settings.accentId);
+                Theme.saveThemeAccents(settings.theme, true, false, true, false);
+            }
+            if (onDone == null) {
+                Theme.applyTheme(settings.theme, settings.nightTheme);
+                next.run();
+            } else {
+                Theme.applyThemeInBackground(settings.theme, settings.nightTheme, () -> AndroidUtilities.runOnUIThread(next));
+            }
+        } else {
+            next.run();
         }
     }
 

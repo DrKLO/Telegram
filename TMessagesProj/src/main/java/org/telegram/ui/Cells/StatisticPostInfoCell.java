@@ -1,7 +1,9 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -17,6 +19,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -44,7 +48,32 @@ public class StatisticPostInfoCell extends FrameLayout {
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
-        message = new TextView(context);
+        message = new TextView(context) {
+            AnimatedEmojiSpan.EmojiGroupedSpans stack;
+            @Override
+            public void setText(CharSequence text, BufferType type) {
+                super.setText(text, type);
+                stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                AnimatedEmojiSpan.release(this, stack);
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), stack, 0, null, 0, 0, 0, 1f);
+            }
+        };
         message.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         message.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         message.setTextColor(Color.BLACK);
@@ -98,14 +127,14 @@ public class StatisticPostInfoCell extends FrameLayout {
             imageView.setRoundRadius(AndroidUtilities.dp(46) >> 1);
         }
 
-        String text;
+        CharSequence text;
         if (messageObject.isMusic()) {
             text = String.format("%s, %s", messageObject.getMusicTitle().trim(), messageObject.getMusicAuthor().trim());
         } else {
-            text = messageObject.caption != null ? messageObject.caption.toString() : messageObject.messageText.toString();
+            text = messageObject.caption != null ? messageObject.caption : messageObject.messageText;
         }
 
-        message.setText(text.replace("\n", " ").trim());
+        message.setText(AndroidUtilities.trim(AndroidUtilities.replaceNewLines(new SpannableStringBuilder(text)), null));
         views.setText(String.format(LocaleController.getPluralString("Views", postInfo.counters.views), AndroidUtilities.formatCount(postInfo.counters.views)));
         date.setText(LocaleController.formatDateAudio(postInfo.message.messageOwner.date, false));
         shares.setText(String.format(LocaleController.getPluralString("Shares", postInfo.counters.forwards), AndroidUtilities.formatCount(postInfo.counters.forwards)));

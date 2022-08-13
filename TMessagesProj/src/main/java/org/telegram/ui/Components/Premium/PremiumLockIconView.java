@@ -44,6 +44,7 @@ public class PremiumLockIconView extends ImageView {
         }
     }
 
+    boolean colorRetrieved = false;
     int currentColor = Color.WHITE;
     int color1, color2;
     Shader shader = null;
@@ -77,6 +78,7 @@ public class PremiumLockIconView extends ImageView {
     }
 
     public void setColor(int color) {
+        colorRetrieved = true;
         if (currentColor != color) {
             currentColor = color;
             if (type == TYPE_REACTIONS) {
@@ -203,6 +205,10 @@ public class PremiumLockIconView extends ImageView {
         waitingImage = true;
         wasDrawn = false;
         invalidate();
+    }
+
+    public boolean ready() {
+        return colorRetrieved;
     }
 
     public void play(int delay) {

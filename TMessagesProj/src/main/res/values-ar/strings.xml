@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">حظر المستخدم</string>
     <string name="DeleteReportSpam">إبلاغ عن إزعاج</string>
     <string name="DeleteAllFrom">حذف جميع مشاركات %1$s</string>
-    <string name="ClearRecentEmoji">مسح الرموز التعبيرية الأخيرة؟</string>
+    <string name="ClearRecentEmojiTitle">مسح الرموز التعبيرية الأخيرة</string>
     <string name="Emoji1">الابتسامات والناس</string>
     <string name="Emoji2">حيوانات وطبيعة</string>
     <string name="Emoji3">أطعمة وأشربة</string>

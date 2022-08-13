@@ -86,6 +86,8 @@ public class PipVideoOverlay {
     private View innerView;
     private FrameLayout controlsView;
 
+    private boolean isWebView;
+
     private ScaleGestureDetector scaleGestureDetector;
     private GestureDetectorFixDoubleTap gestureDetector;
     private boolean isScrolling;
@@ -968,7 +970,7 @@ public class PipVideoOverlay {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 ActivityManager activityManager = (ActivityManager) v.getContext().getSystemService(Context.ACTIVITY_SERVICE);
                 List<ActivityManager.RunningAppProcessInfo> appProcessInfos = activityManager.getRunningAppProcesses();
-                if (!appProcessInfos.isEmpty()) {
+                if (appProcessInfos != null && !appProcessInfos.isEmpty()) {
                     isResumedByActivityManager = appProcessInfos.get(0).importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
                 }
             }
@@ -1008,7 +1010,8 @@ public class PipVideoOverlay {
             }
             updatePlayButton();
         });
-        playPauseButton.setVisibility(innerView instanceof WebView ? View.GONE : View.VISIBLE);
+        isWebView = innerView instanceof WebView;
+        playPauseButton.setVisibility(isWebView ? View.GONE : View.VISIBLE);
         controlsView.addView(playPauseButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.CENTER));
 
         videoProgressView = new VideoProgressView(context);
@@ -1097,6 +1100,10 @@ public class PipVideoOverlay {
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
+
+            if (isWebView) {
+                return;
+            }
 
             int width = getWidth();
 

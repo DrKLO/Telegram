@@ -11,6 +11,7 @@ import android.text.Spannable;
 import android.view.MotionEvent;
 import android.widget.EditText;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
 
@@ -31,6 +32,10 @@ public class EditTextEffects extends EditText {
     private int selStart, selEnd;
     private float lastRippleX, lastRippleY;
     private boolean postedSpoilerTimeout;
+    private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiDrawables;
+    private Layout lastLayout = null;
+    private int lastTextLength;
+
     private Runnable spoilerTimeout = () -> {
         postedSpoilerTimeout = false;
         isSpoilersRevealed = false;
@@ -45,6 +50,7 @@ public class EditTextEffects extends EditText {
         }
     };
     private Rect rect = new Rect();
+    private boolean clipToPadding;
 
     public EditTextEffects(Context context) {
         super(context);
@@ -118,6 +124,13 @@ public class EditTextEffects extends EditText {
         super.onDetachedFromWindow();
 
         removeCallbacks(spoilerTimeout);
+        AnimatedEmojiSpan.release(this, animatedEmojiDrawables);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        updateAnimatedEmoji(false);
     }
 
     @Override
@@ -149,6 +162,8 @@ public class EditTextEffects extends EditText {
                 }
             }
         }
+        updateAnimatedEmoji(true);
+        invalidate();
     }
 
     @Override
@@ -159,6 +174,12 @@ public class EditTextEffects extends EditText {
                 spoilersPool.clear();
         }
         super.setText(text, type);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        updateAnimatedEmoji(false);
     }
 
     /**
@@ -210,13 +231,20 @@ public class EditTextEffects extends EditText {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
+        if (clipToPadding && getScrollY() != 0) {
+            canvas.clipRect(0, getScrollY(), getMeasuredWidth(), getMeasuredHeight() + getScrollY());
+        }
         path.rewind();
         for (SpoilerEffect eff : spoilers) {
             Rect bounds = eff.getBounds();
             path.addRect(bounds.left, bounds.top, bounds.right, bounds.bottom, Path.Direction.CW);
         }
         canvas.clipPath(path, Region.Op.DIFFERENCE);
+        updateAnimatedEmoji(false);
         super.onDraw(canvas);
+        if (animatedEmojiDrawables != null) {
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmojiDrawables, 0, spoilers, computeVerticalScrollOffset() - AndroidUtilities.dp(6), computeVerticalScrollOffset() + computeVerticalScrollExtent(), 0, 1f);
+        }
         canvas.restore();
 
         canvas.save();
@@ -240,6 +268,15 @@ public class EditTextEffects extends EditText {
             }
         }
         canvas.restore();
+    }
+
+    public void updateAnimatedEmoji(boolean force) {
+        int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
+        if (force || lastLayout != getLayout() || lastTextLength != newTextLength) {
+            animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.getCacheTypeForEnterView(), this, animatedEmojiDrawables, getLayout());
+            lastLayout = getLayout();
+            lastTextLength = newTextLength;
+        }
     }
 
     public void invalidateEffects() {
@@ -266,8 +303,18 @@ public class EditTextEffects extends EditText {
 
         Layout layout = getLayout();
         if (layout != null && layout.getText() instanceof Spannable) {
+            if (animatedEmojiDrawables != null) {
+                animatedEmojiDrawables.recordPositions(false);
+            }
             SpoilerEffect.addSpoilers(this, spoilersPool, spoilers);
+            if (animatedEmojiDrawables != null) {
+                animatedEmojiDrawables.recordPositions(true);
+            }
         }
         invalidate();
+    }
+
+    public void setClipToPadding(boolean clipToPadding) {
+        this.clipToPadding = clipToPadding;
     }
 }

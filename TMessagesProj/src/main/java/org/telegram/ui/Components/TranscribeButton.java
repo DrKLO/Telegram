@@ -76,7 +76,6 @@ public class TranscribeButton {
         outIconDrawable = new RLottieDrawable(R.raw.transcribe_out, "transcribe_out", AndroidUtilities.dp(26), AndroidUtilities.dp(26));
         outIconDrawable.setCurrentFrame(0);
         outIconDrawable.setCallback(parent);
-        outIconDrawable.addParentView(parent);
         outIconDrawable.setOnFinishCallback(() -> {
             outIconDrawable.stop();
             inIconDrawable.stop();
@@ -88,7 +87,7 @@ public class TranscribeButton {
         inIconDrawable = new RLottieDrawable(R.raw.transcribe_in, "transcribe_in", AndroidUtilities.dp(26), AndroidUtilities.dp(26));
         inIconDrawable.setCurrentFrame(0);
         inIconDrawable.setCallback(parent);
-        inIconDrawable.addParentView(parent);
+        inIconDrawable.setMasterParent(parent);
         inIconDrawable.setOnFinishCallback(() -> {
             inIconDrawable.stop();
             outIconDrawable.stop();
@@ -222,12 +221,12 @@ public class TranscribeButton {
             inIconDrawable.setLayerColor("Artboard Outlines.**", this.iconColor);
             inIconDrawable.commitApplyLayerColors();
             inIconDrawable.setAllowDecodeSingleFrame(true);
-            inIconDrawable.updateCurrentFrame();
+            inIconDrawable.updateCurrentFrame(0, false);
             outIconDrawable.beginApplyLayerColors();
             outIconDrawable.setLayerColor("Artboard Outlines.**", this.iconColor);
             outIconDrawable.commitApplyLayerColors();
             outIconDrawable.setAllowDecodeSingleFrame(true);
-            outIconDrawable.updateCurrentFrame();
+            outIconDrawable.updateCurrentFrame(0, false);
         }
 //        inIconDrawable.setAlpha(disabled ? 125 : 255);
 //        outIconDrawable.setAlpha(disabled ? 125 : 255);
@@ -355,7 +354,7 @@ public class TranscribeButton {
             lottie.setLayerColor("Comp 1.**", color);
             lottie.commitApplyLayerColors();
             lottie.setAllowDecodeSingleFrame(true);
-            lottie.updateCurrentFrame();
+            lottie.updateCurrentFrame(0, false);
         }
 
         @Override

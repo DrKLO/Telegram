@@ -41,6 +41,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.ProductDetails;
+import com.android.billingclient.api.Purchase;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -85,10 +86,8 @@ import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Currency;
 import java.util.List;
 
 public class PremiumPreviewFragment extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -131,6 +130,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_VOICE_TO_TEXT = 8;
     public final static int PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT = 9;
     public final static int PREMIUM_FEATURE_APPLICATION_ICONS = 10;
+    public final static int PREMIUM_FEATURE_ANIMATED_EMOJI = 11;
     private int statusBarHeight;
     private int firstViewHeight;
     private boolean isDialogVisible;
@@ -150,7 +150,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     private boolean forcePremium;
     float progressToFull;
 
-    public static int severStringToFeatureType(String s) {
+    public static int serverStringToFeatureType(String s) {
         switch (s) {
             case "double_limits":
                 return PREMIUM_FEATURE_LIMITS;
@@ -174,6 +174,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_ANIMATED_AVATARS;
             case "app_icons":
                 return PREMIUM_FEATURE_APPLICATION_ICONS;
+            case "animated_emoji":
+                return PREMIUM_FEATURE_ANIMATED_EMOJI;
         }
         return -1;
     }
@@ -192,6 +194,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "no_ads";
             case PREMIUM_FEATURE_REACTIONS:
                 return "unique_reactions";
+            case PREMIUM_FEATURE_ANIMATED_EMOJI:
+                return "animated_emoji";
             case PREMIUM_FEATURE_STICKERS:
                 return "premium_stickers";
             case PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT:
@@ -220,7 +224,18 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     @Override
     public View createView(Context context) {
         hasOwnBackground = true;
-        shader = new LinearGradient(0, 0, 0, 100, new int[]{0xffF38926, 0xffDB5C9D, 0xffA767FF, 0xff55A5FF}, new float[]{0f, 0.32f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+        shader = new LinearGradient(
+            0, 0, 0, 100,
+            new int[]{
+                Theme.getColor(Theme.key_premiumGradient4),
+                Theme.getColor(Theme.key_premiumGradient3),
+                Theme.getColor(Theme.key_premiumGradient2),
+                Theme.getColor(Theme.key_premiumGradient1),
+                Theme.getColor(Theme.key_premiumGradient0)
+            },
+            new float[]{0f, 0.32f, 0.5f, 0.7f, 1f},
+            Shader.TileMode.CLAMP
+        );
         shader.setLocalMatrix(matrix);
         gradientPaint.setShader(shader);
 
@@ -513,6 +528,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADS, R.drawable.msg_premium_ads, LocaleController.getString("PremiumPreviewNoAds", R.string.PremiumPreviewNoAds), LocaleController.getString("PremiumPreviewNoAdsDescription", R.string.PremiumPreviewNoAdsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_REACTIONS, R.drawable.msg_premium_reactions, LocaleController.getString("PremiumPreviewReactions", R.string.PremiumPreviewReactions), LocaleController.getString("PremiumPreviewReactionsDescription", R.string.PremiumPreviewReactionsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_STICKERS, R.drawable.msg_premium_stickers, LocaleController.getString("PremiumPreviewStickers", R.string.PremiumPreviewStickers), LocaleController.getString("PremiumPreviewStickersDescription", R.string.PremiumPreviewStickersDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_EMOJI, R.drawable.msg_premium_emoji, LocaleController.getString("PremiumPreviewEmoji", R.string.PremiumPreviewEmoji), LocaleController.getString("PremiumPreviewEmojiDescription", R.string.PremiumPreviewEmojiDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, R.drawable.msg_premium_tools, LocaleController.getString("PremiumPreviewAdvancedChatManagement", R.string.PremiumPreviewAdvancedChatManagement), LocaleController.getString("PremiumPreviewAdvancedChatManagementDescription", R.string.PremiumPreviewAdvancedChatManagementDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE, R.drawable.msg_premium_badge, LocaleController.getString("PremiumPreviewProfileBadge", R.string.PremiumPreviewProfileBadge), LocaleController.getString("PremiumPreviewProfileBadgeDescription", R.string.PremiumPreviewProfileBadgeDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_ANIMATED_AVATARS, R.drawable.msg_premium_avatar, LocaleController.getString("PremiumPreviewAnimatedProfiles", R.string.PremiumPreviewAnimatedProfiles), LocaleController.getString("PremiumPreviewAnimatedProfilesDescription", R.string.PremiumPreviewAnimatedProfilesDescription)));
@@ -520,6 +536,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {
+                messagesController.premiumFeaturesTypesToPosition.append(PREMIUM_FEATURE_ANIMATED_EMOJI, 6);
                 if (messagesController.premiumFeaturesTypesToPosition.get(premiumFeatures.get(i).type, -1) == -1) {
                     premiumFeatures.remove(i);
                     i--;
@@ -581,43 +598,74 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             return;
         }
 
-        BillingController.getInstance().addResultListener(BillingController.PREMIUM_PRODUCT_ID, billingResult -> {
-            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                if (fragment instanceof PremiumPreviewFragment) {
-                    PremiumPreviewFragment premiumPreviewFragment = (PremiumPreviewFragment) fragment;
-                    premiumPreviewFragment.setForcePremium();
-                    premiumPreviewFragment.getMediaDataController().loadPremiumPromo(false);
+        BillingController.getInstance().queryPurchases(BillingClient.ProductType.SUBS, (billingResult1, list) -> AndroidUtilities.runOnUIThread(() -> {
+            if (billingResult1.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                Runnable onSuccess = () -> {
+                    if (fragment instanceof PremiumPreviewFragment) {
+                        PremiumPreviewFragment premiumPreviewFragment = (PremiumPreviewFragment) fragment;
+                        premiumPreviewFragment.setForcePremium();
+                        premiumPreviewFragment.getMediaDataController().loadPremiumPromo(false);
 
-                    premiumPreviewFragment.listView.smoothScrollToPosition(0);
-                } else {
-                    fragment.presentFragment(new PremiumPreviewFragment(null).setForcePremium());
+                        premiumPreviewFragment.listView.smoothScrollToPosition(0);
+                    } else {
+                        fragment.presentFragment(new PremiumPreviewFragment(null).setForcePremium());
+                    }
+                    if (fragment.getParentActivity() instanceof LaunchActivity) {
+                        try {
+                            fragment.getFragmentView().performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        } catch (Exception ignored) {
+                        }
+                        ((LaunchActivity) fragment.getParentActivity()).getFireworksOverlay().start();
+                    }
+                };
+                if (list != null && !list.isEmpty()) {
+                    for (Purchase purchase : list) {
+                        if (purchase.getProducts().contains(BillingController.PREMIUM_PRODUCT_ID)) {
+                            TLRPC.TL_payments_assignPlayMarketTransaction req = new TLRPC.TL_payments_assignPlayMarketTransaction();
+                            req.receipt = new TLRPC.TL_dataJSON();
+                            req.receipt.data = purchase.getOriginalJson();
+                            TLRPC.TL_inputStorePaymentPremiumSubscription purpose = new TLRPC.TL_inputStorePaymentPremiumSubscription();
+                            purpose.restore = true;
+                            req.purpose = purpose;
+                            fragment.getConnectionsManager().sendRequest(req, (response, error) -> {
+                                if (response instanceof TLRPC.Updates) {
+                                    fragment.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+
+                                    onSuccess.run();
+                                } else if (error != null) {
+                                    AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(fragment.getCurrentAccount(), error, fragment, req));
+                                }
+                            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagInvokeAfter);
+
+                            return;
+                        }
+                    }
                 }
-                if (fragment.getParentActivity() instanceof LaunchActivity) {
-                    try {
-                        fragment.getFragmentView().performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                    } catch (Exception ignored) {}
-                    ((LaunchActivity) fragment.getParentActivity()).getFireworksOverlay().start();
-                }
-            } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
-                sentPremiumBuyCanceled();
+
+                BillingController.getInstance().addResultListener(BillingController.PREMIUM_PRODUCT_ID, billingResult -> {
+                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                        onSuccess.run();
+                    }
+                });
+
+                TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
+                req.purpose = new TLRPC.TL_inputStorePaymentPremiumSubscription();
+                fragment.getConnectionsManager().sendRequest(req, (response, error) -> {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (response instanceof TLRPC.TL_boolTrue) {
+                            BillingController.getInstance().launchBillingFlow(fragment.getParentActivity(), fragment.getAccountInstance(), new TLRPC.TL_inputStorePaymentPremiumSubscription(), Collections.singletonList(
+                                    BillingFlowParams.ProductDetailsParams.newBuilder()
+                                            .setProductDetails(BillingController.PREMIUM_PRODUCT_DETAILS)
+                                            .setOfferToken(offerDetails.get(0).getOfferToken())
+                                            .build()
+                            ));
+                        } else {
+                            AlertsCreator.processError(fragment.getCurrentAccount(), error, fragment, req);
+                        }
+                    });
+                });
             }
-        });
-
-        TLRPC.TL_payments_canPurchasePremium req = new TLRPC.TL_payments_canPurchasePremium();
-        fragment.getConnectionsManager().sendRequest(req, (response, error) -> {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (response instanceof TLRPC.TL_boolTrue) {
-                    BillingController.getInstance().launchBillingFlow(fragment.getParentActivity(), Collections.singletonList(
-                            BillingFlowParams.ProductDetailsParams.newBuilder()
-                                    .setProductDetails(BillingController.PREMIUM_PRODUCT_DETAILS)
-                                    .setOfferToken(offerDetails.get(0).getOfferToken())
-                                    .build()
-                    ));
-                } else {
-                    AlertsCreator.processError(fragment.getCurrentAccount(), error, fragment, req);
-                }
-            });
-        });
+        }));
     }
 
     public static String getPremiumButtonText(int currentAccount) {
@@ -628,13 +676,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         if (BuildVars.useInvoiceBilling()) {
             TLRPC.TL_help_premiumPromo premiumPromo = MediaDataController.getInstance(currentAccount).getPremiumPromo();
             if (premiumPromo != null) {
-                Currency currency = Currency.getInstance(premiumPromo.currency);
-                if (currency != null) {
-                    NumberFormat numberFormat = NumberFormat.getCurrencyInstance();
-                    numberFormat.setCurrency(currency);
-
-                    return LocaleController.formatString(R.string.SubscribeToPremium, numberFormat.format(premiumPromo.monthly_amount / Math.pow(10, BillingController.getInstance().getCurrencyExp(premiumPromo.currency))));
-                }
+                return LocaleController.formatString(R.string.SubscribeToPremium, BillingController.getInstance().formatCurrency(premiumPromo.monthly_amount, premiumPromo.currency));
             }
 
             return LocaleController.getString(R.string.SubscribeToPremiumNoPrice);

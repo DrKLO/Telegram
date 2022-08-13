@@ -44,6 +44,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -187,11 +188,11 @@ public class Bulletin {
                         }
                         if (isTransitionsEnabled()) {
                             ensureLayoutTransitionCreated();
-                            layout.transitionRunning = true;
+                            layout.transitionRunningEnter = true;
                             layout.delegate = currentDelegate;
                             layout.invalidate();
                             layoutTransition.animateEnter(layout, layout::onEnterTransitionStart, () -> {
-                                layout.transitionRunning = false;
+                                layout.transitionRunningEnter = false;
                                 layout.onEnterTransitionEnd();
                                 setCanHide(true);
                             }, offset -> {
@@ -270,7 +271,7 @@ public class Bulletin {
             if (ViewCompat.isLaidOut(layout)) {
                 layout.removeCallbacks(hideRunnable);
                 if (animated) {
-                    layout.transitionRunning = true;
+                    layout.transitionRunningExit = true;
                     layout.delegate = currentDelegate;
                     layout.invalidate();
                     if (duration >= 0) {
@@ -285,7 +286,7 @@ public class Bulletin {
                             currentDelegate.onOffsetChange(0);
                             currentDelegate.onHide(this);
                         }
-                        layout.transitionRunning = false;
+                        layout.transitionRunningExit = false;
                         layout.onExitTransitionEnd();
                         layout.onHide();
                         containerLayout.removeView(parentLayout);
@@ -508,12 +509,17 @@ public class Bulletin {
     public abstract static class Layout extends FrameLayout {
 
         private final List<Callback> callbacks = new ArrayList<>();
-        public boolean transitionRunning;
+        public boolean transitionRunningEnter;
+        public boolean transitionRunningExit;
         Delegate delegate;
         public float inOutOffset;
 
         protected Bulletin bulletin;
         Drawable background;
+
+        public boolean isTransitionRunning() {
+            return transitionRunningEnter || transitionRunningExit;
+        }
 
         @WidthDef
         private int wideScreenWidth = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -850,9 +856,12 @@ public class Bulletin {
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            if (bulletin == null) {
+                return;
+            }
             background.setBounds(AndroidUtilities.dp(8), AndroidUtilities.dp(8), getMeasuredWidth() - AndroidUtilities.dp(8), getMeasuredHeight() - AndroidUtilities.dp(8));
-            if (transitionRunning && delegate != null) {
-                int clipBottom = ((View)getParent()).getMeasuredHeight() - delegate.getBottomOffset(bulletin.tag);
+            if (isTransitionRunning() && delegate != null) {
+                int clipBottom = ((View) getParent()).getMeasuredHeight() - delegate.getBottomOffset(bulletin.tag);
                 int viewBottom = (int) (getY() + getMeasuredHeight());
                 canvas.save();
                 canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - (viewBottom - clipBottom));
@@ -1087,14 +1096,15 @@ public class Bulletin {
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             addView(imageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.START | Gravity.CENTER_VERTICAL));
 
-            textView = new TextView(context);
+            textView = new LinkSpanDrawable.LinksTextView(context);
             textView.setSingleLine();
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
-            addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
+            addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 8, 0));
 
+            textView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
             setTextColor(getThemedColor(Theme.key_undo_infoColor));
             setBackground(getThemedColor(Theme.key_undo_background));
         }
@@ -1122,6 +1132,13 @@ public class Bulletin {
 
         public void setAnimation(int resId, int w, int h, String... layers) {
             imageView.setAnimation(resId, w, h);
+            for (String layer : layers) {
+                imageView.setLayerColor(layer + ".**", textColor);
+            }
+        }
+
+        public void setAnimation(TLRPC.Document document, int w, int h, String... layers) {
+            imageView.setAnimation(document, w, h);
             for (String layer : layers) {
                 imageView.setLayerColor(layer + ".**", textColor);
             }

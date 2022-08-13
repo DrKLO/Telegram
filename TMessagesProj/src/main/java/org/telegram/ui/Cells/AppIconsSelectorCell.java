@@ -207,6 +207,7 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
 
     private final static class IconHolderView extends LinearLayout {
         private Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         private AdaptiveIconImageView iconView;
         private TextView titleView;
@@ -231,14 +232,18 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
 
             outlinePaint.setStyle(Paint.Style.STROKE);
             outlinePaint.setStrokeWidth(Math.max(2, AndroidUtilities.dp(0.5f)));
+
+            fillPaint.setColor(Color.WHITE);
         }
 
         @Override
         public void draw(Canvas canvas) {
-            super.draw(canvas);
-
             float stroke = outlinePaint.getStrokeWidth();
             AndroidUtilities.rectTmp.set(iconView.getLeft() + stroke, iconView.getTop() + stroke, iconView.getRight() - stroke, iconView.getBottom() - stroke);
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(ICONS_ROUND_RADIUS), AndroidUtilities.dp(ICONS_ROUND_RADIUS), fillPaint);
+
+            super.draw(canvas);
+
             canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(ICONS_ROUND_RADIUS), AndroidUtilities.dp(ICONS_ROUND_RADIUS), outlinePaint);
         }
 

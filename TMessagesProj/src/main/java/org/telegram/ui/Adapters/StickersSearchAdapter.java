@@ -175,7 +175,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (added) {
                         notifyDataSetChanged();
                     }
-                });
+                }, false);
             }
             ArrayList<TLRPC.TL_messages_stickerSet> local = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE);
             int index;
@@ -533,7 +533,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
         }
 
         if (unread) {
-            mediaDataController.markFaturedStickersByIdAsRead(stickerSetCovered.set.id);
+            mediaDataController.markFeaturedStickersByIdAsRead(false, stickerSetCovered.set.id);
         }
 
         boolean installing = installingStickerSets.indexOfKey(stickerSetCovered.set.id) >= 0;

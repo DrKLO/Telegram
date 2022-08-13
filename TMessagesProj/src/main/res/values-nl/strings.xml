@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">Blokkeer gebruiker</string>
     <string name="DeleteReportSpam">Spam melden</string>
     <string name="DeleteAllFrom">Alles verwijderen van %1$s</string>
-    <string name="ClearRecentEmoji">Recente emoji\'s wissen?</string>
+    <string name="ClearRecentEmojiTitle">Recente emoji\'s wissen</string>
     <string name="Emoji1">Smiley\'s en mensen</string>
     <string name="Emoji2">Dieren en natuur</string>
     <string name="Emoji3">Eten en drinken</string>
