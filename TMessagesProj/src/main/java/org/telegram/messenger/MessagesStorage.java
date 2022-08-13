@@ -2213,7 +2213,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state5 != null) {
                     state5.dispose();
                 }
@@ -3049,7 +3051,9 @@ public class MessagesStorage extends BaseController {
         } catch (Exception e) {
             FileLog.e(e);
         } finally {
-            database.commitTransaction();
+            if (database != null) {
+                database.commitTransaction();
+            }
             if (state != null) {
                 state.dispose();
             }
@@ -3789,7 +3793,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -4357,7 +4363,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (cursor != null) {
                     cursor.dispose();
                 }
@@ -4641,7 +4649,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (cursor != null) {
                     cursor.dispose();
                 }
@@ -4680,7 +4690,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -4718,7 +4730,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -4758,7 +4772,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -4794,7 +4810,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -5073,7 +5091,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -5729,24 +5749,32 @@ public class MessagesStorage extends BaseController {
                 }
                 cursor.dispose();
             } else {
-                if (!isEmpty(stillUnreadMessagesCount)) {
-                    for (int b = 0; b < stillUnreadMessagesCount.size(); b++) {
-                        long key = stillUnreadMessagesCount.keyAt(b);
-                        int unread = stillUnreadMessagesCount.get(key);
-                        dialogsToUpdate.put(key, unread);
-
-                    }
-                }
                 if (!isEmpty(inbox)) {
                     for (int b = 0; b < inbox.size(); b++) {
                         long key = inbox.keyAt(b);
                         int messageId = inbox.get(key);
-                        if (dialogsToUpdate.get(key, -1) < 0) {
+                        boolean canCountByMessageId = true;
+
+                        if (stillUnreadMessagesCount != null && stillUnreadMessagesCount.get(key, -1) != -1) {
+                            SQLiteCursor checkHolesCursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND end > %d", key, messageId));
+                            while (checkHolesCursor.next()) {
+                                canCountByMessageId = false;
+                            }
+                            checkHolesCursor.dispose();
+                        }
+
+                        if (canCountByMessageId) {
                             SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages_v2 WHERE uid = %d AND mid > %d AND read_state IN(0,2) AND out = 0", key, messageId));
                             if (cursor.next()) {
-                                dialogsToUpdate.put(key, cursor.intValue(0));
+                                int unread = cursor.intValue(0);
+                                dialogsToUpdate.put(key, unread);
                             }
                             cursor.dispose();
+                        } else {
+                            int unread = stillUnreadMessagesCount.get(key);
+                            if (unread > 0) {
+                                dialogsToUpdate.put(key, unread);
+                            }
                         }
 
                         SQLitePreparedStatement state = database.executeFast("UPDATE dialogs SET inbox_max = max((SELECT inbox_max FROM dialogs WHERE did = ?), ?) WHERE did = ?");
@@ -5994,7 +6022,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -6032,7 +6062,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -6514,7 +6546,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (cursor != null) {
                     cursor.dispose();
                 }
@@ -6950,7 +6984,9 @@ public class MessagesStorage extends BaseController {
                 if (cursor != null) {
                     cursor.dispose();
                 }
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
             }
         });
     }
@@ -6984,7 +7020,9 @@ public class MessagesStorage extends BaseController {
                 if (state != null) {
                     state.dispose();
                 }
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
             }
         });
     }
@@ -7078,7 +7116,9 @@ public class MessagesStorage extends BaseController {
                 if (state2 != null) {
                     state2.dispose();
                 }
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
             }
         });
     }
@@ -9219,7 +9259,9 @@ public class MessagesStorage extends BaseController {
         } catch (Exception e) {
             FileLog.e(e);
         } finally {
-            database.commitTransaction();
+            if (database != null) {
+                database.commitTransaction();
+            }
         }
     }
 
@@ -9292,7 +9334,9 @@ public class MessagesStorage extends BaseController {
                 state.dispose();
             }
             if (transaction) {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
             }
         }
     }
@@ -9469,7 +9513,9 @@ public class MessagesStorage extends BaseController {
                 if (state2 != null) {
                     state2.dispose();
                 }
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
             }
         });
     }
@@ -9657,7 +9703,9 @@ public class MessagesStorage extends BaseController {
                 FileLog.e(e);
             } finally {
                 if (inTransaction) {
-                    database.commitTransaction();
+                    if (database != null) {
+                        database.commitTransaction();
+                    }
                 }
                 if (state != null) {
                     state.dispose();
@@ -9803,7 +9851,9 @@ public class MessagesStorage extends BaseController {
                 FileLog.e(e);
             } finally {
                 if (databaseInTransaction) {
-                    database.commitTransaction();
+                    if (database != null) {
+                        database.commitTransaction();
+                    }
                 }
                 if (state != null) {
                     state.dispose();
@@ -10500,7 +10550,9 @@ public class MessagesStorage extends BaseController {
             FileLog.e(e);
         } finally {
             if (databaseInTransaction) {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
             }
             if (state_messages != null) {
                 state_messages.dispose();
@@ -10854,7 +10906,9 @@ public class MessagesStorage extends BaseController {
         } catch (Exception e) {
             FileLog.e(e);
         } finally {
-            database.commitTransaction();
+            if (database != null) {
+                database.commitTransaction();
+            }
             if (state != null) {
                 state.dispose();
             }
@@ -11326,7 +11380,9 @@ public class MessagesStorage extends BaseController {
         } catch (Exception e) {
             FileLog.e(e);
         } finally {
-            database.commitTransaction();
+            if (database != null) {
+                database.commitTransaction();
+            }
             if (cursor != null) {
                 cursor.dispose();
             }
@@ -11486,7 +11542,9 @@ public class MessagesStorage extends BaseController {
         } catch (Exception e) {
             FileLog.e(e);
         } finally {
-            database.commitTransaction();
+            if (database != null) {
+                database.commitTransaction();
+            }
             if (cursor != null) {
                 cursor.dispose();
             }
@@ -12029,7 +12087,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }
@@ -12393,7 +12453,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state_messages != null) {
                     state_messages.dispose();
                 }
@@ -13056,7 +13118,9 @@ public class MessagesStorage extends BaseController {
         } catch (Exception e) {
             FileLog.e(e);
         } finally {
-            database.commitTransaction();
+            if (database != null) {
+                database.commitTransaction();
+            }
             if (cursor != null) {
                 cursor.dispose();
             }
@@ -13163,7 +13227,9 @@ public class MessagesStorage extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                database.commitTransaction();
+                if (database != null) {
+                    database.commitTransaction();
+                }
                 if (state != null) {
                     state.dispose();
                 }

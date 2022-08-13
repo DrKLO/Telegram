@@ -280,11 +280,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     }
 
     private void checkLayerType() {
-        if (parallaxEffect == null && backgroundDrawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH) {
-            backgroundView.setLayerType(LAYER_TYPE_HARDWARE, null);
-        } else {
-            backgroundView.setLayerType(LAYER_TYPE_NONE, null);
-        }
+//        if (parallaxEffect == null && backgroundDrawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH) {
+//            backgroundView.setLayerType(LAYER_TYPE_HARDWARE, null);
+//        } else {
+//            backgroundView.setLayerType(LAYER_TYPE_NONE, null);
+//        }
     }
 
     public Drawable getBackgroundImage() {

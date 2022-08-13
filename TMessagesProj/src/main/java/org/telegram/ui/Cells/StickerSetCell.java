@@ -89,26 +89,6 @@ public class StickerSetCell extends FrameLayout {
         super(context);
         this.option = option;
 
-        textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setLines(1);
-        textView.setMaxLines(1);
-        textView.setSingleLine(true);
-        textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setGravity(LayoutHelper.getAbsoluteGravityStart());
-        addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 71, 9, 46, 0));
-
-        valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-        valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        valueTextView.setLines(1);
-        valueTextView.setMaxLines(1);
-        valueTextView.setSingleLine(true);
-        valueTextView.setGravity(LayoutHelper.getAbsoluteGravityStart());
-        addView(valueTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 71, 32, 46, 0));
-
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
         imageView.setLayerNum(1);
@@ -201,6 +181,26 @@ public class StickerSetCell extends FrameLayout {
                 removeButtonView.performClick();
             }
         });
+
+        textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setLines(1);
+        textView.setMaxLines(1);
+        textView.setSingleLine(true);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
+        textView.setGravity(LayoutHelper.getAbsoluteGravityStart());
+        addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 71, 9, 70, 0));
+
+        valueTextView = new TextView(context);
+        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        valueTextView.setLines(1);
+        valueTextView.setMaxLines(1);
+        valueTextView.setSingleLine(true);
+        valueTextView.setGravity(LayoutHelper.getAbsoluteGravityStart());
+        addView(valueTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 71, 32, 70, 0));
 
         updateButtonState(BUTTON_STATE_EMPTY, false);
     }
@@ -528,6 +528,18 @@ public class StickerSetCell extends FrameLayout {
         }
     }
 
+    public void updateRightMargin() {
+        sideButtons.measure(MeasureSpec.makeMeasureSpec(999999, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58), MeasureSpec.EXACTLY));
+        final int margin = sideButtons.getMeasuredWidth();
+        if (LocaleController.isRTL) {
+            ((MarginLayoutParams) textView.getLayoutParams()).leftMargin = margin;
+            ((MarginLayoutParams) valueTextView.getLayoutParams()).leftMargin = margin;
+        } else {
+            ((MarginLayoutParams) textView.getLayoutParams()).rightMargin = margin;
+            ((MarginLayoutParams) valueTextView.getLayoutParams()).rightMargin = margin;
+        }
+    }
+
     public static final int BUTTON_STATE_EMPTY = 0;
     public static final int BUTTON_STATE_LOCKED = 1;
     public static final int BUTTON_STATE_LOCKED_RESTORE = 2;
@@ -574,6 +586,7 @@ public class StickerSetCell extends FrameLayout {
                     premiumButtonView.setVisibility(state == BUTTON_STATE_LOCKED || state == BUTTON_STATE_LOCKED_RESTORE ? View.VISIBLE : View.GONE);
                     addButtonView.setVisibility(state == BUTTON_STATE_ADD ? View.VISIBLE : View.GONE);
                     removeButtonView.setVisibility(state == BUTTON_STATE_REMOVE ? View.VISIBLE : View.GONE);
+                    updateRightMargin();
                 }
             });
             stateAnimator.setDuration(250);
@@ -592,6 +605,7 @@ public class StickerSetCell extends FrameLayout {
             removeButtonView.setScaleX(state == BUTTON_STATE_REMOVE ? 1 : .6f);
             removeButtonView.setScaleY(state == BUTTON_STATE_REMOVE ? 1 : .6f);
             removeButtonView.setVisibility(state == BUTTON_STATE_REMOVE ? View.VISIBLE : View.GONE);
+            updateRightMargin();
         }
     }
 

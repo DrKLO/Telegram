@@ -18,7 +18,9 @@ import android.graphics.drawable.Animatable;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
@@ -32,6 +34,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.BitmapsCache;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -63,6 +66,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     private HashMap<String, Integer> newColorUpdates = new HashMap<>();
     private volatile HashMap<String, Integer> pendingColorUpdates = new HashMap<>();
     private HashMap<Integer, Integer> vibrationPattern;
+    private boolean resetVibrationAfterRestart = false;
     private boolean allowVibration = true;
 
     private WeakReference<Runnable> frameReadyCallback;
@@ -116,6 +120,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     protected boolean destroyAfterLoading;
     protected int secondFramesCount;
     protected volatile boolean setLastFrame;
+    private boolean fallbackCache;
 
     private boolean invalidateOnProgressSet;
     private boolean isInvalid;
@@ -219,7 +224,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                 }
             }
         }
-        if (nativePtr == 0 && secondNativePtr == 0 && bitmapsCache == null) {
+        if ((nativePtr == 0 || fallbackCache) && secondNativePtr == 0 && bitmapsCache == null) {
             recycleResources();
             return;
         }
@@ -255,6 +260,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
     private boolean genCacheSend;
     protected Runnable loadFrameRunnable = new Runnable() {
+        private long lastUpdate = 0;
         @Override
         public void run() {
             if (isRecycled) {
@@ -290,26 +296,36 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                     pendingReplaceColors = null;
                 }
                 try {
-                    long ptrToUse;
-                    if (isDice == 1) {
-                        ptrToUse = nativePtr;
-                    } else if (isDice == 2) {
-                        ptrToUse = secondNativePtr;
-                        if (setLastFrame) {
-                            currentFrame = secondFramesCount - 1;
-                        }
-                    } else {
-                        ptrToUse = nativePtr;
-                    }
                     int result = 0;
                     int framesPerUpdates = shouldLimitFps ? 2 : 1;
-                    if (precache && bitmapsCache != null) {
+                    if (precache && bitmapsCache != null && (!fallbackCache || !generatingCache)) {
                         try {
                             result = bitmapsCache.getFrame(currentFrame / framesPerUpdates, backgroundBitmap);
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
                     } else {
+                        if (fallbackCache) {
+                            final long now = SystemClock.elapsedRealtime();
+                            if (lastUpdate > 0) {
+                                framesPerUpdates = Math.max(1, Math.min(4, Math.round((now - lastUpdate) / 16f)));
+                                if (currentFrame + framesPerUpdates > (customEndFrame >= 0 ? customEndFrame : metaData[0])) {
+                                    framesPerUpdates = (customEndFrame >= 0 ? customEndFrame : metaData[0]) - currentFrame;
+                                }
+                            }
+                            lastUpdate = now;
+                        }
+                        long ptrToUse;
+                        if (isDice == 1) {
+                            ptrToUse = nativePtr;
+                        } else if (isDice == 2) {
+                            ptrToUse = secondNativePtr;
+                            if (setLastFrame) {
+                                currentFrame = secondFramesCount - 1;
+                            }
+                        } else {
+                            ptrToUse = nativePtr;
+                        }
                         result = getFrame(ptrToUse, currentFrame, backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
                     }
                     if (bitmapsCache != null && bitmapsCache.needGenCache()) {
@@ -317,7 +333,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                             genCacheSend = true;
                             uiHandler.post(uiRunnableGenerateCache);
                         }
-                        result = -1;
+                        if (!fallbackCache) {
+                            result = -1;
+                        }
                     }
                     if (result == -1) {
                         uiHandler.post(uiRunnableNoFrame);
@@ -337,6 +355,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                             nextFrameIsLast = false;
                             if (secondNativePtr != 0) {
                                 isDice = 2;
+                            }
+                            if (resetVibrationAfterRestart) {
+                                vibrationPattern = null;
+                                resetVibrationAfterRestart = false;
                             }
                         }
                     } else if (isDice == 2) {
@@ -377,10 +399,18 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                             } else if (autoRepeat == 1) {
                                 currentFrame = 0;
                                 nextFrameIsLast = false;
+                                if (resetVibrationAfterRestart) {
+                                    vibrationPattern = null;
+                                    resetVibrationAfterRestart = false;
+                                }
                             } else if (autoRepeat == 2) {
                                 currentFrame = 0;
                                 nextFrameIsLast = true;
                                 autoRepeatPlayCount++;
+                                if (resetVibrationAfterRestart) {
+                                    vibrationPattern = null;
+                                    resetVibrationAfterRestart = false;
+                                }
                             } else {
                                 nextFrameIsLast = true;
                                 checkDispatchOnAnimationEnd();
@@ -407,6 +437,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         height = h;
         shouldLimitFps = limitFps;
         this.precache = cacheOptions != null;
+        this.fallbackCache = cacheOptions != null && cacheOptions.fallback;
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
 
         this.file = file;
@@ -421,8 +452,14 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             args.colorReplacement = colorReplacement;
             args.fitzModifier = fitzModifier;
             nativePtr = create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
-            destroy(nativePtr);
-            nativePtr = 0;
+            if (fallbackCache) {
+                if (nativePtr == 0) {
+                    file.delete();
+                }
+            } else {
+                destroy(nativePtr);
+                nativePtr = 0;
+            }
         } else {
             nativePtr = create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
             if (nativePtr == 0) {
@@ -453,10 +490,16 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             args.colorReplacement = colorReplacement;
             args.fitzModifier = fitzModifier;
             nativePtr = create(file.getAbsolutePath(), json, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
-            if (nativePtr != 0) {
-                destroy(nativePtr);
+            if (fallbackCache) {
+                if (nativePtr == 0) {
+                    file.delete();
+                }
+            } else {
+                if (nativePtr != 0) {
+                    destroy(nativePtr);
+                }
+                nativePtr = 0;
             }
-            nativePtr = 0;
         } else {
             nativePtr = create(file.getAbsolutePath(), json, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
             if (nativePtr == 0) {
@@ -790,6 +833,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         vibrationPattern = pattern;
     }
 
+    public boolean hasVibrationPattern() {
+        return vibrationPattern != null;
+    }
+
     public void beginApplyLayerColors() {
         applyingLayerColors = true;
     }
@@ -845,7 +892,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             return false;
         }
         if (generatingCache) {
-            return false;
+//            return false;
         }
         if (!newColorUpdates.isEmpty()) {
             pendingColorUpdates.putAll(newColorUpdates);
@@ -921,6 +968,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             forceFrameRedraw = true;
         }
         invalidateSelf();
+    }
+
+    public boolean isCacheFallbacked() {
+        return fallbackCache;
     }
 
     public void setProgressMs(long ms) {
@@ -1107,6 +1158,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         allowVibration = allow;
     }
 
+    public void resetVibrationAfterRestart(boolean value) {
+        resetVibrationAfterRestart = value;
+    }
+
     @Override
     public int getMinimumHeight() {
         return height;
@@ -1216,7 +1271,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
     public boolean canLoadFrames() {
         if (precache) {
-            return bitmapsCache != null;
+            return bitmapsCache != null || fallbackCache;
         } else {
             return nativePtr != 0;
         }

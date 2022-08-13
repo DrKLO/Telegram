@@ -635,8 +635,9 @@ public class MediaDataController extends BaseController {
         if (reactionsList == null) {
             return;
         }
-        for (int i = 0; i < reactionsList.size(); i++) {
-            TLRPC.TL_availableReaction reaction = reactionsList.get(i);
+        ArrayList<TLRPC.TL_availableReaction> arrayList = new ArrayList<>(reactionsList);
+        for (int i = 0; i < arrayList.size(); i++) {
+            TLRPC.TL_availableReaction reaction = arrayList.get(i);
             int size = ReactionsEffectOverlay.sizeForBigReaction();
             preloadImage(ImageLocation.getForDocument(reaction.effect_animation), size + "_" + size + "_pcache");
             preloadImage(ImageLocation.getForDocument(reaction.activate_animation), null);

@@ -426,11 +426,13 @@ public class AnimatedEmojiDrawable extends Drawable {
         if ("video/webm".equals(document.mime_type)) {
             mediaLocation = ImageLocation.getForDocument(document);
             mediaFilter = filter + "_" + ImageLoader.AUTOPLAY_FILTER;
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
+            thumbDrawable = svgThumb;
         } else {
             String probableCacheKey = (cacheType != 0 ? cacheType + "_" : "") + documentId + "@" + filter;
             if (cacheType == CACHE_TYPE_KEYBOARD || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey)) {
                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-                if (svgThumb != null) {
+                if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, false)) {
                     svgThumb.overrideWidthAndHeight(512, 512);
                 }
                 thumbDrawable = svgThumb;
@@ -443,10 +445,8 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         if (cacheType == STANDARD_LOTTIE_FRAME) {
             imageReceiver.setImage(null, null, mediaLocation, mediaFilter, null, null, thumbDrawable, document.size, null, document, 1);
-
         } else {
             imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
-
         }
 
         if (cacheType == CACHE_TYPE_ALERT_PREVIEW) {

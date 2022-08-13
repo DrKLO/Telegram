@@ -160,7 +160,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     }
 
     public void launchBillingFlow(Activity activity, AccountInstance accountInstance, TLRPC.InputStorePaymentPurpose paymentPurpose, List<BillingFlowParams.ProductDetailsParams> productDetails, boolean checkedConsume) {
-        if (!isReady()) {
+        if (!isReady() || activity == null) {
             return;
         }
 

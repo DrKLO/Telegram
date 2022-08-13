@@ -39,6 +39,8 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -104,6 +106,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UndoView;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -135,6 +138,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private IMapsProvider.ICameraUpdate moveToBounds;
     private IMapsProvider.IMapView mapView;
     private IMapsProvider.ICameraUpdate forceUpdate;
+    private boolean hasScreenshot;
     private float yOffset;
 
     private IMapsProvider.ICircle proximityCircle;
@@ -2470,7 +2474,67 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             proximitySheet.dismiss();
             return false;
         }
+        if (onCheckGlScreenshot()) {
+            return false;
+        }
+
         return super.onBackPressed();
+    }
+
+    @Override
+    public void finishFragment(boolean animated) {
+        if (onCheckGlScreenshot()) {
+            return;
+        }
+
+        super.finishFragment(animated);
+    }
+
+    private boolean onCheckGlScreenshot() {
+        if (mapView != null && mapView.getGlSurfaceView() != null && !hasScreenshot) {
+            GLSurfaceView glSurfaceView = mapView.getGlSurfaceView();
+            glSurfaceView.queueEvent(() -> {
+                if (glSurfaceView.getWidth() == 0 || glSurfaceView.getHeight() == 0) {
+                    return;
+                }
+                ByteBuffer buffer = ByteBuffer.allocateDirect(glSurfaceView.getWidth() * glSurfaceView.getHeight() * 4);
+                GLES20.glReadPixels(0, 0, glSurfaceView.getWidth(), glSurfaceView.getHeight(), GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
+                Bitmap bitmap = Bitmap.createBitmap(glSurfaceView.getWidth(), glSurfaceView.getHeight(), Bitmap.Config.ARGB_8888);
+                bitmap.copyPixelsFromBuffer(buffer);
+
+                Matrix flipVertically = new Matrix();
+                flipVertically.preScale(1, -1);
+
+                Bitmap flippedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), flipVertically, false);
+                bitmap.recycle();
+
+                AndroidUtilities.runOnUIThread(()->{
+                    ImageView snapshotView = new ImageView(getContext());
+                    snapshotView.setImageBitmap(flippedBitmap);
+
+                    ViewGroup parent = (ViewGroup) glSurfaceView.getParent();
+                    try {
+                        parent.addView(snapshotView, parent.indexOfChild(glSurfaceView));
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+
+                    AndroidUtilities.runOnUIThread(()->{
+                        try {
+                            parent.removeView(glSurfaceView);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+
+                        hasScreenshot = true;
+
+                        finishFragment();
+                    }, 100);
+                });
+            });
+            return true;
+        }
+        return false;
     }
 
     @Override

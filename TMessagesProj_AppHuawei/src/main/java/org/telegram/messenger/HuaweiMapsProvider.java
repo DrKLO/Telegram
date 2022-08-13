@@ -5,9 +5,11 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.location.Location;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.core.util.Consumer;
 
@@ -34,6 +36,9 @@ import java.util.List;
 import java.util.Map;
 
 public class HuaweiMapsProvider implements IMapsProvider {
+    public HuaweiMapsProvider() {
+        initializeMaps(ApplicationLoader.applicationContext);
+    }
 
     @Override
     public void initializeMaps(Context context) {
@@ -96,8 +101,8 @@ public class HuaweiMapsProvider implements IMapsProvider {
         private Map<Marker, HuaweiMarker> implToAbsMarkerMap = new HashMap<>();
         private Map<Circle, HuaweiCircle> implToAbsCircleMap = new HashMap<>();
 
-        private HuaweiMapImpl(HuaweiMap googleMap) {
-            this.huaweiMap = googleMap;
+        private HuaweiMapImpl(HuaweiMap huaweiMap) {
+            this.huaweiMap = huaweiMap;
         }
 
         @Override
@@ -521,6 +526,8 @@ public class HuaweiMapsProvider implements IMapsProvider {
         private ITouchInterceptor interceptInterceptor;
         private Runnable onLayoutListener;
 
+        private GLSurfaceView glSurfaceView;
+
         private HuaweiMapView(Context context) {
             mapView = new MapView(context) {
                 @Override
@@ -571,7 +578,28 @@ public class HuaweiMapsProvider implements IMapsProvider {
 
         @Override
         public void getMapAsync(Consumer<IMap> callback) {
-            mapView.getMapAsync(googleMap -> callback.accept(new HuaweiMapImpl(googleMap)));
+            mapView.getMapAsync(huaweiMap -> {
+                callback.accept(new HuaweiMapImpl(huaweiMap));
+                findGlSurfaceView(mapView);
+            });
+        }
+
+        @Override
+        public GLSurfaceView getGlSurfaceView() {
+            return glSurfaceView;
+        }
+
+        private void findGlSurfaceView(View v) {
+            if (v instanceof GLSurfaceView) {
+                glSurfaceView = (GLSurfaceView) v;
+            }
+
+            if (v instanceof ViewGroup) {
+                ViewGroup vg = (ViewGroup) v;
+                for (int i = 0; i < vg.getChildCount(); i++) {
+                    findGlSurfaceView(vg.getChildAt(i));
+                }
+            }
         }
 
         @Override

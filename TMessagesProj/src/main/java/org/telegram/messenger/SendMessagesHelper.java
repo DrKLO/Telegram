@@ -6356,8 +6356,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 cursor.moveToFirst();
                 len = cursor.getLong(sizeIndex);
 
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                FileLog.e(e);
             }
         }
         if (!FileLoader.checkUploadFileSize(accountInstance.getCurrentAccount(), len)) {
@@ -6836,7 +6836,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     precachedKey[0] = getKeyForPhotoSize(accountInstance, photoSizeThumb, precahcedThumb, true, true);
                 }
                 TLRPC.InputPeer sendToPeer = !DialogObject.isEncryptedDialog(dialogId) ? accountInstance.getMessagesController().getInputPeer(dialogId) : null;
-                if (sendToPeer.user_id != 0 && accountInstance.getMessagesController().getUserFull(sendToPeer.user_id) != null &&
+                if (sendToPeer != null && sendToPeer.user_id != 0 && accountInstance.getMessagesController().getUserFull(sendToPeer.user_id) != null &&
                         accountInstance.getMessagesController().getUserFull(sendToPeer.user_id).voice_messages_forbidden && document != null) {
 
                     if (MessageObject.isVoiceDocument(finalDocument)) {

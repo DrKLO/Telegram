@@ -13396,17 +13396,16 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (value == null) {
                     value = getMessagesStorage().getDialogReadMax(false, dialogId);
                 }
-                if (update.max_id > value || update.still_unread_count != 0) {
-                    if (markAsReadMessagesInbox == null) {
-                        markAsReadMessagesInbox = new LongSparseIntArray();
-                    }
-                    if (stillUnreadMessagesCount == null) {
-                        stillUnreadMessagesCount = new LongSparseIntArray();
-                    }
-                    markAsReadMessagesInbox.put(dialogId, update.max_id);
-                    stillUnreadMessagesCount.put(dialogId, update.still_unread_count);
-                    dialogs_read_inbox_max.put(dialogId, Math.max(value, update.max_id));
+
+                if (markAsReadMessagesInbox == null) {
+                    markAsReadMessagesInbox = new LongSparseIntArray();
                 }
+                if (stillUnreadMessagesCount == null) {
+                    stillUnreadMessagesCount = new LongSparseIntArray();
+                }
+                markAsReadMessagesInbox.put(dialogId, update.max_id);
+                stillUnreadMessagesCount.put(dialogId, update.still_unread_count);
+                dialogs_read_inbox_max.put(dialogId, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TLRPC.TL_updateReadChannelOutbox) {
                 TLRPC.TL_updateReadChannelOutbox update = (TLRPC.TL_updateReadChannelOutbox) baseUpdate;
                 if (BuildVars.LOGS_ENABLED) {

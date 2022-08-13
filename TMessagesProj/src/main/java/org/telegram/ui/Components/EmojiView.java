@@ -230,10 +230,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         if (typeTabs != null) {
             AndroidUtilities.updateViewVisibilityAnimated(typeTabs, currentTabs.size() > 1, 1, animated);
         }
-        pager.setAdapter(null);
-        pager.setAdapter(emojiPagerAdapter);
-        if (typeTabs != null) {
-            typeTabs.setViewPager(pager);
+        if (pager != null) {
+            pager.setAdapter(null);
+            pager.setAdapter(emojiPagerAdapter);
+            if (typeTabs != null) {
+                typeTabs.setViewPager(pager);
+            }
         }
     }
 
@@ -2821,8 +2823,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     drawable.update(time);
                     imageView.backgroundThreadDrawHolder = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder);
                     imageView.backgroundThreadDrawHolder.time = time;
+                    imageView.backgroundThreadDrawHolder.overrideAlpha = 1f;
                     drawable.setAlpha(255);
-                    AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft() - startOffset, 0, imageView.getRight() - imageView.getPaddingRight() - startOffset, imageView.getMeasuredHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom());
+                    int topOffset = (int) (imageView.getHeight() * .03f);
+                    AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft() - startOffset, topOffset, imageView.getRight() - imageView.getPaddingRight() - startOffset, topOffset + imageView.getMeasuredHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom());
                     imageView.backgroundThreadDrawHolder.setBounds(AndroidUtilities.rectTmp2);
                     imageView.drawable = drawable;
                     imageView.imageReceiver = drawable.getImageReceiver();
@@ -2858,7 +2862,8 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             continue;
                         }
 
-                        AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(), 0, imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom() - imageView.getPaddingTop());
+                        int topOffset = (int) (imageView.getHeight() * .03f);
+                        AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(), topOffset, imageView.getRight() - imageView.getPaddingRight(), topOffset + imageView.getMeasuredHeight() - imageView.getPaddingBottom() - imageView.getPaddingTop());
                         float alpha = 1f, scale = 1;
                         if (imageView.pressedProgress != 0) {
                             scale *= 0.8f + 0.2f * (1f - imageView.pressedProgress);
@@ -5378,7 +5383,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             int previousCount2 = favouriteStickers.size();
             recentStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_IMAGE);
             favouriteStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_FAVE);
-            premiumStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_PREMIUM_STICKERS);
+            if (UserConfig.getInstance(currentAccount).isPremium()) {
+                premiumStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_PREMIUM_STICKERS);
+            } else {
+                premiumStickers = new ArrayList<>();
+            }
             for (int a = 0; a < favouriteStickers.size(); a++) {
                 TLRPC.Document favSticker = favouriteStickers.get(a);
                 for (int b = 0; b < recentStickers.size(); b++) {
