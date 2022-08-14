@@ -92,4 +92,5 @@
     <string name="THGraheriumStarrEveryone">Всем!</string>
     <string name="THGraheriumStarrPeperemiumOnly">Лишь пеперемиумам</string>
     <string name="THHidePhoneNumberOnLeftPanel">Скрыть номер телефона на левой панели</string>
+    <string name="THGraheriumVanillaStickerFlow">Классический flow стикеров</string>
 </resources>

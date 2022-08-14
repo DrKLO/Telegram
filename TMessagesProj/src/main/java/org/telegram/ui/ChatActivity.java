@@ -11977,9 +11977,15 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                     updateReactionsMentionButton(true);
                 }
                 getDownloadController().checkUnviewedDownloads(messageCell.getId(), dialog_id);
-                if ((chatListItemAnimator == null || !chatListItemAnimator.isRunning()) && (!messageObject.isOutOwner() || messageObject.forcePlayEffect) && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false) && messageObject.messageOwner.media != null && true && !messageObject.messageOwner.premiumEffectWasPlayed && true && emojiAnimationsOverlay.isIdle() && emojiAnimationsOverlay.checkPosition(messageCell, chatListViewPaddingTop, chatListView.getMeasuredHeight() - blurredViewBottomOffset)) {
-                    emojiAnimationsOverlay.onTapItem(messageCell, ChatActivity.this);
-                    messageObject.messageOwner.premiumEffectWasPlayed = true;
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumVanillaStickerFlow", true)) {
+                    if ((chatListItemAnimator == null || !chatListItemAnimator.isRunning()) && (!messageObject.isOutOwner() || messageObject.forcePlayEffect) && messageObject.messageOwner.media != null && !messageObject.messageOwner.media.nopremium && !messageObject.messageOwner.premiumEffectWasPlayed && messageObject.isPremiumSticker() && emojiAnimationsOverlay.isIdle() && emojiAnimationsOverlay.checkPosition(messageCell, chatListViewPaddingTop, chatListView.getMeasuredHeight() - blurredViewBottomOffset)) {
+                        emojiAnimationsOverlay.onTapItem(messageCell, ChatActivity.this);
+                    }
+                } else {
+                    if ((chatListItemAnimator == null || !chatListItemAnimator.isRunning()) && (!messageObject.isOutOwner() || messageObject.forcePlayEffect) && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false) && messageObject.messageOwner.media != null && true && !messageObject.messageOwner.premiumEffectWasPlayed && true && emojiAnimationsOverlay.isIdle() && emojiAnimationsOverlay.checkPosition(messageCell, chatListViewPaddingTop, chatListView.getMeasuredHeight() - blurredViewBottomOffset)) {
+                        emojiAnimationsOverlay.onTapItem(messageCell, ChatActivity.this);
+                        messageObject.messageOwner.premiumEffectWasPlayed = true;
+                    }
                 }
             } else if (view instanceof ChatActionCell) {
                 ChatActionCell cell = (ChatActionCell) view;
@@ -17293,8 +17299,14 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                         }
                     }
                 }
-                if (messageObject.wasJustSent && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false)) {
-                    messageObject.forcePlayEffect = true;
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumVanillaStickerFlow", true)) {
+                    if (messageObject.wasJustSent && getUserConfig().isPremium()) {
+                        messageObject.forcePlayEffect = true;
+                    }
+                } else {
+                    if (messageObject.wasJustSent && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false)) {
+                        messageObject.forcePlayEffect = true;
+                    }
                 }
             }
             if (currentChat != null) {

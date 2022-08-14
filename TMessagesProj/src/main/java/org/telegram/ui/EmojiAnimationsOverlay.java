@@ -316,21 +316,40 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (chatActivity.isSecretChat() || view.getMessageObject() == null || view.getMessageObject().getId() < 0) {
             return false;
         }
-        if ((!view.getMessageObject().isPremiumSticker() || !MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false))
-                && chatActivity.currentUser == null) {
-            return false;
+
+        if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumVanillaStickerFlow", true)) {
+            if (!view.getMessageObject().isPremiumSticker() && chatActivity.currentUser == null) {
+                return false;
+            }
+        } else {
+            if ((!view.getMessageObject().isPremiumSticker() || !MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false))
+                    && chatActivity.currentUser == null) {
+                return false;
+            }
         }
+
         boolean show = showAnimationForCell(view, -1, true, false);
 
         if (show && (!EmojiData.hasEmojiSupportVibration(view.getMessageObject().getStickerEmoji()) || view.getMessageObject().isPremiumSticker())) {
             if (!MessagesController.getGlobalTelegraherSettings().getBoolean("HardwareDisableVibro", false)) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         }
-        if (view.getMessageObject().isSticker() && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false)) {
-            view.getMessageObject().forcePlayEffect = false;
-            view.getMessageObject().messageOwner.premiumEffectWasPlayed = true;
-            chatActivity.getMessagesStorage().updateMessageCustomParams(dialogId, view.getMessageObject().messageOwner);
-            return show;
+
+        if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumVanillaStickerFlow", true)) {
+            if (view.getMessageObject().isPremiumSticker()) {
+                view.getMessageObject().forcePlayEffect = false;
+                view.getMessageObject().messageOwner.premiumEffectWasPlayed = true;
+                chatActivity.getMessagesStorage().updateMessageCustomParams(dialogId, view.getMessageObject().messageOwner);
+                return show;
+            }
+        } else {
+            if (view.getMessageObject().isSticker() && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false)) {
+                view.getMessageObject().forcePlayEffect = false;
+                view.getMessageObject().messageOwner.premiumEffectWasPlayed = true;
+                chatActivity.getMessagesStorage().updateMessageCustomParams(dialogId, view.getMessageObject().messageOwner);
+                return show;
+            }
         }
+
         Integer printingType = MessagesController.getInstance(currentAccount).getPrintingStringType(dialogId, threadMsgId);
         boolean canShowHint = true;
         if (printingType != null && printingType == 5) {
@@ -383,7 +402,13 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         }
 
         emoji = unwrapEmoji(emoji);
-        boolean isPremiumSticker = messageObject.isPremiumSticker() && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false);
+        boolean isPremiumSticker;
+
+        if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumVanillaStickerFlow", true)) {
+            isPremiumSticker = messageObject.isPremiumSticker();
+        } else {
+            isPremiumSticker = messageObject.isPremiumSticker() && MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumAnimatedStickerOverlays", false);
+        }
 
         if (supportedEmoji.contains(emoji) || isPremiumSticker) {
             ArrayList<TLRPC.Document> arrayList = emojiInteractionsStickersMap.get(emoji);
