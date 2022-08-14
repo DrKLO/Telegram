@@ -1,5 +1,8 @@
 # Changes
 
+* 8.85.37
+    * removed some log shitting when some folks edit messages too fast
+    * vanilla sticker flow trigger which enable vanilla flow and disable our custom overlays flow
 * 8.85.36
     * crash fix for `getMaxInternalAccountId()`
 * 8.85.35
