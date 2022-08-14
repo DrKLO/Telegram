@@ -10258,7 +10258,7 @@ public class MessagesStorage extends BaseController {
             );
             database.executeFast(query).stepThis().dispose();
         } catch (Exception e) {
-            FileLog.e(e);
+//            FileLog.e(e);
         }
     }
 
