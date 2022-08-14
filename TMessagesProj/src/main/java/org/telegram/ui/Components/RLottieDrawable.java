@@ -20,7 +20,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
@@ -34,7 +33,6 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.BitmapsCache;
-import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -892,7 +890,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             return false;
         }
         if (generatingCache) {
-//            return false;
+            return false;
         }
         if (!newColorUpdates.isEmpty()) {
             pendingColorUpdates.putAll(newColorUpdates);

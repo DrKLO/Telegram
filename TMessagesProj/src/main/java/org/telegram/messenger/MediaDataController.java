@@ -6682,7 +6682,7 @@ public class MediaDataController extends BaseController {
                 }
             });
             String aliasFinal = alias;
-            if (allowAnimated) {
+            if (allowAnimated && SharedConfig.suggestAnimatedEmoji) {
                 fillWithAnimatedEmoji(result, null, () -> {
                     if (sync != null) {
                         callback.run(result, aliasFinal);

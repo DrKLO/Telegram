@@ -5755,7 +5755,7 @@ public class MessagesStorage extends BaseController {
                         int messageId = inbox.get(key);
                         boolean canCountByMessageId = true;
 
-                        if (stillUnreadMessagesCount != null && stillUnreadMessagesCount.get(key, -1) != -1) {
+                        if (stillUnreadMessagesCount != null && stillUnreadMessagesCount.get(key, -2) != -2) {
                             SQLiteCursor checkHolesCursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND end > %d", key, messageId));
                             while (checkHolesCursor.next()) {
                                 canCountByMessageId = false;
@@ -5771,8 +5771,8 @@ public class MessagesStorage extends BaseController {
                             }
                             cursor.dispose();
                         } else {
-                            int unread = stillUnreadMessagesCount.get(key);
-                            if (unread > 0) {
+                            int unread = stillUnreadMessagesCount.get(key, -1);
+                            if (unread >= 0) {
                                 dialogsToUpdate.put(key, unread);
                             }
                         }

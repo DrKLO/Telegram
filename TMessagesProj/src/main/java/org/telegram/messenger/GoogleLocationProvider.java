@@ -39,7 +39,12 @@ public class GoogleLocationProvider implements ILocationServiceProvider {
 
     @Override
     public void getLastLocation(Consumer<Location> callback) {
-        locationProviderClient.getLastLocation().addOnCompleteListener(task -> callback.accept(task.getResult()));
+        locationProviderClient.getLastLocation().addOnCompleteListener(task -> {
+            if (task.getException() != null) {
+                return;
+            }
+            callback.accept(task.getResult());
+        });
     }
 
     @Override
