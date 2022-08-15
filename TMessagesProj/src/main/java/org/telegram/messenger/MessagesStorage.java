@@ -10262,6 +10262,14 @@ public class MessagesStorage extends BaseController {
         }
     }
 
+    public void wipeThHistory() {
+        try {
+            database.executeFast("delete from telegraher_message_history;").stepThis().dispose();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public Map<Long, String> loadThHistory(long uid, long mid) {
         Map<Long, String> map = new LinkedHashMap<>();
         try {
