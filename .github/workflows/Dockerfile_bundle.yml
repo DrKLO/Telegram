@@ -30,7 +30,7 @@ jobs:
           prerelease: false
           release_name: ${{ env.RNAME }} (${{ env.AARCH }})
           tag_name: ${{ env.TNAME }}${{ env.AARCH }}
-          body: BETA Bundle (`arm64_v8a`/`armeabi_v7a`/`x86`/`x86_64`)  ${{ env.ANAME }}${{ env.AARCH }}.apk (sha256 `${{ steps.sha256_basic.outputs.SHA256BASIC }}`)
+          body: BETA Bundle (`arm64_v8a`/`armeabi_v7a`/`x86`/`x86_64`), sha256 `${{ steps.sha256_basic.outputs.SHA256BASIC }}`
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: upload apk basic
@@ -44,7 +44,7 @@ jobs:
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}.apk
           asset_content_type: application/gzip
     env:
-      RNAME: Telegraher BETA 8.85.37
-      TNAME: noshit_8.85.37_
-      ANAME: Telegraher.BETA.8.85.37.
+      RNAME: Telegraher BETA 8.85.38
+      TNAME: noshit_8.85.38_
+      ANAME: Telegraher.BETA.8.85.38.
       AARCH: bundle
