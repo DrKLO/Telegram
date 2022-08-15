@@ -59,6 +59,7 @@
     <string name="THUIAppNotificationIconRow0">Голова</string>
     <string name="THUIAppNotificationIconRow1">Глаза</string>
     <string name="THUIAppNotificationIconRow2">Оригинальная</string>
+    <string name="THUIAppNotificationIconRow3">XXX</string>
     <string name="THUIUseCustomFontRegular">Выбрать обычный шрифт</string>
     <string name="THUIUseCustomFontBold">Выбрать жирный шрифт</string>
     <string name="THUIUseCustomFontItalic">Выбрать курсив</string>

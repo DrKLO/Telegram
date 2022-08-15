@@ -5509,6 +5509,7 @@
     <string name="THUIAppNotificationIconRow0">The head</string>
     <string name="THUIAppNotificationIconRow1">The eyez</string>
     <string name="THUIAppNotificationIconRow2">Vanilla one</string>
+    <string name="THUIAppNotificationIconRow3">XXX</string>
     <string name="THUIUseCustomFontRegular">Change Regular font</string>
     <string name="THUIUseCustomFontBold">Change Bold font</string>
     <string name="THUIUseCustomFontItalic">Change Italic font</string>

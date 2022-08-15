@@ -102,6 +102,8 @@ public class ThePenisMightierThanTheSword {
                 return R.drawable.telegraher_eyez;
             case 2:
                 return R.drawable.notification;
+            case 3:
+                return R.drawable.msg_report_xxx;
             case 0:
             default:
                 return R.drawable.telegraher_notification;
