@@ -13,6 +13,7 @@
     <string name="THVoipDisableEndBeep">* Выключить бип при завершении</string>
     <string name="THEnableProfileUID">Показывать числовой ID</string>
     <string name="THEnableProfileDCID">Показывать DC ID</string>
+    <string name="THEnableMessageHistory">Включить историю сообщений</string>
     <string name="THEnableProfileSB">Показывать чекбокс Shadowban</string>
     <string name="THEnableChatDeleteMark">Показывать метку `%s`</string>
     <string name="THEnableAccountExtendVanilla">* включить 3+ аккаунтов</string>
@@ -59,6 +60,7 @@
     <string name="THUIAppNotificationIconRow0">Голова</string>
     <string name="THUIAppNotificationIconRow1">Глаза</string>
     <string name="THUIAppNotificationIconRow2">Оригинальная</string>
+    <string name="THUIAppNotificationIconRow3">XXX</string>
     <string name="THUIUseCustomFontRegular">Выбрать обычный шрифт</string>
     <string name="THUIUseCustomFontBold">Выбрать жирный шрифт</string>
     <string name="THUIUseCustomFontItalic">Выбрать курсив</string>

@@ -5463,6 +5463,7 @@
     <string name="THVoipDisableEndBeep">* Disable end beep</string>
     <string name="THEnableProfileUID">Show numeric ID</string>
     <string name="THEnableProfileDCID">Show DC ID</string>
+    <string name="THEnableMessageHistory">Enable message history</string>
     <string name="THEnableProfileSB">Show Shadowban</string>
     <string name="THEnableChatDeleteMark">Show `%s` mark</string>
     <string name="THEnableAccountExtendVanilla">* enable 3+ accounts</string>
@@ -5509,6 +5510,7 @@
     <string name="THUIAppNotificationIconRow0">The head</string>
     <string name="THUIAppNotificationIconRow1">The eyez</string>
     <string name="THUIAppNotificationIconRow2">Vanilla one</string>
+    <string name="THUIAppNotificationIconRow3">XXX</string>
     <string name="THUIUseCustomFontRegular">Change Regular font</string>
     <string name="THUIUseCustomFontBold">Change Bold font</string>
     <string name="THUIUseCustomFontItalic">Change Italic font</string>

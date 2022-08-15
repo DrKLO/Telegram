@@ -1,5 +1,9 @@
 # Changes
 
+* 8.85.38
+    * you can choose XXX as your message notification icon also
+    * added to debug menu wipe ALL message history for actual account
+    * added to th menu enable/disable message history
 * 8.85.37
     * removed some log shitting when some folks edit messages too fast
     * vanilla sticker flow trigger which enable vanilla flow and disable our custom overlays flow
