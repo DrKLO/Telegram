@@ -11400,7 +11400,8 @@ public class MessagesStorage extends BaseController {
                                 if (data != null) {
                                     TLRPC.Message oldMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                     oldMessage.readAttachPath(data, getUserConfig().clientUserId);
-                                    if (!oldMessage.message.equals(message.message) && message.from_id != null) {
+                                    if (MessagesController.getTelegraherSettings(currentAccount).getBoolean("EnableMessageHistory", true)
+                                            && !oldMessage.message.equals(message.message) && message.from_id != null) {
                                         saveThHistory(message.dialog_id, message.id, getConnectionsManager().getCurrentTime(), oldMessage.message);
 //                                        message.message = String.format("%s\n\n`%s`\n%s", message.message, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME), oldMessage.message);
                                     }

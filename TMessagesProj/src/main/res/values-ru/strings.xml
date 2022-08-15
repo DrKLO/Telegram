@@ -13,6 +13,7 @@
     <string name="THVoipDisableEndBeep">* Выключить бип при завершении</string>
     <string name="THEnableProfileUID">Показывать числовой ID</string>
     <string name="THEnableProfileDCID">Показывать DC ID</string>
+    <string name="THEnableMessageHistory">Включить историю сообщений</string>
     <string name="THEnableProfileSB">Показывать чекбокс Shadowban</string>
     <string name="THEnableChatDeleteMark">Показывать метку `%s`</string>
     <string name="THEnableAccountExtendVanilla">* включить 3+ аккаунтов</string>
