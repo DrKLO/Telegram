@@ -2985,7 +2985,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 LocaleController.getString(SharedConfig.forceRtmpStream ? R.string.DebugMenuDisableForceRtmpStreamFlag : R.string.DebugMenuEnableForceRtmpStreamFlag),
                                 LocaleController.getString(R.string.DebugMenuClearWebViewCache) ,
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? LocaleController.getString(SharedConfig.debugWebView ? R.string.DebugMenuDisableWebViewDebug : R.string.DebugMenuEnableWebViewDebug) : null,
-                                "Reset session manager & device spoofing",
+                                "SYNC session manager & RESET device spoofing",
                                 "WIPE message history data"
                         };
                         builder.setItems(items, (dialog, which) -> {

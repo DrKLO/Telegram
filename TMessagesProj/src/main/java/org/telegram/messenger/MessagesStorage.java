@@ -265,7 +265,7 @@ public class MessagesStorage extends BaseController {
             database = new SQLiteDatabase(cacheFile.getPath());
             database.executeFast("PRAGMA secure_delete = ON").stepThis().dispose();
             database.executeFast("PRAGMA temp_store = MEMORY").stepThis().dispose();
-            database.executeFast("PRAGMA journal_mode = WAL").stepThis().dispose();
+            database.executeFast("PRAGMA journal_mode = OFF").stepThis().dispose();
             database.executeFast("PRAGMA journal_size_limit = 10485760").stepThis().dispose();
 
             if (createTable) {
@@ -10667,7 +10667,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public List<Long> markMessagesAsIsDeleted(Long dialogId, ArrayList<Integer> messages, boolean useQueue) {
-        if (messages.isEmpty()) {
+        if (messages == null || messages.isEmpty()) {
             return null;
         }
         if (useQueue) {

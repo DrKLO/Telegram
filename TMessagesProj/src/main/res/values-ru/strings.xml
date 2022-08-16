@@ -69,6 +69,7 @@
     <string name="THUIUseCustomFontDummy">(%s)</string>
     <string name="THEnableSwapToNextChannel">Следующий канал при свайпе</string>
     <string name="THEnableTabsOnForward">Вкладки при пересылке</string>
+    <string name="THDisableSpoilers">Выключить спойлеры</string>
     <string name="ThIdCopied">ID скопирован в буфер</string>
     <string name="ThDCCopied">DC скопирован в буфер</string>
     <string name="THChatSBManager">Shadowban менеджер</string>

@@ -270,7 +270,8 @@ public class ThSessionManagerActivity extends BaseFragment implements Notificati
                                         thTextDetailCell.isChecked() ? EMOJIS[1] : EMOJIS[0],
                                         SharedConfig.thAccounts.get(accs.get(position)).get("userPhone").toString())
                                 ,
-                                String.format(Locale.US, "%s %s(@%s) - %s %s, SDK (%s)"
+                                String.format(Locale.US, "%d: %s %s(@%s) - %s %s, SDK (%s)"
+                                        , accs.get(position)
                                         , SharedConfig.thAccounts.get(accs.get(position)).get("userFName")
                                         , SharedConfig.thAccounts.get(accs.get(position)).get("userLName")
                                         , SharedConfig.thAccounts.get(accs.get(position)).get("userName")

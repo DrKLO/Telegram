@@ -1,5 +1,13 @@
 # Changes
 
+* 8.85.39
+    * well we disable journal_mode
+        * i don't see any good moments on a telegram app except files which growing up. There are no rollbacks, app just
+          select/insert/delete the data. So now it's off. Lets see how it will work on mass tests.
+    * SM now show internal accountIds
+    * before `Reset session manager & device spoofing` now `SYNC session manager & RESET device spoofing` in a debug
+      menu
+    * added Disable spoilers
 * 8.85.38
     * you can choose XXX as your message notification icon also
     * added to debug menu wipe ALL message history for actual account
