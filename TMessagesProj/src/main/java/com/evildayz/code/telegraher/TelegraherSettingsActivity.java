@@ -101,6 +101,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatSBManagerRow;
     private int chatSwapToNextChannelRow;
     private int chatTabsOnForwardRow;
+    private int chatDisableSpoilersRow;
 
     private int videoLabelRoundBitrateRow;
     private int videoRoundBitrateMultRow;
@@ -177,6 +178,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatSBManagerRow = rowCount++;
         chatSwapToNextChannelRow = rowCount++;
         chatTabsOnForwardRow = rowCount++;
+        chatDisableSpoilersRow = rowCount++;
 
         accountLabelRow = rowCount++;
         accountSessionManagerRow = rowCount++;
@@ -335,6 +337,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableTabsOnForward", false);
                 editor.putBoolean("EnableTabsOnForward", !enabled);
+                editor.apply();
+            } else if (position == chatDisableSpoilersRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("DisableSpoilers", false);
+                editor.putBoolean("DisableSpoilers", !enabled);
                 editor.apply();
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -597,6 +605,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableSwapToNextChannel), globalPreps.getBoolean("EnableSwapToNextChannel", false), true);
                     } else if (position == chatTabsOnForwardRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableTabsOnForward), globalPreps.getBoolean("EnableTabsOnForward", false), true);
+                    } else if (position == chatDisableSpoilersRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDisableSpoilers), globalPreps.getBoolean("DisableSpoilers", false), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
@@ -807,7 +817,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == voipHDRow || position == voipDisableStartBeep || position == voipDisableEndBeep
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
-                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow
+                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow
                             || position == graheriumSpeedUp || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
                             || position == uiAppHidePhoneNumberOnLeftPanelRow

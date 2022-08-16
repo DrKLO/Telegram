@@ -5519,6 +5519,7 @@
     <string name="THUIUseCustomFontDummy">(%s)</string>
     <string name="THEnableSwapToNextChannel">Next channel on swap</string>
     <string name="THEnableTabsOnForward">Tabs on forward</string>
+    <string name="THDisableSpoilers">Disable spoilers</string>
     <string name="ThIdCopied">ID copied to clipboard</string>
     <string name="ThDCCopied">DC copied to clipboard</string>
     <string name="THChatSBManager">Shadowban manager</string>
