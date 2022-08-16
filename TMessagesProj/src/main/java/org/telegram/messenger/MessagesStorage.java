@@ -10667,7 +10667,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public List<Long> markMessagesAsIsDeleted(Long dialogId, ArrayList<Integer> messages, boolean useQueue) {
-        if (messages.isEmpty()) {
+        if (messages == null || messages.isEmpty()) {
             return null;
         }
         if (useQueue) {
