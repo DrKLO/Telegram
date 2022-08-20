@@ -22,7 +22,6 @@ import android.graphics.Shader;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
-import android.util.Log;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -754,7 +753,19 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         }
 
         if (renderingBitmap != null) {
-            if (applyTransformation) {
+            float scaleX = this.scaleX;
+            float scaleY = this.scaleY;
+            if (drawInBackground) {
+                int bitmapW = renderingBitmap.getWidth();
+                int bitmapH = renderingBitmap.getHeight();
+                if (metaData[2] == 90 || metaData[2] == 270) {
+                    int temp = bitmapW;
+                    bitmapW = bitmapH;
+                    bitmapH = temp;
+                }
+                scaleX = rect.width() / bitmapW;
+                scaleY = rect.height() / bitmapH;
+            } else if (applyTransformation) {
                 int bitmapW = renderingBitmap.getWidth();
                 int bitmapH = renderingBitmap.getHeight();
                 if (metaData[2] == 90 || metaData[2] == 270) {
@@ -763,8 +774,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                     bitmapH = temp;
                 }
                 rect.set(getBounds());
-                scaleX = rect.width() / bitmapW;
-                scaleY = rect.height() / bitmapH;
+                this.scaleX = scaleX = rect.width() / bitmapW;
+                this.scaleY = scaleY = rect.height() / bitmapH;
                 applyTransformation = false;
             }
             if (hasRoundRadius()) {
@@ -958,6 +969,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     long cacheGenerateTimestamp;
     Bitmap generatingCacheBitmap;
     long cacheGenerateNativePtr;
+    int tryCount;
+    int lastMetadata;
 
     @Override
     public void prepareForGenerateCache() {
@@ -981,9 +994,16 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             generatingCacheBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         }
         getVideoFrame(cacheGenerateNativePtr, generatingCacheBitmap, metaData, generatingCacheBitmap.getRowBytes(), false, startTime, endTime);
-        if (cacheGenerateTimestamp != 0 && metaData[3] == 0) {
+        if (cacheGenerateTimestamp != 0 && (metaData[3] == 0 || cacheGenerateTimestamp > metaData[3])) {
             return 0;
         }
+        if (lastMetadata == metaData[3]) {
+            tryCount++;
+            if (tryCount > 5) {
+                return 0;
+            }
+        }
+        lastMetadata = metaData[3];
         bitmap.eraseColor(Color.TRANSPARENT);
         canvas.save();
         float s = (float) renderingWidth / generatingCacheBitmap.getWidth();

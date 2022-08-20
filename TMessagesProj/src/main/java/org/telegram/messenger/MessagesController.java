@@ -3883,6 +3883,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
                             update.channel_id = dialog.peer.channel_id;
                             update.max_id = dialog.read_inbox_max_id;
+                            update.still_unread_count = dialog.unread_count;
                             arrayList.add(update);
                         } else {
                             TLRPC.TL_updateReadHistoryInbox update = new TLRPC.TL_updateReadHistoryInbox();
@@ -4026,6 +4027,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
                         update.channel_id = chatId;
                         update.max_id = res.full_chat.read_inbox_max_id;
+                        update.still_unread_count = res.full_chat.unread_count;
                         arrayList.add(update);
                         processUpdateArray(arrayList, null, null, false, 0);
                     }
@@ -13396,17 +13398,16 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (value == null) {
                     value = getMessagesStorage().getDialogReadMax(false, dialogId);
                 }
-                if (update.max_id > value || update.still_unread_count != 0) {
-                    if (markAsReadMessagesInbox == null) {
-                        markAsReadMessagesInbox = new LongSparseIntArray();
-                    }
-                    if (stillUnreadMessagesCount == null) {
-                        stillUnreadMessagesCount = new LongSparseIntArray();
-                    }
-                    markAsReadMessagesInbox.put(dialogId, update.max_id);
-                    stillUnreadMessagesCount.put(dialogId, update.still_unread_count);
-                    dialogs_read_inbox_max.put(dialogId, Math.max(value, update.max_id));
+
+                if (markAsReadMessagesInbox == null) {
+                    markAsReadMessagesInbox = new LongSparseIntArray();
                 }
+                if (stillUnreadMessagesCount == null) {
+                    stillUnreadMessagesCount = new LongSparseIntArray();
+                }
+                markAsReadMessagesInbox.put(dialogId, update.max_id);
+                stillUnreadMessagesCount.put(dialogId, update.still_unread_count);
+                dialogs_read_inbox_max.put(dialogId, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TLRPC.TL_updateReadChannelOutbox) {
                 TLRPC.TL_updateReadChannelOutbox update = (TLRPC.TL_updateReadChannelOutbox) baseUpdate;
                 if (BuildVars.LOGS_ENABLED) {

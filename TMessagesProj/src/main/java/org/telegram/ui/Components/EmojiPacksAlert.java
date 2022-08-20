@@ -50,6 +50,7 @@ import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 
@@ -941,7 +942,28 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             if (context == null) {
                 context = getContext();
             }
-            ShareAlert alert = new ShareAlert(context, null, stickersUrl, false, stickersUrl, false, resourcesProvider);
+            ShareAlert alert = new ShareAlert(context, null, stickersUrl, false, stickersUrl, false, resourcesProvider) {
+                @Override
+                protected void onSend(androidx.collection.LongSparseArray<TLRPC.Dialog> dids, int count) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        UndoView undoView;
+                        if (fragment instanceof ChatActivity) {
+                            undoView = ((ChatActivity) fragment).getUndoView();
+                        } else if (fragment instanceof ProfileActivity) {
+                            undoView = ((ProfileActivity) fragment).getUndoView();
+                        } else {
+                            undoView = null;
+                        }
+                        if (undoView != null) {
+                            if (dids.size() == 1) {
+                                undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_FWD_MESSAGES, count);
+                            } else {
+                                undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, dids.size(), null, null);
+                            }
+                        }
+                    }, 100);
+                }
+            };
             if (fragment != null) {
                 fragment.showDialog(alert);
             } else {

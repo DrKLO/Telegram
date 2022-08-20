@@ -2,6 +2,7 @@ package org.telegram.messenger.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -128,7 +129,11 @@ public class BitmapsCache {
                 int finalFramePosition = framePosition;
                 RandomAccessFile finalRandomAccessFile1 = randomAccessFile;
                 bitmapCompressExecutor.execute(() -> {
-                    bitmap[finalIndex].compress(Bitmap.CompressFormat.WEBP, compressQuality, byteArrayOutputStream[finalIndex]);
+                    Bitmap.CompressFormat format = Bitmap.CompressFormat.WEBP;
+                    if (Build.VERSION.SDK_INT <= 26) {
+                        format = Bitmap.CompressFormat.PNG;
+                    }
+                    bitmap[finalIndex].compress(format, compressQuality, byteArrayOutputStream[finalIndex]);
                     int size = byteArrayOutputStream[finalIndex].count;
 
                     try {
@@ -266,6 +271,8 @@ public class BitmapsCache {
                         source.getFirstFrame(bitmap);
                         return FRAME_RESULT_OK;
                     } else if (frameOffsets.isEmpty()) {
+                        randomAccessFile.close();
+                        randomAccessFile = null;
                         return FRAME_RESULT_NO_FRAME;
                     }
                 } else {
@@ -291,7 +298,7 @@ public class BitmapsCache {
             return FRAME_RESULT_OK;
         } catch (FileNotFoundException e) {
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             FileLog.e(e);
         }
 
@@ -415,5 +422,6 @@ public class BitmapsCache {
 
     public static class CacheOptions {
         public int compressQuality = 100;
+        public boolean fallback = false;
     }
 }

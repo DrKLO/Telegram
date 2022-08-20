@@ -4772,7 +4772,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     }
 
     public static boolean checkPremiumAnimatedEmoji(int currentAccount, long dialogId, BaseFragment parentFragment, FrameLayout container, CharSequence message) {
-        if (message == null) {
+        if (message == null || parentFragment == null) {
             return false;
         }
         if (container == null) {

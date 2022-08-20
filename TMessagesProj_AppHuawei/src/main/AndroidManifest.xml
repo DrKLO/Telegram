@@ -6,6 +6,10 @@
 
     <uses-permission android:name="com.huawei.appmarket.service.commondata.permission.GET_COMMON_DATA"/>
 
+    <queries>
+        <package android:name="com.huawei.maps.app"/>
+    </queries>
+
     <application android:name="org.telegram.messenger.HuaweiApplicationLoader" tools:replace="name">
         <service android:name="org.telegram.messenger.GoogleVoiceClientService"/>
         <activity

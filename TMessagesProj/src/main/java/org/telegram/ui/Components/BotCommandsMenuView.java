@@ -278,11 +278,7 @@ public class BotCommandsMenuView extends View {
                     TLRPC.TL_botCommand botCommand = info.commands.get(a);
                     if (botCommand != null && botCommand.command != null) {
                         newResult.add("/" + botCommand.command);
-                        if (botCommand.description != null && botCommand.description.length() > 1) {
-                            newResultHelp.add(botCommand.description.substring(0, 1).toUpperCase() + botCommand.description.substring(1).toLowerCase());
-                        } else {
-                            newResultHelp.add(botCommand.description);
-                        }
+                        newResultHelp.add(botCommand.description);
                     }
                 }
             }

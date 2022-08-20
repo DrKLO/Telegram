@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.location.Location;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -62,6 +63,9 @@ public interface IMapsProvider {
         void setOnDispatchTouchEventInterceptor(ITouchInterceptor touchInterceptor);
         void setOnInterceptTouchEventInterceptor(ITouchInterceptor touchInterceptor);
         void setOnLayoutListener(Runnable callback);
+        default GLSurfaceView getGlSurfaceView() {
+            return null;
+        }
     }
 
     interface IUISettings {

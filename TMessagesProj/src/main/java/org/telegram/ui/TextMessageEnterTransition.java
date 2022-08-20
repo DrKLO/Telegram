@@ -37,6 +37,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -97,6 +98,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     MessageObject.TextLayoutBlock textLayoutBlock;
     Drawable fromMessageDrawable;
     ChatActivityEnterView enterView;
+    private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiStack;
 
     float textX;
     float textY;
@@ -194,8 +196,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 layoutH = chatActivityEnterView.getEditField().getLayout().getLineBottom(chatActivityEnterView.getEditField().getLayout().getLineForOffset(newStart[0] + trimmedStr.length())) - linesOffset;
             }
             text = Emoji.replaceEmoji(editText, textPaint.getFontMetricsInt(), emojiSize, false);
+            text = AnimatedEmojiSpan.cloneSpans(text);
         }
-
 
         scaleFrom = chatActivityEnterView.getEditField().getTextSize() / textPaint.getTextSize();
 
@@ -211,6 +213,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         } else {
             layout = new StaticLayout(text, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
+        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, null, animatedEmojiStack, layout);
         float textViewY = chatActivityEnterView.getY() + chatActivityEnterView.getEditField().getY() + ((View) chatActivityEnterView.getEditField().getParent()).getY() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getY();
         fromStartX = chatActivityEnterView.getX() + chatActivityEnterView.getEditField().getX() + ((View) chatActivityEnterView.getEditField().getParent()).getX() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getX();
         fromStartY = textViewY + AndroidUtilities.dp(10) - chatActivityEnterView.getEditField().getScrollY() + linesOffset;
@@ -386,6 +389,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 chatActivityEnterView.getEditField().setAlpha(1f);
                 chatActivity.getReplyNameTextView().setAlpha(1f);
                 chatActivity.getReplyObjectTextView().setAlpha(1f);
+                AnimatedEmojiSpan.release(null, animatedEmojiStack);
             }
         });
 
@@ -608,7 +612,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
         canvas.save();
 
-        canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
+        if (messageView.getMessageObject() == null || messageView.getMessageObject().type != MessageObject.TYPE_EMOJIS) {
+            canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
+        }
 
         float scale = progressX + scaleFrom * (1f - progressX);
         float scale2;
@@ -627,20 +633,23 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 bitmapPaint.setAlpha((int) (255 * (1f - alphaProgress)));
             }
             canvas.drawBitmap(textLayoutBitmap, 0, 0, bitmapPaint);
-        } else if (currentMessageObject == null || currentMessageObject.type != MessageObject.TYPE_EMOJIS) {
+        } else {
             if (crossfade && changeColor) {
                 int oldColor = layout.getPaint().getColor();
                 int oldAlpha = Color.alpha(oldColor);
                 layout.getPaint().setColor(ColorUtils.setAlphaComponent(ColorUtils.blendARGB(fromColor, toColor, alphaProgress), (int) (oldAlpha * (1f - alphaProgress))));
                 layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f - alphaProgress);
                 layout.getPaint().setColor(oldColor);
             } else if (crossfade) {
                 int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
                 Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
                 layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f - alphaProgress);
                 Theme.chat_msgTextPaint.setAlpha(oldAlpha);
             } else {
                 layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f);
             }
         }
         canvas.restore();

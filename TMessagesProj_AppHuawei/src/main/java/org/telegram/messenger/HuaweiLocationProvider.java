@@ -32,17 +32,22 @@ public class HuaweiLocationProvider implements ILocationServiceProvider {
 
     @Override
     public ILocationRequest onCreateLocationRequest() {
-        return new GoogleLocationRequest(LocationRequest.create());
+        return new HuaweiLocationRequest(LocationRequest.create());
     }
 
     @Override
     public void getLastLocation(Consumer<Location> callback) {
-        locationProviderClient.getLastLocation().addOnCompleteListener(task -> callback.accept(task.getResult()));
+        locationProviderClient.getLastLocation().addOnCompleteListener(task -> {
+            if (task.getException() != null) {
+                return;
+            }
+            callback.accept(task.getResult());
+        });
     }
 
     @Override
     public void requestLocationUpdates(ILocationRequest request, ILocationListener locationListener) {
-        locationProviderClient.requestLocationUpdates(((GoogleLocationRequest) request).request, new LocationCallback() {
+        locationProviderClient.requestLocationUpdates(((HuaweiLocationRequest) request).request, new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 locationListener.onLocationChanged(locationResult.getLastLocation());
@@ -62,7 +67,7 @@ public class HuaweiLocationProvider implements ILocationServiceProvider {
 
     @Override
     public void checkLocationSettings(ILocationRequest request, Consumer<Integer> callback) {
-        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(((GoogleLocationRequest) request).request);
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(((HuaweiLocationRequest) request).request);
 
         settingsClient.checkLocationSettings(builder.build()).addOnCompleteListener(task -> {
             try {
@@ -83,7 +88,7 @@ public class HuaweiLocationProvider implements ILocationServiceProvider {
 
     @Override
     public IMapApiClient onCreateLocationServicesAPI(Context context, IAPIConnectionCallbacks connectionCallbacks, IAPIOnConnectionFailedListener failedListener) {
-        return new GoogleApiClientImpl(new HuaweiApiClient.Builder(ApplicationLoader.applicationContext)
+        return new HuaweiApiClientImpl(new HuaweiApiClient.Builder(ApplicationLoader.applicationContext)
                 .addConnectionCallbacks(new HuaweiApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected() {
@@ -101,13 +106,13 @@ public class HuaweiLocationProvider implements ILocationServiceProvider {
 
     @Override
     public boolean checkServices() {
-        return PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+        return HuaweiPushListenerProvider.INSTANCE.hasServices();
     }
 
-    public final static class GoogleLocationRequest implements ILocationRequest {
+    public final static class HuaweiLocationRequest implements ILocationRequest {
         private LocationRequest request;
 
-        private GoogleLocationRequest(LocationRequest request) {
+        private HuaweiLocationRequest(LocationRequest request) {
             this.request = request;
         }
 
@@ -143,10 +148,10 @@ public class HuaweiLocationProvider implements ILocationServiceProvider {
         }
     }
 
-    public final static class GoogleApiClientImpl implements IMapApiClient {
+    public final static class HuaweiApiClientImpl implements IMapApiClient {
         private HuaweiApiClient apiClient;
 
-        private GoogleApiClientImpl(HuaweiApiClient apiClient) {
+        private HuaweiApiClientImpl(HuaweiApiClient apiClient) {
             this.apiClient = apiClient;
         }
 
