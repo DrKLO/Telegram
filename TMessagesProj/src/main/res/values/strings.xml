@@ -5282,6 +5282,7 @@
     <string name="PushChatReactInvoice">%3$s to your invoice in %2$s</string>
     <string name="PushChatReactGif">%3$s to your GIF in %2$s</string>
     <string name="BlurInChat">Blur in chat</string>
+    <string name="HidePinnedMessagesBanner">Hide Pinned Messages Banner</string>
 
     <string name="AllowBackgroundActivity">Allow background activity</string>
     <string name="AllowBackgroundActivityInfo">This will improve reliability for incoming notifications and Telegram calls.</string>

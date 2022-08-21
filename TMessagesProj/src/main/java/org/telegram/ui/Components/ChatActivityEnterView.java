@@ -1765,7 +1765,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         sizeNotifierLayout = parent;
         sizeNotifierLayout.setDelegate(this);
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        sendByEnter = preferences.getBoolean("send_by_enter", false);
+        sendByEnter = preferences.getBoolean("send_by_enter", AndroidUtilities.isWatch());
         configAnimationsEnabled = preferences.getBoolean("view_animations", true);
 
         textFieldContainer = new FrameLayout(context) {

@@ -172,6 +172,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int themeAccentListRow;
     private int themeInfoRow;
     private int chatBlurRow;
+    private int hidePinBannerRow;
 
     private int swipeGestureHeaderRow;
     private int swipeGestureRow;
@@ -499,6 +500,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         chatListRow = -1;
         chatListInfoRow = -1;
         chatBlurRow = -1;
+        hidePinBannerRow = -1;
 
         textSizeRow = -1;
         backgroundRow = -1;
@@ -614,6 +616,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             if (SharedConfig.canBlurChat()) {
                 chatBlurRow = rowCount++;
             }
+            hidePinBannerRow = rowCount++;
             distanceRow = rowCount++;
             settings2Row = rowCount++;
         } else {
@@ -886,7 +889,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     builder1.setMessage(LocaleController.getString("ThemeResetToDefaultsText", R.string.ThemeResetToDefaultsText));
                     builder1.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialogInterface, i) -> {
                         boolean changed = false;
-                        if (setFontSize(AndroidUtilities.isTablet() ? 18 : 16)) {
+                        if (setFontSize(AndroidUtilities.isTablet() ? 18 : AndroidUtilities.isWatch() ? 12 : 16)) {
                             changed = true;
                         }
                         if (setBubbleRadius(10, true)) {
@@ -991,7 +994,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 presentFragment(new WallpapersListActivity(WallpapersListActivity.TYPE_ALL));
             } else if (position == sendByEnterRow) {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                boolean send = preferences.getBoolean("send_by_enter", false);
+                boolean send = preferences.getBoolean("send_by_enter", AndroidUtilities.isWatch());
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putBoolean("send_by_enter", !send);
                 editor.commit();
@@ -1059,6 +1062,15 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 SharedConfig.toggleChatBlur();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.chatBlurEnabled());
+                }
+            } else if (position == hidePinBannerRow) {
+                SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                boolean hide = preferences.getBoolean("hide_pin_banner", AndroidUtilities.isWatch());
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("hide_pin_banner", !hide);
+                editor.commit();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(!hide);
                 }
             } else if (position == nightThemeRow) {
                 if (LocaleController.isRTL && x <= AndroidUtilities.dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - AndroidUtilities.dp(76)) {
@@ -2133,7 +2145,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndCheck(LocaleController.getString("EnableAnimations", R.string.EnableAnimations), preferences.getBoolean("view_animations", true), true);
                     } else if (position == sendByEnterRow) {
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        textCheckCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
+                        textCheckCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", AndroidUtilities.isWatch()), true);
                     } else if (position == raiseToSpeakRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), SharedConfig.raiseToSpeak, true);
                     } else if (position == customTabsRow) {
@@ -2142,6 +2154,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndValueAndCheck(LocaleController.getString("DirectShare", R.string.DirectShare), LocaleController.getString("DirectShareInfo", R.string.DirectShareInfo), SharedConfig.directShare, false, true);
                     } else if (position == chatBlurRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("BlurInChat", R.string.BlurInChat), SharedConfig.chatBlurEnabled(), true);
+                    } else if (position == hidePinBannerRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("HidePinnedMessagesBanner", R.string.HidePinnedMessagesBanner), preferences.getBoolean("hide_pin_banner", AndroidUtilities.isWatch()), true);
                     }
                     break;
                 }
@@ -2249,7 +2263,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return TYPE_BRIGHTNESS;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
                     position == raiseToSpeakRow || position == customTabsRow ||
-                    position == directShareRow || position == chatBlurRow) {
+                    position == directShareRow || position == chatBlurRow || position == hidePinBannerRow) {
                 return TYPE_TEXT_CHECK;
             } else if (position == textSizeRow) {
                 return TYPE_TEXT_SIZE;

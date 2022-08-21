@@ -209,7 +209,7 @@ public class AndroidUtilities {
     private static AccessibilityManager accessibilityManager;
     private static Vibrator vibrator;
 
-    private static Boolean isTablet = null, isSmallScreen = null;
+    private static Boolean isTablet = null, isSmallScreen = null, isWatch = null;
     private static int adjustOwnerClassGuid = 0;
     private static int altFocusableClassGuid = 0;
 
@@ -1973,6 +1973,17 @@ public class AndroidUtilities {
             isTablet = ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
         }
         return isTablet;
+    }
+
+    public static boolean isWatch() {
+        if (isWatch == null) {
+            if (Build.VERSION.SDK_INT >= 20)
+            {
+                isWatch = ApplicationLoader.applicationContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+            }
+            else isWatch = false;
+        }
+        return isWatch;
     }
 
     public static boolean isSmallScreen() {
