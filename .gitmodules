@@ -1,3 +1,7 @@
 [submodule "TMessagesProj/jni/libwebp"]
 	path = TMessagesProj/jni/libwebp
 	url = https://github.com/webmproject/libwebp
+[submodule "TMessagesProj/jni/boringssl"]
+	path = TMessagesProj/jni/boringssl
+	url = https://github.com/google/boringssl
+	ignore = all

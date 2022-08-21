@@ -1,0 +1,242 @@
+From 02952ace408e331237a1ccd724f072b3e67ceb20 Mon Sep 17 00:00:00 2001
+From: thermatk <thermatk@thermatk.com>
+Date: Wed, 23 Jan 2019 22:16:34 +0100
+Subject: [PATCH] only build what we need
+
+---
+ CMakeLists.txt        | 36 ---------------------
+ crypto/CMakeLists.txt | 74 -------------------------------------------
+ ssl/CMakeLists.txt    | 18 ------------------
+ 3 files changed, 128 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fd3532664..7fcfb1627 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -562,45 +562,9 @@ if(USE_CUSTOM_LIBCXX)
+   target_link_libraries(libcxx libcxxabi)
+   install(TARGETS libcxx EXPORT OpenSSLTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+-# Add minimal googletest targets. The provided one has many side-effects, and
+-# googletest has a very straightforward build.
+-add_library(boringssl_gtest third_party/googletest/src/gtest-all.cc)
+-target_include_directories(boringssl_gtest PRIVATE third_party/googletest)
+-
+-include_directories(third_party/googletest/include)
+-
+-# Declare a dummy target to build all unit tests. Test targets should inject
+-# themselves as dependencies next to the target definition.
+-add_custom_target(all_tests)
+-
+-# On Windows, CRYPTO_TEST_DATA is too long to fit in command-line limits.
+-# TODO(davidben): CMake 3.12 has a list(JOIN) command. Use that when we've
+-# updated the minimum version.
+-set(EMBED_TEST_DATA_ARGS "")
+-foreach(arg ${CRYPTO_TEST_DATA})
+-  set(EMBED_TEST_DATA_ARGS "${EMBED_TEST_DATA_ARGS}${arg}\n")
+-endforeach()
+-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/embed_test_data_args.txt"
+-     "${EMBED_TEST_DATA_ARGS}")
+-
+-add_custom_command(
+-  OUTPUT crypto_test_data.cc
+-  COMMAND ${GO_EXECUTABLE} run util/embed_test_data.go -file-list
+-          "${CMAKE_CURRENT_BINARY_DIR}/embed_test_data_args.txt" >
+-          "${CMAKE_CURRENT_BINARY_DIR}/crypto_test_data.cc"
+-  DEPENDS util/embed_test_data.go ${CRYPTO_TEST_DATA}
+-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+-
+-add_library(crypto_test_data OBJECT crypto_test_data.cc)
+-
+ add_subdirectory(crypto)
+ add_subdirectory(ssl)
+-add_subdirectory(ssl/test)
+-add_subdirectory(tool)
+-add_subdirectory(util/fipstools)
+-add_subdirectory(util/fipstools/acvp/modulewrapper)
+-add_subdirectory(decrepit)
+ 
+ if(FUZZ)
+   if(LIBFUZZER_FROM_DEPS)
+@@ -634,41 +598,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+   set(HANDSHAKER_ARGS "-handshaker-path" $<TARGET_FILE:handshaker>)
+ endif()
+ 
+-if(FIPS)
+-  add_custom_target(
+-    acvp_tests
+-    COMMAND ${GO_EXECUTABLE} build -o ${CMAKE_BINARY_DIR}/acvptool
+-            boringssl.googlesource.com/boringssl/util/fipstools/acvp/acvptool
+-    COMMAND ${GO_EXECUTABLE} build -o ${CMAKE_BINARY_DIR}/testmodulewrapper
+-            boringssl.googlesource.com/boringssl/util/fipstools/acvp/acvptool/testmodulewrapper
+-    COMMAND cd util/fipstools/acvp/acvptool/test &&
+-            ${GO_EXECUTABLE} run check_expected.go
+-            -tool ${CMAKE_BINARY_DIR}/acvptool
+-            -module-wrappers modulewrapper:$<TARGET_FILE:modulewrapper>,testmodulewrapper:${CMAKE_BINARY_DIR}/testmodulewrapper
+-            -tests tests.json
+-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+-    DEPENDS modulewrapper
+-    USES_TERMINAL)
+-
+-  add_custom_target(
+-    fips_specific_tests_if_any
+-    DEPENDS acvp_tests
+-  )
+-else()
+-  add_custom_target(fips_specific_tests_if_any)
+-endif()
+-
+-add_custom_target(
+-    run_tests
+-    COMMAND ${GO_EXECUTABLE} run util/all_tests.go -build-dir
+-            ${CMAKE_BINARY_DIR}
+-    COMMAND cd ssl/test/runner &&
+-            ${GO_EXECUTABLE} test -shim-path $<TARGET_FILE:bssl_shim>
+-              ${HANDSHAKER_ARGS} ${RUNNER_ARGS}
+-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+-    DEPENDS all_tests bssl_shim handshaker fips_specific_tests_if_any
+-    USES_TERMINAL)
+-
+ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ install(EXPORT OpenSSLTargets
+diff --git a/crypto/CMakeLists.txt b/crypto/CMakeLists.txt
+index e940f7d5f..f5221d70d 100644
+--- a/crypto/CMakeLists.txt
++++ b/crypto/CMakeLists.txt
+@@ -85,7 +85,6 @@ function(perlasm dest src)
+ endfunction()
+ 
+ add_subdirectory(fipsmodule)
+-add_subdirectory(test)
+ 
+ if(FIPS_DELOCATE OR FIPS_SHARED)
+   SET_SOURCE_FILES_PROPERTIES(fipsmodule/bcm.o PROPERTIES EXTERNAL_OBJECT true)
+@@ -466,97 +466,3 @@ endif()
+ if(USE_CUSTOM_LIBCXX)
+   target_link_libraries(crypto libcxx)
+ endif()
+-
+-# urandom_test is a separate binary because it needs to be able to observe the
+-# PRNG initialisation, which means that it can't have other tests running before
+-# it does.
+-add_executable(
+-  urandom_test
+-
+-  fipsmodule/rand/urandom_test.cc
+-)
+-
+-target_link_libraries(urandom_test test_support_lib boringssl_gtest crypto)
+-
+-add_dependencies(urandom_test global_target)
+-add_dependencies(all_tests urandom_test)
+-
+-add_executable(
+-  crypto_test
+-
+-  abi_self_test.cc
+-  asn1/asn1_test.cc
+-  base64/base64_test.cc
+-  bio/bio_test.cc
+-  blake2/blake2_test.cc
+-  buf/buf_test.cc
+-  bytestring/bytestring_test.cc
+-  chacha/chacha_test.cc
+-  cipher_extra/aead_test.cc
+-  cipher_extra/cipher_test.cc
+-  compiler_test.cc
+-  conf/conf_test.cc
+-  constant_time_test.cc
+-  cpu_arm_linux_test.cc
+-  crypto_test.cc
+-  curve25519/ed25519_test.cc
+-  curve25519/spake25519_test.cc
+-  curve25519/x25519_test.cc
+-  ecdh_extra/ecdh_test.cc
+-  dh_extra/dh_test.cc
+-  digest_extra/digest_test.cc
+-  dsa/dsa_test.cc
+-  err/err_test.cc
+-  evp/evp_extra_test.cc
+-  evp/evp_test.cc
+-  evp/pbkdf_test.cc
+-  evp/scrypt_test.cc
+-  fipsmodule/aes/aes_test.cc
+-  fipsmodule/bn/bn_test.cc
+-  fipsmodule/cmac/cmac_test.cc
+-  fipsmodule/ec/ec_test.cc
+-  fipsmodule/ec/p256-nistz_test.cc
+-  fipsmodule/ecdsa/ecdsa_test.cc
+-  fipsmodule/md5/md5_test.cc
+-  fipsmodule/modes/gcm_test.cc
+-  fipsmodule/rand/ctrdrbg_test.cc
+-  fipsmodule/rand/fork_detect_test.cc
+-  fipsmodule/service_indicator/service_indicator_test.cc
+-  fipsmodule/sha/sha_test.cc
+-  hkdf/hkdf_test.cc
+-  hpke/hpke_test.cc
+-  hmac_extra/hmac_test.cc
+-  hrss/hrss_test.cc
+-  impl_dispatch_test.cc
+-  lhash/lhash_test.cc
+-  obj/obj_test.cc
+-  pem/pem_test.cc
+-  pkcs7/pkcs7_test.cc
+-  pkcs8/pkcs8_test.cc
+-  pkcs8/pkcs12_test.cc
+-  poly1305/poly1305_test.cc
+-  pool/pool_test.cc
+-  rand_extra/rand_test.cc
+-  refcount_test.cc
+-  rsa_extra/rsa_test.cc
+-  self_test.cc
+-  stack/stack_test.cc
+-  siphash/siphash_test.cc
+-  test/file_test_gtest.cc
+-  thread_test.cc
+-  trust_token/trust_token_test.cc
+-  x509/x509_test.cc
+-  x509/x509_time_test.cc
+-  x509v3/tab_test.cc
+-
+-  $<TARGET_OBJECTS:crypto_test_data>
+-  $<TARGET_OBJECTS:boringssl_gtest_main>
+-)
+-
+-add_dependencies(crypto_test global_target)
+-
+-target_link_libraries(crypto_test test_support_lib boringssl_gtest crypto)
+-if(WIN32)
+-  target_link_libraries(crypto_test ws2_32)
+-endif()
+-add_dependencies(all_tests crypto_test)
+diff --git a/ssl/CMakeLists.txt b/ssl/CMakeLists.txt
+index 0fb532eae..f5cab9807 100644
+--- a/ssl/CMakeLists.txt
++++ b/ssl/CMakeLists.txt
+@@ -44,21 +44,3 @@ add_library(
+ add_dependencies(ssl global_target)
+ 
+ target_link_libraries(ssl crypto)
+-
+-add_executable(
+-  ssl_test
+-
+-  span_test.cc
+-  ssl_test.cc
+-  ssl_c_test.c
+-
+-  $<TARGET_OBJECTS:boringssl_gtest_main>
+-)
+-
+-add_dependencies(ssl_test global_target)
+-
+-target_link_libraries(ssl_test test_support_lib boringssl_gtest ssl crypto)
+-if(WIN32)
+-  target_link_libraries(ssl_test ws2_32)
+-endif()
+-add_dependencies(all_tests ssl_test)
+-- 
+2.20.1
+
