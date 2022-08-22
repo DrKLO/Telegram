@@ -10,7 +10,9 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.LinearLayout;
@@ -19,10 +21,11 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -35,8 +38,11 @@ public class MentionCell extends LinearLayout {
     private AvatarDrawable avatarDrawable;
     private Theme.ResourcesProvider resourcesProvider;
 
+    private Drawable emojiDrawable;
+
     public MentionCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         setOrientation(HORIZONTAL);
 
@@ -70,6 +76,7 @@ public class MentionCell extends LinearLayout {
     }
 
     public void setUser(TLRPC.User user) {
+        resetEmojiSuggestion();
         if (user == null) {
             nameTextView.setText("");
             usernameTextView.setText("");
@@ -133,6 +140,7 @@ public class MentionCell extends LinearLayout {
     }
 
     public void setText(String text) {
+        resetEmojiSuggestion();
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
         nameTextView.setText(text);
@@ -144,17 +152,65 @@ public class MentionCell extends LinearLayout {
         nameTextView.invalidate();
     }
 
+    public void resetEmojiSuggestion() {
+        nameTextView.setPadding(0, 0, 0, 0);
+        if (emojiDrawable instanceof AnimatedEmojiDrawable) {
+            ((AnimatedEmojiDrawable) emojiDrawable).removeView(this);
+            emojiDrawable = null;
+        }
+    }
+
     public void setEmojiSuggestion(MediaDataController.KeywordResult suggestion) {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
-        StringBuilder stringBuilder = new StringBuilder(suggestion.emoji.length() + suggestion.keyword.length() + 4);
-        stringBuilder.append(suggestion.emoji);
-        stringBuilder.append("   :");
-        stringBuilder.append(suggestion.keyword);
-        nameTextView.setText(Emoji.replaceEmoji(stringBuilder, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false));
+        if (suggestion.emoji != null && suggestion.emoji.startsWith("animated_")) {
+            try {
+                if (emojiDrawable instanceof AnimatedEmojiDrawable) {
+                    ((AnimatedEmojiDrawable) emojiDrawable).removeView(this);
+                    emojiDrawable = null;
+                }
+                long documentId = Long.parseLong(suggestion.emoji.substring(9));
+                emojiDrawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, documentId);
+                if (attached) {
+                    ((AnimatedEmojiDrawable) emojiDrawable).addView(this);
+                }
+            } catch (Exception ignore) {
+                emojiDrawable = Emoji.getEmojiDrawable(suggestion.emoji);
+            }
+        } else {
+            emojiDrawable = Emoji.getEmojiDrawable(suggestion.emoji);
+        }
+        if (emojiDrawable == null) {
+            nameTextView.setPadding(0, 0, 0, 0);
+            nameTextView.setText(new StringBuilder().append(suggestion.emoji).append(":  ").append(suggestion.keyword));
+        } else {
+            nameTextView.setPadding(AndroidUtilities.dp(22), 0, 0, 0);
+            nameTextView.setText(new StringBuilder().append(":  ").append(suggestion.keyword));
+        }
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
+
+        if (emojiDrawable != null) {
+            final int sz = AndroidUtilities.dp(emojiDrawable instanceof AnimatedEmojiDrawable ? 24 : 20);
+            final int offsetX = AndroidUtilities.dp(emojiDrawable instanceof AnimatedEmojiDrawable ? -2 : 0);
+            emojiDrawable.setBounds(
+                nameTextView.getLeft() + offsetX,
+                (nameTextView.getTop() + nameTextView.getBottom() - sz) / 2,
+                nameTextView.getLeft() + offsetX + sz,
+                (nameTextView.getTop() + nameTextView.getBottom() + sz) / 2
+            );
+            if (emojiDrawable instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) emojiDrawable).setTime(System.currentTimeMillis());
+            }
+            emojiDrawable.draw(canvas);
+        }
     }
 
     public void setBotCommand(String command, String help, TLRPC.User user) {
+        resetEmojiSuggestion();
         if (user != null) {
             imageView.setVisibility(VISIBLE);
             avatarDrawable.setInfo(user);
@@ -184,5 +240,25 @@ public class MentionCell extends LinearLayout {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    private boolean attached;
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        attached = false;
+        if (emojiDrawable instanceof AnimatedEmojiDrawable) {
+            ((AnimatedEmojiDrawable) emojiDrawable).removeView(this);
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        attached = true;
+        if (emojiDrawable instanceof AnimatedEmojiDrawable) {
+            ((AnimatedEmojiDrawable) emojiDrawable).addView(this);
+        }
     }
 }

@@ -3,18 +3,29 @@ package org.telegram.ui.Components;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.ClickableSpan;
+import android.util.TypedValue;
 import android.view.HapticFeedbackConstants;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
@@ -23,6 +34,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.PremiumPreviewFragment;
 
 import java.io.File;
 
@@ -148,6 +160,51 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_SHORT);
     }
 
+    public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence button, Runnable onButtonClick) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(iconRawId, 36, 36);
+        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(3);
+        layout.textView.setText(text);
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
+        return create(layout, Bulletin.DURATION_SHORT);
+    }
+
+    public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text, String button, Runnable onButtonClick) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.imageView.setImageDrawable(drawable);
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createEmojiBulletin(String emoji, String text) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(emoji), 36, 36);
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createEmojiBulletin(String emoji, String text, String button, Runnable onButtonClick) {
+        return createEmojiBulletin(MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(emoji), text, button, onButtonClick);
+    }
+
+    public Bulletin createEmojiBulletin(TLRPC.Document document, CharSequence text, CharSequence button, Runnable onButtonClick) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(document, 36, 36);
+        layout.textView.setText(text);
+        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(3);
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
     @CheckResult
     public Bulletin createDownloadBulletin(FileType fileType) {
         return createDownloadBulletin(fileType, resourcesProvider);
@@ -202,6 +259,31 @@ public final class BulletinFactory {
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
         return create(layout, Bulletin.DURATION_SHORT);
+    }
+
+    public Bulletin createRestrictVoiceMessagesPremiumBulletin() {
+        Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
+        layout.setAnimation(R.raw.voip_muted);
+        String str = LocaleController.getString(R.string.PrivacyVoiceMessagesPremiumOnly);
+        SpannableStringBuilder spannable = new SpannableStringBuilder(str);
+        int indexStart = str.indexOf('*'), indexEnd = str.lastIndexOf('*');
+        spannable.replace(indexStart, indexEnd + 1, str.substring(indexStart + 1, indexEnd));
+        spannable.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                fragment.presentFragment(new PremiumPreviewFragment("settings"));
+            }
+
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setUnderlineText(false);
+            }
+        }, indexStart, indexEnd - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        layout.textView.setText(spannable);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        return create(layout, Bulletin.DURATION_LONG);
     }
 
     public Bulletin createErrorBulletinSubtitle(CharSequence errorMessage, CharSequence errorDescription, Theme.ResourcesProvider resourcesProvider) {
@@ -394,6 +476,40 @@ public final class BulletinFactory {
         layout.setAnimation(R.raw.ic_admin, "Shield");
         layout.textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("UserAddedAsAdminHint", R.string.UserAddedAsAdminHint, userFirstName)));
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
+    }
+
+    @CheckResult
+    public static Bulletin createInviteSentBulletin(Context context, FrameLayout containerLayout, int dialogsCount, long did, int messagesCount, int backgroundColor, int textColor) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(context, null, backgroundColor, textColor);
+        CharSequence text;
+        int hapticDelay = -1;
+        if (dialogsCount <= 1) {
+            if (did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId) {
+                text = AndroidUtilities.replaceTags(LocaleController.getString("InvLinkToSavedMessages", R.string.InvLinkToSavedMessages));
+                layout.setAnimation(R.raw.saved_messages, 30, 30);
+            } else {
+                if (DialogObject.isChatDialog(did)) {
+                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-did);
+                    text = AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToGroup", R.string.InvLinkToGroup, chat.title));
+                } else {
+                    TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(did);
+                    text = AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToUser", R.string.InvLinkToUser, UserObject.getFirstName(user)));
+                }
+                layout.setAnimation(R.raw.forward, 30, 30);
+                hapticDelay = 300;
+            }
+        } else {
+            text = AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToChats", R.string.InvLinkToChats, LocaleController.formatPluralString("Chats", dialogsCount)));
+            layout.setAnimation(R.raw.forward, 30, 30);
+            hapticDelay = 300;
+        }
+        layout.textView.setText(text);
+        if (hapticDelay > 0) {
+            layout.postDelayed(() -> {
+                layout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            }, hapticDelay);
+        }
+        return Bulletin.make(containerLayout, layout, Bulletin.DURATION_SHORT);
     }
 
     @CheckResult

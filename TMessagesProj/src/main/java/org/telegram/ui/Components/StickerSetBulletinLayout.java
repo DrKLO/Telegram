@@ -12,6 +12,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -43,13 +44,17 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
     }
 
     public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, @Type int type) {
-        this(context, setObject, type, null, null);
+        this(context, setObject, 1, type, null, null);
     }
 
     public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, @Type int type, TLRPC.Document sticker, Theme.ResourcesProvider resourcesProvider) {
+        this(context, setObject, 1, type, sticker, resourcesProvider);
+    }
+
+    public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, int count, @Type int type, TLRPC.Document sticker, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
 
-        final TLRPC.StickerSet stickerSet;
+        TLRPC.StickerSet stickerSet;
 
         if (setObject instanceof TLRPC.TL_messages_stickerSet) {
             final TLRPC.TL_messages_stickerSet obj = (TLRPC.TL_messages_stickerSet) setObject;
@@ -75,6 +80,13 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 throw new IllegalArgumentException("Invalid type of the given setObject: " + setObject.getClass());
             }
             stickerSet = null;
+        }
+
+        if (stickerSet == null && sticker != null) {
+            TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(UserConfig.selectedAccount).getStickerSet(MessageObject.getInputStickerSet(sticker), true);
+            if (set != null) {
+                stickerSet = set.set;
+            }
         }
 
 
@@ -112,30 +124,50 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
 
         switch (type) {
             case TYPE_ADDED:
-                if (stickerSet.masks) {
-                    titleTextView.setText(LocaleController.getString("AddMasksInstalled", R.string.AddMasksInstalled));
-                    subtitleTextView.setText(LocaleController.formatString("AddMasksInstalledInfo", R.string.AddMasksInstalledInfo, stickerSet.title));
-                } else {
-                    titleTextView.setText(LocaleController.getString("AddStickersInstalled", R.string.AddStickersInstalled));
-                    subtitleTextView.setText(LocaleController.formatString("AddStickersInstalledInfo", R.string.AddStickersInstalledInfo, stickerSet.title));
+                if (stickerSet != null) {
+                    if (stickerSet.masks) {
+                        titleTextView.setText(LocaleController.getString("AddMasksInstalled", R.string.AddMasksInstalled));
+                        subtitleTextView.setText(LocaleController.formatString("AddMasksInstalledInfo", R.string.AddMasksInstalledInfo, stickerSet.title));
+                    } else if (stickerSet.emojis) {
+                        titleTextView.setText(LocaleController.getString("AddEmojiInstalled", R.string.AddEmojiInstalled));
+                        if (count > 1) {
+                            subtitleTextView.setText(LocaleController.formatPluralString("AddEmojiMultipleInstalledInfo", count));
+                        } else {
+                            subtitleTextView.setText(LocaleController.formatString("AddEmojiInstalledInfo", R.string.AddEmojiInstalledInfo, stickerSet.title));
+                        }
+                    } else {
+                        titleTextView.setText(LocaleController.getString("AddStickersInstalled", R.string.AddStickersInstalled));
+                        subtitleTextView.setText(LocaleController.formatString("AddStickersInstalledInfo", R.string.AddStickersInstalledInfo, stickerSet.title));
+                    }
                 }
                 break;
             case TYPE_REMOVED:
-                if (stickerSet.masks) {
-                    titleTextView.setText(LocaleController.getString("MasksRemoved", R.string.MasksRemoved));
-                    subtitleTextView.setText(LocaleController.formatString("MasksRemovedInfo", R.string.MasksRemovedInfo, stickerSet.title));
-                } else {
-                    titleTextView.setText(LocaleController.getString("StickersRemoved", R.string.StickersRemoved));
-                    subtitleTextView.setText(LocaleController.formatString("StickersRemovedInfo", R.string.StickersRemovedInfo, stickerSet.title));
+                if (stickerSet != null) {
+                    if (stickerSet.masks) {
+                        titleTextView.setText(LocaleController.getString("MasksRemoved", R.string.MasksRemoved));
+                        subtitleTextView.setText(LocaleController.formatString("MasksRemovedInfo", R.string.MasksRemovedInfo, stickerSet.title));
+                    } else if (stickerSet.emojis) {
+                        titleTextView.setText(LocaleController.getString("EmojiRemoved", R.string.EmojiRemoved));
+                        if (count > 1) {
+                            subtitleTextView.setText(LocaleController.formatPluralString("EmojiRemovedMultipleInfo", count));
+                        } else {
+                            subtitleTextView.setText(LocaleController.formatString("EmojiRemovedInfo", R.string.EmojiRemovedInfo, stickerSet.title));
+                        }
+                    } else {
+                        titleTextView.setText(LocaleController.getString("StickersRemoved", R.string.StickersRemoved));
+                        subtitleTextView.setText(LocaleController.formatString("StickersRemovedInfo", R.string.StickersRemovedInfo, stickerSet.title));
+                    }
                 }
                 break;
             case TYPE_ARCHIVED:
-                if (stickerSet.masks) {
-                    titleTextView.setText(LocaleController.getString("MasksArchived", R.string.MasksArchived));
-                    subtitleTextView.setText(LocaleController.formatString("MasksArchivedInfo", R.string.MasksArchivedInfo, stickerSet.title));
-                } else {
-                    titleTextView.setText(LocaleController.getString("StickersArchived", R.string.StickersArchived));
-                    subtitleTextView.setText(LocaleController.formatString("StickersArchivedInfo", R.string.StickersArchivedInfo, stickerSet.title));
+                if (stickerSet != null) {
+                    if (stickerSet.masks) {
+                        titleTextView.setText(LocaleController.getString("MasksArchived", R.string.MasksArchived));
+                        subtitleTextView.setText(LocaleController.formatString("MasksArchivedInfo", R.string.MasksArchivedInfo, stickerSet.title));
+                    } else {
+                        titleTextView.setText(LocaleController.getString("StickersArchived", R.string.StickersArchived));
+                        subtitleTextView.setText(LocaleController.formatString("StickersArchivedInfo", R.string.StickersArchivedInfo, stickerSet.title));
+                    }
                 }
                 break;
             case TYPE_REMOVED_FROM_FAVORITES:

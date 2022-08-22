@@ -496,7 +496,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         for (int a = 0; a < selectedAudiosOrder.size(); a++) {
             audios.add(selectedAudiosOrder.get(a).messageObject);
         }
-        delegate.didSelectAudio(audios, parentAlert.commentTextView.getText().toString(), notify, scheduleDate);
+        delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), notify, scheduleDate);
     }
 
     public void setDelegate(AudioSelectDelegate audioSelectDelegate) {

@@ -81,6 +81,10 @@ public class ContentPreviewViewer {
     }
 
     public interface ContentPreviewViewerDelegate {
+        default boolean can() {
+            return true;
+        }
+
         void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate);
 
         void openSet(TLRPC.InputStickerSet set, boolean clearInputField);
@@ -533,6 +537,9 @@ public class ContentPreviewViewer {
     public boolean onTouch(MotionEvent event, final RecyclerListView listView, final int height, final Object listener, ContentPreviewViewerDelegate contentPreviewViewerDelegate, Theme.ResourcesProvider resourcesProvider) {
         delegate = contentPreviewViewerDelegate;
         this.resourcesProvider = resourcesProvider;
+        if (delegate != null && !delegate.can()) {
+            return false;
+        }
         if (openPreviewRunnable != null || isVisible()) {
             if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_POINTER_UP) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -693,6 +700,9 @@ public class ContentPreviewViewer {
     public boolean onInterceptTouchEvent(MotionEvent event, final RecyclerListView listView, final int height, ContentPreviewViewerDelegate contentPreviewViewerDelegate, Theme.ResourcesProvider resourcesProvider) {
         delegate = contentPreviewViewerDelegate;
         this.resourcesProvider = resourcesProvider;
+        if (delegate != null && !delegate.can()) {
+            return false;
+        }
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             int x = (int) event.getX();
             int y = (int) event.getY();
@@ -749,7 +759,7 @@ public class ContentPreviewViewer {
                     listView.setOnItemClickListener((RecyclerListView.OnItemClickListener) null);
                     listView.requestDisallowInterceptTouchEvent(true);
                     openPreviewRunnable = null;
-                    setParentActivity((Activity) listView.getContext());
+                    setParentActivity(AndroidUtilities.findActivity(listView.getContext()));
                     //setKeyboardHeight(height);
                     clearsInputField = false;
                     if (currentPreviewCell instanceof StickerEmojiCell) {

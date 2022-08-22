@@ -794,7 +794,19 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                                 if (wasEmpty) {
                                     adapter.notifyItemInserted(filtersHeaderRow);
                                 }
-                                adapter.notifyItemInserted(filtersStartRow);
+                                int indexToInsert = 0;
+                                for (int i = 0; i < getMessagesController().dialogFilters.size(); i++) {
+                                    if (filter.id == getMessagesController().dialogFilters.get(i).id) {
+                                        indexToInsert = i;
+                                    }
+                                }
+                                if (!getUserConfig().isPremium()) {
+                                    indexToInsert--;
+                                }
+                                if (indexToInsert < 0) {
+                                    indexToInsert = 0;
+                                }
+                                adapter.notifyItemInserted(filtersStartRow + indexToInsert);
                             } else {
                                 updateRows(true);
                             }

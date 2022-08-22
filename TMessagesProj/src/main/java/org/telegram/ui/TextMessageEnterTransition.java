@@ -37,6 +37,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyStubSpan;
@@ -96,6 +98,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     MessageObject.TextLayoutBlock textLayoutBlock;
     Drawable fromMessageDrawable;
     ChatActivityEnterView enterView;
+    private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiStack;
 
     float textX;
     float textY;
@@ -111,7 +114,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         currentAccount = UserConfig.selectedAccount;
-        if (messageView.getMessageObject().textLayoutBlocks.size() > 1 || messageView.getMessageObject().textLayoutBlocks.isEmpty() || messageView.getMessageObject().textLayoutBlocks.get(0).textLayout.getLineCount() > 10) {
+        if (messageView.getMessageObject().textLayoutBlocks == null || messageView.getMessageObject().textLayoutBlocks.size() > 1 || messageView.getMessageObject().textLayoutBlocks.isEmpty() || messageView.getMessageObject().textLayoutBlocks.get(0).textLayout.getLineCount() > 10) {
             return;
         }
         this.messageView = messageView;
@@ -144,15 +147,33 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         TextPaint textPaint = Theme.chat_msgTextPaint;
         int emojiSize = AndroidUtilities.dp(20);
         if (messageView.getMessageObject().getEmojiOnlyCount() != 0) {
-            if (messageView.getMessageObject().getEmojiOnlyCount() == 1) {
-                textPaint = Theme.chat_msgTextPaintOneEmoji;
-                emojiSize = AndroidUtilities.dp(32);
-            } else if (messageView.getMessageObject().getEmojiOnlyCount() == 2) {
-                textPaint = Theme.chat_msgTextPaintTwoEmoji;
-                emojiSize = AndroidUtilities.dp(28);
-            } else if (messageView.getMessageObject().getEmojiOnlyCount() == 3) {
-                textPaint = Theme.chat_msgTextPaintThreeEmoji;
-                emojiSize = AndroidUtilities.dp(24);
+            switch (messageView.getMessageObject().getEmojiOnlyCount()) {
+                case 0:
+                case 1:
+                case 2:
+                    textPaint = Theme.chat_msgTextPaintEmoji[0];
+                    break;
+                case 3:
+                    textPaint = Theme.chat_msgTextPaintEmoji[1];
+                    break;
+                case 4:
+                    textPaint = Theme.chat_msgTextPaintEmoji[2];
+                    break;
+                case 5:
+                    textPaint = Theme.chat_msgTextPaintEmoji[3];
+                    break;
+                case 6:
+                    textPaint = Theme.chat_msgTextPaintEmoji[4];
+                    break;
+                case 7:
+                case 8:
+                case 9:
+                default:
+                    textPaint = Theme.chat_msgTextPaintEmoji[5];
+                    break;
+            }
+            if (textPaint != null) {
+                emojiSize = (int) (textPaint.getTextSize() + AndroidUtilities.dp(4));
             }
         }
         boolean containsSpans = false;
@@ -168,16 +189,15 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         }
         if (editText.length() != text.length() || containsSpans) {
             crossfade = true;
-            String str = editText.toString();
-            String trimmedStr = str.trim();
-            int i = str.indexOf(trimmedStr);
-            if (i > 0) {
-                linesOffset = chatActivityEnterView.getEditField().getLayout().getLineTop(chatActivityEnterView.getEditField().getLayout().getLineForOffset(i));
-                layoutH = chatActivityEnterView.getEditField().getLayout().getLineBottom(chatActivityEnterView.getEditField().getLayout().getLineForOffset(i + trimmedStr.length())) - linesOffset;
+            int[] newStart = new int[1];
+            CharSequence trimmedStr = AndroidUtilities.trim(editText, newStart);
+            if (newStart[0] > 0) {
+                linesOffset = chatActivityEnterView.getEditField().getLayout().getLineTop(chatActivityEnterView.getEditField().getLayout().getLineForOffset(newStart[0]));
+                layoutH = chatActivityEnterView.getEditField().getLayout().getLineBottom(chatActivityEnterView.getEditField().getLayout().getLineForOffset(newStart[0] + trimmedStr.length())) - linesOffset;
             }
-            text = Emoji.replaceEmoji(trimmedStr, textPaint.getFontMetricsInt(), emojiSize, false);
+            text = Emoji.replaceEmoji(editText, textPaint.getFontMetricsInt(), emojiSize, false);
+            text = AnimatedEmojiSpan.cloneSpans(text);
         }
-
 
         scaleFrom = chatActivityEnterView.getEditField().getTextSize() / textPaint.getTextSize();
 
@@ -193,6 +213,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         } else {
             layout = new StaticLayout(text, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
+        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, null, animatedEmojiStack, layout);
         float textViewY = chatActivityEnterView.getY() + chatActivityEnterView.getEditField().getY() + ((View) chatActivityEnterView.getEditField().getParent()).getY() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getY();
         fromStartX = chatActivityEnterView.getX() + chatActivityEnterView.getEditField().getX() + ((View) chatActivityEnterView.getEditField().getParent()).getX() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getX();
         fromStartY = textViewY + AndroidUtilities.dp(10) - chatActivityEnterView.getEditField().getScrollY() + linesOffset;
@@ -368,6 +389,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 chatActivityEnterView.getEditField().setAlpha(1f);
                 chatActivity.getReplyNameTextView().setAlpha(1f);
                 chatActivity.getReplyObjectTextView().setAlpha(1f);
+                AnimatedEmojiSpan.release(null, animatedEmojiStack);
             }
         });
 
@@ -397,7 +419,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             initBitmaps = true;
             Canvas bitmapCanvas = new Canvas(crossfadeTextBitmap);
             bitmapCanvas.translate(0, crossfadeTextOffset);
+            if (messageView.animatedEmojiStack != null) {
+                messageView.animatedEmojiStack.clearPositions();
+            }
             messageView.drawMessageText(bitmapCanvas, messageView.getMessageObject().textLayoutBlocks, true, 1f, true);
+            messageView.drawAnimatedEmojis(bitmapCanvas, 1f);
         }
         float listViewBottom = listView.getY() - container.getY() + listView.getMeasuredHeight();
 
@@ -446,7 +472,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         float drawableH = messageView.getBackgroundDrawableBottom() - messageView.getBackgroundDrawableTop();
         float drawableBottom = (drawableFromBottom - container.getY()) * (1f - progress) + (drawableToTop + drawableH) * progress;
         int drawableRight = (int) (messageViewX + messageView.getBackgroundDrawableRight() + AndroidUtilities.dp(4) * (1f - progressX));
-        Theme.MessageDrawable drawable = messageView.getCurrentBackgroundDrawable(true);
+        Theme.MessageDrawable drawable = null;
+        if (!currentMessageObject.isAnimatedEmojiStickers()) {
+            drawable = messageView.getCurrentBackgroundDrawable(true);
+        }
+
 
         if (drawable != null) {
             messageView.setBackgroundTopY(container.getTop() - listView.getTop());
@@ -474,16 +504,18 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         canvas.restore();
 
         canvas.save();
-        if (currentMessageObject.isOutOwner()) {
-            canvas.clipRect(
-                    drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4),
-                    drawableRight - AndroidUtilities.dp(10), drawableBottom - AndroidUtilities.dp(4)
-            );
-        } else {
-            canvas.clipRect(
-                    drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4),
-                    drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4)
-            );
+        if (drawable != null) {
+            if (currentMessageObject.isOutOwner()) {
+                canvas.clipRect(
+                        drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4),
+                        drawableRight - AndroidUtilities.dp(10), drawableBottom - AndroidUtilities.dp(4)
+                );
+            } else {
+                canvas.clipRect(
+                        drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4),
+                        drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4)
+                );
+            }
         }
         canvas.translate(messageView.getLeft() + listView.getX() - container.getX(), messageViewY + (fromY - toY) * (1f - progress));
         messageView.drawTime(canvas, alphaProgress, false);
@@ -563,6 +595,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
                 canvas.save();
                 SpoilerEffect.clipOutCanvas(canvas, messageView.replySpoilers);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, messageView.replyTextLayout, messageView.animatedEmojiReplyStack, 0, messageView.replySpoilers, 0, 0, 0, 1f);
                 messageView.replyTextLayout.draw(canvas);
                 canvas.restore();
 
@@ -579,7 +612,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
         canvas.save();
 
-        canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
+        if (messageView.getMessageObject() == null || messageView.getMessageObject().type != MessageObject.TYPE_EMOJIS) {
+            canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
+        }
 
         float scale = progressX + scaleFrom * (1f - progressX);
         float scale2;
@@ -604,14 +639,17 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 int oldAlpha = Color.alpha(oldColor);
                 layout.getPaint().setColor(ColorUtils.setAlphaComponent(ColorUtils.blendARGB(fromColor, toColor, alphaProgress), (int) (oldAlpha * (1f - alphaProgress))));
                 layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f - alphaProgress);
                 layout.getPaint().setColor(oldColor);
             } else if (crossfade) {
                 int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
                 Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
                 layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f - alphaProgress);
                 Theme.chat_msgTextPaint.setAlpha(oldAlpha);
             } else {
                 layout.draw(canvas);
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f);
             }
         }
         canvas.restore();
@@ -657,6 +695,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 int oldColor = Theme.chat_msgTextPaint.getColor();
                 Theme.chat_msgTextPaint.setColor(toColor);
                 messageView.drawMessageText(canvas, messageView.getMessageObject().textLayoutBlocks, false, alphaProgress, true);
+                messageView.drawAnimatedEmojis(canvas, alphaProgress);
                 if (Theme.chat_msgTextPaint.getColor() != oldColor) {
                     Theme.chat_msgTextPaint.setColor(oldColor);
                 }

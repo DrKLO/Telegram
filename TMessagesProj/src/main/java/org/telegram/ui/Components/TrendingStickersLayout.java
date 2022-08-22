@@ -502,7 +502,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 }
             }
         } else if (id == NotificationCenter.featuredStickersDidLoad) {
-            if (hash != MediaDataController.getInstance(currentAccount).getFeaturesStickersHashWithoutUnread()) {
+            if (hash != MediaDataController.getInstance(currentAccount).getFeaturedStickersHashWithoutUnread(false)) {
                 loaded = false;
             }
             if (loaded) {
@@ -790,7 +790,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 final ArrayList<Long> unreadStickers = mediaDataController.getUnreadStickerSets();
                 unread = unreadStickers != null && unreadStickers.contains(stickerSetCovered.set.id);
                 if (unread) {
-                    mediaDataController.markFaturedStickersByIdAsRead(stickerSetCovered.set.id);
+                    mediaDataController.markFeaturedStickersByIdAsRead(false, stickerSetCovered.set.id);
                 }
             } else {
                 stickerSetCovered = sets.get((Integer) cache.get(position));
@@ -924,7 +924,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             }
             if (totalItems != 0) {
                 loaded = true;
-                hash = mediaDataController.getFeaturesStickersHashWithoutUnread();
+                hash = mediaDataController.getFeaturedStickersHashWithoutUnread(false);
             }
             notifyDataSetChanged();
         }

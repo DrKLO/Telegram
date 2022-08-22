@@ -197,7 +197,7 @@ public class ReactionsEffectOverlay {
             sizeForFilter = (int) (2f * size / AndroidUtilities.density);
         } else if (animationType == SHORT_ANIMATION) {
             size = AndroidUtilities.dp(80);
-            sizeForFilter = (int) (2f * size / AndroidUtilities.density);
+            sizeForFilter = sizeForAroundReaction();
         } else {
             size = Math.round(Math.min(AndroidUtilities.dp(350), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) * 0.8f);
             sizeForFilter = sizeForBigReaction();
@@ -718,6 +718,11 @@ public class ReactionsEffectOverlay {
 
     public static int sizeForBigReaction() {
         return (int) (Math.round(Math.min(AndroidUtilities.dp(350), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) * 0.7f) / AndroidUtilities.density);
+    }
+
+    public static int sizeForAroundReaction() {
+        int size = AndroidUtilities.dp(80);
+        return (int) (2f * size / AndroidUtilities.density);
     }
 
     private class AvatarParticle {

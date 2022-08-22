@@ -44,7 +44,7 @@ public:
     double  frameRate() const { return mModel->frameRate(); }
     size_t  totalFrame() const { return mModel->totalFrame(); }
     size_t  frameAtPos(double pos) const { return mModel->frameAtPos(pos); }
-    Surface render(size_t frameNo, const Surface &surface, bool clear);
+    Surface render(size_t frameNo, const Surface &surface, bool clear, bool* result);
     const LOTLayerNode * renderTree(size_t frameNo, const VSize &size);
 
     const LayerInfoList &layerInfoList() const
@@ -93,11 +93,12 @@ bool AnimationImpl::update(size_t frameNo, const VSize &size)
     return mCompItem->update(frameNo);
 }
 
-Surface AnimationImpl::render(size_t frameNo, const Surface &surface, bool clear)
+Surface AnimationImpl::render(size_t frameNo, const Surface &surface, bool clear, bool* result)
 {
     bool renderInProgress = mRenderInProgress.load();
     if (renderInProgress) {
         vCritical << "Already Rendering Scheduled for this Animation";
+        *result = false;
         return surface;
     }
 
@@ -106,6 +107,7 @@ Surface AnimationImpl::render(size_t frameNo, const Surface &surface, bool clear
            VSize(surface.drawRegionWidth(), surface.drawRegionHeight()));
     mCompItem->render(surface, clear);
     mRenderInProgress.store(false);
+    *result = true;
 
     return surface;
 }
@@ -198,9 +200,9 @@ const LOTLayerNode *Animation::renderTree(size_t frameNo, size_t width,
     return d->renderTree(frameNo, VSize(width, height));
 }
 
-void Animation::renderSync(size_t frameNo, Surface &surface, bool clear)
+void Animation::renderSync(size_t frameNo, Surface &surface, bool clear, bool* res)
 {
-    d->render(frameNo, surface, clear);
+    d->render(frameNo, surface, clear, res);
 }
 
 const LayerInfoList &Animation::layers() const

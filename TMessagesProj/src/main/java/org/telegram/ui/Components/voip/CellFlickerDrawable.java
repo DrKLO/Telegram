@@ -199,7 +199,7 @@ public class CellFlickerDrawable {
                 svgDrawable.setPaint(paint);
                 float x = (parentWidth + size * 2) * progress - size;
                 int drawableSize = (int) (parentWidth * 0.5f);
-                float s = svgDrawable.getScale();
+                float s = svgDrawable.getScale(getBounds().width(), getBounds().height());
                 matrix.reset();
                 matrix.setScale(1f / s, 0, size / 2f, 0);
                 matrix.setTranslate(x - svgDrawable.getBounds().left - size / s, 0);

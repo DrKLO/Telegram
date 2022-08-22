@@ -100,6 +100,8 @@ public class CrossOutDrawable extends Drawable {
             startY = startY + (stopY - startY) * (1f - progress);
         }
         canvas.drawLine(startX, startY - paint.getStrokeWidth(), stopX, stopY - paint.getStrokeWidth(), xRefPaint);
+        float offsetY = (xRefPaint.getStrokeWidth() - paint.getStrokeWidth()) / 2f + 1;
+        canvas.drawLine(startX, startY - offsetY, stopX, stopY - offsetY, xRefPaint);
         canvas.drawLine(startX, startY, stopX, stopY, paint);
         canvas.restore();
     }

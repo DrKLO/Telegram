@@ -452,7 +452,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                 }
             } else {
                 int account = UserConfig.selectedAccount;
-                animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
+//                animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
                 listViewTranslationAnimator =
                     new SpringAnimation(new FloatValueHolder(fromTranslation))
                         .setSpring(
@@ -481,7 +481,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                     });
                 }
                 listViewTranslationAnimator.addEndListener((animation, canceled, value, velocity) -> {
-                    NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
+//                    `NotificationCenter.`getInstance(account).onAnimationFinish(animationIndex);
                 });
                 listViewTranslationAnimator.start();
             }

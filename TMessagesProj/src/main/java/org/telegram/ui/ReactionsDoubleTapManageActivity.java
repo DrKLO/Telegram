@@ -25,6 +25,7 @@ import org.telegram.ui.Cells.AvailableReactionCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.ThemePreviewMessagesCell;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
 
@@ -94,7 +95,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
                         break;
                     default:
                     case 1: {
-                        view = new AvailableReactionCell(context, true);
+                        view = new AvailableReactionCell(context, true, true);
                     }
                     break;
                 }
@@ -107,7 +108,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
                     case 1:
                         AvailableReactionCell reactionCell = (AvailableReactionCell) holder.itemView;
                         TLRPC.TL_availableReaction react = getAvailableReactions().get(position - reactionsStartRow);
-                        reactionCell.bind(react, react.reaction.contains(MediaDataController.getInstance(currentAccount).getDoubleTapReaction()));
+                        reactionCell.bind(react, react.reaction.contains(MediaDataController.getInstance(currentAccount).getDoubleTapReaction()), currentAccount);
                         break;
                 }
             }
@@ -130,9 +131,13 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
         });
         listView.setOnItemClickListener((view, position) -> {
             if (view instanceof AvailableReactionCell) {
-                MediaDataController.getInstance(currentAccount).setDoubleTapReaction(((AvailableReactionCell) view).react.reaction);
+                AvailableReactionCell cell = (AvailableReactionCell) view;
+                if (cell.locked && !getUserConfig().isPremium()) {
+                    showDialog(new PremiumFeatureBottomSheet(this, PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS, true));
+                    return;
+                }
+                MediaDataController.getInstance(currentAccount).setDoubleTapReaction(cell.react.reaction);
                 listView.getAdapter().notifyItemRangeChanged(0, listView.getAdapter().getItemCount());
-                //AndroidUtilities.updateVisibleRows(listView);
             }
         });
         linaerLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));

@@ -544,7 +544,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             frameLayout.addView(avatarImage, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));
         }
 
-        nameTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, this, EditTextEmoji.STYLE_FRAGMENT);
+        nameTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, this, EditTextEmoji.STYLE_FRAGMENT, false);
         if (isChannel) {
             nameTextView.setHint(LocaleController.getString("EnterChannelName", R.string.EnterChannelName));
         } else {
@@ -674,7 +674,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             locationCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             typeEditContainer.addView(locationCell, LayoutHelper.createLinear(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             locationCell.setOnClickListener(v -> {
-                if (!AndroidUtilities.isGoogleMapsInstalled(ChatEditActivity.this)) {
+                if (!AndroidUtilities.isMapsInstalled(ChatEditActivity.this)) {
                     return;
                 }
                 LocationActivity fragment = new LocationActivity(LocationActivity.LOCATION_TYPE_GROUP);

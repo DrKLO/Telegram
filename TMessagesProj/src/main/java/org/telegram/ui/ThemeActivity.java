@@ -48,7 +48,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -1712,7 +1712,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         intent.setType("text/xml");
                         if (Build.VERSION.SDK_INT >= 24) {
                             try {
-                                intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", finalFile));
+                                intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getParentActivity(), ApplicationLoader.getApplicationId() + ".provider", finalFile));
                                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             } catch (Exception ignore) {
                                 intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(finalFile));

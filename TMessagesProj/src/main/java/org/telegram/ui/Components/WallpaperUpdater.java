@@ -17,10 +17,11 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+
 import androidx.core.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -79,7 +80,7 @@ public class WallpaperUpdater {
                         File image = AndroidUtilities.generatePicturePath();
                         if (image != null) {
                             if (Build.VERSION.SDK_INT >= 24) {
-                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(parentActivity, BuildConfig.APPLICATION_ID + ".provider", image));
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(parentActivity, ApplicationLoader.getApplicationId() + ".provider", image));
                                 takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                                 takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             } else {

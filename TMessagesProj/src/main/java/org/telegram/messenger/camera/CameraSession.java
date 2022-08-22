@@ -11,7 +11,6 @@ package org.telegram.messenger.camera;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -204,7 +203,7 @@ public class CameraSession {
         return sameTakePictureOrientation;
     }
 
-    protected void configureRoundCamera(boolean initial) {
+    protected boolean configureRoundCamera(boolean initial) {
         try {
             isVideo = true;
             Camera camera = cameraInfo.camera;
@@ -276,7 +275,9 @@ public class CameraSession {
             }
         } catch (Throwable e) {
             FileLog.e(e);
+            return false;
         }
+        return true;
     }
 
     public void updateRotation() {
@@ -579,5 +580,13 @@ public class CameraSession {
             orientationEventListener.disable();
             orientationEventListener = null;
         }
+    }
+
+    public Camera.Size getCurrentPreviewSize() {
+        return cameraInfo.camera.getParameters().getPreviewSize();
+    }
+
+    public Camera.Size getCurrentPictureSize() {
+        return cameraInfo.camera.getParameters().getPictureSize();
     }
 }

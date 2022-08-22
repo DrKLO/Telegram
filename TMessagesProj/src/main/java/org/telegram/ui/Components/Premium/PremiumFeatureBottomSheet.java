@@ -66,14 +66,15 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     private final boolean onlySelectedType;
 
     public PremiumFeatureBottomSheet(BaseFragment fragment, int startType, boolean onlySelectedType) {
-        super(fragment.getParentActivity(), false);
+        super(fragment.getContext(), false);
+        fixNavigationBar();
         this.fragment = fragment;
         this.startType = startType;
         this.onlySelectedType = onlySelectedType;
 
         String svg = RLottieDrawable.readRes(null, R.raw.star_loader);
         svgIcon = SvgHelper.getDrawable(svg);
-        Context context = fragment.getParentActivity();
+        Context context = fragment.getContext();
         FrameLayout frameLayout = new FrameLayout(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -268,11 +269,14 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         }
         premiumButtonView = new PremiumButtonView(context, true);
         premiumButtonView.buttonLayout.setOnClickListener(v -> {
-            if (fragment.getVisibleDialog() != null) {
-                fragment.getVisibleDialog().dismiss();
-            }
             if (fragment instanceof ChatActivity) {
                 ((ChatActivity) fragment).closeMenu();
+                if (((ChatActivity) fragment).chatAttachAlert != null) {
+                    ((ChatActivity) fragment).chatAttachAlert.dismiss(true);
+                }
+            }
+            if (fragment.getVisibleDialog() != null) {
+                fragment.getVisibleDialog().dismiss();
             }
             if (onlySelectedType) {
                 fragment.presentFragment(new PremiumPreviewFragment(PremiumPreviewFragment.featureTypeToServerString(featureData.type)));
@@ -319,6 +323,12 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     }
 
     @Override
+    public void show() {
+        super.show();
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 16);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
@@ -334,6 +344,8 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.billingProductDetailsUpdated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.premiumPromoUpdated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
+
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 16);
     }
 
     @Override

@@ -16,6 +16,7 @@ import android.text.TextDirectionHeuristic;
 import android.text.TextDirectionHeuristics;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.CharacterStyle;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -172,7 +173,7 @@ public class StaticLayoutEx {
                                 .setAlignment(align)
                                 .setLineSpacing(spacingAdd, spacingMult)
                                 .setIncludePad(includePad)
-                                .setEllipsize(ellipsize)
+                                .setEllipsize(stringBuilder.getSpans(0, stringBuilder.length(), CharacterStyle.class).length > 0 ? null : ellipsize)
                                 .setEllipsizedWidth(ellipsisWidth)
                                 .setMaxLines(maxLines)
                                 .setBreakStrategy(canContainUrl ? StaticLayout.BREAK_STRATEGY_HIGH_QUALITY : StaticLayout.BREAK_STRATEGY_SIMPLE)

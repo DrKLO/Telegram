@@ -30,6 +30,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.AnimatedVectorDrawable;
+import android.hardware.Camera;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
@@ -63,6 +64,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -157,7 +159,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private CameraGLThread cameraThread;
     private Size previewSize;
     private Size pictureSize;
-    private Size aspectRatio = SharedConfig.roundCamera16to9 ? new Size(1, 1) : new Size(4, 3);
+    private Size aspectRatio = SharedConfig.roundCamera16to9 ? new Size(16, 9) : new Size(4, 3);
     private TextureView textureView;
     private BackupImageView textureOverlayView;
     private CameraSession cameraSession;
@@ -1015,10 +1017,34 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             cameraThread.setCurrentSession(cameraSession);
             CameraController.getInstance().openRound(cameraSession, surfaceTexture, () -> {
                 if (cameraSession != null) {
+                    boolean updateScale = false;
+                    try {
+                        Camera.Size size = cameraSession.getCurrentPreviewSize();
+                        if (size.width != previewSize.getWidth() || size.height != previewSize.getHeight()) {
+                            previewSize = new Size(size.width, size.height);
+                            FileLog.d("change preview size to w = " + previewSize.getWidth() + " h = " + previewSize.getHeight());
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+
+                    try {
+                        Camera.Size size = cameraSession.getCurrentPictureSize();
+                        if (size.width != pictureSize.getWidth() || size.height != pictureSize.getHeight()) {
+                            pictureSize = new Size(size.width, size.height);
+                            FileLog.d("change picture size to w = " + pictureSize.getWidth() + " h = " + pictureSize.getHeight());
+                            updateScale = true;
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("camera initied");
                     }
                     cameraSession.setInitied();
+                    if (updateScale) {
+                        cameraThread.reinitForNewCamera();
+                    }
                 }
             }, () -> cameraThread.setCurrentSession(cameraSession));
         });
