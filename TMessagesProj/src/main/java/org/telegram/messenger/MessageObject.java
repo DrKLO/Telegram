@@ -106,6 +106,13 @@ public class MessageObject {
     public TLRPC.Document emojiAnimatedSticker;
     public String emojiAnimatedStickerColor;
     public CharSequence messageText;
+    public CharSequence messageTextTranslated;
+    public enum Translating {
+        NO,
+        TRANSLATING,
+        TRANSLATED
+    }
+    public Translating isTranslating=Translating.NO;
     public CharSequence linkDescription;
     public CharSequence caption;
     public MessageObject replyMessageObject;
@@ -2156,7 +2163,10 @@ public class MessageObject {
         checkEmojiOnly(emojiOnly);
         generateLayout(fromUser);
     }
-
+    public void applyNewCaption(SpannableString text){
+            caption = text;
+        generateCaption();
+    }
     private boolean allowsBigEmoji() {
         if (!SharedConfig.allowBigEmoji) {
             return false;

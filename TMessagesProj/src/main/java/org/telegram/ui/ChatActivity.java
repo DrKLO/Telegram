@@ -61,6 +61,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -909,7 +910,102 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
 
     private ValueAnimator searchExpandAnimator;
     private float searchExpandProgress;
+    //-------------------------------- mine ------------------------
+    public void autoChatTranslation(){
+        //if(LocaleController.getString())
+        int pStart=0,pEnd=0;
+        for (int i = 0; i < chatListView.getChildCount(); i++) {
+            View child = chatListView.getChildAt(i);
+            if (child instanceof ChatMessageCell) {
+                ChatMessageCell cell = (ChatMessageCell) child;
+                MessageObject messageObject = cell.getMessageObject();
+                if(messageObject.isTranslating== MessageObject.Translating.NO){
+                    CharSequence textToTranslate;
+                    String setCaption = "false";
+                    if(messageObject.caption != null && (messageObject.type == 1 || messageObject.type == 8 || messageObject.type == 9)) {
+                        textToTranslate = getMessageCaption(messageObject, cell.getCurrentMessagesGroup());
+                        setCaption = "true";
+                    }
+                    else{
+                        textToTranslate = getMessageContent(messageObject, 0, false);
 
+                    }
+                    /* */
+
+                    TranslateApi translate=new TranslateApi();
+                    translate.setOnTranslationCompleteListener(new TranslateApi.OnTranslationCompleteListener() {
+
+                        @Override
+                        public void onStartTranslation() {
+
+                            messageObject.isTranslating = MessageObject.Translating.TRANSLATING;
+                            chatAdapter.notifyItemChanged(chatListView.getChildAdapterPosition(child));
+                        }
+                        @Override
+
+                        public void onCompleted(String text,boolean isCaption) {
+
+                            // "text" variable will give you the translated text
+                            Log.d("mine", "onCompleted: "+text);
+                            if(isCaption){
+                                Log.d("mine", "onCompleted: applyNewCaption(text)");
+                                SpannableString newCaption = new SpannableString(text);
+                                SpannableString oldCaption = (SpannableString)messageObject.caption;
+
+                                Object [] objectSpans = oldCaption.getSpans(0,oldCaption.length(),Object.class);
+                                for(Object span : objectSpans){
+
+                                    if(oldCaption.getSpanEnd(span)>newCaption.length() ) {
+                                        if(newCaption.length()>oldCaption.getSpanStart(span)){
+                                            newCaption.setSpan(span, oldCaption.getSpanStart(span), newCaption.length(), oldCaption.getSpanFlags(span));
+
+                                        }
+                                    }
+                                    else{
+                                        newCaption.setSpan(span,oldCaption.getSpanStart(span),oldCaption.getSpanEnd(span),oldCaption.getSpanFlags(span));
+                                    }
+                                }
+
+                                messageObject.applyNewCaption(newCaption);
+
+
+                            }else{
+                                Log.d("mine", "onCompleted: applyNewText(text)");
+
+
+                                messageObject.applyNewText(text);
+                            }
+
+                            messageObject.isTranslating = MessageObject.Translating.TRANSLATED;
+                            chatAdapter.notifyItemChanged(chatListView.getChildAdapterPosition(child));
+
+                        }
+
+
+
+                        @Override
+
+                        public void onError(Exception e) {
+
+
+                        }
+
+                    });
+                    translate.execute("ru","en",textToTranslate.toString(),setCaption);
+                }
+                //messageObject.applyNewText("HAck" + i);
+                if(messageObject.isTranslating== MessageObject.Translating.TRANSLATED){
+                    int p = chatListView.getChildAdapterPosition(child);
+                    chatAdapter.notifyItemChanged(p);
+                }
+
+            }
+        }
+
+        //chatAdapter.notifyItemRangeChanged(pStart, pEnd);
+    }
+
+    //-----------------------------------------------
     public void deleteHistory(int dateSelectedStart, int dateSelectedEnd, boolean forAll) {
         chatAdapter.frozenMessages.clear();
         for (int i = 0; i < messages.size(); i++) {
@@ -2866,6 +2962,22 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                 });
                 muteItemGap = headerItem.addColoredGap();
             }
+            //------------------------hack-------------------
+            ActionBarMenuSubItem msgTranslate = headerItem.addSubItem(95,R.drawable.msg_translate,"Translate",themeDelegate);
+            msgTranslate.setOnClickListener(view -> {
+                boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id);
+                if (muted) {
+                    updateTitleIcons(true);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        ChatActivity.this.toggleMute(true);
+                    }, 150);
+                    headerItem.toggleSubMenu();
+                    BulletinFactory.createMuteBulletin(ChatActivity.this, false, themeDelegate).show();
+                } else {
+                    muteItem.openSwipeBack();
+                }
+            });
+                    //---------------hack----------------------
             if (currentUser != null) {
                 headerItem.addSubItem(call, R.drawable.msg_callback, LocaleController.getString("Call", R.string.Call), themeDelegate);
                 if (Build.VERSION.SDK_INT >= 18) {
@@ -5940,6 +6052,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                 textSelectionHelper.onParentScrolled();
                 emojiAnimationsOverlay.onScrolled(dy);
                 ReactionsEffectOverlay.onScrolled(dy);
+                autoChatTranslation();
             }
         });
 
