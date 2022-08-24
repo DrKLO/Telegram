@@ -944,6 +944,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         public void onCompleted(String text,boolean isCaption) {
 
                             // "text" variable will give you the translated text
+                            if(text==null){
+                                messageObject.isTranslating = MessageObject.Translating.NO;
+                                chatAdapter.notifyItemChanged(chatListView.getChildAdapterPosition(child));
+                                return;
+                            }
                             Log.d("mine", "onCompleted: "+text);
                             if(isCaption){
                                 Log.d("mine", "onCompleted: applyNewCaption(text)");
@@ -2956,17 +2961,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             //------------------------hack-------------------
             ActionBarMenuSubItem msgTranslate = headerItem.addSubItem(95,R.drawable.msg_translate,"Translate",themeDelegate);
             msgTranslate.setOnClickListener(view -> {
-                boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id);
-                if (muted) {
-                    updateTitleIcons(true);
-                    AndroidUtilities.runOnUIThread(() -> {
-                        ChatActivity.this.toggleMute(true);
-                    }, 150);
-                    headerItem.toggleSubMenu();
-                    BulletinFactory.createMuteBulletin(ChatActivity.this, false, themeDelegate).show();
-                } else {
-                    muteItem.openSwipeBack();
-                }
+//                boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id);
+//                if (muted) {
+//                    updateTitleIcons(true);
+//                    AndroidUtilities.runOnUIThread(() -> {
+//                        ChatActivity.this.toggleMute(true);
+//                    }, 150);
+//                    headerItem.toggleSubMenu();
+//                    BulletinFactory.createMuteBulletin(ChatActivity.this, false, themeDelegate).show();
+//                } else {
+//                    muteItem.openSwipeBack();
+//                }
             });
                     //---------------hack----------------------
             if (currentUser != null) {
@@ -5995,7 +6000,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 textSelectionHelper.onParentScrolled();
                 emojiAnimationsOverlay.onScrolled(dy);
                 ReactionsEffectOverlay.onScrolled(dy);
+
+
                 autoChatTranslation();
+
             }
         });
 
