@@ -3610,7 +3610,7 @@
     <string name="Page4Title">Secure</string>
     <string name="Page5Title">Powerful</string>
     <string name="Page6Title">Cloud-Based</string>
-    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source and Telegram will make you pay for the stuff which was once free</string>
+    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source and Telegram will make you pay for the stuffs which was once free</string>
     <string name="Page2Message">Remember, that Telegram have access to all your messages except the GREEN CHATS.</string>
     <string name="Page3Message">Remember, that Telegram use GEO bans and CONTENT bans and coop with GOVs.</string>
     <string name="Page4Message">Remember, that Telegram\'s database isn\'t encrypted on your device.</string>
