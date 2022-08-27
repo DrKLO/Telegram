@@ -461,6 +461,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private MessageObject hintMessageObject;
     private int hintMessageType;
 
+    private boolean isTranslate = false;
+
     private RecyclerListView messagesSearchListView;
     private MessagesSearchAdapter messagesSearchAdapter;
     private AnimatorSet messagesSearchListViewAnimation;
@@ -908,10 +910,47 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private ValueAnimator searchExpandAnimator;
     private float searchExpandProgress;
+    private final String[] fromLang = {null};
+    private final String toLang = LocaleController.getInstance().getCurrentLocale().getLanguage();
     //-------------------------------- mine ------------------------
+    public boolean detectLanguageOfChat(){
+        if(fromLang[0]!=null) return true;
+        for (int i = 0; i < chatListView.getChildCount(); i++) {
+            View child = chatListView.getChildAt(i);
+            if (child instanceof ChatMessageCell) {
+                ChatMessageCell cell = (ChatMessageCell) child;
+                MessageObject messageObject = cell.getMessageObject();
+                CharSequence textToTranslate;
+                if(messageObject.caption != null && (messageObject.type == 1 || messageObject.type == 8 || messageObject.type == 9)) {
+                    textToTranslate = getMessageCaption(messageObject, cell.getCurrentMessagesGroup());
+                }
+                else{
+                    textToTranslate = getMessageContent(messageObject, 0, false);
+
+                }
+                if(fromLang[0] == null){
+                    if (LanguageDetector.hasSupport()) {
+
+                        LanguageDetector.detectLanguage(
+                                textToTranslate.toString(),
+                                (String lang) -> {
+
+                                    if (!lang.equals(toLang) && !lang.equals("und")){
+                                        fromLang[0] = lang;
+                                    }
+                                }
+                                ,
+                                (Exception e) -> {});}}
+
+            }
+        }
+        if(fromLang[0]!=null) return true;
+        else return false;
+    }
     public void autoChatTranslation(){
-        //if(LocaleController.getString())
-        int pStart=0,pEnd=0;
+        if(!detectLanguageOfChat()){
+            return;
+        }
         for (int i = 0; i < chatListView.getChildCount(); i++) {
             View child = chatListView.getChildAt(i);
             if (child instanceof ChatMessageCell) {
@@ -928,8 +967,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         textToTranslate = getMessageContent(messageObject, 0, false);
 
                     }
-                    /* */
-
                     TranslateApi translate=new TranslateApi();
                     translate.setOnTranslationCompleteListener(new TranslateApi.OnTranslationCompleteListener() {
 
@@ -994,7 +1031,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
 
                     });
-                    translate.execute("ru","en",textToTranslate.toString(),setCaption);
+                    translate.execute(fromLang[0],toLang,textToTranslate.toString(),setCaption);
                 }
                 //messageObject.applyNewText("HAck" + i);
                 if(messageObject.isTranslating== MessageObject.Translating.TRANSLATED){
@@ -2961,17 +2998,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             //------------------------hack-------------------
             ActionBarMenuSubItem msgTranslate = headerItem.addSubItem(95,R.drawable.msg_translate,"Translate",themeDelegate);
             msgTranslate.setOnClickListener(view -> {
-//                boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id);
-//                if (muted) {
-//                    updateTitleIcons(true);
-//                    AndroidUtilities.runOnUIThread(() -> {
-//                        ChatActivity.this.toggleMute(true);
-//                    }, 150);
-//                    headerItem.toggleSubMenu();
-//                    BulletinFactory.createMuteBulletin(ChatActivity.this, false, themeDelegate).show();
-//                } else {
-//                    muteItem.openSwipeBack();
-//                }
+                if(isTranslate){
+                    isTranslate = false;
+                    msgTranslate.setText("Translate");
+                    msgTranslate.setColors(getThemedColor(Theme.key_actionBarDefaultSubmenuItem),
+                    getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon));
+
+                }else{
+                    autoChatTranslation();
+                    msgTranslate.setIconColor(Color.parseColor("#0573e1"));
+                    msgTranslate.setTextColor(Color.parseColor("#0573e1"));
+                    msgTranslate.setText("Translating");
+                    isTranslate = true;
+                }
+
             });
                     //---------------hack----------------------
             if (currentUser != null) {
@@ -6001,8 +6041,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 emojiAnimationsOverlay.onScrolled(dy);
                 ReactionsEffectOverlay.onScrolled(dy);
 
-
-                autoChatTranslation();
+                if(isTranslate){
+                    autoChatTranslation();
+                }
 
             }
         });
