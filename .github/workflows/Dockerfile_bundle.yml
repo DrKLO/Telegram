@@ -18,7 +18,7 @@ jobs:
       - name: build docker
         run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} .
       - name: build app
-        run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
+        run: docker run -e GRAHER_KEYSTORE_FILE=${{ secrets.GRAHER_KEYSTORE_FILE }} -e GRAHER_RELEASE_STORE_PASSWORD=${{ secrets.GRAHER_RELEASE_STORE_PASSWORD }} -e GRAHER_RELEASE_KEY_ALIAS=${{ secrets.GRAHER_RELEASE_KEY_ALIAS }} -e GRAHER_RELEASE_KEY_PASSWORD=${{ secrets.GRAHER_RELEASE_KEY_PASSWORD }} --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
         env:
           GRAHER_KEYSTORE_FILE: ${{ secrets.GRAHER_KEYSTORE_FILE }}
           GRAHER_RELEASE_STORE_PASSWORD: ${{ secrets.GRAHER_RELEASE_STORE_PASSWORD }}
@@ -51,6 +51,6 @@ jobs:
           asset_content_type: application/gzip
     env:
       RNAME: Telegraher 8.85.40
-      TNAME: noshit_8.85.40__
+      TNAME: noshit_8.85.40_
       ANAME: Telegraher.8.85.40.
       AARCH: bundle
