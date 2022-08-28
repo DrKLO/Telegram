@@ -9,13 +9,18 @@ jobs:
   build_release:
     name: build_release
     runs-on: ubuntu-22.04
+    environment: graherkeys
     steps:
       - name: checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
       - name: build docker
-        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} .
+        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} --build-arg SIGNING_KEY_ALIAS --build-arg SIGNING_KEY_PASSWORD --build-arg SIGNING_STORE_PASSWORD .
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
       - name: build app
         run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
       - name: sha256 basic apk
@@ -30,7 +35,7 @@ jobs:
           prerelease: false
           release_name: ${{ env.RNAME }} (${{ env.AARCH }})
           tag_name: ${{ env.TNAME }}${{ env.AARCH }}
-          body: BETA Bundle (`arm64_v8a`/`armeabi_v7a`/`x86`/`x86_64`), sha256 `${{ steps.sha256_basic.outputs.SHA256BASIC }}`
+          body: Bundle (`arm64_v8a`/`armeabi_v7a`/`x86`/`x86_64`), sha256 `${{ steps.sha256_basic.outputs.SHA256BASIC }}`
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: upload apk basic
@@ -44,7 +49,7 @@ jobs:
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}.apk
           asset_content_type: application/gzip
     env:
-      RNAME: Telegraher BETA 8.85.39
-      TNAME: noshit_8.85.39_
-      ANAME: Telegraher.BETA.8.85.39.
+      RNAME: Telegraher 8.85.40
+      TNAME: noshit_8.85.40_
+      ANAME: Telegraher.8.85.40.
       AARCH: bundle
