@@ -66,11 +66,7 @@ different)
 * Realeases are
   here: [https://github.com/nikitasius/Telegraher/releases](https://github.com/nikitasius/Telegraher/releases)
     * if it contain `beta` it mean it's BETA
-* Last release `8.74.6`:
-    * [arm64_v8a](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.74.6_arm64_v8a)
-    * [armeabi_v7a](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.74.6_armeabi_v7a)
-    * [x86](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.74.6_x86)
-    * [x86_64](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.74.6_x86_64)
+* Last release `8.85.40`: [bundle](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.85.40_bundle)
 * Last beta `8.85.39`: [bundle](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.85.39_bundle)
 
 ### Issues/Wishlist
