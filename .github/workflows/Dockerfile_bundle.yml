@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: build docker
-        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} --build-arg RELEASE_KEY_PASSWORD --build-arg RELEASE_KEY_ALIAS --build-arg RELEASE_STORE_PASSWORD .
+        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} .
       - name: build app
         run: docker run -e GRAHER_KEYSTORE_FILE=${{ secrets.GRAHER_KEYSTORE_FILE }} -e GRAHER_RELEASE_STORE_PASSWORD=${{ secrets.GRAHER_RELEASE_STORE_PASSWORD }} -e GRAHER_RELEASE_KEY_ALIAS=${{ secrets.GRAHER_RELEASE_KEY_ALIAS }} -e GRAHER_RELEASE_KEY_PASSWORD=${{ secrets.GRAHER_RELEASE_KEY_PASSWORD }} --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
       - name: sha256 basic apk
