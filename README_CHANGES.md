@@ -1,5 +1,10 @@
 # Changes
 
+* 8.85.40
+    * release
+    * package name now `com.evildayz.code.telegraher2` so you can install it in parallel with 8.7.x version and move
+      your accs
+    * apk also now have our own signature to avoid phishing (someone mod an app and say "it's new graher 9.0.1")
 * 8.85.39
     * well we disable journal_mode
         * i don't see any good moments on a telegram app except files which growing up. There are no rollbacks, app just
