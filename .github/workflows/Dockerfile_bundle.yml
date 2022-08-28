@@ -16,11 +16,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: build docker
-        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} --build-arg SIGNING_KEY_ALIAS --build-arg SIGNING_KEY_PASSWORD --build-arg SIGNING_STORE_PASSWORD .
+        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} --build-arg RELEASE_KEY_PASSWORD --build-arg RELEASE_KEY_ALIAS --build-arg RELEASE_STORE_PASSWORD .
         env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
       - name: build app
         run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
       - name: sha256 basic apk
