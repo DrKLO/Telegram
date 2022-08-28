@@ -98,7 +98,7 @@ public class MediaDataController extends BaseController {
             SPOILER_PATTERN = Pattern.compile("\\|\\|(.+?)\\|\\|"),
             STRIKE_PATTERN = Pattern.compile("~~(.+?)~~");
 
-    public static String SHORTCUT_CATEGORY = "com.evildayz.code.telegraher_beta.SHORTCUT_SHARE";
+    public static String SHORTCUT_CATEGORY = "com.evildayz.code.telegraher2.SHORTCUT_SHARE";
 
     private static final SparseArray<MediaDataController> Instance = new SparseArray<>();
     private static final Object lockObject = new Object();
