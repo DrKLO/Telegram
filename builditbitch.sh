@@ -8,9 +8,10 @@ mv /home/gradle/TMessagesProj/config/release.keystore /home/gradle/TMessagesProj
 echo $GRAHER_KEYSTORE_BASE64 | base64 --decode >/home/gradle/TMessagesProj/config/release.keystore
 stat /home/gradle/TMessagesProj/config/release.keystore
 cp /home/gradle/gradle.properties /home/gradle/gradle.properties.old
-sed -i 's/RELEASE_STORE_PASSWORD=android/RELEASE_STORE_PASSWORD=$GRAHER_RELEASE_STORE_PASSWORD/g' /home/gradle/gradle.properties
+#sed -i 's/RELEASE_STORE_PASSWORD=android/RELEASE_STORE_PASSWORD=$GRAHER_RELEASE_STORE_PASSWORD/g' /home/gradle/gradle.properties
 sed -i 's/RELEASE_KEY_ALIAS=androidkey/RELEASE_KEY_ALIAS=$GRAHER_RELEASE_KEY_ALIAS/g' /home/gradle/gradle.properties
-sed -i 's/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_KEY_PASSWORD/g' /home/gradle/gradle.properties
+#sed -i 's/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_KEY_PASSWORD/g' /home/gradle/gradle.properties
+cat /home/gradle/gradle.properties
 #comment this block to use default keys
 
 #building a bundle
