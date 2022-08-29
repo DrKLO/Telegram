@@ -44,10 +44,10 @@ CMD sed -i 's/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_
 CMD cd /home/gradle && gradle assembleBundleRelease
 
 #comment this block to use default keys
-CMD rm /home/source/TMessagesProj/config/release.keystore
-CMD mv /home/source/TMessagesProj/config/release.keystore.old /home/source/TMessagesProj/config/release.keystore
-CMD rm /home/source/gradle.properties
-CMD mv /home/source/gradle.properties.old /home/source/gradle.properties
+CMD rm /home/gradle/TMessagesProj/config/release.keystore
+CMD mv /home/gradle/TMessagesProj/config/release.keystore.old /home/gradle/TMessagesProj/config/release.keystore
+CMD rm /home/gradle/gradle.properties
+CMD mv /home/gradle/gradle.properties.old /home/gradle/gradle.properties
 #comment this block to use default keys
 
 #moving back
