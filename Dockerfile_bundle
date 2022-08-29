@@ -28,4 +28,4 @@ ENV PATH ${ANDROID_NDK_HOME}:$PATH
 ENV PATH ${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/bin/:$PATH
 
 
-CMD chmod +x /home/source/builditbitch.sh && ./home/source/builditbitch.sh
+CMD chmod +x /home/source/builditbitch.sh && /home/source/builditbitch.sh
