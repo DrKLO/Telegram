@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -61,6 +63,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
+import android.text.util.Linkify;
 import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
@@ -954,6 +957,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         for (int i = 0; i < chatListView.getChildCount(); i++) {
             View child = chatListView.getChildAt(i);
             if (child instanceof ChatMessageCell) {
+                final String[] translatedText = new String[1];
+                final boolean[] isCaptionAvail = new boolean[1];
                 ChatMessageCell cell = (ChatMessageCell) child;
                 MessageObject messageObject = cell.getMessageObject();
                 if(messageObject.isTranslating== MessageObject.Translating.NO){
@@ -986,39 +991,59 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 chatAdapter.notifyItemChanged(chatListView.getChildAdapterPosition(child));
                                 return;
                             }
-                            Log.d("mine", "onCompleted: "+text);
-                            if(isCaption){
-                                Log.d("mine", "onCompleted: applyNewCaption(text)");
+
                                 SpannableString newCaption = new SpannableString(text);
-                                SpannableString oldCaption = (SpannableString)messageObject.caption;
+                            SpannableString newCaption2 = new SpannableString(text);
+                                try {
+                                    AndroidUtilities.addLinks(newCaption, Linkify.WEB_URLS); //add urls https , http , tg ..
+                                    MessageObject.addUrlsByPattern(false, newCaption, false, 0, 0, true); //add #hashtags and @mentions
+                                    URLSpan[] urlSpans = newCaption.getSpans(0, newCaption.length(), URLSpan.class);
 
-                                Object [] objectSpans = oldCaption.getSpans(0,oldCaption.length(),Object.class);
-                                for(Object span : objectSpans){
+                                    for (int i = 0; i < urlSpans.length; ++i) {
+                                        URLSpan urlSpan = urlSpans[i];
+                                        int start = newCaption.getSpanStart(urlSpan),
+                                                end = newCaption.getSpanEnd(urlSpan);
 
-                                    if(oldCaption.getSpanEnd(span)>newCaption.length() ) {
-                                        if(newCaption.length()>oldCaption.getSpanStart(span)){
-                                            newCaption.setSpan(span, oldCaption.getSpanStart(span), newCaption.length(), oldCaption.getSpanFlags(span));
 
+                                        TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(i);
+                                            entity.offset = start;
+
+                                        if (start == -1 || end == -1) {
+                                            continue;
                                         }
                                     }
-                                    else{
-                                        newCaption.setSpan(span,oldCaption.getSpanStart(span),oldCaption.getSpanEnd(span),oldCaption.getSpanFlags(span));
-                                    }
-                                }
 
+
+//                                    urlSpans = newCaption.getSpans(0, newCaption.length(), URLSpan.class);
+//                                    for (int i = 0; i < urlSpans.length; ++i) {
+//                                        URLSpan urlSpan = urlSpans[i];
+//                                        int start = newCaption.getSpanStart(urlSpan),
+//                                                end = newCaption.getSpanEnd(urlSpan);
+//                                        TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(i);
+//                                        if(entity instanceof TLRPC.TL_messageEntityMention){
+//                                            entity.offset = start;
+//
+//
+//                                        }
+//                                        if (start == -1 || end == -1) {
+//                                            continue;
+//                                        }
+//                                    }
+
+                                    newCaption = (SpannableString) Emoji.replaceEmoji(newCaption, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            if(isCaption){
                                 messageObject.applyNewCaption(newCaption);
 
-
                             }else{
-                                Log.d("mine", "onCompleted: applyNewText(text)");
-
-
-                                messageObject.applyNewText(text);
+                                messageObject.applyNewText(newCaption);
                             }
+                            messageObject.generateLinkDescription();
 
                             messageObject.isTranslating = MessageObject.Translating.TRANSLATED;
                             chatAdapter.notifyItemChanged(chatListView.getChildAdapterPosition(child));
-
                         }
 
 
@@ -1033,7 +1058,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     });
                     translate.execute(fromLang[0],toLang,textToTranslate.toString(),setCaption);
                 }
-                //messageObject.applyNewText("HAck" + i);
+                //------------------------------------------------
+
+                //-----------------------------------------------
                 if(messageObject.isTranslating== MessageObject.Translating.TRANSLATED){
                     int p = chatListView.getChildAdapterPosition(child);
                     chatAdapter.notifyItemChanged(p);
