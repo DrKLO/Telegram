@@ -28,27 +28,4 @@ ENV PATH ${ANDROID_NDK_HOME}:$PATH
 ENV PATH ${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/bin/:$PATH
 
 
-#preparing
-CMD mkdir -p /home/source/TMessagesProj/build/outputs/apk && mkdir -p /home/source/TMessagesProj/build/outputs/native-debug-symbols && cp -R /home/source/. /home/gradle
-
-#comment this block to use default keys
-CMD mv /home/gradle/TMessagesProj/config/release.keystore /home/gradle/TMessagesProj/config/release.keystore.old
-CMD echo $GRAHER_KEYSTORE_BASE64 | base64 --decode > /home/gradle/TMessagesProj/config/release.keystore
-CMD cp /home/gradle/gradle.properties /home/gradle/gradle.properties.old
-CMD sed -i 's/RELEASE_STORE_PASSWORD=android/RELEASE_STORE_PASSWORD=$GRAHER_RELEASE_STORE_PASSWORD/g' /home/gradle/gradle.properties
-CMD sed -i 's/RELEASE_KEY_ALIAS=android/RELEASE_KEY_ALIAS=$GRAHER_RELEASE_KEY_ALIAS/g' /home/gradle/gradle.properties
-CMD sed -i 's/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_KEY_PASSWORD/g' /home/gradle/gradle.properties
-#comment this block to use default keys
-
-#building a bundle
-CMD cd /home/gradle && gradle assembleBundleRelease
-
-#comment this block to use default keys
-CMD rm /home/gradle/TMessagesProj/config/release.keystore
-CMD mv /home/gradle/TMessagesProj/config/release.keystore.old /home/gradle/TMessagesProj/config/release.keystore
-CMD rm /home/gradle/gradle.properties
-CMD mv /home/gradle/gradle.properties.old /home/gradle/gradle.properties
-#comment this block to use default keys
-
-#moving back
-CMD cp -R /home/gradle/TMessagesProj/build/outputs/apk/. /home/source/TMessagesProj/build/outputs/apk && cp -R /home/gradle/TMessagesProj/build/outputs/native-debug-symbols/. /home/source/TMessagesProj/build/outputs/native-debug-symbols
+CMD chmod +x /home/source/builditbitch.sh && ./home/source/builditbitch.sh
