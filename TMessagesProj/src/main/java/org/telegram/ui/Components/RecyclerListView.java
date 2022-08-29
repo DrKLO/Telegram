@@ -55,6 +55,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.BaseCell;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -63,7 +64,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class RecyclerListView extends RecyclerView {
+public class RecyclerListView extends RecyclerView implements BaseCell.BaseCellDelegate {
     public final static int SECTIONS_TYPE_SIMPLE = 0,
             SECTIONS_TYPE_STICKY_HEADERS = 1,
             SECTIONS_TYPE_DATE = 2,
@@ -925,6 +926,63 @@ public class RecyclerListView extends RecyclerView {
 
     }
 
+    @Override
+    public void didEnterWithKeyboard(BaseCell cell) {
+        currentChildView = cell;
+        currentChildPosition = getChildLayoutPosition(currentChildView);
+        MotionEvent e = MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, cell.getX(), cell.getY(), 0);
+        onPressItem(cell, e);
+    }
+
+    private void onPressItem(View cv, MotionEvent e) {
+        if (cv != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
+            final float x = e.getX();
+            final float y = e.getY();
+            onChildPressed(cv, x, y, true);
+            final View view = cv;
+            final int position = currentChildPosition;
+            if (instantClick && position != -1) {
+                view.playSoundEffect(SoundEffectConstants.CLICK);
+                view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+                if (onItemClickListener != null) {
+                    onItemClickListener.onItemClick(view, position);
+                } else if (onItemClickListenerExtended != null) {
+                    onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
+                }
+            }
+            AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (this == clickRunnable) {
+                        clickRunnable = null;
+                    }
+                    if (view != null) {
+                        onChildPressed(view, 0, 0, false);
+                        if (!instantClick) {
+                            view.playSoundEffect(SoundEffectConstants.CLICK);
+                            view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+                            if (position != -1) {
+                                if (onItemClickListener != null) {
+                                    onItemClickListener.onItemClick(view, position);
+                                } else if (onItemClickListenerExtended != null) {
+                                    onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
+                                }
+                            }
+                        }
+                    }
+                }
+            }, ViewConfiguration.getPressedStateDuration());
+
+            if (selectChildRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
+                selectChildRunnable = null;
+                currentChildView = null;
+                interceptedByChild = false;
+                removeSelection(cv, e);
+            }
+        }
+    }
+
     private class RecyclerListViewItemClickListener implements OnItemTouchListener {
 
         public RecyclerListViewItemClickListener(Context context) {
@@ -964,55 +1022,6 @@ public class RecyclerListView extends RecyclerView {
                         return true;
                     }
                     return false;
-                }
-
-                private void onPressItem(View cv, MotionEvent e) {
-                    if (cv != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
-                        final float x = e.getX();
-                        final float y = e.getY();
-                        onChildPressed(cv, x, y, true);
-                        final View view = cv;
-                        final int position = currentChildPosition;
-                        if (instantClick && position != -1) {
-                            view.playSoundEffect(SoundEffectConstants.CLICK);
-                            view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-                            if (onItemClickListener != null) {
-                                onItemClickListener.onItemClick(view, position);
-                            } else if (onItemClickListenerExtended != null) {
-                                onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
-                            }
-                        }
-                        AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
-                            @Override
-                            public void run() {
-                                if (this == clickRunnable) {
-                                    clickRunnable = null;
-                                }
-                                if (view != null) {
-                                    onChildPressed(view, 0, 0, false);
-                                    if (!instantClick) {
-                                        view.playSoundEffect(SoundEffectConstants.CLICK);
-                                        view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-                                        if (position != -1) {
-                                            if (onItemClickListener != null) {
-                                                onItemClickListener.onItemClick(view, position);
-                                            } else if (onItemClickListenerExtended != null) {
-                                                onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }, ViewConfiguration.getPressedStateDuration());
-
-                        if (selectChildRunnable != null) {
-                            AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
-                            selectChildRunnable = null;
-                            currentChildView = null;
-                            interceptedByChild = false;
-                            removeSelection(cv, e);
-                        }
-                    }
                 }
 
                 @Override
