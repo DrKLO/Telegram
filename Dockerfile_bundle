@@ -27,4 +27,20 @@ RUN cp $ANDROID_HOME/build-tools/30.0.3/lib/dx.jar $ANDROID_HOME/build-tools/31.
 ENV PATH ${ANDROID_NDK_HOME}:$PATH
 ENV PATH ${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/bin/:$PATH
 
+#comment this block to use default keys
+CMD mv /home/source/TMessagesProj/config/release.keystore /home/source/TMessagesProj/config/release.keystore.old
+CMD echo $GRAHER_KEYSTORE_BASE64 | base64 --decode > /home/source/TMessagesProj/config/release.keystore
+CMD cp /home/source/gradle.properties /home/source/gradle.properties.old
+CMD sed -i 's/RELEASE_STORE_PASSWORD=android/RELEASE_STORE_PASSWORD=$GRAHER_RELEASE_STORE_PASSWORD/g' /home/source/gradle.properties
+CMD sed -i 's/RELEASE_KEY_ALIAS=android/RELEASE_KEY_ALIAS=$GRAHER_RELEASE_KEY_ALIAS/g' /home/source/gradle.properties
+CMD sed -i 's/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_KEY_PASSWORD/g' /home/source/gradle.properties
+#comment this block to use default keys
+
 CMD mkdir -p /home/source/TMessagesProj/build/outputs/apk && mkdir -p /home/source/TMessagesProj/build/outputs/native-debug-symbols && cp -R /home/source/. /home/gradle && cd /home/gradle && gradle assembleBundleRelease && cp -R /home/gradle/TMessagesProj/build/outputs/apk/. /home/source/TMessagesProj/build/outputs/apk && cp -R /home/gradle/TMessagesProj/build/outputs/native-debug-symbols/. /home/source/TMessagesProj/build/outputs/native-debug-symbols
+
+#comment this block to use default keys
+CMD rm /home/source/TMessagesProj/config/release.keystore
+CMD mv /home/source/TMessagesProj/config/release.keystore.old /home/source/TMessagesProj/config/release.keystore
+CMD rm /home/source/gradle.properties
+CMD mv /home/source/gradle.properties.old /home/source/gradle.properties
+#comment this block to use default keys
