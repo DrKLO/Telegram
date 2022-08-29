@@ -6,12 +6,10 @@ mkdir -p /home/source/TMessagesProj/build/outputs/apk && mkdir -p /home/source/T
 #comment this block to use default keys
 mv /home/gradle/TMessagesProj/config/release.keystore /home/gradle/TMessagesProj/config/release.keystore.old
 echo $GRAHER_KEYSTORE_BASE64 | base64 --decode >/home/gradle/TMessagesProj/config/release.keystore
-stat /home/gradle/TMessagesProj/config/release.keystore
 cp /home/gradle/gradle.properties /home/gradle/gradle.properties.old
-#sed -i "s/RELEASE_STORE_PASSWORD=android/RELEASE_STORE_PASSWORD=$GRAHER_RELEASE_STORE_PASSWORD/g" /home/gradle/gradle.properties
+sed -i "s/RELEASE_STORE_PASSWORD=android/RELEASE_STORE_PASSWORD=$GRAHER_RELEASE_STORE_PASSWORD/g" /home/gradle/gradle.properties
 sed -i "s/RELEASE_KEY_ALIAS=androidkey/RELEASE_KEY_ALIAS=$GRAHER_RELEASE_KEY_ALIAS/g" /home/gradle/gradle.properties
-#sed -i "s/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_KEY_PASSWORD/g" /home/gradle/gradle.properties
-cat /home/gradle/gradle.properties
+sed -i "s/RELEASE_KEY_PASSWORD=android/RELEASE_KEY_PASSWORD=$GRAHER_RELEASE_KEY_PASSWORD/g" /home/gradle/gradle.properties
 #comment this block to use default keys
 
 #building a bundle
