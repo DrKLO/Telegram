@@ -25,7 +25,7 @@ jobs:
           GRAHER_RELEASE_KEY_ALIAS: ${{ secrets.GRAHER_RELEASE_KEY_ALIAS }}
           GRAHER_RELEASE_KEY_PASSWORD: ${{ secrets.GRAHER_RELEASE_KEY_PASSWORD }}
       - name: sha256 basic apk
-        run: echo "::set-output name=SHA256BASIC::$(sha256sum ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk|head -c 64)"
+        run: echo "::set-output name=SHA256BASIC::$(sha256sum /home/source/TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk|head -c 64)"
         id: sha256_basic
       - name: release
         if: github.event.pull_request.merged
@@ -46,11 +46,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk
+          asset_path: /home/source/TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}.apk
           asset_content_type: application/gzip
     env:
-      RNAME: Telegraher 8.85.40
-      TNAME: noshit_8.85.40_
-      ANAME: Telegraher.8.85.40.
+      RNAME: Telegraher 8.85.41
+      TNAME: noshit_8.85.41_
+      ANAME: Telegraher.8.85.41.
       AARCH: bundle
