@@ -1034,7 +1034,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                         }
                                     }
 
-                                    newCaption = (SpannableString) Emoji.replaceEmoji(newCaption, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                                    //newCaption = (SpannableString) Emoji.replaceEmoji(newCaption, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
 
                                 } catch (Exception e) {
                                     e.printStackTrace();
