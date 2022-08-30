@@ -2272,7 +2272,7 @@ public class MessageObject {
     }
     public void applyNewCaption(SpannableString text){
             caption = text;
-        generateCaption();
+        //generateCaption();
     }
     private boolean allowsBigEmoji() {
         if (!SharedConfig.allowBigEmoji) {

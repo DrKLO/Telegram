@@ -997,12 +997,28 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 try {
                                     AndroidUtilities.addLinks(newCaption, Linkify.WEB_URLS); //add urls https , http , tg ..
                                     MessageObject.addUrlsByPattern(false, newCaption, false, 0, 0, true); //add #hashtags and @mentions
-                                    URLSpan[] urlSpans = newCaption.getSpans(0, newCaption.length(), URLSpan.class);
 
+                                    //---------------------------------- converting the spans in ascending order
+                                    int next;
+                                    for (int i = 0; i < newCaption.length(); i = next) {
+
+                                        // find the next span transition
+                                        next = newCaption.nextSpanTransition(i, newCaption.length(), URLSpan.class);
+
+                                        // get all spans in this range
+                                        URLSpan[] spans = newCaption.getSpans(i, next+1, URLSpan.class);
+                                        if(spans.length > 0) {
+                                            next = newCaption.getSpanEnd(spans[0]);
+                                            newCaption2.setSpan(spans[0],newCaption.getSpanStart(spans[0]),newCaption.getSpanEnd(spans[0]),newCaption.getSpanFlags(spans[0]));
+
+                                        }
+                                    }
+                                    URLSpan[] urlSpans = newCaption2.getSpans(0, newCaption2.length(), URLSpan.class);
+                                    //-----------------------------------------
                                     for (int i = 0; i < urlSpans.length; ++i) {
                                         URLSpan urlSpan = urlSpans[i];
-                                        int start = newCaption.getSpanStart(urlSpan),
-                                                end = newCaption.getSpanEnd(urlSpan);
+                                        int start = newCaption2.getSpanStart(urlSpan),
+                                                end = newCaption2.getSpanEnd(urlSpan);
 
 
                                         TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(i);
@@ -1014,31 +1030,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
 
 
-//                                    urlSpans = newCaption.getSpans(0, newCaption.length(), URLSpan.class);
-//                                    for (int i = 0; i < urlSpans.length; ++i) {
-//                                        URLSpan urlSpan = urlSpans[i];
-//                                        int start = newCaption.getSpanStart(urlSpan),
-//                                                end = newCaption.getSpanEnd(urlSpan);
-//                                        TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(i);
-//                                        if(entity instanceof TLRPC.TL_messageEntityMention){
-//                                            entity.offset = start;
-//
-//
-//                                        }
-//                                        if (start == -1 || end == -1) {
-//                                            continue;
-//                                        }
-//                                    }
-
-                                    newCaption = (SpannableString) Emoji.replaceEmoji(newCaption, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                                    newCaption2 = (SpannableString) Emoji.replaceEmoji(newCaption2, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             if(isCaption){
-                                messageObject.applyNewCaption(newCaption);
+                                messageObject.applyNewCaption(newCaption2);
 
                             }else{
-                                messageObject.applyNewText(newCaption);
+                                messageObject.applyNewText(newCaption2);
                             }
                             messageObject.generateLinkDescription();
 
