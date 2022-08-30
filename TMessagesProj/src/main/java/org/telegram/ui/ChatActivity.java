@@ -1015,13 +1015,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                     URLSpan[] urlSpans = newCaption2.getSpans(0, newCaption2.length(), URLSpan.class);
                                     //-----------------------------------------
-                                    for (int i = 0; i < urlSpans.length; ++i) {
+                                    for (int i = 0,j=0; i < urlSpans.length; ++i,j++) {
                                         URLSpan urlSpan = urlSpans[i];
                                         int start = newCaption2.getSpanStart(urlSpan),
                                                 end = newCaption2.getSpanEnd(urlSpan);
 
 
-                                        TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(i);
+                                        TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(j);
+
+                                        while(entity instanceof TLRPC.TL_messageEntityBold || entity instanceof TLRPC.TL_messageEntityTextUrl ){
+                                                                      j++;
+                                            entity = messageObject.messageOwner.entities.get(j);
+                                        }
                                             entity.offset = start;
 
                                         if (start == -1 || end == -1) {
@@ -1029,8 +1034,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                         }
                                     }
 
+                                    newCaption = (SpannableString) Emoji.replaceEmoji(newCaption, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
 
-                                    newCaption2 = (SpannableString) Emoji.replaceEmoji(newCaption2, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
