@@ -101,4 +101,6 @@
     <string name="THGraheriumOverrideConnectionSpeedAuto">Авто</string>
     <string name="THGraheriumOverrideConnectionSpeedSlow">Низкая</string>
     <string name="THGraheriumOverrideConnectionSpeedHigh">Высокая</string>
+    <string name="THPrivacyRowLabel">Секция приватности</string>
+    <string name="THPrivacyDontCallApple">Не использовать Apple</string>
 </resources>

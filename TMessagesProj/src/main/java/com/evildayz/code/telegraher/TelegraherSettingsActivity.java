@@ -89,6 +89,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int hardwareProximitySensorModeRow;
     private int hardwareDisableVibroRow;
 
+    private int privacyLabelRow;
+    private int privacyDontCallAppleRow;
+
     private int profileLabelRow;
     private int profileUIDRow;
     private int profileDCIDRow;
@@ -168,6 +171,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         hardwareProximitySensorModeLabelRow = rowCount++;
         hardwareProximitySensorModeRow = rowCount++;
         hardwareDisableVibroRow = rowCount++;
+
+        privacyLabelRow = rowCount++;
+        privacyDontCallAppleRow = rowCount++;
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
@@ -295,6 +301,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("VoipDisableEndBeep", false);
                 editor.putBoolean("VoipDisableEndBeep", !enabled);
+                editor.apply();
+            } else if (position == privacyDontCallAppleRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("PrivacyDontCallApple", true);
+                editor.putBoolean("PrivacyDontCallApple", !enabled);
                 editor.apply();
             } else if (position == profileUIDRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
@@ -540,6 +552,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THVoipLabelRow));
+                    } else if (position == privacyLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THPrivacyRowLabel));
                     } else if (position == profileLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THProfileLabelRow));
                     } else if (position == hardwareLabelRow) {
@@ -589,6 +603,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THVoipDisableStartBeep), globalPreps.getBoolean("VoipDisableStartBeep", false), true);
                     } else if (position == voipDisableEndBeep) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THVoipDisableEndBeep), globalPreps.getBoolean("VoipDisableEndBeep", false), true);
+                    } else if (position == privacyDontCallAppleRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THPrivacyDontCallApple), globalPreps.getBoolean("PrivacyDontCallApple", true), true);
                     } else if (position == profileUIDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileUID), localPreps.getBoolean("EnableProfileUID", true), true);
                     } else if (position == hardwareDisableVibroRow) {
@@ -825,6 +841,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == uiLabelRow
                             || position == uiAppNotificationIconRow
                             || position == voiceLabelRow || position == voipLabelRow
+                            || position == privacyLabelRow
                             || position == profileLabelRow
                             || position == hardwareLabelRow
                             || position == hardwareProximitySensorModeLabelRow
@@ -844,6 +861,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow
                             || position == voipHDRow || position == voipDisableStartBeep || position == voipDisableEndBeep
+                            || position == privacyDontCallAppleRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow

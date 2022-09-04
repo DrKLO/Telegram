@@ -5551,4 +5551,6 @@
     <string name="THGraheriumOverrideConnectionSpeedAuto">Auto</string>
     <string name="THGraheriumOverrideConnectionSpeedSlow">Slow</string>
     <string name="THGraheriumOverrideConnectionSpeedHigh">Fast</string>
+    <string name="THPrivacyRowLabel">Privacy section</string>
+    <string name="THPrivacyDontCallApple">Don\'t use Apple</string>
 </resources>
