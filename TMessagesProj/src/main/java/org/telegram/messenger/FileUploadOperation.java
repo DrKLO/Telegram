@@ -283,7 +283,7 @@ public class FileUploadOperation {
                 }
 
                 long maxUploadParts = MessagesController.getInstance(currentAccount).uploadMaxFileParts;
-                if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumSpeedUp", false)
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGraheriumSpeedUpUpload", false)
                         || (AccountInstance.getInstance(currentAccount).getUserConfig().isPremium() && totalFileSize > FileLoader.DEFAULT_MAX_FILE_SIZE)) {
                     maxUploadParts = MessagesController.getInstance(currentAccount).uploadMaxFilePartsPremium;
                 }

@@ -120,7 +120,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int accountExtendVanillaRow;
 
     private int graheriumLabelRow;
-    private int graheriumSpeedUp;
+    private int graheriumSpeedUpUpload;
+    private int graheriumSpeedUpDownload;
     private int graheriumAnimateEveryAvatar;
     private int graheriumVanillaStickerFlow;
     private int graheriumAnimatedStickerOverlays;
@@ -184,7 +185,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         accountSessionManagerRow = rowCount++;
         accountExtendVanillaRow = -1;
         graheriumLabelRow = rowCount++;
-        graheriumSpeedUp = rowCount++;
+        graheriumSpeedUpUpload = rowCount++;
+        graheriumSpeedUpDownload = rowCount++;
         graheriumAnimateEveryAvatar = rowCount++;
         graheriumVanillaStickerFlow = rowCount++;
         graheriumAnimatedStickerOverlays = rowCount++;
@@ -350,11 +352,17 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
                 editor.putBoolean("EnableAccountExtendVanilla", !enabled);
                 editor.apply();
-            } else if (position == graheriumSpeedUp) {
+            } else if (position == graheriumSpeedUpUpload) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("EnableGraheriumSpeedUp", false);
-                editor.putBoolean("EnableGraheriumSpeedUp", !enabled);
+                enabled = preferences.getBoolean("EnableGraheriumSpeedUpUpload", false);
+                editor.putBoolean("EnableGraheriumSpeedUpUpload", !enabled);
+                editor.apply();
+            } else if (position == graheriumSpeedUpDownload) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableGraheriumSpeedUpDownload", false);
+                editor.putBoolean("EnableGraheriumSpeedUpDownload", !enabled);
                 editor.apply();
             } else if (position == graheriumAnimateEveryAvatar) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -589,8 +597,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableMessageHistory), localPreps.getBoolean("EnableMessageHistory", true), true);
                     } else if (position == accountExtendVanillaRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableAccountExtendVanilla), globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
-                    } else if (position == graheriumSpeedUp) {
-                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUp), globalPreps.getBoolean("EnableGraheriumSpeedUp", false), true);
+                    } else if (position == graheriumSpeedUpUpload) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUpUpload), globalPreps.getBoolean("EnableGraheriumSpeedUpUpload", false), true);
+                    } else if (position == graheriumSpeedUpDownload) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUpDownload), globalPreps.getBoolean("EnableGraheriumSpeedUpDownload", false), true);
                     } else if (position == graheriumAnimateEveryAvatar) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THGraheriumAnimateEveryAvatar), globalPreps.getBoolean("EnableGraheriumAnimateEveryAvatar", false), true);
                     } else if (position == graheriumAnimatedStickerOverlays) {
@@ -818,7 +828,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow
-                            || position == graheriumSpeedUp || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
+                            || position == graheriumSpeedUpUpload || position == graheriumSpeedUpDownload || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
                             || position == uiAppHidePhoneNumberOnLeftPanelRow
             ) {

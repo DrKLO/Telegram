@@ -5536,7 +5536,8 @@
     <string name="THDSSDKLabel">SDK</string>
     <string name="THDDeleteDownloadedFile">Delete downloaded file</string>
     <string name="THDGraheriumLabelRow">Graherium 🍒</string>
-    <string name="THDGraheriumSpeedUp">Speed-Up!</string>
+    <string name="THDGraheriumSpeedUpUpload">Speed-Up, upload!</string>
+    <string name="THDGraheriumSpeedUpDownload">Speed-Up, download!</string>
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Animate every avatar</string>
     <string name="THGraheriumAnimatedStickerOverlays">Animated sticker overlays</string>
