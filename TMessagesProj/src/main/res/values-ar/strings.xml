@@ -4581,4 +4581,5 @@
     <string name="THGraheriumOverrideConnectionSpeedAuto">تلقائي</string>
     <string name="THGraheriumOverrideConnectionSpeedSlow">بطيء</string>
     <string name="THGraheriumOverrideConnectionSpeedHigh">سريع</string>
+    <string name="THPrivacyDontCallApple">لا تستخدم طلبات Apple</string>
 </resources>
