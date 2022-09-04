@@ -89,6 +89,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int hardwareProximitySensorModeRow;
     private int hardwareDisableVibroRow;
 
+    private int privacyLabelRow;
+    private int privacyDontCallAppleRow;
+
     private int profileLabelRow;
     private int profileUIDRow;
     private int profileDCIDRow;
@@ -120,12 +123,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int accountExtendVanillaRow;
 
     private int graheriumLabelRow;
-    private int graheriumSpeedUp;
+    private int graheriumSpeedUpUpload;
+    private int graheriumSpeedUpDownload;
     private int graheriumAnimateEveryAvatar;
     private int graheriumVanillaStickerFlow;
     private int graheriumAnimatedStickerOverlays;
     private int graheriumStarrLabelRow;
     private int graheriumStarrMark;
+    private int graheriumOverrideConnectionSpeedLabelRow;
+    private int graheriumOverrideConnectionSpeed;
 
     private int deviceSpoofingLabelRow;
     private int deviceSpoofingBrand;
@@ -166,6 +172,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         hardwareProximitySensorModeRow = rowCount++;
         hardwareDisableVibroRow = rowCount++;
 
+        privacyLabelRow = rowCount++;
+        privacyDontCallAppleRow = rowCount++;
+
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
         profileDCIDRow = rowCount++;
@@ -184,12 +193,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         accountSessionManagerRow = rowCount++;
         accountExtendVanillaRow = -1;
         graheriumLabelRow = rowCount++;
-        graheriumSpeedUp = rowCount++;
+        graheriumSpeedUpUpload = rowCount++;
+        graheriumSpeedUpDownload = rowCount++;
         graheriumAnimateEveryAvatar = rowCount++;
         graheriumVanillaStickerFlow = rowCount++;
         graheriumAnimatedStickerOverlays = rowCount++;
         graheriumStarrLabelRow = rowCount++;
         graheriumStarrMark = rowCount++;
+        graheriumOverrideConnectionSpeedLabelRow = rowCount++;
+        graheriumOverrideConnectionSpeed = rowCount++;
 
         gifLabelHDRow = rowCount++;
         gifHDRow = rowCount++;
@@ -290,6 +302,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("VoipDisableEndBeep", false);
                 editor.putBoolean("VoipDisableEndBeep", !enabled);
                 editor.apply();
+            } else if (position == privacyDontCallAppleRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("PrivacyDontCallApple", true);
+                editor.putBoolean("PrivacyDontCallApple", !enabled);
+                editor.apply();
             } else if (position == profileUIDRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
                 SharedPreferences.Editor editor = preferences.edit();
@@ -350,11 +368,17 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
                 editor.putBoolean("EnableAccountExtendVanilla", !enabled);
                 editor.apply();
-            } else if (position == graheriumSpeedUp) {
+            } else if (position == graheriumSpeedUpUpload) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("EnableGraheriumSpeedUp", false);
-                editor.putBoolean("EnableGraheriumSpeedUp", !enabled);
+                enabled = preferences.getBoolean("EnableGraheriumSpeedUpUpload", false);
+                editor.putBoolean("EnableGraheriumSpeedUpUpload", !enabled);
+                editor.apply();
+            } else if (position == graheriumSpeedUpDownload) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableGraheriumSpeedUpDownload", false);
+                editor.putBoolean("EnableGraheriumSpeedUpDownload", !enabled);
                 editor.apply();
             } else if (position == graheriumAnimateEveryAvatar) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -528,6 +552,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THVoipLabelRow));
+                    } else if (position == privacyLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THPrivacyRowLabel));
                     } else if (position == profileLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THProfileLabelRow));
                     } else if (position == hardwareLabelRow) {
@@ -550,6 +576,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THDGraheriumLabelRow));
                     } else if (position == graheriumStarrLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THGraheriumStarrLabel));
+                    } else if (position == graheriumOverrideConnectionSpeedLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeed));
                     } else if (position == deviceSpoofingLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THDeviceSpoofingLabelRow));
                     } else if (position == deviceSpoofingResetDefaultLabelRow) {
@@ -575,6 +603,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THVoipDisableStartBeep), globalPreps.getBoolean("VoipDisableStartBeep", false), true);
                     } else if (position == voipDisableEndBeep) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THVoipDisableEndBeep), globalPreps.getBoolean("VoipDisableEndBeep", false), true);
+                    } else if (position == privacyDontCallAppleRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THPrivacyDontCallApple), globalPreps.getBoolean("PrivacyDontCallApple", true), true);
                     } else if (position == profileUIDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileUID), localPreps.getBoolean("EnableProfileUID", true), true);
                     } else if (position == hardwareDisableVibroRow) {
@@ -589,8 +619,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableMessageHistory), localPreps.getBoolean("EnableMessageHistory", true), true);
                     } else if (position == accountExtendVanillaRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableAccountExtendVanilla), globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
-                    } else if (position == graheriumSpeedUp) {
-                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUp), globalPreps.getBoolean("EnableGraheriumSpeedUp", false), true);
+                    } else if (position == graheriumSpeedUpUpload) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUpUpload), globalPreps.getBoolean("EnableGraheriumSpeedUpUpload", false), true);
+                    } else if (position == graheriumSpeedUpDownload) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THDGraheriumSpeedUpDownload), globalPreps.getBoolean("EnableGraheriumSpeedUpDownload", false), true);
                     } else if (position == graheriumAnimateEveryAvatar) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THGraheriumAnimateEveryAvatar), globalPreps.getBoolean("EnableGraheriumAnimateEveryAvatar", false), true);
                     } else if (position == graheriumAnimatedStickerOverlays) {
@@ -766,6 +798,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                 editor.apply();
                             }
                         });
+                    } else if (position == graheriumOverrideConnectionSpeed) {
+                        String[] strings = new String[]{LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeedAuto), LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeedSlow), LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeedHigh)};
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("GraheriumConnectionSpeed", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("GraheriumConnectionSpeed", index);
+                                editor.apply();
+                            }
+                        });
                     }
                     break;
                 }
@@ -797,6 +841,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == uiLabelRow
                             || position == uiAppNotificationIconRow
                             || position == voiceLabelRow || position == voipLabelRow
+                            || position == privacyLabelRow
                             || position == profileLabelRow
                             || position == hardwareLabelRow
                             || position == hardwareProximitySensorModeLabelRow
@@ -805,6 +850,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == accountLabelRow
                             || position == graheriumLabelRow
                             || position == graheriumStarrLabelRow
+                            || position == graheriumOverrideConnectionSpeedLabelRow
                             || position == deviceSpoofingLabelRow
                             || position == deviceSpoofingResetDefaultLabelRow
                             || position == videoLabelMaxResolutionRow
@@ -815,10 +861,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow
                             || position == voipHDRow || position == voipDisableStartBeep || position == voipDisableEndBeep
+                            || position == privacyDontCallAppleRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
                             || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow
-                            || position == graheriumSpeedUp || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
+                            || position == graheriumSpeedUpUpload || position == graheriumSpeedUpDownload || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
                             || position == uiAppHidePhoneNumberOnLeftPanelRow
             ) {
@@ -834,6 +881,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == hardwareProximitySensorModeRow
                             || position == uiAppNotificationIconSelectorRow
                             || position == graheriumStarrMark
+                            || position == graheriumOverrideConnectionSpeed
             ) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingSDK) {

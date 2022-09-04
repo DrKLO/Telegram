@@ -1,5 +1,16 @@
 # Changes
 
+* 8.85.45
+    * we compress libs, so APK should be smaller, but installation longer.
+        * "Gplay optimisations failed"? well we're not on gplay.
+    * graherium speedup now separated for upload & download
+        * cause some folks are facing issues with uploads)
+    * arabic translations are added, thanks to RHineix
+    * graherium connection speed override is added. You can keep it `auto`, setup `slow` or be `high` 😎
+        * with this you can send files realllly faster or use network less than usually being on wifi
+        * it doesn't override your autodownloads presets, so be smart
+    * Privacy "don't use Apple" is added and enabled by default
+        * cause telegram app use itunes to pick the covers. If you need it - just disable the feature
 * 8.85.44
     * 40, 41, 42, 43, 44 - due new flow debugging
     * release

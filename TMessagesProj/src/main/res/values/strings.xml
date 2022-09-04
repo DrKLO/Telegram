@@ -5536,7 +5536,8 @@
     <string name="THDSSDKLabel">SDK</string>
     <string name="THDDeleteDownloadedFile">Delete downloaded file</string>
     <string name="THDGraheriumLabelRow">Graherium 🍒</string>
-    <string name="THDGraheriumSpeedUp">Speed-Up!</string>
+    <string name="THDGraheriumSpeedUpUpload">Speed-Up, upload!</string>
+    <string name="THDGraheriumSpeedUpDownload">Speed-Up, download!</string>
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Animate every avatar</string>
     <string name="THGraheriumAnimatedStickerOverlays">Animated sticker overlays</string>
@@ -5546,4 +5547,10 @@
     <string name="THGraheriumStarrPeperemiumOnly">Peperemium only</string>
     <string name="THHidePhoneNumberOnLeftPanel">Hide phone number on the left panel</string>
     <string name="THGraheriumVanillaStickerFlow">Vanilla sticker flow</string>
+    <string name="THGraheriumOverrideConnectionSpeed">Override connection speed</string>
+    <string name="THGraheriumOverrideConnectionSpeedAuto">Auto</string>
+    <string name="THGraheriumOverrideConnectionSpeedSlow">Slow</string>
+    <string name="THGraheriumOverrideConnectionSpeedHigh">Fast</string>
+    <string name="THPrivacyRowLabel">Privacy section</string>
+    <string name="THPrivacyDontCallApple">Don\'t use Apple</string>
 </resources>

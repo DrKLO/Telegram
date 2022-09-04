@@ -86,7 +86,8 @@
     <string name="THDSSDKLabel">SDK</string>
     <string name="THDDeleteDownloadedFile">Удалить скачанный файл</string>
     <string name="THDGraheriumLabelRow">ГраХЕРиум 🍒</string>
-    <string name="THDGraheriumSpeedUp">Шустрее!</string>
+    <string name="THDGraheriumSpeedUpUpload">Шустрее отправлять!</string>
+    <string name="THDGraheriumSpeedUpDownload">Шустрее качать!</string>
     <string name="THDMessageTTL">TTL %d″</string>
     <string name="THGraheriumAnimateEveryAvatar">Анимировать все авы</string>
     <string name="THGraheriumAnimatedStickerOverlays">Анимированные подложки стикеров</string>
@@ -96,4 +97,10 @@
     <string name="THGraheriumStarrPeperemiumOnly">Лишь пеперемиумам</string>
     <string name="THHidePhoneNumberOnLeftPanel">Скрыть номер телефона на левой панели</string>
     <string name="THGraheriumVanillaStickerFlow">Классический flow стикеров</string>
+    <string name="THGraheriumOverrideConnectionSpeed">Переопределение скорости сети</string>
+    <string name="THGraheriumOverrideConnectionSpeedAuto">Авто</string>
+    <string name="THGraheriumOverrideConnectionSpeedSlow">Низкая</string>
+    <string name="THGraheriumOverrideConnectionSpeedHigh">Высокая</string>
+    <string name="THPrivacyRowLabel">Секция приватности</string>
+    <string name="THPrivacyDontCallApple">Не использовать Apple</string>
 </resources>

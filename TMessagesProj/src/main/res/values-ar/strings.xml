@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="AppName">Telegraher</string>
-    <string name="AppNameBeta">Telegraher DEBUG</string>
+    <string name="AppNameBeta">تصحيح Telegraher</string>
     <string name="LanguageName">العربية</string>
-    <string name="English">الإنجليزية</string>
+    <string name="English">English</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
     <string name="ContinueOnThisLanguage">الاستمرار باللغة العربية</string>
@@ -4484,5 +4484,102 @@
     <string name="RemindTodayAt">\'ذكّرني اليوم عند\' HH:mm</string>
     <string name="RemindDayAt">\'ذكّرني بتاريخ\' d MMM \'عند\' HH:mm</string>
     <string name="RemindDayYearAt">\'ذكّرني بتاريخ\' d MMM yyyy \'عند\' HH:mm</string>
-    <string name="BotsMenuTitle">Menu</string>
+    <string name="BotsMenuTitle">القائمة</string>
+    <string name="THSettingsLabel">إعدادات تلغراهر 💦</string>
+    <string name="THEnableVoiceHD">* صوت عالي الدقة</string>
+    <string name="THEnableVoiceBadman">* 🦇 صوت (بطيء)</string>
+    <string name="THEnableVoIPHD">مكالمات عالية الدقة</string>
+    <string name="THVoipDisableStartBeep">* تعطيل صفارة البداية</string>
+    <string name="THVoipDisableEndBeep">* تعطيل صفارة النهاية</string>
+    <string name="THEnableProfileUID">إظهار ID</string>
+    <string name="THEnableProfileDCID">إظهار DC ID</string>
+    <string name="THEnableMessageHistory">تفعيل سجل الرسائل</string>
+    <string name="THEnableProfileSB">عرض شادوبان</string>
+    <string name="THEnableChatDeleteMark">عرض %s علامة</string>
+    <string name="THEnableAccountExtendVanilla">* تمكين 3+ حسابات</string>
+    <string name="THEnableChatSBFull">شادوبان كامل 🙈</string>
+    <string name="THEnableGifHD">* تمكين صور متحركة عالية الدقة</string>
+    <string name="THVideoRoundUseMainCamera">* استخدام الكاميرا الرئيسية</string>
+    <string name="THKillTheAPP">قتل التطبيق</string>
+    <string name="THMenuPositionBoth">كلاهما</string>
+    <string name="THMenuPositionSettings">الإعدادات</string>
+    <string name="THMenuPositionStorageUsage">استخدام التخزين</string>
+    <string name="THMenuPositionTheVoid">إخفاء</string>
+    <string name="THDSBrandCurrentText">العلامة التجارية للجهاز ،للحساب الحالي هي `%s`</string>
+    <string name="THDSModelCurrentText">طراز الجهاز ،للحساب الحالي هو `%s`</string>
+    <string name="THDSSDKCurrentText">جهاز SDK للحساب الحالي هو `%s`</string>
+    <string name="THDSLabel">انتحال جهاز</string>
+    <string name="THDSOverrideLabel">تجاوز الجهاز %s?</string>
+    <string name="THDSOverrideGlobal">عالمي</string>
+    <string name="THDSOverrideCurrent">الحساب الحالي</string>
+    <string name="THDSResetAlert">إعادة تعيين القيم الافتراضية؟</string>
+    <string name="THYesYesYes">نعم!</string>
+    <string name="THVoiceLabelRow">قسم الرسائل الصوتية</string>
+    <string name="THVoipLabelRow">قسم المكالمات عبر بروتوكول الإنترنت</string>
+    <string name="THProfileLabelRow">قسم الملف الشخصي</string>
+    <string name="THHardwareLabelRow">قسم الأجهزة</string>
+    <string name="THHardwareProximitySensorModeRow">* مستشعر عن قرب تعطيل:</string>
+    <string name="THHardwareProximitySensorModeRow0">الاستمرار في العمل!</string>
+    <string name="THHardwareProximitySensorModeRow1">بدء/توقف</string>
+    <string name="THHardwareProximitySensorModeRow2">شاشة سوداء</string>
+    <string name="THHardwareDisableVibroRow">* تعطيل الاهتزاز</string>
+    <string name="THChatLabelRow">قسم الدردشة</string>
+    <string name="THGifLabelHDRow">قسم الصور المتحركة</string>
+    <string name="THVideoLabelMaxResolutionRow">* الحد الأقصى لدقة الفيديو</string>
+    <string name="THVideoLabelRoundBitrateRow">* معدل بث الفيديو الدائري</string>
+    <string name="THVideoLabelRoundSizeRow">* حجم الفيديو الدائري</string>
+    <string name="THAccountLabelRow">قسم الحساب</string>
+    <string name="THDeviceSpoofingLabelRow">قسم انتحال جهاز</string>
+    <string name="THDeviceSpoofingResetDefaultLabelRow">**إعادة تعيين قيم الانتحال الافتراضية**</string>
+    <string name="THShowLabelTelegraherMenuRow">* إظهار قائمة تلغراهر</string>
+    <string name="THDSMainActivityHint0">يمكنك تجاوز الجهاز الافتراضي %s هنا</string>
+    <string name="THDSMainActivityHint1">يمكنك تجاوز جهاز الحساب الحالي %s هنا</string>
+    <string name="THNotificationBackgroundNotice">للسماح لك بتلقي الإخطارات w/o GApps</string>
+    <string name="THUILabelRow">قسم واجهة المستخدم</string>
+    <string name="THUIAppNotificationIconRow">* رمز إشعارات التطبيق</string>
+    <string name="THUIAppNotificationIconRow0">الرأس</string>
+    <string name="THUIAppNotificationIconRow1">العينين</string>
+    <string name="THUIAppNotificationIconRow2">الرسمي</string>
+    <string name="THUIAppNotificationIconRow3">XXX</string>
+    <string name="THUIUseCustomFontRegular">تغيير الخط العادي</string>
+    <string name="THUIUseCustomFontBold">تغيير الخط الغامق</string>
+    <string name="THUIUseCustomFontItalic">تغيير الخط المائل</string>
+    <string name="THUIUseCustomFontBoldItalic">تغيير الخط المائل الغامق</string>
+    <string name="THUIUseCustomFontMono">تغيير الخط الأحادي</string>
+    <string name="THUIUseCustomFontDummy">(%s)</string>
+    <string name="THEnableSwapToNextChannel">القناة التالية عند السحب</string>
+    <string name="THEnableTabsOnForward">علامات التبويب عند التوجيه</string>
+    <string name="THDisableSpoilers">تعطيل المفسدين</string>
+    <string name="ThIdCopied">نسخ ID إلى الحافظة</string>
+    <string name="ThDCCopied">نسخ DC إلى الحافظة</string>
+    <string name="THChatSBManager">مدير شادوبان</string>
+    <string name="THAccountSessionManager">مدير الجلسة (🌞 %d / 🌚 %d)</string>
+    <string name="THAccountSessionInfo">معلومات الجلسة</string>
+    <string name="THAccountSessionDeleteDescription">حذف الجلسة دون اتصال نهائيا</string>
+    <string name="THAccountSessionDeleteError1">الجلسة متصلة بالإنترنت ، قم بتعطيلها واقتل التطبيق لإعادة التشغيل</string>
+    <string name="THAccountSessionDeleteError2">الجلسة على الإنترنت غبى!  WTF لا يمكنك القراءة !؟</string>
+    <string name="THAccountSessionDeleteSuccessful">تم حذف الجلسة بنجاح!</string>
+    <string name="THDeleteThatBitch">حذف</string>
+    <string name="THHistory">السجل</string>
+    <string name="THDSBrandLabel">العلامة التجارية</string>
+    <string name="THDSModelLabel">الموديل</string>
+    <string name="THDSSDKLabel">SDK</string>
+    <string name="THDDeleteDownloadedFile">احذف الملف الذي تم تنزيله</string>
+    <string name="THDGraheriumLabelRow">غراهيريوم 🍒</string>
+    <string name="THDGraheriumSpeedUpUpload">زيادة سرعة الرفع!</string>
+    <string name="THDGraheriumSpeedUpDownload">زيادة سرعة التحميل!</string>
+    <string name="THDMessageTTL">TTL %d″</string>
+    <string name="THGraheriumAnimateEveryAvatar">تحريك كل الصورة الرمزية</string>
+    <string name="THGraheriumAnimatedStickerOverlays">تفاعلات الملصقات المتحركة</string>
+    <string name="THGraheriumStarrLabel">نجمة لـ..</string>
+    <string name="THGraheriumStarrNoone">لا أحد</string>
+    <string name="THGraheriumStarrEveryone">الجميع!</string>
+    <string name="THGraheriumStarrPeperemiumOnly">بيريميوم فقط</string>
+    <string name="THHidePhoneNumberOnLeftPanel">إخفاء رقم الهاتف على اللوحة اليسرى</string>
+    <string name="THGraheriumVanillaStickerFlow">تدفق ملصق الفانيليا</string>
+    <string name="THGraheriumOverrideConnectionSpeed">تجاوز سرعة الاتصال</string>
+    <string name="THGraheriumOverrideConnectionSpeedAuto">تلقائي</string>
+    <string name="THGraheriumOverrideConnectionSpeedSlow">بطيء</string>
+    <string name="THGraheriumOverrideConnectionSpeedHigh">سريع</string>
+    <string name="THPrivacyDontCallApple">لا تستخدم طلبات Apple</string>
 </resources>
