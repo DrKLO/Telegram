@@ -281,6 +281,17 @@ public class ApplicationLoader extends Application {
 
         LauncherIconController.tryFixLauncherIconIfNeeded();
         ProxyRotationController.init();
+        // SET TFOSS USERAGENT FOR OSM SERVERS
+        PackageInfo pInfo;
+        String VERSIONNAME="";
+        try {
+            pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+            VERSIONNAME = pInfo.versionName;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        org.osmdroid.config.Configuration.getInstance().setUserAgentValue("Telegram-FOSS(F-Droid) "+VERSIONNAME);
+        org.osmdroid.config.Configuration.getInstance().setOsmdroidBasePath(new File(getCacheDir(),"osmdroid"));
     }
 
     public static void startPushService() {
