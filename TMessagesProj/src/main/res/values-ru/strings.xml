@@ -97,4 +97,8 @@
     <string name="THGraheriumStarrPeperemiumOnly">Лишь пеперемиумам</string>
     <string name="THHidePhoneNumberOnLeftPanel">Скрыть номер телефона на левой панели</string>
     <string name="THGraheriumVanillaStickerFlow">Классический flow стикеров</string>
+    <string name="THGraheriumOverrideConnectionSpeed">Переопределение скорости сети</string>
+    <string name="THGraheriumOverrideConnectionSpeedAuto">Авто</string>
+    <string name="THGraheriumOverrideConnectionSpeedSlow">Низкая</string>
+    <string name="THGraheriumOverrideConnectionSpeedHigh">Высокая</string>
 </resources>

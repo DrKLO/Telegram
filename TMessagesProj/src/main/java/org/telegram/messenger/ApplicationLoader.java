@@ -356,21 +356,13 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
-    public static boolean isConnectedToWiFi() {
-        try {
-            ensureCurrentNetworkGet(false);
-            if (currentNetworkInfo != null && (currentNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI || currentNetworkInfo.getType() == ConnectivityManager.TYPE_ETHERNET) && currentNetworkInfo.getState() == NetworkInfo.State.CONNECTED) {
-                return true;
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return false;
-    }
-
     public static boolean isConnectionSlow() {
         try {
             ensureCurrentNetworkGet(false);
+
+            if (MessagesController.getGlobalTelegraherSettings().getInt("GraheriumConnectionSpeed", 0) == 1) return true;
+            if (MessagesController.getGlobalTelegraherSettings().getInt("GraheriumConnectionSpeed", 0) == 2) return false;
+
             if (currentNetworkInfo != null && currentNetworkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
                 switch (currentNetworkInfo.getSubtype()) {
                     case TelephonyManager.NETWORK_TYPE_1xRTT:

@@ -5547,4 +5547,8 @@
     <string name="THGraheriumStarrPeperemiumOnly">Peperemium only</string>
     <string name="THHidePhoneNumberOnLeftPanel">Hide phone number on the left panel</string>
     <string name="THGraheriumVanillaStickerFlow">Vanilla sticker flow</string>
+    <string name="THGraheriumOverrideConnectionSpeed">Override connection speed</string>
+    <string name="THGraheriumOverrideConnectionSpeedAuto">Auto</string>
+    <string name="THGraheriumOverrideConnectionSpeedSlow">Slow</string>
+    <string name="THGraheriumOverrideConnectionSpeedHigh">Fast</string>
 </resources>

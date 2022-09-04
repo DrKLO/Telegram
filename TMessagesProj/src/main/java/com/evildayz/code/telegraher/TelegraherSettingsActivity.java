@@ -127,6 +127,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int graheriumAnimatedStickerOverlays;
     private int graheriumStarrLabelRow;
     private int graheriumStarrMark;
+    private int graheriumOverrideConnectionSpeedLabelRow;
+    private int graheriumOverrideConnectionSpeed;
 
     private int deviceSpoofingLabelRow;
     private int deviceSpoofingBrand;
@@ -192,6 +194,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         graheriumAnimatedStickerOverlays = rowCount++;
         graheriumStarrLabelRow = rowCount++;
         graheriumStarrMark = rowCount++;
+        graheriumOverrideConnectionSpeedLabelRow = rowCount++;
+        graheriumOverrideConnectionSpeed = rowCount++;
 
         gifLabelHDRow = rowCount++;
         gifHDRow = rowCount++;
@@ -558,6 +562,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THDGraheriumLabelRow));
                     } else if (position == graheriumStarrLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THGraheriumStarrLabel));
+                    } else if (position == graheriumOverrideConnectionSpeedLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeed));
                     } else if (position == deviceSpoofingLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THDeviceSpoofingLabelRow));
                     } else if (position == deviceSpoofingResetDefaultLabelRow) {
@@ -776,6 +782,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                 editor.apply();
                             }
                         });
+                    } else if (position == graheriumOverrideConnectionSpeed) {
+                        String[] strings = new String[]{LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeedAuto), LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeedSlow), LocaleController.getString(R.string.THGraheriumOverrideConnectionSpeedHigh)};
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("GraheriumConnectionSpeed", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("GraheriumConnectionSpeed", index);
+                                editor.apply();
+                            }
+                        });
                     }
                     break;
                 }
@@ -815,6 +833,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == accountLabelRow
                             || position == graheriumLabelRow
                             || position == graheriumStarrLabelRow
+                            || position == graheriumOverrideConnectionSpeedLabelRow
                             || position == deviceSpoofingLabelRow
                             || position == deviceSpoofingResetDefaultLabelRow
                             || position == videoLabelMaxResolutionRow
@@ -844,6 +863,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == hardwareProximitySensorModeRow
                             || position == uiAppNotificationIconSelectorRow
                             || position == graheriumStarrMark
+                            || position == graheriumOverrideConnectionSpeed
             ) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingSDK) {

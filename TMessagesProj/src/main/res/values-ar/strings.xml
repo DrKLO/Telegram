@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">تلغراهر</string>
-    <string name="AppNameBeta">تصحيح تلغراهر</string>
+    <string name="AppName">Telegraher</string>
+    <string name="AppNameBeta">تصحيح Telegraher</string>
     <string name="LanguageName">العربية</string>
-    <string name="English">الإنجليزية</string>
+    <string name="English">English</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
     <string name="ContinueOnThisLanguage">الاستمرار باللغة العربية</string>
@@ -4569,12 +4569,16 @@
     <string name="THDGraheriumSpeedUpUpload">زيادة سرعة الرفع!</string>
     <string name="THDGraheriumSpeedUpDownload">زيادة سرعة التحميل!</string>
     <string name="THDMessageTTL">TTL %d″</string>
-    <string name="THGraheriumAnimateEveryAvatar">Animate every avatar</string>
-    <string name="THGraheriumAnimatedStickerOverlays">Animated sticker overlays</string>
+    <string name="THGraheriumAnimateEveryAvatar">تحريك كل الصورة الرمزية</string>
+    <string name="THGraheriumAnimatedStickerOverlays">تفاعلات الملصقات المتحركة</string>
     <string name="THGraheriumStarrLabel">نجمة لـ..</string>
     <string name="THGraheriumStarrNoone">لا أحد</string>
     <string name="THGraheriumStarrEveryone">الجميع!</string>
     <string name="THGraheriumStarrPeperemiumOnly">بيريميوم فقط</string>
     <string name="THHidePhoneNumberOnLeftPanel">إخفاء رقم الهاتف على اللوحة اليسرى</string>
     <string name="THGraheriumVanillaStickerFlow">تدفق ملصق الفانيليا</string>
+    <string name="THGraheriumOverrideConnectionSpeed">تجاوز سرعة الاتصال</string>
+    <string name="THGraheriumOverrideConnectionSpeedAuto">تلقائي</string>
+    <string name="THGraheriumOverrideConnectionSpeedSlow">بطيء</string>
+    <string name="THGraheriumOverrideConnectionSpeedHigh">سريع</string>
 </resources>
