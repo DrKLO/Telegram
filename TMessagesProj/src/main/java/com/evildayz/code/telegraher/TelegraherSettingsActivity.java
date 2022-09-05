@@ -107,6 +107,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatSwapToNextChannelRow;
     private int chatTabsOnForwardRow;
     private int chatDisableSpoilersRow;
+    private int chatRealForwardedMessageTimeRow;
 
     private int videoLabelRoundBitrateRow;
     private int videoRoundBitrateMultRow;
@@ -192,6 +193,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatSwapToNextChannelRow = rowCount++;
         chatTabsOnForwardRow = rowCount++;
         chatDisableSpoilersRow = rowCount++;
+        chatRealForwardedMessageTimeRow = rowCount++;
 
         accountLabelRow = rowCount++;
         accountSessionManagerRow = rowCount++;
@@ -365,6 +367,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("DisableSpoilers", false);
                 editor.putBoolean("DisableSpoilers", !enabled);
+                editor.apply();
+            } else if (position == chatRealForwardedMessageTimeRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("RealForwardedMessageTime", true);
+                editor.putBoolean("RealForwardedMessageTime", !enabled);
                 editor.apply();
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -645,6 +653,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableTabsOnForward), globalPreps.getBoolean("EnableTabsOnForward", false), true);
                     } else if (position == chatDisableSpoilersRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THDisableSpoilers), globalPreps.getBoolean("DisableSpoilers", false), true);
+                    } else if (position == chatRealForwardedMessageTimeRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THChatRealForwardedMessageTime), globalPreps.getBoolean("RealForwardedMessageTime", true), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
@@ -888,7 +898,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == privacyDontCallAppleRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
-                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow
+                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow|| position == chatRealForwardedMessageTimeRow
                             || position == graheriumSpeedUpUpload || position == graheriumSpeedUpDownload || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
                             || position == uiAppHidePhoneNumberOnLeftPanelRow

@@ -5554,4 +5554,5 @@
     <string name="THPrivacyRowLabel">Privacy section</string>
     <string name="THPrivacyDontCallApple">Don\'t use Apple</string>
     <string name="THUIStickerSize">Sticker size</string>
+    <string name="THChatRealForwardedMessageTime">Real forwarded message time</string>
 </resources>
