@@ -108,6 +108,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatTabsOnForwardRow;
     private int chatDisableSpoilersRow;
     private int chatRealForwardedMessageTimeRow;
+    private int chatHideStickersRow;
 
     private int videoLabelRoundBitrateRow;
     private int videoRoundBitrateMultRow;
@@ -194,6 +195,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatTabsOnForwardRow = rowCount++;
         chatDisableSpoilersRow = rowCount++;
         chatRealForwardedMessageTimeRow = rowCount++;
+        chatHideStickersRow = rowCount++;
 
         accountLabelRow = rowCount++;
         accountSessionManagerRow = rowCount++;
@@ -373,6 +375,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("RealForwardedMessageTime", true);
                 editor.putBoolean("RealForwardedMessageTime", !enabled);
+                editor.apply();
+            } else if (position == chatHideStickersRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("HideStickers", false);
+                editor.putBoolean("HideStickers", !enabled);
                 editor.apply();
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -655,6 +663,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THDisableSpoilers), globalPreps.getBoolean("DisableSpoilers", false), true);
                     } else if (position == chatRealForwardedMessageTimeRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THChatRealForwardedMessageTime), globalPreps.getBoolean("RealForwardedMessageTime", true), true);
+                    } else if (position == chatHideStickersRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THChatHideStickers), globalPreps.getBoolean("HideStickers", false), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
@@ -898,7 +908,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == privacyDontCallAppleRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
-                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow|| position == chatRealForwardedMessageTimeRow
+                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow
+                            || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow || position == chatRealForwardedMessageTimeRow
+                            || position == chatHideStickersRow
                             || position == graheriumSpeedUpUpload || position == graheriumSpeedUpDownload || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
                             || position == uiAppHidePhoneNumberOnLeftPanelRow
