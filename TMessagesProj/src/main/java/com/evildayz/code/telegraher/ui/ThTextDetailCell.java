@@ -102,6 +102,14 @@ public class ThTextDetailCell extends FrameLayout {
         );
     }
 
+    public void setTitleFontSize(int fontSize) {
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
+    }
+
+    public void setValueFontSize(int fontSize) {
+        valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
+    }
+
     public void setTextAndValue(String text, String value, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);

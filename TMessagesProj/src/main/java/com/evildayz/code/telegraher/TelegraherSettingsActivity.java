@@ -77,6 +77,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int uiLabelRow;
     private int uiAppNotificationIconRow;
     private int uiAppNotificationIconSelectorRow;
+    private int uiStickerSizeLabelRow;
+    private int uiStickerSizeRow;
     private int uiAppHidePhoneNumberOnLeftPanelRow;
     private int uiSystemFontRegularRow;
     private int uiSystemFontBoldRow;
@@ -105,6 +107,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatSwapToNextChannelRow;
     private int chatTabsOnForwardRow;
     private int chatDisableSpoilersRow;
+    private int chatRealForwardedMessageTimeRow;
+    private int chatHideStickersRow;
 
     private int videoLabelRoundBitrateRow;
     private int videoRoundBitrateMultRow;
@@ -151,6 +155,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         uiLabelRow = rowCount++;
         uiAppNotificationIconRow = rowCount++;
         uiAppNotificationIconSelectorRow = rowCount++;
+        uiStickerSizeLabelRow = rowCount++;
+        uiStickerSizeRow = rowCount++;
         uiAppHidePhoneNumberOnLeftPanelRow = rowCount++;
         uiSystemFontRegularRow = -1;//TODO WTF need the fuck make it work
         uiSystemFontBoldRow = -1;
@@ -188,6 +194,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatSwapToNextChannelRow = rowCount++;
         chatTabsOnForwardRow = rowCount++;
         chatDisableSpoilersRow = rowCount++;
+        chatRealForwardedMessageTimeRow = rowCount++;
+        chatHideStickersRow = rowCount++;
 
         accountLabelRow = rowCount++;
         accountSessionManagerRow = rowCount++;
@@ -361,6 +369,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("DisableSpoilers", false);
                 editor.putBoolean("DisableSpoilers", !enabled);
+                editor.apply();
+            } else if (position == chatRealForwardedMessageTimeRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("RealForwardedMessageTime", true);
+                editor.putBoolean("RealForwardedMessageTime", !enabled);
+                editor.apply();
+            } else if (position == chatHideStickersRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("HideStickers", false);
+                editor.putBoolean("HideStickers", !enabled);
                 editor.apply();
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -548,6 +568,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText(LocaleController.getString(R.string.THUILabelRow));
                     } else if (position == uiAppNotificationIconRow) {
                         headerCell.setText(LocaleController.getString(R.string.THUIAppNotificationIconRow));
+                    } else if (position == uiStickerSizeLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THUIStickerSize));
                     } else if (position == voiceLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
@@ -639,6 +661,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableTabsOnForward), globalPreps.getBoolean("EnableTabsOnForward", false), true);
                     } else if (position == chatDisableSpoilersRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THDisableSpoilers), globalPreps.getBoolean("DisableSpoilers", false), true);
+                    } else if (position == chatRealForwardedMessageTimeRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THChatRealForwardedMessageTime), globalPreps.getBoolean("RealForwardedMessageTime", true), true);
+                    } else if (position == chatHideStickersRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THChatHideStickers), globalPreps.getBoolean("HideStickers", false), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
@@ -786,6 +812,23 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                 editor.apply();
                             }
                         });
+                    } else if (position == uiStickerSizeRow) {
+                        String[] strings = new String[]{
+                                "x0.25",
+                                "x0.5",
+                                "x1",
+                                "x2",
+                        };
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("UIStickerSize", 2), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("UIStickerSize", index);
+                                editor.apply();
+                            }
+                        });
                     } else if (position == graheriumStarrMark) {
                         String[] strings = new String[]{LocaleController.getString(R.string.THGraheriumStarrNoone), LocaleController.getString(R.string.THGraheriumStarrEveryone), LocaleController.getString(R.string.THGraheriumStarrPeperemiumOnly)};
                         slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("GraheriumStarrMark", 0), strings);
@@ -840,6 +883,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     position == showLabelTelegraherMenuRow
                             || position == uiLabelRow
                             || position == uiAppNotificationIconRow
+                            || position == uiStickerSizeLabelRow
                             || position == voiceLabelRow || position == voipLabelRow
                             || position == privacyLabelRow
                             || position == profileLabelRow
@@ -864,7 +908,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == privacyDontCallAppleRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == hardwareDisableVibroRow
-                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow
+                            || position == chatDeleteMarkRow || position == chatEnableMessageHistoryRow || position == accountExtendVanillaRow || position == chatSBFullRow
+                            || position == chatSwapToNextChannelRow || position == chatTabsOnForwardRow || position == chatDisableSpoilersRow || position == chatRealForwardedMessageTimeRow
+                            || position == chatHideStickersRow
                             || position == graheriumSpeedUpUpload || position == graheriumSpeedUpDownload || position == graheriumAnimateEveryAvatar || position == graheriumAnimatedStickerOverlays || position == graheriumVanillaStickerFlow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
                             || position == uiAppHidePhoneNumberOnLeftPanelRow
@@ -880,6 +926,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == videoMaxResolutionRow
                             || position == hardwareProximitySensorModeRow
                             || position == uiAppNotificationIconSelectorRow
+                            || position == uiStickerSizeRow
                             || position == graheriumStarrMark
                             || position == graheriumOverrideConnectionSpeed
             ) {

@@ -5553,4 +5553,7 @@
     <string name="THGraheriumOverrideConnectionSpeedHigh">Fast</string>
     <string name="THPrivacyRowLabel">Privacy section</string>
     <string name="THPrivacyDontCallApple">Don\'t use Apple</string>
+    <string name="THUIStickerSize">Sticker size</string>
+    <string name="THChatRealForwardedMessageTime">Real forwarded message time</string>
+    <string name="THChatHideStickers">Hide stickers in chats</string>
 </resources>

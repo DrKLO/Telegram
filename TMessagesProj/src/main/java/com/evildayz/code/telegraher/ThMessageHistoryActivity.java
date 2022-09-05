@@ -244,6 +244,8 @@ public class ThMessageHistoryActivity extends BaseFragment implements Notificati
                     if (false) {
                         //durov relogin!
                     } else if (position >= 0 && position < messageMap.size()) {
+                        thTextDetailCell.setTitleFontSize(SharedConfig.fontSize);
+                        thTextDetailCell.setValueFontSize(SharedConfig.fontSize - 2);
                         thTextDetailCell.setTextAndValue(
                                 LocaleController.formatDateAudio(messageMap.get(position).date, false)
                                 , new String(android.util.Base64.decode(messageMap.get(position).message, Base64.DEFAULT))

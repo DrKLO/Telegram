@@ -19,6 +19,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.StickerImageView;
 
@@ -85,8 +86,10 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
                 if (fragment.getParentActivity() == null) {
                     return;
                 }
-                MessagesController.getInstance(currentAccount).clearQueryTime();
-                fragment.getMessagesStorage().clearLocalDatabase();
+                // disabled until we will find a good way for that.
+                BulletinFactory.of(fragment).createCopyBulletin(LocaleController.getString(R.string.PopupDisabled), fragment.getResourceProvider()).show();
+//                MessagesController.getInstance(currentAccount).clearQueryTime();
+//                fragment.getMessagesStorage().clearLocalDatabase();
             });
             AlertDialog alertDialog = builder.create();
             fragment.showDialog(alertDialog);

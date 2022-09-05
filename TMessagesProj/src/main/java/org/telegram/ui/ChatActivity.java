@@ -21574,7 +21574,7 @@ ChatActivity extends BaseFragment implements NotificationCenter.NotificationCent
                 icons.add(R.drawable.msg_log);
             }
 
-            if (message != null && message.isDocument()) {
+            if (message != null && (message.isDocument() || message.isVideo() || message.isMusic())) {
                 items.add(LocaleController.getString(R.string.THDDeleteDownloadedFile));
                 options.add(420_002);
                 icons.add(R.drawable.msg_delete_filled);

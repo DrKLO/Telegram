@@ -103,4 +103,7 @@
     <string name="THGraheriumOverrideConnectionSpeedHigh">Высокая</string>
     <string name="THPrivacyRowLabel">Секция приватности</string>
     <string name="THPrivacyDontCallApple">Не использовать Apple</string>
+    <string name="THUIStickerSize">Размер стикеров</string>
+    <string name="THChatRealForwardedMessageTime">Настоящее время пересланного сообщения</string>
+    <string name="THChatHideStickers">Скрывать стикеры в чатах</string>
 </resources>
