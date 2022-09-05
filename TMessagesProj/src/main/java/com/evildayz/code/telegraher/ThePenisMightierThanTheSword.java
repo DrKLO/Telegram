@@ -155,4 +155,18 @@ public class ThePenisMightierThanTheSword {
                 return bool;
         }
     }
+
+    public static float stickerSizeMult() {
+        switch (MessagesController.getGlobalTelegraherSettings().getInt("UIStickerSize", 2)) {
+            case 0:
+                return 4f;
+            case 1:
+                return 2f;
+            case 3:
+                return 0.5f;
+            case 2:
+            default:
+                return 1f;
+        }
+    }
 }

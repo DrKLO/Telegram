@@ -73,6 +73,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -5887,22 +5888,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         maxHeight = maxWidth = (int) (Math.min(getParentWidth(), AndroidUtilities.displaySize.y) * 0.5f);
                     }
                     String filter;
-                    if (messageObject.isAnimatedEmoji() || messageObject.isDice()) {
-                        float zoom = MessagesController.getInstance(currentAccount).animatedEmojisZoom;
-                        photoWidth = (int) ((photoWidth / 512.0f) * maxWidth * zoom);
-                        photoHeight = (int) ((photoHeight / 512.0f) * maxHeight * zoom);
-                    } else {
-                        if (photoWidth == 0) {
-                            photoHeight = (int) maxHeight;
-                            photoWidth = photoHeight + AndroidUtilities.dp(100);
-                        }
-                        photoHeight *= maxWidth / (float) photoWidth;
-                        photoWidth = (int) maxWidth;
-                        if (photoHeight > maxHeight) {
-                            photoWidth *= maxHeight / photoHeight;
-                            photoHeight = (int) maxHeight;
-                        }
+//                    if (messageObject.isAnimatedEmoji() || messageObject.isDice()) {
+//                        float zoom = MessagesController.getInstance(currentAccount).animatedEmojisZoom;
+//                        photoWidth = (int) ((photoWidth / 512.0f) * maxWidth * zoom);
+//                        photoHeight = (int) ((photoHeight / 512.0f) * maxHeight * zoom);
+//                    } else {
+                    if (photoWidth == 0) {
+                        photoHeight = (int) maxHeight;
+                        photoWidth = photoHeight + AndroidUtilities.dp(100);
                     }
+                    photoHeight *= maxWidth / (float) photoWidth;
+                    photoHeight /= ThePenisMightierThanTheSword.stickerSizeMult();
+                    photoWidth = (int) (maxWidth / ThePenisMightierThanTheSword.stickerSizeMult());
+                    if (photoHeight > maxHeight) {
+                        photoWidth *= maxHeight / photoHeight;
+                        photoHeight = (int) maxHeight;
+                    }
+                    //}
                     Object parentObject = messageObject;
                     int w = (int) (photoWidth / AndroidUtilities.density);
                     int h = (int) (photoHeight / AndroidUtilities.density);

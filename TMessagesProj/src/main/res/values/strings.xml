@@ -5553,4 +5553,5 @@
     <string name="THGraheriumOverrideConnectionSpeedHigh">Fast</string>
     <string name="THPrivacyRowLabel">Privacy section</string>
     <string name="THPrivacyDontCallApple">Don\'t use Apple</string>
+    <string name="THUIStickerSize">Sticker size</string>
 </resources>
