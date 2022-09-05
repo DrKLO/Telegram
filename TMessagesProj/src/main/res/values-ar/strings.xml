@@ -4583,4 +4583,5 @@
     <string name="THGraheriumOverrideConnectionSpeedHigh">سريع</string>
     <string name="THPrivacyDontCallApple">لا تستخدم طلبات Apple</string>
     <string name="THUIStickerSize">حجم الملصق</string>
+    <string name="THChatRealForwardedMessageTime">الوقت الحقيقي للرسائل المعاد توجيهها</string>
 </resources>
