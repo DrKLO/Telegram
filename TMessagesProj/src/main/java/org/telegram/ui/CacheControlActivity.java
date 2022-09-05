@@ -61,13 +61,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckBoxCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SlideChooseView;
-import org.telegram.ui.Components.StorageDiagramView;
-import org.telegram.ui.Components.StroageUsageView;
-import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.Components.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -636,11 +630,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             if (getParentActivity() == null) {
                 return;
             }
-            progressDialog = new AlertDialog(getParentActivity(), 3);
-            progressDialog.setCanCancel(false);
-            progressDialog.showDelayed(500);
-            MessagesController.getInstance(currentAccount).clearQueryTime();
-            getMessagesStorage().clearLocalDatabase();
+//            progressDialog = new AlertDialog(getParentActivity(), 3);
+//            progressDialog.setCanCancel(false);
+//            progressDialog.showDelayed(500);
+            // disabled until we will find a good way for that.
+            BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.PopupDisabled), parentLayout.getLastFragment().getResourceProvider()).show();
+//            MessagesController.getInstance(currentAccount).clearQueryTime();
+//            getMessagesStorage().clearLocalDatabase();
         });
         AlertDialog alertDialog = builder.create();
         showDialog(alertDialog);
