@@ -5582,7 +5582,6 @@
     <string name="ConnectingToProxyDisableAlert">آیا از غیرفعال کردن سرور پروکسی %1$s اطمینان دارید؟ شما می‌توانید بعداً آن را در قسمت تنظیمات &gt; داده‌ها و ذخیره‌سازی مجدداً فعال کنید.</string>
     <string name="ConnectingToProxyTapToDisable">برای غیرفعال کردن پروکسی اینجا را بزنید...</string>
     <string name="CreateNewThemeInfo">شما می‌توانید با تغییر رنگ‌ها در داخل برنامه، پوسته دلخواه خود را ایجاد کنید. شما همیشه می‌توانید از این قسمت به پوسته پیش‌فرض تلگرام بازگردید.</string>
-    <string name="DebugDrawSnowInChat">بارش برف در گفتگو</string>
     <string name="DeleteAccountIfAwayFor">اگر برای این مدت نبودید</string>
     <string name="DeleteLocalization">فایل زبان حذف شود؟</string>
     <string name="DeleteTheseChats">حذف گفتگوها</string>
