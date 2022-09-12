@@ -1,5 +1,10 @@
 # Changes
 
+* 8.85.47
+    * hide deletion marks fix
+    * added persian translation, thanks to OxMohsen
+    * forwarded message real time fix
+    * seconds added to message history
 * 8.85.46
     * "clear db" is disabled cause we need to rework vanilla code (we don't use journal/wal)
     * "delete downloaded file" also works for videos & music
