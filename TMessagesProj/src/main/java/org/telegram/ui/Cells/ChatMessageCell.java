@@ -10931,7 +10931,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 forwardedNameWidth = getMaxNameWidth();
                 String forwardedString;
                 if (MessagesController.getGlobalTelegraherSettings().getBoolean("RealForwardedMessageTime", true)) {
-                    forwardedString = String.format("¶ %s", LocaleController.formatDateBitch(messageObject.messageOwner.fwd_from.date));
+                    forwardedString = String.format("¶ %s", LocaleController.formatDateBitch(messageObject.messageOwner.fwd_from.date, false));
                 } else {
                     forwardedString = getForwardedMessageText(messageObject);
                 }
