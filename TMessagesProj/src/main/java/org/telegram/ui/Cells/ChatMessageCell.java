@@ -10928,11 +10928,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     currentForwardNameString = currentForwardName;
                 }
 
-                if (MessagesController.getGlobalTelegraherSettings().getBoolean("RealForwardedMessageTime", true))
-                    currentForwardNameString += String.format(" %s", LocaleController.formatDateAudio(messageObject.messageOwner.fwd_from.date, false));
-
                 forwardedNameWidth = getMaxNameWidth();
-                String forwardedString = getForwardedMessageText(messageObject);
+                String forwardedString;
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("RealForwardedMessageTime", true)) {
+                    forwardedString = String.format("¶ %s", LocaleController.formatDateBitch(messageObject.messageOwner.fwd_from.date));
+                } else {
+                    forwardedString = getForwardedMessageText(messageObject);
+                }
                 if (hasPsaHint) {
                     forwardedNameWidth -= AndroidUtilities.dp(36);
                 }

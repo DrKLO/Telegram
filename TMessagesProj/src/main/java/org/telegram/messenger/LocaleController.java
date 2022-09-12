@@ -1619,6 +1619,18 @@ public class LocaleController {
         return "LOC_ERR";
     }
 
+    public static String formatDateBitch(long date) {
+        try {
+            date *= 1000;
+            Calendar rightNow = Calendar.getInstance();
+            rightNow.setTimeInMillis(date);
+            return String.format("%1$s/%2$s", getInstance().formatterYear.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
+
     public static String formatDateCallLog(long date) {
         try {
             date *= 1000;
