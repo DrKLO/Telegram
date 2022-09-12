@@ -247,7 +247,7 @@ public class ThMessageHistoryActivity extends BaseFragment implements Notificati
                         thTextDetailCell.setTitleFontSize(SharedConfig.fontSize);
                         thTextDetailCell.setValueFontSize(SharedConfig.fontSize - 2);
                         thTextDetailCell.setTextAndValue(
-                                LocaleController.formatDateAudio(messageMap.get(position).date, false)
+                                LocaleController.formatDateBitch(messageMap.get(position).date, true)
                                 , new String(android.util.Base64.decode(messageMap.get(position).message, Base64.DEFAULT))
                                 , false);
                         thTextDetailCell.setId(position);

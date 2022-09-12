@@ -10605,7 +10605,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             timeString = LocaleController.getString("SponsoredMessage", R.string.SponsoredMessage);
         } else if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE) {
             timeString = "";
-        } else if (edited || deleted) {
+        } else if (edited || (deleted && MessagesController.getTelegraherSettings(currentAccount).getBoolean("EnableChatDeleteMark", true))) {
             timeString = (deleted ? LocaleController.getString("DeletedMessage", R.string.DeletedMessage) : LocaleController.getString("EditedMessage", R.string.EditedMessage)) + " " + LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
         } else {
             timeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
@@ -10928,11 +10928,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     currentForwardNameString = currentForwardName;
                 }
 
-                if (MessagesController.getGlobalTelegraherSettings().getBoolean("RealForwardedMessageTime", true))
-                    currentForwardNameString += String.format(" %s", LocaleController.formatDateAudio(messageObject.messageOwner.fwd_from.date, false));
-
                 forwardedNameWidth = getMaxNameWidth();
-                String forwardedString = getForwardedMessageText(messageObject);
+                String forwardedString;
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("RealForwardedMessageTime", true)) {
+                    forwardedString = String.format("¶ %s", LocaleController.formatDateBitch(messageObject.messageOwner.fwd_from.date, false));
+                } else {
+                    forwardedString = getForwardedMessageText(messageObject);
+                }
                 if (hasPsaHint) {
                     forwardedNameWidth -= AndroidUtilities.dp(36);
                 }
@@ -16243,7 +16245,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     changed = true;
                 }
             }
-            if ((edited || deleted) && !lastDrawingEdited && timeLayout != null) {
+            if ((edited || (deleted && MessagesController.getTelegraherSettings(currentAccount).getBoolean("EnableChatDeleteMark", true))) && !lastDrawingEdited && timeLayout != null) {
                 String editedStr = deleted ? LocaleController.getString("DeletedMessage", R.string.DeletedMessage) : LocaleController.getString("EditedMessage", R.string.EditedMessage);
                 String text = timeLayout.getText().toString();
                 int i = text.indexOf(editedStr);
