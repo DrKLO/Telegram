@@ -1287,15 +1287,7 @@ public final class Util {
    * @return A user agent string generated using the applicationName and the library version.
    */
   public static String getUserAgent(Context context, String applicationName) {
-    String versionName;
-    try {
-      String packageName = "org.telegram.messenger";
-      PackageInfo info = context.getPackageManager().getPackageInfo(packageName, 0);
-      versionName = BuildVars.BUILD_VERSION_STRING;
-    } catch (NameNotFoundException e) {
-      versionName = "?";
-    }
-    return applicationName + "/" + versionName + " (Linux;Android " + Build.VERSION.RELEASE
+    return applicationName + "/" + BuildVars.BUILD_VERSION_STRING + " (Linux;Android " + Build.VERSION.RELEASE
         + ") " + ExoPlayerLibraryInfo.VERSION_SLASHY;
   }
 
