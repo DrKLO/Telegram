@@ -84,9 +84,11 @@ public class PlayPauseDrawable extends Drawable {
         }
         canvas.scale(1.45f * size / AndroidUtilities.dp(28), 1.5f * size / AndroidUtilities.dp(28));
         canvas.rotate(rotation);
-        Theme.playPauseAnimator.draw(canvas, paint, ms);
-        canvas.scale(1.0f, -1.0f);
-        Theme.playPauseAnimator.draw(canvas, paint, ms);
+        if (Theme.playPauseAnimator != null) {
+            Theme.playPauseAnimator.draw(canvas, paint, ms);
+            canvas.scale(1.0f, -1.0f);
+            Theme.playPauseAnimator.draw(canvas, paint, ms);
+        }
         canvas.restore();
     }
 

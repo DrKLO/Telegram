@@ -4,12 +4,15 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 
@@ -102,7 +105,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
     private boolean reset;
     private int lastFrameId;
 
-    DrawingInBackgroundThreadDrawable() {
+    public DrawingInBackgroundThreadDrawable() {
         if (backgroundQueue == null) {
             backgroundQueue = new DispatchQueue("draw_background_queue");
         }
@@ -110,6 +113,9 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
 
     public void draw(Canvas canvas, long time, int w, int h, float alpha) {
         if (error) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                canvas.drawRect(0, 0, w, h, Theme.DEBUG_RED);
+            }
             return;
         }
         height = h;
@@ -133,7 +139,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             }
             nextRenderingCanvas.save();
             nextRenderingCanvas.translate(0, padding);
-            drawInUiThread(nextRenderingCanvas);
+            drawInUiThread(nextRenderingCanvas, 1f);
             nextRenderingCanvas.restore();
         }
 
@@ -152,12 +158,16 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             paint.setAlpha((int) (255 * alpha));
             canvas.save();
             canvas.translate(0, -padding);
-            canvas.drawBitmap(drawingBitmap, 0, 0, paint);
+            this.drawBitmap(canvas, drawingBitmap, paint);
             canvas.restore();
         }
     }
 
-    protected void drawInUiThread(Canvas nextRenderingCanvas) {
+    protected void drawBitmap(Canvas canvas, Bitmap bitmap, Paint paint) {
+        canvas.drawBitmap(bitmap, 0, 0, paint);
+    }
+
+    protected void drawInUiThread(Canvas nextRenderingCanvas, float alpha) {
 
     }
 

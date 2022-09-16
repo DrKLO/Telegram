@@ -336,7 +336,7 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
                             FileLog.e(e);
                         }
                         if (response1 != null) {
-                            TLRPC.TL_account_password accountPassword = (TLRPC.TL_account_password) response1;
+                            TLRPC.account_Password accountPassword = (TLRPC.account_Password) response1;
                             MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
                             PassportActivity fragment = new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, nonce, null, authorizationForm, accountPassword);
                             fragment.setNeedActivityResult(true);

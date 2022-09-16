@@ -305,7 +305,17 @@ public class StickerSetCell extends FrameLayout {
         if (documents != null && !documents.isEmpty()) {
             valueTextView.setText(LocaleController.formatPluralString(emojis ? "EmojiCount" : "Stickers", documents.size()));
 
-            TLRPC.Document sticker = documents.get(0);
+            TLRPC.Document sticker = null;
+            for (int i = 0; i < documents.size(); ++i) {
+                TLRPC.Document d = documents.get(i);
+                if (d != null && d.id == set.set.thumb_document_id) {
+                    sticker = d;
+                    break;
+                }
+            }
+            if (sticker == null) {
+                sticker = documents.get(0);
+            }
             TLObject object = FileLoader.getClosestPhotoSizeWithSize(set.set.thumbs, 90);
             if (object == null) {
                 object = sticker;

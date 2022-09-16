@@ -1642,7 +1642,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             return;
         }
         TLRPC.User user = getMessagesController().getUser(userId);
-        getMessagesController().deleteParticipantFromChat(chatId, user, null);
+        getMessagesController().deleteParticipantFromChat(chatId, user);
         if (delegate != null) {
             delegate.didKickParticipant(userId);
         }
@@ -1832,7 +1832,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setItems(items.toArray(new CharSequence[actions.size()]), AndroidUtilities.toIntArray(icons), (dialogInterface, i) -> {
                 if (actions.get(i) == 2) {
-                    getMessagesController().deleteParticipantFromChat(chatId, user, null);
+                    getMessagesController().deleteParticipantFromChat(chatId, user);
                     removeParticipants(peerId);
                     if (currentChat != null && user != null && BulletinFactory.canShowBulletin(this)) {
                         BulletinFactory.createRemoveFromChatBulletin(this, user, currentChat.title).show();
@@ -1989,7 +1989,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             user = null;
                             chat = getMessagesController().getChat(-peerId);
                         }
-                        getMessagesController().deleteParticipantFromChat(chatId, user, chat, null, false, false);
+                        getMessagesController().deleteParticipantFromChat(chatId, user, chat, false, false);
                     }
                 }
             });

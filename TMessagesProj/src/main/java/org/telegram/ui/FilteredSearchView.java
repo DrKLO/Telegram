@@ -30,6 +30,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -980,7 +981,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             return;
         }
         if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
-            PhotoViewer.getInstance().setParentActivity(parentActivity);
+            PhotoViewer.getInstance().setParentActivity(parentFragment);
             PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, provider);
             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
         } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC || currentSearchFilter.filterType == FiltersView.FILTER_TYPE_VOICE) {
@@ -993,16 +994,16 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 TLRPC.Document document = message.getDocument();
                 if (cell.isLoaded()) {
                     if (message.canPreviewDocument()) {
-                        PhotoViewer.getInstance().setParentActivity(parentActivity);
+                        PhotoViewer.getInstance().setParentActivity(parentFragment);
                         index = messages.indexOf(message);
                         if (index < 0) {
                             ArrayList<MessageObject> documents = new ArrayList<>();
                             documents.add(message);
-                            PhotoViewer.getInstance().setParentActivity(parentActivity);
+                            PhotoViewer.getInstance().setParentActivity(parentFragment);
                             PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, provider);
                             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
                         } else {
-                            PhotoViewer.getInstance().setParentActivity(parentActivity);
+                            PhotoViewer.getInstance().setParentActivity(parentFragment);
                             PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, provider);
                             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
                         }
@@ -1012,7 +1013,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 } else if (!cell.isLoading()) {
                     MessageObject messageObject = cell.getMessage();
                     messageObject.putInDownloadsStore = true;
-                    AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, 0, 0);
+                    AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, FileLoader.PRIORITY_LOW, 0);
                     cell.updateFileExistIcon(true);
                 } else {
                     AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().cancelLoadFile(document);
@@ -1429,7 +1430,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     }
 
     private void openWebView(TLRPC.WebPage webPage, MessageObject message) {
-        EmbedBottomSheet.show(parentActivity, message, provider, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
+        EmbedBottomSheet.show(parentFragment, message, provider, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
     }
 
     int lastAccount;

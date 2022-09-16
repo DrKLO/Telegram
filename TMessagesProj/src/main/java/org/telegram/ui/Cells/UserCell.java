@@ -13,12 +13,15 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -33,6 +36,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
@@ -51,6 +55,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     private CheckBoxSquare checkBoxBig;
     private TextView adminTextView;
     private TextView addButton;
+    private Drawable premiumDrawable;
+    private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
     private Theme.ResourcesProvider resourcesProvider;
 
     private AvatarDrawable avatarDrawable;
@@ -122,6 +128,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) + additionalPadding : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0) + additionalPadding, 0));
+
+        emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameTextView, AndroidUtilities.dp(20));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(15);
@@ -473,7 +481,30 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             nameTextView.setText(name);
         }
         if (currentUser != null && MessagesController.getInstance(currentAccount).isPremiumUser(currentUser)) {
-            nameTextView.setRightDrawable(PremiumGradient.getInstance().premiumStarDrawableMini);
+            if (currentUser.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
+                emojiStatus.set(((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).document_id, false);
+                emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                nameTextView.setRightDrawable(emojiStatus);
+            } else if (currentUser.emoji_status instanceof TLRPC.TL_emojiStatus) {
+                emojiStatus.set(((TLRPC.TL_emojiStatus) currentUser.emoji_status).document_id, false);
+                emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                nameTextView.setRightDrawable(emojiStatus);
+            } else {
+                if (premiumDrawable == null) {
+                    premiumDrawable = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
+                    premiumDrawable = new AnimatedEmojiDrawable.WrapSizeDrawable(premiumDrawable, AndroidUtilities.dp(14), AndroidUtilities.dp(14)) {
+                        @Override
+                        public void draw(@NonNull Canvas canvas) {
+                            canvas.save();
+                            canvas.translate(0, AndroidUtilities.dp(1));
+                            super.draw(canvas);
+                            canvas.restore();
+                        }
+                    };
+                    premiumDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+                }
+                nameTextView.setRightDrawable(premiumDrawable);
+            }
             nameTextView.setRightDrawableTopPadding(-AndroidUtilities.dp(0.5f));
         } else {
             nameTextView.setRightDrawable(null);
@@ -562,11 +593,13 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        emojiStatus.attach();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        emojiStatus.detach();
     }
 }

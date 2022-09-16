@@ -634,7 +634,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         photoEntry.isVideo = isVideo;
         photoEntry.thumbPath = thumb;
         arrayList.add(photoEntry);
-        PhotoViewer.getInstance().setParentActivity(parentFragment.getParentActivity());
+        PhotoViewer.getInstance().setParentActivity(parentFragment);
         PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_AVATAR, false, new PhotoViewer.EmptyPhotoViewerProvider() {
             @Override
             public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
@@ -686,7 +686,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 currentPicturePath = null;
             } else if (requestCode == 13) {
                 parentFragment.getParentActivity().overridePendingTransition(R.anim.alpha_in, R.anim.alpha_out);
-                PhotoViewer.getInstance().setParentActivity(parentFragment.getParentActivity());
+                PhotoViewer.getInstance().setParentActivity(parentFragment);
                 int orientation = 0;
                 try {
                     ExifInterface ei = new ExifInterface(currentPicturePath);

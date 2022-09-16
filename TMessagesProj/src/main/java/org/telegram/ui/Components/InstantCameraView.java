@@ -16,6 +16,8 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -32,6 +34,7 @@ import android.graphics.SurfaceTexture;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.hardware.Camera;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -2035,7 +2038,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
             GLES20.glUniform2f(resolutionHandle, videoWidth, videoHeight);
 
-            if (oldCameraTexture[0] != 0) {
+            if (oldCameraTexture[0] != 0 && oldTextureTextureBuffer != null) {
                 if (!blendEnabled) {
                     GLES20.glEnable(GLES20.GL_BLEND);
                     blendEnabled = true;
@@ -2148,6 +2151,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     audioEncoder.stop();
                     audioEncoder.release();
                     audioEncoder = null;
+
+                    setBluetoothScoOn(false);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -2270,7 +2275,28 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             handler.exit();
         }
 
+        private void setBluetoothScoOn(boolean scoOn) {
+            AudioManager am = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+            if (am.isBluetoothScoAvailableOffCall() && SharedConfig.recordViaSco || !scoOn) {
+                BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+                try {
+                    if (btAdapter != null && btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) == BluetoothProfile.STATE_CONNECTED || !scoOn) {
+                        if (scoOn && !am.isBluetoothScoOn()) {
+                            am.startBluetoothSco();
+                        } else if (!scoOn && am.isBluetoothScoOn()) {
+                            am.stopBluetoothSco();
+                        }
+                    }
+                } catch (SecurityException ignored) {
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+
         private void prepareEncoder() {
+            setBluetoothScoOn(true);
+
             try {
                 int recordBufferSize = AudioRecord.getMinBufferSize(audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
                 if (recordBufferSize <= 0) {

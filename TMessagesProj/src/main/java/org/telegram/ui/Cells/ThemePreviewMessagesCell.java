@@ -32,6 +32,7 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 public class ThemePreviewMessagesCell extends LinearLayout {
 
@@ -190,12 +191,12 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                 private GestureDetector gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
                     @Override
                     public boolean onDoubleTap(MotionEvent e) {
-                        boolean added = getMessageObject().selectReaction(MediaDataController.getInstance(currentAccount).getDoubleTapReaction(), false, false);
+                        boolean added = getMessageObject().selectReaction(ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(MediaDataController.getInstance(currentAccount).getDoubleTapReaction()), false, false);
                         setMessageObject(getMessageObject(), null, false, false);
                         requestLayout();
                         ReactionsEffectOverlay.removeCurrent(false);
                         if (added) {
-                            ReactionsEffectOverlay.show(fragment, null, cells[1], e.getX(), e.getY(), MediaDataController.getInstance(currentAccount).getDoubleTapReaction(), currentAccount, ReactionsEffectOverlay.LONG_ANIMATION);
+                            ReactionsEffectOverlay.show(fragment, null, cells[1], null, e.getX(), e.getY(), ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(MediaDataController.getInstance(currentAccount).getDoubleTapReaction()), currentAccount, ReactionsEffectOverlay.LONG_ANIMATION);
                             ReactionsEffectOverlay.startAnimation();
                         }
                         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {

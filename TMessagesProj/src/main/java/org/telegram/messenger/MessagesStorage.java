@@ -47,6 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MessagesStorage extends BaseController {
 
@@ -89,7 +90,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    private final static int LAST_DB_VERSION = 100;
+    private final static int LAST_DB_VERSION = 101;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
 
@@ -407,6 +408,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE attach_menu_bots(data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE premium_promo(data BLOB, date INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE emoji_statuses(data BLOB, type INTEGER);").stepThis().dispose();
                 //version
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
@@ -1610,6 +1612,12 @@ public class MessagesStorage extends BaseController {
             database.executeFast("ALTER TABLE stickers_featured ADD COLUMN emoji INTEGER default 0").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 100").stepThis().dispose();
             version = 100;
+        }
+
+        if (version == 100) {
+            database.executeFast("CREATE TABLE emoji_statuses(data BLOB, type INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 101").stepThis().dispose();
+            version = 101;
         }
 
         FileLog.d("MessagesStorage db migration finished");
@@ -5753,27 +5761,42 @@ public class MessagesStorage extends BaseController {
                     for (int b = 0; b < inbox.size(); b++) {
                         long key = inbox.keyAt(b);
                         int messageId = inbox.get(key);
-                        boolean canCountByMessageId = true;
+                        int stillUnread = stillUnreadMessagesCount == null ? -2 : stillUnreadMessagesCount.get(key, -2);
 
-                        if (stillUnreadMessagesCount != null && stillUnreadMessagesCount.get(key, -2) != -2) {
-                            SQLiteCursor checkHolesCursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND end > %d", key, messageId));
-                            while (checkHolesCursor.next()) {
-                                canCountByMessageId = false;
+                        if (stillUnread >= 0) {
+                            dialogsToUpdate.put(key, stillUnread);
+                            if (BuildVars.DEBUG_VERSION) {
+                                FileLog.d(key + " update unread messages count by still unread " + stillUnread);
                             }
-                            checkHolesCursor.dispose();
-                        }
-
-                        if (canCountByMessageId) {
-                            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages_v2 WHERE uid = %d AND mid > %d AND read_state IN(0,2) AND out = 0", key, messageId));
-                            if (cursor.next()) {
-                                int unread = cursor.intValue(0);
-                                dialogsToUpdate.put(key, unread);
-                            }
-                            cursor.dispose();
                         } else {
-                            int unread = stillUnreadMessagesCount.get(key, -1);
-                            if (unread >= 0) {
-                                dialogsToUpdate.put(key, unread);
+                            boolean canCountByMessageId = true;
+
+                            if (stillUnreadMessagesCount != null && stillUnread != -2) {
+                                SQLiteCursor checkHolesCursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND end > %d", key, messageId));
+                                while (checkHolesCursor.next()) {
+                                    canCountByMessageId = false;
+                                }
+                                checkHolesCursor.dispose();
+                            }
+
+                            if (canCountByMessageId) {
+                                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages_v2 WHERE uid = %d AND mid > %d AND read_state IN(0,2) AND out = 0", key, messageId));
+                                if (cursor.next()) {
+                                    int unread = cursor.intValue(0);
+                                    dialogsToUpdate.put(key, unread);
+                                    if (BuildVars.DEBUG_VERSION) {
+                                        FileLog.d(key + " update unread messages count " + unread);
+                                    }
+                                } else {
+                                    if (BuildVars.DEBUG_VERSION) {
+                                        FileLog.d(key + " can't update unread messages count cursor trouble");
+                                    }
+                                }
+                                cursor.dispose();
+                            } else {
+                                if (BuildVars.DEBUG_VERSION) {
+                                    FileLog.d(key + " can't update unread messages count");
+                                }
                             }
                         }
 
@@ -6679,6 +6702,40 @@ public class MessagesStorage extends BaseController {
             FileLog.e(e);
         }
         return result[0];
+    }
+
+    public TLRPC.Message getMessage(long dialogId, long msgId) {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AtomicReference<TLRPC.Message> ref = new AtomicReference<>();
+        storageQueue.postRunnable(() -> {
+            SQLiteCursor cursor = null;
+            try {
+                cursor = database.queryFinalized("SELECT data FROM messages_v2 WHERE uid = " + dialogId + " AND mid = " + msgId + " LIMIT 1");
+                while (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        data.reuse();
+                        ref.set(message);
+                    }
+                }
+                cursor.dispose();
+                cursor = null;
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+                countDownLatch.countDown();
+            }
+        });
+        try {
+            countDownLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return ref.get();
     }
 
     public boolean hasInviteMeMessage(long chatId) {

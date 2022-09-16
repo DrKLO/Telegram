@@ -594,10 +594,10 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             for (int a = 0; a < dids.size(); a++) {
                                 long did = dids.get(a);
                                 if (message != null) {
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                                 }
                                 if (!TextUtils.isEmpty(fmessage)) {
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                                 }
                             }
                             fragment1.finishFragment();
@@ -621,7 +621,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
                             ChatActivity chatActivity = new ChatActivity(args1);
                             presentFragment(chatActivity, true);
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
                     });
                     presentFragment(fragment);

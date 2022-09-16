@@ -3,11 +3,20 @@ package org.telegram.ui.Components.Premium;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -34,10 +43,15 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.LoadingSpan;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -46,7 +60,7 @@ import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 
-public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
+public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
     ArrayList<PremiumPreviewFragment.PremiumFeatureData> premiumFeatures = new ArrayList<>();
     int currentAccount;
@@ -78,6 +92,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
     public float startEnterFromY1;
     public float startEnterFromScale;
     public SimpleTextView startEnterFromView;
+    public View overrideTitleIcon;
+    public TLRPC.InputStickerSet statusStickerSet;
+    public boolean isEmojiStatus;
 
     int[] coords = new int[2];
     float enterTransitionProgress = 0;
@@ -86,13 +103,15 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
 
     boolean animateConfetti;
     FrameLayout buttonContainer;
+    FrameLayout bulletinContainer;
 
-    public PremiumPreviewBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user) {
-        this(fragment, currentAccount, user, null);
+    public PremiumPreviewBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user, Theme.ResourcesProvider resourcesProvider) {
+        this(fragment, currentAccount, user, null, resourcesProvider);
     }
 
-    public PremiumPreviewBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user, GiftPremiumBottomSheet.GiftTier gift) {
-        super(fragment, false, false);
+    public PremiumPreviewBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user, GiftPremiumBottomSheet.GiftTier gift, Theme.ResourcesProvider resourcesProvider) {
+        super(fragment, false, false, resourcesProvider);
+        fixNavigationBar();
         this.fragment = fragment;
         topPadding = 0.26f;
         this.user = user;
@@ -141,6 +160,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
 
         fireworksOverlay = new FireworksOverlay(getContext());
         container.addView(fireworksOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        bulletinContainer = new FrameLayout(getContext());
+        containerView.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
     }
 
     public PremiumPreviewBottomSheet setOutboundGift(boolean outboundGift) {
@@ -154,10 +176,14 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private void showDialog(Dialog dialog) {
-        iconTextureView.setDialogVisible(true);
+        if (iconTextureView != null) {
+            iconTextureView.setDialogVisible(true);
+        }
         starParticlesView.setPaused(true);
         dialog.setOnDismissListener(dialog1 -> {
-            iconTextureView.setDialogVisible(false);
+            if (iconTextureView != null) {
+                iconTextureView.setDialogVisible(false);
+            }
             starParticlesView.setPaused(false);
         });
         dialog.show();
@@ -166,20 +192,18 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
     @Override
     public void onViewCreated(FrameLayout containerView) {
         super.onViewCreated(containerView);
+        currentAccount = UserConfig.selectedAccount;
 
         PremiumButtonView premiumButtonView = new PremiumButtonView(getContext(), false);
-        premiumButtonView.setButton(PremiumPreviewFragment.getPremiumButtonText(currentAccount), new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PremiumPreviewFragment.sentPremiumButtonClick();
-                PremiumPreviewFragment.buyPremium(fragment, "profile");
-            }
+        premiumButtonView.setButton(PremiumPreviewFragment.getPremiumButtonText(currentAccount, null), v -> {
+            PremiumPreviewFragment.sentPremiumButtonClick();
+            PremiumPreviewFragment.buyPremium(fragment, "profile");
         });
 
         buttonContainer = new FrameLayout(getContext());
 
         View buttonDivider = new View(getContext());
-        buttonDivider.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        buttonDivider.setBackgroundColor(getThemedColor(Theme.key_divider));
         buttonContainer.addView(buttonDivider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1));
         buttonDivider.getLayoutParams().height = 1;
         AndroidUtilities.updateViewVisibilityAnimated(buttonDivider, true, 1f, false);
@@ -196,7 +220,114 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
         super.onPreMeasure(widthMeasureSpec, heightMeasureSpec);
         measureGradient(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(heightMeasureSpec));
         container.getLocationOnScreen(coords);
+    }
 
+    private LinkSpanDrawable.LinksTextView titleView;
+    private TextView subtitleView;
+    public void setTitle() {
+        if (titleView == null || subtitleView == null) {
+            return;
+        }
+        if (statusStickerSet != null) {
+            final String stickerSetPlaceholder = "<STICKERSET>";
+            String string = LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogTitle, ContactsController.formatName(user.first_name, user.last_name), stickerSetPlaceholder);
+            CharSequence charSequence = AndroidUtilities.replaceSingleTag(string, Theme.key_windowBackgroundWhiteBlueButton, null);
+            SpannableStringBuilder title = charSequence instanceof SpannableStringBuilder ? ((SpannableStringBuilder) charSequence) : new SpannableStringBuilder(charSequence);
+            int index = charSequence.toString().indexOf(stickerSetPlaceholder);
+            if (index >= 0) {
+                TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(statusStickerSet, false);
+                TLRPC.Document sticker = null;
+                if (stickerSet != null && !stickerSet.documents.isEmpty()) {
+                    sticker = stickerSet.documents.get(0);
+                    if (stickerSet.set != null) {
+                        for (int i = 0; i < stickerSet.documents.size(); ++i) {
+                            if (stickerSet.documents.get(i).id == stickerSet.set.thumb_document_id) {
+                                sticker = stickerSet.documents.get(i);
+                                break;
+                            }
+                        }
+                    }
+                }
+                SpannableStringBuilder replaceWith;
+                if (sticker != null) {
+                    SpannableStringBuilder animatedEmoji = new SpannableStringBuilder("x");
+                    animatedEmoji.setSpan(new AnimatedEmojiSpan(sticker, titleView.getPaint().getFontMetricsInt()), 0, animatedEmoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (stickerSet != null && stickerSet.set != null) {
+                        animatedEmoji.append("\u00A0").append(stickerSet.set.title);
+                    }
+                    replaceWith = animatedEmoji;
+                } else {
+                    SpannableStringBuilder loading = new SpannableStringBuilder("xxxxxx");
+                    loading.setSpan(new LoadingSpan(titleView, AndroidUtilities.dp(100)), 0, loading.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    replaceWith = loading;
+                }
+                title.replace(index, index + stickerSetPlaceholder.length(), replaceWith);
+                title.setSpan(new ClickableSpan() {
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                    }
+                    @Override
+                    public void onClick(@NonNull View view) {}
+                }, index, index + replaceWith.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                titleView.setOnLinkPressListener(l -> {
+                    ArrayList<TLRPC.InputStickerSet> inputStickerSets = new ArrayList<>();
+                    inputStickerSets.add(statusStickerSet);
+                    BaseFragment overridenFragment = new BaseFragment() {
+                        @Override
+                        public Activity getParentActivity() {
+                            if (fragment == null) {
+                                return null;
+                            }
+                            return fragment.getParentActivity();
+                        }
+                        @Override
+                        public int getCurrentAccount() {
+                            return currentAccount;
+                        }
+                        @Override
+                        public FrameLayout getLayoutContainer() {
+                            return bulletinContainer;
+                        }
+                        @Override
+                        public View getFragmentView() {
+                            return containerView;
+                        }
+                        @Override
+                        public Dialog showDialog(Dialog dialog) {
+                            dialog.show();
+                            return dialog;
+                        }
+                    };
+                    if (fragment != null) {
+                        overridenFragment.setParentFragment(fragment);
+                    }
+                    new EmojiPacksAlert(overridenFragment, getContext(), resourcesProvider, inputStickerSets) {
+                        @Override
+                        protected void onCloseByLink() {
+                            PremiumPreviewBottomSheet.this.dismiss();
+                        }
+                    }.show();
+                });
+            }
+            titleView.setText(title, null);
+            subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserStatusDialogSubtitle)));
+        } else if (isEmojiStatus) {
+            titleView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.TelegramPremiumUserStatusDefaultDialogTitle, ContactsController.formatName(user.first_name, user.last_name))));
+            subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogSubtitle, ContactsController.formatName(user.first_name, user.last_name))));
+        } else if (giftTier != null) {
+            if (isOutboundGift) {
+                titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton, null));
+                subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), Theme.key_windowBackgroundWhiteBlueButton, null));
+            } else {
+                titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton, null));
+                subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
+            }
+        } else {
+            titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), Theme.key_windowBackgroundWhiteBlueButton, null));
+            subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserDialogSubtitle)));
+        }
     }
 
     @Override
@@ -229,62 +360,101 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
                     };
                     iconContainer = linearLayout;
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    iconTextureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE) {
-                        @Override
-                        protected void onAttachedToWindow() {
-                            super.onAttachedToWindow();
-                            setPaused(false);
-                        }
+                    if (overrideTitleIcon == null) {
+                        iconTextureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE) {
+                            @Override
+                            protected void onAttachedToWindow() {
+                                super.onAttachedToWindow();
+                                setPaused(false);
+                            }
 
-                        @Override
-                        protected void onDetachedFromWindow() {
-                            super.onDetachedFromWindow();
-                            setPaused(true);
-                        }
-                    };
-                    Bitmap bitmap = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmap);
-                    canvas.drawColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2), Theme.getColor(Theme.key_dialogBackground), 0.5f));
-                    iconTextureView.setBackgroundBitmap(bitmap);
-                    iconTextureView.mRenderer.colorKey1 = Theme.key_premiumGradient1;
-                    iconTextureView.mRenderer.colorKey2 = Theme.key_premiumGradient2;
-                    iconTextureView.mRenderer.updateColors();
-                    linearLayout.addView(iconTextureView, LayoutHelper.createLinear(160, 160, Gravity.CENTER_HORIZONTAL));
-
-                    TextView titleView = new TextView(context);
-                    titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                    titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                    titleView.setGravity(Gravity.CENTER_HORIZONTAL);
-                    titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                    titleView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-                    linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_HORIZONTAL, 40, 0, 40, 0));
-
-                    TextView subtitleView = new TextView(context);
-                    subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                    subtitleView.setGravity(Gravity.CENTER_HORIZONTAL);
-                    subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                    subtitleView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-                    linearLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 16, 9, 16, 20));
-
-                    if (giftTier != null) {
-                        if (isOutboundGift) {
-                            titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitle, user != null ? user.first_name : "", giftTier.getMonths()), null));
-                            subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), null));
-                        } else {
-                            titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitle, user != null ? user.first_name : "", giftTier.getMonths()), null));
-                            subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
-                        }
+                            @Override
+                            protected void onDetachedFromWindow() {
+                                super.onDetachedFromWindow();
+                                setPaused(true);
+                            }
+                        };
+                        Bitmap bitmap = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bitmap);
+                        canvas.drawColor(ColorUtils.blendARGB(getThemedColor(Theme.key_premiumGradient2), getThemedColor(Theme.key_dialogBackground), 0.5f));
+                        iconTextureView.setBackgroundBitmap(bitmap);
+                        iconTextureView.mRenderer.colorKey1 = Theme.key_premiumGradient2;
+                        iconTextureView.mRenderer.colorKey2 = Theme.key_premiumGradient1;
+                        iconTextureView.mRenderer.updateColors();
+                        linearLayout.addView(iconTextureView, LayoutHelper.createLinear(160, 160, Gravity.CENTER_HORIZONTAL));
                     } else {
-                        titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), null));
-                        subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserDialogSubtitle)));
+                        if (overrideTitleIcon.getParent() != null) {
+                            ((ViewGroup) overrideTitleIcon.getParent()).removeView(overrideTitleIcon);
+                        }
+                        linearLayout.addView(overrideTitleIcon, LayoutHelper.createLinear(140, 140, Gravity.CENTER_HORIZONTAL, Gravity.CENTER, 10, 10, 10, 10));
                     }
 
-                    starParticlesView = new StarParticlesView(context);
+                    if (titleView == null) {
+                        final ColorFilter colorFilter = new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteLinkText), 178), PorterDuff.Mode.MULTIPLY);
+                        titleView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
+                            private Layout lastLayout;
+                            AnimatedEmojiSpan.EmojiGroupedSpans stack;
+
+                            @Override
+                            protected void onDetachedFromWindow() {
+                                super.onDetachedFromWindow();
+                                AnimatedEmojiSpan.release(this, stack);
+                                lastLayout = null;
+                            }
+
+                            @Override
+                            protected void dispatchDraw(Canvas canvas) {
+                                super.dispatchDraw(canvas);
+                                if (lastLayout != getLayout()) {
+                                    stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, this, stack, lastLayout = getLayout());
+                                }
+                                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), stack, 0, null, 0, 0, 0, 1f, colorFilter);
+                            }
+                        };
+                        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        titleView.setGravity(Gravity.CENTER_HORIZONTAL);
+                        titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                        titleView.setLinkTextColor(getThemedColor(Theme.key_windowBackgroundWhiteLinkText));
+                    }
+                    if (titleView.getParent() != null) {
+                        ((ViewGroup) titleView.getParent()).removeView(titleView);
+                    }
+                    linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_HORIZONTAL, 40, 0, 40, 0));
+
+                    if (subtitleView == null) {
+                        subtitleView = new TextView(context);
+                        subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                        subtitleView.setGravity(Gravity.CENTER_HORIZONTAL);
+                        subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                        subtitleView.setLinkTextColor(getThemedColor(Theme.key_windowBackgroundWhiteLinkText));
+                    }
+                    if (subtitleView.getParent() != null) {
+                        ((ViewGroup) subtitleView.getParent()).removeView(subtitleView);
+                    }
+                    linearLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 16, 9, 16, 20));
+
+                    setTitle();
+
+                    starParticlesView = new StarParticlesView(context) {
+                        @Override
+                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+                            drawable.rect2.set(0, 0, getMeasuredWidth(), getMeasuredHeight() - AndroidUtilities.dp(52));
+                        }
+                    };
                     FrameLayout frameLayout = new FrameLayout(context) {
                         @Override
                         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                            starParticlesView.setTranslationY(iconTextureView.getTop() + iconTextureView.getMeasuredHeight() / 2f - starParticlesView.getMeasuredHeight() / 2f);
+                            float y = 0;
+                            if (iconTextureView != null) {
+                                y = iconTextureView.getTop() + iconTextureView.getMeasuredHeight() / 2f;
+                            } else if (overrideTitleIcon != null) {
+                                y = overrideTitleIcon.getTop() + overrideTitleIcon.getMeasuredHeight() / 2f;
+                            }
+                            starParticlesView.setTranslationY(y - starParticlesView.getMeasuredHeight() / 2f);
                         }
                     };
                     frameLayout.setClipChildren(false);
@@ -292,8 +462,13 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
                     frameLayout.addView(linearLayout);
 
                     starParticlesView.drawable.useGradient = true;
+                    starParticlesView.drawable.useBlur = false;
+                    starParticlesView.drawable.forceMaxAlpha = true;
+                    starParticlesView.drawable.checkBounds = true;
                     starParticlesView.drawable.init();
-                    iconTextureView.setStarParticlesView(starParticlesView);
+                    if (iconTextureView != null) {
+                        iconTextureView.setStarParticlesView(starParticlesView);
+                    }
 
                     view = frameLayout;
                     break;
@@ -310,7 +485,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
                     };
                     break;
                 case 2:
-                    view = new ShadowSectionCell(context, 12, Theme.getColor(Theme.key_windowBackgroundGray));
+                    view = new ShadowSectionCell(context, 12, getThemedColor(Theme.key_windowBackgroundGray));
                     break;
                 case 3:
                     view = new View(context) {
@@ -403,8 +578,16 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
 
     @Override
     protected void mainContainerDispatchDraw(Canvas canvas) {
+        if (overrideTitleIcon != null) {
+            overrideTitleIcon.setVisibility(enterTransitionInProgress ? View.INVISIBLE : View.VISIBLE);
+        }
         super.mainContainerDispatchDraw(canvas);
         if (startEnterFromView != null && enterTransitionInProgress) {
+            View titleIcon = overrideTitleIcon == null ? iconTextureView : overrideTitleIcon;
+            if (titleIcon == overrideTitleIcon) {
+                overrideTitleIcon.setVisibility(View.VISIBLE);
+            }
+
             canvas.save();
 
             float[] points = new float[]{startEnterFromX, startEnterFromY};
@@ -414,12 +597,12 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
             float cyFrom = -coords[1] + startEnterFromY1 + points[1];
 
             float fromSize = startEnterFromScale * startEnterFromDrawable.getIntrinsicWidth();
-            float toSize = iconTextureView.getMeasuredHeight() * 0.8f;
+            float toSize = titleIcon.getMeasuredHeight() * 0.8f;
             float toSclale = toSize / fromSize;
             float bigIconFromScale = fromSize / toSize;
 
-            float cxTo = iconTextureView.getMeasuredWidth() / 2f;
-            View view = iconTextureView;
+            float cxTo = titleIcon.getMeasuredWidth() / 2f;
+            View view = titleIcon;
             while (view != container) {
                 if (view == null) {
                     break;
@@ -427,7 +610,8 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
                 cxTo += view.getX();
                 view = (View) view.getParent();
             }
-            float cyTo = iconTextureView.getY() + ((View) iconTextureView.getParent()).getY() + ((View) iconTextureView.getParent().getParent()).getY() + iconTextureView.getMeasuredHeight() / 2f;
+            float cy = 0;
+            float cyTo = cy + titleIcon.getY() + ((View) titleIcon.getParent()).getY() + ((View) titleIcon.getParent().getParent()).getY() + titleIcon.getMeasuredHeight() / 2f;
 
             float x = AndroidUtilities.lerp(cxFrom, cxTo, CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(enterTransitionProgress));
             float y = AndroidUtilities.lerp(cyFrom, cyTo, enterTransitionProgress);
@@ -448,9 +632,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
 
                 s = AndroidUtilities.lerp(bigIconFromScale, 1, enterTransitionProgress);
                 canvas.scale(s, s, x, y);
-                canvas.translate(x - iconTextureView.getMeasuredWidth() / 2f, y - iconTextureView.getMeasuredHeight() / 2f);
-              //  canvas.saveLayerAlpha(0, 0, iconTextureView.getMeasuredWidth(), iconTextureView.getMeasuredHeight(), (int) (255 * enterTransitionProgress), Canvas.ALL_SAVE_FLAG);
-                iconTextureView.draw(canvas);
+                canvas.translate(x - titleIcon.getMeasuredWidth() / 2f, y - titleIcon.getMeasuredHeight() / 2f);
+              //  canvas.saveLayerAlpha(0, 0, titleIcon.getMeasuredWidth(), titleIcon.getMeasuredHeight(), (int) (255 * enterTransitionProgress), Canvas.ALL_SAVE_FLAG);
+                titleIcon.draw(canvas);
                // canvas.restore();
             }
             canvas.restore();
@@ -468,7 +652,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
         iconContainer.invalidate();
         startEnterFromView.getRightDrawable().setAlpha(0);
         startEnterFromView.invalidate();
-        iconTextureView.startEnterAnimation(-360, 100);
+        if (iconTextureView != null) {
+            iconTextureView.startEnterAnimation(-360, 100);
+        }
         enterAnimator.addUpdateListener(animation -> {
             enterTransitionProgress = (float) animation.getAnimatedValue();
             container.invalidate();
@@ -493,5 +679,26 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView {
         enterAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         enterAnimator.start();
         return super.onCustomOpenAnimation();
+    }
+
+    @Override
+    public void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+    }
+
+    @Override
+    public void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.groupStickersDidLoad) {
+            if (statusStickerSet != null && statusStickerSet.id == (long) args[0]) {
+                setTitle();
+            }
+        }
     }
 }

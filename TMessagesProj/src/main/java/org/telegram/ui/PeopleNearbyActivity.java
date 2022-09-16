@@ -779,7 +779,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     if (ChatObject.isNotInChat(chat)) {
                         getMessagesController().deleteDialog(dialogId, 0, revoke);
                     } else {
-                        getMessagesController().deleteParticipantFromChat(-dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
+                        getMessagesController().deleteParticipantFromChat(-dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, revoke, revoke);
                     }
                 } else {
                     getMessagesController().deleteDialog(dialogId, 0, revoke);

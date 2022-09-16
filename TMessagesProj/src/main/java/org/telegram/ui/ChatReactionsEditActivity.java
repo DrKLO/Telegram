@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AvailableReactionCell;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.RadioCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
@@ -35,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class ChatReactionsEditActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    private final static int TYPE_INFO = 0, TYPE_HEADER = 1, TYPE_REACTION = 2;
+    private final static int TYPE_INFO = 0, TYPE_HEADER = 1, TYPE_REACTION = 2, TYPE_CONTROLS_CONTAINER = 3;
 
     public final static String KEY_CHAT_ID = "chat_id";
 
@@ -51,6 +53,17 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
 
     private TextCheckCell enableReactionsCell;
     private ArrayList<TLRPC.TL_availableReaction> availableReactions = new ArrayList();
+    LinearLayout contorlsLayout;
+
+    public final static int SELECT_TYPE_NONE = 2, SELECT_TYPE_SOME = 1, SELECT_TYPE_ALL = 0;
+    int selectedType = -1;
+    int startFromType;
+    private RadioCell allReactions;
+    private RadioCell someReactions;
+    private RadioCell disableReactions;
+    ArrayList<RadioCell> radioCells = new ArrayList();
+    boolean isChannel;
+
 
     public ChatReactionsEditActivity(Bundle args) {
         super(args);
@@ -81,6 +94,8 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
 
     @Override
     public View createView(Context context) {
+        isChannel = ChatObject.isChannelAndNotMegaGroup(chatId, currentAccount);
+
         actionBar.setTitle(LocaleController.getString("Reactions", R.string.Reactions));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
@@ -99,15 +114,49 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
 
         availableReactions.addAll(getMediaDataController().getEnabledReactionsList());
 
-        enableReactionsCell = new TextCheckCell(context);
-        enableReactionsCell.setHeight(56);
-        enableReactionsCell.setTextAndCheck(LocaleController.getString("EnableReactions", R.string.EnableReactions), !chatReactions.isEmpty(), false);
-        enableReactionsCell.setBackgroundColor(Theme.getColor(enableReactionsCell.isChecked() ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
-        enableReactionsCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        enableReactionsCell.setOnClickListener(v -> {
-            setCheckedEnableReactionCell(!enableReactionsCell.isChecked());
-        });
-        ll.addView(enableReactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        if (isChannel) {
+            enableReactionsCell = new TextCheckCell(context);
+            enableReactionsCell.setHeight(56);
+            enableReactionsCell.setTextAndCheck(LocaleController.getString("EnableReactions", R.string.EnableReactions), !chatReactions.isEmpty(), false);
+            enableReactionsCell.setBackgroundColor(Theme.getColor(enableReactionsCell.isChecked() ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
+            enableReactionsCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            enableReactionsCell.setOnClickListener(v -> {
+                setCheckedEnableReactionCell(enableReactionsCell.isChecked() ? SELECT_TYPE_NONE : SELECT_TYPE_SOME, true);
+            });
+            ll.addView(enableReactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        HeaderCell headerCell = new HeaderCell(context);
+        headerCell.setText(LocaleController.getString("AvailableReactions", R.string.AvailableReactions));
+
+        contorlsLayout = new LinearLayout(context);
+        contorlsLayout.setOrientation(LinearLayout.VERTICAL);
+        allReactions = new RadioCell(context);
+        allReactions.setText(LocaleController.getString("AllReactions", R.string.AllReactions), false, true);
+        someReactions = new RadioCell(context);
+        someReactions.setText(LocaleController.getString("SomeReactions", R.string.SomeReactions), false, true);
+        disableReactions = new RadioCell(context);
+        disableReactions.setText(LocaleController.getString("NoReactions", R.string.NoReactions), false, false);
+        contorlsLayout.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        contorlsLayout.addView(allReactions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        contorlsLayout.addView(someReactions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        contorlsLayout.addView(disableReactions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        radioCells.clear();
+        radioCells.add(allReactions);
+        radioCells.add(someReactions);
+        radioCells.add(disableReactions);
+        allReactions.setOnClickListener(v -> AndroidUtilities.runOnUIThread(() -> setCheckedEnableReactionCell(SELECT_TYPE_ALL, true)));
+        someReactions.setOnClickListener(v -> AndroidUtilities.runOnUIThread(() -> setCheckedEnableReactionCell(SELECT_TYPE_SOME, true)));
+        disableReactions.setOnClickListener(v -> AndroidUtilities.runOnUIThread(() -> setCheckedEnableReactionCell(SELECT_TYPE_NONE, true)));
+
+        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        allReactions.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+        someReactions.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+        disableReactions.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+
+
+        setCheckedEnableReactionCell(startFromType, false);
 
         listView = new RecyclerListView(context);
         listView.setLayoutManager(new LinearLayoutManager(context));
@@ -127,6 +176,16 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
                     case TYPE_HEADER: {
                         return new RecyclerListView.Holder(new HeaderCell(context, 23));
                     }
+                    case TYPE_CONTROLS_CONTAINER:
+                        FrameLayout frameLayout = new FrameLayout(context);
+                        if (contorlsLayout.getParent() != null) {
+                            ((ViewGroup) contorlsLayout.getParent()).removeView(contorlsLayout);
+                        }
+                        frameLayout.addView(contorlsLayout);
+                        frameLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+                        return new RecyclerListView.Holder(frameLayout);
+
                 }
             }
 
@@ -136,17 +195,27 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
                     case TYPE_INFO:
                         TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
                         infoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-                        infoCell.setText(ChatObject.isChannelAndNotMegaGroup(currentChat) ? LocaleController.getString("EnableReactionsChannelInfo", R.string.EnableReactionsChannelInfo) :
-                                LocaleController.getString("EnableReactionsGroupInfo", R.string.EnableReactionsGroupInfo));
+                        if (isChannel) {
+                            infoCell.setText(ChatObject.isChannelAndNotMegaGroup(currentChat) ? LocaleController.getString("EnableReactionsChannelInfo", R.string.EnableReactionsChannelInfo) :
+                                    LocaleController.getString("EnableReactionsGroupInfo", R.string.EnableReactionsGroupInfo));
+                        } else {
+                            if (selectedType == SELECT_TYPE_SOME) {
+                                infoCell.setText(LocaleController.getString("EnableSomeReactionsInfo", R.string.EnableSomeReactionsInfo));
+                            } else if (selectedType == SELECT_TYPE_ALL) {
+                                infoCell.setText(LocaleController.getString("EnableAllReactionsInfo", R.string.EnableAllReactionsInfo));
+                            } else if (selectedType == SELECT_TYPE_NONE) {
+                                infoCell.setText(LocaleController.getString("DisableReactionsInfo", R.string.DisableReactionsInfo));
+                            }
+                        }
                         break;
                     case TYPE_HEADER:
                         HeaderCell headerCell = (HeaderCell) holder.itemView;
-                        headerCell.setText(LocaleController.getString("AvailableReactions", R.string.AvailableReactions));
+                        headerCell.setText(LocaleController.getString("OnlyAllowThisReactions", R.string.OnlyAllowThisReactions));
                         headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                         break;
                     case TYPE_REACTION:
                         AvailableReactionCell reactionCell = (AvailableReactionCell) holder.itemView;
-                        TLRPC.TL_availableReaction react = availableReactions.get(position - 2);
+                        TLRPC.TL_availableReaction react = availableReactions.get(position - (isChannel ? 2 : 3));
                         reactionCell.bind(react, chatReactions.contains(react.reaction), currentAccount);
                         break;
                 }
@@ -154,26 +223,35 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
 
             @Override
             public int getItemCount() {
-                return 1 + (!chatReactions.isEmpty() ? 1 + availableReactions.size() : 0);
+                if (isChannel) {
+                    return 1 + (!chatReactions.isEmpty() ? 1 + availableReactions.size() : 0);
+                }
+                return 1 + 1 + (!chatReactions.isEmpty() ? 1 + availableReactions.size() : 0);
             }
 
             @Override
             public int getItemViewType(int position) {
-                return position == 0 ? TYPE_INFO : position == 1 ? TYPE_HEADER : TYPE_REACTION;
+                if (isChannel) {
+                    return position == 0 ? TYPE_INFO : position == 1 ? TYPE_HEADER : TYPE_REACTION;
+                }
+                if (position == 0) {
+                    return TYPE_CONTROLS_CONTAINER;
+                }
+                return position == 1 ? TYPE_INFO : position == 2 ? TYPE_HEADER : TYPE_REACTION;
             }
         });
         listView.setOnItemClickListener((view, position) -> {
-            if (position <= 1) return;
+            if (position <= (isChannel ? 1 : 2)) return;
 
             AvailableReactionCell cell = (AvailableReactionCell) view;
-            TLRPC.TL_availableReaction react = availableReactions.get(position - 2);
+            TLRPC.TL_availableReaction react = availableReactions.get(position - (isChannel ? 2 : 3));
             boolean nc = !chatReactions.contains(react.reaction);
             if (nc) {
                 chatReactions.add(react.reaction);
             } else {
                 chatReactions.remove(react.reaction);
                 if (chatReactions.isEmpty()) {
-                    setCheckedEnableReactionCell(false);
+                    setCheckedEnableReactionCell(SELECT_TYPE_NONE, true);
                 }
             }
 
@@ -187,45 +265,68 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
         return contentView;
     }
 
-    private void setCheckedEnableReactionCell(boolean c) {
-        if (enableReactionsCell.isChecked() == c) {
+    private void setCheckedEnableReactionCell(int selectType, boolean animated) {
+        if (selectedType == selectType) {
             return;
         }
-        enableReactionsCell.setChecked(c);
-        int clr = Theme.getColor(c ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
-        if (c) {
-            enableReactionsCell.setBackgroundColorAnimated(c, clr);
-        } else {
-            enableReactionsCell.setBackgroundColorAnimatedReverse(clr);
-        }
-        if (c) {
-            for (TLRPC.TL_availableReaction a : availableReactions) {
-                chatReactions.add(a.reaction);
+        if (enableReactionsCell != null) {
+            boolean checked = selectType == SELECT_TYPE_SOME;
+            enableReactionsCell.setChecked(checked);
+            int clr = Theme.getColor(checked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
+            if (checked) {
+                enableReactionsCell.setBackgroundColorAnimated(checked, clr);
+            } else {
+                enableReactionsCell.setBackgroundColorAnimatedReverse(clr);
             }
-            listAdapter.notifyItemRangeInserted(1, 1 + availableReactions.size());
+        }
+        this.selectedType = selectType;
+        for (int i = 0; i < radioCells.size(); i++) {
+            radioCells.get(i).setChecked(selectType == i, animated);
+        }
+
+        if (selectType == SELECT_TYPE_SOME) {
+            if (animated) {
+                chatReactions.clear();
+                for (TLRPC.TL_availableReaction a : availableReactions) {
+                    if (a.reaction.equals("\uD83D\uDC4D") || a.reaction.equals("\uD83D\uDC4E")) {
+                        chatReactions.add(a.reaction);
+                    }
+                }
+                if (chatReactions.isEmpty() && availableReactions.size() >= 2) {
+                    chatReactions.add(availableReactions.get(0).reaction);
+                    chatReactions.add(availableReactions.get(1).reaction);
+                }
+            }
+            if (listAdapter != null && animated) {
+                listAdapter.notifyItemRangeInserted((isChannel ? 1 : 2), 1 + availableReactions.size());
+            }
         } else {
-            chatReactions.clear();
-            listAdapter.notifyItemRangeRemoved(1, 1 + availableReactions.size());
+            if (!chatReactions.isEmpty()) {
+                chatReactions.clear();
+                if (listAdapter != null && animated) {
+                    listAdapter.notifyItemRangeRemoved((isChannel ? 1 : 2), 1 + availableReactions.size());
+                }
+            }
+        }
+        if (!isChannel && listAdapter != null && animated) {
+            listAdapter.notifyItemChanged(1);
+        }
+        if (listAdapter != null && !animated) {
+            listAdapter.notifyDataSetChanged();
         }
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-
-        boolean changed = true;
-        if (info != null) {
-            changed = !info.available_reactions.equals(chatReactions);
-        }
-        if (changed) {
-            getMessagesController().setChatReactions(chatId, chatReactions);
-        }
+        getMessagesController().setChatReactions(chatId, selectedType, chatReactions);
         getNotificationCenter().removeObserver(this, NotificationCenter.reactionsDidLoad);
     }
 
 
     /**
      * Sets chat full info
+     *
      * @param info Info to use
      */
     public void setInfo(TLRPC.ChatFull info) {
@@ -234,8 +335,21 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             if (currentChat == null) {
                 currentChat = getMessagesController().getChat(chatId);
             }
+            chatReactions = new ArrayList<>();
+            if (info.available_reactions instanceof TLRPC.TL_chatReactionsAll) {
+                startFromType = SELECT_TYPE_ALL;
+            } else if (info.available_reactions instanceof TLRPC.TL_chatReactionsNone) {
+                startFromType = SELECT_TYPE_NONE;
+            } else if (info.available_reactions instanceof TLRPC.TL_chatReactionsSome) {
+                TLRPC.TL_chatReactionsSome reactionsSome = (TLRPC.TL_chatReactionsSome) info.available_reactions;
+                for (int i = 0; i < reactionsSome.reactions.size(); i++) {
+                    if (reactionsSome.reactions.get(i) instanceof TLRPC.TL_reactionEmoji) {
+                        chatReactions.add(((TLRPC.TL_reactionEmoji) reactionsSome.reactions.get(i)).emoticon);
+                    }
+                }
+                startFromType = SELECT_TYPE_SOME;
+            }
 
-            chatReactions = new ArrayList<>(info.available_reactions);
         }
     }
 
@@ -261,7 +375,9 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
     @SuppressLint("NotifyDataSetChanged")
     private void updateColors() {
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        enableReactionsCell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
+        if (enableReactionsCell != null) {
+            enableReactionsCell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
+        }
         listAdapter.notifyDataSetChanged();
     }
 

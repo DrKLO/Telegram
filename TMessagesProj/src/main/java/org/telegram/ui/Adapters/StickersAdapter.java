@@ -138,7 +138,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
                 ArrayList<TLRPC.TL_messages_stickerSet> sets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_EMOJI);
                 File f = FileLoader.getInstance(currentAccount).getPathToAttach(animatedSticker, true);
                 if (!f.exists()) {
-                    FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(animatedSticker), sets.get(0), null, 1, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(animatedSticker), sets.get(0), null, FileLoader.PRIORITY_NORMAL, 1);
                 }
             }
         }

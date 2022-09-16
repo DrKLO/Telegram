@@ -23,6 +23,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
@@ -38,6 +39,7 @@ import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlobDrawable;
@@ -61,6 +63,10 @@ public class GroupCallUserCell extends FrameLayout {
     private RLottieImageView muteButton;
     private RLottieDrawable muteDrawable;
     private RLottieDrawable shakeHandDrawable;
+
+    public AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable rightDrawable;
+    private Drawable verifiedDrawable;
+    private Drawable premiumDrawable;
 
     private RadialProgressView avatarProgressView;
 
@@ -287,6 +293,7 @@ public class GroupCallUserCell extends FrameLayout {
         nameTextView.setDrawablePadding(AndroidUtilities.dp(6));
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 54 : 67, 10, LocaleController.isRTL ? 67 : 54, 0));
+        rightDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameTextView, AndroidUtilities.dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_EMOJI_STATUS);
 
         speakingDrawable = context.getResources().getDrawable(R.drawable.voice_volume_mini);
         speakingDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_voipgroup_speakingText), PorterDuff.Mode.MULTIPLY));
@@ -460,7 +467,31 @@ public class GroupCallUserCell extends FrameLayout {
             avatarDrawable.setInfo(currentUser);
 
             nameTextView.setText(UserObject.getUserName(currentUser));
-            nameTextView.setRightDrawable(currentUser != null && currentUser.verified ? new VerifiedDrawable(getContext()) : null);
+            if (currentUser != null && currentUser.verified) {
+                rightDrawable.set(verifiedDrawable = (verifiedDrawable == null ? new VerifiedDrawable(getContext()) : verifiedDrawable), animated);
+            } else if (currentUser != null && currentUser.emoji_status instanceof TLRPC.TL_emojiStatus) {
+                rightDrawable.set(((TLRPC.TL_emojiStatus) currentUser.emoji_status).document_id, animated);
+            } else if (currentUser != null && currentUser.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
+                rightDrawable.set(((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).document_id, animated);
+            } else if (currentUser != null && currentUser.premium) {
+                if (premiumDrawable == null) {
+                    premiumDrawable = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
+                    premiumDrawable = new AnimatedEmojiDrawable.WrapSizeDrawable(premiumDrawable, AndroidUtilities.dp(14), AndroidUtilities.dp(14)) {
+                        @Override
+                        public void draw(@NonNull Canvas canvas) {
+                            canvas.save();
+                            canvas.translate(AndroidUtilities.dp(-2), AndroidUtilities.dp(0));
+                            super.draw(canvas);
+                            canvas.restore();
+                        }
+                    };
+                }
+                rightDrawable.set(premiumDrawable, animated);
+            } else {
+                rightDrawable.set((Drawable) null, animated);
+            }
+            rightDrawable.setColor(Theme.getColor(Theme.key_premiumGradient1));
+            nameTextView.setRightDrawable(rightDrawable);
             avatarImageView.getImageReceiver().setCurrentAccount(account.getCurrentAccount());
             if (uploadingAvatar != null) {
                 hasAvatar = true;
@@ -477,7 +508,11 @@ public class GroupCallUserCell extends FrameLayout {
 
             if (currentChat != null) {
                 nameTextView.setText(currentChat.title);
-                nameTextView.setRightDrawable(currentChat.verified ? new VerifiedDrawable(getContext()) : null);
+                if (currentChat.verified) {
+                    rightDrawable.set(verifiedDrawable = (verifiedDrawable == null ? new VerifiedDrawable(getContext()) : verifiedDrawable), animated);
+                } else {
+                    rightDrawable.set((Drawable) null, animated);
+                }
                 avatarImageView.getImageReceiver().setCurrentAccount(account.getCurrentAccount());
                 if (uploadingAvatar != null) {
                     hasAvatar = true;

@@ -4,9 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
-import android.os.Build;
-import android.os.Bundle;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
@@ -16,10 +13,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
-import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.accessibility.AccessibilityNodeProvider;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -35,7 +29,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox2;
@@ -45,8 +39,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.FilteredSearchView;
-
-import java.util.Locale;
 
 public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
 
@@ -90,6 +82,9 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     private TextPaint description2TextPaint;
     private TextPaint captionTextPaint;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    boolean showReorderIcon;
+    float showReorderIconProgress;
 
     public SharedAudioCell(Context context) {
         this(context, VIEW_TYPE_DEFAULT, null);
@@ -343,7 +338,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         if (miniButtonState == 0) {
             miniButtonState = 1;
             radialProgress.setProgress(0, false);
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             radialProgress.setMiniIcon(getMiniIconForCurrentState(), false, true);
             invalidate();
         } else if (miniButtonState == 1) {
@@ -361,7 +356,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         if (buttonState == 0) {
             if (miniButtonState == 0) {
                 currentMessageObject.putInDownloadsStore = true;
-                FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+                FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             }
             if (needPlayMessage(currentMessageObject)) {
                 if (hasMiniProgress == 2 && miniButtonState != 1) {
@@ -383,7 +378,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         } else if (buttonState == 2) {
             radialProgress.setProgress(0, false);
             currentMessageObject.putInDownloadsStore = true;
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             buttonState = 4;
             radialProgress.setIcon(getIconForCurrentState(), false, true);
             invalidate();
@@ -574,10 +569,36 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), (int) (enterAlpha * 255), Canvas.ALL_SAVE_FLAG);
             drawInternal(canvas);
             super.dispatchDraw(canvas);
+            drawReorder(canvas);
             canvas.restore();
         } else {
             drawInternal(canvas);
+            drawReorder(canvas);
             super.dispatchDraw(canvas);
+        }
+
+
+    }
+
+    private void drawReorder(Canvas canvas) {
+        if (showReorderIcon || showReorderIconProgress != 0) {
+            if (showReorderIcon && showReorderIconProgress != 1f) {
+                showReorderIconProgress += 16 /150f;
+                invalidate();
+            } else if (!showReorderIcon && showReorderIconProgress != 0) {
+                showReorderIconProgress -= 16 /150f;
+                invalidate();
+            }
+            showReorderIconProgress = Utilities.clamp(showReorderIconProgress, 1f, 0);
+
+            int x = getMeasuredWidth() - AndroidUtilities.dp(12) - Theme.dialogs_reorderDrawable.getIntrinsicWidth();
+            int y = (getMeasuredHeight() - Theme.dialogs_reorderDrawable.getIntrinsicHeight()) >> 1;
+
+            canvas.save();
+            canvas.scale(showReorderIconProgress, showReorderIconProgress, x + Theme.dialogs_reorderDrawable.getIntrinsicWidth() / 2f, y + Theme.dialogs_reorderDrawable.getIntrinsicHeight() / 2f);
+            Theme.dialogs_reorderDrawable.setBounds(x, y, x + Theme.dialogs_reorderDrawable.getIntrinsicWidth(), y + Theme.dialogs_reorderDrawable.getIntrinsicHeight());
+            Theme.dialogs_reorderDrawable.draw(canvas);
+            canvas.restore();
         }
     }
 
@@ -628,6 +649,18 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             this.enterAlpha = alpha;
             invalidate();
         }
+    }
+
+
+    public void showReorderIcon(boolean show, boolean animated) {
+        if (showReorderIcon == show) {
+            return;
+        }
+        showReorderIcon = show;
+        if (!animated) {
+            showReorderIconProgress = show ? 1f : 0;
+        }
+        invalidate();
     }
 }
 

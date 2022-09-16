@@ -26,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,12 +111,11 @@ public class AnimatedTextView extends View {
                     canvas.save();
                     int lwidth = j >= 0 ? width : currentWidth;
                     if (isRTL) {
-                        x = lwidth - x - currentLayout[i].getWidth();
-                        x -= fullWidth - lwidth;
+                        x = -x + 2 * lwidth - currentLayout[i].getWidth() - fullWidth;
                     }
                     if ((gravity & Gravity.CENTER_HORIZONTAL) > 0) {
                         x += (fullWidth - lwidth) / 2f;
-                    } else if ((gravity & Gravity.RIGHT) > 0) {
+                    } else if ((gravity & Gravity.RIGHT) > 0 || isRTL) {
                         x += fullWidth - lwidth;
                     }
                     canvas.translate(x, y);
@@ -132,12 +132,11 @@ public class AnimatedTextView extends View {
                     textPaint.setAlpha((int) (alpha * (1f - t)));
                     canvas.save();
                     if (isRTL) {
-                        x = oldWidth - x - oldLayout[i].getWidth();
-                        x -= fullWidth - oldWidth;
+                        x = -x + 2 * oldWidth - oldLayout[i].getWidth() - fullWidth;
                     }
                     if ((gravity & Gravity.CENTER_HORIZONTAL) > 0) {
                         x += (fullWidth - oldWidth) / 2f;
-                    } else if ((gravity & Gravity.RIGHT) > 0) {
+                    } else if ((gravity & Gravity.RIGHT) > 0 || isRTL) {
                         x += fullWidth - oldWidth;
                     }
                     canvas.translate(x, y);
@@ -152,12 +151,11 @@ public class AnimatedTextView extends View {
                         canvas.save();
                         float x = currentLayoutOffsets[i];
                         if (isRTL) {
-                            x = currentWidth - x - currentLayout[i].getWidth();
-                            x -= fullWidth - currentWidth;
+                            x = -x + 2 * currentWidth - currentLayout[i].getWidth() - fullWidth;
                         }
                         if ((gravity & Gravity.CENTER_HORIZONTAL) > 0) {
                             x += (fullWidth - currentWidth) / 2f;
-                        } else if ((gravity & Gravity.RIGHT) > 0) {
+                        } else if ((gravity & Gravity.RIGHT) > 0 || isRTL) {
                             x += fullWidth - currentWidth;
                         }
                         canvas.translate(x, 0);

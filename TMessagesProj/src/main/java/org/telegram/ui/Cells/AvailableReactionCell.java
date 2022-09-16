@@ -26,6 +26,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Reactions.ReactionsUtils;
 import org.telegram.ui.Components.Switch;
 
 public class AvailableReactionCell extends FrameLayout {
@@ -91,7 +92,7 @@ public class AvailableReactionCell extends FrameLayout {
         this.react = react;
         textView.setText(react.title);
         SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(react.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-        imageView.setImage(ImageLocation.getForDocument(react.center_icon), "32_32_lastframe", "webp", svgThumb, react);
+        imageView.setImage(ImageLocation.getForDocument(react.activate_animation), ReactionsUtils.ACTIVATE_ANIMATION_FILTER, "tgs", svgThumb, react);
 
         locked = canLock && react.premium && !UserConfig.getInstance(currentAccount).isPremium();
         if (locked) {

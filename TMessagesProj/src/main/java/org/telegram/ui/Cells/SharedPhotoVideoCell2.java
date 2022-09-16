@@ -135,7 +135,7 @@ public class SharedPhotoVideoCell2 extends View {
                     showImageStub = true;
                 }
             }
-        } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageObject.messageOwner.media.photo != null && !messageObject.photoThumbs.isEmpty()) {
+        } else if (MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaPhoto && MessageObject.getMedia(messageObject.messageOwner).photo != null && !messageObject.photoThumbs.isEmpty()) {
             if (messageObject.mediaExists || canAutoDownload(messageObject)) {
                 if (messageObject.mediaThumb != null) {
                     if (messageObject.strippedThumb != null) {

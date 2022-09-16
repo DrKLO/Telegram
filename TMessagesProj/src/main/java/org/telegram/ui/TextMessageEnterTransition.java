@@ -195,8 +195,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 linesOffset = chatActivityEnterView.getEditField().getLayout().getLineTop(chatActivityEnterView.getEditField().getLayout().getLineForOffset(newStart[0]));
                 layoutH = chatActivityEnterView.getEditField().getLayout().getLineBottom(chatActivityEnterView.getEditField().getLayout().getLineForOffset(newStart[0] + trimmedStr.length())) - linesOffset;
             }
-            text = Emoji.replaceEmoji(editText, textPaint.getFontMetricsInt(), emojiSize, false);
             text = AnimatedEmojiSpan.cloneSpans(text);
+            text = Emoji.replaceEmoji(editText, textPaint.getFontMetricsInt(), emojiSize, false);
         }
 
         scaleFrom = chatActivityEnterView.getEditField().getTextSize() / textPaint.getTextSize();
@@ -636,17 +636,17 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         } else {
             if (crossfade && changeColor) {
                 int oldColor = layout.getPaint().getColor();
-                int oldAlpha = Color.alpha(oldColor);
-                layout.getPaint().setColor(ColorUtils.setAlphaComponent(ColorUtils.blendARGB(fromColor, toColor, alphaProgress), (int) (oldAlpha * (1f - alphaProgress))));
+                layout.getPaint().setColor(ColorUtils.blendARGB(fromColor, toColor, alphaProgress));
+                canvas.saveLayerAlpha(0,0,layout.getWidth(),layout.getHeight(),(int) (255 * (1f - alphaProgress)),Canvas.ALL_SAVE_FLAG);
                 layout.draw(canvas);
                 AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f - alphaProgress);
                 layout.getPaint().setColor(oldColor);
+                canvas.restore();
             } else if (crossfade) {
-                int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
-                Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
+                canvas.saveLayerAlpha(0,0,layout.getWidth(),layout.getHeight(),(int) (255 * (1f - alphaProgress)),Canvas.ALL_SAVE_FLAG);
                 layout.draw(canvas);
                 AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f - alphaProgress);
-                Theme.chat_msgTextPaint.setAlpha(oldAlpha);
+                canvas.restore();
             } else {
                 layout.draw(canvas);
                 AnimatedEmojiSpan.drawAnimatedEmojis(canvas, layout, animatedEmojiStack, 0, null, 0, 0, 0, 1f);

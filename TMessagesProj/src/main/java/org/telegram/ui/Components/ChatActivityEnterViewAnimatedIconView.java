@@ -5,6 +5,7 @@ import android.content.Context;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
 import java.util.HashMap;
@@ -59,6 +60,15 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
             drawable.setOnAnimationEndListener(() -> animatingState = null);
             setAnimation(drawable);
             AndroidUtilities.runOnUIThread(drawable::start);
+        }
+
+        switch (state) {
+            case VOICE:
+                setContentDescription(LocaleController.getString("AccDescrVoiceMessage", R.string.AccDescrVoiceMessage));
+                break;
+            case VIDEO:
+                setContentDescription(LocaleController.getString("AccDescrVideoMessage", R.string.AccDescrVideoMessage));
+                break;
         }
     }
 

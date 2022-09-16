@@ -40,6 +40,7 @@ public class FlickerLoadingView extends View {
     public final static int STICKERS_TYPE = 19;
     public final static int LIMIT_REACHED_GROUPS = 21;
     public final static int LIMIT_REACHED_LINKS = 22;
+    public final static int REACTED_TYPE_WITH_EMOJI_HINT = 23;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -121,15 +122,19 @@ public class FlickerLoadingView extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (isSingleCell) {
             if (itemsCount > 1 && ignoreHeightCheck) {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount, MeasureSpec.EXACTLY));
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount + getAdditionalHeight(), MeasureSpec.EXACTLY));
             } else if (itemsCount > 1 && MeasureSpec.getSize(heightMeasureSpec) > 0) {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(MeasureSpec.getSize(heightMeasureSpec), getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount), MeasureSpec.EXACTLY));
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(MeasureSpec.getSize(heightMeasureSpec), getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount) + getAdditionalHeight(), MeasureSpec.EXACTLY));
             } else {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY));
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) + getAdditionalHeight(), MeasureSpec.EXACTLY));
             }
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
+    }
+
+    public int getAdditionalHeight() {
+        return 0;
     }
 
     @Override
@@ -561,7 +566,7 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
-        } else if (getViewType() == REACTED_TYPE) {
+        } else if (getViewType() == REACTED_TYPE || getViewType() == REACTED_TYPE_WITH_EMOJI_HINT) {
             int k = 0;
             while (h <= getMeasuredHeight()) {
                 int r = AndroidUtilities.dp(18);
@@ -582,6 +587,14 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
+            rectF.set(paddingLeft + AndroidUtilities.dp(8), h + AndroidUtilities.dp(20), getWidth() - AndroidUtilities.dp(8), h + AndroidUtilities.dp(28));
+            checkRtl(rectF);
+            canvas.drawRoundRect(rectF, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
+
+            rectF.set(paddingLeft + AndroidUtilities.dp(8), h + AndroidUtilities.dp(36), getWidth() - AndroidUtilities.dp(53), h + AndroidUtilities.dp(44));
+            checkRtl(rectF);
+            canvas.drawRoundRect(rectF, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
+
         } else if (viewType == LIMIT_REACHED_GROUPS) {
             int k = 0;
             while (h <= getMeasuredHeight()) {
@@ -730,6 +743,7 @@ public class FlickerLoadingView extends View {
                 return AndroidUtilities.dp(103);
             case MEMBER_REQUESTS_TYPE:
                 return AndroidUtilities.dp(107);
+            case REACTED_TYPE_WITH_EMOJI_HINT:
             case REACTED_TYPE:
                 return AndroidUtilities.dp(48);
             case LIMIT_REACHED_GROUPS:

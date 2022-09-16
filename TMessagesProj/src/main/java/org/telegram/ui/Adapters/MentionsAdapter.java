@@ -275,7 +275,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 File f = FileLoader.getInstance(currentAccount).getPathToAttach(thumb, "webp", true);
                 if (!f.exists()) {
                     stickersToLoad.add(FileLoader.getAttachFileName(thumb, "webp"));
-                    FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(thumb, result.sticker), result.parent, "webp", 1, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(thumb, result.sticker), result.parent, "webp", FileLoader.PRIORITY_NORMAL, 1);
                 }
             }
         }

@@ -4,12 +4,15 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
+import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,6 +33,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
@@ -47,12 +51,12 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_MESSAGES_LARGE = 1;
     public static final int CACHE_TYPE_KEYBOARD = 2;
     public static final int CACHE_TYPE_ALERT_PREVIEW = 3;
-    public static final int CACHE_TYPE_TAB_STRIP = 4;
-
-    public static final int STANDARD_LOTTIE_FRAME = 5;
-
-    private Paint debugCacheType;
-    private static final boolean DEBUG_CACHE_TYPE = false;
+    public static final int CACHE_TYPE_ALERT_PREVIEW_LARGE = 4;
+    public static final int CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP = 5;
+    public static final int CACHE_TYPE_TAB_STRIP = 6;
+    public static final int CACHE_TYPE_EMOJI_STATUS = 7;
+    public static final int STANDARD_LOTTIE_FRAME = 8;
+    public static final int CACHE_TYPE_ALERT_EMOJI_STATUS = 9;
 
     private static HashMap<Integer, HashMap<Long, AnimatedEmojiDrawable>> globalEmojiCache;
     @NonNull
@@ -325,7 +329,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
     private boolean attached;
     private ArrayList<View> views;
-    private ArrayList<AnimatedEmojiSpan.AnimatedEmojiHolder> holders;
+    private ArrayList<AnimatedEmojiSpan.InvalidateHolder> holders;
 
     public int sizedp;
 
@@ -340,18 +344,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     public AnimatedEmojiDrawable(int cacheType, int currentAccount, long documentId) {
         this.currentAccount = currentAccount;
         this.cacheType = cacheType;
-        if (this.cacheType == CACHE_TYPE_MESSAGES) {
-            sizedp = (int) ((Math.abs(Theme.chat_msgTextPaint.ascent()) + Math.abs(Theme.chat_msgTextPaint.descent())) * 1.15f / AndroidUtilities.density);
-        } else if (this.cacheType == CACHE_TYPE_MESSAGES_LARGE) {
-            sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[2].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[2].descent())) * 1.15f / AndroidUtilities.density);
-        } else if (this.cacheType == CACHE_TYPE_KEYBOARD || this.cacheType == CACHE_TYPE_TAB_STRIP || this.cacheType == CACHE_TYPE_ALERT_PREVIEW) {
-            sizedp = 34;
-        } else if (this.cacheType == STANDARD_LOTTIE_FRAME) {
-            sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[0].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[0].descent())) * 1.15f / AndroidUtilities.density);
-        } else {
-            sizedp = 34;
-        }
-
+        updateSize();
         this.documentId = documentId;
         getDocumentFetcher(currentAccount).fetchDocument(documentId, document -> {
             this.document = document;
@@ -363,21 +356,21 @@ public class AnimatedEmojiDrawable extends Drawable {
         this.cacheType = cacheType;
         this.currentAccount = currentAccount;
         this.document = document;
+        updateSize();
+        this.initDocument();
+    }
+
+    private void updateSize() {
         if (this.cacheType == CACHE_TYPE_MESSAGES) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaint.ascent()) + Math.abs(Theme.chat_msgTextPaint.descent())) * 1.15f / AndroidUtilities.density);
-        } else if (this.cacheType == CACHE_TYPE_MESSAGES_LARGE) {
+        } else if (this.cacheType == CACHE_TYPE_MESSAGES_LARGE || this.cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[2].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[2].descent())) * 1.15f / AndroidUtilities.density);
-        } else if (this.cacheType == CACHE_TYPE_KEYBOARD || this.cacheType == CACHE_TYPE_TAB_STRIP || this.cacheType == CACHE_TYPE_ALERT_PREVIEW) {
-            sizedp = 34;
         } else if (this.cacheType == STANDARD_LOTTIE_FRAME) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[0].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[0].descent())) * 1.15f / AndroidUtilities.density);
         } else {
             sizedp = 34;
         }
-
-        this.initDocument();
     }
-
     public long getDocumentId() {
         return this.document != null ? this.document.id : this.documentId;
     }
@@ -403,10 +396,14 @@ public class AnimatedEmojiDrawable extends Drawable {
                 return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
             }
         };
+        if (colorFilterToSet != null && canOverrideColor()) {
+            imageReceiver.setColorFilter(colorFilterToSet);
+        }
         if (cacheType != 0) {
             imageReceiver.setUniqKeyPrefix(cacheType + "_");
         }
-        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_ALERT_PREVIEW);
+        imageReceiver.setVideoThumbIsSame(true);
+        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP);
 
         String filter = sizedp + "_" + sizedp;
         if (cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH)) {
@@ -428,16 +425,24 @@ public class AnimatedEmojiDrawable extends Drawable {
             mediaFilter = filter + "_" + ImageLoader.AUTOPLAY_FILTER;
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
             thumbDrawable = svgThumb;
-        } else {
+        } else if ("application/x-tgsticker".equals(document.mime_type)) {
             String probableCacheKey = (cacheType != 0 ? cacheType + "_" : "") + documentId + "@" + filter;
             if (cacheType == CACHE_TYPE_KEYBOARD || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey)) {
                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-                if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, false)) {
+                if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, true)) {
                     svgThumb.overrideWidthAndHeight(512, 512);
                 }
                 thumbDrawable = svgThumb;
             }
             mediaLocation = ImageLocation.getForDocument(document);
+            mediaFilter = filter;
+        } else {
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
+            if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, true)) {
+                svgThumb.overrideWidthAndHeight(512, 512);
+            }
+            thumbDrawable = svgThumb;
+            mediaLocation = null;
             mediaFilter = filter;
         }
         if (onlyStaticPreview) {
@@ -449,8 +454,15 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
         }
 
-        if (cacheType == CACHE_TYPE_ALERT_PREVIEW) {
+        if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) {
+            imageReceiver.setAutoRepeatCount(2);
+        }
+
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
             imageReceiver.setLayerNum(7);
+        }
+        if (cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) {
+            imageReceiver.setLayerNum(6656);
         }
         imageReceiver.setAspectFit(true);
         if (cacheType != STANDARD_LOTTIE_FRAME) {
@@ -463,6 +475,11 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setAutoRepeat(0);
         }
         imageReceiver.setAllowDecodeSingleFrame(true);
+        int roundRadius = 0;
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_TAB_STRIP) {
+            roundRadius = AndroidUtilities.dp(6);
+        }
+        imageReceiver.setRoundRadius(roundRadius);
         updateAttachState();
         invalidate();
     }
@@ -478,7 +495,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         if (holders != null) {
             for (int i = 0; i < holders.size(); ++i) {
-                AnimatedEmojiSpan.AnimatedEmojiHolder holder = holders.get(i);
+                AnimatedEmojiSpan.InvalidateHolder holder = holders.get(i);
                 if (holder != null) {
                     holder.invalidate();
                 }
@@ -500,7 +517,10 @@ public class AnimatedEmojiDrawable extends Drawable {
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        drawDebugCacheType(canvas);
+        draw(canvas, true);
+    }
+
+    public void draw(@NonNull Canvas canvas, boolean canTranslate) {
         if (imageReceiver != null) {
             imageReceiver.setImageCoords(getBounds());
             imageReceiver.setAlpha(alpha);
@@ -512,7 +532,6 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     public void draw(Canvas canvas, Rect drawableBounds, float alpha) {
-        drawDebugCacheType(canvas);
         if (imageReceiver != null) {
             imageReceiver.setImageCoords(drawableBounds);
             imageReceiver.setAlpha(alpha);
@@ -524,8 +543,8 @@ public class AnimatedEmojiDrawable extends Drawable {
             drawPlaceholder(canvas, drawableBounds.centerX(), drawableBounds.centerY(), drawableBounds.width() / 2f);
         }
     }
-    public void draw(Canvas canvas, ImageReceiver.BackgroundThreadDrawHolder backgroundThreadDrawHolder) {
-        drawDebugCacheType(canvas);
+
+    public void draw(Canvas canvas, ImageReceiver.BackgroundThreadDrawHolder backgroundThreadDrawHolder, boolean canTranslate) {
         if (imageReceiver != null) {
             imageReceiver.setAlpha(alpha);
             imageReceiver.draw(canvas, backgroundThreadDrawHolder);
@@ -534,16 +553,6 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         if (backgroundThreadDrawHolder != null) {
             drawPlaceholder(canvas, backgroundThreadDrawHolder.imageX + backgroundThreadDrawHolder.imageW / 2, backgroundThreadDrawHolder.imageY + backgroundThreadDrawHolder.imageH / 2, backgroundThreadDrawHolder.imageW / 2);
-        }
-    }
-
-    private void drawDebugCacheType(Canvas canvas) {
-        if (DEBUG_CACHE_TYPE) {
-            if (debugCacheType == null) {
-                debugCacheType = new Paint(Paint.ANTI_ALIAS_FLAG);
-            }
-            debugCacheType.setColor(0xff000000 | (cacheType % 2 == 0 ? 0x00ff0000 : 0x0000ff00) | (cacheType % 3 == 0 ? 0x000000ff : 0x00ff0000));
-            canvas.drawRect(getBounds(), debugCacheType);
         }
     }
 
@@ -580,7 +589,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         updateAttachState();
     }
 
-    public void addView(AnimatedEmojiSpan.AnimatedEmojiHolder holder) {
+    public void addView(AnimatedEmojiSpan.InvalidateHolder holder) {
         if (holders == null) {
             holders = new ArrayList<>(10);
         }
@@ -590,7 +599,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         updateAttachState();
     }
 
-    public void removeView(AnimatedEmojiSpan.AnimatedEmojiHolder holder) {
+    public void removeView(AnimatedEmojiSpan.InvalidateHolder holder) {
         if (holders != null) {
             holders.remove(holder);
         }
@@ -604,7 +613,6 @@ public class AnimatedEmojiDrawable extends Drawable {
         updateAttachState();
     }
 
-    int count;
     private void updateAttachState() {
         if (imageReceiver == null) {
             return;
@@ -613,20 +621,38 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (attach != attached) {
             attached = attach;
             if (attached) {
-                count++;
                 imageReceiver.onAttachedToWindow();
             } else {
-                count--;
                 imageReceiver.onDetachedFromWindow();
             }
         }
 
-//        if (globalEmojiCache != null && (views == null || views.size() <= 0) && (holders == null || holders.size() <= 0) && globalEmojiCache.size() > 300) {
+//        if (globalEmojiCache != null && (views == null || views.size() <= 0) && (holders == null || holders.size() <= 0) && globalEmojiCache.size() > 50) {
 //            HashMap<Long, AnimatedEmojiDrawable> cache = globalEmojiCache.get(currentAccount);
 //            if (cache != null) {
 //                cache.remove(documentId);
 //            }
 //        }
+    }
+
+    private Boolean canOverrideColorCached = null;
+    public boolean canOverrideColor() {
+        if (canOverrideColorCached != null) {
+            return canOverrideColorCached;
+        }
+        if (document != null) {
+            TLRPC.InputStickerSet set = MessageObject.getInputStickerSet(document);
+            return canOverrideColorCached = (
+                set instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses ||
+                set instanceof TLRPC.TL_inputStickerSetID && set.id == 773947703670341676L
+            );
+        }
+        return false;
+    }
+
+    @Override
+    public int getAlpha() {
+        return (int) (255 * this.alpha);
     }
 
     @Override
@@ -637,9 +663,15 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
     }
 
+    private ColorFilter colorFilterToSet;
+
     @Override
     public void setColorFilter(@Nullable ColorFilter colorFilter) {
-
+        if (imageReceiver == null) {
+            colorFilterToSet = colorFilter;
+        } else if (canOverrideColor()) {
+            imageReceiver.setColorFilter(colorFilter);
+        }
     }
 
     @Override
@@ -651,4 +683,350 @@ public class AnimatedEmojiDrawable extends Drawable {
         return imageReceiver;
     }
 
+    public static class WrapSizeDrawable extends Drawable {
+
+        private Drawable drawable;
+        int width, height;
+
+        public WrapSizeDrawable(Drawable drawable, int width, int height) {
+            this.drawable = drawable;
+            this.width = width;
+            this.height = height;
+        }
+
+        public Drawable getDrawable() {
+            return drawable;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            if (this.drawable != null) {
+                this.drawable.setBounds(getBounds());
+                this.drawable.setAlpha(this.alpha);
+                this.drawable.draw(canvas);
+            }
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return this.width;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return this.height;
+        }
+
+        private int alpha = 255;
+        @Override
+        public void setAlpha(int alpha) {
+            this.alpha = alpha;
+            if (this.drawable != null) {
+                this.drawable.setAlpha(alpha);
+            }
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+            if (this.drawable != null) {
+                this.drawable.setColorFilter(colorFilter);
+            }
+        }
+
+        @Override
+        public int getOpacity() {
+            if (this.drawable != null) {
+                return this.drawable.getOpacity();
+            }
+            return PixelFormat.TRANSPARENT;
+        }
+    }
+
+    public static class SwapAnimatedEmojiDrawable extends Drawable {
+
+        public boolean center = false;
+
+        private int cacheType;
+        private OvershootInterpolator overshootInterpolator = new OvershootInterpolator(2f);
+        private AnimatedFloat changeProgress = new AnimatedFloat((View) null, 300, CubicBezierInterpolator.EASE_OUT);
+        private Drawable[] drawables = new Drawable[2];
+        private View parentView;
+        private int size;
+        private int alpha = 255;
+
+        public SwapAnimatedEmojiDrawable(View parentView, int size) {
+            this(parentView, size, CACHE_TYPE_EMOJI_STATUS);
+        }
+
+        public SwapAnimatedEmojiDrawable(View parentView, int size, int cacheType) {
+            changeProgress.setParent(this.parentView = parentView);
+            this.size = size;
+            this.cacheType = cacheType;
+        }
+
+        public void setParentView(View parentView) {
+            removeParentView(this.parentView);
+            addParentView(this.parentView = parentView);
+            changeProgress.setParent(parentView);
+            this.parentView = parentView;
+        }
+
+        public void addParentView(View parentView) {
+            if (drawables[0] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[0]).addView(parentView);
+            }
+            if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[1]).addView(parentView);
+            }
+        }
+
+        public void removeParentView(View parentView) {
+            if (drawables[0] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[0]).removeView(parentView);
+            }
+            if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[1]).removeView(parentView);
+            }
+        }
+
+        public void play() {
+            if (getDrawable() instanceof AnimatedEmojiDrawable) {
+                AnimatedEmojiDrawable drawable = (AnimatedEmojiDrawable) getDrawable();
+                ImageReceiver imageReceiver = drawable.getImageReceiver();
+                if (imageReceiver != null) {
+                    if (drawable.cacheType == CACHE_TYPE_EMOJI_STATUS || drawable.cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) {
+                        imageReceiver.setAutoRepeatCount(2);
+                    }
+                    imageReceiver.startAnimation();
+                }
+            }
+        }
+
+        private Integer lastColor;
+        private ColorFilter colorFilter;
+        public void setColor(Integer color) {
+            if (lastColor == null && color == null || lastColor != null && lastColor.equals(color)) {
+                return;
+            }
+            lastColor = color;
+            colorFilter = color != null ? new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY) : null;
+        }
+
+        public Integer getColor() {
+            return lastColor;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            float progress = changeProgress.set(1);
+            Rect bounds = getBounds();
+            if (drawables[1] != null && progress < 1) {
+                drawables[1].setAlpha((int) (alpha * (1f - progress)));
+                if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                    drawables[1].setBounds(bounds);
+                } else if (center) {
+                    drawables[1].setBounds(
+                        bounds.centerX() - drawables[1].getIntrinsicWidth() / 2,
+                        bounds.centerY() - drawables[1].getIntrinsicHeight() / 2,
+                        bounds.centerX() + drawables[1].getIntrinsicWidth() / 2,
+                        bounds.centerY() + drawables[1].getIntrinsicHeight() / 2
+                    );
+                } else { // left
+                    drawables[1].setBounds(
+                        bounds.left,
+                        bounds.centerY() - drawables[1].getIntrinsicHeight() / 2,
+                        bounds.left + drawables[1].getIntrinsicWidth(),
+                        bounds.centerY() + drawables[1].getIntrinsicHeight() / 2
+                    );
+                }
+                drawables[1].setColorFilter(colorFilter);
+                drawables[1].draw(canvas);
+                drawables[1].setColorFilter(null);
+            }
+            if (drawables[0] != null) {
+                canvas.save();
+                if (drawables[0] instanceof AnimatedEmojiDrawable) {
+                    if (((AnimatedEmojiDrawable) drawables[0]).imageReceiver != null) {
+                        ((AnimatedEmojiDrawable) drawables[0]).imageReceiver.setRoundRadius(AndroidUtilities.dp(4));
+                    }
+                    if (progress < 1) {
+                        float scale = overshootInterpolator.getInterpolation(progress);
+                        canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
+                    }
+                    drawables[0].setBounds(bounds);
+                } else if (center) {
+                    if (progress < 1) {
+                        float scale = overshootInterpolator.getInterpolation(progress);
+                        canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
+                    }
+                    drawables[0].setBounds(
+                        bounds.centerX() - drawables[0].getIntrinsicWidth() / 2,
+                        bounds.centerY() - drawables[0].getIntrinsicHeight() / 2,
+                        bounds.centerX() + drawables[0].getIntrinsicWidth() / 2,
+                        bounds.centerY() + drawables[0].getIntrinsicHeight() / 2
+                    );
+                } else { // left
+                    if (progress < 1) {
+                        float scale = overshootInterpolator.getInterpolation(progress);
+                        canvas.scale(scale, scale, bounds.left + drawables[0].getIntrinsicWidth() / 2f, bounds.centerY());
+                    }
+                    drawables[0].setBounds(
+                        bounds.left,
+                        bounds.centerY() - drawables[0].getIntrinsicHeight() / 2,
+                        bounds.left + drawables[0].getIntrinsicWidth(),
+                        bounds.centerY() + drawables[0].getIntrinsicHeight() / 2
+                    );
+                }
+                drawables[0].setAlpha(alpha);
+                drawables[0].setColorFilter(colorFilter);
+                drawables[0].draw(canvas);
+                drawables[0].setColorFilter(null);
+                canvas.restore();
+            }
+        }
+
+        public Drawable getDrawable() {
+            return drawables[0];
+        }
+
+        public void set(long documentId, boolean animated) {
+            set(documentId, cacheType, animated);
+        }
+
+        public void set(long documentId, int cacheType, boolean animated) {
+            if (drawables[0] instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == documentId) {
+                return;
+            }
+            if (animated) {
+                changeProgress.set(0, true);
+                if (drawables[1] != null) {
+                    if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                        ((AnimatedEmojiDrawable) drawables[1]).removeView(parentView);
+                    }
+                    drawables[1] = null;
+                }
+                drawables[1] = drawables[0];
+                drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, documentId);
+                ((AnimatedEmojiDrawable) drawables[0]).addView(parentView);
+            } else {
+                changeProgress.set(1, true);
+                detach();
+                drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, documentId);
+                ((AnimatedEmojiDrawable) drawables[0]).addView(parentView);
+            }
+            lastColor = 0xffffffff;
+            colorFilter = null;
+            play();
+            if (parentView != null) {
+                parentView.invalidate();
+            }
+        }
+
+        public void set(TLRPC.Document document, boolean animated) {
+            set(document, cacheType, animated);
+        }
+
+        public void set(TLRPC.Document document, int cacheType, boolean animated) {
+            if (drawables[0] instanceof AnimatedEmojiDrawable && document != null && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == document.id) {
+                return;
+            }
+            if (animated) {
+                changeProgress.set(0, true);
+                if (drawables[1] != null) {
+                    if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                        ((AnimatedEmojiDrawable) drawables[1]).removeView(parentView);
+                    }
+                    drawables[1] = null;
+                }
+                drawables[1] = drawables[0];
+                if (document != null) {
+                    drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, document);
+                    ((AnimatedEmojiDrawable) drawables[0]).addView(parentView);
+                } else {
+                    drawables[0] = null;
+                }
+            } else {
+                changeProgress.set(1, true);
+                detach();
+                if (document != null) {
+                    drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, document);
+                    ((AnimatedEmojiDrawable) drawables[0]).addView(parentView);
+                } else {
+                    drawables[0] = null;
+                }
+            }
+            lastColor = 0xffffffff;
+            colorFilter = null;
+            play();
+            if (parentView != null) {
+                parentView.invalidate();
+            }
+        }
+
+        public void set(Drawable drawable, boolean animated) {
+            if (drawables[0] == drawable) {
+                return;
+            }
+            if (animated) {
+                changeProgress.set(0, true);
+                if (drawables[1] != null) {
+                    if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                        ((AnimatedEmojiDrawable) drawables[1]).removeView(parentView);
+                    }
+                    drawables[1] = null;
+                }
+                drawables[1] = drawables[0];
+                drawables[0] = drawable;
+            } else {
+                changeProgress.set(1, true);
+                detach();
+                drawables[0] = drawable;
+            }
+            lastColor = 0xffffffff;
+            colorFilter = null;
+            play();
+            if (parentView != null) {
+                parentView.invalidate();
+            }
+        }
+
+        public void detach() {
+            if (drawables[0] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[0]).removeView(parentView);
+            }
+            if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[1]).removeView(parentView);
+            }
+        }
+
+        public void attach() {
+            if (drawables[0] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[0]).addView(parentView);
+            }
+            if (drawables[1] instanceof AnimatedEmojiDrawable) {
+                ((AnimatedEmojiDrawable) drawables[1]).addView(parentView);
+            }
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return size;
+        }
+
+        @Override
+        public void setAlpha(int i) {
+            alpha = i;
+        }
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSPARENT;
+        }
+    }
 }

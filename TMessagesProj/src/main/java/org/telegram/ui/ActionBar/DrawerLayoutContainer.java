@@ -318,6 +318,10 @@ public class DrawerLayoutContainer extends FrameLayout {
         closeDrawer(false);
     }
 
+    public void openStatusSelect() {
+        
+    }
+
     public void closeDrawer() {
         if (drawerPosition != 0) {
             setDrawerPosition(0);

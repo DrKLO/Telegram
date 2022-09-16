@@ -685,6 +685,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         TLRPC.TL_messages_requestWebView req = new TLRPC.TL_messages_requestWebView();
         req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(botId);
+        req.platform = "android";
 
         req.url = botUrl;
         req.flags |= 2;

@@ -16,12 +16,10 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.animation.LinearInterpolator;
 
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 

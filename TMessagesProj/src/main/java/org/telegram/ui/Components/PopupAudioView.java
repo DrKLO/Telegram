@@ -234,7 +234,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
                 invalidate();
             }
         } else if (buttonState == 2) {
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             buttonState = 4;
             invalidate();
         } else if (buttonState == 3) {
@@ -275,7 +275,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void downloadAudioIfNeed() {
         if (buttonState == 2) {
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             buttonState = 3;
             invalidate();
         }

@@ -245,9 +245,6 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                 for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
                     AccountInstance acc = AccountInstance.getInstance(i);
                     if (acc.getUserConfig().awaitBillingProductIds.containsAll(purchase.getProducts()) && purchase.getPurchaseState() != Purchase.PurchaseState.PENDING) {
-                        acc.getUserConfig().awaitBillingProductIds.removeAll(purchase.getProducts());
-                        acc.getUserConfig().saveConfig(false);
-
                         if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
                             if (!purchase.isAcknowledged()) {
                                 requestingTokens.add(purchase.getPurchaseToken());
@@ -273,11 +270,18 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                                                     .build(), (billingResult1, s) -> {});
                                         }
                                     }
+                                    if (response != null || (ApplicationLoader.isNetworkOnline() && error != null && error.code != -1000)) {
+                                        acc.getUserConfig().awaitBillingProductIds.removeAll(purchase.getProducts());
+                                        acc.getUserConfig().saveConfig(false);
+                                    }
                                 }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagInvokeAfter);
-
-                                acc.getUserConfig().billingPaymentPurpose = null;
+                            } else {
+                                acc.getUserConfig().awaitBillingProductIds.removeAll(purchase.getProducts());
                                 acc.getUserConfig().saveConfig(false);
                             }
+                        } else {
+                            acc.getUserConfig().awaitBillingProductIds.removeAll(purchase.getProducts());
+                            acc.getUserConfig().saveConfig(false);
                         }
                     }
                 }

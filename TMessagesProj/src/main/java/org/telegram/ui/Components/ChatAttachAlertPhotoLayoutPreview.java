@@ -1786,7 +1786,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                         AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
                         AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
                     }
-                    PhotoViewer.getInstance().setParentActivity(parentAlert.baseFragment.getParentActivity(), resourcesProvider);
+                    PhotoViewer.getInstance().setParentActivity(parentAlert.baseFragment, resourcesProvider);
                     PhotoViewer.getInstance().setParentAlert(parentAlert);
                     PhotoViewer.getInstance().setMaxSelectedPhotos(parentAlert.maxSelectedPhotos, parentAlert.allowOrder);
                     photoViewerProvider.init(arrayList);

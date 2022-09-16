@@ -37,6 +37,7 @@ public class Utilities {
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
+    public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
 
     private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

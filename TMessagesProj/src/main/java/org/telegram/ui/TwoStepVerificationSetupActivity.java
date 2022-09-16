@@ -128,7 +128,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     private String email;
     private boolean paused;
     private boolean waitingForEmail;
-    private TLRPC.TL_account_password currentPassword;
+    private TLRPC.account_Password currentPassword;
     private byte[] currentPasswordHash = new byte[0];
     private long currentSecretId;
     private byte[] currentSecret;
@@ -183,7 +183,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     private Runnable monkeyAfterSwitchCallback;
     private Runnable monkeyEndCallback;
 
-    public TwoStepVerificationSetupActivity(int type, TLRPC.TL_account_password password) {
+    public TwoStepVerificationSetupActivity(int type, TLRPC.account_Password password) {
         super();
         currentType = type;
         currentPassword = password;
@@ -194,7 +194,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         }
     }
 
-    public TwoStepVerificationSetupActivity(int account, int type, TLRPC.TL_account_password password) {
+    public TwoStepVerificationSetupActivity(int account, int type, TLRPC.account_Password password) {
         super();
         currentAccount = account;
         currentType = type;
@@ -1389,7 +1389,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                                     TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                                     ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                         if (error2 == null) {
-                                            currentPassword = (TLRPC.TL_account_password) response2;
+                                            currentPassword = (TLRPC.account_Password) response2;
                                             TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
                                             processNext();
@@ -1750,7 +1750,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
-                currentPassword = (TLRPC.TL_account_password) response;
+                currentPassword = (TLRPC.account_Password) response;
                 if (!TwoStepVerificationActivity.canHandleCurrentPassword(currentPassword, false)) {
                     AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
                     return;
@@ -1942,7 +1942,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                     ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                         if (error2 == null) {
-                            currentPassword = (TLRPC.TL_account_password) response2;
+                            currentPassword = (TLRPC.account_Password) response2;
                             TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                             setNewPassword(clear);
                             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);

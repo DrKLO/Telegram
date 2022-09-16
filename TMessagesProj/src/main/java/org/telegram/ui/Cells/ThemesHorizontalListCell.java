@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -33,6 +32,10 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Keep;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
@@ -58,10 +61,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import androidx.annotation.Keep;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ThemesHorizontalListCell extends RecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
@@ -349,7 +348,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                 String name = FileLoader.getAttachFileName(wallPaper.document);
                                 if (!loadingThemes.containsKey(name)) {
                                     loadingThemes.put(name, themeInfo);
-                                    FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, 1, 1);
+                                    FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, FileLoader.PRIORITY_NORMAL, 1);
                                 }
                             } else {
                                 themeInfo.badWallpaper = true;
@@ -439,7 +438,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                             String name = FileLoader.getAttachFileName(themeInfo.info.document);
                             if (!loadingThemes.containsKey(name)) {
                                 loadingThemes.put(name, themeInfo);
-                                FileLoader.getInstance(themeInfo.account).loadFile(themeInfo.info.document, themeInfo.info, 1, 1);
+                                FileLoader.getInstance(themeInfo.account).loadFile(themeInfo.info.document, themeInfo.info, FileLoader.PRIORITY_NORMAL, 1);
                             }
                         }
                     } else {

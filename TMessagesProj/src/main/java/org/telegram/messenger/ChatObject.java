@@ -61,6 +61,21 @@ public class ChatObject {
 
     private static final int MAX_PARTICIPANTS_COUNT = 5000;
 
+    public static boolean reactionIsAvailable(TLRPC.ChatFull chatInfo, String reaction) {
+        if (chatInfo.available_reactions instanceof TLRPC.TL_chatReactionsAll) {
+            return true;
+        }
+        if (chatInfo.available_reactions instanceof TLRPC.TL_chatReactionsSome) {
+            TLRPC.TL_chatReactionsSome someReactions = (TLRPC.TL_chatReactionsSome) chatInfo.available_reactions;
+            for (int i = 0; i < someReactions.reactions.size(); i++) {
+                if (someReactions.reactions.get(i) instanceof TLRPC.TL_reactionEmoji && TextUtils.equals(((TLRPC.TL_reactionEmoji) someReactions.reactions.get(i)).emoticon, reaction)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static class Call {
         public final static int RECORD_TYPE_AUDIO = 0,
             RECORD_TYPE_VIDEO_PORTAIT = 1,

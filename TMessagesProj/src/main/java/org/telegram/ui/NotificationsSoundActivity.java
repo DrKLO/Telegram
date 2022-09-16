@@ -372,7 +372,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                             lastPlayedRingtone = r;
                             r.play();
                         } else {
-                            getFileLoader().loadFile(cell.tone.document, cell.tone.document, 2, 0);
+                            getFileLoader().loadFile(cell.tone.document, cell.tone.document, FileLoader.PRIORITY_HIGH, 0);
                         }
                     }
                 } catch (Exception e) {

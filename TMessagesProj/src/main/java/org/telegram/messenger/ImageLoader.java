@@ -34,6 +34,7 @@ import androidx.exifinterface.media.ExifInterface;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.DispatchQueuePriority;
 import org.telegram.messenger.secretmedia.EncryptedFileInputStream;
 import org.telegram.messenger.utils.BitmapsCache;
 import org.telegram.tgnet.ConnectionsManager;
@@ -102,7 +103,7 @@ public class ImageLoader {
     private SparseArray<String> waitingForQualityThumbByTag = new SparseArray<>();
     private LinkedList<HttpImageTask> httpTasks = new LinkedList<>();
     private LinkedList<ArtworkLoadTask> artworkTasks = new LinkedList<>();
-    private DispatchQueue cacheOutQueue = new DispatchQueue("cacheOutQueue");
+    private DispatchQueuePriority cacheOutQueue = new DispatchQueuePriority("cacheOutQueue");
     private DispatchQueue cacheThumbOutQueue = new DispatchQueue("cacheThumbOutQueue");
     private DispatchQueue thumbGeneratingQueue = new DispatchQueue("thumbGeneratingQueue");
     private DispatchQueue imageLoadQueue = new DispatchQueue("imageLoadQueue");
@@ -151,7 +152,11 @@ public class ImageLoader {
         if (key == null) {
             return;
         }
-        BitmapDrawable drawable = memCache.get(key);
+        BitmapDrawable drawable = lottieMemCache.get(key);
+        if (drawable != null) {
+            lottieMemCache.moveToFront(key);
+        }
+        drawable = memCache.get(key);
         if (drawable != null) {
             memCache.moveToFront(key);
         }
@@ -165,6 +170,10 @@ public class ImageLoader {
         for (int i = 0; i < updateMessageThumbs.size(); i++) {
             putImageToCache(updateMessageThumbs.get(i).drawable, updateMessageThumbs.get(i).key, true);
         }
+    }
+
+    public LruCache<BitmapDrawable> getLottieMemCahce() {
+        return lottieMemCache;
     }
 
     private static class ThumbGenerateInfo {
@@ -676,12 +685,12 @@ public class ImageLoader {
                     }
                 });
             });
-            imageLoadQueue.postRunnable(() -> runHttpTasks(true));
+            imageLoadQueue.postRunnable(() -> runHttpTasks(true), cacheImage.priority);
         }
 
         @Override
         protected void onCancelled() {
-            imageLoadQueue.postRunnable(() -> runHttpTasks(true));
+            imageLoadQueue.postRunnable(() -> runHttpTasks(true), cacheImage.priority);
             Utilities.stageQueue.postRunnable(() -> {
                 fileProgresses.remove(cacheImage.url);
                 AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileLoadFailed, cacheImage.url, 1));
@@ -881,7 +890,7 @@ public class ImageLoader {
                         if (args.length >= 3 && "pcache".equals(args[2])) {
                             precache = true;
                         } else {
-                            precache = !cacheImage.filter.contains("nolimit") && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
+                            precache = cacheImage.filter.contains("pcache") || !cacheImage.filter.contains("nolimit") && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
                         }
 
                         if (cacheImage.filter.contains("lastframe")) {
@@ -1611,7 +1620,7 @@ public class ImageLoader {
                 }
                 final Drawable toSetFinal = toSet;
                 final String decrementKetFinal = decrementKey;
-                imageLoadQueue.postRunnable(() -> cacheImage.setImageAndClear(toSetFinal, decrementKetFinal));
+                imageLoadQueue.postRunnable(() -> cacheImage.setImageAndClear(toSetFinal, decrementKetFinal), cacheImage.priority);
             });
         }
 
@@ -1671,6 +1680,8 @@ public class ImageLoader {
 
     private class CacheImage {
 
+        public int priority = 1;
+        public Runnable runningTask;
         protected String key;
         protected String url;
         protected String filter;
@@ -1771,6 +1782,7 @@ public class ImageLoader {
                         cacheThumbOutQueue.cancelRunnable(cacheTask);
                     } else {
                         cacheOutQueue.cancelRunnable(cacheTask);
+                        cacheOutQueue.cancelRunnable(runningTask);
                     }
                     cacheTask.cancel();
                     cacheTask = null;
@@ -2506,7 +2518,7 @@ public class ImageLoader {
                     }
                 }
             }
-        });
+        }, imageReceiver.getFileLoadingPriority() == FileLoader.PRIORITY_LOW ? 0 : 1);
     }
 
     public BitmapDrawable getImageFromMemory(TLObject fileLocation, String httpUrl, String filter) {
@@ -2754,6 +2766,7 @@ public class ImageLoader {
                 if (thumb != 2) {
                     boolean isEncrypted = imageLocation.isEncrypted();
                     CacheImage img = new CacheImage();
+                    img.priority = imageReceiver.getFileLoadingPriority() == FileLoader.PRIORITY_LOW ? 0 : 1;
                     if (!currentKeyQuality) {
                         if (imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION || MessageObject.isGifDocument(imageLocation.webFile) || MessageObject.isGifDocument(imageLocation.document) || MessageObject.isRoundVideoDocument(imageLocation.document) || MessageObject.isVideoSticker(imageLocation.document)) {
                             img.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
@@ -2878,11 +2891,12 @@ public class ImageLoader {
                         img.finalFilePath = cacheFile;
                         img.imageLocation = imageLocation;
                         img.cacheTask = new CacheOutTask(img);
+
                         imageLoadingByKeys.put(key, img);
                         if (thumb != 0) {
                             cacheThumbOutQueue.postRunnable(img.cacheTask);
                         } else {
-                            cacheOutQueue.postRunnable(img.cacheTask);
+                            img.runningTask = cacheOutQueue.postRunnable(img.cacheTask, img.priority);
                         }
                     } else {
                         img.url = url;
@@ -2903,18 +2917,19 @@ public class ImageLoader {
                                 runHttpTasks(false);
                             }
                         } else {
+                            int loadingPriority = thumb != 0 ? FileLoader.PRIORITY_HIGH : imageReceiver.getFileLoadingPriority();
                             if (imageLocation.location != null) {
                                 int localCacheType = cacheType;
                                 if (localCacheType == 0 && (size <= 0 || imageLocation.key != null)) {
                                     localCacheType = 1;
                                 }
-                                FileLoader.getInstance(currentAccount).loadFile(imageLocation, parentObject, ext, thumb != 0 ? 2 : 1, localCacheType);
+                                FileLoader.getInstance(currentAccount).loadFile(imageLocation, parentObject, ext, loadingPriority, localCacheType);
                             } else if (imageLocation.document != null) {
-                                FileLoader.getInstance(currentAccount).loadFile(imageLocation.document, parentObject, thumb != 0 ? 2 : 1, cacheType);
+                                FileLoader.getInstance(currentAccount).loadFile(imageLocation.document, parentObject, loadingPriority, cacheType);
                             } else if (imageLocation.secureDocument != null) {
-                                FileLoader.getInstance(currentAccount).loadFile(imageLocation.secureDocument, thumb != 0 ? 2 : 1);
+                                FileLoader.getInstance(currentAccount).loadFile(imageLocation.secureDocument, loadingPriority);
                             } else if (imageLocation.webFile != null) {
-                                FileLoader.getInstance(currentAccount).loadFile(imageLocation.webFile, thumb != 0 ? 2 : 1, cacheType);
+                                FileLoader.getInstance(currentAccount).loadFile(imageLocation.webFile, loadingPriority, cacheType);
                             }
                             if (imageReceiver.isForceLoding()) {
                                 forceLoadingImages.put(img.key, 0);
@@ -2924,7 +2939,7 @@ public class ImageLoader {
                 }
             }
         };
-        imageLoadQueue.postRunnable(loadOperationRunnable);
+        imageLoadQueue.postRunnable(loadOperationRunnable, imageReceiver.getFileLoadingPriority() == FileLoader.PRIORITY_LOW ? 0 : 1);
         imageReceiver.addLoadingImageRunnable(loadOperationRunnable);
     }
 
@@ -3339,6 +3354,7 @@ public class ImageLoader {
                 CacheImage cacheImage = imageLoadingByKeys.get(key);
                 if (cacheImage == null) {
                     cacheImage = new CacheImage();
+                    cacheImage.priority = img.priority;
                     cacheImage.secureDocument = img.secureDocument;
                     cacheImage.currentAccount = img.currentAccount;
                     cacheImage.finalFilePath = finalFile;
@@ -3361,7 +3377,7 @@ public class ImageLoader {
                 if (task.cacheImage.type == ImageReceiver.TYPE_THUMB) {
                     cacheThumbOutQueue.postRunnable(task);
                 } else {
-                    cacheOutQueue.postRunnable(task);
+                    cacheOutQueue.postRunnable(task, task.cacheImage.priority);
                 }
             }
         });
@@ -3939,6 +3955,8 @@ public class ImageLoader {
                     }
                 }
             }
+        } else if (message.media instanceof TLRPC.TL_messageMediaInvoice && message.media.extended_media instanceof TLRPC.TL_messageExtendedMediaPreview) {
+            photoSize = ((TLRPC.TL_messageExtendedMediaPreview) message.media.extended_media).thumb;
         }
         return photoSize;
     }
@@ -4031,7 +4049,7 @@ public class ImageLoader {
         }
     }
 
-    public DispatchQueue getCacheOutQueue() {
+    public DispatchQueuePriority getCacheOutQueue() {
         return cacheOutQueue;
     }
 

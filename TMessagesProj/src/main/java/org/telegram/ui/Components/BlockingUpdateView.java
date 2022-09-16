@@ -150,7 +150,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             }
             if (appUpdate.document instanceof TLRPC.TL_document) {
                 if (!openApkInstall((Activity) getContext(), appUpdate.document)) {
-                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", 2, 1);
+                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_HIGH, 1);
                     showProgress(true);
                 }
             } else if (appUpdate.url != null) {

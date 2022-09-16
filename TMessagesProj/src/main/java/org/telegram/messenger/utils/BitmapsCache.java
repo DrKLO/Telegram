@@ -3,6 +3,7 @@ package org.telegram.messenger.utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
+import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -23,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BitmapsCache {
 
@@ -47,7 +49,9 @@ public class BitmapsCache {
 
     final File file;
 
-    public BitmapsCache(File sourceFile, Cacheable source, CacheOptions options, int w, int h) {
+    public AtomicBoolean cancelled = new AtomicBoolean(false);
+
+    public BitmapsCache(File sourceFile, Cacheable source, CacheOptions options, int w, int h, boolean noLimit) {
         this.source = source;
         this.w = w;
         this.h = h;
@@ -58,7 +62,7 @@ public class BitmapsCache {
         }
 
         File fileTmo = new File(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), "acache");
-        file = new File(fileTmo, fileName + "_" + w + "_" + h + ".pcache2");
+        file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + ".pcache2");
     }
 
     volatile boolean checkCache;
@@ -107,6 +111,7 @@ public class BitmapsCache {
             long writeFileTime = 0;
             int framePosition = 0;
 
+            AtomicBoolean closed = new AtomicBoolean(false);
             source.prepareForGenerateCache();
             while (true) {
                 if (countDownLatch[index] != null) {
@@ -115,6 +120,32 @@ public class BitmapsCache {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                }
+
+                if (cancelled.get() || closed.get()) {
+                    if (BuildVars.DEBUG_VERSION) {
+                        FileLog.d("cancelled cache generation");
+                    }
+                    closed.set(true);
+                    for (int i = 0; i < N; i++) {
+                        if (countDownLatch[i] != null) {
+                            try {
+                                countDownLatch[i].await();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        if (bitmap[i] != null) {
+                            try {
+                                bitmap[i].recycle();
+                            } catch (Exception e) {
+
+                            }
+                        }
+                    }
+                    randomAccessFile.close();
+                    source.releaseForGenerateCache();
+                    return;
                 }
 
                 long time2 = System.currentTimeMillis();
@@ -129,6 +160,10 @@ public class BitmapsCache {
                 int finalFramePosition = framePosition;
                 RandomAccessFile finalRandomAccessFile1 = randomAccessFile;
                 bitmapCompressExecutor.execute(() -> {
+                    if (cancelled.get() || closed.get()) {
+                        return;
+                    }
+
                     Bitmap.CompressFormat format = Bitmap.CompressFormat.WEBP;
                     if (Build.VERSION.SDK_INT <= 26) {
                         format = Bitmap.CompressFormat.PNG;
@@ -149,6 +184,11 @@ public class BitmapsCache {
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
+                        try {
+                            finalRandomAccessFile1.close();
+                        } catch (Exception e2) {} finally {
+                            closed.set(true);
+                        }
                     }
 
                     countDownLatch[finalIndex].countDown();
@@ -191,6 +231,7 @@ public class BitmapsCache {
             randomAccessFile.seek(0);
             randomAccessFile.writeBoolean(true);
             randomAccessFile.writeInt(arrayOffset);
+            closed.set(true);
             randomAccessFile.close();
 
             if (BuildVars.DEBUG_VERSION) {
@@ -203,6 +244,10 @@ public class BitmapsCache {
         } finally {
             source.releaseForGenerateCache();
         }
+    }
+
+    public void cancelCreate() {
+//        cancelled.set(true);
     }
 
     public int getFrame(Bitmap bitmap, Metadata metadata) {
@@ -298,7 +343,7 @@ public class BitmapsCache {
             return FRAME_RESULT_OK;
         } catch (FileNotFoundException e) {
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             FileLog.e(e);
         }
 

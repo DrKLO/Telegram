@@ -119,6 +119,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.MenuDrawable;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.DialogsAdapter;
@@ -144,6 +145,7 @@ import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -172,6 +174,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
@@ -255,6 +258,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private AnimatorSet scrimAnimatorSet;
     private ActionBarPopupWindow scrimPopupWindow;
     private ActionBarMenuSubItem[] scrimPopupWindowItems;
+
+    private SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow selectAnimatedEmojiDialog;
 
     private int initialDialogsType;
 
@@ -445,6 +450,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private int debugLastUpdateAction = -1;
     private boolean slowedReloadAfterDialogClick;
+
+    private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusDrawable;
+    private DrawerProfileCell.AnimatedStatusView animatedStatusView;
 
     public final Property<DialogsActivity, Float> SCROLL_Y = new AnimationProperties.FloatProperty<DialogsActivity>("animationValue") {
         @Override
@@ -741,10 +749,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
+        private boolean wasPortrait;
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int widthSize = View.MeasureSpec.getSize(widthMeasureSpec);
             int heightSize = View.MeasureSpec.getSize(heightMeasureSpec);
+            boolean portrait = heightSize > widthSize;
 
             setMeasuredDimension(widthSize, heightSize);
             heightSize -= getPaddingTop();
@@ -835,6 +846,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
                 }
+            }
+
+            if (portrait != wasPortrait) {
+                post(() -> {
+                    if (selectAnimatedEmojiDialog != null) {
+                        selectAnimatedEmojiDialog.dismiss();
+                        selectAnimatedEmojiDialog = null;
+                    }
+                });
+                wasPortrait = portrait;
             }
         }
 
@@ -1935,6 +1956,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getNotificationCenter().addObserver(this, NotificationCenter.fileLoadProgressChanged);
             getNotificationCenter().addObserver(this, NotificationCenter.dialogsUnreadReactionsCounterChanged);
             getNotificationCenter().addObserver(this, NotificationCenter.forceImportContactsStart);
+            getNotificationCenter().addObserver(this, NotificationCenter.userEmojiStatusUpdated);
+            getNotificationCenter().addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
 
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetPasscode);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateAvailable);
@@ -1975,6 +1998,50 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private Drawable premiumStar;
+    public void updateStatus(TLRPC.User user, boolean animated) {
+        if (statusDrawable == null || actionBar == null) {
+            return;
+        }
+        if (user != null && user.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) user.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
+            statusDrawable.set(((TLRPC.TL_emojiStatusUntil) user.emoji_status).document_id, animated);
+            actionBar.setRightDrawableOnClick(e -> showSelectStatusDialog());
+            SelectAnimatedEmojiDialog.preload(currentAccount);
+        } else if (user != null && user.emoji_status instanceof TLRPC.TL_emojiStatus) {
+            statusDrawable.set(((TLRPC.TL_emojiStatus) user.emoji_status).document_id, animated);
+            actionBar.setRightDrawableOnClick(e -> showSelectStatusDialog());
+            SelectAnimatedEmojiDialog.preload(currentAccount);
+        } else if (user != null && MessagesController.getInstance(currentAccount).isPremiumUser(user)) {
+            if (premiumStar == null) {
+                premiumStar = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
+                premiumStar = new AnimatedEmojiDrawable.WrapSizeDrawable(premiumStar, AndroidUtilities.dp(18), AndroidUtilities.dp(18)) {
+                    @Override
+                    public void draw(@NonNull Canvas canvas) {
+                        canvas.save();
+                        canvas.translate(AndroidUtilities.dp(-2), AndroidUtilities.dp(1));
+                        super.draw(canvas);
+                        canvas.restore();
+                    }
+                };
+            }
+            premiumStar.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_verifiedBackground), PorterDuff.Mode.MULTIPLY));
+            statusDrawable.set(premiumStar, animated);
+            actionBar.setRightDrawableOnClick(e -> showSelectStatusDialog());
+            SelectAnimatedEmojiDialog.preload(currentAccount);
+        } else {
+            statusDrawable.set((Drawable) null, animated);
+            actionBar.setRightDrawableOnClick(null);
+        }
+        statusDrawable.setColor(Theme.getColor(Theme.key_profile_verifiedBackground));
+        if (animatedStatusView != null) {
+            animatedStatusView.setColor(Theme.getColor(Theme.key_profile_verifiedBackground));
+        }
+        if (selectAnimatedEmojiDialog != null && selectAnimatedEmojiDialog.getContentView() instanceof SelectAnimatedEmojiDialog) {
+            SimpleTextView textView = actionBar.getTitleTextView();
+            ((SelectAnimatedEmojiDialog) selectAnimatedEmojiDialog.getContentView()).setScrimDrawable(textView != null && textView.getRightDrawable() == statusDrawable ? statusDrawable : null, textView);
+        }
+    }
+
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
@@ -2010,6 +2077,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getNotificationCenter().removeObserver(this, NotificationCenter.fileLoadProgressChanged);
             getNotificationCenter().removeObserver(this, NotificationCenter.dialogsUnreadReactionsCounterChanged);
             getNotificationCenter().removeObserver(this, NotificationCenter.forceImportContactsStart);
+            getNotificationCenter().removeObserver(this, NotificationCenter.userEmojiStatusUpdated);
+            getNotificationCenter().removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
 
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetPasscode);
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
@@ -2053,6 +2122,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return false;
                 }
                 return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
+            public void setTitleOverlayText(String title, int titleId, Runnable action) {
+                super.setTitleOverlayText(title, titleId, action);
+                if (selectAnimatedEmojiDialog != null && selectAnimatedEmojiDialog.getContentView() instanceof SelectAnimatedEmojiDialog) {
+                    SimpleTextView textView = getTitleTextView();
+                    ((SelectAnimatedEmojiDialog) selectAnimatedEmojiDialog.getContentView()).setScrimDrawable(textView != null && textView.getRightDrawable() == statusDrawable ? statusDrawable : null, textView);
+                }
             }
         };
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
@@ -2235,11 +2313,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (folderId != 0) {
                 actionBar.setTitle(LocaleController.getString("ArchivedChats", R.string.ArchivedChats));
             } else {
+                statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, AndroidUtilities.dp(26));
+                statusDrawable.center = true;
                 if (BuildVars.DEBUG_VERSION) {
-                    actionBar.setTitle(LocaleController.getString("AppNameBeta", R.string.AppNameBeta));
+                    actionBar.setTitle(LocaleController.getString("AppNameBeta", R.string.AppNameBeta), statusDrawable);
                 } else {
-                    actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName), statusDrawable);
                 }
+                updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
                 actionBar.setSupportsHolidayImage(true);
@@ -3659,6 +3740,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 layoutParams.topMargin = AndroidUtilities.statusBarHeight;
             }
             contentView.addView(actionBar, layoutParams);
+
+            animatedStatusView = new DrawerProfileCell.AnimatedStatusView(context, 20, 60);
+            contentView.addView(animatedStatusView, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.TOP));
         }
 
         if (searchString == null && initialDialogsType == 0) {
@@ -3872,6 +3956,77 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateMenuButton(false);
         actionBar.setDrawBlurBackground(contentView);
         return fragmentView;
+    }
+
+    public void showSelectStatusDialog() {
+        if (selectAnimatedEmojiDialog != null) {
+            return;
+        }
+        final SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[] popup = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[1];
+        TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
+        int xoff = 0, yoff = 0;
+        boolean hasEmoji = false;
+        SimpleTextView actionBarTitle = actionBar.getTitleTextView();
+        if (actionBarTitle != null && actionBarTitle.getRightDrawable() != null) {
+            statusDrawable.play();
+            hasEmoji = statusDrawable.getDrawable() instanceof AnimatedEmojiDrawable;
+            AndroidUtilities.rectTmp2.set(actionBarTitle.getRightDrawable().getBounds());
+            AndroidUtilities.rectTmp2.offset((int) actionBarTitle.getX(), (int) actionBarTitle.getY());
+            yoff = -(actionBar.getHeight() - AndroidUtilities.rectTmp2.centerY()) - AndroidUtilities.dp(16);
+            xoff = AndroidUtilities.rectTmp2.centerX() - AndroidUtilities.dp(16);
+            if (animatedStatusView != null) {
+                animatedStatusView.translate(AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
+            }
+        }
+        SelectAnimatedEmojiDialog popupLayout = new SelectAnimatedEmojiDialog(this, getContext(), true, xoff, SelectAnimatedEmojiDialog.TYPE_EMOJI_STATUS, getResourceProvider()) {
+            @Override
+            protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document, Integer until) {
+                TLRPC.TL_account_updateEmojiStatus req = new TLRPC.TL_account_updateEmojiStatus();
+                if (documentId == null) {
+                    req.emoji_status = new TLRPC.TL_emojiStatusEmpty();
+                } else if (until != null) {
+                    req.emoji_status = new TLRPC.TL_emojiStatusUntil();
+                    ((TLRPC.TL_emojiStatusUntil) req.emoji_status).document_id = documentId;
+                    ((TLRPC.TL_emojiStatusUntil) req.emoji_status).until = until;
+                } else {
+                    req.emoji_status = new TLRPC.TL_emojiStatus();
+                    ((TLRPC.TL_emojiStatus) req.emoji_status).document_id = documentId;
+                }
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
+                if (user != null) {
+                    user.emoji_status = req.emoji_status;
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userEmojiStatusUpdated, user);
+                    getMessagesController().updateEmojiStatusUntilUpdate(user.id, user.emoji_status);
+                }
+                if (documentId != null) {
+                    animatedStatusView.animateChange(ReactionsLayoutInBubble.VisibleReaction.fromCustomEmoji(documentId));
+                }
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
+                    if (!(res instanceof TLRPC.TL_boolTrue)) {
+                        // TODO: reject
+                    }
+                });
+                if (popup[0] != null) {
+                    selectAnimatedEmojiDialog = null;
+                    popup[0].dismiss();
+                }
+            }
+        };
+        if (user != null && user.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) user.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
+            popupLayout.setExpireDateHint(((TLRPC.TL_emojiStatusUntil) user.emoji_status).until);
+        }
+        popupLayout.setSelected(statusDrawable.getDrawable() instanceof AnimatedEmojiDrawable ? ((AnimatedEmojiDrawable) statusDrawable.getDrawable()).getDocumentId() : null);
+        popupLayout.setSaveState(1);
+        popupLayout.setScrimDrawable(statusDrawable, actionBarTitle);
+        popup[0] = selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+            @Override
+            public void dismiss() {
+                super.dismiss();
+                selectAnimatedEmojiDialog = null;
+            }
+        };
+        popup[0].showAsDropDown(actionBar, AndroidUtilities.dp(16), yoff, Gravity.TOP);
+        popup[0].dimBehind();
     }
 
     private int commentViewPreviousTop = -1;
@@ -5024,8 +5179,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searchAnimationProgress = progress;
         if (whiteActionBar) {
             int color1 = folderId != 0 ? Theme.getColor(Theme.key_actionBarDefaultArchivedIcon) : Theme.getColor(Theme.key_actionBarDefaultIcon);
-            actionBar.setItemsColor(ColorUtils.blendARGB(color1, Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), searchAnimationProgress), false);
-            actionBar.setItemsColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), searchAnimationProgress), true);
+            actionBar.setItemsColor(ColorUtils.blendARGB(color1, Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), searchAnimationProgress), false);
+            actionBar.setItemsColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), searchAnimationProgress), true);
 
             color1 = folderId != 0 ? Theme.getColor(Theme.key_actionBarDefaultArchivedSelector) : Theme.getColor(Theme.key_actionBarDefaultSelector);
             int color2 = Theme.getColor(Theme.key_actionBarActionModeDefaultSelector);
@@ -5312,6 +5467,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
+    }
+
+    public void setOpenedDialogId(long dialogId) {
+        openedDialogId = dialogId;
+
+        if (viewPages == null) {
+            return;
+        }
+        for (ViewPage viewPage : viewPages) {
+            if (viewPage.isDefaultDialogType() && AndroidUtilities.isTablet()) {
+                viewPage.dialogsAdapter.setOpenedDialogId(openedDialogId);
+            }
+        }
+        updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
     }
 
     private boolean onItemLongClick(RecyclerListView listView, View view, int position, float x, float y, int dialogsType, RecyclerListView.Adapter adapter) {
@@ -5813,6 +5982,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         actionBar.setTranslationY(value);
         if (filterTabsView != null) {
             filterTabsView.setTranslationY(value);
+        }
+        if (animatedStatusView != null) {
+            animatedStatusView.translateY2((int) value);
+            animatedStatusView.setAlpha(1f - -value / ActionBar.getCurrentActionBarHeight());
         }
         updateContextViewPosition();
         if (viewPages != null) {
@@ -6360,7 +6533,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     getMessagesController().deleteDialog(selectedDialog, 0, revoke);
                 } else {
                     TLRPC.User currentUser = getMessagesController().getUser(getUserConfig().getClientUserId());
-                    getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null, null, revoke, false);
+                    getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null, revoke, false);
                 }
             } else {
                 getMessagesController().deleteDialog(selectedDialog, 0, revoke);
@@ -7244,6 +7417,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             }
+            updateStatus(UserConfig.getInstance(account).getCurrentUser(), true);
         } else if (id == NotificationCenter.appDidLogout) {
             dialogsLoaded[currentAccount] = false;
         } else if (id == NotificationCenter.encryptedChatUpdated) {
@@ -7329,7 +7503,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (ChatObject.isNotInChat(chat)) {
                         getMessagesController().deleteDialog(dialogId, 0, revoke);
                     } else {
-                        getMessagesController().deleteParticipantFromChat(-dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
+                        getMessagesController().deleteParticipantFromChat(-dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, revoke, revoke);
                     }
                 } else {
                     getMessagesController().deleteDialog(dialogId, 0, revoke);
@@ -7415,6 +7589,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (id == NotificationCenter.onDatabaseOpened) {
             checkSuggestClearDatabase();
+        } else if (id == NotificationCenter.userEmojiStatusUpdated) {
+            updateStatus((TLRPC.User) args[0], true);
+        } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {
+            updateStatus(UserConfig.getInstance(account).getCurrentUser(), true);
         }
     }
 
@@ -8191,6 +8369,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), false, true);
                 actionBar.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), true, true);
                 actionBar.setPopupItemsSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector), true);
+            }
+            if (statusDrawable != null) {
+                updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
 
             if (scrimPopupWindowItems != null) {

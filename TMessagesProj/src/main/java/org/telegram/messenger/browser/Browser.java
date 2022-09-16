@@ -48,6 +48,7 @@ import org.telegram.ui.LaunchActivity;
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.regex.Matcher;
 
 public class Browser {
 
@@ -382,6 +383,15 @@ public class Browser {
     public static boolean isInternalUri(Uri uri, boolean all, boolean[] forceBrowser) {
         String host = uri.getHost();
         host = host != null ? host.toLowerCase() : "";
+
+        Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
+        if (prefixMatcher.find()) {
+            uri = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
+
+            host = uri.getHost();
+            host = host != null ? host.toLowerCase() : "";
+        }
+
         if ("ton".equals(uri.getScheme())) {
             try {
                 Intent viewIntent = new Intent(Intent.ACTION_VIEW, uri);

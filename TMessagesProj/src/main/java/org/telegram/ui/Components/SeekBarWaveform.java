@@ -21,8 +21,6 @@ import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
-
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;

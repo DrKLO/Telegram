@@ -252,7 +252,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     private CropViewListener listener;
 
     public float getStateOrientation() {
-        return state.orientation;
+        return state == null ? 0 : state.orientation;
     }
 
     public float getStateFullOrientation() {

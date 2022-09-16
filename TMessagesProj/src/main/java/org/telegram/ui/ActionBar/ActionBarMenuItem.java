@@ -717,11 +717,7 @@ public class ActionBarMenuItem extends FrameLayout {
         //}
         processedPopupClick = false;
         popupWindow.setFocusable(true);
-        if (container.getMeasuredWidth() == 0) {
-            updateOrShowPopup(true, true);
-        } else {
-            updateOrShowPopup(true, false);
-        }
+        updateOrShowPopup(true, container.getMeasuredWidth() == 0);
         popupLayout.updateRadialSelectors();
         if (popupLayout.getSwipeBack() != null) {
             popupLayout.getSwipeBack().closeForeground(false);
@@ -1940,7 +1936,11 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public static ActionBarMenuSubItem addItem(ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
-        ActionBarMenuSubItem cell = new ActionBarMenuSubItem(windowLayout.getContext(), needCheck, false, false, resourcesProvider);
+        return addItem(false, false, windowLayout, icon, text, needCheck, resourcesProvider);
+    }
+
+    public static ActionBarMenuSubItem addItem(boolean first, boolean last, ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
+        ActionBarMenuSubItem cell = new ActionBarMenuSubItem(windowLayout.getContext(), needCheck, first, last, resourcesProvider);
         cell.setTextAndIcon(text, icon);
         cell.setMinimumWidth(AndroidUtilities.dp(196));
         windowLayout.addView(cell);

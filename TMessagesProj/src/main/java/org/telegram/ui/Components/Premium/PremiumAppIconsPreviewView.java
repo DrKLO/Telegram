@@ -88,7 +88,7 @@ public class PremiumAppIconsPreviewView extends FrameLayout implements PagerHead
         if (isEmpty) {
             return;
         }
-        float progress = translationX / getMeasuredWidth();
+        float progress = Math.abs(translationX / getMeasuredWidth());
 
         float rightProgress = CubicBezierInterpolator.EASE_IN.getInterpolation(progress);
         bottomRightIcon.setTranslationX(rightProgress * (getRight() - bottomRightIcon.getRight() + bottomRightIcon.getWidth() * 1.5f + AndroidUtilities.dp(32)));

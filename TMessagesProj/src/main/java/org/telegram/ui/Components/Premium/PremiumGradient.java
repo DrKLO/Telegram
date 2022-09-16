@@ -24,6 +24,7 @@ import org.telegram.ui.ActionBar.Theme;
 public class PremiumGradient {
 
     private final GradientTools mainGradient = new GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
+//    private final GradientTools grayGradient = new GradientTools(Theme.key_windowBackgroundWhiteGrayText7, Theme.key_windowBackgroundWhiteGrayText7, Theme.key_windowBackgroundWhiteGrayText7);
     private final Paint mainGradientPaint = mainGradient.paint;
     Paint lockedPremiumPaint;
 
@@ -36,6 +37,7 @@ public class PremiumGradient {
     public Drawable premiumStarDrawableMini;
     public InternalDrawable premiumStarMenuDrawable;
     public InternalDrawable premiumStarMenuDrawable2;
+    public InternalDrawable premiumStarMenuDrawableGray;
 
     private int lastStarColor;
 
@@ -50,12 +52,20 @@ public class PremiumGradient {
         premiumStarDrawableMini = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
         premiumStarMenuDrawable = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_settings_premium));
         premiumStarMenuDrawable2 = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_normal));
+//        premiumStarMenuDrawableGray = createGradientDrawable(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_settings_premium), grayGradient);
         premiumStarColoredDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_premium_liststar).mutate();
         mainGradient.chekColors();
         checkIconColors();
     }
 
     public InternalDrawable createGradientDrawable(Drawable drawable) {
+        return createGradientDrawable(drawable, mainGradient);
+    }
+
+    public InternalDrawable createGradientDrawable(Drawable drawable, PremiumGradient.GradientTools gradient) {
+        if (drawable == null) {
+            return null;
+        }
         int width = drawable.getIntrinsicWidth();
         int height = drawable.getMinimumHeight();
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -63,12 +73,12 @@ public class PremiumGradient {
         drawable.setBounds(0, 0, width, height);
         drawable.draw(canvas);
 
-        mainGradient.paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        mainGradient.gradientMatrix(0, 0, width, height, -width, 0);
-        canvas.drawRect(0, 0, width, height, mainGradient.paint);
-        mainGradient.paint.setXfermode(null);
+        gradient.paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        gradient.gradientMatrix(0, 0, width, height, -width, 0);
+        canvas.drawRect(0, 0, width, height, gradient.paint);
+        gradient.paint.setXfermode(null);
 
-        return new InternalDrawable(drawable, bitmap, mainGradient.colors);
+        return new InternalDrawable(drawable, bitmap, gradient.colors);
     }
 
     public void checkIconColors() {
@@ -138,6 +148,10 @@ public class PremiumGradient {
         public boolean exactly;
 
         public float x1 = 0f, y1 = 1f, x2 = 1.5f, y2 = 0f;
+
+        public GradientTools(String colorKey1, String colorKey2, String colorKey3) {
+            this(colorKey1, colorKey2, colorKey3, null, null);
+        }
 
         public GradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4) {
             this(colorKey1, colorKey2, colorKey3, colorKey4, null);
