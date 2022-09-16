@@ -152,6 +152,12 @@ public class Bulletin {
         return visibleBulletin;
     }
 
+    public static void hideVisible() {
+        if (visibleBulletin != null) {
+            visibleBulletin.hide();
+        }
+    }
+
     public void setDuration(int duration) {
         this.duration = duration;
     }
@@ -701,22 +707,14 @@ public class Bulletin {
         }
 
         public interface Callback {
-
-            void onAttach(@NonNull Layout layout, @NonNull Bulletin bulletin);
-
-            void onDetach(@NonNull Layout layout);
-
-            void onShow(@NonNull Layout layout);
-
-            void onHide(@NonNull Layout layout);
-
-            void onEnterTransitionStart(@NonNull Layout layout);
-
-            void onEnterTransitionEnd(@NonNull Layout layout);
-
-            void onExitTransitionStart(@NonNull Layout layout);
-
-            void onExitTransitionEnd(@NonNull Layout layout);
+            default void onAttach(@NonNull Layout layout, @NonNull Bulletin bulletin) {}
+            default void onDetach(@NonNull Layout layout) {}
+            default void onShow(@NonNull Layout layout) {}
+            default void onHide(@NonNull Layout layout) {}
+            default void onEnterTransitionStart(@NonNull Layout layout) {}
+            default void onEnterTransitionEnd(@NonNull Layout layout) {}
+            default void onExitTransitionStart(@NonNull Layout layout) {}
+            default void onExitTransitionEnd(@NonNull Layout layout) {}
         }
         //endregion
 

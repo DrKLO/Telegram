@@ -177,6 +177,8 @@ public class ChatNotificationsPopupWrapper {
         int days = time / (60 * 60 * 24);
         time -= days * (60 * 60 * 24);
         int hours = time / (60 * 60);
+        time -= hours * (60 * 60);
+        int minutes = time / 60;
 
         if (days != 0) {
             stringBuilder.append(days).append(LocaleController.getString("SecretChatTimerDays", R.string.SecretChatTimerDays));
@@ -186,6 +188,12 @@ public class ChatNotificationsPopupWrapper {
                 stringBuilder.append(" ");
             }
             stringBuilder.append(hours).append(LocaleController.getString("SecretChatTimerHours", R.string.SecretChatTimerHours));
+        }
+        if (minutes != 0) {
+            if (stringBuilder.length() > 0) {
+                stringBuilder.append(" ");
+            }
+            stringBuilder.append(minutes).append(LocaleController.getString("SecretChatTimerMinutes", R.string.SecretChatTimerMinutes));
         }
         return LocaleController.formatString("MuteForButton", R.string.MuteForButton, stringBuilder.toString());
     }

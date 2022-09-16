@@ -189,6 +189,44 @@ public class FileLog {
         }
     }
 
+    public static void fatal(final Throwable e) {
+        fatal(e, true);
+    }
+
+    public static void fatal(final Throwable e, boolean logToAppCenter) {
+        if (!BuildVars.LOGS_ENABLED) {
+            return;
+        }
+        if (BuildVars.DEBUG_VERSION && needSent(e) && logToAppCenter) {
+            AndroidUtilities.appCenterLog(e);
+        }
+        ensureInitied();
+        e.printStackTrace();
+        if (getInstance().streamWriter != null) {
+            getInstance().logQueue.postRunnable(() -> {
+                try {
+                    getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/tmessages: " + e + "\n");
+                    StackTraceElement[] stack = e.getStackTrace();
+                    for (int a = 0; a < stack.length; a++) {
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/tmessages: " + stack[a] + "\n");
+                    }
+                    getInstance().streamWriter.flush();
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+                if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                    System.exit(2);
+                }
+            });
+        } else {
+            e.printStackTrace();
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                System.exit(2);
+            }
+        }
+    }
+
     private static boolean needSent(Throwable e) {
         if (e instanceof InterruptedException || e instanceof MediaCodecVideoConvertor.ConversionCanceledException) {
             return false;

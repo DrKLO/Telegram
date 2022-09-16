@@ -3,17 +3,9 @@ package org.telegram.ui.Components;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.CornerPathEffect;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.Shader;
-import android.graphics.drawable.Drawable;
-import android.os.SystemClock;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -60,6 +52,10 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     private CharSequence secondPartText;
     private StaticLayout secondPartTextLayout;
 
+    public final static int EMOJI_TYPE = 0;
+    public final static int REACTIONS_TYPE = 1;
+    int type;
+
     private class BoldAndAccent extends CharacterStyle {
         @Override
         public void updateDrawState(TextPaint textPaint) {
@@ -70,9 +66,10 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         }
     }
 
-    public MessageContainsEmojiButton(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, @NonNull ArrayList<TLRPC.InputStickerSet> inputStickerSets) {
+    public MessageContainsEmojiButton(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, @NonNull ArrayList<TLRPC.InputStickerSet> inputStickerSets, int type) {
         super(context);
         this.currentAccount = currentAccount;
+        this.type = type;
 
         setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 6));
 
@@ -81,7 +78,13 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         textPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
 
         if (inputStickerSets.size() > 1) {
-            mainText = AndroidUtilities.replaceTags(LocaleController.formatPluralString("MessageContainsEmojiPacks", inputStickerSets.size()));
+            String string;
+            if (type == EMOJI_TYPE) {
+                string = LocaleController.formatPluralString("MessageContainsEmojiPacks", inputStickerSets.size());
+            } else {
+                string = LocaleController.formatPluralString("MessageContainsReactionsPacks", inputStickerSets.size());
+            }
+            mainText = AndroidUtilities.replaceTags(string);
             Spannable spannable = (Spannable) mainText;
             TypefaceSpan[] bold = spannable.getSpans(0, mainText.length(), TypefaceSpan.class);
             for (int i = 0; bold != null && i < bold.length; ++i) {
@@ -91,7 +94,12 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                 spannable.setSpan(new BoldAndAccent(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         } else if (inputStickerSets.size() == 1) {
-            String string = LocaleController.getString("MessageContainsEmojiPack", R.string.MessageContainsEmojiPack);
+            String string;
+            if (type == EMOJI_TYPE) {
+                string = LocaleController.getString("MessageContainsEmojiPack", R.string.MessageContainsEmojiPack);
+            } else {
+                string = LocaleController.getString("MessageContainsReactionsPack", R.string.MessageContainsReactionsPack);
+            }
             String[] parts = string.split("%s");
             if (parts.length <= 1) {
                 mainText = string;
@@ -194,15 +202,22 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     }
 
     private int lastWidth = -1;
+    public boolean checkWidth = true;
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        if (lastWidth > 0) {
-            width = Math.min(width, lastWidth);
+        if (checkWidth) {
+            if (lastWidth > 0) {
+                width = Math.min(width, lastWidth);
+            }
         }
         lastWidth = width;
         int contentWidth = width - getPaddingLeft() - getPaddingRight();
+        if (contentWidth < 0) {
+            contentWidth = 0;
+        }
         int contentHeight = updateLayout(contentWidth, false);
         int height = contentHeight + getPaddingTop() + getPaddingBottom();
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -347,93 +362,9 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        if (emojiDrawable != null) {
+            emojiDrawable.addView(this);
+        }
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
-    }
-}
-
-class LoadingDrawable extends Drawable {
-
-    private Theme.ResourcesProvider resourcesProvider;
-    public LoadingDrawable(Theme.ResourcesProvider resourcesProvider) {
-        this.resourcesProvider = resourcesProvider;
-    }
-
-    private long start = -1;
-    private LinearGradient gradient;
-    private int gradientColor1, gradientColor2;
-    private int gradientWidth;
-
-    public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Path path = new Path();
-    private RectF[] rects;
-
-    private void setPathRects(RectF[] rects) {
-        this.rects = rects;
-    }
-
-    @Override
-    public void draw(@NonNull Canvas canvas) {
-        Rect bounds = getBounds();
-        if (getPaintAlpha() <= 0) {
-            return;
-        }
-        int gwidth = Math.min(AndroidUtilities.dp(400), bounds.width());
-        int color1 = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
-        int color2 = Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider);
-        if (gradient == null || gwidth != gradientWidth || color1 != gradientColor1 || color2 != gradientColor2) {
-            gradientWidth = gwidth;
-            gradientColor1 = color1;
-            gradientColor2 = color2;
-            gradient = new LinearGradient(0, 0, gradientWidth, 0, new int[] { gradientColor1, gradientColor2, gradientColor1 }, new float[] { 0f, .67f, 1f }, Shader.TileMode.REPEAT);
-            paint.setShader(gradient);
-        }
-
-        long now = SystemClock.elapsedRealtime();
-        if (start < 0) {
-            start = now;
-        }
-        float offset = gradientWidth - (((now - start) / 1000f * gradientWidth) % gradientWidth);
-
-        canvas.save();
-        canvas.clipRect(bounds);
-        canvas.translate(-offset, 0);
-        path.reset();
-        if (rects == null) {
-            path.addRect(bounds.left + offset, bounds.top, bounds.right + offset, bounds.bottom, Path.Direction.CW);
-        } else {
-            for (int i = 0; i < rects.length; ++i) {
-                RectF r = rects[i];
-                if (r != null) {
-                    path.addRect(r.left + offset, r.top, r.right + offset, r.bottom, Path.Direction.CW);
-                }
-            }
-        }
-        canvas.drawPath(path, paint);
-        canvas.translate(offset, 0);
-        canvas.restore();
-
-        invalidateSelf();
-    }
-
-    public int getPaintAlpha() {
-        return paint.getAlpha();
-    }
-
-    @Override
-    public void setAlpha(int i) {
-        paint.setAlpha(i);
-        if (i > 0) {
-            invalidateSelf();
-        }
-    }
-
-    @Override
-    public void setColorFilter(@Nullable ColorFilter colorFilter) {
-        paint.setColorFilter(colorFilter);
-    }
-
-    @Override
-    public int getOpacity() {
-        return PixelFormat.TRANSPARENT;
     }
 }

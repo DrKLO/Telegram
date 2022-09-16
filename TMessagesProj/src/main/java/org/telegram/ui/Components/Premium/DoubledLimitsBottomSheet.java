@@ -57,9 +57,15 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
     private BaseFragment baseFragment;
 
     private View divider;
+    private PremiumPreviewFragment.SubscriptionTier selectedTier;
 
     public DoubledLimitsBottomSheet(BaseFragment fragment, int currentAccount) {
+        this(fragment, currentAccount, null);
+    }
+
+    public DoubledLimitsBottomSheet(BaseFragment fragment, int currentAccount, PremiumPreviewFragment.SubscriptionTier subscriptionTier) {
         super(fragment, false, false);
+        this.selectedTier = subscriptionTier;
         this.baseFragment = fragment;
         gradientTools = new PremiumGradient.GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
         gradientTools.x1 = 0;
@@ -152,13 +158,13 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
         containerView.addView(divider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 72, Gravity.BOTTOM, 0, 0, 0, 0));
 
         premiumButtonView = new PremiumButtonView(getContext(), true);
-        premiumButtonView.buttonTextView.setText(PremiumPreviewFragment.getPremiumButtonText(currentAccount));
+        premiumButtonView.buttonTextView.setText(PremiumPreviewFragment.getPremiumButtonText(currentAccount, selectedTier));
 
         containerView.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 12));
 
         premiumButtonView.buttonLayout.setOnClickListener((view) -> {
             if (!UserConfig.getInstance(currentAccount).isPremium()) {
-                PremiumPreviewFragment.buyPremium(fragment, "double_limits");
+                PremiumPreviewFragment.buyPremium(fragment, selectedTier, "double_limits");
             }
             dismiss();
         });
@@ -304,7 +310,7 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.billingProductDetailsUpdated || id == NotificationCenter.premiumPromoUpdated) {
-            premiumButtonView.buttonTextView.setText(PremiumPreviewFragment.getPremiumButtonText(currentAccount));
+            premiumButtonView.buttonTextView.setText(PremiumPreviewFragment.getPremiumButtonText(currentAccount, selectedTier));
         } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {
             bindPremium(UserConfig.getInstance(currentAccount).isPremium());
         }

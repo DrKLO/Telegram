@@ -285,6 +285,7 @@ public class AboutLinkCell extends FrameLayout {
         canvas.translate(0, textY = AndroidUtilities.dp(8));
 
         try {
+            Theme.profile_aboutTextPaint.linkColor = Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider);
             if (firstThreeLinesLayout == null || !shouldExpand) {
                 if (textLayout != null) {
                     textLayout.draw(canvas);

@@ -662,7 +662,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
                     for (int a = 0; a < arr.size(); a++) {
                         MessageObject obj = arr.get(a);
-                        if (obj.messageOwner.media == null || obj.needDrawBluredPreview()) {
+                        if (MessageObject.getMedia(obj.messageOwner) == null || obj.needDrawBluredPreview()) {
                             continue;
                         }
                         int type = MediaDataController.getMediaType(obj.messageOwner);
@@ -1326,7 +1326,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         photoVideoOptionsItem.setVisibility(View.INVISIBLE);
 
         Drawable calendarDrawable = ContextCompat.getDrawable(context, R.drawable.ic_ab_other).mutate();
-        calendarDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2), PorterDuff.Mode.MULTIPLY));
+        calendarDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
         photoVideoOptionsItem.setImageDrawable(calendarDrawable);
         photoVideoOptionsItem.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         actionBar.addView(photoVideoOptionsItem, LayoutHelper.createFrame(48, 56, Gravity.RIGHT | Gravity.BOTTOM));
@@ -1495,7 +1495,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         closeButton = new ImageView(context);
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
         closeButton.setImageDrawable(backDrawable = new BackDrawable(true));
-        backDrawable.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
+        backDrawable.setColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
         closeButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
         closeButton.setContentDescription(LocaleController.getString("Close", R.string.Close));
         actionModeLayout.addView(closeButton, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
@@ -3229,7 +3229,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a);
                         if (message != null) {
-                            profileActivity.getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                            profileActivity.getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
                         profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0);
                     }
@@ -3901,7 +3901,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 boolean updated = false;
                 for (int a = 0; a < arr.size(); a++) {
                     MessageObject obj = arr.get(a);
-                    if (obj.messageOwner.media == null || obj.needDrawBluredPreview()) {
+                    if (MessageObject.getMedia(obj.messageOwner) == null || obj.needDrawBluredPreview()) {
                         continue;
                     }
                     int type = MediaDataController.getMediaType(obj.messageOwner);
@@ -4694,7 +4694,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             if (selectedMode == 0) {
                 int i = index - sharedMediaData[selectedMode].startOffset;
                 if (i >= 0 && i < sharedMediaData[selectedMode].messages.size()) {
-                    PhotoViewer.getInstance().setParentActivity(profileActivity.getParentActivity());
+                    PhotoViewer.getInstance().setParentActivity(profileActivity);
                     PhotoViewer.getInstance().openPhoto(sharedMediaData[selectedMode].messages, i, dialog_id, mergeDialogId, provider);
                 }
             } else if (selectedMode == 2 || selectedMode == 4) {
@@ -4702,7 +4702,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     ((SharedAudioCell) view).didPressedButton();
                 }
             } else if (selectedMode == 5) {
-                PhotoViewer.getInstance().setParentActivity(profileActivity.getParentActivity());
+                PhotoViewer.getInstance().setParentActivity(profileActivity);
                 index = sharedMediaData[selectedMode].messages.indexOf(message);
                 if (index < 0) {
                     ArrayList<MessageObject> documents = new ArrayList<>();
@@ -4717,7 +4717,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     TLRPC.Document document = message.getDocument();
                     if (cell.isLoaded()) {
                         if (message.canPreviewDocument()) {
-                            PhotoViewer.getInstance().setParentActivity(profileActivity.getParentActivity());
+                            PhotoViewer.getInstance().setParentActivity(profileActivity);
                             index = sharedMediaData[selectedMode].messages.indexOf(message);
                             if (index < 0) {
                                 ArrayList<MessageObject> documents = new ArrayList<>();
@@ -4732,7 +4732,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     } else if (!cell.isLoading()) {
                         MessageObject messageObject = cell.getMessage();
                         messageObject.putInDownloadsStore = true;
-                        profileActivity.getFileLoader().loadFile(document, messageObject, 0, 0);
+                        profileActivity.getFileLoader().loadFile(document, messageObject, FileLoader.PRIORITY_LOW, 0);
                         cell.updateFileExistIcon(true);
                     } else {
                         profileActivity.getFileLoader().cancelLoadFile(document);
@@ -4741,7 +4741,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             } else if (selectedMode == 3) {
                 try {
-                    TLRPC.WebPage webPage = message.messageOwner.media != null ? message.messageOwner.media.webpage : null;
+                    TLRPC.WebPage webPage = MessageObject.getMedia(message.messageOwner) != null ? MessageObject.getMedia(message.messageOwner).webpage : null;
                     String link = null;
                     if (webPage != null && !(webPage instanceof TLRPC.TL_webPageEmpty)) {
                         if (webPage.cached_page != null) {
@@ -4778,7 +4778,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     private void openWebView(TLRPC.WebPage webPage, MessageObject message) {
-        EmbedBottomSheet.show(profileActivity.getParentActivity(), message, provider, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
+        EmbedBottomSheet.show(profileActivity, message, provider, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
     }
 
     private void recycleAdapter(RecyclerView.Adapter adapter) {
@@ -5726,9 +5726,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                                     if (currentType == 4) {
                                         TLRPC.Document document;
                                         if (messageObject.type == 0) {
-                                            document = messageObject.messageOwner.media.webpage.document;
+                                            document = MessageObject.getMedia(messageObject.messageOwner).webpage.document;
                                         } else {
-                                            document = messageObject.messageOwner.media.document;
+                                            document = MessageObject.getMedia(messageObject.messageOwner).document;
                                         }
                                         boolean ok = false;
                                         for (int c = 0; c < document.attributes.size(); c++) {
@@ -6462,7 +6462,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             arrayList.add(new ThemeDescription(forwardItem.getIconView(), ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
             arrayList.add(new ThemeDescription(forwardItem, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector));
         }
-        arrayList.add(new ThemeDescription(closeButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, new Drawable[]{backDrawable}, null, Theme.key_windowBackgroundWhiteGrayText2));
+        arrayList.add(new ThemeDescription(closeButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, new Drawable[]{backDrawable}, null, Theme.key_actionBarActionModeDefaultIcon));
         arrayList.add(new ThemeDescription(closeButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector));
 
         arrayList.add(new ThemeDescription(actionModeLayout, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));

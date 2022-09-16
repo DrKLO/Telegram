@@ -844,7 +844,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 } else {
                     type = 0;
                 }
-                PhotoViewer.getInstance().setParentActivity(getParentActivity());
+                PhotoViewer.getInstance().setParentActivity(PhotoPickerActivity.this);
                 PhotoViewer.getInstance().setMaxSelectedPhotos(maxSelectedPhotos, allowOrder);
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, type, isDocumentsPicker, provider, chatActivity);
             }

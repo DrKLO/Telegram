@@ -838,10 +838,10 @@ public class DownloadController extends BaseController implements NotificationCe
                 } else {
                     cacheType = 0;
                 }
-                getFileLoader().loadFile(ImageLocation.getForPhoto(photoSize, photo), downloadObject.parent, null, 0, cacheType);
+                getFileLoader().loadFile(ImageLocation.getForPhoto(photoSize, photo), downloadObject.parent, null, FileLoader.PRIORITY_LOW, cacheType);
             } else if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
-                getFileLoader().loadFile(document, downloadObject.parent, 0, downloadObject.secret ? 2 : 0);
+                getFileLoader().loadFile(document, downloadObject.parent, FileLoader.PRIORITY_LOW, downloadObject.secret ? 2 : 0);
             } else {
                 added = false;
             }
@@ -1129,7 +1129,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
             if (!contains) {
-                downloadingFiles.add(parentObject);
+                downloadingFiles.add(0, parentObject);
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
                     try {
                         NativeByteBuffer data = new NativeByteBuffer(parentObject.messageOwner.getObjectSize());
@@ -1344,6 +1344,24 @@ public class DownloadController extends BaseController implements NotificationCe
         });
     }
 
+    public void swapLoadingPriority(MessageObject o1, MessageObject o2) {
+        int index1 = downloadingFiles.indexOf(o1);
+        int index2 = downloadingFiles.indexOf(o2);
+        if (index1 >= 0 && index2 >= 0) {
+            downloadingFiles.set(index1, o2);
+            downloadingFiles.set(index2, o1);
+        }
+        updateFilesLoadingPriority();
+    }
+
+    public void updateFilesLoadingPriority() {
+        for (int i = downloadingFiles.size() - 1; i >= 0 ; i--) {
+            if (getFileLoader().isLoadingFile(downloadingFiles.get(i).getFileName())) {
+                getFileLoader().loadFile(downloadingFiles.get(i).getDocument(), downloadingFiles.get(i), FileLoader.PRIORITY_NORMAL_UP, 0);
+            }
+        }
+    }
+
     public void clearRecentDownloadedFiles() {
         recentDownloadingFiles.clear();
         getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
@@ -1377,7 +1395,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
             messageObjects.get(i).putInDownloadsStore = false;
-            FileLoader.getInstance(currentAccount).loadFile(messageObjects.get(i).getDocument(), messageObjects.get(i), 0, 0);
+            FileLoader.getInstance(currentAccount).loadFile(messageObjects.get(i).getDocument(), messageObjects.get(i), FileLoader.PRIORITY_LOW, 0);
             FileLoader.getInstance(currentAccount).cancelLoadFile(messageObjects.get(i).getDocument(), true);
         }
         getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);

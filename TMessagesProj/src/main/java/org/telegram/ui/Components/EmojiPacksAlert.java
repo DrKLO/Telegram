@@ -2,33 +2,52 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+import android.text.Editable;
+import android.text.Selection;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
+import android.text.method.LinkMovementMethod;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.view.WindowManager;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -37,11 +56,15 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -51,8 +74,11 @@ import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -72,6 +98,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
     private GridLayoutManager gridLayoutManager;
 
     private CircularProgressDrawable progressDrawable;
+    private ActionBarPopupWindow popupWindow;
 
     private boolean hasDescription;
     private float loadT;
@@ -101,6 +128,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         progressDrawable = new CircularProgressDrawable(AndroidUtilities.dp(32), AndroidUtilities.dp(3.5f), getThemedColor(Theme.key_featuredStickers_addButton));
 
+        final ColorFilter colorFilter = new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteLinkText), 178), PorterDuff.Mode.MULTIPLY);
         containerView = new FrameLayout(context) {
 
             private Paint paint = new Paint();
@@ -163,6 +191,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                     for (int i = 0; i < listView.getChildCount(); ++i) {
                         View child = listView.getChildAt(i);
                         if (child instanceof EmojiImageView) {
+                            ((EmojiImageView) child).updatePressedProgress();
                             if (animatedEmojiDrawables == null) {
                                 animatedEmojiDrawables = new LongSparseArray<>();
                             }
@@ -175,6 +204,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                             if (drawable == null) {
                                 animatedEmojiDrawables.put(documentId, drawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, documentId));
                             }
+                            drawable.setColorFilter(colorFilter);
                             drawable.addView(this);
                             ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.get(child.getTop());
                             if (arrayList == null) {
@@ -296,6 +326,30 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 }
 
                 @Override
+                public void draw(Canvas canvas, long time, int w, int h, float alpha) {
+                    if (imageViewEmojis == null) {
+                        return;
+                    }
+                    boolean drawInUi = imageViewEmojis.size() <= 3 || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW;
+                    if (!drawInUi) {
+                        for (int i = 0; i < imageViewEmojis.size(); i++) {
+                            EmojiImageView img = imageViewEmojis.get(i);
+                            if (img.pressedProgress != 0 || img.backAnimator != null || img.getTranslationX() != 0 || img.getTranslationY() != 0 || img.getAlpha() != 1) {
+                                drawInUi = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (drawInUi) {
+                        prepareDraw(System.currentTimeMillis());
+                        drawInUiThread(canvas, alpha);
+                        reset();
+                    } else {
+                        super.draw(canvas, time, w, h, alpha);
+                    }
+                }
+
+                @Override
                 public void drawInBackground(Canvas canvas) {
                     for (int i = 0; i < drawInBackgroundViews.size(); i++) {
                         EmojiImageView imageView = drawInBackgroundViews.get(i);
@@ -304,7 +358,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 }
 
                 @Override
-                protected void drawInUiThread(Canvas canvas) {
+                protected void drawInUiThread(Canvas canvas, float alpha) {
                     if (imageViewEmojis != null) {
                         for (int i = 0; i < imageViewEmojis.size(); i++) {
                             EmojiImageView imageView = imageViewEmojis.get(i);
@@ -317,9 +371,22 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                                 continue;
                             }
                             if (imageView.imageReceiver != null) {
-                                drawable.setAlpha((int) (255 * imageView.getAlpha()));
-                                drawable.setBounds(imageView.getLeft() + imageView.getPaddingLeft(),  imageView.getPaddingTop(), imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom());
-                                drawable.draw(canvas);
+                                drawable.setAlpha((int) (255 * alpha * imageView.getAlpha()));
+                                float hw = (imageView.getWidth() - imageView.getPaddingLeft() - imageView.getPaddingRight()) / 2f;
+                                float hh = (imageView.getHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom()) / 2f;
+                                float cx = (imageView.getLeft() + imageView.getRight()) / 2f;
+                                float cy = imageView.getPaddingTop() + hh;
+                                float scale = 1f;
+                                if (imageView.pressedProgress != 0) {
+                                    scale *= 0.8f + 0.2f * (1f - imageView.pressedProgress);
+                                }
+                                drawable.setBounds(
+                                    (int) (cx - hw * imageView.getScaleX() * scale),
+                                    (int) (cy - hh * imageView.getScaleY() * scale),
+                                    (int) (cx + hw * imageView.getScaleX() * scale),
+                                    (int) (cy + hh * imageView.getScaleY() * scale)
+                                );
+                                drawable.draw(canvas, false);
                             }
                         }
                     }
@@ -393,6 +460,8 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         containerView.setClipChildren(false);
         containerView.setClipToPadding(false);
         containerView.setWillNotDraw(false);
+        listView.setSelectorRadius(AndroidUtilities.dp(6));
+        listView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector, resourceProvider));
         listView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(68));
         listView.setAdapter(new Adapter());
         listView.setLayoutManager(gridLayoutManager = new GridLayoutManager(context, 8));
@@ -409,6 +478,25 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         });
         listView.setOnItemClickListener((view, position) -> {
             if (stickerSets == null || stickerSets.size() <= 1) {
+                if (popupWindow != null) {
+                    popupWindow.dismiss();
+                    popupWindow = null;
+                    return;
+                }
+                if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getChatActivityEnterView().getVisibility() == View.VISIBLE && view instanceof EmojiImageView) {
+                    final AnimatedEmojiSpan span = ((EmojiImageView) view).span;
+                    try {
+                        SpannableString text = new SpannableString(MessageObject.findAnimatedEmojiEmoticon(span.document == null ? AnimatedEmojiDrawable.findDocument(currentAccount, span.getDocumentId()) : span.document));
+                        text.setSpan(span, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        ((Editable) ((ChatActivity) fragment).getChatActivityEnterView().messageEditText.getText()).append(text);
+                        ((ChatActivity) fragment).showEmojiHint();
+                        onCloseByLink();
+                        dismiss();
+                    } catch (Exception ignore) {}
+                    try {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                    } catch (Exception e) {}
+                }
                 return;
             }
             if (SystemClock.elapsedRealtime() - premiumButtonClicked < 250) {
@@ -433,8 +521,65 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 inputStickerSet.id = stickerSet.set.id;
                 inputStickerSet.access_hash = stickerSet.set.access_hash;
                 inputStickerSets.add(inputStickerSet);
-                new EmojiPacksAlert(fragment, getContext(), resourceProvider, inputStickerSets).show();
+                new EmojiPacksAlert(fragment, getContext(), resourceProvider, inputStickerSets) {
+                    @Override
+                    protected void onCloseByLink() {
+                        EmojiPacksAlert.this.dismiss();
+                    }
+                }.show();
             }
+        });
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (view instanceof EmojiImageView) {
+                final AnimatedEmojiSpan span = ((EmojiImageView) view).span;
+                if (span == null) {
+                    return false;
+                }
+
+                ActionBarMenuSubItem copyButton = new ActionBarMenuSubItem(getContext(), true, true);
+                copyButton.setItemHeight(48);
+                copyButton.setPadding(AndroidUtilities.dp(26), 0, AndroidUtilities.dp(26), 0);
+                copyButton.setText(LocaleController.getString("Copy", R.string.Copy));
+                copyButton.getTextView().setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.4f);
+                copyButton.getTextView().setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                copyButton.setOnClickListener(e -> {
+                    if (popupWindow == null) {
+                        return;
+                    }
+                    popupWindow.dismiss();
+                    popupWindow = null;
+
+                    SpannableString text = new SpannableString(MessageObject.findAnimatedEmojiEmoticon(AnimatedEmojiDrawable.findDocument(currentAccount, span.getDocumentId())));
+                    text.setSpan(span, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (AndroidUtilities.addToClipboard(text)) {
+                        BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createCopyBulletin(LocaleController.getString("EmojiCopied", R.string.EmojiCopied)).show();
+                    }
+                });
+
+                LinearLayout layout = new LinearLayout(context);
+                Drawable shadowDrawable2 = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert).mutate();
+                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+                layout.setBackground(shadowDrawable2);
+                layout.addView(copyButton);
+
+                popupWindow = new ActionBarPopupWindow(layout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                popupWindow.setClippingEnabled(true);
+                popupWindow.setLayoutInScreen(true);
+                popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+                popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+                popupWindow.setOutsideTouchable(true);
+                popupWindow.setAnimationStyle(R.style.PopupAnimation);
+                int[] loc = new int[2];
+                view.getLocationInWindow(loc);
+                popupWindow.showAtLocation(view, Gravity.TOP | Gravity.LEFT, loc[0] - AndroidUtilities.dp(49) + view.getMeasuredWidth() / 2, loc[1] - AndroidUtilities.dp(52));
+
+                try {
+                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception e) {}
+
+                return true;
+            }
+            return false;
         });
         gridLayoutManager.setReverseLayout(false);
         gridLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -463,12 +608,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         addButtonView.setGravity(Gravity.CENTER);
         buttonsView.addView(addButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 12, 10, 12, 10));
 
-        removeButtonView = new TextView(context) {
-            @Override
-            public void setVisibility(int visibility) {
-                super.setVisibility(visibility);
-            }
-        };
+        removeButtonView = new TextView(context);
         removeButtonView.setVisibility(View.GONE);
         removeButtonView.setBackground(Theme.createRadSelectorDrawable(0x0fffffff & getThemedColor(Theme.key_dialogTextRed), 0, 0));
         removeButtonView.setTextColor(getThemedColor(Theme.key_dialogTextRed));
@@ -493,7 +633,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
     }
 
-    private void updateShowButton(boolean show, boolean animated) {
+    private boolean shown = false;
+    private void updateShowButton(boolean show) {
+        boolean animated = !shown && show;
         final float removeOffset = (removeButtonView.getVisibility() == View.VISIBLE ? AndroidUtilities.dp(19) : 0);
         if (animated) {
             buttonsView.animate().translationY(show ? removeOffset : AndroidUtilities.dp(16)).alpha(show ? 1 : 0).setDuration(250).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
@@ -506,6 +648,11 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             shadowView.setTranslationY(show ? -(AndroidUtilities.dp(68) - removeOffset) : 0);
             listView.setTranslationY(!show ? (AndroidUtilities.dp(68) - removeOffset) : 0);
         }
+        shown = show;
+    }
+
+    protected void onCloseByLink() {
+
     }
 
     @Override
@@ -556,14 +703,22 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         updateButton();
     }
 
-    public static void installSet(BaseFragment fragment, TLRPC.TL_messages_stickerSet set, boolean showBulletIn) {
+    public static void installSet(BaseFragment fragment, TLObject set, boolean showBulletIn) {
         installSet(fragment, set, showBulletIn, null, null);
     }
-    public static void installSet(BaseFragment fragment, TLRPC.TL_messages_stickerSet set, boolean showBulletIn, Utilities.Callback<Boolean> onDone, Runnable onStickersLoaded) {
-        if (set == null || fragment == null) {
+    public static void installSet(BaseFragment fragment, TLObject obj, boolean showBulletIn, Utilities.Callback<Boolean> onDone, Runnable onStickersLoaded) {
+        int currentAccount = fragment == null ? UserConfig.selectedAccount : fragment.getCurrentAccount();
+        View fragmentView = fragment == null ? null : fragment.getFragmentView();
+        if (obj == null) {
             return;
         }
-        if (MediaDataController.getInstance(fragment.getCurrentAccount()).cancelRemovingStickerSet(set.set.id)) {
+        TLRPC.TL_messages_stickerSet stickerSet = obj instanceof TLRPC.TL_messages_stickerSet ? (TLRPC.TL_messages_stickerSet) obj : null;
+        TLRPC.StickerSet set = stickerSet != null ? stickerSet.set : obj instanceof TLRPC.StickerSet ? (TLRPC.StickerSet) obj : null;
+        if (set == null) {
+            return;
+        }
+
+        if (MediaDataController.getInstance(currentAccount).cancelRemovingStickerSet(set.id)) {
             if (onDone != null) {
                 onDone.run(true);
             }
@@ -571,27 +726,27 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }
         TLRPC.TL_messages_installStickerSet req = new TLRPC.TL_messages_installStickerSet();
         req.stickerset = new TLRPC.TL_inputStickerSetID();
-        req.stickerset.id = set.set.id;
-        req.stickerset.access_hash = set.set.access_hash;
-        ConnectionsManager.getInstance(fragment.getCurrentAccount()).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        req.stickerset.id = set.id;
+        req.stickerset.access_hash = set.access_hash;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             int type = MediaDataController.TYPE_IMAGE;
-            if (set.set.masks) {
+            if (set.masks) {
                 type = MediaDataController.TYPE_MASK;
-            } else if (set.set.emojis) {
+            } else if (set.emojis) {
                 type = MediaDataController.TYPE_EMOJIPACKS;
-            };
+            }
             try {
                 if (error == null) {
-                    if (showBulletIn && fragment.getFragmentView() != null) {
-                        Bulletin.make(fragment, new StickerSetBulletinLayout(fragment.getFragmentView().getContext(), set, StickerSetBulletinLayout.TYPE_ADDED, null, fragment.getResourceProvider()), Bulletin.DURATION_SHORT).show();
+                    if (showBulletIn && fragmentView != null) {
+                        Bulletin.make(fragment, new StickerSetBulletinLayout(fragment.getFragmentView().getContext(), stickerSet == null ? set : stickerSet, StickerSetBulletinLayout.TYPE_ADDED, null, fragment.getResourceProvider()), Bulletin.DURATION_SHORT).show();
                     }
                     if (response instanceof TLRPC.TL_messages_stickerSetInstallResultArchive) {
-                        MediaDataController.getInstance(fragment.getCurrentAccount()).processStickerSetInstallResultArchive(fragment, true, type, (TLRPC.TL_messages_stickerSetInstallResultArchive) response);
+                        MediaDataController.getInstance(currentAccount).processStickerSetInstallResultArchive(fragment, true, type, (TLRPC.TL_messages_stickerSetInstallResultArchive) response);
                     }
                     if (onDone != null) {
                         onDone.run(true);
                     }
-                } else if (fragment.getFragmentView() != null) {
+                } else if (fragmentView != null) {
                     Toast.makeText(fragment.getFragmentView().getContext(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred), Toast.LENGTH_SHORT).show();
                     if (onDone != null) {
                         onDone.run(false);
@@ -604,7 +759,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            MediaDataController.getInstance(fragment.getCurrentAccount()).loadStickers(type, false, true, false, p -> {
+            MediaDataController.getInstance(currentAccount).loadStickers(type, false, true, false, p -> {
                 if (onStickersLoaded != null) {
                     onStickersLoaded.run();
                 }
@@ -616,7 +771,6 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         if (fragment == null || set == null || fragment.getFragmentView() == null) {
             return;
         }
-        // set.set.official ? 1 : 0
         MediaDataController.getInstance(fragment.getCurrentAccount()).toggleStickerSet(fragment.getFragmentView().getContext(), set, 0, fragment, true, showBulletin, onUndo);
     }
 
@@ -639,7 +793,6 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         loadAnimator.start();
     }
 
-    boolean first = false;
     boolean loaded = true;
     private void updateButton() {
         if (buttonsView == null) {
@@ -683,11 +836,16 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             listView.setAlpha(0);
         }
 
-        if (canInstallPacks.size() <= 0 && notInstalledPacks.size() >= 0 && !mePremium || !loaded) {
+        if (!loaded) {
+            premiumButtonView.setVisibility(View.GONE);
+            addButtonView.setVisibility(View.GONE);
+            removeButtonView.setVisibility(View.GONE);
+            updateShowButton(false);
+        } else if (canInstallPacks.size() <= 0 && notInstalledPacks.size() >= 0 && !mePremium || !loaded) {
             premiumButtonView.setVisibility(View.VISIBLE);
             addButtonView.setVisibility(View.GONE);
             removeButtonView.setVisibility(View.GONE);
-            updateShowButton(true, !first);
+            updateShowButton(true);
         } else {
             premiumButtonView.setVisibility(View.INVISIBLE);
             if (canInstallPacks.size() > 0) {
@@ -721,7 +879,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         dismiss();
                     }
                 });
-                updateShowButton(true, !first);
+                updateShowButton(true);
             } else if (installedPacks.size() > 0) {
                 addButtonView.setVisibility(View.GONE);
                 removeButtonView.setVisibility(View.VISIBLE);
@@ -743,14 +901,13 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                     }
                     onButtonClicked(false);
                 });
-                updateShowButton(true, !first);
+                updateShowButton(true);
             } else {
                 addButtonView.setVisibility(View.GONE);
                 removeButtonView.setVisibility(View.GONE);
-                updateShowButton(false, !first);
+                updateShowButton(false);
             }
         }
-        first = false;
     }
 
     private int getListTop() {
@@ -794,7 +951,12 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }
     }
 
-    private class Adapter extends RecyclerView.Adapter {
+    private class Adapter extends RecyclerListView.SelectionAdapter {
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return holder.getItemViewType() == 1;
+        }
 
         @NonNull
         @Override
@@ -993,11 +1155,51 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY));
         }
+
+        ValueAnimator backAnimator;
+        private float pressedProgress;
+        @Override
+        public void setPressed(boolean pressed) {
+            if (isPressed() != pressed) {
+                super.setPressed(pressed);
+                invalidate();
+                if (pressed) {
+                    if (backAnimator != null) {
+                        backAnimator.removeAllListeners();
+                        backAnimator.cancel();
+                    }
+                }
+                if (!pressed && pressedProgress != 0) {
+                    backAnimator = ValueAnimator.ofFloat(pressedProgress, 0);
+                    backAnimator.addUpdateListener(animation -> {
+                        pressedProgress = (float) animation.getAnimatedValue();
+                        containerView.invalidate();
+                    });
+                    backAnimator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            super.onAnimationEnd(animation);
+                            backAnimator = null;
+                        }
+                    });
+                    backAnimator.setInterpolator(new OvershootInterpolator(5.0f));
+                    backAnimator.setDuration(350);
+                    backAnimator.start();
+                }
+            }
+        }
+
+        public void updatePressedProgress() {
+            if (isPressed() && pressedProgress != 1f) {
+                pressedProgress = Utilities.clamp(pressedProgress + 16f / 100f, 1f, 0);
+                invalidate();
+            }
+        }
     }
 
     private class EmojiPackHeader extends FrameLayout {
 
-        public TextView titleView;
+        public LinkSpanDrawable.LinksTextView titleView;
         public TextView subtitleView;
         public TextView addButtonView;
         public TextView removeButtonView;
@@ -1095,20 +1297,24 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
                 removeButtonView.measure(MeasureSpec.makeMeasureSpec(99999, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(28), MeasureSpec.EXACTLY));
                 endMarginDp = Math.max(endMarginDp, (removeButtonView.getMeasuredWidth() + AndroidUtilities.dp(8 + 8)) / AndroidUtilities.density);
+            } else {
+                endMarginDp = 32;
             }
 
-            titleView = new TextView(context);
+            titleView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
+            titleView.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(2), 0);
             titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             titleView.setSingleLine(true);
             titleView.setLines(1);
+            titleView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
             titleView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             if (single) {
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 14, 11, endMarginDp, 0));
+                addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 12, 11, endMarginDp, 0));
             } else {
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-                addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 8, 10, endMarginDp, 0));
+                addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 6, 10, endMarginDp, 0));
             }
 
             if (!single) {
@@ -1187,7 +1393,36 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             this.set = set;
 
             if (set != null && set.set != null) {
-                titleView.setText(set.set.title);
+                SpannableStringBuilder stringBuilder = null;
+                try {
+                    if (urlPattern == null) {
+                        urlPattern = Pattern.compile("@[a-zA-Z\\d_]{1,32}");
+                    }
+                    Matcher matcher = urlPattern.matcher(set.set.title);
+                    while (matcher.find()) {
+                        if (stringBuilder == null) {
+                            stringBuilder = new SpannableStringBuilder(set.set.title);
+                            titleView.setMovementMethod(new LinkMovementMethodMy());
+                        }
+                        int start = matcher.start();
+                        int end = matcher.end();
+                        if (set.set.title.charAt(start) != '@') {
+                            start++;
+                        }
+                        URLSpanNoUnderline url = new URLSpanNoUnderline(set.set.title.subSequence(start + 1, end).toString()) {
+                            @Override
+                            public void onClick(View widget) {
+                                MessagesController.getInstance(currentAccount).openByUserName(getURL(), fragment, 1);
+                                onCloseByLink();
+                                dismiss();
+                            }
+                        };
+                        stringBuilder.setSpan(url, start, end, 0);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                titleView.setText(stringBuilder != null ? stringBuilder : set.set.title);
             } else {
                 titleView.setText(null);
             }
@@ -1225,6 +1460,23 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }
     }
 
+    private static Pattern urlPattern;
+    private static class LinkMovementMethodMy extends LinkMovementMethod {
+        @Override
+        public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
+            try {
+                boolean result = super.onTouchEvent(widget, buffer, event);
+                if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    Selection.removeSelection(buffer);
+                }
+                return result;
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return false;
+        }
+    }
+
     class EmojiPacksLoader implements NotificationCenter.NotificationCenterDelegate {
         final int loadingStickersCount = 12;
 
@@ -1253,7 +1505,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         failed[0] = true;
                         AndroidUtilities.runOnUIThread(() -> {
                             dismiss();
-                            BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("AddEmojiNotFound", R.string.AddEmojiNotFound)).show();
+                            if (fragment != null && fragment.getParentActivity() != null) {
+                                BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("AddEmojiNotFound", R.string.AddEmojiNotFound)).show();
+                            }
                         });
                     }
                 });

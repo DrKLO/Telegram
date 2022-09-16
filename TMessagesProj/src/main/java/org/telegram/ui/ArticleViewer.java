@@ -6273,7 +6273,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(currentDocument.thumbs, 40);
                     imageView.setImage(ImageLocation.getForDocument(currentDocument), null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", currentDocument.size, null, parentAdapter.currentPage, 1);
                 } else {
-                    FileLoader.getInstance(currentAccount).loadFile(currentDocument, parentAdapter.currentPage, 1, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(currentDocument, parentAdapter.currentPage, FileLoader.PRIORITY_NORMAL, 1);
                 }
                 buttonState = 1;
                 radialProgress.setIcon(getIconForCurrentState(), true, animated);
@@ -11222,7 +11222,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             index = 0;
         }
         final PhotoViewer photoViewer = PhotoViewer.getInstance();
-        photoViewer.setParentActivity(parentActivity);
+        photoViewer.setParentActivity(parentFragment);
         return photoViewer.openPhoto(index, new RealPageBlocksAdapter(adapter.currentPage, pageBlocks), new PageBlocksPhotoViewerProvider(pageBlocks));
     }
 

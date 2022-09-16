@@ -65,7 +65,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
     public LinkSpanDrawable(S span, Theme.ResourcesProvider resourcesProvider, float touchX, float touchY, boolean supportsLongPress) {
         mSpan = span;
         mResourcesProvider = resourcesProvider;
-        setColor(getThemedColor(Theme.key_chat_linkSelectBackground));
+        setColor(Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider));
         mTouchX = touchX;
         mTouchY = touchY;
         final long tapTimeout = ViewConfiguration.getTapTimeout();
@@ -205,11 +205,6 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         }
 
         return pressT < 1f || mReleaseStart >= 0 || (mSupportsLongPress && now - mStart < mLongPressDuration + mDuration);
-    }
-
-    private int getThemedColor(String key) {
-        Integer color = mResourcesProvider != null ? mResourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
     }
 
     public static class LinkCollector {
@@ -467,8 +462,13 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (!isCustomLinkCollector && links.draw(canvas)) {
-                invalidate();
+            if (!isCustomLinkCollector) {
+                canvas.save();
+                canvas.translate(getPaddingLeft(), getPaddingTop());
+                if (links.draw(canvas)) {
+                    invalidate();
+                }
+                canvas.restore();
             }
             super.onDraw(canvas);
         }

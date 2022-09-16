@@ -258,7 +258,7 @@ public class RingtoneDataStore {
                     File file = FileLoader.getInstance(currentAccount).getPathToAttach(document);
                     if (file == null || !file.exists()) {
                         AndroidUtilities.runOnUIThread(() -> {
-                            FileLoader.getInstance(currentAccount).loadFile(document, document, 0, 0);
+                            FileLoader.getInstance(currentAccount).loadFile(document, document, FileLoader.PRIORITY_LOW, 0);
                         });
                     }
                 }

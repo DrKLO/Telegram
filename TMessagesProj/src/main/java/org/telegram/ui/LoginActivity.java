@@ -44,6 +44,7 @@ import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -51,6 +52,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.Base64;
 import android.util.TypedValue;
@@ -79,7 +81,14 @@ import android.widget.ViewSwitcher;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -125,6 +134,7 @@ import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LoginOrView;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
@@ -168,7 +178,8 @@ public class LoginActivity extends BaseFragment {
 
     private final static int MODE_LOGIN = 0,
             MODE_CANCEL_ACCOUNT_DELETION = 1,
-            MODE_CHANGE_PHONE_NUMBER = 2;
+            MODE_CHANGE_PHONE_NUMBER = 2,
+            MODE_CHANGE_LOGIN_EMAIL = 3;
 
     private final static int VIEW_PHONE_INPUT = 0,
             VIEW_CODE_MESSAGE = 1,
@@ -181,7 +192,10 @@ public class LoginActivity extends BaseFragment {
             VIEW_RESET_WAIT = 8,
             VIEW_NEW_PASSWORD_STAGE_1 = 9,
             VIEW_NEW_PASSWORD_STAGE_2 = 10,
-            VIEW_CODE_MISSED_CALL = 11;
+            VIEW_CODE_MISSED_CALL = 11,
+            VIEW_ADD_EMAIL = 12,
+            VIEW_CODE_EMAIL_SETUP = 13,
+            VIEW_CODE_EMAIL = 14;
 
     private final static int COUNTRY_STATE_NOT_SET_OR_VALID = 0,
             COUNTRY_STATE_EMPTY = 1,
@@ -201,7 +215,8 @@ public class LoginActivity extends BaseFragment {
     @IntDef({
             MODE_LOGIN,
             MODE_CANCEL_ACCOUNT_DELETION,
-            MODE_CHANGE_PHONE_NUMBER
+            MODE_CHANGE_PHONE_NUMBER,
+            MODE_CHANGE_LOGIN_EMAIL
     })
     public @interface ActivityMode {}
 
@@ -218,7 +233,10 @@ public class LoginActivity extends BaseFragment {
             VIEW_RESET_WAIT,
             VIEW_NEW_PASSWORD_STAGE_1,
             VIEW_NEW_PASSWORD_STAGE_2,
-            VIEW_CODE_MISSED_CALL
+            VIEW_CODE_MISSED_CALL,
+            VIEW_ADD_EMAIL,
+            VIEW_CODE_EMAIL_SETUP,
+            VIEW_CODE_EMAIL
     })
     private @interface ViewNumber {}
 
@@ -231,8 +249,9 @@ public class LoginActivity extends BaseFragment {
 
     @ViewNumber
     private int currentViewNum;
-    private SlideView[] views = new SlideView[12];
+    private SlideView[] views = new SlideView[15];
     private CustomPhoneKeyboardView keyboardView;
+    private ValueAnimator keyboardAnimator;
 
     private boolean restoringState;
 
@@ -290,6 +309,8 @@ public class LoginActivity extends BaseFragment {
     private final static int done_button = 1;
 
     private boolean needRequestPermissions;
+
+    private Runnable emailChangeFinishCallback;
 
     private boolean[] doneProgressVisible = new boolean[2];
     private Runnable[] editDoneCallback = new Runnable[2];
@@ -372,6 +393,13 @@ public class LoginActivity extends BaseFragment {
         newAccount = true;
     }
 
+    public LoginActivity changeEmail(Runnable onFinishCallback) {
+        activityMode = MODE_CHANGE_LOGIN_EMAIL;
+        currentViewNum = VIEW_ADD_EMAIL;
+        emailChangeFinishCallback = onFinishCallback;
+        return this;
+    }
+
     public LoginActivity cancelAccountDeletion(String phone, Bundle params, TLRPC.TL_auth_sentCode sentCode) {
         cancelDeletionPhone = phone;
         cancelDeletionParams = params;
@@ -449,6 +477,13 @@ public class LoginActivity extends BaseFragment {
 
                 marginLayoutParams = (MarginLayoutParams) radialProgressView.getLayoutParams();
                 marginLayoutParams.topMargin = AndroidUtilities.dp(16) + statusBarHeight;
+
+                if (measureKeyboardHeight() > AndroidUtilities.dp(20) && keyboardView.getVisibility() != GONE && !isCustomKeyboardForceDisabled() && !customKeyboardWasVisible) {
+                    if (keyboardAnimator != null) {
+                        keyboardAnimator.cancel();
+                    }
+                    keyboardView.setVisibility(View.GONE);
+                }
 
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
@@ -528,6 +563,9 @@ public class LoginActivity extends BaseFragment {
         views[VIEW_NEW_PASSWORD_STAGE_1] = new LoginActivityNewPasswordView(context, 0);
         views[VIEW_NEW_PASSWORD_STAGE_2] = new LoginActivityNewPasswordView(context, 1);
         views[VIEW_CODE_MISSED_CALL] = new LoginActivitySmsView(context, AUTH_TYPE_MISSED_CALL);
+        views[VIEW_ADD_EMAIL] = new LoginActivitySetupEmail(context);
+        views[VIEW_CODE_EMAIL_SETUP] = new LoginActivityEmailCodeView(context, true);
+        views[VIEW_CODE_EMAIL] = new LoginActivityEmailCodeView(context, false);
 
         for (int a = 0; a < views.length; a++) {
             views[a].setVisibility(a == 0 ? View.VISIBLE : View.GONE);
@@ -643,7 +681,8 @@ public class LoginActivity extends BaseFragment {
 
                 currentDoneType = DONE_TYPE_FLOATING;
                 boolean needFloatingButton = a == VIEW_PHONE_INPUT || a == VIEW_REGISTER ||
-                        a == VIEW_PASSWORD || a == VIEW_NEW_PASSWORD_STAGE_1 || a == VIEW_NEW_PASSWORD_STAGE_2;
+                        a == VIEW_PASSWORD || a == VIEW_NEW_PASSWORD_STAGE_1 || a == VIEW_NEW_PASSWORD_STAGE_2 ||
+                        a == VIEW_ADD_EMAIL;
                 showDoneButton(needFloatingButton, false);
                 if (a == VIEW_CODE_MESSAGE || a == VIEW_CODE_SMS || a == VIEW_CODE_FLASH_CALL || a == VIEW_CODE_CALL) {
                     currentDoneType = DONE_TYPE_ACTION;
@@ -686,40 +725,51 @@ public class LoginActivity extends BaseFragment {
             AndroidUtilities.hideKeyboard(fragmentView);
             AndroidUtilities.requestAltFocusable(getParentActivity(), classGuid);
             if (animate) {
-                ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(300);
-                anim.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                anim.addUpdateListener(animation -> {
+                keyboardAnimator = ValueAnimator.ofFloat(0, 1).setDuration(300);
+                keyboardAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                keyboardAnimator.addUpdateListener(animation -> {
                     float val = (float) animation.getAnimatedValue();
                     keyboardView.setAlpha(val);
                     keyboardView.setTranslationY((1f - val) * AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP));
                 });
-                anim.addListener(new AnimatorListenerAdapter() {
+                keyboardAnimator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationStart(Animator animation) {
                         keyboardView.setVisibility(View.VISIBLE);
                     }
+
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (keyboardAnimator == animation) {
+                            keyboardAnimator = null;
+                        }
+                    }
                 });
-                anim.start();
+                keyboardAnimator.start();
             } else {
                 keyboardView.setVisibility(View.VISIBLE);
             }
         } else {
             AndroidUtilities.removeAltFocusable(getParentActivity(), classGuid);
             if (animate) {
-                ValueAnimator anim = ValueAnimator.ofFloat(1, 0).setDuration(300);
-                anim.setInterpolator(Easings.easeInOutQuad);
-                anim.addUpdateListener(animation -> {
+                keyboardAnimator = ValueAnimator.ofFloat(1, 0).setDuration(300);
+                keyboardAnimator.setInterpolator(Easings.easeInOutQuad);
+                keyboardAnimator.addUpdateListener(animation -> {
                     float val = (float) animation.getAnimatedValue();
                     keyboardView.setAlpha(val);
                     keyboardView.setTranslationY((1f - val) * AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP));
                 });
-                anim.addListener(new AnimatorListenerAdapter() {
+                keyboardAnimator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         keyboardView.setVisibility(View.GONE);
+
+                        if (keyboardAnimator == animation) {
+                            keyboardAnimator = null;
+                        }
                     }
                 });
-                anim.start();
+                keyboardAnimator.start();
             } else {
                 keyboardView.setVisibility(View.GONE);
             }
@@ -898,7 +948,7 @@ public class LoginActivity extends BaseFragment {
 
     @Override
     public boolean onBackPressed() {
-        if (currentViewNum == VIEW_PHONE_INPUT) {
+        if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL) {
             for (int a = 0; a < views.length; a++) {
                 if (views[a] != null) {
                     views[a].onDestroyActivity();
@@ -924,6 +974,13 @@ public class LoginActivity extends BaseFragment {
         } else if (currentViewNum == VIEW_NEW_PASSWORD_STAGE_2) {
             views[currentViewNum].onBackPressed(true);
             setPage(VIEW_NEW_PASSWORD_STAGE_1, true, null, true);
+        } else if (currentViewNum == VIEW_CODE_EMAIL_SETUP) {
+            views[currentViewNum].onBackPressed(true);
+            setPage(VIEW_ADD_EMAIL, true, null, true);
+        } else {
+            if (views[currentViewNum].onBackPressed(true)) {
+                setPage(VIEW_PHONE_INPUT, true, null, true);
+            }
         }
         return false;
     }
@@ -1363,7 +1420,7 @@ public class LoginActivity extends BaseFragment {
 
     public void setPage(@ViewNumber int page, boolean animated, Bundle params, boolean back) {
         boolean needFloatingButton = page == VIEW_PHONE_INPUT || page == VIEW_REGISTER || page == VIEW_PASSWORD ||
-                page == VIEW_NEW_PASSWORD_STAGE_1 || page == VIEW_NEW_PASSWORD_STAGE_2;
+                page == VIEW_NEW_PASSWORD_STAGE_1 || page == VIEW_NEW_PASSWORD_STAGE_2 || page == VIEW_ADD_EMAIL;
         if (needFloatingButton) {
             if (page == VIEW_PHONE_INPUT) {
                 checkPermissions = true;
@@ -1517,6 +1574,12 @@ public class LoginActivity extends BaseFragment {
         needFinishActivity(afterSignup, res.setup_password_required, res.otherwise_relogin_days);
     }
 
+    private void fillNextCodeParams(Bundle params, TLRPC.TL_account_sentEmailCode res) {
+        params.putString("emailPattern", res.email_pattern);
+        params.putInt("length", res.length);
+        setPage(VIEW_CODE_EMAIL_SETUP, true, params, false);
+    }
+
     private void fillNextCodeParams(Bundle params, TLRPC.TL_auth_sentCode res) {
         fillNextCodeParams(params, res, true);
     }
@@ -1533,7 +1596,7 @@ public class LoginActivity extends BaseFragment {
             params.putInt("nextType", AUTH_TYPE_MISSED_CALL);
         }
         if (res.type instanceof TLRPC.TL_auth_sentCodeTypeApp) {
-            params.putInt("type", 1);
+            params.putInt("type", AUTH_TYPE_MESSAGE);
             params.putInt("length", res.type.length);
             setPage(VIEW_CODE_MESSAGE, animate, params, false);
         } else {
@@ -1542,15 +1605,15 @@ public class LoginActivity extends BaseFragment {
             }
             params.putInt("timeout", res.timeout * 1000);
             if (res.type instanceof TLRPC.TL_auth_sentCodeTypeCall) {
-                params.putInt("type", 4);
+                params.putInt("type", AUTH_TYPE_CALL);
                 params.putInt("length", res.type.length);
                 setPage(VIEW_CODE_CALL, animate, params, false);
             } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFlashCall) {
-                params.putInt("type", 3);
+                params.putInt("type", AUTH_TYPE_FLASH_CALL);
                 params.putString("pattern", res.type.pattern);
                 setPage(VIEW_CODE_FLASH_CALL, animate, params, false);
             } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSms) {
-                params.putInt("type", 2);
+                params.putInt("type", AUTH_TYPE_SMS);
                 params.putInt("length", res.type.length);
                 setPage(VIEW_CODE_SMS, animate, params, false);
             } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeMissedCall) {
@@ -1558,6 +1621,15 @@ public class LoginActivity extends BaseFragment {
                 params.putInt("length", res.type.length);
                 params.putString("prefix", res.type.prefix);
                 setPage(VIEW_CODE_MISSED_CALL, animate, params, false);
+            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSetUpEmailRequired) {
+                params.putBoolean("googleSignInAllowed", res.type.google_signin_allowed);
+                setPage(VIEW_ADD_EMAIL, animate, params, false);
+            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeEmailCode) {
+                params.putBoolean("googleSignInAllowed", res.type.google_signin_allowed);
+                params.putString("emailPattern", res.type.email_pattern);
+                params.putInt("length", res.type.length);
+                params.putInt("nextPhoneLoginDate", res.type.next_phone_login_date);
+                setPage(VIEW_CODE_EMAIL, animate, params, false);
             }
         }
     }
@@ -2539,7 +2611,7 @@ public class LoginActivity extends BaseFragment {
                                 nextPressed = false;
                                 showDoneButton(false, true);
                                 if (error1 == null) {
-                                    TLRPC.TL_account_password password = (TLRPC.TL_account_password) response1;
+                                    TLRPC.account_Password password = (TLRPC.account_Password) response1;
                                     if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
                                         AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
                                         return;
@@ -3714,6 +3786,7 @@ public class LoginActivity extends BaseFragment {
                     req.phone_number = requestPhone;
                     req.phone_code = code;
                     req.phone_code_hash = phoneHash;
+                    req.flags |= 1;
                     destroyTimer();
 
                     codeFieldContainer.isFocusSuppressed = true;
@@ -3755,7 +3828,7 @@ public class LoginActivity extends BaseFragment {
                                     nextPressed = false;
                                     showDoneButton(false, true);
                                     if (error1 == null) {
-                                        TLRPC.TL_account_password password = (TLRPC.TL_account_password) response1;
+                                        TLRPC.account_Password password = (TLRPC.account_Password) response1;
                                         if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
                                             AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
                                             return;
@@ -4034,7 +4107,7 @@ public class LoginActivity extends BaseFragment {
 
         private Bundle currentParams;
         private boolean nextPressed;
-        private TLRPC.TL_account_password currentPassword;
+        private TLRPC.account_Password currentPassword;
         private String passwordString;
         private String requestPhone;
         private String phoneHash;
@@ -4210,7 +4283,7 @@ public class LoginActivity extends BaseFragment {
             passwordString = currentParams.getString("password");
             if (passwordString != null) {
                 SerializedData data = new SerializedData(Utilities.hexToBytes(passwordString));
-                currentPassword = TLRPC.TL_account_password.TLdeserialize(data, data.readInt32(false), false);
+                currentPassword = TLRPC.account_Password.TLdeserialize(data, data.readInt32(false), false);
             }
 
             requestPhone = params.getString("phoneFormated");
@@ -4269,7 +4342,7 @@ public class LoginActivity extends BaseFragment {
                         TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                         ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                             if (error2 == null) {
-                                currentPassword = (TLRPC.TL_account_password) response2;
+                                currentPassword = (TLRPC.account_Password) response2;
                                 onNextPressed(null);
                             }
                         }), ConnectionsManager.RequestFlagWithoutLogin);
@@ -4580,6 +4653,919 @@ public class LoginActivity extends BaseFragment {
         }
     }
 
+    public class LoginActivitySetupEmail extends SlideView {
+        private OutlineTextContainerView emailOutlineView;
+        private EditTextBoldCursor emailField;
+
+        private TextView titleView;
+        private TextView subtitleView;
+        private TextView signInWithGoogleView;
+        private LoginOrView loginOrView;
+        private RLottieImageView inboxImageView;
+
+        private Bundle currentParams;
+        private boolean nextPressed;
+
+        private String phone, emailPhone;
+        private String requestPhone, phoneHash;
+
+        private GoogleSignInAccount googleAccount;
+
+        public LoginActivitySetupEmail(Context context) {
+            super(context);
+
+            setOrientation(VERTICAL);
+
+            FrameLayout inboxFrameLayout = new FrameLayout(context);
+            inboxImageView = new RLottieImageView(context);
+            inboxImageView.setAnimation(R.raw.tsv_setup_mail, 120, 120);
+            inboxImageView.setAutoRepeat(false);
+            inboxFrameLayout.addView(inboxImageView, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL));
+            inboxFrameLayout.setVisibility(AndroidUtilities.isSmallScreen() || (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y && !AndroidUtilities.isTablet()) ? GONE : VISIBLE);
+            addView(inboxFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
+
+            titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setText(LocaleController.getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.EnterNewEmail : R.string.AddEmailTitle));
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 16, 32, 0));
+
+            subtitleView = new TextView(context);
+            subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            subtitleView.setGravity(Gravity.CENTER);
+            subtitleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            subtitleView.setText(LocaleController.getString(R.string.AddEmailSubtitle));
+            addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 8, 32, 0));
+
+            emailOutlineView = new OutlineTextContainerView(context);
+            emailOutlineView.setText(LocaleController.getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.YourNewEmail : R.string.YourEmail));
+
+            emailField = new EditTextBoldCursor(context);
+            emailField.setCursorSize(AndroidUtilities.dp(20));
+            emailField.setCursorWidth(1.5f);
+            emailField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+            emailField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+            emailField.setMaxLines(1);
+            emailField.setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+            emailField.setOnFocusChangeListener((v, hasFocus) -> emailOutlineView.animateSelection(hasFocus ? 1f : 0f));
+            emailField.setBackground(null);
+            emailField.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+
+            emailOutlineView.attachEditText(emailField);
+            emailOutlineView.addView(emailField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
+            emailField.setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    onNextPressed(null);
+                    return true;
+                }
+                return false;
+            });
+
+            addView(emailOutlineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 58, 16, 24, 16, 0));
+
+            signInWithGoogleView = new TextView(context);
+            signInWithGoogleView.setGravity(Gravity.LEFT);
+            signInWithGoogleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            signInWithGoogleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            signInWithGoogleView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+            signInWithGoogleView.setMaxLines(2);
+
+            SpannableStringBuilder str = new SpannableStringBuilder("d ");
+            Drawable dr = ContextCompat.getDrawable(context, R.drawable.googleg_standard_color_18);
+            dr.setBounds(0, AndroidUtilities.dp(9), AndroidUtilities.dp(18), AndroidUtilities.dp(18 + 9));
+            str.setSpan(new ImageSpan(dr, ImageSpan.ALIGN_BOTTOM), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            str.setSpan(new ReplacementSpan() {
+                @Override
+                public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
+                    return AndroidUtilities.dp(12);
+                }
+
+                @Override
+                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {}
+            }, 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            str.append(LocaleController.getString(R.string.SignInWithGoogle));
+            signInWithGoogleView.setText(str);
+
+            loginOrView = new LoginOrView(context);
+
+            Space space = new Space(context);
+            addView(space, LayoutHelper.createLinear(0, 0, 1f));
+
+            FrameLayout bottomContainer = new FrameLayout(context);
+            bottomContainer.addView(signInWithGoogleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 24));
+            bottomContainer.addView(loginOrView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 16, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 70));
+            loginOrView.setMeasureAfter(signInWithGoogleView);
+            addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            VerticalPositionAutoAnimator.attach(bottomContainer);
+
+            bottomContainer.setOnClickListener(view -> {
+                NotificationCenter.getGlobalInstance().addObserver(new NotificationCenter.NotificationCenterDelegate() {
+                    @Override
+                    public void didReceivedNotification(int id, int account, Object... args) {
+                        int request = (int) args[0];
+                        int result = (int) args[1];
+                        Intent data = (Intent) args[2];
+                        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.onActivityResultReceived);
+
+                        if (request == BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE) {
+                            try {
+                                googleAccount = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class);
+                                onNextPressed(null);
+                            } catch (ApiException e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    }
+                }, NotificationCenter.onActivityResultReceived);
+
+                GoogleSignInClient googleClient = GoogleSignIn.getClient(getContext(), new GoogleSignInOptions.Builder()
+                        .requestIdToken(BuildVars.GOOGLE_AUTH_CLIENT_ID)
+                        .requestEmail()
+                        .build());
+                googleClient.signOut().addOnCompleteListener(command -> getParentActivity().startActivityForResult(googleClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE));
+            });
+        }
+
+        @Override
+        public void updateColors() {
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            emailField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            signInWithGoogleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            loginOrView.updateColors();
+
+            emailOutlineView.invalidate();
+        }
+
+        @Override
+        public boolean needBackButton() {
+            return true;
+        }
+
+        @Override
+        public String getHeaderName() {
+            return LocaleController.getString("AddEmailTitle", R.string.AddEmailTitle);
+        }
+
+        @Override
+        public void setParams(Bundle params, boolean restore) {
+            if (params == null) {
+                return;
+            }
+            emailField.setText("");
+            currentParams = params;
+            phone = currentParams.getString("phone");
+            emailPhone = currentParams.getString("ephone");
+            requestPhone = currentParams.getString("phoneFormated");
+            phoneHash = currentParams.getString("phoneHash");
+
+            int v = params.getBoolean("googleSignInAllowed") ? VISIBLE : GONE;
+            loginOrView.setVisibility(v);
+            signInWithGoogleView.setVisibility(v);
+
+            showKeyboard(emailField);
+            emailField.requestFocus();
+        }
+
+        private void onPasscodeError(boolean clear) {
+            if (getParentActivity() == null) {
+                return;
+            }
+            try {
+                emailOutlineView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            } catch (Exception ignore) {}
+            if (clear) {
+                emailField.setText("");
+            }
+            emailField.requestFocus();
+
+            onFieldError(emailOutlineView, true);
+            postDelayed(()-> emailField.requestFocus(), 300);
+        }
+
+        @Override
+        public void onNextPressed(String code) {
+            if (nextPressed) {
+                return;
+            }
+
+            String email = googleAccount != null ? googleAccount.getEmail() : emailField.getText().toString();
+            Bundle params = new Bundle();
+            params.putString("phone", phone);
+            params.putString("ephone", emailPhone);
+            params.putString("phoneFormated", requestPhone);
+            params.putString("phoneHash", phoneHash);
+            params.putString("email", email);
+            params.putBoolean("setup", true);
+
+            if (googleAccount != null) {
+                TLRPC.TL_account_verifyEmail verifyEmail = new TLRPC.TL_account_verifyEmail();
+                if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                    verifyEmail.purpose = new TLRPC.TL_emailVerifyPurposeLoginChange();
+                } else {
+                    TLRPC.TL_emailVerifyPurposeLoginSetup purpose = new TLRPC.TL_emailVerifyPurposeLoginSetup();
+                    purpose.phone_number = requestPhone;
+                    purpose.phone_code_hash = phoneHash;
+                    verifyEmail.purpose = purpose;
+                }
+                TLRPC.TL_emailVerificationGoogle verificationGoogle = new TLRPC.TL_emailVerificationGoogle();
+                verificationGoogle.token = googleAccount.getIdToken();
+                verifyEmail.verification = verificationGoogle;
+
+                googleAccount = null;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(verifyEmail, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (response instanceof TLRPC.TL_account_emailVerified && activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                        finishFragment();
+                        emailChangeFinishCallback.run();
+                    } else if (response instanceof TLRPC.TL_account_emailVerifiedLogin) {
+                        TLRPC.TL_account_emailVerifiedLogin emailVerifiedLogin = (TLRPC.TL_account_emailVerifiedLogin) response;
+
+                        params.putString("email", emailVerifiedLogin.email);
+                        fillNextCodeParams(params, emailVerifiedLogin.sent_code);
+                    } else if (error != null) {
+                        if (error.text.contains("EMAIL_NOT_ALLOWED")) {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString(R.string.EmailNotAllowed));
+                        } else if (error.text.contains("EMAIL_TOKEN_INVALID")) {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString(R.string.EmailTokenInvalid));
+                        } else if (error.code != -1000) {
+                            AlertsCreator.processError(currentAccount, error, LoginActivity.this, verifyEmail);
+                        }
+                    }
+                }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+
+                return;
+            }
+
+            if (TextUtils.isEmpty(email)) {
+                onPasscodeError(false);
+                return;
+            }
+            nextPressed = true;
+            needShowProgress(0);
+            TLRPC.TL_account_sendVerifyEmailCode req = new TLRPC.TL_account_sendVerifyEmailCode();
+            if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                req.purpose = new TLRPC.TL_emailVerifyPurposeLoginChange();
+            } else {
+                TLRPC.TL_emailVerifyPurposeLoginSetup purpose = new TLRPC.TL_emailVerifyPurposeLoginSetup();
+                purpose.phone_number = requestPhone;
+                purpose.phone_code_hash = phoneHash;
+                req.purpose = purpose;
+            }
+            req.email = email;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                needHideProgress(false);
+                nextPressed = false;
+
+                if (response instanceof TLRPC.TL_account_sentEmailCode) {
+                    TLRPC.TL_account_sentEmailCode emailCode = (TLRPC.TL_account_sentEmailCode) response;
+                    fillNextCodeParams(params, emailCode);
+                } else if (error.text != null) {
+                    if (error.text.contains("EMAIL_INVALID")) {
+                        onPasscodeError(false);
+                    } else if (error.text.contains("EMAIL_NOT_ALLOWED")) {
+                        needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString(R.string.EmailNotAllowed));
+                    } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
+                        needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("FloodWait", R.string.FloodWait));
+                    } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
+                        needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("PhoneNumberFlood", R.string.PhoneNumberFlood));
+                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                        needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                        needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                    } else if (error.text.startsWith("FLOOD_WAIT")) {
+                        needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("FloodWait", R.string.FloodWait));
+                    } else if (error.code != -1000) {
+                        AlertsCreator.processError(currentAccount, error, LoginActivity.this, req, requestPhone);
+                    }
+                }
+            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+        }
+
+        @Override
+        public void onShow() {
+            super.onShow();
+            AndroidUtilities.runOnUIThread(() -> {
+                inboxImageView.getAnimatedDrawable().setCurrentFrame(0, false);
+                inboxImageView.playAnimation();
+                emailField.requestFocus();
+                AndroidUtilities.showKeyboard(emailField);
+            }, SHOW_DELAY);
+        }
+
+        @Override
+        public void saveStateParams(Bundle bundle) {
+            String email = emailField.getText().toString();
+            if (email != null && email.length() != 0) {
+                bundle.putString("emailsetup_email", email);
+            }
+            if (currentParams != null) {
+                bundle.putBundle("emailsetup_params", currentParams);
+            }
+        }
+
+        @Override
+        public void restoreStateParams(Bundle bundle) {
+            currentParams = bundle.getBundle("emailsetup_params");
+            if (currentParams != null) {
+                setParams(currentParams, true);
+            }
+            String email = bundle.getString("emailsetup_email");
+            if (email != null) {
+                emailField.setText(email);
+            }
+        }
+    }
+
+    public class LoginActivityEmailCodeView extends SlideView {
+
+        private CodeFieldContainer codeFieldContainer;
+        private TextView titleView;
+        private TextView confirmTextView;
+        private TextView signInWithGoogleView;
+        private FrameLayout resendFrameLayout;
+        private TextView resendCodeView;
+        private TextView wrongCodeView;
+        private LoginOrView loginOrView;
+        private RLottieImageView inboxImageView;
+
+        private Bundle currentParams;
+        private boolean nextPressed;
+        private GoogleSignInAccount googleAccount;
+
+        private String phone, emailPhone, email;
+        private String requestPhone, phoneHash;
+        private boolean isFromSetup;
+        private int length;
+        private boolean isSetup;
+
+        private ViewSwitcher errorViewSwitcher;
+
+        private boolean postedErrorColorTimeout;
+        private Runnable errorColorTimeout = () -> {
+            postedErrorColorTimeout = false;
+            for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
+                codeFieldContainer.codeField[i].animateErrorProgress(0);
+            }
+
+            if (errorViewSwitcher.getCurrentView() != resendFrameLayout) {
+                errorViewSwitcher.showNext();
+            }
+        };
+        private Runnable resendCodeTimeout = () -> showResendCodeView(true);
+
+        public LoginActivityEmailCodeView(Context context, boolean setup) {
+            super(context);
+            isSetup = setup;
+
+            setOrientation(VERTICAL);
+
+            FrameLayout inboxFrameLayout = new FrameLayout(context);
+            inboxImageView = new RLottieImageView(context);
+            if (!setup || activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                inboxImageView.setAnimation(R.raw.email_check_inbox, 120, 120);
+            } else {
+                inboxImageView.setAnimation(R.raw.email_setup_heart, 120, 120);
+            }
+            inboxImageView.setAutoRepeat(false);
+            inboxFrameLayout.addView(inboxImageView, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL));
+            inboxFrameLayout.setVisibility(AndroidUtilities.isSmallScreen() || (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y && !AndroidUtilities.isTablet()) ? GONE : VISIBLE);
+            addView(inboxFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
+
+            titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setText(LocaleController.getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.CheckYourNewEmail : setup ? R.string.VerificationCode : R.string.CheckYourEmail));
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 16, 32, 0));
+
+            confirmTextView = new SpoilersTextView(context, false);
+            confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            confirmTextView.setGravity(Gravity.CENTER);
+            confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            addView(confirmTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 8, 24, 0));
+
+            codeFieldContainer = new CodeFieldContainer(context) {
+                @Override
+                protected void processNextPressed() {
+                    onNextPressed(null);
+                }
+            };
+
+            addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL, 0, setup ? 48 : 32, 0, 0));
+
+            signInWithGoogleView = new TextView(context);
+            signInWithGoogleView.setGravity(Gravity.CENTER);
+            signInWithGoogleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            signInWithGoogleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            signInWithGoogleView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+            signInWithGoogleView.setMaxLines(2);
+
+            SpannableStringBuilder str = new SpannableStringBuilder("d ");
+            Drawable dr = ContextCompat.getDrawable(context, R.drawable.googleg_standard_color_18);
+            dr.setBounds(0, AndroidUtilities.dp(9), AndroidUtilities.dp(18), AndroidUtilities.dp(18 + 9));
+            str.setSpan(new ImageSpan(dr, ImageSpan.ALIGN_BOTTOM), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            str.setSpan(new ReplacementSpan() {
+                @Override
+                public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
+                    return AndroidUtilities.dp(12);
+                }
+
+                @Override
+                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {}
+            }, 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            str.append(LocaleController.getString(R.string.SignInWithGoogle));
+            signInWithGoogleView.setText(str);
+
+            signInWithGoogleView.setOnClickListener(view -> {
+                NotificationCenter.getGlobalInstance().addObserver(new NotificationCenter.NotificationCenterDelegate() {
+                    @Override
+                    public void didReceivedNotification(int id, int account, Object... args) {
+                        int request = (int) args[0];
+                        int result = (int) args[1];
+                        Intent data = (Intent) args[2];
+                        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.onActivityResultReceived);
+
+                        if (request == BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE) {
+                            try {
+                                googleAccount = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class);
+                                onNextPressed(null);
+                            } catch (ApiException e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    }
+                }, NotificationCenter.onActivityResultReceived);
+
+                GoogleSignInClient googleClient = GoogleSignIn.getClient(getContext(), new GoogleSignInOptions.Builder()
+                                .requestIdToken(BuildVars.GOOGLE_AUTH_CLIENT_ID)
+                                .requestEmail()
+                                .build());
+                googleClient.signOut().addOnCompleteListener(command -> getParentActivity().startActivityForResult(googleClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE));
+            });
+
+            resendCodeView = new TextView(context);
+            resendCodeView.setGravity(Gravity.CENTER);
+            resendCodeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            resendCodeView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            resendCodeView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+            resendCodeView.setMaxLines(2);
+            resendCodeView.setText(LocaleController.getString(R.string.ResendCode));
+            resendCodeView.setOnClickListener(v -> {
+                showResendCodeView(false);
+
+                TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
+                req.phone_number = requestPhone;
+                req.phone_code_hash = phoneHash;
+
+                Bundle params = new Bundle();
+                params.putString("phone", phone);
+                params.putString("ephone", emailPhone);
+                params.putString("phoneFormated", requestPhone);
+
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (response instanceof TLRPC.TL_auth_sentCode) {
+                            TLRPC.TL_auth_sentCode sentCode = (TLRPC.TL_auth_sentCode) response;
+                            fillNextCodeParams(params, sentCode);
+                        } else if (error != null && error.text != null) {
+                            AlertsCreator.processError(currentAccount, error, LoginActivity.this, req);
+                        }
+                    });
+                }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            });
+            AndroidUtilities.updateViewVisibilityAnimated(resendCodeView, false, 1f, false);
+
+            loginOrView = new LoginOrView(context);
+            VerticalPositionAutoAnimator.attach(loginOrView);
+
+            errorViewSwitcher = new ViewSwitcher(context) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
+                }
+            };
+            Animation anim = AnimationUtils.loadAnimation(context, R.anim.text_in);
+            anim.setInterpolator(Easings.easeInOutQuad);
+            errorViewSwitcher.setInAnimation(anim);
+
+            anim = AnimationUtils.loadAnimation(context, R.anim.text_out);
+            anim.setInterpolator(Easings.easeInOutQuad);
+            errorViewSwitcher.setOutAnimation(anim);
+
+            resendFrameLayout = new FrameLayout(context);
+            resendFrameLayout.addView(resendCodeView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            errorViewSwitcher.addView(resendFrameLayout);
+
+            wrongCodeView = new TextView(context);
+            wrongCodeView.setText(LocaleController.getString("WrongCode", R.string.WrongCode));
+            wrongCodeView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            wrongCodeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            wrongCodeView.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
+            wrongCodeView.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
+            errorViewSwitcher.addView(wrongCodeView);
+
+            FrameLayout bottomContainer = new FrameLayout(context);
+            if (setup) {
+                bottomContainer.addView(errorViewSwitcher, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 32));
+            } else {
+                bottomContainer.addView(errorViewSwitcher, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 8, 0, 0));
+                bottomContainer.addView(loginOrView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.CENTER, 0, 0, 0, 16));
+                bottomContainer.addView(signInWithGoogleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 16));
+            }
+            addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
+        }
+
+        @Override
+        public void updateColors() {
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            confirmTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            signInWithGoogleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            loginOrView.updateColors();
+            resendCodeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            wrongCodeView.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+
+            codeFieldContainer.invalidate();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            removeCallbacks(errorColorTimeout);
+            removeCallbacks(resendCodeTimeout);
+        }
+
+        private void showResendCodeView(boolean show) {
+            AndroidUtilities.updateViewVisibilityAnimated(resendCodeView, show);
+
+            if (loginOrView.getVisibility() != GONE) {
+                loginOrView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.CENTER, 0, 0, 0, show ? 8 : 16));
+                loginOrView.requestLayout();
+            }
+        }
+
+        @Override
+        public boolean hasCustomKeyboard() {
+            return true;
+        }
+
+        @Override
+        public boolean needBackButton() {
+            return true;
+        }
+
+        @Override
+        public String getHeaderName() {
+            return LocaleController.getString(R.string.VerificationCode);
+        }
+
+        @Override
+        public void setParams(Bundle params, boolean restore) {
+            if (params == null) {
+                return;
+            }
+
+            currentParams = params;
+            requestPhone = currentParams.getString("phoneFormated");
+            phoneHash = currentParams.getString("phoneHash");
+            phone = currentParams.getString("phone");
+            emailPhone = currentParams.getString("ephone");
+            isFromSetup = currentParams.getBoolean("setup");
+            length = currentParams.getInt("length");
+            email = currentParams.getString("email");
+
+            if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                confirmTextView.setText(LocaleController.formatString(R.string.CheckYourNewEmailSubtitle, email));
+            } else if (isSetup) {
+                confirmTextView.setText(LocaleController.formatString(R.string.VerificationCodeSubtitle, email));
+            }
+
+            codeFieldContainer.setNumbersCount(length, AUTH_TYPE_MESSAGE);
+            for (CodeNumberField f : codeFieldContainer.codeField) {
+                f.setShowSoftInputOnFocusCompat(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
+                f.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        if (postedErrorColorTimeout) {
+                            removeCallbacks(errorColorTimeout);
+                            errorColorTimeout.run();
+                        }
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                    @Override
+                    public void afterTextChanged(Editable s) {}
+                });
+                f.setOnFocusChangeListener((v, hasFocus) -> {
+                    if (hasFocus) {
+                        keyboardView.setEditText((EditText) v);
+                        keyboardView.setDispatchBackWhenEmpty(true);
+                    }
+                });
+            }
+            codeFieldContainer.setText("");
+
+            if (!isFromSetup && activityMode != MODE_CHANGE_LOGIN_EMAIL) {
+                String rawPattern = currentParams.getString("emailPattern");
+                SpannableStringBuilder confirmText = new SpannableStringBuilder(rawPattern);
+                int startIndex = rawPattern.indexOf('*'), endIndex = rawPattern.lastIndexOf('*');
+                if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
+                    TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                    run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                    run.start = startIndex;
+                    run.end = endIndex + 1;
+                    confirmText.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
+                }
+
+                confirmTextView.setText(AndroidUtilities.formatSpannable(LocaleController.getString(R.string.CheckYourEmailSubtitle), confirmText));
+            }
+
+            int v = params.getBoolean("googleSignInAllowed") ? VISIBLE : GONE;
+            loginOrView.setVisibility(v);
+            signInWithGoogleView.setVisibility(v);
+
+            showKeyboard(codeFieldContainer.codeField[0]);
+            codeFieldContainer.requestFocus();
+        }
+
+        private void onPasscodeError(boolean clear) {
+            if (getParentActivity() == null) {
+                return;
+            }
+            try {
+                codeFieldContainer.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            } catch (Exception ignore) {}
+            if (clear) {
+                for (CodeNumberField f : codeFieldContainer.codeField) {
+                    f.setText("");
+                }
+            }
+            for (CodeNumberField f : codeFieldContainer.codeField) {
+                f.animateErrorProgress(1f);
+            }
+            codeFieldContainer.codeField[0].requestFocus();
+            AndroidUtilities.shakeViewSpring(codeFieldContainer, () -> {
+                postDelayed(()-> {
+                    codeFieldContainer.isFocusSuppressed = false;
+                    codeFieldContainer.codeField[0].requestFocus();
+
+                    for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
+                        codeFieldContainer.codeField[a].animateErrorProgress(0f);
+                    }
+                }, 150);
+
+                removeCallbacks(errorColorTimeout);
+                postDelayed(errorColorTimeout, 3000);
+                postedErrorColorTimeout = true;
+            });
+        }
+
+        @Override
+        public void onNextPressed(String code) {
+            if (nextPressed) {
+                return;
+            }
+            AndroidUtilities.cancelRunOnUIThread(resendCodeTimeout);
+
+            codeFieldContainer.isFocusSuppressed = true;
+            for (CodeNumberField f : codeFieldContainer.codeField) {
+                f.animateFocusedProgress(0);
+            }
+
+            code = codeFieldContainer.getCode();
+            if (code.length() == 0 && googleAccount == null) {
+                onPasscodeError(false);
+                return;
+            }
+            nextPressed = true;
+            needShowProgress(0);
+
+            TLObject req;
+            if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                TLRPC.TL_account_verifyEmail request = new TLRPC.TL_account_verifyEmail();
+                request.purpose = new TLRPC.TL_emailVerifyPurposeLoginChange();
+                TLRPC.TL_emailVerificationCode verification = new TLRPC.TL_emailVerificationCode();
+                verification.code = code;
+                request.verification = verification;
+                req = request;
+            } else if (isFromSetup) {
+                TLRPC.TL_account_verifyEmail request = new TLRPC.TL_account_verifyEmail();
+                TLRPC.TL_emailVerifyPurposeLoginSetup setup = new TLRPC.TL_emailVerifyPurposeLoginSetup();
+                setup.phone_number = requestPhone;
+                setup.phone_code_hash = phoneHash;
+                request.purpose = setup;
+                TLRPC.TL_emailVerificationCode verificationCode = new TLRPC.TL_emailVerificationCode();
+                verificationCode.code = code;
+                request.verification = verificationCode;
+                req = request;
+            } else {
+                TLRPC.TL_auth_signIn request = new TLRPC.TL_auth_signIn();
+                request.phone_number = requestPhone;
+                request.phone_code_hash = phoneHash;
+                if (googleAccount != null) {
+                    TLRPC.TL_emailVerificationGoogle verification = new TLRPC.TL_emailVerificationGoogle();
+                    verification.token = googleAccount.getIdToken();
+                    request.email_verification = verification;
+                } else {
+                    TLRPC.TL_emailVerificationCode verification = new TLRPC.TL_emailVerificationCode();
+                    verification.code = code;
+                    request.email_verification = verification;
+                }
+                request.flags |= 2;
+                req = request;
+            }
+
+            codeFieldContainer.isFocusSuppressed = true;
+            for (CodeNumberField f : codeFieldContainer.codeField) {
+                f.animateFocusedProgress(0);
+            }
+
+            String finalCode = code;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                needHideProgress(false);
+                if (error == null) {
+                    nextPressed = false;
+                    showDoneButton(false, true);
+
+                    Bundle params = new Bundle();
+                    params.putString("phone", phone);
+                    params.putString("ephone", emailPhone);
+                    params.putString("phoneFormated", requestPhone);
+                    params.putString("phoneHash", phoneHash);
+                    params.putString("code", finalCode);
+
+
+                    if (response instanceof TLRPC.TL_auth_authorizationSignUpRequired) {
+                        TLRPC.TL_auth_authorizationSignUpRequired authorization = (TLRPC.TL_auth_authorizationSignUpRequired) response;
+                        if (authorization.terms_of_service != null) {
+                            currentTermsOfService = authorization.terms_of_service;
+                        }
+                        animateSuccess(() -> setPage(VIEW_REGISTER, true, params, false));
+                    } else {
+                        animateSuccess(() -> {
+                            if (response instanceof TLRPC.TL_account_emailVerified && activityMode == MODE_CHANGE_LOGIN_EMAIL) {
+                                finishFragment();
+                                emailChangeFinishCallback.run();
+                            } else if (response instanceof TLRPC.TL_account_emailVerifiedLogin) {
+                                fillNextCodeParams(params, ((TLRPC.TL_account_emailVerifiedLogin) response).sent_code);
+                            } else if (response instanceof TLRPC.TL_auth_authorization) {
+                                onAuthSuccess((TLRPC.TL_auth_authorization) response);
+                            }
+                        });
+                    }
+                } else {
+                    if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
+                        TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                            nextPressed = false;
+                            showDoneButton(false, true);
+                            if (error1 == null) {
+                                TLRPC.account_Password password = (TLRPC.account_Password) response1;
+                                if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
+                                    AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                                    return;
+                                }
+                                Bundle bundle = new Bundle();
+                                SerializedData data = new SerializedData(password.getObjectSize());
+                                password.serializeToStream(data);
+                                bundle.putString("password", Utilities.bytesToHex(data.toByteArray()));
+                                bundle.putString("phoneFormated", requestPhone);
+                                bundle.putString("phoneHash", phoneHash);
+                                bundle.putString("code", finalCode);
+
+                                animateSuccess(() -> setPage(VIEW_PASSWORD, true, bundle, false));
+                            } else {
+                                needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), error1.text);
+                            }
+                        }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    } else {
+                        nextPressed = false;
+                        showDoneButton(false, true);
+                        boolean isWrongCode = false;
+                        if (error.text.contains("EMAIL_ADDRESS_INVALID")) {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString(R.string.EmailAddressInvalid));
+                        } else if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                        } else if (error.text.contains("CODE_EMPTY") || error.text.contains("CODE_INVALID") || error.text.contains("EMAIL_CODE_INVALID") || error.text.contains("PHONE_CODE_INVALID")) {
+                            shakeWrongCode();
+                            isWrongCode = true;
+                        } else if (error.text.contains("EMAIL_TOKEN_INVALID")) {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString(R.string.EmailTokenInvalid));
+                        } else if (error.text.contains("EMAIL_VERIFY_EXPIRED")) {
+                            onBackPressed(true);
+                            setPage(VIEW_PHONE_INPUT, true, null, true);
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("FloodWait", R.string.FloodWait));
+                        } else {
+                            needShowAlert(LocaleController.getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
+                        }
+
+                        if (!isWrongCode) {
+                            for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
+                                codeFieldContainer.codeField[a].setText("");
+                            }
+
+                            codeFieldContainer.isFocusSuppressed = false;
+                            codeFieldContainer.codeField[0].requestFocus();
+                        }
+                    }
+                }
+                googleAccount = null;
+            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+        }
+
+        private void animateSuccess(Runnable callback) {
+            if (googleAccount != null) {
+                callback.run();
+                return;
+            }
+            for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
+                int finalI = i;
+                codeFieldContainer.postDelayed(()-> codeFieldContainer.codeField[finalI].animateSuccessProgress(1f), i * 75L);
+            }
+            codeFieldContainer.postDelayed(()->{
+                for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
+                    codeFieldContainer.codeField[i].animateSuccessProgress(0f);
+                }
+                callback.run();
+                codeFieldContainer.isFocusSuppressed = false;
+            }, codeFieldContainer.codeField.length * 75L + 400L);
+        }
+
+        private void shakeWrongCode() {
+            try {
+                codeFieldContainer.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            } catch (Exception ignore) {}
+
+            for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
+                codeFieldContainer.codeField[a].setText("");
+                codeFieldContainer.codeField[a].animateErrorProgress(1f);
+            }
+            if (errorViewSwitcher.getCurrentView() == resendFrameLayout) {
+                errorViewSwitcher.showNext();
+            }
+            codeFieldContainer.codeField[0].requestFocus();
+            AndroidUtilities.shakeViewSpring(codeFieldContainer, 10f, () -> {
+                postDelayed(()-> {
+                    codeFieldContainer.isFocusSuppressed = false;
+                    codeFieldContainer.codeField[0].requestFocus();
+
+                    for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
+                        codeFieldContainer.codeField[a].animateErrorProgress(0f);
+                    }
+                }, 150);
+            });
+            removeCallbacks(errorColorTimeout);
+            postDelayed(errorColorTimeout, 5000);
+            postedErrorColorTimeout = true;
+        }
+
+        @Override
+        public void onShow() {
+            super.onShow();
+            AndroidUtilities.runOnUIThread(() -> {
+                inboxImageView.getAnimatedDrawable().setCurrentFrame(0, false);
+                inboxImageView.playAnimation();
+
+                if (codeFieldContainer != null) {
+                    codeFieldContainer.setText("");
+                    codeFieldContainer.codeField[0].requestFocus();
+                }
+
+                AndroidUtilities.runOnUIThread(resendCodeTimeout, 60000);
+            }, SHOW_DELAY);
+        }
+
+        @Override
+        public void saveStateParams(Bundle bundle) {
+            String code = codeFieldContainer.getCode();
+            if (code != null && code.length() != 0) {
+                bundle.putString("emailcode_code", code);
+            }
+            if (currentParams != null) {
+                bundle.putBundle("emailcode_params", currentParams);
+            }
+        }
+
+        @Override
+        public void restoreStateParams(Bundle bundle) {
+            currentParams = bundle.getBundle("emailcode_params");
+            if (currentParams != null) {
+                setParams(currentParams, true);
+            }
+            String code = bundle.getString("emailcode_code");
+            if (code != null) {
+                codeFieldContainer.setText(code);
+            }
+        }
+    }
+
     public class LoginActivityRecoverView extends SlideView {
 
         private CodeFieldContainer codeFieldContainer;
@@ -4664,7 +5650,7 @@ public class LoginActivity extends BaseFragment {
 
             addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
-            troubleButton = new SpoilersTextView(context);
+            troubleButton = new SpoilersTextView(context, false);
             troubleButton.setGravity(Gravity.CENTER);
             troubleButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             troubleButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
@@ -4888,7 +5874,7 @@ public class LoginActivity extends BaseFragment {
         private String emailCode;
         private String newPassword;
         private String passwordString;
-        private TLRPC.TL_account_password currentPassword;
+        private TLRPC.account_Password currentPassword;
         private Bundle currentParams;
         private boolean nextPressed;
         private int currentStage;
@@ -5080,7 +6066,7 @@ public class LoginActivity extends BaseFragment {
             passwordString = currentParams.getString("password");
             if (passwordString != null) {
                 SerializedData data = new SerializedData(Utilities.hexToBytes(passwordString));
-                currentPassword = TLRPC.TL_account_password.TLdeserialize(data, data.readInt32(false), false);
+                currentPassword = TLRPC.account_Password.TLdeserialize(data, data.readInt32(false), false);
                 TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
             }
             newPassword = currentParams.getString("new_password");
@@ -5150,7 +6136,7 @@ public class LoginActivity extends BaseFragment {
                         TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                         ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                             if (error2 == null) {
-                                currentPassword = (TLRPC.TL_account_password) response2;
+                                currentPassword = (TLRPC.account_Password) response2;
                                 TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                 recoverPassword(password, hint);
                             }

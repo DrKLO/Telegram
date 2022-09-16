@@ -87,6 +87,7 @@ public class PipVideoOverlay {
     private FrameLayout controlsView;
 
     private boolean isWebView;
+    private PhotoViewerWebView photoViewerWebView;
 
     private ScaleGestureDetector scaleGestureDetector;
     private GestureDetectorFixDoubleTap gestureDetector;
@@ -119,13 +120,19 @@ public class PipVideoOverlay {
         if (photoViewer == null) {
             return;
         }
-        VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-        if (videoPlayer == null) {
-            return;
-        }
-        videoProgress = videoPlayer.getCurrentPosition() / (float) videoPlayer.getDuration();
-        if (photoViewer == null) {
-            bufferProgress = videoPlayer.getBufferedPosition() / (float) videoPlayer.getDuration();
+
+        if (photoViewerWebView != null) {
+            videoProgress = photoViewerWebView.getCurrentPosition() / (float) photoViewerWebView.getVideoDuration();
+            bufferProgress = photoViewerWebView.getBufferedPosition();
+        } else {
+            VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+            if (videoPlayer == null) {
+                return;
+            }
+
+            long duration = getDuration();
+            videoProgress = videoPlayer.getCurrentPosition() / (float) duration;
+            bufferProgress = videoPlayer.getBufferedPosition() / (float) duration;
         }
         videoProgressView.invalidate();
 
@@ -187,21 +194,61 @@ public class PipVideoOverlay {
         }
     }
 
+    private long getCurrentPosition() {
+        if (photoViewerWebView != null) {
+            return photoViewerWebView.getCurrentPosition();
+        } else {
+            VideoPlayer player = photoViewer.getVideoPlayer();
+            if (player == null) {
+                return 0;
+            }
+            return player.getCurrentPosition();
+        }
+    }
+
+    private void seekTo(long position) {
+        if (photoViewerWebView != null) {
+            photoViewerWebView.seekTo(position);
+        } else {
+            VideoPlayer player = photoViewer.getVideoPlayer();
+            if (player == null) {
+                return;
+            }
+            player.seekTo(position);
+        }
+    }
+
+    private long getDuration() {
+        if (photoViewerWebView != null) {
+            return photoViewerWebView.getVideoDuration();
+        } else {
+            VideoPlayer player = photoViewer.getVideoPlayer();
+            if (player == null) {
+                return 0;
+            }
+            return player.getDuration();
+        }
+    }
+
     protected void onLongClick() {
-        if (photoViewer == null || photoViewer.getVideoPlayer() == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
+        if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
             return;
         }
 
         VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
         boolean forward = longClickStartPoint[0] >= getSuggestedWidth() * scaleFactor * 0.5f;
 
-        long current = videoPlayer.getCurrentPosition();
-        long total = videoPlayer.getDuration();
+        long current = getCurrentPosition();
+        long total = getDuration();
         if (current == C.TIME_UNSET || total < 15 * 1000) {
             return;
         }
 
-        photoViewer.getVideoPlayerRewinder().startRewind(videoPlayer, forward, photoViewer.getCurrentVideoSpeed());
+        if (photoViewerWebView != null) {
+            photoViewer.getVideoPlayerRewinder().startRewind(photoViewerWebView, forward, photoViewer.getCurrentVideoSpeed());
+        } else {
+            photoViewer.getVideoPlayerRewinder().startRewind(videoPlayer, forward, photoViewer.getCurrentVideoSpeed());
+        }
 
         if (!isShowingControls) {
             toggleControls(isShowingControls = true);
@@ -334,9 +381,14 @@ public class PipVideoOverlay {
             }
         } catch (IllegalArgumentException ignored) {}
 
+        if (photoViewerWebView != null) {
+            photoViewerWebView.showControls();
+        }
+
         videoProgressView = null;
         innerView = null;
         photoViewer = null;
+        photoViewerWebView = null;
         parentSheet = null;
         consumingChild = null;
         isScrolling = false;
@@ -346,6 +398,10 @@ public class PipVideoOverlay {
 
         cancelRewind();
         AndroidUtilities.cancelRunOnUIThread(longClickCallback);
+    }
+
+    public static View getInnerView() {
+        return instance.innerView;
     }
 
     private void cancelRewind() {
@@ -363,15 +419,23 @@ public class PipVideoOverlay {
     }
 
     private void updatePlayButtonInternal() {
-        if (photoViewer == null) {
+        if (photoViewer == null || playPauseButton == null) {
             return;
         }
-        VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-        if (videoPlayer == null || playPauseButton == null) {
-            return;
+
+        boolean isPlaying;
+        if (photoViewerWebView != null) {
+            isPlaying = photoViewerWebView.isPlaying();
+        } else {
+            VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+            if (videoPlayer == null) {
+                return;
+            }
+
+            isPlaying = videoPlayer.isPlaying();
         }
         AndroidUtilities.cancelRunOnUIThread(progressRunnable);
-        if (!videoPlayer.isPlaying()) {
+        if (!isPlaying) {
             if (isVideoCompleted) {
                 playPauseButton.setImageResource(R.drawable.pip_replay_large);
             } else {
@@ -456,10 +520,14 @@ public class PipVideoOverlay {
     }
 
     public static boolean show(boolean inAppOnly, Activity activity, View pipContentView, int videoWidth, int videoHeight, boolean animate) {
-        return instance.showInternal(inAppOnly, activity, pipContentView, videoWidth, videoHeight, animate);
+        return show(inAppOnly, activity, null, pipContentView, videoWidth, videoHeight, animate);
     }
 
-    private boolean showInternal(boolean inAppOnly, Activity activity, View pipContentView, int videoWidth, int videoHeight, boolean animate) {
+    public static boolean show(boolean inAppOnly, Activity activity, PhotoViewerWebView viewerWebView, View pipContentView, int videoWidth, int videoHeight, boolean animate) {
+        return instance.showInternal(inAppOnly, activity, pipContentView, viewerWebView, videoWidth, videoHeight, animate);
+    }
+
+    private boolean showInternal(boolean inAppOnly, Activity activity, View pipContentView, PhotoViewerWebView viewerWebView, int videoWidth, int videoHeight, boolean animate) {
         if (isVisible) {
             return false;
         }
@@ -468,6 +536,12 @@ public class PipVideoOverlay {
         mVideoWidth = videoWidth;
         mVideoHeight = videoHeight;
         aspectRatio = null;
+        if (viewerWebView != null && viewerWebView.isControllable()) {
+            photoViewerWebView = viewerWebView;
+            photoViewerWebView.hideControls();
+        } else {
+            photoViewerWebView = null;
+        }
 
         float savedPipX = getPipConfig().getPipX(), savedPipY = getPipConfig().getPipY();
         scaleFactor = getPipConfig().getScaleFactor();
@@ -628,15 +702,15 @@ public class PipVideoOverlay {
 
             @Override
             public boolean onDoubleTap(MotionEvent e) {
-                if (photoViewer == null || photoViewer.getVideoPlayer() == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
+                if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
                     return false;
                 }
 
                 VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
                 boolean forward = e.getX() >= getSuggestedWidth() * scaleFactor * 0.5f;
 
-                long current = videoPlayer.getCurrentPosition();
-                long total = videoPlayer.getDuration();
+                long current = getCurrentPosition();
+                long total = getDuration();
                 if (current == C.TIME_UNSET || total < 15 * 1000) {
                     return false;
                 }
@@ -661,7 +735,7 @@ public class PipVideoOverlay {
                         videoForwardDrawable.setOneShootAnimation(true);
                         videoForwardDrawable.setLeftSide(!forward);
                         videoForwardDrawable.addTime(10000);
-                        videoPlayer.seekTo(current);
+                        seekTo(current);
                         onUpdateRewindProgressUiInternal(forward ? 10000 : -10000, current / (float) total, true);
                         if (!isShowingControls) {
                             toggleControls(isShowingControls = true);
@@ -687,14 +761,12 @@ public class PipVideoOverlay {
 
             @Override
             public boolean hasDoubleTap() {
-                if (photoViewer == null || photoViewer.getVideoPlayer() == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
+                if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
                     return false;
                 }
 
-                VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-
-                long current = videoPlayer.getCurrentPosition();
-                long total = videoPlayer.getDuration();
+                long current = getCurrentPosition();
+                long total = getDuration();
                 return current != C.TIME_UNSET && total >= 15 * 1000;
             }
 
@@ -999,19 +1071,27 @@ public class PipVideoOverlay {
             if (photoViewer == null) {
                 return;
             }
-            VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-            if (videoPlayer == null) {
-                return;
-            }
-            if (videoPlayer.isPlaying()) {
-                videoPlayer.pause();
+            if (photoViewerWebView != null) {
+                if (photoViewerWebView.isPlaying()) {
+                    photoViewerWebView.pauseVideo();
+                } else {
+                    photoViewerWebView.playVideo();
+                }
             } else {
-                videoPlayer.play();
+                VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+                if (videoPlayer == null) {
+                    return;
+                }
+                if (videoPlayer.isPlaying()) {
+                    videoPlayer.pause();
+                } else {
+                    videoPlayer.play();
+                }
             }
             updatePlayButton();
         });
-        isWebView = innerView instanceof WebView;
-        playPauseButton.setVisibility(isWebView ? View.GONE : View.VISIBLE);
+        isWebView = innerView instanceof WebView || innerView instanceof PhotoViewerWebView;
+        playPauseButton.setVisibility(isWebView && (photoViewerWebView == null || !photoViewerWebView.isControllable()) ? View.GONE : View.VISIBLE);
         controlsView.addView(playPauseButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.CENTER));
 
         videoProgressView = new VideoProgressView(context);
@@ -1101,7 +1181,7 @@ public class PipVideoOverlay {
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
-            if (isWebView) {
+            if (isWebView && (photoViewerWebView == null || !photoViewerWebView.isControllable())) {
                 return;
             }
 

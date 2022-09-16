@@ -39,6 +39,41 @@ void FileLog::init(std::string path) {
     pthread_mutex_unlock(&mutex);
 }
 
+void FileLog::fatal(const char *message, ...) {
+    if (!LOGS_ENABLED) {
+        return;
+    }
+    va_list argptr;
+    va_start(argptr, message);
+    time_t t = time(0);
+    struct tm *now = localtime(&t);
+#ifdef ANDROID
+    __android_log_vprint(ANDROID_LOG_FATAL, "tgnet", message, argptr);
+    va_end(argptr);
+    va_start(argptr, message);
+#else
+    printf("%d-%d %02d:%02d:%02d FATAL ERROR: ", now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+    vprintf(message, argptr);
+    printf("\n");
+    fflush(stdout);
+    va_end(argptr);
+    va_start(argptr, message);
+#endif
+    FILE *logFile = getInstance().logFile;
+    if (logFile) {
+        fprintf(logFile, "%d-%d %02d:%02d:%02d FATAL ERROR: ", now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+        vfprintf(logFile, message, argptr);
+        fprintf(logFile, "\n");
+        fflush(logFile);
+    }
+
+    va_end(argptr);
+
+#ifdef DEBUG_VERSION
+    abort();
+#endif
+}
+
 void FileLog::e(const char *message, ...) {
     if (!LOGS_ENABLED) {
         return;

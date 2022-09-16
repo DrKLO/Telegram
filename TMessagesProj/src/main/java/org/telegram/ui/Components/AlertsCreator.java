@@ -827,7 +827,7 @@ public class AlertsCreator {
                     if (ChatObject.isNotInChat(currentChat)) {
                         accountInstance.getMessagesController().deleteDialog(dialog_id, 0);
                     } else {
-                        accountInstance.getMessagesController().deleteParticipantFromChat(-dialog_id, accountInstance.getMessagesController().getUser(accountInstance.getUserConfig().getClientUserId()), null);
+                        accountInstance.getMessagesController().deleteParticipantFromChat(-dialog_id, accountInstance.getMessagesController().getUser(accountInstance.getUserConfig().getClientUserId()));
                     }
                 } else {
                     accountInstance.getMessagesController().deleteDialog(dialog_id, 0);
@@ -2612,7 +2612,6 @@ public class AlertsCreator {
         return builder;
     }
 
-
     public static BottomSheet.Builder createDatePickerDialog(Context context, long currentDate, final ScheduleDatePickerDelegate datePickerDelegate) {
         if (context == null) {
             return null;
@@ -2783,6 +2782,194 @@ public class AlertsCreator {
                 calendar.set(Calendar.SECOND, 0);
             }
             datePickerDelegate.didSelectDate(true, (int) (calendar.getTimeInMillis() / 1000));
+            builder.getDismissRunnable().run();
+        });
+
+        builder.setCustomView(container);
+        BottomSheet bottomSheet = builder.show();
+        bottomSheet.setBackgroundColor(datePickerColors.backgroundColor);
+        bottomSheet.fixNavigationBar(datePickerColors.backgroundColor);
+        return builder;
+    }
+
+    public interface StatusUntilDatePickerDelegate {
+        void didSelectDate(int date);
+    }
+
+    public static BottomSheet.Builder createStatusUntilDatePickerDialog(Context context, long currentDate, final StatusUntilDatePickerDelegate delegate) {
+        if (context == null) {
+            return null;
+        }
+
+        ScheduleDatePickerColors datePickerColors = new ScheduleDatePickerColors();
+        BottomSheet.Builder builder = new BottomSheet.Builder(context, false);
+        builder.setApplyBottomPadding(false);
+
+        final NumberPicker dayPicker = new NumberPicker(context);
+        dayPicker.setTextColor(datePickerColors.textColor);
+        dayPicker.setTextOffset(AndroidUtilities.dp(10));
+        dayPicker.setItemCount(5);
+        final NumberPicker hourPicker = new NumberPicker(context) {
+            @Override
+            protected CharSequence getContentDescription(int value) {
+                return LocaleController.formatPluralString("Hours", value);
+            }
+        };
+        hourPicker.setItemCount(5);
+        hourPicker.setTextColor(datePickerColors.textColor);
+        hourPicker.setTextOffset(-AndroidUtilities.dp(10));
+        final NumberPicker minutePicker = new NumberPicker(context) {
+            @Override
+            protected CharSequence getContentDescription(int value) {
+                return LocaleController.formatPluralString("Minutes", value);
+            }
+        };
+        minutePicker.setItemCount(5);
+        minutePicker.setTextColor(datePickerColors.textColor);
+        minutePicker.setTextOffset(-AndroidUtilities.dp(34));
+
+        LinearLayout container = new LinearLayout(context) {
+
+            boolean ignoreLayout = false;
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                ignoreLayout = true;
+                int count;
+                if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
+                    count = 3;
+                } else {
+                    count = 5;
+                }
+                dayPicker.setItemCount(count);
+                hourPicker.setItemCount(count);
+                minutePicker.setItemCount(count);
+                dayPicker.getLayoutParams().height = AndroidUtilities.dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                hourPicker.getLayoutParams().height = AndroidUtilities.dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                minutePicker.getLayoutParams().height = AndroidUtilities.dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                ignoreLayout = false;
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            }
+
+            @Override
+            public void requestLayout() {
+                if (ignoreLayout) {
+                    return;
+                }
+                super.requestLayout();
+            }
+        };
+        container.setOrientation(LinearLayout.VERTICAL);
+
+        FrameLayout titleLayout = new FrameLayout(context);
+        container.addView(titleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 22, 0, 0, 4));
+
+        TextView titleView = new TextView(context);
+        titleView.setText(LocaleController.getString("SetEmojiStatusUntilTitle", R.string.SetEmojiStatusUntilTitle));
+
+        titleView.setTextColor(datePickerColors.textColor);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
+        titleView.setOnTouchListener((v, event) -> true);
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+        linearLayout.setWeightSum(1.0f);
+        container.addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 12, 0, 12));
+
+        long currentTime = System.currentTimeMillis();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(currentTime);
+        int currentYear = calendar.get(Calendar.YEAR);
+        int currentDayYear = calendar.get(Calendar.DAY_OF_YEAR);
+
+        TextView buttonTextView = new TextView(context) {
+            @Override
+            public CharSequence getAccessibilityClassName() {
+                return Button.class.getName();
+            }
+        };
+
+        linearLayout.addView(dayPicker, LayoutHelper.createLinear(0, 54 * 5, 0.5f));
+        dayPicker.setMinValue(0);
+        dayPicker.setMaxValue(365);
+        dayPicker.setWrapSelectorWheel(false);
+        dayPicker.setFormatter(value -> {
+            if (value == 0) {
+                return LocaleController.getString("MessageScheduleToday", R.string.MessageScheduleToday);
+            } else {
+                long date = currentTime + (long) value * 86400000L;
+                calendar.setTimeInMillis(date);
+                int year = calendar.get(Calendar.YEAR);
+                int yearDay = calendar.get(Calendar.DAY_OF_YEAR);
+                if (year == currentYear && yearDay < currentDayYear + 7) {
+                    return LocaleController.getInstance().formatterWeek.format(date) + ", " + LocaleController.getInstance().formatterScheduleDay.format(date);
+                } else if (year == currentYear) {
+                    return LocaleController.getInstance().formatterScheduleDay.format(date);
+                } else {
+                    return LocaleController.getInstance().formatterScheduleYear.format(date);
+                }
+            }
+        });
+        final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
+            try {
+                container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            } catch (Exception ignore) {
+
+            }
+            checkScheduleDate(null, null, 0, dayPicker, hourPicker, minutePicker);
+        };
+        dayPicker.setOnValueChangedListener(onValueChangeListener);
+
+        hourPicker.setMinValue(0);
+        hourPicker.setMaxValue(23);
+        linearLayout.addView(hourPicker, LayoutHelper.createLinear(0, 54 * 5, 0.2f));
+        hourPicker.setFormatter(value -> String.format("%02d", value));
+        hourPicker.setOnValueChangedListener(onValueChangeListener);
+
+        minutePicker.setMinValue(0);
+        minutePicker.setMaxValue(59);
+        minutePicker.setValue(0);
+        minutePicker.setFormatter(value -> String.format("%02d", value));
+        linearLayout.addView(minutePicker, LayoutHelper.createLinear(0, 54 * 5, 0.3f));
+        minutePicker.setOnValueChangedListener(onValueChangeListener);
+
+        if (currentDate > 0 && currentDate != 0x7FFFFFFE) {
+            currentDate *= 1000;
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            int days = (int) ((currentDate - calendar.getTimeInMillis()) / (24 * 60 * 60 * 1000));
+            calendar.setTimeInMillis(currentDate);
+            if (days >= 0) {
+                minutePicker.setValue(calendar.get(Calendar.MINUTE));
+                hourPicker.setValue(calendar.get(Calendar.HOUR_OF_DAY));
+                dayPicker.setValue(days);
+            }
+        }
+
+        checkScheduleDate(null, null, 0, dayPicker, hourPicker, minutePicker);
+
+        buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+        buttonTextView.setGravity(Gravity.CENTER);
+        buttonTextView.setTextColor(datePickerColors.buttonTextColor);
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        buttonTextView.setText(LocaleController.getString("SetEmojiStatusUntilButton", R.string.SetEmojiStatusUntilButton));
+        container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
+        buttonTextView.setOnClickListener(v -> {
+            boolean setSeconds = checkScheduleDate(null, null, 0, dayPicker, hourPicker, minutePicker);
+            calendar.setTimeInMillis(System.currentTimeMillis() + (long) dayPicker.getValue() * 24 * 3600 * 1000);
+            calendar.set(Calendar.HOUR_OF_DAY, hourPicker.getValue());
+            calendar.set(Calendar.MINUTE, minutePicker.getValue());
+            if (setSeconds) {
+                calendar.set(Calendar.SECOND, 0);
+            }
+            delegate.didSelectDate((int) (calendar.getTimeInMillis() / 1000));
             builder.getDismissRunnable().run();
         });
 
@@ -5065,7 +5252,7 @@ public class AlertsCreator {
             }
             if (userFinal != null || chatFinal != null) {
                 if (checks[0]) {
-                    MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat.id, userFinal, chatFinal, chatInfo, false, false);
+                    MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat.id, userFinal, chatFinal, false, false);
                 }
                 if (checks[1]) {
                     TLRPC.TL_channels_reportSpam req = new TLRPC.TL_channels_reportSpam();

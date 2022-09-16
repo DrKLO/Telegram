@@ -21,7 +21,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -38,10 +37,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
-import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
 
 public class EditTextEmoji extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate {
@@ -580,7 +577,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             }
 
             @Override
-            public void onCustomEmojiSelected(long documentId, TLRPC.Document document,  String emoticon) {
+            public void onCustomEmojiSelected(long documentId, TLRPC.Document document,  String emoticon, boolean isRecent) {
                 int i = editText.getSelectionEnd();
                 if (i < 0) {
                     i = 0;

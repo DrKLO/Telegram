@@ -727,7 +727,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         if (locationsCount > 1) {
             for (int i = 0; i < (locationsCount > 2 ? 2 : 1); i++) {
                 final int pos = i == 0 ? 1 : locationsCount - 1;
-                FileLoader.getInstance(currentAccount).loadFile(thumbsLocations.get(pos), null, null, 0, 1);
+                FileLoader.getInstance(currentAccount).loadFile(thumbsLocations.get(pos), null, null, FileLoader.PRIORITY_LOW, 1);
             }
         }
     }

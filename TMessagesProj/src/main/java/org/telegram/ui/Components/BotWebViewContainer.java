@@ -45,11 +45,9 @@ import androidx.core.util.Consumer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -58,7 +56,6 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -77,7 +74,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -271,6 +267,9 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         settings.setGeolocationEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
+
+        // Hackfix text on some Xiaomi devices
+        settings.setTextSize(WebSettings.TextSize.NORMAL);
 
         File databaseStorage = new File(ApplicationLoader.getFilesDirFixed(), "webview_database");
         if (databaseStorage.exists() && databaseStorage.isDirectory() || databaseStorage.mkdirs()) {

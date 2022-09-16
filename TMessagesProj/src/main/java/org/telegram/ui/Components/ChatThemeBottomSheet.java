@@ -861,7 +861,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                                 String name = FileLoader.getAttachFileName(wallPaper.document);
                                 if (!loadingThemes.containsKey(name)) {
                                     loadingThemes.put(name, themeInfo);
-                                    FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, 1, 1);
+                                    FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, FileLoader.PRIORITY_NORMAL, 1);
                                 }
                             } else {
                                 themeInfo.badWallpaper = true;

@@ -27,6 +27,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -336,5 +337,13 @@ public class TextSettingsCell extends FrameLayout {
             addView(valueBackupImageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
         }
         return valueBackupImageView;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (valueBackupImageView != null && valueBackupImageView.getImageReceiver() != null && valueBackupImageView.getImageReceiver().getDrawable() instanceof AnimatedEmojiDrawable) {
+            ((AnimatedEmojiDrawable) valueBackupImageView.getImageReceiver().getDrawable()).removeView(this);
+        }
     }
 }

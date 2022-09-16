@@ -105,10 +105,11 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             matrixParticlesDrawable = new MatrixParticlesDrawable();
             matrixParticlesDrawable.init();
         } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE ||
-                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
-                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
-                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
-                   type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI ||
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
             starDrawable = new StarParticlesView.Drawable(40);
             starDrawable.speedScale = 3;
             starDrawable.type = type;
@@ -227,7 +228,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 }
                 attachFileName = FileLoader.getAttachFileName(document);
                 imageReceiver.setImage(null, null, drawable, null, null, 1);
-                FileLoader.getInstance(currentAccount).loadFile(document, null, 1, 0);
+                FileLoader.getInstance(currentAccount).loadFile(document, null, FileLoader.PRIORITY_NORMAL, 0);
                 Utilities.globalQueue.postRunnable(() -> {
                     File file = FileLoader.getInstance(currentAccount).getPathToAttach(document);
                     AndroidUtilities.runOnUIThread(() -> {
@@ -293,10 +294,11 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             }
             if (starDrawable != null) {
                 if (type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
                     starDrawable.rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     starDrawable.rect.inset(AndroidUtilities.dp(30), AndroidUtilities.dp(30));
                 } else {

@@ -1058,7 +1058,7 @@ public class Theme {
                     NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.fileLoadFailed);
                     for (HashMap.Entry<String, LoadingPattern> entry : watingForLoad.entrySet()) {
                         LoadingPattern loadingPattern = entry.getValue();
-                        FileLoader.getInstance(account).loadFile(ImageLocation.getForDocument(loadingPattern.pattern.document), "wallpaper", null, 0, 1);
+                        FileLoader.getInstance(account).loadFile(ImageLocation.getForDocument(loadingPattern.pattern.document), "wallpaper", null, FileLoader.PRIORITY_LOW, 1);
                     }
                 }
             } else {
@@ -2378,7 +2378,7 @@ public class Theme {
             loadingThemeWallpaperName = null;
             newPathToWallpaper = null;
             addObservers();
-            FileLoader.getInstance(account).loadFile(info.document, info, 1, 1);
+            FileLoader.getInstance(account).loadFile(info.document, info, FileLoader.PRIORITY_NORMAL, 1);
         }
 
         private void addObservers() {
@@ -2671,7 +2671,7 @@ public class Theme {
                                                 TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
                                                 loadingThemeWallpaperName = FileLoader.getAttachFileName(wallPaper.document);
                                                 addObservers();
-                                                FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, 1, 1);
+                                                FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, FileLoader.PRIORITY_NORMAL, 1);
                                             } else {
                                                 onFinishLoadingRemoteTheme();
                                             }
@@ -2925,6 +2925,7 @@ public class Theme {
 
     public static TextPaint chat_msgTextPaint;
     public static TextPaint chat_actionTextPaint;
+    public static TextPaint chat_unlockExtendedMediaTextPaint;
     public static TextPaint chat_msgBotButtonPaint;
     public static TextPaint chat_msgGameTextPaint;
     public static TextPaint[] chat_msgTextPaintEmoji;
@@ -2984,6 +2985,7 @@ public class Theme {
     public static Drawable chat_msgStickerHalfCheckDrawable;
     public static Drawable chat_msgStickerViewsDrawable;
     public static Drawable chat_msgStickerRepliesDrawable;
+    public static Drawable chat_msgUnlockDrawable;
     public static Drawable chat_msgInViewsDrawable;
     public static Drawable chat_msgInViewsSelectedDrawable;
     public static Drawable chat_msgOutViewsDrawable;
@@ -7650,7 +7652,7 @@ public class Theme {
         }
 
         if (night) {
-            if (currentTheme != currentNightTheme) {
+            if (currentTheme != currentNightTheme && (currentTheme == null || currentNightTheme != null &&  currentTheme.isDark() != currentNightTheme.isDark())) {
                 isInNigthMode = true;
                 lastThemeSwitchTime = SystemClock.elapsedRealtime();
                 switchingNightTheme = true;
@@ -7658,7 +7660,7 @@ public class Theme {
                 switchingNightTheme = false;
             }
         } else {
-            if (currentTheme != currentDayTheme) {
+            if (currentTheme != currentDayTheme && (currentTheme == null || currentNightTheme != null &&  currentTheme.isDark() != currentNightTheme.isDark())) {
                 isInNigthMode = false;
                 lastThemeSwitchTime = SystemClock.elapsedRealtime();
                 switchingNightTheme = true;
@@ -9005,6 +9007,8 @@ public class Theme {
             chat_statusRecordPaint.setStrokeCap(Paint.Cap.ROUND);
             chat_actionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_actionTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_unlockExtendedMediaTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            chat_unlockExtendedMediaTextPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             chat_actionBackgroundGradientDarkenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_actionBackgroundGradientDarkenPaint.setColor(0x2a000000);
             chat_timeBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -9069,6 +9073,7 @@ public class Theme {
             chat_msgMediaHalfCheckDrawable = resources.getDrawable(R.drawable.msg_halfcheck_s).mutate();
             chat_msgStickerHalfCheckDrawable = resources.getDrawable(R.drawable.msg_halfcheck_s).mutate();
             chat_msgClockDrawable = new MsgClockDrawable();
+            chat_msgUnlockDrawable = resources.getDrawable(R.drawable.ic_lock_header).mutate();
             chat_msgInViewsDrawable = resources.getDrawable(R.drawable.msg_views).mutate();
             chat_msgInViewsSelectedDrawable = resources.getDrawable(R.drawable.msg_views).mutate();
             chat_msgOutViewsDrawable = resources.getDrawable(R.drawable.msg_views).mutate();
@@ -9332,6 +9337,7 @@ public class Theme {
             chat_instantViewRectPaint.setStrokeWidth(AndroidUtilities.dp(1));
             chat_pollTimerPaint.setStrokeWidth(AndroidUtilities.dp(1.1f));
             chat_actionTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
+            chat_unlockExtendedMediaTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize)));
             chat_contextResult_titleTextPaint.setTextSize(AndroidUtilities.dp(15));
             chat_contextResult_descriptionTextPaint.setTextSize(AndroidUtilities.dp(13));
             chat_radialProgressPaint.setStrokeWidth(AndroidUtilities.dp(3));
@@ -9391,6 +9397,7 @@ public class Theme {
             chat_statusRecordPaint.setColor(getColor(key_chat_status));
             chat_actionTextPaint.setColor(getColor(key_chat_serviceText));
             chat_actionTextPaint.linkColor = getColor(key_chat_serviceLink);
+            chat_unlockExtendedMediaTextPaint.setColor(getColor(key_chat_serviceText));
             chat_contextResult_titleTextPaint.setColor(getColor(key_windowBackgroundWhiteBlackText));
             chat_composeBackgroundPaint.setColor(getColor(key_chat_messagePanelBackground));
             chat_timeBackgroundPaint.setColor(getColor(key_chat_mediaTimeBackground));
@@ -9412,6 +9419,7 @@ public class Theme {
             setDrawableColorByKey(chat_msgStickerHalfCheckDrawable, key_chat_serviceText);
             setDrawableColorByKey(chat_msgStickerViewsDrawable, key_chat_serviceText);
             setDrawableColorByKey(chat_msgStickerRepliesDrawable, key_chat_serviceText);
+            setDrawableColorByKey(chat_msgUnlockDrawable, key_chat_serviceText);
             setDrawableColorByKey(chat_shareIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_replyIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_goIconDrawable, key_chat_serviceIcon);
@@ -9631,6 +9639,7 @@ public class Theme {
             setDrawableColor(chat_msgStickerRepliesDrawable, 0xffffffff);
             chat_actionTextPaint.setColor(0xffffffff);
             chat_actionTextPaint.linkColor = 0xffffffff;
+            chat_unlockExtendedMediaTextPaint.setColor(0xffffffff);
             chat_botButtonPaint.setColor(0xffffffff);
             setDrawableColor(chat_commentStickerDrawable, 0xffffffff);
             setDrawableColor(chat_shareIconDrawable, 0xffffffff);
@@ -9651,6 +9660,7 @@ public class Theme {
             setDrawableColorByKey(chat_msgStickerRepliesDrawable, key_chat_serviceText);
             chat_actionTextPaint.setColor(getColor(key_chat_serviceText));
             chat_actionTextPaint.linkColor = getColor(key_chat_serviceLink);
+            chat_unlockExtendedMediaTextPaint.setColor(getColor(key_chat_serviceText));
             setDrawableColorByKey(chat_commentStickerDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_shareIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_replyIconDrawable, key_chat_serviceIcon);

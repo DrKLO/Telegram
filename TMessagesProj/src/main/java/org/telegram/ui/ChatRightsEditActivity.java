@@ -907,7 +907,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                     ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                         if (error2 == null) {
-                            TLRPC.TL_account_password currentPassword = (TLRPC.TL_account_password) response2;
+                            TLRPC.account_Password currentPassword = (TLRPC.account_Password) response2;
                             passwordFragment.setCurrentPasswordInfo(null, currentPassword);
                             TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                             initTransfer(passwordFragment.getNewSrpPassword(), passwordFragment);

@@ -663,7 +663,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (position < 0 || position >= arrayList.size()) {
                     return;
                 }
-                PhotoViewer.getInstance().setParentActivity(parentAlert.baseFragment.getParentActivity(), resourcesProvider);
+                PhotoViewer.getInstance().setParentActivity(parentAlert.baseFragment, resourcesProvider);
                 PhotoViewer.getInstance().setParentAlert(parentAlert);
                 PhotoViewer.getInstance().setMaxSelectedPhotos(parentAlert.maxSelectedPhotos, parentAlert.allowOrder);
                 ChatActivity chatActivity;

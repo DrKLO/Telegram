@@ -173,7 +173,7 @@ public class StaticLayoutEx {
                                 .setAlignment(align)
                                 .setLineSpacing(spacingAdd, spacingMult)
                                 .setIncludePad(includePad)
-                                .setEllipsize(stringBuilder.getSpans(0, stringBuilder.length(), CharacterStyle.class).length > 0 ? null : ellipsize)
+                                .setEllipsize(stringBuilder.getSpans(0, stringBuilder.length(), AnimatedEmojiSpan.class).length > 0 ? null : ellipsize)
                                 .setEllipsizedWidth(ellipsisWidth)
                                 .setMaxLines(maxLines)
                                 .setBreakStrategy(canContainUrl ? StaticLayout.BREAK_STRATEGY_HIGH_QUALITY : StaticLayout.BREAK_STRATEGY_SIMPLE)

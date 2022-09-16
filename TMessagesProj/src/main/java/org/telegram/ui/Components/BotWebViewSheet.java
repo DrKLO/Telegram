@@ -712,6 +712,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 TLRPC.TL_messages_requestWebView req = new TLRPC.TL_messages_requestWebView();
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(botId);
+                req.platform = "android";
 
                 req.url = buttonUrl;
                 req.flags |= 2;
@@ -739,6 +740,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             case TYPE_SIMPLE_WEB_VIEW_BUTTON: {
                 TLRPC.TL_messages_requestSimpleWebView req = new TLRPC.TL_messages_requestSimpleWebView();
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
+                req.platform = "android";
                 if (hasThemeParams) {
                     req.theme_params = new TLRPC.TL_dataJSON();
                     req.theme_params.data = themeParams;
@@ -760,6 +762,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 TLRPC.TL_messages_requestWebView req = new TLRPC.TL_messages_requestWebView();
                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(peerId);
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
+                req.platform = "android";
                 if (buttonUrl != null) {
                     req.url = buttonUrl;
                     req.flags |= 2;

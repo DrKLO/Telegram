@@ -290,7 +290,7 @@ public class UpdateAppAlertDialog extends BottomSheet {
         BottomSheetCell doneButton = new BottomSheetCell(context, false);
         doneButton.setText(LocaleController.formatString("AppUpdateDownloadNow", R.string.AppUpdateDownloadNow), false);
         doneButton.background.setOnClickListener(v -> {
-            FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", 1, 1);
+            FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_NORMAL, 1);
             dismiss();
         });
         container.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 50));

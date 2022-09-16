@@ -29,6 +29,7 @@ public:
     void processHandshakeResponse(TLObject *message, int64_t messageId);
     void onHandshakeConnectionConnected();
     void onHandshakeConnectionClosed();
+    static void cleanupServerKeys();
     HandshakeType getType();
     ByteArray *getPendingAuthKey();
     int64_t getPendingAuthKeyId();

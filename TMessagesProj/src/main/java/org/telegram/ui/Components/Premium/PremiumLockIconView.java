@@ -28,10 +28,16 @@ public class PremiumLockIconView extends ImageView {
     private float[] colorFloat = new float[3];
     StarParticlesView.Drawable starParticles;
     private boolean locked;
+    private Theme.ResourcesProvider resourcesProvider;
 
     public PremiumLockIconView(Context context, int type) {
+        this(context, type, null);
+    }
+
+    public PremiumLockIconView(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.type = type;
+        this.resourcesProvider = resourcesProvider;
         setImageResource(type == TYPE_REACTIONS ? R.drawable.msg_premium_lock2 : R.drawable.msg_mini_premiumlock);
         if (type == TYPE_REACTIONS) {
             starParticles = new StarParticlesView.Drawable(5);
@@ -94,7 +100,7 @@ public class PremiumLockIconView extends ImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         if (waitingImage) {
-            if (imageReceiver.getBitmap() != null) {
+            if (imageReceiver != null && imageReceiver.getBitmap() != null) {
                 waitingImage = false;
                 setColor(getDominantColor(imageReceiver.getBitmap()));
             } else {
@@ -143,7 +149,14 @@ public class PremiumLockIconView extends ImageView {
 
     public void setImageReceiver(ImageReceiver imageReceiver) {
         this.imageReceiver = imageReceiver;
-        waitingImage = true;
+        if (imageReceiver != null) {
+            waitingImage = true;
+            invalidate();
+        }
+    }
+
+    public ImageReceiver getImageReceiver() {
+        return imageReceiver;
     }
 
     public static int getDominantColor(Bitmap bitmap) {
@@ -184,8 +197,8 @@ public class PremiumLockIconView extends ImageView {
             }
             int baseColor = Color.HSVToColor(colorFloat);
 
-            c2 = ColorUtils.blendARGB(baseColor, Theme.getColor(Theme.key_windowBackgroundWhite), 0.5f);
-            c1 = ColorUtils.blendARGB(baseColor, Theme.getColor(Theme.key_windowBackgroundWhite), 0.4f);
+            c2 = ColorUtils.blendARGB(baseColor, Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), 0.5f);
+            c1 = ColorUtils.blendARGB(baseColor, Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), 0.4f);
 
             if (shader == null || color1 != c1 || color2 != c2) {
                 if (wasDrawn) {

@@ -140,6 +140,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private float aspectRatio;
     private boolean dimEnabled = true;
     private float dimAlpha = 0.6f;
+    private boolean dimCustom = false;
     private final Theme.ResourcesProvider resourcesProvider;
     private boolean topAnimationAutoRepeat = true;
 
@@ -483,7 +484,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             titleContainer = new FrameLayout(getContext());
             containerView.addView(titleContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 24, 0, 24, 0));
 
-            titleTextView = new TextView(getContext());
+            titleTextView = new SpoilersTextView(getContext(), false);
             titleTextView.setText(title);
             titleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -542,7 +543,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             contentScrollView.addView(scrollContainer, new ScrollView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
-        messageTextView = new SpoilersTextView(getContext());
+        messageTextView = new SpoilersTextView(getContext(), false);
         messageTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
@@ -867,7 +868,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         if (progressViewStyle == 3) {
             params.width = WindowManager.LayoutParams.MATCH_PARENT;
         } else {
-            if (dimEnabled) {
+            if (dimEnabled && !dimCustom) {
                 params.dimAmount = dimAlpha;
                 params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
             } else {
@@ -898,6 +899,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         if (Build.VERSION.SDK_INT >= 28) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
         }
+
         window.setAttributes(params);
     }
 

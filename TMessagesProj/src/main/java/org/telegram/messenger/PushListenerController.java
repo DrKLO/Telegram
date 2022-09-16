@@ -305,7 +305,7 @@ public class PushListenerController {
                                 TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
                                 update.channel_id = channel_id;
                                 update.max_id = max_id;
-                                update.still_unread_count = -1;
+                                update.still_unread_count = 0;
                                 updates.add(update);
                             } else {
                                 TLRPC.TL_updateReadHistoryInbox update = new TLRPC.TL_updateReadHistoryInbox();

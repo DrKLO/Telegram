@@ -34,7 +34,11 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     public float topPadding = 0.4f;
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize) {
-        super(fragment.getParentActivity(), needFocus);
+        this(fragment, needFocus, hasFixedSize, null);
+    }
+
+    public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, Theme.ResourcesProvider resourcesProvider) {
+        super(fragment.getParentActivity(), needFocus, resourcesProvider);
         this.baseFragment = fragment;
         this.hasFixedSize = hasFixedSize;
         Context context = fragment.getParentActivity();

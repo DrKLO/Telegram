@@ -30,7 +30,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -42,13 +41,8 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 
 public class PremiumFeatureBottomSheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
-
-    BaseFragment fragment;
 
     private PremiumButtonView premiumButtonView;
     ArrayList<PremiumPreviewFragment.PremiumFeatureData> premiumFeatures = new ArrayList<>();
@@ -65,17 +59,34 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     private final int startType;
     private final boolean onlySelectedType;
 
+    private PremiumPreviewFragment.SubscriptionTier selectedTier;
+
     public PremiumFeatureBottomSheet(BaseFragment fragment, int startType, boolean onlySelectedType) {
-        super(fragment.getContext(), false);
+        this(fragment, startType, onlySelectedType, null);
+    }
+
+    public PremiumFeatureBottomSheet(BaseFragment fragment, int startType, boolean onlySelectedType, PremiumPreviewFragment.SubscriptionTier subscriptionTier) {
+        this(fragment, fragment.getContext(), fragment.getCurrentAccount(), startType, onlySelectedType, subscriptionTier);
+    }
+
+    public PremiumFeatureBottomSheet(BaseFragment fragment, Context context, int currentAccount, int startType, boolean onlySelectedType) {
+        this(fragment, context, currentAccount, startType, onlySelectedType, null);
+    }
+
+    public PremiumFeatureBottomSheet(BaseFragment fragment, Context context, int currentAccount, int startType, boolean onlySelectedType, PremiumPreviewFragment.SubscriptionTier subscriptionTier) {
+        super(context, false);
+        if (fragment == null) {
+            throw new RuntimeException("fragmnet can't be null");
+        }
+        selectedTier = subscriptionTier;
+
         fixNavigationBar();
-        this.fragment = fragment;
         this.startType = startType;
         this.onlySelectedType = onlySelectedType;
 
         String svg = RLottieDrawable.readRes(null, R.raw.star_loader);
         svgIcon = SvgHelper.getDrawable(svg);
-        Context context = fragment.getContext();
-        FrameLayout frameLayout = new FrameLayout(context) {
+        FrameLayout frameLayout = new FrameLayout(getContext()) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 if (isPortrait) {
@@ -88,7 +99,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         };
 
 
-        PremiumPreviewFragment.fillPremiumFeaturesList(premiumFeatures, fragment.getCurrentAccount());
+        PremiumPreviewFragment.fillPremiumFeaturesList(premiumFeatures, currentAccount);
 
         int selectedPosition = 0;
         for (int i = 0; i < premiumFeatures.size(); i++) {
@@ -120,7 +131,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         gradientTools.x2 = 1.5f;
         gradientTools.y2 = -0.2f;
         gradientTools.exactly = true;
-        content = new FrameLayout(context) {
+        content = new FrameLayout(getContext()) {
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -140,15 +151,15 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             }
         };
 
-        FrameLayout closeLayout = new FrameLayout(context);
-        ImageView closeImage = new ImageView(context);
+        FrameLayout closeLayout = new FrameLayout(getContext());
+        ImageView closeImage = new ImageView(getContext());
         closeImage.setImageResource(R.drawable.msg_close);
         closeImage.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(12), ColorUtils.setAlphaComponent(Color.WHITE, 40), ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         closeLayout.addView(closeImage, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
         closeLayout.setOnClickListener(v -> dismiss());
         frameLayout.addView(content, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
 
-        viewPager = new ViewPager(context) {
+        viewPager = new ViewPager(getContext()) {
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -187,7 +198,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             @NonNull
             @Override
             public Object instantiateItem(@NonNull ViewGroup container, int position) {
-                ViewPage viewPage = new ViewPage(context, position);
+                ViewPage viewPage = new ViewPage(getContext(), position);
                 container.addView(viewPage);
                 viewPage.position = position;
                 viewPage.setFeatureDate(premiumFeatures.get(position));
@@ -209,7 +220,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         frameLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, 0, 0, 18, 0, 0));
 
         frameLayout.addView(closeLayout, LayoutHelper.createFrame(52, 52, Gravity.RIGHT | Gravity.TOP, 0, 16, 0, 0));
-        BottomPagesView bottomPages = new BottomPagesView(context, viewPager, premiumFeatures.size());
+        BottomPagesView bottomPages = new BottomPagesView(getContext(), viewPager, premiumFeatures.size());
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
             int selectedPosition;
@@ -260,14 +271,14 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             }
         });
 
-        LinearLayout linearLayout = new LinearLayout(context);
+        LinearLayout linearLayout = new LinearLayout(getContext());
         linearLayout.addView(frameLayout);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         bottomPages.setColor(Theme.key_chats_unreadCounterMuted, Theme.key_chats_actionBackground);
         if (!onlySelectedType) {
             linearLayout.addView(bottomPages, LayoutHelper.createLinear(11 * premiumFeatures.size(), 5, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
         }
-        premiumButtonView = new PremiumButtonView(context, true);
+        premiumButtonView = new PremiumButtonView(getContext(), true);
         premiumButtonView.buttonLayout.setOnClickListener(v -> {
             if (fragment instanceof ChatActivity) {
                 ((ChatActivity) fragment).closeMenu();
@@ -275,20 +286,20 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                     ((ChatActivity) fragment).chatAttachAlert.dismiss(true);
                 }
             }
-            if (fragment.getVisibleDialog() != null) {
+            if (fragment != null && fragment.getVisibleDialog() != null) {
                 fragment.getVisibleDialog().dismiss();
             }
-            if (onlySelectedType) {
+            if (onlySelectedType && fragment != null) {
                 fragment.presentFragment(new PremiumPreviewFragment(PremiumPreviewFragment.featureTypeToServerString(featureData.type)));
             } else {
-                PremiumPreviewFragment.buyPremium(fragment, PremiumPreviewFragment.featureTypeToServerString(featureData.type));
+                PremiumPreviewFragment.buyPremium(fragment, selectedTier, PremiumPreviewFragment.featureTypeToServerString(featureData.type));
             }
             dismiss();
         });
         premiumButtonView.overlayTextView.setOnClickListener(v -> {
             dismiss();
         });
-        buttonContainer = new FrameLayout(context);
+        buttonContainer = new FrameLayout(getContext());
 
         buttonContainer.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
         buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
@@ -298,7 +309,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             premiumButtonView.setOverlayText(LocaleController.getString("OK", R.string.OK), false, false);
         }
 
-        ScrollView scrollView = new ScrollView(context);
+        ScrollView scrollView = new ScrollView(getContext());
         scrollView.addView(linearLayout);
         setCustomView(scrollView);
 
@@ -318,7 +329,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 premiumButtonView.setIcon(R.raw.unlock_icon);
             }
         } else {
-            premiumButtonView.buttonTextView.setText(PremiumPreviewFragment.getPremiumButtonText(currentAccount));
+            premiumButtonView.buttonTextView.setText(PremiumPreviewFragment.getPremiumButtonText(currentAccount, selectedTier));
         }
     }
 
@@ -449,38 +460,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
     View getViewForPosition(Context context, int position) {
         PremiumPreviewFragment.PremiumFeatureData featureData = premiumFeatures.get(position);
-        if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
-            ArrayList<ReactionDrawingObject> drawingObjects = new ArrayList<>();
-            List<TLRPC.TL_availableReaction> list = MediaDataController.getInstance(currentAccount).getEnabledReactionsList();
-            List<TLRPC.TL_availableReaction> premiumLockedReactions = new ArrayList<>();
-            for (int i = 0; i < list.size(); i++) {
-                if (list.get(i).premium) {
-                    premiumLockedReactions.add(list.get(i));
-                }
-            }
-            for (int i = 0; i < premiumLockedReactions.size(); i++) {
-                ReactionDrawingObject drawingObject = new ReactionDrawingObject(i);
-                drawingObject.set(premiumLockedReactions.get(i));
-                drawingObjects.add(drawingObject);
-            }
-
-            HashMap<String, Integer> sortRulesMap = new HashMap<>();
-            sortRulesMap.put("\uD83D\uDC4C", 1);
-            sortRulesMap.put("\uD83D\uDE0D", 2);
-            sortRulesMap.put("\uD83E\uDD21", 3);
-            sortRulesMap.put("\uD83D\uDD4A", 4);
-            sortRulesMap.put("\uD83E\uDD71", 5);
-            sortRulesMap.put("\uD83E\uDD74", 6);
-            sortRulesMap.put("\uD83D\uDC33", 7);
-            Collections.sort(drawingObjects, (o1, o2) -> {
-                int i1 = sortRulesMap.containsKey(o1.reaction.reaction) ? sortRulesMap.get(o1.reaction.reaction) : Integer.MAX_VALUE;
-                int i2 = sortRulesMap.containsKey(o2.reaction.reaction) ? sortRulesMap.get(o2.reaction.reaction) : Integer.MAX_VALUE;
-                return i2 - i1;
-            });
-
-            CarouselView carouselView = new CarouselView(context, drawingObjects);
-            return carouselView;
-        } else if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STICKERS) {
+        if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_STICKERS) {
             PremiumStickersPreviewRecycler recyclerListView = new PremiumStickersPreviewRecycler(context, currentAccount) {
                 @Override
                 public void setOffset(float v) {

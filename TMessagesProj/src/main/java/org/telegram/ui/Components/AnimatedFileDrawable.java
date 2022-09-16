@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -112,11 +113,15 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     private BitmapShader nextRenderingShader;
     private BitmapShader backgroundShader;
 
+    private BitmapShader renderingShaderBackgroundDraw;
+
     private int[] roundRadius = new int[4];
     private int[] roundRadiusBackup;
     private Matrix shaderMatrix = new Matrix();
     private Path roundPath = new Path();
     private static float[] radii = new float[8];
+
+    private Matrix shaderMatrixBackgroundDraw;
 
     private float scaleX = 1.0f;
     private float scaleY = 1.0f;
@@ -312,8 +317,12 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                             cacheMetadata = new BitmapsCache.Metadata();
                         }
                         lastFrameDecodeTime = System.currentTimeMillis();
+                        int lastFrame = cacheMetadata.frame;
                         int result = bitmapsCache.getFrame(backgroundBitmap, cacheMetadata);
-                        metaData[3] = backgroundBitmapTime = cacheMetadata.frame * 33;
+                        if (result != -1 && cacheMetadata.frame < lastFrame) {
+                            isRestarted = true;
+                        }
+                        metaData[3] = backgroundBitmapTime = cacheMetadata.frame * Math.max(16, metaData[4] / Math.max(1, bitmapsCache.getFrameCount()));
 
                         if (bitmapsCache.needGenCache()) {
                             AndroidUtilities.runOnUIThread(uiRunnableGenerateCache);
@@ -357,7 +366,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                                 AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
                                 return;
                             }
-                            if (lastTimeStamp != 0 && metaData[3] == 0) {
+                            if (metaData[3] < lastTimeStamp) {
                                 isRestarted = true;
                             }
                             if (seekWas) {
@@ -431,7 +440,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 destroyDecoder(nativePtr);
                 nativePtr = 0;
             } else {
-                bitmapsCache = new BitmapsCache(file, this, cacheOptions, renderingWidth, renderingHeight);
+                bitmapsCache = new BitmapsCache(file, this, cacheOptions, renderingWidth, renderingHeight, !limitFps);
             }
         }
         if (seekTo != 0) {
@@ -487,12 +496,32 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 scheduleNextGetFrame();
             }
         }
+        checkCacheCancel();
     }
 
     public void removeParent(ImageReceiver imageReceiver) {
         parents.remove(imageReceiver);
         if (parents.size() == 0) {
             repeatCount = 0;
+        }
+        checkCacheCancel();
+    }
+
+    private Runnable cancelCache;
+    public void checkCacheCancel() {
+        if (bitmapsCache == null) {
+            return;
+        }
+        boolean mustCancel = parents.isEmpty();
+        if (mustCancel && cancelCache == null) {
+            AndroidUtilities.runOnUIThread(cancelCache = () -> {
+                if (bitmapsCache != null) {
+                    bitmapsCache.cancelCreate();
+                }
+            }, 600);
+        } else if (!mustCancel && cancelCache != null) {
+            AndroidUtilities.cancelRunOnUIThread(cancelCache);
+            cancelCache = null;
         }
     }
 
@@ -725,13 +754,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         drawInternal(canvas, false, System.currentTimeMillis());
     }
 
-    public void drawInBackground(Canvas canvas, float x, float y, float w, float h, int alpha) {
+    public void drawInBackground(Canvas canvas, float x, float y, float w, float h, int alpha, ColorFilter colorFilter) {
         if (dstRectBackground == null) {
             dstRectBackground = new RectF();
             backgroundPaint = new Paint();
             backgroundPaint.setFilterBitmap(true);
         }
         backgroundPaint.setAlpha(alpha);
+        backgroundPaint.setColorFilter(colorFilter);
         dstRectBackground.set(x, y, x + w, y + h);
         drawInternal(canvas, true, 0);
     }
@@ -780,7 +810,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             }
             if (hasRoundRadius()) {
                 if (renderingShader == null) {
-                    renderingShader = new BitmapShader(backgroundBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    renderingShader = new BitmapShader(renderingBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                 }
                 paint.setShader(renderingShader);
                 shaderMatrix.reset();
@@ -805,7 +835,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                         radii[a * 2 + 1] = roundRadius[a];
                     }
                     roundPath.reset();
-                    roundPath.addRoundRect(actualDrawRect, radii, Path.Direction.CW);
+                    roundPath.addRoundRect(drawInBackground ? rect : actualDrawRect, radii, Path.Direction.CW);
                     roundPath.close();
                 }
                 canvas.drawPath(roundPath, paint);

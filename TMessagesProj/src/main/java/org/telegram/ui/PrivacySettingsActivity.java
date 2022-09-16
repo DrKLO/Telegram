@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -49,9 +50,11 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.TextStyleSpan;
 
 import java.util.ArrayList;
 
@@ -63,7 +66,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
 
-    private TLRPC.TL_account_password currentPassword;
+    private TLRPC.account_Password currentPassword;
 
     private int privacySectionRow;
     private int blockedRow;
@@ -73,6 +76,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int forwardsRow;
     private int callsRow;
     private int voicesRow;
+    private int emailLoginRow;
     private int privacyShadowRow;
     private int groupsRow;
     private int groupsDetailRow;
@@ -208,7 +212,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             }
         });
         listView.setVerticalScrollBarEnabled(false);
-        listView.setItemAnimator(null);
         listView.setLayoutAnimation(null);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
@@ -316,6 +319,40 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 }
 
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES));
+            } else if (position == emailLoginRow) {
+                if (currentPassword == null || currentPassword.login_email_pattern == null) {
+                    return;
+                }
+
+                SpannableStringBuilder spannable = SpannableStringBuilder.valueOf(currentPassword.login_email_pattern);
+                int startIndex = currentPassword.login_email_pattern.indexOf('*');
+                int endIndex = currentPassword.login_email_pattern.lastIndexOf('*');
+                if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
+                    TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                    run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                    run.start = startIndex;
+                    run.end = endIndex + 1;
+                    spannable.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
+                }
+
+                new AlertDialog.Builder(context)
+                        .setTitle(spannable)
+                        .setMessage(LocaleController.getString(R.string.EmailLoginChangeMessage))
+                        .setPositiveButton(LocaleController.getString(R.string.ChangeEmail), (dialog, which) -> presentFragment(new LoginActivity().changeEmail(() -> {
+                            Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
+                            layout.setAnimation(R.raw.email_check_inbox);
+                            layout.textView.setText(LocaleController.getString(R.string.YourLoginEmailChangedSuccess));
+                            int duration = Bulletin.DURATION_SHORT;
+                            Bulletin.make(PrivacySettingsActivity.this, layout, duration).show();
+
+                            try {
+                                fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                            } catch (Exception ignored) {}
+
+                            loadPasswordSettings();
+                        })))
+                        .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                        .show();
             } else if (position == passwordRow) {
                 if (currentPassword == null) {
                     return;
@@ -514,7 +551,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             listAdapter.notifyItemChanged(blockedRow);
         } else if (id == NotificationCenter.didSetOrRemoveTwoStepPassword) {
             if (args.length > 0) {
-                currentPassword = (TLRPC.TL_account_password) args[0];
+                currentPassword = (TLRPC.account_Password) args[0];
                 if (listAdapter != null) {
                     listAdapter.notifyItemChanged(passwordRow);
                 }
@@ -527,6 +564,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     }
 
     private void updateRows() {
+        updateRows(true);
+    }
+
+    private void updateRows(boolean notify) {
         rowCount = 0;
         privacySectionRow = rowCount++;
         blockedRow = rowCount++;
@@ -542,6 +583,19 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         securitySectionRow = rowCount++;
         passcodeRow = rowCount++;
         passwordRow = rowCount++;
+
+        if (currentPassword != null ? currentPassword.login_email_pattern != null : SharedConfig.hasEmailLogin) {
+            emailLoginRow = rowCount++;
+        } else {
+            emailLoginRow = -1;
+        }
+        if (currentPassword != null) {
+            boolean hasEmail = currentPassword.login_email_pattern != null;
+            if (SharedConfig.hasEmailLogin != hasEmail) {
+                SharedConfig.hasEmailLogin = hasEmail;
+                SharedConfig.saveConfig();
+            }
+        }
         sessionsRow = rowCount++;
         sessionsDetailRow = rowCount++;
         if (getMessagesController().autoarchiveAvailable || getUserConfig().isPremium()) {
@@ -574,8 +628,47 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         secretMapRow = rowCount++;
         secretWebpageRow = rowCount++;
         secretDetailRow = rowCount++;
-        if (listAdapter != null) {
+        if (listAdapter != null && notify) {
             listAdapter.notifyDataSetChanged();
+        }
+    }
+
+    public PrivacySettingsActivity setCurrentPassword(TLRPC.account_Password currentPassword) {
+        this.currentPassword = currentPassword;
+        if (currentPassword != null) {
+            initPassword();
+        }
+        return this;
+    }
+
+    private void initPassword() {
+        TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+        if (!getUserConfig().hasSecureData && currentPassword.has_secure_values) {
+            getUserConfig().hasSecureData = true;
+            getUserConfig().saveConfig(false);
+            updateRows();
+        } else {
+            if (currentPassword != null) {
+                int wasEmailRow = emailLoginRow;
+                boolean appear = currentPassword.login_email_pattern != null && emailLoginRow == -1;
+                boolean disappear = currentPassword.login_email_pattern == null && emailLoginRow != -1;
+
+                if (appear || disappear) {
+                    updateRows(false);
+
+                    if (listAdapter != null) {
+                        if (appear) {
+                            listAdapter.notifyItemInserted(emailLoginRow);
+                        } else {
+                            listAdapter.notifyItemRemoved(wasEmailRow);
+                        }
+                    }
+                }
+            }
+
+            if (listAdapter != null) {
+                listAdapter.notifyItemChanged(passwordRow);
+            }
         }
     }
 
@@ -583,19 +676,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response != null) {
-                TLRPC.TL_account_password password = (TLRPC.TL_account_password) response;
+                TLRPC.account_Password password = (TLRPC.account_Password) response;
                 AndroidUtilities.runOnUIThread(() -> {
                     currentPassword = password;
-                    TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
-                    if (!getUserConfig().hasSecureData && password.has_secure_values) {
-                        getUserConfig().hasSecureData = true;
-                        getUserConfig().saveConfig(false);
-                        updateRows();
-                    } else {
-                        if (listAdapter != null) {
-                            listAdapter.notifyItemChanged(passwordRow);
-                        }
-                    }
+                    initPassword();
                 });
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
@@ -736,7 +820,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == voicesRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES) ||
                     position == deleteAccountRow && !getContactsController().getLoadingDeleteInfo() ||
                     position == newChatsRow && !getContactsController().getLoadingGlobalSettings() ||
-                    position == paymentsClearRow || position == secretMapRow || position == contactsSyncRow || position == passportRow || position == contactsDeleteRow || position == contactsSuggestRow;
+                    position == emailLoginRow || position == paymentsClearRow || position == secretMapRow ||
+                    position == contactsSyncRow || position == passportRow || position == contactsDeleteRow || position == contactsSuggestRow;
         }
 
         @Override
@@ -806,6 +891,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         textCell.setTextAndValue(LocaleController.getString("TwoStepVerification", R.string.TwoStepVerification), value, true);
                     } else if (position == passcodeRow) {
                         textCell.setText(LocaleController.getString("Passcode", R.string.Passcode), true);
+                    } else if (position == emailLoginRow) {
+                        textCell.setText(LocaleController.getString(R.string.EmailLogin), true);
                     } else if (position == phoneNumberRow) {
                         if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_PHONE)) {
                             showLoading = true;
@@ -977,7 +1064,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public int getItemViewType(int position) {
-            if (position == passportRow || position == lastSeenRow || position == phoneNumberRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == webSessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow || position == secretMapRow || position == contactsDeleteRow) {
+            if (position == passportRow || position == lastSeenRow || position == phoneNumberRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == webSessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow || position == secretMapRow || position == contactsDeleteRow || position == emailLoginRow) {
                 return 0;
             } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == botsDetailRow || position == contactsDetailRow || position == newChatsSectionRow) {
                 return 1;

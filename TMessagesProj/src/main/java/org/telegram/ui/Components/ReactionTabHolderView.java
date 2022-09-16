@@ -29,6 +29,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 public class ReactionTabHolderView extends FrameLayout {
     private Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -45,7 +46,7 @@ public class ReactionTabHolderView extends FrameLayout {
     Drawable drawable;
 
     private int count;
-    private String reaction;
+    private ReactionsLayoutInBubble.VisibleReaction reaction;
 
     public ReactionTabHolderView(@NonNull Context context) {
         super(context);
@@ -103,20 +104,25 @@ public class ReactionTabHolderView extends FrameLayout {
         reactView.setVisibility(GONE);
     }
 
-    public void setCounter(int currentAccount, TLRPC.TL_reactionCount counter) {
+    public void setCounter(int currentAccount, TLRPC.ReactionCount counter) {
         this.count = counter.count;
         counterView.setText(String.format("%s", LocaleController.formatShortNumber(counter.count, null)));
-        String e = counter.reaction;
-        this.reaction = null;
-        for (TLRPC.TL_availableReaction r : MediaDataController.getInstance(currentAccount).getReactionsList()) {
-            if (r.reaction.equals(e)) {
-                SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-                this.reaction = r.reaction;
-                reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", svgThumb, r);
-                reactView.setVisibility(VISIBLE);
-                iconView.setVisibility(GONE);
-                break;
+        ReactionsLayoutInBubble.VisibleReaction counterReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(counter.reaction);
+        reaction = counterReaction;
+        if (reaction.emojicon != null) {
+            for (TLRPC.TL_availableReaction r : MediaDataController.getInstance(currentAccount).getReactionsList()) {
+                if (r.reaction.equals(reaction.emojicon)) {
+                    SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
+                    reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", svgThumb, r);
+                    reactView.setVisibility(VISIBLE);
+                    iconView.setVisibility(GONE);
+                    break;
+                }
             }
+        } else {
+            reactView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, reaction.documentId));
+            reactView.setVisibility(VISIBLE);
+            iconView.setVisibility(GONE);
         }
     }
 

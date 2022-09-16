@@ -273,6 +273,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         isLocked = !UserConfig.getInstance(currentAccount).isPremium() && MessageObject.isPremiumEmojiPack(set);
         if (animated) {
             if (isLocked) {
+                unlockButton.setVisibility(VISIBLE);
                 delButton.setVisibility(VISIBLE);
                 addButton.setVisibility(VISIBLE);
             } else {
@@ -300,13 +301,14 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
                     if (isLocked) {
                         addButton.setVisibility(INVISIBLE);
                         delButton.setVisibility(INVISIBLE);
-                        unlockButton.setVisibility(INVISIBLE);
+                        unlockButton.setVisibility(VISIBLE);
                     } else {
                         if (isInstalled) {
                             addButton.setVisibility(INVISIBLE);
                         } else {
                             delButton.setVisibility(INVISIBLE);
                         }
+                        unlockButton.setVisibility(GONE);
                     }
                 }
             });
@@ -327,7 +329,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
                 delButton.setScaleX(0.0f);
                 delButton.setScaleY(0.0f);
             } else {
-                unlockButton.setVisibility(INVISIBLE);
+                unlockButton.setVisibility(GONE);
                 unlockButton.setAlpha(0.0f);
                 unlockButton.setScaleX(0.0f);
                 unlockButton.setScaleY(0.0f);

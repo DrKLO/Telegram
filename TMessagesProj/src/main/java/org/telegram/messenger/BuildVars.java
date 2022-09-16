@@ -12,21 +12,26 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 
+import com.android.billingclient.api.ProductDetails;
+
+import java.util.Objects;
+
 public class BuildVars {
 
-    public static boolean DEBUG_VERSION = false;
-    public static boolean LOGS_ENABLED = false;
+    public static boolean DEBUG_VERSION = true;
+    public static boolean LOGS_ENABLED = true;
     public static boolean DEBUG_PRIVATE_VERSION = false;
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = true;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
-    public static int BUILD_VERSION = 2757;
-    public static String BUILD_VERSION_STRING = "8.9.3";
+    public static int BUILD_VERSION = 2799;
+    public static String BUILD_VERSION_STRING = "9.0.0";
     public static int APP_ID = 4;
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
 
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
     public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=org.telegram.messenger";
+    public static String GOOGLE_AUTH_CLIENT_ID = "760348033671-81kmi3pi84p11ub8hp9a1funsv0rn2p9.apps.googleusercontent.com";
 
     public static String HUAWEI_APP_ID = "101184875";
 
@@ -41,7 +46,23 @@ public class BuildVars {
     }
 
     public static boolean useInvoiceBilling() {
-        return DEBUG_VERSION || isStandaloneApp() || isBetaApp() || isHuaweiStoreApp();
+        return DEBUG_VERSION || isStandaloneApp() || isBetaApp() || isHuaweiStoreApp() || hasDirectCurrency();
+    }
+
+    private static boolean hasDirectCurrency() {
+        if (!BillingController.getInstance().isReady() || BillingController.PREMIUM_PRODUCT_DETAILS == null) {
+            return false;
+        }
+        for (ProductDetails.SubscriptionOfferDetails offerDetails : BillingController.PREMIUM_PRODUCT_DETAILS.getSubscriptionOfferDetails()) {
+            for (ProductDetails.PricingPhase phase : offerDetails.getPricingPhases().getPricingPhaseList()) {
+                for (String cur : MessagesController.getInstance(UserConfig.selectedAccount).directPaymentsCurrency) {
+                    if (Objects.equals(phase.getPriceCurrencyCode(), cur)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static Boolean standaloneApp;

@@ -135,6 +135,7 @@ public class StarParticlesView extends View {
         public boolean checkTime = true;
         public boolean isCircle = true;
         public boolean useBlur = false;
+        public boolean forceMaxAlpha = false;
         public boolean roundEffect = true;
         public int type = -1;
         public String colorKey = Theme.key_premiumStartSmallStarsColor;
@@ -202,7 +203,7 @@ public class StarParticlesView extends View {
                     stars[i] = SvgHelper.getBitmap(res, size, size, ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30));
                     svg = true;
                     continue;
-                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) {
+                } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI || type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
                     int res;
                     if (i == 0) {
                         res = R.raw.premium_object_smile1;
@@ -285,7 +286,9 @@ public class StarParticlesView extends View {
                     if (roundEffect) {
                         paint1.setPathEffect(new CornerPathEffect(AndroidUtilities.dpf2(size1 / 5f)));
                     }
-                    if (useBlur) {
+                    if (forceMaxAlpha) {
+                        paint1.setAlpha(0xFF);
+                    } else if (useBlur) {
                         paint1.setAlpha(60);
                     } else {
                         paint1.setAlpha(120);
@@ -510,10 +513,11 @@ public class StarParticlesView extends View {
                     alpha = (int) (255 * ((50 + Utilities.fastRandom.nextInt(50)) / 100f));
                 }
                 if ((type == PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE && (starIndex == 1 || starIndex == 2)) ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
-                    type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS
                 ) {
                     randomRotate = (int) (45 * ((Utilities.fastRandom.nextInt() % 100) / 100f));
                 }
