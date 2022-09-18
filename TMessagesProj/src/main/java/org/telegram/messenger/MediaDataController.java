@@ -2508,6 +2508,9 @@ public class MediaDataController extends BaseController {
     private static long calcStickersHash(ArrayList<TLRPC.TL_messages_stickerSet> sets) {
         long acc = 0;
         for (int a = 0; a < sets.size(); a++) {
+            if (sets.get(a) == null) {
+                continue;
+            }
             TLRPC.StickerSet set = sets.get(a).set;
             if (set.archived) {
                 continue;

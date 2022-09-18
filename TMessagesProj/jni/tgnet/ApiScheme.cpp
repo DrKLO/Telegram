@@ -241,12 +241,9 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     if ((flags & 4) != 0) {
         base_lang_pack_version = stream->readInt32(&error);
     }
-    if ((flags & 4) != 0) {
-        base_lang_pack_version = stream->readInt32(&error);
+    if ((flags & 32768) != 0) {
+        reactions_default = std::unique_ptr<Reaction>(Reaction::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     }
-//    if ((flags & 32768) != 0) {
-//        reactions_default = std::unique_ptr<Reaction>(Reaction::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
-//    }
 }
 
 void TL_config::serializeToStream(NativeByteBuffer *stream) {

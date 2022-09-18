@@ -35149,9 +35149,9 @@ public class TLRPC {
             if ((flags & 4) != 0) {
                 base_lang_pack_version = stream.readInt32(exception);
             }
-//            if ((flags & 32768) != 0) {
-//                reactions_default = Reaction.TLdeserialize(stream, stream.readInt32(exception), exception);
-//            }
+            if ((flags & 32768) != 0) {
+                reactions_default = Reaction.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
@@ -35232,9 +35232,9 @@ public class TLRPC {
             if ((flags & 4) != 0) {
                 stream.writeInt32(base_lang_pack_version);
             }
-//            if ((flags & 32768) != 0) {
-//                reactions_default.serializeToStream(stream);
-//            }
+            if ((flags & 32768) != 0) {
+                reactions_default.serializeToStream(stream);
+            }
         }
     }
 

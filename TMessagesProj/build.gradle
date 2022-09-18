@@ -72,7 +72,7 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    defaultConfig.versionCode = 2759
+    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
 
     defaultConfig {
         minSdkVersion 16
