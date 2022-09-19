@@ -2454,7 +2454,7 @@ public class LoginActivity extends BaseFragment {
                 }
             }
 
-//            ConnectionsManager.getInstance(currentAccount).cleanup(false);
+            ConnectionsManager.getInstance(currentAccount).cleanup(false);
             TLRPC.TL_codeSettings settings = new TLRPC.TL_codeSettings();
             settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
             settings.allow_missed_call = simcardAvailable && allowCall;
