@@ -212,7 +212,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         if (miniButtonState == 0) {
             miniButtonState = 1;
             radialProgress.setProgress(0, false);
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_HIGH, 0);
             radialProgress.setMiniIcon(getMiniIconForCurrentState(), false, true);
             invalidate();
         } else if (miniButtonState == 1) {
@@ -229,7 +229,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     public void didPressedButton() {
         if (buttonState == 0) {
             if (miniButtonState == 0) {
-                FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+                FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             }
             if (MediaController.getInstance().findMessageInPlaylistAndPlay(currentMessageObject)) {
                 if (hasMiniProgress == 2 && miniButtonState != 1) {
@@ -250,7 +250,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             }
         } else if (buttonState == 2) {
             radialProgress.setProgress(0, false);
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, FileLoader.PRIORITY_NORMAL, 0);
             buttonState = 4;
             radialProgress.setIcon(getIconForCurrentState(), false, true);
             invalidate();
@@ -316,7 +316,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             }
         }
         if (cacheFile == null) {
-            cacheFile = FileLoader.getPathToAttach(currentMessageObject.getDocument());
+            cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(currentMessageObject.getDocument());
         }
         if (TextUtils.isEmpty(fileName)) {
             return;

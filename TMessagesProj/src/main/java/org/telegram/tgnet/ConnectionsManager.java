@@ -10,22 +10,22 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
-import com.google.android.exoplayer2.util.Log;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BaseController;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.EmuDetector;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.KeepAliveJob;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.StatsController;
 import org.telegram.messenger.UserConfig;
@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -116,10 +117,19 @@ public class ConnectionsManager extends BaseController {
         }
     };
 
+    private boolean forceTryIpV6;
+
     static {
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
         threadPoolExecutor.allowCoreThreadTimeOut(true);
         DNS_THREAD_POOL_EXECUTOR = threadPoolExecutor;
+    }
+
+    public void setForceTryIpV6(boolean forceTryIpV6) {
+        if (this.forceTryIpV6 != forceTryIpV6) {
+            this.forceTryIpV6 = forceTryIpV6;
+            checkConnection();
+        }
     }
 
     private static class ResolvedDomain {
@@ -141,7 +151,7 @@ public class ConnectionsManager extends BaseController {
 
     private static int lastClassGuid = 1;
     
-    private static volatile ConnectionsManager[] Instance = new ConnectionsManager[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final ConnectionsManager[] Instance = new ConnectionsManager[UserConfig.MAX_ACCOUNT_COUNT];
     public static ConnectionsManager getInstance(int num) {
         ConnectionsManager localInstance = Instance[num];
         if (localInstance == null) {
@@ -206,17 +216,27 @@ public class ConnectionsManager extends BaseController {
         String fingerprint = AndroidUtilities.getCertificateSHA256Fingerprint();
 
         int timezoneOffset = (TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings()) / 1000;
-
+        SharedPreferences mainPreferences;
+        if (currentAccount == 0) {
+            mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        } else {
+            mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
+        }
+        forceTryIpV6 = mainPreferences.getBoolean("forceTryIpV6", false);
         init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), enablePushConnection);
     }
 
     private String getRegId() {
         String pushString = SharedConfig.pushString;
+        if (!TextUtils.isEmpty(pushString) && SharedConfig.pushType == PushListenerController.PUSH_TYPE_HUAWEI) {
+            pushString = "huawei://" + pushString;
+        }
         if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(SharedConfig.pushStringStatus)) {
             pushString = SharedConfig.pushStringStatus;
         }
         if (TextUtils.isEmpty(pushString)) {
-            pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getCurrentTime() + "__";
+            String tag = SharedConfig.pushType == PushListenerController.PUSH_TYPE_FIREBASE ? "FIREBASE" : "HUAWEI";
+            pushString = SharedConfig.pushStringStatus = "__" + tag + "_GENERATING_SINCE_" + getCurrentTime() + "__";
         }
         return pushString;
     }
@@ -288,7 +308,12 @@ public class ConnectionsManager extends BaseController {
                         if (response != 0) {
                             NativeByteBuffer buff = NativeByteBuffer.wrap(response);
                             buff.reused = true;
-                            resp = object.deserializeResponse(buff, buff.readInt32(true), true);
+//                            try {
+                                resp = object.deserializeResponse(buff, buff.readInt32(true), true);
+//                            } catch (Exception e2) {
+//                                FileLog.fatal(e2);
+//                                return;
+//                            }
                         } else if (errorText != null) {
                             error = new TLRPC.TL_error();
                             error.code = errorCode;
@@ -296,6 +321,14 @@ public class ConnectionsManager extends BaseController {
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.e(object + " got error " + error.code + " " + error.text);
                             }
+                        }
+                        if (BuildVars.DEBUG_PRIVATE_VERSION && !getUserConfig().isClientActivated() && error != null && error.code == 400 && Objects.equals(error.text, "CONNECTION_NOT_INITED")) {
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
+                            }
+                            cleanup(true);
+                            sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
+                            return;
                         }
                         if (resp != null) {
                             resp.networkType = networkType;
@@ -407,13 +440,17 @@ public class ConnectionsManager extends BaseController {
         }
     }
 
-    public static void setRegId(String regId, String status) {
+    public static void setRegId(String regId, @PushListenerController.PushType int type, String status) {
         String pushString = regId;
+        if (!TextUtils.isEmpty(pushString) && type == PushListenerController.PUSH_TYPE_HUAWEI) {
+            pushString = "huawei://" + pushString;
+        }
         if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(status)) {
             pushString = status;
         }
         if (TextUtils.isEmpty(pushString)) {
-            pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getInstance(0).getCurrentTime() + "__";
+            String tag = type == PushListenerController.PUSH_TYPE_FIREBASE ? "FIREBASE" : "HUAWEI";
+            pushString = SharedConfig.pushStringStatus = "__" + tag + "_GENERATING_SINCE_" + getInstance(0).getCurrentTime() + "__";
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             native_setRegId(a, pushString);
@@ -744,7 +781,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     @SuppressLint("NewApi")
-    protected static byte getIpStrategy() {
+    protected byte getIpStrategy() {
         if (Build.VERSION.SDK_INT < 19) {
             return USE_IPV4_ONLY;
         }
@@ -810,6 +847,9 @@ public class ConnectionsManager extends BaseController {
                 }
             }
             if (hasIpv6) {
+                if (forceTryIpV6) {
+                    return USE_IPV6_ONLY;
+                }
                 if (hasStrangeIpv4) {
                     return USE_IPV4_IPV6_RANDOM;
                 }

@@ -69,11 +69,11 @@ public class FiltersView extends RecyclerListView {
     public final static int FILTER_INDEX_VOICE = 4;
 
     public final static MediaFilterData[] filters = new MediaFilterData[]{
-            new MediaFilterData(R.drawable.search_media, R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
-            new MediaFilterData(R.drawable.search_links, R.drawable.search_links_filled, LocaleController.getString("SharedLinksTab2", R.string.SharedLinksTab2), new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),
-            new MediaFilterData(R.drawable.search_files, R.drawable.search_files_filled, LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), new TLRPC.TL_inputMessagesFilterDocument(), FILTER_TYPE_FILES),
-            new MediaFilterData(R.drawable.search_music, R.drawable.search_music_filled, LocaleController.getString("SharedMusicTab2", R.string.SharedMusicTab2), new TLRPC.TL_inputMessagesFilterMusic(), FILTER_TYPE_MUSIC),
-            new MediaFilterData(R.drawable.search_voice, R.drawable.search_voice_filled, LocaleController.getString("SharedVoiceTab2", R.string.SharedVoiceTab2), new TLRPC.TL_inputMessagesFilterRoundVoice(), FILTER_TYPE_VOICE)
+            new MediaFilterData(R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
+            new MediaFilterData(R.drawable.search_links_filled, LocaleController.getString("SharedLinksTab2", R.string.SharedLinksTab2), new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),
+            new MediaFilterData(R.drawable.search_files_filled, LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), new TLRPC.TL_inputMessagesFilterDocument(), FILTER_TYPE_FILES),
+            new MediaFilterData(R.drawable.search_music_filled, LocaleController.getString("SharedMusicTab2", R.string.SharedMusicTab2), new TLRPC.TL_inputMessagesFilterMusic(), FILTER_TYPE_MUSIC),
+            new MediaFilterData(R.drawable.search_voice_filled, LocaleController.getString("SharedVoiceTab2", R.string.SharedVoiceTab2), new TLRPC.TL_inputMessagesFilterRoundVoice(), FILTER_TYPE_VOICE)
     };
 
     private ArrayList<MediaFilterData> usersFilters = new ArrayList<>();
@@ -235,7 +235,7 @@ public class FiltersView extends RecyclerListView {
                     } else {
                         title = ContactsController.formatName(user.first_name, user.last_name, 10);
                     }
-                    MediaFilterData data = new MediaFilterData(R.drawable.search_users, R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
+                    MediaFilterData data = new MediaFilterData(R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
                     data.setUser(user);
                     usersFilters.add(data);
                 } else if (object instanceof TLRPC.Chat) {
@@ -244,7 +244,7 @@ public class FiltersView extends RecyclerListView {
                     if (chat.title.length() > 12) {
                         title = String.format("%s...", title.substring(0, 10));
                     }
-                    MediaFilterData data = new MediaFilterData(R.drawable.search_users, R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
+                    MediaFilterData data = new MediaFilterData(R.drawable.search_users_filled, title, null, FILTER_TYPE_CHAT);
                     data.setUser(chat);
                     usersFilters.add(data);
                 }
@@ -253,13 +253,13 @@ public class FiltersView extends RecyclerListView {
         if (dates != null) {
             for (int i = 0; i < dates.size(); i++) {
                 DateData dateData = dates.get(i);
-                MediaFilterData data = new MediaFilterData(R.drawable.search_date, R.drawable.search_date_filled, dateData.title, null, FILTER_TYPE_DATE);
+                MediaFilterData data = new MediaFilterData(R.drawable.search_date_filled, dateData.title, null, FILTER_TYPE_DATE);
                 data.setDate(dateData);
                 usersFilters.add(data);
             }
         }
         if (archive) {
-            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, R.drawable.chats_archive, LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter), null, FiltersView.FILTER_TYPE_ARCHIVE);
+            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter), null, FiltersView.FILTER_TYPE_ARCHIVE);
             usersFilters.add(filterData);
         }
         if (getAdapter() != null) {
@@ -787,7 +787,6 @@ public class FiltersView extends RecyclerListView {
 
     public static class MediaFilterData {
 
-        public final int iconRes;
         public final int iconResFilled;
         public final String title;
         public final int filterType;
@@ -796,8 +795,7 @@ public class FiltersView extends RecyclerListView {
         public DateData dateData;
         public boolean removable = true;
 
-        public MediaFilterData(int iconRes, int iconResFilled, String title, TLRPC.MessagesFilter filter, int filterType) {
-            this.iconRes = iconRes;
+        public MediaFilterData(int iconResFilled, String title, TLRPC.MessagesFilter filter, int filterType) {
             this.iconResFilled = iconResFilled;
             this.title = title;
             this.filter = filter;

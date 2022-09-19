@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">Expulsar usuario</string>
     <string name="DeleteReportSpam">Reportar spam</string>
     <string name="DeleteAllFrom">Eliminar todo lo de %1$s</string>
-    <string name="ClearRecentEmoji">¿Borrar los emojis recientes?</string>
+    <string name="ClearRecentEmojiTitle">Borrar los emojis recientes</string>
     <string name="Emoji1">Emoticonos y personas</string>
     <string name="Emoji2">Animales y naturaleza</string>
     <string name="Emoji3">Comida y bebida</string>
@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">Quitaste **%1$s** de **%2$s**</string>
     <string name="FilterChatsRemovedFrom">Quitaste **%1$s** de **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">Límite alcanzado</string>
-    <string name="FilterRemoveFromAlertFullText">No puedes añadir más de 100 chats a una carpeta.</string>
     <string name="FilterAddToAlertFullText">No puedes excluir más de 100 chats de una carpeta.</string>
     <!--passcode view-->
     <string name="Passcode">Código de bloqueo</string>

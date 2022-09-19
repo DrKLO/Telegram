@@ -68,7 +68,6 @@ import org.json.JSONObject;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
@@ -79,6 +78,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MrzRecognizer;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SecureDocument;
@@ -210,7 +210,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private ArrayList<TLRPC.TL_secureRequiredType> availableDocumentTypes;
     private TLRPC.TL_secureValue currentTypeValue;
     private TLRPC.TL_secureValue currentDocumentsTypeValue;
-    private TLRPC.TL_account_password currentPassword;
+    private TLRPC.account_Password currentPassword;
     private TLRPC.TL_auth_sentCode currentPhoneVerification;
 
     private ActionBarMenuItem doneItem;
@@ -588,7 +588,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         public void updateButtonState(boolean animated) {
             String fileName = FileLoader.getAttachFileName(currentSecureDocument);
-            File path = FileLoader.getPathToAttach(currentSecureDocument);
+            File path = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(currentSecureDocument);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
                 radialProgress.setBackground(null, false, false);
@@ -666,7 +666,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, long botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword) {
+    public PassportActivity(int type, long botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.account_Password accountPassword) {
         this(type, form, accountPassword, null, null, null, null, null, null);
         currentBotId = botId;
         currentPayload = payload;
@@ -844,7 +844,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword, TLRPC.TL_secureRequiredType secureType, TLRPC.TL_secureValue secureValue, TLRPC.TL_secureRequiredType secureDocumentsType, TLRPC.TL_secureValue secureDocumentsValue, HashMap<String, String> values, HashMap<String, String> documentValues) {
+    public PassportActivity(int type, TLRPC.TL_account_authorizationForm form, TLRPC.account_Password accountPassword, TLRPC.TL_secureRequiredType secureType, TLRPC.TL_secureValue secureValue, TLRPC.TL_secureRequiredType secureDocumentsType, TLRPC.TL_secureValue secureDocumentsValue, HashMap<String, String> values, HashMap<String, String> documentValues) {
         super();
         currentActivityType = type;
         currentForm = form;
@@ -1215,9 +1215,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 return;
                             }
                         } else if (currentActivityType == TYPE_EMAIL_VERIFICATION) {
-                            final TLRPC.TL_account_verifyEmail req = new TLRPC.TL_account_verifyEmail();
-                            req.email = currentValues.get("email");
-                            req.code = inputFields[FIELD_EMAIL].getText().toString();
+                            TLRPC.TL_account_verifyEmail req = new TLRPC.TL_account_verifyEmail();
+                            req.purpose = new TLRPC.TL_emailVerifyPurposePassport();
+                            TLRPC.TL_emailVerificationCode code = new TLRPC.TL_emailVerificationCode();
+                            code.code = inputFields[FIELD_EMAIL].getText().toString();
+                            req.verification = code;
                             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                                 if (error == null) {
                                     delegate.saveValue(currentType, currentValues.get("email"), null, null, null, null, null, null, null, null, finishRunnable, errorRunnable);
@@ -1287,7 +1289,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         if (currentActivityType != TYPE_REQUEST && currentActivityType != TYPE_MANAGE) {
             ActionBarMenu menu = actionBar.createMenu();
-            doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
+            doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
             progressView = new ContextProgressView(context, 1);
             progressView.setAlpha(0.0f);
             progressView.setScaleX(0.1f);
@@ -1411,7 +1413,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
         int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
-                currentPassword = (TLRPC.TL_account_password) response;
+                currentPassword = (TLRPC.account_Password) response;
                 if (!TwoStepVerificationActivity.canHandleCurrentPassword(currentPassword, false)) {
                     AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
                     return;
@@ -1755,7 +1757,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                             ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                 if (error2 == null) {
-                                    currentPassword = (TLRPC.TL_account_password) response2;
+                                    currentPassword = (TLRPC.account_Password) response2;
                                     TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                     resetSecret();
                                 }
@@ -1801,7 +1803,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                                 ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                     if (error2 == null) {
-                                        currentPassword = (TLRPC.TL_account_password) response2;
+                                        currentPassword = (TLRPC.account_Password) response2;
                                         TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                         generateNewSecret();
                                     }
@@ -1822,7 +1824,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
                         ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                             if (error2 == null) {
-                                currentPassword = (TLRPC.TL_account_password) response2;
+                                currentPassword = (TLRPC.account_Password) response2;
                                 TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                 onPasswordDone(saved);
                             }
@@ -1989,7 +1991,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         actionBar.setTitle(LocaleController.getString("TelegramPassport", R.string.TelegramPassport));
 
-        actionBar.createMenu().addItem(info_item, R.drawable.profile_info);
+        actionBar.createMenu().addItem(info_item, R.drawable.msg_info);
 
         if (botUser != null) {
             FrameLayout avatarContainer = new FrameLayout(context);
@@ -2419,7 +2421,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         actionBar.setTitle(LocaleController.getString("TelegramPassport", R.string.TelegramPassport));
 
-        actionBar.createMenu().addItem(info_item, R.drawable.profile_info);
+        actionBar.createMenu().addItem(info_item, R.drawable.msg_info);
 
         headerCell = new HeaderCell(context);
         headerCell.setText(LocaleController.getString("PassportProvidedInformation", R.string.PassportProvidedInformation));
@@ -4871,7 +4873,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 currentPhotoViewerLayout = documentsLayout;
             }
             SecureDocument document1 = (SecureDocument) v.getTag();
-            PhotoViewer.getInstance().setParentActivity(getParentActivity());
+            PhotoViewer.getInstance().setParentActivity(PassportActivity.this);
             if (type == UPLOADING_TYPE_SELFIE) {
                 ArrayList<SecureDocument> arrayList = new ArrayList<>();
                 arrayList.add(selfieDocument);
@@ -5521,9 +5523,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 private void renameFile(SecureDocument oldDocument, TLRPC.TL_secureFile newSecureFile) {
-                    File oldFile = FileLoader.getPathToAttach(oldDocument);
+                    File oldFile = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(oldDocument);
                     String oldKey = oldDocument.secureFile.dc_id + "_" + oldDocument.secureFile.id;
-                    File newFile = FileLoader.getPathToAttach(newSecureFile);
+                    File newFile = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(newSecureFile);
                     String newKey = newSecureFile.dc_id + "_" + newSecureFile.id;
                     oldFile.renameTo(newFile);
                     ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, null, false);
@@ -5716,6 +5718,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             if (error != null) {
                                 if (error.text.equals("EMAIL_VERIFICATION_NEEDED")) {
                                     TLRPC.TL_account_sendVerifyEmailCode req = new TLRPC.TL_account_sendVerifyEmailCode();
+                                    req.purpose = new TLRPC.TL_emailVerifyPurposePassport();
                                     req.email = text;
                                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
                                         if (response1 != null) {
@@ -6295,7 +6298,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         req.phone_number = phone;
         req.settings = new TLRPC.TL_codeSettings();
         req.settings.allow_flashcall = simcardAvailable && allowCall;
-        req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
+        req.settings.allow_app_hash = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         if (req.settings.allow_app_hash) {
             preferences.edit().putString("sms_hash", BuildVars.SMS_HASH).commit();
@@ -6891,7 +6894,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 File image = AndroidUtilities.generatePicturePath();
                 if (image != null) {
                     if (Build.VERSION.SDK_INT >= 24) {
-                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", image));
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(getParentActivity(), ApplicationLoader.getApplicationId() + ".provider", image));
                         takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     } else {

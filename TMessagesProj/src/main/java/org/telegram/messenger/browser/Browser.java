@@ -26,7 +26,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
@@ -49,6 +48,7 @@ import org.telegram.ui.LaunchActivity;
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.regex.Matcher;
 
 public class Browser {
 
@@ -329,7 +329,7 @@ public class Browser {
 
                     builder.setToolbarColor(Theme.getColor(Theme.key_actionBarBrowser));
                     builder.setShowTitle(true);
-                    builder.setActionButton(BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha), LocaleController.getString("ShareFile", R.string.ShareFile), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, share, 0), true);
+                    builder.setActionButton(BitmapFactory.decodeResource(context.getResources(), R.drawable.msg_filled_shareout), LocaleController.getString("ShareFile", R.string.ShareFile), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, share, 0), true);
                     CustomTabsIntent intent = builder.build();
                     intent.setUseNewTask();
                     intent.launchUrl(context, uri);
@@ -383,6 +383,15 @@ public class Browser {
     public static boolean isInternalUri(Uri uri, boolean all, boolean[] forceBrowser) {
         String host = uri.getHost();
         host = host != null ? host.toLowerCase() : "";
+
+        Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
+        if (prefixMatcher.find()) {
+            uri = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
+
+            host = uri.getHost();
+            host = host != null ? host.toLowerCase() : "";
+        }
+
         if ("ton".equals(uri.getScheme())) {
             try {
                 Intent viewIntent = new Intent(Intent.ACTION_VIEW, uri);

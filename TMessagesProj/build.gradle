@@ -1,4 +1,4 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 repositories {
     mavenCentral()
@@ -37,7 +37,7 @@ dependencies {
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation 'com.google.mlkit:language-id:16.1.1'
-    implementation files('libs/libgsaverification-client.aar')
+    implementation 'com.android.billingclient:billing:5.0.0'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }
@@ -46,9 +46,7 @@ android {
     compileSdkVersion 31
     buildToolsVersion '31.0.0'
     ndkVersion "21.4.7075529"
-
     defaultConfig.applicationId = "org.chatengine.messenger"
-
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
     externalNativeBuild {
@@ -74,19 +72,22 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    signingConfigs {
-        debug {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
-        }
+    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
 
-        release {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 30
+        versionName "8.9.0"
+
+        vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
+
+        multiDexEnabled true
+
+        externalNativeBuild {
+            cmake {
+                version '3.10.2'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+            }
         }
     }
 
@@ -94,240 +95,39 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
-
-        /*debugAsan {
-            debuggable true
-            jniDebuggable true
-            signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
-            minifyEnabled true
-            multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-
-            packagingOptions {
-                doNotStrip "**.so"
-            }
-
-            sourceSets {
-                main {
-                    jniLibs {
-                        srcDir {
-                            'jniLibs'
-                        }
-                    }
-                    resources {
-                        srcDir {
-                            'jniRes'
-                        }
-                    }
-                }
-            }
-        }*/
 
         HA {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
             minifyEnabled true
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
 
         standalone {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
-            applicationIdSuffix ".web"
             minifyEnabled true
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
 
         release {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources false
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
-        }
-    }
-
-    sourceSets.debug {
-        manifest.srcFile 'config/debug/AndroidManifest.xml'
-    }
-
-    /*sourceSets.debugAsan {
-        manifest.srcFile 'config/debug/AndroidManifest.xml'
-    }*/
-
-    sourceSets.HA {
-        manifest.srcFile 'config/debug/AndroidManifest.xml'
-    }
-
-    sourceSets.standalone {
-        manifest.srcFile 'config/release/AndroidManifest.xml'
-    }
-
-    sourceSets.release {
-        manifest.srcFile 'config/release/AndroidManifest.xml'
-    }
-
-    flavorDimensions "minApi"
-
-    productFlavors {
-        armv7 {
-            ndk {
-                abiFilters "armeabi-v7a"
-            }
-            ext {
-                abiVersionCode = 1
-            }
-        }
-        x86 {
-            ndk {
-                abiFilters "x86"
-            }
-            ext {
-                abiVersionCode = 2
-            }
-        }
-        armv7_SDK23 {
-            ndk {
-                abiFilters "armeabi-v7a"
-            }
-            sourceSets.debug {
-                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.release {
-                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
-            }
-            minSdkVersion 23
-            ext {
-                abiVersionCode = 3
-            }
-        }
-        x86_SDK23 {
-            ndk {
-                abiFilters "x86"
-            }
-            sourceSets.debug {
-                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.release {
-                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
-            }
-            minSdkVersion 23
-            ext {
-                abiVersionCode = 4
-            }
-        }
-        arm64 {
-            ndk {
-                abiFilters "arm64-v8a"
-            }
-            ext {
-                abiVersionCode = 5
-            }
-        }
-        x64 {
-            ndk {
-                abiFilters "x86_64"
-            }
-            ext {
-                abiVersionCode = 6
-            }
-        }
-        arm64_SDK23 {
-            ndk {
-                abiFilters "arm64-v8a"
-            }
-            sourceSets.debug {
-                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.release {
-                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
-            }
-            minSdkVersion 23
-            ext {
-                abiVersionCode = 7
-            }
-        }
-        x64_SDK23 {
-            ndk {
-                abiFilters "x86_64"
-            }
-            sourceSets.debug {
-                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.release {
-                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
-            }
-            minSdkVersion 23
-            ext {
-                abiVersionCode = 8
-            }
-        }
-        afat {
-            ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            }
-            sourceSets.debug {
-                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.release {
-                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.standalone {
-                manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
-            }
-            ext {
-                abiVersionCode = 9
-            }
-        }
-    }
-
-    defaultConfig.versionCode = 2636
-
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            outputFileName = "app.apk"
-            output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
-        }
-    }
-
-    variantFilter { variant ->
-        def names = variant.flavors*.name
-        if (variant.buildType.name != "release" && !names.contains("afat")) {
-            setIgnore(true)
-        }
-    }
-
-    defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 30
-        versionName "8.7.4"
-
-        vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
-
-        externalNativeBuild {
-            cmake {
-                version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
-            }
         }
     }
 }

@@ -249,6 +249,16 @@ public class ClippingImageView extends View {
         orientation = angle;
     }
 
+    public float getCenterX() {
+        float scaleY = getScaleY();
+        return getTranslationX() + (clipLeft / scaleY + (getWidth() - clipRight / scaleY)) / 2 * getScaleX();
+    }
+
+    public float getCenterY() {
+        float scaleY = getScaleY();
+        return getTranslationY() + (clipTop / scaleY + (getHeight() - clipBottom / scaleY)) / 2 * getScaleY();
+    }
+
     public void setImageBitmap(ImageReceiver.BitmapHolder bitmap) {
         if (bmp != null) {
             bmp.release();

@@ -161,9 +161,11 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                     } else {
                         statusTextView.setText("");
                         Utilities.globalQueue.postRunnable(() -> {
-                            formattedPhoneNumber = PhoneFormat.getInstance().format("+" + currentUser.phone);
-                            formattedPhoneNumberUser = currentUser;
-                            AndroidUtilities.runOnUIThread(() -> statusTextView.setText(formattedPhoneNumber));
+                            if (currentUser != null) {
+                                formattedPhoneNumber = PhoneFormat.getInstance().format("+" + currentUser.phone);
+                                formattedPhoneNumberUser = currentUser;
+                                AndroidUtilities.runOnUIThread(() -> statusTextView.setText(formattedPhoneNumber));
+                            }
                         });
                     }
                 }

@@ -20,6 +20,7 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -74,7 +75,7 @@ public class ChangeBioActivity extends BaseFragment {
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56));
         doneButton.setContentDescription(LocaleController.getString("Done", R.string.Done));
 
         fragmentView = new LinearLayout(context);
@@ -85,7 +86,15 @@ public class ChangeBioActivity extends BaseFragment {
         FrameLayout fieldContainer = new FrameLayout(context);
         linearLayout.addView(fieldContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 24, 20, 0));
 
-        firstNameField = new EditTextBoldCursor(context);
+        firstNameField = new EditTextBoldCursor(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                Editable s = getEditableText();
+                int number = getMessagesController().getAboutLimit() - Character.codePointCount(s, 0, s.length());
+                info.setText(getText() + ", " + LocaleController.formatPluralString("PeopleJoinedRemaining", number));
+            }
+        };
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         firstNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         firstNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -98,7 +107,7 @@ public class ChangeBioActivity extends BaseFragment {
         firstNameField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
         InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new CodepointsLengthInputFilter(70) {
+        inputFilters[0] = new CodepointsLengthInputFilter(getMessagesController().getAboutLimit()) {
             @Override
             public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
                 if (source != null && source.length() > 0 && TextUtils.indexOf(source, '\n') == source.length() - 1) {
@@ -142,7 +151,7 @@ public class ChangeBioActivity extends BaseFragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                checkTextView.setNumber(70 - Character.codePointCount(s, 0, s.length()), true);
+                checkTextView.setNumber(getMessagesController().getAboutLimit() - Character.codePointCount(s, 0, s.length()), true);
             }
         });
 
@@ -151,10 +160,10 @@ public class ChangeBioActivity extends BaseFragment {
         checkTextView = new NumberTextView(context);
         checkTextView.setCenterAlign(true);
         checkTextView.setTextSize(15);
-        checkTextView.setNumber(70, false);
+        checkTextView.setNumber(getMessagesController().getAboutLimit(), false);
         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         checkTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        fieldContainer.addView(checkTextView, LayoutHelper.createFrame(20, 20, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT, 0, 4, 4, 0));
+        fieldContainer.addView(checkTextView, LayoutHelper.createFrame(26, 20, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT, 0, 4, 4, 0));
 
         helpTextView = new TextView(context);
         helpTextView.setFocusable(true);

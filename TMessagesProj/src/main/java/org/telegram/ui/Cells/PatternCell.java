@@ -35,6 +35,8 @@ import java.io.File;
 
 public class PatternCell extends BackupImageView implements DownloadController.FileDownloadProgressListener {
 
+    private final int SIZE = 100;
+
     private RectF rect = new RectF();
     private RadialProgress2 radialProgress;
     private boolean wasSelected;
@@ -76,7 +78,7 @@ public class PatternCell extends BackupImageView implements DownloadController.F
         radialProgress = new RadialProgress2(this);
         radialProgress.setProgressRect(AndroidUtilities.dp(30), AndroidUtilities.dp(30), AndroidUtilities.dp(70), AndroidUtilities.dp(70));
 
-        backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
@@ -94,8 +96,8 @@ public class PatternCell extends BackupImageView implements DownloadController.F
     public void setPattern(TLRPC.TL_wallPaper wallPaper) {
         currentPattern = wallPaper;
         if (wallPaper != null) {
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 100);
-            setImage(ImageLocation.getForDocument(thumb, wallPaper.document), "100_100", null, null, "jpg", 0, 1, wallPaper);
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, AndroidUtilities.dp(SIZE));
+            setImage(ImageLocation.getForDocument(thumb, wallPaper.document), SIZE + "_" + SIZE, null, null, "png", 0, 1, wallPaper);
         } else {
             setImageDrawable(null);
         }
@@ -135,12 +137,12 @@ public class PatternCell extends BackupImageView implements DownloadController.F
                 if (TextUtils.isEmpty(fileName)) {
                     return;
                 }
-                path = FileLoader.getPathToAttach(wallPaper.document, true);
+                path = FileLoader.getInstance(currentAccount).getPathToAttach(wallPaper.document, true);
             } else {
                 MediaController.SearchImage wallPaper = (MediaController.SearchImage) image;
                 if (wallPaper.photo != null) {
                     TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, maxWallpaperSize, true);
-                    path = FileLoader.getPathToAttach(photoSize, true);
+                    path = FileLoader.getInstance(currentAccount).getPathToAttach(photoSize, true);
                     fileName = FileLoader.getAttachFileName(photoSize);
                 } else {
                     path = ImageLoader.getHttpFilePath(wallPaper.imageUrl, "jpg");
@@ -245,7 +247,7 @@ public class PatternCell extends BackupImageView implements DownloadController.F
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(AndroidUtilities.dp(100), AndroidUtilities.dp(100));
+        setMeasuredDimension(AndroidUtilities.dp(SIZE), AndroidUtilities.dp(SIZE));
     }
 
     @Override

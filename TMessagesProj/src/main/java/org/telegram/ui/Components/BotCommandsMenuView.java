@@ -79,6 +79,7 @@ public class BotCommandsMenuView extends View {
         backDrawable.setRoundCap();
         backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         backgroundDrawable.setCallback(this);
+        setContentDescription(LocaleController.getString("AccDescrBotMenu", R.string.AccDescrBotMenu));
     }
 
     public void setDrawBackgroundDrawable(boolean drawBackgroundDrawable) {
@@ -89,16 +90,14 @@ public class BotCommandsMenuView extends View {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-
-        webViewAnimation.addParentView(this);
+        webViewAnimation.setMasterParent(this);
         webViewAnimation.setCurrentParentView(this);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-
-        webViewAnimation.removeParentView(this);
+        webViewAnimation.setMasterParent(this);
     }
 
     public void setWebView(boolean webView) {
@@ -205,13 +204,15 @@ public class BotCommandsMenuView extends View {
 
     }
 
-    public void setMenuText(String menuText) {
+    public boolean setMenuText(String menuText) {
         if (menuText == null) {
             menuText = LocaleController.getString(R.string.BotsMenuTitle);
         }
+        boolean changed = this.menuText == null || !this.menuText.equals(menuText);
         this.menuText = menuText;
         menuTextLayout = null;
         requestLayout();
+        return changed;
     }
 
     public void setExpanded(boolean expanded, boolean animated) {
@@ -277,11 +278,7 @@ public class BotCommandsMenuView extends View {
                     TLRPC.TL_botCommand botCommand = info.commands.get(a);
                     if (botCommand != null && botCommand.command != null) {
                         newResult.add("/" + botCommand.command);
-                        if (botCommand.description != null && botCommand.description.length() > 1) {
-                            newResultHelp.add(botCommand.description.substring(0, 1).toUpperCase() + botCommand.description.substring(1).toLowerCase());
-                        } else {
-                            newResultHelp.add(botCommand.description);
-                        }
+                        newResultHelp.add(botCommand.description);
                     }
                 }
             }
@@ -296,9 +293,6 @@ public class BotCommandsMenuView extends View {
         if (isWebView) {
             if (isWebViewOpened != opened) {
                 RLottieDrawable drawable = webViewAnimation;
-                if (!drawable.hasParentView()) {
-                    drawable.addParentView(this);
-                }
                 drawable.stop();
                 drawable.setPlayInDirectionOfCustomEndFrame(true);
                 drawable.setCustomEndFrame(opened ? drawable.getFramesCount() : 1);

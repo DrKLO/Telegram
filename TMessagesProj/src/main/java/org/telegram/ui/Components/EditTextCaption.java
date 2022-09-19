@@ -9,6 +9,8 @@
 package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -17,6 +19,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Layout;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -37,10 +41,12 @@ import android.widget.FrameLayout;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.utils.CopyUtilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -95,6 +101,7 @@ public class EditTextCaption extends EditTextBoldCursor {
                 }
             }
         });
+        setClipToPadding(true);
     }
 
     protected void onLineCountChanged(int oldLineCount, int newLineCount) {
@@ -198,14 +205,16 @@ public class EditTextCaption extends EditTextBoldCursor {
             if (spans != null && spans.length > 0) {
                 for (int a = 0; a < spans.length; a++) {
                     CharacterStyle oldSpan = spans[a];
-                    int spanStart = editable.getSpanStart(oldSpan);
-                    int spanEnd = editable.getSpanEnd(oldSpan);
-                    editable.removeSpan(oldSpan);
-                    if (spanStart < start) {
-                        editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    }
-                    if (spanEnd > end) {
-                        editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (!(oldSpan instanceof AnimatedEmojiSpan)) {
+                        int spanStart = editable.getSpanStart(oldSpan);
+                        int spanEnd = editable.getSpanEnd(oldSpan);
+                        editable.removeSpan(oldSpan);
+                        if (spanStart < start) {
+                            editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        if (spanEnd > end) {
+                            editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
                     }
                 }
             }
@@ -275,11 +284,20 @@ public class EditTextCaption extends EditTextBoldCursor {
         }
     }
 
+    protected void onContextMenuOpen() {
+
+    }
+
+    protected void onContextMenuClose() {
+
+    }
+
     private ActionMode.Callback overrideCallback(final ActionMode.Callback callback) {
         ActionMode.Callback wrap = new ActionMode.Callback() {
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 copyPasteShowed = true;
+                onContextMenuOpen();
                 return callback.onCreateActionMode(mode, menu);
             }
 
@@ -305,6 +323,7 @@ public class EditTextCaption extends EditTextBoldCursor {
             @Override
             public void onDestroyActionMode(ActionMode mode) {
                 copyPasteShowed = false;
+                onContextMenuClose();
                 callback.onDestroyActionMode(mode);
             }
         };
@@ -503,5 +522,60 @@ public class EditTextCaption extends EditTextBoldCursor {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    @Override
+    public boolean onTextContextMenuItem(int id) {
+        if (id == android.R.id.paste) {
+            ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clipData = clipboard.getPrimaryClip();
+            if (clipData != null && clipData.getItemCount() == 1 && clipData.getDescription().hasMimeType("text/html")) {
+                try {
+                    String html = clipData.getItemAt(0).getHtmlText();
+                    Spannable pasted = CopyUtilities.fromHTML(html);
+                    Emoji.replaceEmoji(pasted, getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false, null, true);
+                    AnimatedEmojiSpan[] spans = pasted.getSpans(0, pasted.length(), AnimatedEmojiSpan.class);
+                    if (spans != null) {
+                        for (int k = 0; k < spans.length; ++k) {
+                            spans[k].applyFontMetrics(getPaint().getFontMetricsInt(), AnimatedEmojiDrawable.getCacheTypeForEnterView());
+                        }
+                    }
+                    int start = Math.max(0, getSelectionStart());
+                    int end   = Math.min(getText().length(), getSelectionEnd());
+                    setText(getText().replace(start, end, pasted));
+                    setSelection(start + pasted.length(), start + pasted.length());
+                    return true;
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        } else if (id == android.R.id.copy) {
+            int start = Math.max(0, getSelectionStart());
+            int end = Math.min(getText().length(), getSelectionEnd());
+            try {
+                AndroidUtilities.addToClipboard(getText().subSequence(start, end));
+                return true;
+            } catch (Exception e) {
+
+            }
+        } else if (id == android.R.id.cut) {
+            int start = Math.max(0, getSelectionStart());
+            int end = Math.min(getText().length(), getSelectionEnd());
+            try {
+                AndroidUtilities.addToClipboard(getText().subSequence(start, end));
+                SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
+                if (start != 0) {
+                    stringBuilder.append(getText().subSequence(0, start));
+                }
+                if (end != getText().length()) {
+                    stringBuilder.append(getText().subSequence(end, getText().length()));
+                }
+                setText(stringBuilder);
+                return true;
+            } catch (Exception e) {
+
+            }
+        }
+        return super.onTextContextMenuItem(id);
     }
 }

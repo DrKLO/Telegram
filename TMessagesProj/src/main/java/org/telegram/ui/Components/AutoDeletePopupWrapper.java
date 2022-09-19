@@ -52,7 +52,7 @@ public class AutoDeletePopupWrapper {
         item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_customize, LocaleController.getString("AutoDeleteCustom", R.string.AutoDeleteCustom), false, resourcesProvider);
         item.setOnClickListener(view -> {
             dismiss();
-            AlertsCreator.createAutoDeleteDatePickerDialog(context, (notify, timeInMinutes) -> {
+            AlertsCreator.createAutoDeleteDatePickerDialog(context, resourcesProvider, (notify, timeInMinutes) -> {
                 callback.setAutoDeleteHistory(timeInMinutes * 60, timeInMinutes == 0 ? UndoView.ACTION_AUTO_DELETE_OFF : UndoView.ACTION_AUTO_DELETE_ON);
             });
         });
@@ -63,9 +63,8 @@ public class AutoDeletePopupWrapper {
         });
         disableItem.setColors(Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogTextRed2));
 
-
         View gap = new FrameLayout(context);
-        gap.setBackgroundColor(Theme.getColor(Theme.key_graySection));
+        gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
         gap.setTag(R.id.fit_width_tag, 1);
         windowLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 

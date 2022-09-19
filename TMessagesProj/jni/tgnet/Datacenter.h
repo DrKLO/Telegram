@@ -58,6 +58,7 @@ public:
     bool isExportingAuthorization();
     bool hasMediaAddress();
     void resetInitVersion();
+    bool isRepeatCheckingAddresses();
 
     Connection *getDownloadConnection(uint8_t num, bool create);
     Connection *getProxyConnection(uint8_t num, bool create, bool connect);
@@ -121,6 +122,7 @@ private:
     int64_t authKeyMediaTempId = 0;
     Config *config = nullptr;
     bool isCdnDatacenter = false;
+    bool repeatCheckingAddresses = false;
 
     std::vector<std::unique_ptr<Handshake>> handshakes;
 

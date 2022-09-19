@@ -37,6 +37,10 @@ public class FlickerLoadingView extends View {
     public final static int REACTED_TYPE = 16;
     public final static int QR_TYPE = 17;
     public final static int CONTACT_TYPE = 18;
+    public final static int STICKERS_TYPE = 19;
+    public final static int LIMIT_REACHED_GROUPS = 21;
+    public final static int LIMIT_REACHED_LINKS = 22;
+    public final static int REACTED_TYPE_WITH_EMOJI_HINT = 23;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -71,6 +75,7 @@ public class FlickerLoadingView extends View {
     private float parentXOffset;
 
     FlickerLoadingView globalGradientView;
+    private boolean ignoreHeightCheck;
 
     public void setViewType(int type) {
         this.viewType = type;
@@ -116,20 +121,20 @@ public class FlickerLoadingView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (isSingleCell) {
-            if (itemsCount > 1 && ignoreHeightCheck()) {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount, MeasureSpec.EXACTLY));
+            if (itemsCount > 1 && ignoreHeightCheck) {
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount + getAdditionalHeight(), MeasureSpec.EXACTLY));
             } else if (itemsCount > 1 && MeasureSpec.getSize(heightMeasureSpec) > 0) {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(MeasureSpec.getSize(heightMeasureSpec), getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount), MeasureSpec.EXACTLY));
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(MeasureSpec.getSize(heightMeasureSpec), getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) * itemsCount) + getAdditionalHeight(), MeasureSpec.EXACTLY));
             } else {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY));
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)) + getAdditionalHeight(), MeasureSpec.EXACTLY));
             }
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
     }
 
-    private boolean ignoreHeightCheck() {
-        return viewType == CONTACT_TYPE;
+    public int getAdditionalHeight() {
+        return 0;
     }
 
     @Override
@@ -204,6 +209,30 @@ public class FlickerLoadingView extends View {
                 canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                 rectF.set(AndroidUtilities.dp(textStart), h + AndroidUtilities.dp(42), AndroidUtilities.dp(textStart + 64), h + AndroidUtilities.dp(50));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                canvas.drawLine(AndroidUtilities.dp(textStart), h + getCellHeight(getMeasuredWidth()), getMeasuredWidth(), h + getCellHeight(getMeasuredWidth()), paint);
+
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
+        } else if (getViewType() == STICKERS_TYPE) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                int r = AndroidUtilities.dp(20);
+                canvas.drawCircle(checkRtl(paddingLeft + AndroidUtilities.dp(9) + r), h + AndroidUtilities.dp(29), r, paint);
+
+                int textStart = 76;
+                int titleWidth = k % 2 == 0 ? 92 : 128;
+                rectF.set(AndroidUtilities.dp(textStart), h + AndroidUtilities.dp(16), AndroidUtilities.dp(textStart + titleWidth), h + AndroidUtilities.dp(24));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                rectF.set(AndroidUtilities.dp(textStart), h + AndroidUtilities.dp(38), AndroidUtilities.dp(textStart + 164), h + AndroidUtilities.dp(46));
                 checkRtl(rectF);
                 canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
@@ -537,7 +566,7 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
-        } else if (getViewType() == REACTED_TYPE) {
+        } else if (getViewType() == REACTED_TYPE || getViewType() == REACTED_TYPE_WITH_EMOJI_HINT) {
             int k = 0;
             while (h <= getMeasuredHeight()) {
                 int r = AndroidUtilities.dp(18);
@@ -551,6 +580,54 @@ public class FlickerLoadingView extends View {
                     r = AndroidUtilities.dp(12);
                     canvas.drawCircle(checkRtl(getWidth() - AndroidUtilities.dp(12) - r), h + AndroidUtilities.dp(24), r, paint);
                 }
+
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
+            rectF.set(paddingLeft + AndroidUtilities.dp(8), h + AndroidUtilities.dp(20), getWidth() - AndroidUtilities.dp(8), h + AndroidUtilities.dp(28));
+            checkRtl(rectF);
+            canvas.drawRoundRect(rectF, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
+
+            rectF.set(paddingLeft + AndroidUtilities.dp(8), h + AndroidUtilities.dp(36), getWidth() - AndroidUtilities.dp(53), h + AndroidUtilities.dp(44));
+            checkRtl(rectF);
+            canvas.drawRoundRect(rectF, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
+
+        } else if (viewType == LIMIT_REACHED_GROUPS) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                int r = AndroidUtilities.dp(46) >> 1;
+                canvas.drawCircle(checkRtl(AndroidUtilities.dp(20) + r), h + (AndroidUtilities.dp(58) >> 1), r, paint);
+
+                rectF.set(AndroidUtilities.dp(74), h + AndroidUtilities.dp(16), AndroidUtilities.dp(140), h + AndroidUtilities.dp(24));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                rectF.set(AndroidUtilities.dp(74), h + AndroidUtilities.dp(38), AndroidUtilities.dp(260), h + AndroidUtilities.dp(46));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
+        }  else if (viewType == LIMIT_REACHED_LINKS) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                int r = AndroidUtilities.dp(48) >> 1;
+                canvas.drawCircle(checkRtl(AndroidUtilities.dp(20) + r), h + AndroidUtilities.dp(6) + r, r, paint);
+
+                rectF.set(AndroidUtilities.dp(76), h + AndroidUtilities.dp(16), AndroidUtilities.dp(140), h + AndroidUtilities.dp(24));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                rectF.set(AndroidUtilities.dp(76), h + AndroidUtilities.dp(38), AndroidUtilities.dp(260), h + AndroidUtilities.dp(46));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                 h += getCellHeight(getMeasuredWidth());
                 k++;
@@ -649,6 +726,8 @@ public class FlickerLoadingView extends View {
                 return AndroidUtilities.dp(56);
             case LINKS_TYPE:
                 return AndroidUtilities.dp(80);
+            case STICKERS_TYPE:
+                return AndroidUtilities.dp(58);
             case USERS_TYPE:
             case CONTACT_TYPE:
                 return AndroidUtilities.dp(64);
@@ -664,8 +743,13 @@ public class FlickerLoadingView extends View {
                 return AndroidUtilities.dp(103);
             case MEMBER_REQUESTS_TYPE:
                 return AndroidUtilities.dp(107);
+            case REACTED_TYPE_WITH_EMOJI_HINT:
             case REACTED_TYPE:
                 return AndroidUtilities.dp(48);
+            case LIMIT_REACHED_GROUPS:
+                return AndroidUtilities.dp(58);
+            case LIMIT_REACHED_LINKS:
+                return AndroidUtilities.dp(60);
         }
         return 0;
     }
@@ -713,5 +797,9 @@ public class FlickerLoadingView extends View {
 
     public Paint getPaint() {
         return paint;
+    }
+
+    public void setIgnoreHeightCheck(boolean ignore) {
+        this.ignoreHeightCheck = ignore;
     }
 }

@@ -20,6 +20,7 @@ import android.view.View;
 import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.GenericProvider;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CheckBoxBase {
@@ -67,6 +68,8 @@ public class CheckBoxBase {
 
     private Theme.MessageDrawable messageDrawable;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private GenericProvider<Void, Paint> circlePaintProvider = obj -> paint;
 
     public interface ProgressDelegate {
         void setProgress(float progress);
@@ -375,12 +378,17 @@ public class CheckBoxBase {
             }
 
             if (backgroundType != -1) {
+                Paint circlePaint = circlePaintProvider.provide(null);
                 if (backgroundType == 12 || backgroundType == 13) {
-                    paint.setAlpha((int) (255 * roundProgress));
-                    bitmapCanvas.drawCircle(drawBitmap.getWidth() / 2, drawBitmap.getHeight() / 2, rad * roundProgress, paint);
+                    int a = circlePaint.getAlpha();
+                    circlePaint.setAlpha((int) (255 * roundProgress));
+                    bitmapCanvas.drawCircle(drawBitmap.getWidth() / 2, drawBitmap.getHeight() / 2, rad * roundProgress, circlePaint);
+                    if (circlePaint != paint) {
+                        circlePaint.setAlpha(a);
+                    }
                 } else {
                     rad -= AndroidUtilities.dp(0.5f);
-                    bitmapCanvas.drawCircle(drawBitmap.getWidth() / 2, drawBitmap.getHeight() / 2, rad, paint);
+                    bitmapCanvas.drawCircle(drawBitmap.getWidth() / 2, drawBitmap.getHeight() / 2, rad, circlePaint);
                     bitmapCanvas.drawCircle(drawBitmap.getWidth() / 2, drawBitmap.getHeight() / 2, rad * (1.0f - roundProgress), eraser);
                 }
                 canvas.drawBitmap(drawBitmap, cx - drawBitmap.getWidth() / 2, cy - drawBitmap.getHeight() / 2, null);
@@ -434,6 +442,10 @@ public class CheckBoxBase {
                 }
             }
         }
+    }
+
+    public void setCirclePaintProvider(GenericProvider<Void, Paint> circlePaintProvider) {
+        this.circlePaintProvider = circlePaintProvider;
     }
 
     private int getThemedColor(String key) {

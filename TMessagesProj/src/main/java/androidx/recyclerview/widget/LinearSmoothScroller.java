@@ -41,7 +41,7 @@ public class LinearSmoothScroller extends RecyclerView.SmoothScroller {
 
     private static final float MILLISECONDS_PER_INCH = 25f;
 
-    private static final int TARGET_SEEK_SCROLL_DISTANCE_PX = 10000;
+    protected static final int TARGET_SEEK_SCROLL_DISTANCE_PX = 10000;
 
     /**
      * Align child view's left or top with parent view's left or top
@@ -76,7 +76,7 @@ public class LinearSmoothScroller extends RecyclerView.SmoothScroller {
     // Trigger a scroll to a further distance than TARGET_SEEK_SCROLL_DISTANCE_PX so that if target
     // view is not laid out until interim target position is reached, we can detect the case before
     // scrolling slows down and reschedule another interim target scroll
-    private static final float TARGET_SEEK_EXTRA_SCROLL_RATIO = 1.2f;
+    protected static final float TARGET_SEEK_EXTRA_SCROLL_RATIO = 1.2f;
 
     protected final LinearInterpolator mLinearInterpolator = new LinearInterpolator();
 

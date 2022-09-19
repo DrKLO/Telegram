@@ -129,6 +129,10 @@ public class EditTextOutline extends EditTextBoldCursor {
         if (mFrameColor != 0) {
             paint.setColor(mFrameColor);
             Layout sl = getLayout();
+            if (sl == null) {
+                super.onDraw(canvas);
+                return;
+            }
             if (lines == null || lines.length != sl.getLineCount()) {
                 lines = new float[sl.getLineCount()];
             }

@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_ACCOUNTS;
+
 import android.animation.AnimatorSet;
 import android.app.Dialog;
 import android.content.Context;
@@ -40,6 +42,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -117,15 +120,24 @@ public class LogoutActivity extends BaseFragment {
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (position == addAccountRow) {
-                int freeAccount = -1;
-                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                int freeAccounts = 0;
+                Integer availableAccount = null;
+                for (int a = UserConfig.MAX_ACCOUNT_COUNT - 1; a >= 0; a--) {
                     if (!UserConfig.getInstance(a).isClientActivated()) {
-                        freeAccount = a;
-                        break;
+                        freeAccounts++;
+                        if (availableAccount == null) {
+                            availableAccount = a;
+                        }
                     }
                 }
-                if (freeAccount >= 0) {
-                    presentFragment(new LoginActivity(freeAccount));
+                if (!UserConfig.hasPremiumOnAccounts()) {
+                    freeAccounts -= (UserConfig.MAX_ACCOUNT_COUNT - UserConfig.MAX_ACCOUNT_DEFAULT_COUNT);
+                }
+                if (freeAccounts > 0 && availableAccount != null) {
+                    presentFragment(new LoginActivity(availableAccount));
+                } else if (!UserConfig.hasPremiumOnAccounts()) {
+                    LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(this, getContext(), TYPE_ACCOUNTS, currentAccount);
+                    showDialog(limitReachedBottomSheet);
                 }
             } else if (position == passcodeRow) {
                 presentFragment(PasscodeActivity.determineOpenFragment());
@@ -134,27 +146,30 @@ public class LogoutActivity extends BaseFragment {
             } else if (position == phoneRow) {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
             } else if (position == supportRow) {
-                showDialog(AlertsCreator.createSupportAlert(LogoutActivity.this));
+                showDialog(AlertsCreator.createSupportAlert(LogoutActivity.this, null));
             } else if (position == logoutRow) {
                 if (getParentActivity() == null) {
                     return;
                 }
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                UserConfig userConfig = getUserConfig();
-                builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
-                builder.setTitle(LocaleController.getString("LogOut", R.string.LogOut));
-                builder.setPositiveButton(LocaleController.getString("LogOut", R.string.LogOut), (dialogInterface, i) -> MessagesController.getInstance(currentAccount).performLogout(1));
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                AlertDialog alertDialog = builder.create();
-                showDialog(alertDialog);
-                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
-                }
+                showDialog(makeLogOutDialog(getParentActivity(), currentAccount));
             }
         });
 
         return fragmentView;
+    }
+
+    public static AlertDialog makeLogOutDialog(Context context, int currentAccount) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
+        builder.setTitle(LocaleController.getString("LogOut", R.string.LogOut));
+        builder.setPositiveButton(LocaleController.getString("LogOut", R.string.LogOut), (dialogInterface, i) -> MessagesController.getInstance(currentAccount).performLogout(1));
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog alertDialog = builder.create();
+        TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
+        return alertDialog;
     }
 
     @Override
@@ -196,15 +211,15 @@ public class LogoutActivity extends BaseFragment {
                 case 1: {
                     TextDetailSettingsCell view = (TextDetailSettingsCell) holder.itemView;
                     if (position == addAccountRow) {
-                        view.setTextAndValueAndIcon(LocaleController.getString("AddAnotherAccount", R.string.AddAnotherAccount), LocaleController.getString("AddAnotherAccountInfo", R.string.AddAnotherAccountInfo), R.drawable.actions_addmember2, true);
+                        view.setTextAndValueAndIcon(LocaleController.getString("AddAnotherAccount", R.string.AddAnotherAccount), LocaleController.getString("AddAnotherAccountInfo", R.string.AddAnotherAccountInfo), R.drawable.msg_contact_add, true);
                     } else if (position == passcodeRow) {
-                        view.setTextAndValueAndIcon(LocaleController.getString("SetPasscode", R.string.SetPasscode), LocaleController.getString("SetPasscodeInfo", R.string.SetPasscodeInfo), R.drawable.menu_passcode, true);
+                        view.setTextAndValueAndIcon(LocaleController.getString("SetPasscode", R.string.SetPasscode), LocaleController.getString("SetPasscodeInfo", R.string.SetPasscodeInfo), R.drawable.msg_permissions, true);
                     } else if (position == cacheRow) {
-                        view.setTextAndValueAndIcon(LocaleController.getString("ClearCache", R.string.ClearCache), LocaleController.getString("ClearCacheInfo", R.string.ClearCacheInfo), R.drawable.menu_clearcache, true);
+                        view.setTextAndValueAndIcon(LocaleController.getString("ClearCache", R.string.ClearCache), LocaleController.getString("ClearCacheInfo", R.string.ClearCacheInfo), R.drawable.msg_clearcache, true);
                     } else if (position == phoneRow) {
-                        view.setTextAndValueAndIcon(LocaleController.getString("ChangePhoneNumber", R.string.ChangePhoneNumber), LocaleController.getString("ChangePhoneNumberInfo", R.string.ChangePhoneNumberInfo), R.drawable.menu_newphone, true);
+                        view.setTextAndValueAndIcon(LocaleController.getString("ChangePhoneNumber", R.string.ChangePhoneNumber), LocaleController.getString("ChangePhoneNumberInfo", R.string.ChangePhoneNumberInfo), R.drawable.msg_newphone, true);
                     } else if (position == supportRow) {
-                        view.setTextAndValueAndIcon(LocaleController.getString("ContactSupport", R.string.ContactSupport), LocaleController.getString("ContactSupportInfo", R.string.ContactSupportInfo), R.drawable.menu_support, false);
+                        view.setTextAndValueAndIcon(LocaleController.getString("ContactSupport", R.string.ContactSupport), LocaleController.getString("ContactSupportInfo", R.string.ContactSupportInfo), R.drawable.msg_help, false);
                     }
                     break;
                 }

@@ -100,7 +100,7 @@ public class CropTransform {
         return cropPh;
     }
 
-    public boolean isMirrored () {
+    public boolean isMirrored() {
         return isMirrored;
     }
 

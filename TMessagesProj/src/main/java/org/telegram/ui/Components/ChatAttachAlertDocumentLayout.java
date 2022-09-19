@@ -12,12 +12,15 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
@@ -29,6 +32,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -70,6 +74,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.FilteredSearchView;
 import org.telegram.ui.PhotoPickerActivity;
 
@@ -106,8 +111,16 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
     private int type;
 
+    private final static int ANIMATION_NONE = 0;
+    private final static int ANIMATION_FORWARD = 1;
+    private final static int ANIMATION_BACKWARD = 2;
+    private int currentAnimationType;
+
     private RecyclerListView listView;
+    private RecyclerListView backgroundListView;
     private ListAdapter listAdapter;
+    private ListAdapter backgroundListAdapter;
+    private LinearLayoutManager backgroundLayoutManager;
     private SearchAdapter searchAdapter;
     private LinearLayoutManager layoutManager;
     private ActionBarMenuItem searchItem;
@@ -127,15 +140,12 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     private boolean hasFiles;
 
     private File currentDir;
-    private ArrayList<ListItem> items = new ArrayList<>();
     private boolean receiverRegistered = false;
-    private ArrayList<HistoryEntry> history = new ArrayList<>();
     private DocumentSelectActivityDelegate delegate;
     private HashMap<String, ListItem> selectedFiles = new HashMap<>();
     private ArrayList<String> selectedFilesOrder = new ArrayList<>();
     private HashMap<FilteredSearchView.MessageHashId, MessageObject> selectedMessages = new HashMap<>();
     private boolean scrolling;
-    private ArrayList<ListItem> recentItems = new ArrayList<>();
     private int maxSelectedFiles = -1;
     private boolean canSelectOnlyImageFiles;
     private boolean allowMusic;
@@ -188,6 +198,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
     public ChatAttachAlertDocumentLayout(ChatAttachAlert alert, Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(alert, context, resourcesProvider);
+        listAdapter = new ListAdapter(context);
         allowMusic = type == TYPE_MUSIC;
         isSoundPicker = type == TYPE_RINGTONE;
         sortByName = SharedConfig.sortFilesByName;
@@ -250,7 +261,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         editText.setCursorColor(getThemedColor(Theme.key_dialogTextBlack));
         editText.setHintTextColor(getThemedColor(Theme.key_chat_messagePanelHint));
 
-        sortItem = menu.addItem(sort_button, sortByName ? R.drawable.contacts_sort_time : R.drawable.contacts_sort_name);
+        sortItem = menu.addItem(sort_button, sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
         sortItem.setContentDescription(LocaleController.getString("AccDescrContactSorting", R.string.AccDescrContactSorting));
 
         addView(loadingView = new FlickerLoadingView(context, resourcesProvider));
@@ -270,7 +281,59 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         emptyView.setVisibility(View.GONE);
         emptyView.setOnTouchListener((v, event) -> true);
 
-        listView = new RecyclerListView(context, resourcesProvider);
+        backgroundListView = new RecyclerListView(context, resourcesProvider) {
+            Paint paint = new Paint();
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                if (currentAnimationType == ANIMATION_BACKWARD && getChildCount() > 0) {
+                    float top = Integer.MAX_VALUE;
+                    for (int i = 0; i < getChildCount(); i++) {
+                        if (getChildAt(i).getY() < top) {
+                            top = getChildAt(i).getY();
+                        }
+                    }
+                    paint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                   // canvas.drawRect(0, top, getMeasuredWidth(), getMeasuredHeight(), paint);
+                }
+                super.dispatchDraw(canvas);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent e) {
+                if (currentAnimationType != ANIMATION_NONE) {
+                    return false;
+                }
+                return super.onTouchEvent(e);
+            }
+        };
+        backgroundListView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
+        backgroundListView.setVerticalScrollBarEnabled(false);
+        backgroundListView.setLayoutManager(backgroundLayoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(56), backgroundListView));
+        backgroundListView.setClipToPadding(false);
+        backgroundListView.setAdapter(backgroundListAdapter = new ListAdapter(context));
+        backgroundListView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
+        addView(backgroundListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        backgroundListView.setVisibility(View.GONE);
+
+        listView = new RecyclerListView(context, resourcesProvider) {
+
+            Paint paint = new Paint();
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                if (currentAnimationType == ANIMATION_FORWARD && getChildCount() > 0) {
+                    float top = Integer.MAX_VALUE;
+                    for (int i = 0; i < getChildCount(); i++) {
+                        if (getChildAt(i).getY() < top) {
+                            top = getChildAt(i).getY();
+                        }
+                    }
+                    paint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                 //   canvas.drawRect(0, top, getMeasuredWidth(), getMeasuredHeight(), paint);
+                }
+                super.dispatchDraw(canvas);
+
+            }
+        };
         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
         listView.setVerticalScrollBarEnabled(false);
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(56), listView) {
@@ -294,10 +357,11 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             }
         });
         listView.setClipToPadding(false);
-        listView.setAdapter(listAdapter = new ListAdapter(context));
+        listView.setAdapter(listAdapter);
         listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         searchAdapter = new SearchAdapter(context);
+
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -397,7 +461,8 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         }
                     } else {
                         int top = getTopForScroll();
-                        HistoryEntry he = history.remove(history.size() - 1);
+                        prepareAnimation();
+                        HistoryEntry he = listAdapter.history.remove(listAdapter.history.size() - 1);
                         parentAlert.actionBar.setTitle(he.title);
                         if (he.dir != null) {
                             listFiles(he.dir);
@@ -406,6 +471,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         }
                         updateSearchButton();
                         layoutManager.scrollToPositionWithOffset(0, top);
+                        runAnimation(ANIMATION_BACKWARD);
                     }
                 } else if (file.isDirectory()) {
                     HistoryEntry he = new HistoryEntry();
@@ -416,10 +482,14 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         he.scrollOffset = child.getTop();
                         he.dir = currentDir;
                         he.title = parentAlert.actionBar.getTitle();
-                        history.add(he);
+
+                        prepareAnimation();
+                        listAdapter.history.add(he);
                         if (!listFiles(file)) {
-                            history.remove(he);
+                            listAdapter.history.remove(he);
                             return;
+                        } else {
+                            runAnimation(ANIMATION_FORWARD);
                         }
                         parentAlert.actionBar.setTitle(item.title);
                     }
@@ -456,6 +526,112 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         updateEmptyView();
     }
 
+    ValueAnimator listAnimation;
+    private void runAnimation(int animationType) {
+        if (listAnimation != null) {
+            listAnimation.cancel();
+        }
+        currentAnimationType = animationType;
+        int listViewChildIndex = 0;
+        for (int i = 0; i < getChildCount(); i++) {
+            if (getChildAt(i) == listView) {
+                listViewChildIndex = i;
+                break;
+            }
+        }
+        float xTranslate;
+        if (animationType == ANIMATION_FORWARD) {
+            xTranslate = AndroidUtilities.dp(150);
+            backgroundListView.setAlpha(1f);
+            backgroundListView.setScaleX(1f);
+            backgroundListView.setScaleY(1f);
+            backgroundListView.setTranslationX(0);
+            removeView(backgroundListView);
+            addView(backgroundListView, listViewChildIndex);
+            backgroundListView.setVisibility(View.VISIBLE);
+            listView.setTranslationX(xTranslate);
+            listView.setAlpha(0f);
+            listAnimation = ValueAnimator.ofFloat(1f, 0);
+        } else {
+            xTranslate = AndroidUtilities.dp(150);
+            listView.setAlpha(0f);
+            listView.setScaleX(0.95f);
+            listView.setScaleY(0.95f);
+            backgroundListView.setScaleX(1f);
+            backgroundListView.setScaleY(1f);
+            backgroundListView.setTranslationX(0f);
+            backgroundListView.setAlpha(1f);
+            removeView(backgroundListView);
+            addView(backgroundListView, listViewChildIndex + 1);
+            backgroundListView.setVisibility(View.VISIBLE);
+            listAnimation = ValueAnimator.ofFloat(0f, 1f);
+        }
+
+        listAnimation.addUpdateListener(animation -> {
+            float value = (float) animation.getAnimatedValue();
+            if (animationType == ANIMATION_FORWARD) {
+                listView.setTranslationX(xTranslate * value);
+                listView.setAlpha(1f - value);
+                listView.invalidate();
+
+                backgroundListView.setAlpha(value);
+                float s = 0.95f + value * 0.05f;
+                backgroundListView.setScaleX(s);
+                backgroundListView.setScaleY(s);
+            } else {
+                backgroundListView.setTranslationX(xTranslate * value);
+                backgroundListView.setAlpha(Math.max(0, 1f - value));
+                backgroundListView.invalidate();
+
+                listView.setAlpha(value);
+                float s = 0.95f + value * 0.05f;
+                listView.setScaleX(s);
+                listView.setScaleY(s);
+                backgroundListView.invalidate();
+            }
+        });
+        listAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                backgroundListView.setVisibility(View.GONE);
+                currentAnimationType = ANIMATION_NONE;
+                listView.setAlpha(1f);
+                listView.setScaleX(1f);
+                listView.setScaleY(1f);
+                listView.setTranslationX(0f);
+                listView.invalidate();
+            }
+        });
+        if (animationType == ANIMATION_FORWARD) {
+            listAnimation.setDuration(220);
+        } else {
+            listAnimation.setDuration(200);
+        }
+        listAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        listAnimation.start();
+    }
+
+    private void prepareAnimation() {
+        backgroundListAdapter.history.clear();
+        backgroundListAdapter.history.addAll(listAdapter.history);
+        backgroundListAdapter.items.clear();
+        backgroundListAdapter.items.addAll(listAdapter.items);
+        backgroundListAdapter.recentItems.clear();
+        backgroundListAdapter.recentItems.addAll(listAdapter.recentItems);
+        backgroundListAdapter.notifyDataSetChanged();
+        backgroundListView.setVisibility(View.VISIBLE);
+
+        backgroundListView.setPadding(listView.getPaddingLeft(), listView.getPaddingTop(), listView.getPaddingRight(), listView.getPaddingBottom());
+        int p = layoutManager.findFirstVisibleItemPosition();
+        if (p >= 0) {
+            View childView = layoutManager.findViewByPosition(p);
+            if (childView != null) {
+                backgroundLayoutManager.scrollToPositionWithOffset(p, childView.getTop() - backgroundListView.getPaddingTop());
+            }
+        }
+    }
+
     @Override
     void onDestroy() {
         try {
@@ -479,7 +655,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             sortRecentItems();
             sortFileItems();
             listAdapter.notifyDataSetChanged();
-            sortItem.setIcon(sortByName ? R.drawable.contacts_sort_time : R.drawable.contacts_sort_name);
+            sortItem.setIcon(sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
         }
     }
 
@@ -608,8 +784,10 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     showErrorBox(LocaleController.formatString("PassportUploadNotImage", R.string.PassportUploadNotImage));
                     return false;
                 }
-                if (item.file.length() > FileLoader.MAX_FILE_SIZE) {
-                    showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(FileLoader.MAX_FILE_SIZE)));
+                if ((item.file.length() > FileLoader.DEFAULT_MAX_FILE_SIZE && !UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) || item.file.length() > FileLoader.DEFAULT_MAX_FILE_SIZE_PREMIUM) {
+                    LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(parentAlert.baseFragment, parentAlert.getContainer().getContext(), LimitReachedBottomSheet.TYPE_LARGE_FILE, UserConfig.selectedAccount);
+                    limitReachedBottomSheet.setVeryLargeFile(true);
+                    limitReachedBottomSheet.show();
                     return false;
                 }
                 if (maxSelectedFiles >= 0 && selectedFiles.size() >= maxSelectedFiles) {
@@ -752,7 +930,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
                             item.thumb = file.getAbsolutePath();
                         }
-                        recentItems.add(item);
+                        listAdapter.recentItems.add(item);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -786,13 +964,13 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
                     item.thumb = file.getAbsolutePath();
                 }
-                recentItems.add(item);
+                listAdapter.recentItems.add(item);
             }
         }
     }
 
     private void sortRecentItems() {
-        Collections.sort(recentItems, (o1, o2) -> {
+        Collections.sort(listAdapter.recentItems, (o1, o2) -> {
             if (sortByName) {
                 String lm = o1.file.getName();
                 String rm = o2.file.getName();
@@ -815,7 +993,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         if (currentDir == null) {
             return;
         }
-        Collections.sort(items, (lhs, rhs) -> {
+        Collections.sort(listAdapter.items, (lhs, rhs) -> {
             if (lhs.file == null) {
                 return -1;
             } else if (rhs.file == null) {
@@ -858,7 +1036,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         selectedMessages.clear();
         searchAdapter.currentSearchFilters.clear();
         selectedFilesOrder.clear();
-        history.clear();
+        listAdapter.history.clear();
         listRoots();
         updateSearchButton();
         updateEmptyView();
@@ -902,7 +1080,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             return;
         }
         if (!searchItem.isSearchFieldVisible()) {
-            searchItem.setVisibility(hasFiles || history.isEmpty() ? View.VISIBLE : View.GONE);
+            searchItem.setVisibility(hasFiles || listAdapter.history.isEmpty() ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -917,8 +1095,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     private boolean canClosePicker() {
-        if (history.size() > 0) {
-            HistoryEntry he = history.remove(history.size() - 1);
+        if (listAdapter.history.size() > 0) {
+            prepareAnimation();
+            HistoryEntry he = listAdapter.history.remove(listAdapter.history.size() - 1);
             parentAlert.actionBar.setTitle(he.title);
             int top = getTopForScroll();
             if (he.dir != null) {
@@ -928,6 +1107,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             }
             updateSearchButton();
             layoutManager.scrollToPositionWithOffset(0, top);
+            runAnimation(ANIMATION_BACKWARD);
             return false;
         }
         return true;
@@ -960,7 +1140,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)
                         && !Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
                     currentDir = dir;
-                    items.clear();
+                    listAdapter.items.clear();
                     String state = Environment.getExternalStorageState();
                     AndroidUtilities.clearDrawableAnimation(listView);
                     scrolling = true;
@@ -983,7 +1163,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             return false;
         }
         currentDir = dir;
-        items.clear();
+        listAdapter.items.clear();
         for (int a = 0; a < files.length; a++) {
             File file = files[a];
             if (file.getName().indexOf('.') == 0) {
@@ -1006,12 +1186,12 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     item.thumb = file.getAbsolutePath();
                 }
             }
-            items.add(item);
+            listAdapter.items.add(item);
         }
         ListItem item = new ListItem();
         item.title = "..";
-        if (history.size() > 0) {
-            HistoryEntry entry = history.get(history.size() - 1);
+        if (listAdapter.history.size() > 0) {
+            HistoryEntry entry = listAdapter.history.get(listAdapter.history.size() - 1);
             if (entry.dir == null) {
                 item.subtitle = LocaleController.getString("Folder", R.string.Folder);
             } else {
@@ -1022,7 +1202,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         }
         item.icon = R.drawable.files_folder;
         item.file = null;
-        items.add(0, item);
+        listAdapter.items.add(0, item);
         sortFileItems();
         updateSearchButton();
         AndroidUtilities.clearDrawableAnimation(listView);
@@ -1041,13 +1221,14 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     private void listRoots() {
         currentDir = null;
         hasFiles = false;
-        items.clear();
+        listAdapter.items.clear();
 
         HashSet<String> paths = new HashSet<>();
         boolean isExternalStorageManager = false;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             isExternalStorageManager = Environment.isExternalStorageManager();
         }
+        // TODO add permission for read all files and uncomment for direct version
 //        if (!BuildVars.NO_SCOPED_STORAGE && !isExternalStorageManager) {
 //            ListItem ext = new ListItem();
 //            ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
@@ -1069,7 +1250,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     ext.subtitle = LocaleController.getString("InternalFolderInfo", R.string.InternalFolderInfo);
                 }
                 ext.file = Environment.getExternalStorageDirectory();
-                items.add(ext);
+                listAdapter.items.add(ext);
                 paths.add(defaultPath);
             }
 
@@ -1110,7 +1291,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                                     item.subtitle = LocaleController.getString("ExternalFolderInfo", R.string.ExternalFolderInfo);
                                     item.icon = R.drawable.files_internal;
                                     item.file = new File(path);
-                                    items.add(item);
+                                    listAdapter.items.add(item);
                                 } catch (Exception e) {
                                     FileLog.e(e);
                                 }
@@ -1140,7 +1321,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 fs.subtitle = LocaleController.getString("AppFolderInfo", R.string.AppFolderInfo);
                 fs.icon = R.drawable.files_folder;
                 fs.file = telegramPath;
-                items.add(fs);
+                listAdapter.items.add(fs);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -1152,7 +1333,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             fs.subtitle = LocaleController.getString("GalleryInfo", R.string.GalleryInfo);
             fs.icon = R.drawable.files_gallery;
             fs.file = null;
-            items.add(fs);
+            listAdapter.items.add(fs);
         }
 
         if (allowMusic) {
@@ -1161,9 +1342,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             fs.subtitle = LocaleController.getString("MusicInfo", R.string.MusicInfo);
             fs.icon = R.drawable.files_music;
             fs.file = null;
-            items.add(fs);
+            listAdapter.items.add(fs);
         }
-        if (!recentItems.isEmpty()) {
+        if (!listAdapter.recentItems.isEmpty()) {
             hasFiles = true;
         }
 
@@ -1188,6 +1369,11 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
+
+        private ArrayList<ListItem> items = new ArrayList<>();
+        private ArrayList<HistoryEntry> history = new ArrayList<>();
+        private ArrayList<ListItem> recentItems = new ArrayList<>();
+
 
         private Context mContext;
 
@@ -1367,9 +1553,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 notifyDataSetChanged();
             } else {
                 AndroidUtilities.runOnUIThread(localSearchRunnable = () -> {
-                    final ArrayList<ListItem> copy = new ArrayList<>(items);
-                    if (history.isEmpty()) {
-                        copy.addAll(0, recentItems);
+                    final ArrayList<ListItem> copy = new ArrayList<>(listAdapter.items);
+                    if (listAdapter.history.isEmpty()) {
+                        copy.addAll(0, listAdapter.recentItems);
                     }
                     boolean hasFilters = !currentSearchFilters.isEmpty();
                     Utilities.searchQueue.postRunnable(() -> {
@@ -1416,7 +1602,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 }, 300);
             }
 
-            if (!canSelectOnlyImageFiles && history.isEmpty()) {
+            if (!canSelectOnlyImageFiles && listAdapter.history.isEmpty()) {
                 long dialogId = 0;
                 long minDate = 0;
                 long maxDate = 0;

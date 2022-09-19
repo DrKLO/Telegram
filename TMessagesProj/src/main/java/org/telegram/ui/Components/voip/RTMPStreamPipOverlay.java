@@ -543,7 +543,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
                 if (getAlpha() == 0f) return;
 
                 AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
-                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(ROUNDED_CORNERS_DP));
+                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(ROUNDED_CORNERS_DP), null);
                 invalidate();
             }
 

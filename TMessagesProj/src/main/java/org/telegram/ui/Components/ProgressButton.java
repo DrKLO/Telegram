@@ -78,7 +78,11 @@ public class ProgressButton extends Button {
     }
 
     public void setBackgroundRoundRect(int backgroundColor, int pressedBackgroundColor) {
-        setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), backgroundColor, pressedBackgroundColor));
+        setBackgroundRoundRect(backgroundColor, pressedBackgroundColor, 4);
+    }
+
+    public void setBackgroundRoundRect(int backgroundColor, int pressedBackgroundColor, float radius) {
+        setBackground(Theme.AdaptiveRipple.filledRect(backgroundColor, radius));
     }
 
     public void setProgressColor(int progressColor) {

@@ -21,6 +21,7 @@ import android.util.Property;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -51,6 +52,7 @@ public class TextCheckCell extends FrameLayout {
     private float lastTouchX;
     private ObjectAnimator animator;
     private boolean drawCheckRipple;
+    private Theme.ResourcesProvider resourcesProvider;
 
     public static final Property<TextCheckCell, Float> ANIMATION_PROGRESS = new AnimationProperties.FloatProperty<TextCheckCell>("animationProgress") {
         @Override
@@ -70,14 +72,23 @@ public class TextCheckCell extends FrameLayout {
     }
 
     public TextCheckCell(Context context, int padding) {
-        this(context, padding, false);
+        this(context, padding, false, null);
+    }
+
+    public TextCheckCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, 21, false, resourcesProvider);
     }
 
     public TextCheckCell(Context context, int padding, boolean dialog) {
+        this(context, padding, dialog, null);
+    }
+
+    public TextCheckCell(Context context, int padding, boolean dialog, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+        textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -87,7 +98,7 @@ public class TextCheckCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 70 : padding, 0, LocaleController.isRTL ? padding : 70, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayText2));
+        valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         valueTextView.setLines(1);
@@ -97,11 +108,17 @@ public class TextCheckCell extends FrameLayout {
         valueTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 64 : padding, 36, LocaleController.isRTL ? padding : 64, 0));
 
-        checkBox = new Switch(context);
+        checkBox = new Switch(context, resourcesProvider);
         checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
         addView(checkBox, LayoutHelper.createFrame(37, 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
 
         setClipChildren(false);
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        checkBox.setEnabled(enabled);
     }
 
     @Override
@@ -138,7 +155,7 @@ public class TextCheckCell extends FrameLayout {
     }
 
     public void setColors(String key, String switchKey, String switchKeyChecked, String switchThumb, String switchThumbChecked) {
-        textView.setTextColor(Theme.getColor(key));
+        textView.setTextColor(Theme.getColor(key, resourcesProvider));
         checkBox.setColors(switchKey, switchKeyChecked, switchThumb, switchThumbChecked);
         textView.setTag(key);
     }
@@ -193,10 +210,10 @@ public class TextCheckCell extends FrameLayout {
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
         super.setEnabled(value);
         if (animators != null) {
-            animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
-            animators.add(ObjectAnimator.ofFloat(checkBox, "alpha", value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(textView, View.ALPHA, value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(checkBox, View.ALPHA, value ? 1.0f : 0.5f));
             if (valueTextView.getVisibility() == VISIBLE) {
-                animators.add(ObjectAnimator.ofFloat(valueTextView, "alpha", value ? 1.0f : 0.5f));
+                animators.add(ObjectAnimator.ofFloat(valueTextView, View.ALPHA, value ? 1.0f : 0.5f));
             }
         } else {
             textView.setAlpha(value ? 1.0f : 0.5f);
@@ -315,6 +332,12 @@ public class TextCheckCell extends FrameLayout {
         info.setClassName("android.widget.Switch");
         info.setCheckable(true);
         info.setChecked(checkBox.isChecked());
-        info.setContentDescription(checkBox.isChecked() ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
+        StringBuilder sb = new StringBuilder();
+        sb.append(textView.getText());
+        if (!TextUtils.isEmpty(valueTextView.getText())) {
+            sb.append('\n');
+            sb.append(valueTextView.getText());
+        }
+        info.setContentDescription(sb);
     }
 }

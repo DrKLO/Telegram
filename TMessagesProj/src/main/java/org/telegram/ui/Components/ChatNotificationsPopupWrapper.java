@@ -69,7 +69,7 @@ public class ChatNotificationsPopupWrapper {
         ActionBarMenuSubItem item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_mute_period, LocaleController.getString("MuteForPopup", R.string.MuteForPopup), false, resourcesProvider);
         item.setOnClickListener(view -> {
             dismiss();
-            AlertsCreator.createMuteForPickerDialog(context, (notify, inSecond) -> {
+            AlertsCreator.createMuteForPickerDialog(context, resourcesProvider, (notify, inSecond) -> {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (inSecond != 0) {
                         SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
@@ -177,6 +177,8 @@ public class ChatNotificationsPopupWrapper {
         int days = time / (60 * 60 * 24);
         time -= days * (60 * 60 * 24);
         int hours = time / (60 * 60);
+        time -= hours * (60 * 60);
+        int minutes = time / 60;
 
         if (days != 0) {
             stringBuilder.append(days).append(LocaleController.getString("SecretChatTimerDays", R.string.SecretChatTimerDays));
@@ -186,6 +188,12 @@ public class ChatNotificationsPopupWrapper {
                 stringBuilder.append(" ");
             }
             stringBuilder.append(hours).append(LocaleController.getString("SecretChatTimerHours", R.string.SecretChatTimerHours));
+        }
+        if (minutes != 0) {
+            if (stringBuilder.length() > 0) {
+                stringBuilder.append(" ");
+            }
+            stringBuilder.append(minutes).append(LocaleController.getString("SecretChatTimerMinutes", R.string.SecretChatTimerMinutes));
         }
         return LocaleController.formatString("MuteForButton", R.string.MuteForButton, stringBuilder.toString());
     }
@@ -220,7 +228,7 @@ public class ChatNotificationsPopupWrapper {
     }
 
     public interface Callback {
-        void dismiss();
+        default void dismiss() {}
 
         void toggleSound();
 

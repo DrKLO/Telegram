@@ -28,6 +28,8 @@ public class BackupImageView extends View {
     protected ImageReceiver imageReceiver;
     protected int width = -1;
     protected int height = -1;
+    public AnimatedEmojiDrawable animatedEmojiDrawable;
+    boolean attached;
 
     public BackupImageView(Context context) {
         super(context);
@@ -105,7 +107,7 @@ public class BackupImageView extends View {
         imageReceiver.setImage(imageLocation, imageFilter, thumbLocation, thumbFilter, thumb, size, ext, parentObject, 0);
     }
 
-    public void setImage(ImageLocation imageLocation, String imageFilter, ImageLocation thumbLocation, String thumbFilter, String ext, int size, int cacheType, Object parentObject) {
+    public void setImage(ImageLocation imageLocation, String imageFilter, ImageLocation thumbLocation, String thumbFilter, String ext, long size, int cacheType, Object parentObject) {
         imageReceiver.setImage(imageLocation, imageFilter, thumbLocation, thumbFilter, null, size, ext, parentObject, cacheType);
     }
 
@@ -171,17 +173,29 @@ public class BackupImageView extends View {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        attached = false;
         imageReceiver.onDetachedFromWindow();
+        if (animatedEmojiDrawable != null) {
+            animatedEmojiDrawable.removeView(this);
+        }
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        attached = true;
         imageReceiver.onAttachedToWindow();
+        if (animatedEmojiDrawable != null) {
+            animatedEmojiDrawable.addView(this);
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        ImageReceiver imageReceiver = animatedEmojiDrawable != null ? animatedEmojiDrawable.getImageReceiver() : this.imageReceiver;
+        if (imageReceiver == null) {
+            return;
+        }
         if (width != -1 && height != -1) {
             imageReceiver.setImageCoords((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
         } else {
@@ -192,5 +206,18 @@ public class BackupImageView extends View {
 
     public void setColorFilter(ColorFilter colorFilter) {
         imageReceiver.setColorFilter(colorFilter);
+    }
+
+    public void setAnimatedEmojiDrawable(AnimatedEmojiDrawable animatedEmojiDrawable) {
+        if (this.animatedEmojiDrawable == animatedEmojiDrawable) {
+            return;
+        }
+        if (attached && this.animatedEmojiDrawable != null) {
+            this.animatedEmojiDrawable.removeView(this);
+        }
+        this.animatedEmojiDrawable = animatedEmojiDrawable;
+        if (attached && animatedEmojiDrawable != null) {
+            animatedEmojiDrawable.addView(this);
+        }
     }
 }

@@ -40,6 +40,7 @@ public class ManageChatUserCell extends FrameLayout {
     private SimpleTextView statusTextView;
     private ImageView optionsButton;
     private ImageView customImageView;
+    private Theme.ResourcesProvider resourcesProvider;
 
     private AvatarDrawable avatarDrawable;
     private Object currentObject;
@@ -70,10 +71,15 @@ public class ManageChatUserCell extends FrameLayout {
     }
 
     public ManageChatUserCell(Context context, int avatarPadding, int nPadding, boolean needOption) {
-        super(context);
+        this(context, avatarPadding, nPadding, needOption, null);
+    }
 
-        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
-        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+    public ManageChatUserCell(Context context, int avatarPadding, int nPadding, boolean needOption, Theme.ResourcesProvider resourcesProvider) {
+        super(context);
+        this.resourcesProvider = resourcesProvider;
+
+        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
 
         namePadding = nPadding;
 
@@ -84,7 +90,7 @@ public class ManageChatUserCell extends FrameLayout {
         addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + avatarPadding, 8, LocaleController.isRTL ? 7 + avatarPadding : 0, 0));
 
         nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nameTextView.setTextSize(17);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -98,9 +104,9 @@ public class ManageChatUserCell extends FrameLayout {
         if (needOption) {
             optionsButton = new ImageView(context);
             optionsButton.setFocusable(false);
-            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
             optionsButton.setImageResource(R.drawable.ic_ab_other);
-            optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
+            optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             optionsButton.setScaleType(ImageView.ScaleType.CENTER);
             addView(optionsButton, LayoutHelper.createFrame(60, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
             optionsButton.setOnClickListener(v -> delegate.onOptionsButtonCheck(ManageChatUserCell.this, true));
@@ -112,7 +118,7 @@ public class ManageChatUserCell extends FrameLayout {
         customImageView = new ImageView(getContext());
         customImageView.setImageResource(resId);
         customImageView.setScaleType(ImageView.ScaleType.CENTER);
-        customImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_voipgroup_mutedIconUnscrolled), PorterDuff.Mode.MULTIPLY));
+        customImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_voipgroup_mutedIconUnscrolled, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         addView(customImageView, LayoutHelper.createFrame(52, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
     }
 
@@ -348,7 +354,7 @@ public class ManageChatUserCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             if (dividerColor != null) {
-                Theme.dividerExtraPaint.setColor(Theme.getColor(dividerColor));
+                Theme.dividerExtraPaint.setColor(Theme.getColor(dividerColor, resourcesProvider));
             }
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, dividerColor != null ? Theme.dividerExtraPaint : Theme.dividerPaint);
         }

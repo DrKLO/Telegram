@@ -22,7 +22,6 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.os.Build;
-import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -36,11 +35,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import androidx.core.math.MathUtils;
-import androidx.core.view.GestureDetectorCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
+
+import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -86,8 +86,11 @@ public class PipVideoOverlay {
     private View innerView;
     private FrameLayout controlsView;
 
+    private boolean isWebView;
+    private PhotoViewerWebView photoViewerWebView;
+
     private ScaleGestureDetector scaleGestureDetector;
-    private GestureDetectorCompat gestureDetector;
+    private GestureDetectorFixDoubleTap gestureDetector;
     private boolean isScrolling;
     private boolean isScrollDisallowed;
     private View consumingChild;
@@ -103,12 +106,7 @@ public class PipVideoOverlay {
 
     private boolean isVisible;
 
-    private boolean postedDismissControls;
-    private Runnable dismissControlsCallback = () -> {
-        toggleControls(isShowingControls = false);
-        postedDismissControls = false;
-    };
-
+    private VideoForwardDrawable videoForwardDrawable = new VideoForwardDrawable(false);
     private int mVideoWidth, mVideoHeight;
     private EmbedBottomSheet parentSheet;
     private PhotoViewer photoViewer;
@@ -122,18 +120,144 @@ public class PipVideoOverlay {
         if (photoViewer == null) {
             return;
         }
-        VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-        if (videoPlayer == null) {
-            return;
-        }
-        videoProgress = videoPlayer.getCurrentPosition() / (float) videoPlayer.getDuration();
-        if (photoViewer == null) {
-            bufferProgress = videoPlayer.getBufferedPosition() / (float) videoPlayer.getDuration();
+
+        if (photoViewerWebView != null) {
+            videoProgress = photoViewerWebView.getCurrentPosition() / (float) photoViewerWebView.getVideoDuration();
+            bufferProgress = photoViewerWebView.getBufferedPosition();
+        } else {
+            VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+            if (videoPlayer == null) {
+                return;
+            }
+
+            long duration = getDuration();
+            videoProgress = videoPlayer.getCurrentPosition() / (float) duration;
+            bufferProgress = videoPlayer.getBufferedPosition() / (float) duration;
         }
         videoProgressView.invalidate();
 
         AndroidUtilities.runOnUIThread(this.progressRunnable, 500);
     };
+    private boolean canLongClick;
+    private float[] longClickStartPoint = new float[2];
+    private Runnable longClickCallback = this::onLongClick;
+
+    private boolean postedDismissControls;
+    private Runnable dismissControlsCallback = () -> {
+        if (photoViewer != null && photoViewer.getVideoPlayerRewinder().rewindCount > 0) {
+            AndroidUtilities.runOnUIThread(this.dismissControlsCallback, 1500);
+            return;
+        }
+        toggleControls(isShowingControls = false);
+        postedDismissControls = false;
+    };
+
+    public static void onRewindCanceled() {
+        instance.onRewindCanceledInternal();
+    }
+
+    private void onRewindCanceledInternal() {
+        videoForwardDrawable.setShowing(false);
+    }
+
+    public static void onUpdateRewindProgressUi(long timeDiff, float progress, boolean rewindByBackSeek) {
+        instance.onUpdateRewindProgressUiInternal(timeDiff, progress, rewindByBackSeek);
+    }
+
+    private void onUpdateRewindProgressUiInternal(long timeDiff, float progress, boolean rewindByBackSeek) {
+        videoForwardDrawable.setTime(0);
+        if (rewindByBackSeek) {
+            videoProgress = progress;
+
+            if (videoProgressView != null) {
+                videoProgressView.invalidate();
+            }
+            if (controlsView != null) {
+                controlsView.invalidate();
+            }
+        }
+    }
+
+    public static void onRewindStart(boolean rewindForward) {
+        instance.onRewindStartInternal(rewindForward);
+    }
+
+    private void onRewindStartInternal(boolean rewindForward) {
+        videoForwardDrawable.setOneShootAnimation(false);
+        videoForwardDrawable.setLeftSide(!rewindForward);
+        videoForwardDrawable.setShowing(true);
+        if (videoProgressView != null) {
+            videoProgressView.invalidate();
+        }
+        if (controlsView != null) {
+            controlsView.invalidate();
+        }
+    }
+
+    private long getCurrentPosition() {
+        if (photoViewerWebView != null) {
+            return photoViewerWebView.getCurrentPosition();
+        } else {
+            VideoPlayer player = photoViewer.getVideoPlayer();
+            if (player == null) {
+                return 0;
+            }
+            return player.getCurrentPosition();
+        }
+    }
+
+    private void seekTo(long position) {
+        if (photoViewerWebView != null) {
+            photoViewerWebView.seekTo(position);
+        } else {
+            VideoPlayer player = photoViewer.getVideoPlayer();
+            if (player == null) {
+                return;
+            }
+            player.seekTo(position);
+        }
+    }
+
+    private long getDuration() {
+        if (photoViewerWebView != null) {
+            return photoViewerWebView.getVideoDuration();
+        } else {
+            VideoPlayer player = photoViewer.getVideoPlayer();
+            if (player == null) {
+                return 0;
+            }
+            return player.getDuration();
+        }
+    }
+
+    protected void onLongClick() {
+        if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
+            return;
+        }
+
+        VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+        boolean forward = longClickStartPoint[0] >= getSuggestedWidth() * scaleFactor * 0.5f;
+
+        long current = getCurrentPosition();
+        long total = getDuration();
+        if (current == C.TIME_UNSET || total < 15 * 1000) {
+            return;
+        }
+
+        if (photoViewerWebView != null) {
+            photoViewer.getVideoPlayerRewinder().startRewind(photoViewerWebView, forward, photoViewer.getCurrentVideoSpeed());
+        } else {
+            photoViewer.getVideoPlayerRewinder().startRewind(videoPlayer, forward, photoViewer.getCurrentVideoSpeed());
+        }
+
+        if (!isShowingControls) {
+            toggleControls(isShowingControls = true);
+            if (!postedDismissControls) {
+                AndroidUtilities.runOnUIThread(dismissControlsCallback, 1500);
+                postedDismissControls = true;
+            }
+        }
+    }
 
     private PipConfig getPipConfig() {
         if (pipConfig == null) {
@@ -170,6 +294,7 @@ public class PipVideoOverlay {
             aspectRatio = mVideoHeight / (float) mVideoWidth;
 
             maxScaleFactor = (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(SIDE_PADDING_DP * 2)) / (float) getSuggestedWidth();
+            videoForwardDrawable.setPlayScaleFactor(aspectRatio < 1 ? 0.6f : 0.45f);
         }
         return aspectRatio;
     }
@@ -256,14 +381,37 @@ public class PipVideoOverlay {
             }
         } catch (IllegalArgumentException ignored) {}
 
+        if (photoViewerWebView != null) {
+            photoViewerWebView.showControls();
+        }
+
         videoProgressView = null;
         innerView = null;
         photoViewer = null;
+        photoViewerWebView = null;
         parentSheet = null;
         consumingChild = null;
         isScrolling = false;
         isVisible = false;
         isDismissing = false;
+        canLongClick = false;
+
+        cancelRewind();
+        AndroidUtilities.cancelRunOnUIThread(longClickCallback);
+    }
+
+    public static View getInnerView() {
+        return instance.innerView;
+    }
+
+    private void cancelRewind() {
+        if (photoViewer == null) {
+            return;
+        }
+
+        if (photoViewer.getVideoPlayerRewinder().rewindCount > 0) {
+            photoViewer.getVideoPlayerRewinder().cancelRewind();
+        }
     }
 
     public static void updatePlayButton() {
@@ -271,15 +419,23 @@ public class PipVideoOverlay {
     }
 
     private void updatePlayButtonInternal() {
-        if (photoViewer == null) {
+        if (photoViewer == null || playPauseButton == null) {
             return;
         }
-        VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-        if (videoPlayer == null || playPauseButton == null) {
-            return;
+
+        boolean isPlaying;
+        if (photoViewerWebView != null) {
+            isPlaying = photoViewerWebView.isPlaying();
+        } else {
+            VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+            if (videoPlayer == null) {
+                return;
+            }
+
+            isPlaying = videoPlayer.isPlaying();
         }
         AndroidUtilities.cancelRunOnUIThread(progressRunnable);
-        if (!videoPlayer.isPlaying()) {
+        if (!isPlaying) {
             if (isVideoCompleted) {
                 playPauseButton.setImageResource(R.drawable.pip_replay_large);
             } else {
@@ -364,10 +520,14 @@ public class PipVideoOverlay {
     }
 
     public static boolean show(boolean inAppOnly, Activity activity, View pipContentView, int videoWidth, int videoHeight, boolean animate) {
-        return instance.showInternal(inAppOnly, activity, pipContentView, videoWidth, videoHeight, animate);
+        return show(inAppOnly, activity, null, pipContentView, videoWidth, videoHeight, animate);
     }
 
-    private boolean showInternal(boolean inAppOnly, Activity activity, View pipContentView, int videoWidth, int videoHeight, boolean animate) {
+    public static boolean show(boolean inAppOnly, Activity activity, PhotoViewerWebView viewerWebView, View pipContentView, int videoWidth, int videoHeight, boolean animate) {
+        return instance.showInternal(inAppOnly, activity, pipContentView, viewerWebView, videoWidth, videoHeight, animate);
+    }
+
+    private boolean showInternal(boolean inAppOnly, Activity activity, View pipContentView, PhotoViewerWebView viewerWebView, int videoWidth, int videoHeight, boolean animate) {
         if (isVisible) {
             return false;
         }
@@ -376,6 +536,12 @@ public class PipVideoOverlay {
         mVideoWidth = videoWidth;
         mVideoHeight = videoHeight;
         aspectRatio = null;
+        if (viewerWebView != null && viewerWebView.isControllable()) {
+            photoViewerWebView = viewerWebView;
+            photoViewerWebView.hideControls();
+        } else {
+            photoViewerWebView = null;
+        }
 
         float savedPipX = getPipConfig().getPipX(), savedPipY = getPipConfig().getPipY();
         scaleFactor = getPipConfig().getScaleFactor();
@@ -436,6 +602,9 @@ public class PipVideoOverlay {
             public boolean onScaleBegin(ScaleGestureDetector detector) {
                 if (isScrolling) {
                     isScrolling = false;
+                    canLongClick = false;
+                    cancelRewind();
+                    AndroidUtilities.cancelRunOnUIThread(longClickCallback);
                 }
                 isScrollDisallowed = true;
                 windowLayoutParams.width = (int) (getSuggestedWidth() * maxScaleFactor);
@@ -489,7 +658,7 @@ public class PipVideoOverlay {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             scaleGestureDetector.setStylusScaleEnabled(false);
         }
-        gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
+        gestureDetector = new GestureDetectorFixDoubleTap(context, new GestureDetectorFixDoubleTap.OnGestureListener() {
             private float startPipX, startPipY;
 
             @Override
@@ -510,7 +679,7 @@ public class PipVideoOverlay {
             }
 
             @Override
-            public boolean onSingleTapUp(MotionEvent e) {
+            public boolean onSingleTapConfirmed(MotionEvent e) {
                 if (controlsAnimator != null) {
                     return true;
                 }
@@ -529,6 +698,76 @@ public class PipVideoOverlay {
                 }
 
                 return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
+                    return false;
+                }
+
+                VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+                boolean forward = e.getX() >= getSuggestedWidth() * scaleFactor * 0.5f;
+
+                long current = getCurrentPosition();
+                long total = getDuration();
+                if (current == C.TIME_UNSET || total < 15 * 1000) {
+                    return false;
+                }
+
+                long old = current;
+                if (forward) {
+                    current += 10000;
+                } else {
+                    current -= 10000;
+                }
+                if (old != current) {
+                    boolean apply = true;
+                    if (current > total) {
+                        current = total;
+                    } else if (current < 0) {
+                        if (current < -9000) {
+                            apply = false;
+                        }
+                        current = 0;
+                    }
+                    if (apply) {
+                        videoForwardDrawable.setOneShootAnimation(true);
+                        videoForwardDrawable.setLeftSide(!forward);
+                        videoForwardDrawable.addTime(10000);
+                        seekTo(current);
+                        onUpdateRewindProgressUiInternal(forward ? 10000 : -10000, current / (float) total, true);
+                        if (!isShowingControls) {
+                            toggleControls(isShowingControls = true);
+                            if (!postedDismissControls) {
+                                postedDismissControls = true;
+                                AndroidUtilities.runOnUIThread(dismissControlsCallback, 2500);
+                            }
+                        }
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                if (!hasDoubleTap()) {
+                    return onSingleTapConfirmed(e);
+                }
+                return super.onSingleTapUp(e);
+            }
+
+            @Override
+            public boolean hasDoubleTap() {
+                if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
+                    return false;
+                }
+
+                long current = getCurrentPosition();
+                long total = getDuration();
+                return current != C.TIME_UNSET && total >= 15 * 1000;
             }
 
             @Override
@@ -558,6 +797,10 @@ public class PipVideoOverlay {
 
                         pipXSpring.cancel();
                         pipYSpring.cancel();
+
+                        canLongClick = false;
+                        cancelRewind();
+                        AndroidUtilities.cancelRunOnUIThread(longClickCallback);
                     }
                 }
                 if (isScrolling) {
@@ -606,14 +849,32 @@ public class PipVideoOverlay {
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
-                int action = ev.getAction();
+                int action = ev.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+                    if (ev.getPointerCount() == 1) {
+                        canLongClick = true;
+                        longClickStartPoint = new float[]{ev.getX(), ev.getY()};
+                        AndroidUtilities.runOnUIThread(longClickCallback, 500);
+                    } else {
+                        canLongClick = false;
+                        cancelRewind();
+                        AndroidUtilities.cancelRunOnUIThread(longClickCallback);
+                    }
+                }
+
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_UP) {
+                    canLongClick = false;
+                    cancelRewind();
+                    AndroidUtilities.cancelRunOnUIThread(longClickCallback);
+                }
+
                 if (consumingChild != null) {
                     MotionEvent newEvent = MotionEvent.obtain(ev);
                     newEvent.offsetLocation(consumingChild.getX(), consumingChild.getY());
                     boolean consumed = consumingChild.dispatchTouchEvent(ev);
                     newEvent.recycle();
 
-                    if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_UP) {
                         consumingChild = null;
                     }
 
@@ -626,7 +887,7 @@ public class PipVideoOverlay {
                 boolean scaleDetector = scaleGestureDetector.onTouchEvent(temp);
                 temp.recycle();
                 boolean detector = !scaleGestureDetector.isInProgress() && gestureDetector.onTouchEvent(ev);
-                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_UP) {
                     isScrolling = false;
                     isScrollDisallowed = false;
 
@@ -734,7 +995,25 @@ public class PipVideoOverlay {
         }
         contentFrameLayout.addView(innerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        controlsView = new FrameLayout(context);
+        videoForwardDrawable.setDelegate(new VideoForwardDrawable.VideoForwardDrawableDelegate() {
+            @Override
+            public void onAnimationEnd() {}
+
+            @Override
+            public void invalidate() {
+                controlsView.invalidate();
+            }
+        });
+        controlsView = new FrameLayout(context) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (videoForwardDrawable.isAnimating()) {
+                    videoForwardDrawable.setBounds(getLeft(), getTop(), getRight(), getBottom());
+                    videoForwardDrawable.draw(canvas);
+                }
+            }
+        };
+        controlsView.setWillNotDraw(false);
         controlsView.setAlpha(0f);
         View scrim = new View(context);
         scrim.setBackgroundColor(0x4C000000);
@@ -763,7 +1042,7 @@ public class PipVideoOverlay {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 ActivityManager activityManager = (ActivityManager) v.getContext().getSystemService(Context.ACTIVITY_SERVICE);
                 List<ActivityManager.RunningAppProcessInfo> appProcessInfos = activityManager.getRunningAppProcesses();
-                if (!appProcessInfos.isEmpty()) {
+                if (appProcessInfos != null && !appProcessInfos.isEmpty()) {
                     isResumedByActivityManager = appProcessInfos.get(0).importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
                 }
             }
@@ -792,18 +1071,27 @@ public class PipVideoOverlay {
             if (photoViewer == null) {
                 return;
             }
-            VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
-            if (videoPlayer == null) {
-                return;
-            }
-            if (videoPlayer.isPlaying()) {
-                videoPlayer.pause();
+            if (photoViewerWebView != null) {
+                if (photoViewerWebView.isPlaying()) {
+                    photoViewerWebView.pauseVideo();
+                } else {
+                    photoViewerWebView.playVideo();
+                }
             } else {
-                videoPlayer.play();
+                VideoPlayer videoPlayer = photoViewer.getVideoPlayer();
+                if (videoPlayer == null) {
+                    return;
+                }
+                if (videoPlayer.isPlaying()) {
+                    videoPlayer.pause();
+                } else {
+                    videoPlayer.play();
+                }
             }
             updatePlayButton();
         });
-        playPauseButton.setVisibility(innerView instanceof WebView ? View.GONE : View.VISIBLE);
+        isWebView = innerView instanceof WebView || innerView instanceof PhotoViewerWebView;
+        playPauseButton.setVisibility(isWebView && (photoViewerWebView == null || !photoViewerWebView.isControllable()) ? View.GONE : View.VISIBLE);
         controlsView.addView(playPauseButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.CENTER));
 
         videoProgressView = new VideoProgressView(context);
@@ -892,6 +1180,10 @@ public class PipVideoOverlay {
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
+
+            if (isWebView && (photoViewerWebView == null || !photoViewerWebView.isControllable())) {
+                return;
+            }
 
             int width = getWidth();
 

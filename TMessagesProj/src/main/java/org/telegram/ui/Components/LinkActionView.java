@@ -90,6 +90,7 @@ public class LinkActionView extends LinearLayout {
         frameLayout.addView(linkView);
         optionsView = new ImageView(context);
         optionsView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_ab_other));
+        optionsView.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
         optionsView.setScaleType(ImageView.ScaleType.CENTER);
         frameLayout.addView(optionsView, LayoutHelper.createFrame(40, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 4, 0));
@@ -105,6 +106,7 @@ public class LinkActionView extends LinearLayout {
         spannableStringBuilder.append(LocaleController.getString("LinkActionCopy", R.string.LinkActionCopy));
         spannableStringBuilder.append(".").setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(5)), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
         copyView.setText(spannableStringBuilder);
+        copyView.setContentDescription(LocaleController.getString("LinkActionCopy", R.string.LinkActionCopy));
         copyView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
         copyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         copyView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -119,6 +121,7 @@ public class LinkActionView extends LinearLayout {
         spannableStringBuilder.append(LocaleController.getString("LinkActionShare", R.string.LinkActionShare));
         spannableStringBuilder.append(".").setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(5)), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
         shareView.setText(spannableStringBuilder);
+        shareView.setContentDescription(LocaleController.getString("LinkActionShare", R.string.LinkActionShare));
         shareView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
 
         shareView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

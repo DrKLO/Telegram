@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -357,9 +358,8 @@ public class PhotoPickerSearchActivity extends BaseFragment {
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
-                if (parentLayout != null) {
-                    parentLayout.drawHeaderShadow(canvas, actionBar.getMeasuredHeight() + (int) actionBar.getTranslationY());
-                }
+                float y = actionBar.getMeasuredHeight() + (int) actionBar.getTranslationY();
+                canvas.drawLine(0, y, getWidth(), y, Theme.dividerPaint);
             }
 
             @Override
@@ -651,7 +651,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
 
         sizeNotifierFrameLayout.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        sizeNotifierFrameLayout.addView(imagesSearch.shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
+//        sizeNotifierFrameLayout.addView(imagesSearch.shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
         sizeNotifierFrameLayout.addView(imagesSearch.frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
         sizeNotifierFrameLayout.addView(imagesSearch.writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 10));
         sizeNotifierFrameLayout.addView(imagesSearch.selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -2, 9));
@@ -659,6 +659,13 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         updateTabs();
         switchToCurrentSelectedMode(false);
         swipeBackEnabled = scrollSlidingTextTabStrip.getCurrentTabId() == scrollSlidingTextTabStrip.getFirstTabId();
+
+        int statusBarBackground = Theme.getColor(Theme.key_dialogBackground);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && AndroidUtilities.computePerceivedBrightness(statusBarBackground) >= 0.721f) {
+            fragmentView.setSystemUiVisibility(
+                fragmentView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            );
+        }
 
         return fragmentView;
     }

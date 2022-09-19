@@ -22,10 +22,12 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -856,6 +858,11 @@ public class NumberPicker extends LinearLayout {
         int previous = mValue;
         mValue = current;
         updateInputTextView();
+        if (Math.abs(previous - current) > 0.9f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            try {
+                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+            } catch (Exception ignore) {}
+        }
         if (notifyChange) {
             notifyChange(previous, current);
         }
@@ -863,7 +870,7 @@ public class NumberPicker extends LinearLayout {
         invalidate();
     }
 
-    private void changeValueByOne(boolean increment) {
+    protected void changeValueByOne(boolean increment) {
         mInputText.setVisibility(View.INVISIBLE);
         if (!moveToFinalScrollerPosition(mFlingScroller)) {
             moveToFinalScrollerPosition(mAdjustScroller);

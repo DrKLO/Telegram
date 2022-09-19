@@ -16,12 +16,17 @@ import android.util.Base64;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 public class UserConfig extends BaseController {
 
     public static int selectedAccount;
-    public final static int MAX_ACCOUNT_COUNT = 3;
+    public final static int MAX_ACCOUNT_DEFAULT_COUNT = 3;
+    public final static int MAX_ACCOUNT_COUNT = 4;
 
     private final Object sync = new Object();
     private boolean configLoaded;
@@ -60,6 +65,14 @@ public class UserConfig extends BaseController {
     public TLRPC.TL_help_termsOfService unacceptedTermsOfService;
     public long autoDownloadConfigLoadTime;
 
+    public List<String> awaitBillingProductIds = new ArrayList<>();
+    public TLRPC.InputStorePaymentPurpose billingPaymentPurpose;
+
+    public String premiumGiftsStickerPack;
+    public String genericAnimationsStickerPack;
+    public long lastUpdatedPremiumGiftsStickerPack;
+    public long lastUpdatedGenericAnimations;
+
     public volatile byte[] savedPasswordHash;
     public volatile byte[] savedSaltedPassword;
     public volatile long savedPasswordTime;
@@ -90,6 +103,19 @@ public class UserConfig extends BaseController {
 
     public UserConfig(int instance) {
         super(instance);
+    }
+
+    public static boolean hasPremiumOnAccounts() {
+        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
+            if (AccountInstance.getInstance(a).getUserConfig().isClientActivated() && AccountInstance.getInstance(a).getUserConfig().getUserConfig().isPremium()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static int getMaxAccountCount() {
+        return hasPremiumOnAccounts() ? 5 : 3;
     }
 
     public int getNewMessageId() {
@@ -131,6 +157,20 @@ public class UserConfig extends BaseController {
                     editor.putInt("sharingMyLocationUntil", sharingMyLocationUntil);
                     editor.putInt("lastMyLocationShareTime", lastMyLocationShareTime);
                     editor.putBoolean("filtersLoaded", filtersLoaded);
+                    editor.putStringSet("awaitBillingProductIds", new HashSet<>(awaitBillingProductIds));
+                    if (billingPaymentPurpose != null) {
+                        SerializedData data = new SerializedData(billingPaymentPurpose.getObjectSize());
+                        billingPaymentPurpose.serializeToStream(data);
+                        editor.putString("billingPaymentPurpose", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
+                        data.cleanup();
+                    } else {
+                        editor.remove("billingPaymentPurpose");
+                    }
+                    editor.putString("premiumGiftsStickerPack", premiumGiftsStickerPack);
+                    editor.putLong("lastUpdatedPremiumGiftsStickerPack", lastUpdatedPremiumGiftsStickerPack);
+
+                    editor.putString("genericAnimationsStickerPack", genericAnimationsStickerPack);
+                    editor.putLong("lastUpdatedGenericAnimations", lastUpdatedGenericAnimations);
 
                     editor.putInt("6migrateOffsetId", migrateOffsetId);
                     if (migrateOffsetId != -1) {
@@ -216,8 +256,22 @@ public class UserConfig extends BaseController {
 
     public void setCurrentUser(TLRPC.User user) {
         synchronized (sync) {
+            TLRPC.User oldUser = currentUser;
             currentUser = user;
             clientUserId = user.id;
+            checkPremium(oldUser, user);
+        }
+    }
+
+    private void checkPremium(TLRPC.User oldUser, TLRPC.User newUser) {
+        if (oldUser == null || (newUser != null && oldUser.premium != newUser.premium)) {
+            AndroidUtilities.runOnUIThread(() -> {
+                getMessagesController().updatePremium(newUser.premium);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.premiumStatusChangedGlobal);
+
+                getMediaDataController().loadPremiumPromo(false);
+            });
         }
     }
 
@@ -252,6 +306,24 @@ public class UserConfig extends BaseController {
             sharingMyLocationUntil = preferences.getInt("sharingMyLocationUntil", 0);
             lastMyLocationShareTime = preferences.getInt("lastMyLocationShareTime", 0);
             filtersLoaded = preferences.getBoolean("filtersLoaded", false);
+            awaitBillingProductIds = new ArrayList<>(preferences.getStringSet("awaitBillingProductIds", Collections.emptySet()));
+            if (preferences.contains("billingPaymentPurpose")) {
+                String purpose = preferences.getString("billingPaymentPurpose", null);
+                if (purpose != null) {
+                    byte[] arr = Base64.decode(purpose, Base64.DEFAULT);
+                    if (arr != null) {
+                        SerializedData data = new SerializedData();
+                        billingPaymentPurpose = TLRPC.InputStorePaymentPurpose.TLdeserialize(data, data.readInt32(false), false);
+                        data.cleanup();
+                    }
+                }
+            }
+            premiumGiftsStickerPack = preferences.getString("premiumGiftsStickerPack", null);
+            lastUpdatedPremiumGiftsStickerPack = preferences.getLong("lastUpdatedPremiumGiftsStickerPack", 0);
+
+            genericAnimationsStickerPack = preferences.getString("genericAnimationsStickerPack", null);
+            lastUpdatedGenericAnimations = preferences.getLong("lastUpdatedGenericAnimations", 0);
+
 
             try {
                 String terms = preferences.getString("terms", null);
@@ -296,6 +368,7 @@ public class UserConfig extends BaseController {
                 }
             }
             if (currentUser != null) {
+                checkPremium(null, currentUser);
                 clientUserId = currentUser.id;
             }
             configLoaded = true;
@@ -430,5 +503,25 @@ public class UserConfig extends BaseController {
         editor.putLong("2dialogsLoadOffsetAccess" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetAccess);
         editor.putBoolean("hasValidDialogLoadIds", true);
         editor.commit();
+    }
+
+    public boolean isPremium() {
+        if (currentUser == null) {
+            return false;
+        }
+        return currentUser.premium;
+    }
+
+    public Long getEmojiStatus() {
+        if (currentUser == null) {
+            return null;
+        }
+        if (currentUser.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
+            return ((TLRPC.TL_emojiStatusUntil) currentUser.emoji_status).document_id;
+        }
+        if (currentUser.emoji_status instanceof TLRPC.TL_emojiStatus) {
+            return ((TLRPC.TL_emojiStatus) currentUser.emoji_status).document_id;
+        }
+        return null;
     }
 }

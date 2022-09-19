@@ -33,8 +33,8 @@ public abstract class BaseCell extends ViewGroup {
         public void run() {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 if (onLongPress()) {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                     onTouchEvent(event);
                     event.recycle();

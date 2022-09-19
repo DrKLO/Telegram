@@ -141,7 +141,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
                 return backDetector.onTouchEvent(event);
             }
         };
-        backButton.setImageResource(R.drawable.menu_clear);
+        backButton.setImageResource(R.drawable.msg_clear_input);
         backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         backButton.setBackground(getButtonDrawable());
         int pad = AndroidUtilities.dp(11);

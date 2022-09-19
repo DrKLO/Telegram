@@ -135,7 +135,7 @@ public class SharedPhotoVideoCell2 extends View {
                     showImageStub = true;
                 }
             }
-        } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageObject.messageOwner.media.photo != null && !messageObject.photoThumbs.isEmpty()) {
+        } else if (MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaPhoto && MessageObject.getMedia(messageObject.messageOwner).photo != null && !messageObject.photoThumbs.isEmpty()) {
             if (messageObject.mediaExists || canAutoDownload(messageObject)) {
                 if (messageObject.mediaThumb != null) {
                     if (messageObject.strippedThumb != null) {
@@ -440,13 +440,13 @@ public class SharedPhotoVideoCell2 extends View {
         Paint highlightPaint = new Paint();
         SparseArray<String> imageFilters = new SparseArray<>();
 
-        public SharedResources(Context context) {
+        public SharedResources(Context context, Theme.ResourcesProvider resourcesProvider) {
             textPaint.setTextSize(AndroidUtilities.dp(12));
             textPaint.setColor(Color.WHITE);
             textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             playDrawable = ContextCompat.getDrawable(context, R.drawable.play_mini_video);
             playDrawable.setBounds(0, 0, playDrawable.getIntrinsicWidth(), playDrawable.getIntrinsicHeight());
-            backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder));
+            backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder, resourcesProvider));
         }
 
         public String getFilterString(int width) {

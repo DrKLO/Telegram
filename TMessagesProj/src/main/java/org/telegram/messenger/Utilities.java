@@ -37,6 +37,7 @@ public class Utilities {
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
+    public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
 
     private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -65,7 +66,7 @@ public class Utilities {
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     private native static void aesIgeEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     public native static void aesCtrDecryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length);
-    public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n);
+    public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, long length, int n);
     private native static void aesCbcEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt);
     public native static void aesCbcEncryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length, int encrypt);
     public native static String readlink(String path);
@@ -113,15 +114,46 @@ public class Utilities {
         }
         int val = 0;
         try {
-            Matcher matcher = pattern.matcher(value);
-            if (matcher.find()) {
-                String num = matcher.group(0);
-                val = Integer.parseInt(num);
+            int start = -1, end;
+            for (end = 0; end < value.length(); ++end) {
+                char character = value.charAt(end);
+                boolean allowedChar = character == '-' || character >= '0' && character <= '9';
+                if (allowedChar && start < 0) {
+                    start = end;
+                } else if (!allowedChar && start >= 0) {
+                    end++;
+                    break;
+                }
             }
-        } catch (Exception ignore) {
-
-        }
+            if (start >= 0) {
+                String str = value.subSequence(start, end).toString();
+//                val = parseInt(str);
+                val = Integer.parseInt(str);
+            }
+//            Matcher matcher = pattern.matcher(value);
+//            if (matcher.find()) {
+//                String num = matcher.group(0);
+//                val = Integer.parseInt(num);
+//            }
+        } catch (Exception ignore) {}
         return val;
+    }
+    private static int parseInt(final String s) {
+        int num = 0;
+        boolean negative = true;
+        final int len = s.length();
+        final char ch = s.charAt(0);
+        if (ch == '-') {
+            negative = false;
+        } else {
+            num = '0' - ch;
+        }
+        int i = 1;
+        while (i < len) {
+            num = num * 10 + '0' - s.charAt(i++);
+        }
+
+        return negative ? -num : num;
     }
 
     public static Long parseLong(String value) {
@@ -283,10 +315,10 @@ public class Utilities {
         return computeSHA256(convertme, 0, convertme.length);
     }
 
-    public static byte[] computeSHA256(byte[] convertme, int offset, int len) {
+    public static byte[] computeSHA256(byte[] convertme, int offset, long len) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(convertme, offset, len);
+            md.update(convertme, offset, (int) len);
             return md.digest();
         } catch (Exception e) {
             FileLog.e(e);
@@ -403,8 +435,18 @@ public class Utilities {
         return null;
     }
 
-    public static float clamp(float value, float top, float bottom) {
-        return Math.max(Math.min(value, top), bottom);
+    public static int clamp(int value, int maxValue, int minValue) {
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
+    public static float clamp(float value, float maxValue, float minValue) {
+        if (Float.isNaN(value)) {
+            return minValue;
+        }
+        if (Float.isInfinite(value)) {
+            return maxValue;
+        }
+        return Math.max(Math.min(value, maxValue), minValue);
     }
 
     public static String generateRandomString() {
@@ -417,5 +459,9 @@ public class Utilities {
             sb.append(RANDOM_STRING_CHARS.charAt(fastRandom.nextInt(RANDOM_STRING_CHARS.length())));
         }
         return sb.toString();
+    }
+
+    public static interface Callback<T> {
+        public void run(T arg);
     }
 }

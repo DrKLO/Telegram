@@ -16,6 +16,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Rect;
@@ -26,6 +27,7 @@ import android.os.SystemClock;
 
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import android.text.Layout;
@@ -49,6 +51,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.ui.ActionBar.FloatingActionMode;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
@@ -67,6 +70,7 @@ public class EditTextBoldCursor extends EditTextEffects {
     private static Method getVerticalOffsetMethod;
     private static Class editorClass;
     private static Field mCursorDrawableResField;
+    private static Method mEditorInvalidateDisplayList;
 
     private Drawable mCursorDrawable;
     private Object editor;
@@ -329,9 +333,11 @@ public class EditTextBoldCursor extends EditTextEffects {
                 try {
                     mShowCursorField = editorClass.getDeclaredField("mShowCursor");
                     mShowCursorField.setAccessible(true);
-                } catch (Exception ignore) {
-
-                }
+                } catch (Exception ignore) {}
+                try {
+                    mEditorInvalidateDisplayList = editorClass.getDeclaredMethod("invalidateTextDisplayList");
+                    mEditorInvalidateDisplayList.setAccessible(true);
+                } catch (Exception ignore) {}
                 getVerticalOffsetMethod = TextView.class.getDeclaredMethod("getVerticalOffset", boolean.class);
                 getVerticalOffsetMethod.setAccessible(true);
             }
@@ -632,6 +638,20 @@ public class EditTextBoldCursor extends EditTextEffects {
         return super.onTouchEvent(event);
     }
 
+    public void invalidateForce() {
+        if (!isHardwareAccelerated()) {
+            invalidate();
+            return;
+        }
+        try {
+            // on hardware accelerated edittext to invalidate imagespan display list must be invalidated
+            if (mEditorInvalidateDisplayList != null && editor != null) {
+                mEditorInvalidateDisplayList.invoke(editor);
+            }
+        } catch (Exception ignore) {};
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if ((length() == 0 || transformHintToHeader) && hintLayout != null && (hintVisible || hintAlpha != 0)) {
@@ -680,7 +700,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 }
                 canvas.scale(scale, scale);
                 canvas.translate(0, -AndroidUtilities.dp(22) * headerAnimationProgress);
-                getPaint().setColor(AndroidUtilities.lerpColor(hintColor, headerHintColor, headerAnimationProgress));
+                getPaint().setColor(ColorUtils.blendARGB(hintColor, headerHintColor, headerAnimationProgress));
             } else {
                 getPaint().setColor(hintColor);
                 getPaint().setAlpha((int) (255 * hintAlpha * (Color.alpha(hintColor) / 255.0f)));
@@ -845,7 +865,8 @@ public class EditTextBoldCursor extends EditTextEffects {
                 }
             }
 
-            int bottom = (int) lineY;
+            int scrollHeight = (getLayout() == null ? 0 : getLayout().getHeight()) - getMeasuredHeight() + getPaddingBottom() + getPaddingTop();
+            int bottom = (int) lineY + getScrollY() + Math.min(Math.max(0, scrollHeight - getScrollY()), AndroidUtilities.dp(2));
             int centerX = lastTouchX < 0 ? getMeasuredWidth() / 2 : lastTouchX,
                 maxWidth = Math.max(centerX, getMeasuredWidth() - centerX) * 2;
             if (lineActiveness < 1f) {
@@ -1029,11 +1050,34 @@ public class EditTextBoldCursor extends EditTextEffects {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setClassName("android.widget.EditText");
         if (hintLayout != null) {
-            AccessibilityNodeInfoCompat.wrap(info).setHintText(hintLayout.getText());
+            if (getText().length() <= 0) {
+                info.setText(hintLayout.getText());
+            } else {
+                AccessibilityNodeInfoCompat.wrap(info).setHintText(hintLayout.getText());
+            }
         }
     }
 
     protected Theme.ResourcesProvider getResourcesProvider() {
         return null;
+    }
+
+    public void setHandlesColor(int color) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || XiaomiUtilities.isMIUI()) {
+            return;
+        }
+        try {
+            Drawable left = getTextSelectHandleLeft();
+            left.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            setTextSelectHandleLeft(left);
+
+            Drawable middle = getTextSelectHandle();
+            middle.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            setTextSelectHandle(middle);
+
+            Drawable right = getTextSelectHandleRight();
+            right.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            setTextSelectHandleRight(right);
+        } catch (Exception ignore) {}
     }
 }

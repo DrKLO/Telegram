@@ -311,7 +311,7 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
         final RecyclerView.ViewHolder newHolder = changeInfo.newHolder;
         final View newView = newHolder != null ? newHolder.itemView : null;
         if (view != null) {
-            final ViewPropertyAnimator oldViewAnim = view.animate().setDuration(getChangeDuration());
+            final ViewPropertyAnimator oldViewAnim = view.animate().setDuration(getChangeRemoveDuration());
             mChangeAnimations.add(changeInfo.oldHolder);
             oldViewAnim.translationX(changeInfo.toX - changeInfo.fromX);
             oldViewAnim.translationY(changeInfo.toY - changeInfo.fromY);
@@ -336,7 +336,8 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
         if (newView != null) {
             final ViewPropertyAnimator newViewAnimation = newView.animate();
             mChangeAnimations.add(changeInfo.newHolder);
-            newViewAnimation.translationX(0).translationY(0).setDuration(getChangeDuration()).alpha(1).setListener(new AnimatorListenerAdapter() {
+            newViewAnimation.translationX(0).translationY(0).setDuration(getChangeAddDuration())
+                .setStartDelay(getChangeDuration() - getChangeAddDuration()).alpha(1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animator) {
                     dispatchChangeStarting(changeInfo.newHolder, false);

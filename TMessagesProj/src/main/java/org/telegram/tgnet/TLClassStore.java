@@ -21,7 +21,6 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_error.constructor, TLRPC.TL_error.class);
         classStore.put(TLRPC.TL_decryptedMessageService.constructor, TLRPC.TL_decryptedMessageService.class);
         classStore.put(TLRPC.TL_decryptedMessage.constructor, TLRPC.TL_decryptedMessage.class);
-        classStore.put(TLRPC.TL_config.constructor, TLRPC.TL_config.class);
         classStore.put(TLRPC.TL_decryptedMessageLayer.constructor, TLRPC.TL_decryptedMessageLayer.class);
         classStore.put(TLRPC.TL_decryptedMessage_layer17.constructor, TLRPC.TL_decryptedMessage.class);
         classStore.put(TLRPC.TL_decryptedMessage_layer45.constructor, TLRPC.TL_decryptedMessage_layer45.class);

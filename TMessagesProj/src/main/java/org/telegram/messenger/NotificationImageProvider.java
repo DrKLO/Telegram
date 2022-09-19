@@ -6,9 +6,10 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
+import android.text.TextUtils;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.text.TextUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,17 +19,27 @@ import java.util.List;
 
 public class NotificationImageProvider extends ContentProvider implements NotificationCenter.NotificationCenterDelegate {
 
-	public static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".notification_image_provider";
-
-	private static final UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
-
-	static {
-		matcher.addURI(AUTHORITY, "msg_media_raw/#/*", 1); // content://org.telegram..../msg_media_raw/account/filename.ext
-	}
+	private static String authority;
+	private static UriMatcher matcher;
 
 	private HashSet<String> waitingForFiles = new HashSet<>();
 	private final Object sync = new Object();
 	private HashMap<String, Long> fileStartTimes = new HashMap<>();
+
+	public static String getAuthority() {
+		if (authority == null) {
+			authority = ApplicationLoader.getApplicationId() + ".notification_image_provider";
+		}
+		return authority;
+	}
+
+	private static UriMatcher getUriMatcher() {
+		if (matcher == null) {
+			matcher = new UriMatcher(UriMatcher.NO_MATCH);
+			matcher.addURI(getAuthority(), "msg_media_raw/#/*", 1); // content://org.telegram..../msg_media_raw/account/filename.ext
+		}
+		return matcher;
+	}
 
 	@Override
 	public boolean onCreate() {
@@ -88,7 +99,7 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 		if (!"r".equals(mode)) {
 			throw new SecurityException("Can only open files for read");
 		}
-		if (matcher.match(uri) == 1) {
+		if (getUriMatcher().match(uri) == 1) {
 			List<String> path = uri.getPathSegments();
 			int account = Integer.parseInt(path.get(1));
 			String name = path.get(2);

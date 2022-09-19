@@ -16,6 +16,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -48,9 +51,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class FilterCreateActivity extends BaseFragment {
 
@@ -996,10 +996,10 @@ public class FilterCreateActivity extends BaseFragment {
                         textCell.setTextAndIcon(LocaleController.formatPluralString("FilterShowMoreChats", newNeverShow.size() - 5), R.drawable.arrow_more, false);
                     } else if (position == includeAddRow) {
                         textCell.setColors(Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhiteBlueText4);
-                        textCell.setTextAndIcon(LocaleController.getString("FilterAddChats", R.string.FilterAddChats), R.drawable.actions_addchat, position + 1 != includeSectionRow);
+                        textCell.setTextAndIcon(LocaleController.getString("FilterAddChats", R.string.FilterAddChats), R.drawable.msg_chats_add, position + 1 != includeSectionRow);
                     } else if (position == excludeAddRow) {
                         textCell.setColors(Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhiteBlueText4);
-                        textCell.setTextAndIcon(LocaleController.getString("FilterRemoveChats", R.string.FilterRemoveChats), R.drawable.actions_addchat, position + 1 != excludeSectionRow);
+                        textCell.setTextAndIcon(LocaleController.getString("FilterRemoveChats", R.string.FilterRemoveChats), R.drawable.msg_chats_add, position + 1 != excludeSectionRow);
                     }
                     break;
                 }

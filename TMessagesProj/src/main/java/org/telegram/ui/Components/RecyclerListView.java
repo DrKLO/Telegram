@@ -19,6 +19,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
@@ -45,6 +46,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.IntDef;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -52,6 +54,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.lang.annotation.Retention;
@@ -124,6 +127,7 @@ public class RecyclerListView extends RecyclerView {
     private boolean selfOnLayout;
 
     public boolean scrollingByUser;
+    public boolean scrolledByUserOnce;
 
     private GestureDetectorFixDoubleTap gestureDetector;
     private View currentChildView;
@@ -165,6 +169,8 @@ public class RecyclerListView extends RecyclerView {
     HashSet<Integer> selectedPositions;
     RecyclerItemsEnterAnimator itemsEnterAnimator;
 
+    protected Consumer<Canvas> selectorTransformer;
+
     protected final Theme.ResourcesProvider resourcesProvider;
 
     private boolean accessibilityEnabled = true;
@@ -178,6 +184,10 @@ public class RecyclerListView extends RecyclerView {
             }
         }
     };
+
+    public void setSelectorTransformer(Consumer<Canvas> transformer) {
+        selectorTransformer = transformer;
+    }
 
     public FastScroll getFastScroll() {
         return fastScroll;
@@ -1182,7 +1192,7 @@ public class RecyclerListView extends RecyclerView {
         disableHighlightState = value;
     }
 
-    protected View getPressedChildView() {
+    public View getPressedChildView() {
         return currentChildView;
     }
 
@@ -1344,6 +1354,9 @@ public class RecyclerListView extends RecyclerView {
                     onScrollListener.onScrollStateChanged(recyclerView, newState);
                 }
                 scrollingByUser = newState == SCROLL_STATE_DRAGGING || newState == SCROLL_STATE_SETTLING;
+                if (scrollingByUser) {
+                    scrolledByUserOnce = true;
+                }
             }
 
             @Override
@@ -1437,6 +1450,10 @@ public class RecyclerListView extends RecyclerView {
             selectorDrawable = Theme.createSelectorDrawable(color, selectorType);
         }
         selectorDrawable.setCallback(this);
+    }
+
+    public Drawable getSelectorDrawable() {
+        return selectorDrawable;
     }
 
     public void checkSection(boolean force) {
@@ -1670,13 +1687,23 @@ public class RecyclerListView extends RecyclerView {
     }
 
     public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        setOnItemLongClickListener(listener, ViewConfiguration.getLongPressTimeout());
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener listener, long duration) {
         onItemLongClickListener = listener;
         gestureDetector.setIsLongpressEnabled(listener != null);
+        gestureDetector.setLongpressDuration(duration);
     }
 
     public void setOnItemLongClickListener(OnItemLongClickListenerExtended listener) {
+        setOnItemLongClickListener(listener, ViewConfiguration.getLongPressTimeout());
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListenerExtended listener, long duration) {
         onItemLongClickListenerExtended = listener;
         gestureDetector.setIsLongpressEnabled(listener != null);
+        gestureDetector.setLongpressDuration(duration);
     }
 
     public void setEmptyView(View view) {
@@ -1821,7 +1848,7 @@ public class RecyclerListView extends RecyclerView {
         }
         boolean emptyViewVisible = emptyViewIsVisible();
         int newVisibility = emptyViewVisible ? VISIBLE : GONE;
-        if (!animateEmptyView) {
+        if (!animateEmptyView || !SharedConfig.animationsEnabled()) {
             animated = false;
         }
         if (animated) {
@@ -2206,6 +2233,10 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
+    public Rect getSelectorRect() {
+        return selectorRect;
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (itemsEnterAnimator != null) {
@@ -2214,12 +2245,22 @@ public class RecyclerListView extends RecyclerView {
 
         if (drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
+            canvas.save();
+            if (selectorTransformer != null) {
+                selectorTransformer.accept(canvas);
+            }
             selectorDrawable.draw(canvas);
+            canvas.restore();
         }
         super.dispatchDraw(canvas);
         if (!drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
+            canvas.save();
+            if (selectorTransformer != null) {
+                selectorTransformer.accept(canvas);
+            }
             selectorDrawable.draw(canvas);
+            canvas.restore();
         }
         if (overlayContainer != null) {
             overlayContainer.draw(canvas);

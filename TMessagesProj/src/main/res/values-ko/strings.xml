@@ -996,7 +996,7 @@
     <string name="DeleteBanUser">사용자 차단</string>
     <string name="DeleteReportSpam">스팸 신고</string>
     <string name="DeleteAllFrom">%1$s 님의 메시지 모두 삭제</string>
-    <string name="ClearRecentEmoji">최근에 사용한 이모지를 비울까요?</string>
+    <string name="ClearRecentEmojiTitle">최근에 사용한 이모지를 비울까요</string>
     <string name="Emoji1">스마일리와 사람</string>
     <string name="Emoji2">동물과 자연</string>
     <string name="Emoji3">음식과 음료</string>
@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">**%2$s** 폴더에서 **%1$s** 대화가 삭제됨</string>
     <string name="FilterChatsRemovedFrom">**%2$s** 폴더에서 **%1$s** 대화가 삭제됨</string>
     <string name="FilterAddToAlertFullTitle">한계 도달</string>
-    <string name="FilterRemoveFromAlertFullText">죄송합니다, 폴더에 100 개 이상의 대화를 추가 할 수 없습니다.</string>
     <string name="FilterAddToAlertFullText">죄송합니다, 폴더에서 100개 이상의 대화를 제외할 수 없습니다.</string>
     <!--passcode view-->
     <string name="Passcode">암호 잠금</string>

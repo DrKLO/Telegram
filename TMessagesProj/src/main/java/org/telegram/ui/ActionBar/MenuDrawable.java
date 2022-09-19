@@ -34,6 +34,7 @@ public class MenuDrawable extends Drawable {
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
     private int iconColor;
     private int backColor;
+    private boolean roundCap;
 
     private RectF rect = new RectF();
 
@@ -171,11 +172,18 @@ public class MenuDrawable extends Drawable {
             canvas.rotate(currentRotation * (reverseAngle ? -180 : 180), AndroidUtilities.dp(9), 0);
             paint.setColor(color1);
             paint.setAlpha(alpha);
-            canvas.drawLine(0, 0, AndroidUtilities.dp(18) - AndroidUtilities.dp(3.0f) * currentRotation - diffMiddle, 0, paint);
+            canvas.drawLine((roundCap ? AndroidUtilities.dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation) : 0), 0, AndroidUtilities.dp(18) - AndroidUtilities.dp(3.0f) * currentRotation - diffMiddle - (roundCap ? (paint.getStrokeWidth() / 2f) * (1f - currentRotation) : 0), 0, paint);
             endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
             endXDiff = AndroidUtilities.dp(18) - AndroidUtilities.dp(2.5f) * Math.abs(currentRotation);
             startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(2.0f) * Math.abs(currentRotation);
             startXDiff = AndroidUtilities.dp(7.5f) * Math.abs(currentRotation);
+            if (roundCap) {
+                startXDiff += (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
+                endYDiff += AndroidUtilities.dp(.5f) * currentRotation;
+                endXDiff -= AndroidUtilities.dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
+                startYDiff -= AndroidUtilities.dp(.25f) * currentRotation;
+                endYDiff += AndroidUtilities.dp(.25f) * currentRotation;
+            }
         } else {
             canvas.rotate(currentRotation * (reverseAngle ? -225 : 135), AndroidUtilities.dp(9), 0);
             if (miniIcon) {
@@ -186,7 +194,6 @@ public class MenuDrawable extends Drawable {
                 endXDiff = AndroidUtilities.dpf2(16) * (1 - Math.abs(currentRotation)) + (AndroidUtilities.dpf2(9)) * Math.abs(currentRotation);
                 startYDiff = AndroidUtilities.dpf2(5) + AndroidUtilities.dpf2(3.0f) * Math.abs(currentRotation);
                 startXDiff = AndroidUtilities.dpf2(2) + AndroidUtilities.dpf2(7) * Math.abs(currentRotation);
-
             } else {
                 int color2 = Theme.getColor(Theme.key_actionBarActionModeDefaultIcon);
                 int backColor2 = Theme.getColor(Theme.key_actionBarActionModeDefault);
@@ -314,6 +321,7 @@ public class MenuDrawable extends Drawable {
 
     public void setRoundCap() {
         paint.setStrokeCap(Paint.Cap.ROUND);
+        roundCap = true;
     }
 
     public void setMiniIcon(boolean miniIcon) {

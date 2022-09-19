@@ -69,6 +69,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
                 super.dispatchDraw(canvas);
             }
         };
+        listView.setOverScrollMode(OVER_SCROLL_NEVER);
         listView.setClipToPadding(false);
         addView(listView);
         updateColors();
@@ -239,7 +240,7 @@ public class BotCommandsMenuContainer extends FrameLayout implements NestedScrol
     }
 
     public void updateColors() {
-        topBackground.setColor(Theme.getColor(Theme.key_dialogGrayLine));
+        topBackground.setColor(Theme.getColor(Theme.key_sheet_scrollUp));
         backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.MULTIPLY));
         invalidate();

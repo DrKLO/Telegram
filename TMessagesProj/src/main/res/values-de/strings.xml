@@ -2494,7 +2494,6 @@
     <string name="FilterChatRemovedFrom">**%1$s** wurde aus **%2$s** entfernt</string>
     <string name="FilterChatsRemovedFrom">**%1$s** wurde aus **%2$s** entfernt</string>
     <string name="FilterAddToAlertFullTitle">Limt erreicht</string>
-    <string name="FilterRemoveFromAlertFullText">Mehr als 100 Chats kann man leider nicht einem Ordner hinzufügen.</string>
     <string name="FilterAddToAlertFullText">Mehr als 100 Chats kann man leider nicht aus einem Ordner ausschließen.</string>
     <!--passcode view-->
     <string name="Passcode">Pincode-Sperre</string>

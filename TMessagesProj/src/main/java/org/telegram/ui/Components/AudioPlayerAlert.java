@@ -57,7 +57,6 @@ import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -229,6 +228,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     public AudioPlayerAlert(final Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, true, resourcesProvider);
+        fixNavigationBar();
 
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject != null) {
@@ -1217,6 +1217,36 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         updateEmptyView();
     }
 
+    @Override
+    public int getContainerViewHeight() {
+        if (playerLayout == null) {
+            return 0;
+        }
+        if (playlist.size() <= 1) {
+            return playerLayout.getMeasuredHeight() + backgroundPaddingTop;
+        } else {
+            int offset = AndroidUtilities.dp(13);
+            int top = scrollOffsetY - backgroundPaddingTop - offset;
+            if (currentSheetAnimationType == 1) {
+                top += listView.getTranslationY();
+            }
+            if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight()) {
+                float toMove = offset + AndroidUtilities.dp(11 - 7);
+                float moveProgress = Math.min(1.0f, (ActionBar.getCurrentActionBarHeight() - top - backgroundPaddingTop) / toMove);
+                float availableToMove = ActionBar.getCurrentActionBarHeight() - toMove;
+
+                int diff = (int) (availableToMove * moveProgress);
+                top -= diff;
+            }
+
+            if (Build.VERSION.SDK_INT >= 21) {
+                top += AndroidUtilities.statusBarHeight;
+            }
+
+            return container.getMeasuredHeight() - top;
+        }
+    }
+
     private void startForwardRewindingSeek() {
         if (rewindingState == 1) {
             lastRewindingTime = System.currentTimeMillis();
@@ -1364,7 +1394,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a);
                         if (message != null) {
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0);
                     }
@@ -1403,7 +1433,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     }
                 }
                 if (f == null) {
-                    f = FileLoader.getPathToMessage(messageObject.messageOwner);
+                    f = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
                 }
 
                 if (f.exists()) {
@@ -1411,7 +1441,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     intent.setType(messageObject.getMimeType());
                     if (Build.VERSION.SDK_INT >= 24) {
                         try {
-                            intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", f));
+                            intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(ApplicationLoader.applicationContext, ApplicationLoader.getApplicationId() + ".provider", f));
                             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         } catch (Exception ignore) {
                             intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(f));
@@ -1471,7 +1501,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             }
             if (path == null || path.length() == 0) {
-                path = FileLoader.getPathToMessage(messageObject.messageOwner).toString();
+                path = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner).toString();
             }
             MediaController.saveFile(path, parentActivity, 3, fileName, messageObject.getDocument() != null ? messageObject.getDocument().mime_type : "", () -> BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createDownloadBulletin(BulletinFactory.FileType.AUDIO).show());
         }
@@ -1836,7 +1866,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         }
         if (cacheFile == null) {
-            cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
+            cacheFile = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
         }
         boolean canStream = SharedConfig.streamMedia && (int) messageObject.getDialogId() != 0 && messageObject.isMusic();
         if (!cacheFile.exists() && !canStream) {
@@ -1992,7 +2022,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (thumbImageLocation.path != null) {
                     ImageLoader.getInstance().preloadArtwork(thumbImageLocation.path);
                 } else {
-                    FileLoader.getInstance(currentAccount).loadFile(thumbImageLocation, messageObject, null, 0, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(thumbImageLocation, messageObject, null, FileLoader.PRIORITY_LOW, 1);
                 }
             }
         }

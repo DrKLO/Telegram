@@ -164,6 +164,9 @@ public class RecyclerAnimationScrollHelper {
                     if (view.getParent() == null) {
                         recyclerView.addView(view);
                         layoutManager.ignoreView(view);
+                        if (animationCallback != null) {
+                            animationCallback.ignoreView(view, true);
+                        }
                     }
                     if (view instanceof ChatMessageCell) {
                         ((ChatMessageCell) view).setAnimationRunning(true, true);
@@ -172,6 +175,10 @@ public class RecyclerAnimationScrollHelper {
 
                 if (oldT == Integer.MAX_VALUE) {
                     oldT = 0;
+                }
+
+                if (animationCallback != null) {
+                    animationCallback.onPreAnimation();
                 }
 
                 final int scrollLength ;
@@ -233,6 +240,7 @@ public class RecyclerAnimationScrollHelper {
                             layoutManager.stopIgnoringView(view);
                             recyclerView.removeView(view);
                             if (animationCallback != null) {
+                                animationCallback.ignoreView(view, false);
                                 animationCallback.recycleView(view);
                             }
                         }
@@ -286,7 +294,7 @@ public class RecyclerAnimationScrollHelper {
                 if (hasSameViews) {
                    duration = 600;
                 } else {
-                 duration = (long) (((scrollLength / (float) recyclerView.getMeasuredHeight()) + 1f) * 200L);
+                    duration = (long) (((scrollLength / (float) recyclerView.getMeasuredHeight()) + 1f) * 200L);
                     if (duration < 300) {
                         duration = 300;
                     }
@@ -351,6 +359,14 @@ public class RecyclerAnimationScrollHelper {
         }
 
         public void recycleView(View view) {
+
+        }
+
+        public void onPreAnimation() {
+
+        }
+
+        public void ignoreView(View view, boolean ignore) {
 
         }
     }
