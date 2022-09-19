@@ -1,5 +1,9 @@
 # Changes
 
+* 8.85.48
+    * bit changed login part
+    * .gitignore fix
+    * you can enable WAL mode for DB (using debug menu in the client)
 * 8.85.47
     * hide deletion marks fix
     * added persian translation, thanks to OxMohsen

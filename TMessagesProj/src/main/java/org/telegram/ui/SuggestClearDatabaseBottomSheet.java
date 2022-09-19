@@ -86,10 +86,11 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
                 if (fragment.getParentActivity() == null) {
                     return;
                 }
-                // disabled until we will find a good way for that.
-                BulletinFactory.of(fragment).createCopyBulletin(LocaleController.getString(R.string.PopupDisabled), fragment.getResourceProvider()).show();
-//                MessagesController.getInstance(currentAccount).clearQueryTime();
-//                fragment.getMessagesStorage().clearLocalDatabase();
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableWALMode", false)) {
+                    MessagesController.getInstance(currentAccount).clearQueryTime();
+                    fragment.getMessagesStorage().clearLocalDatabase();
+                } else
+                    BulletinFactory.of(fragment).createCopyBulletin(LocaleController.getString(R.string.PopupDisabled), fragment.getResourceProvider()).show();
             });
             AlertDialog alertDialog = builder.create();
             fragment.showDialog(alertDialog);

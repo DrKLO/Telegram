@@ -2350,7 +2350,7 @@ public class LoginActivity extends BaseFragment {
                 phoneNumberConfirmView.dismiss();
             }
 
-            boolean simcardAvailable = true;
+            boolean simcardAvailable = AndroidUtilities.isSimAvailable();
             boolean allowCall = true;
             boolean allowCancelCall = true;
             boolean allowReadCallLog = true;
@@ -2480,6 +2480,7 @@ public class LoginActivity extends BaseFragment {
                 preferences.edit().remove("sms_hash").apply();
             }
             settings.current_number = true;
+
             if (false) {
                 try {
                     String number = tm.getLine1Number();
@@ -2589,7 +2590,7 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             try {
-                if (true) {
+                if (AndroidUtilities.isSimAvailable()) {
                     boolean allowCall = true;
                     boolean allowReadPhoneNumbers = true;
                     if (false) {
@@ -2637,7 +2638,8 @@ public class LoginActivity extends BaseFragment {
                         phoneField.setAlpha(0);
 //                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
 //                        String number = PhoneFormat.stripExceptNumbers(codeField.getText().toString());
-                        String number = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
+                        String number = PhoneFormat.stripExceptNumbers("+" + codeField.getText() + phoneField.getText());
+//                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
                         String textToSet = null;
                         boolean ok = false;
                         if (!TextUtils.isEmpty(number)) {
