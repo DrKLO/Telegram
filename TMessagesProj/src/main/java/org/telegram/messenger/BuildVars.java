@@ -21,12 +21,15 @@ public class BuildVars {
     public static boolean CHECK_UPDATES = true;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
     public static int BUILD_VERSION = 2725;
+    public static int BUILD_VERSION_FULL = 27252;
+    public static String BUILD_VENDOR = "com.android.vending";
+    public static String BUILD_DUROV = "org.telegram.messenger";
     public static String BUILD_VERSION_STRING = "8.8.6";
     public static int APP_ID = 4;
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
     public static String APPCENTER_HASH = "a5b5c4f5-51da-dedc-9918-d9766a22ca7c";
 
-    public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
+    public static String SMS_HASH = "oLeq9AcOZkT";
     public static String PLAYSTORE_APP_URL = "https://github.com/nikitasius/Telegraher/releases";
 
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)
@@ -40,22 +43,16 @@ public class BuildVars {
     }
 
     public static boolean useInvoiceBilling() {
-        return DEBUG_VERSION || isStandaloneApp() || isBetaApp();
+        return false;
     }
 
     private static Boolean standaloneApp;
     public static boolean isStandaloneApp() {
-        if (standaloneApp == null) {
-            standaloneApp = ApplicationLoader.applicationContext != null && "org.telegram.messenger.web".equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return standaloneApp;
+        return false;
     }
 
     private static Boolean betaApp;
     public static boolean isBetaApp() {
-        if (betaApp == null) {
-            betaApp = ApplicationLoader.applicationContext != null && "org.telegram.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return betaApp;
+        return false;
     }
 }

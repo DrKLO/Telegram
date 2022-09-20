@@ -66,7 +66,7 @@ different)
 * Realeases are
   here: [https://github.com/nikitasius/Telegraher/releases](https://github.com/nikitasius/Telegraher/releases)
     * if it contain `beta` it mean it's BETA
-* Last release `8.85.48`: [bundle](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.85.48_bundle)
+* Last release `8.85.49`: [bundle](https://github.com/nikitasius/Telegraher/releases/tag/noshit_8.85.49_bundle)
 * Last beta: write `!beta` in chat
 
 ### Issues/Wishlist

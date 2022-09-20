@@ -1,5 +1,8 @@
 # Changes
 
+* 8.85.49
+    * app use data from BuildVars everywhere
+    * login flow looks now pretty legit for me
 * 8.85.48
     * bit changed login part
     * .gitignore fix
