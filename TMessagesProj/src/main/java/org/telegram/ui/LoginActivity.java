@@ -1592,7 +1592,7 @@ public class LoginActivity extends BaseFragment {
         private boolean ignoreOnTextChange = false;
         private boolean ignoreOnPhoneChange = false;
         private boolean nextPressed = false;
-        private boolean confirmedNumber = false;
+        private boolean confirmedNumber = true;
 
         public PhoneView(Context context) {
             super(context);
@@ -2355,6 +2355,11 @@ public class LoginActivity extends BaseFragment {
             boolean allowReadCallLog = true;
             boolean allowReadPhoneNumbers = true;
 
+            SharedPreferences pref = MessagesController.getGlobalMainSettings();
+            if (pref.getBoolean("firstlogin", true)) {
+                pref.edit().putBoolean("firstlogin", false).apply();
+            }
+
             if (false) {
                 allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                 allowCancelCall = getParentActivity().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED;
@@ -2583,16 +2588,19 @@ public class LoginActivity extends BaseFragment {
             needShowProgress(reqId);
         }
 
-        private boolean numberFilled;
+        private boolean numberFilled = true;
         public void fillNumber() {
+            if (true) return;
+            //this code never played
             if (numberFilled || activityMode != MODE_LOGIN) {
                 return;
             }
             try {
+                TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
                 if (AndroidUtilities.isSimAvailable()) {
                     boolean allowCall = true;
                     boolean allowReadPhoneNumbers = true;
-                    if (false) {
+                    if (Build.VERSION.SDK_INT >= 23) {
                         allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             allowReadPhoneNumbers = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED;
@@ -2635,10 +2643,8 @@ public class LoginActivity extends BaseFragment {
                     if (!newAccount && allowCall && allowReadPhoneNumbers) {
                         codeField.setAlpha(0);
                         phoneField.setAlpha(0);
-//                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
-//                        String number = PhoneFormat.stripExceptNumbers(codeField.getText().toString());
-                        String number = PhoneFormat.stripExceptNumbers("+" + codeField.getText() + phoneField.getText());
-//                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
+
+                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
                         String textToSet = null;
                         boolean ok = false;
                         if (!TextUtils.isEmpty(number)) {
