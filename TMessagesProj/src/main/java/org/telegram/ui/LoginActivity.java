@@ -1033,8 +1033,7 @@ public class LoginActivity extends BaseFragment {
         }
         builder.setNeutralButton(LocaleController.getString("BotHelp", R.string.BotHelp), (dialog, which) -> {
             try {
-                PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, pInfo.versionCode / 100);
+                String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, BuildVars.BUILD_VERSION_FULL);
 
                 Intent mailer = new Intent(Intent.ACTION_SENDTO);
                 mailer.setData(Uri.parse("mailto:"));
@@ -3063,8 +3062,7 @@ public class LoginActivity extends BaseFragment {
                             .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("DidNotGetTheCodeInfo", R.string.DidNotGetTheCodeInfo, phone)))
                             .setNeutralButton(LocaleController.getString(R.string.DidNotGetTheCodeHelpButton), (dialog, which)->{
                                 try {
-                                    PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                                    String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, pInfo.versionCode / 100);
+                                    String version = String.format(Locale.US, "%s (%d)", BuildVars.BUILD_VERSION_STRING, BuildVars.BUILD_VERSION_FULL);
 
                                     Intent mailer = new Intent(Intent.ACTION_SENDTO);
                                     mailer.setData(Uri.parse("mailto:"));

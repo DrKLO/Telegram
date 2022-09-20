@@ -7596,10 +7596,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     cell.getTextView().setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
                     cell.getTextView().setMovementMethod(null);
                     try {
-                        PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                        int code = pInfo.versionCode / 1000;
+                        int code = BuildVars.BUILD_VERSION;
                         String abi = "";
-                        switch ((pInfo.versionCode / 100) % 10) {
+                        switch (BuildVars.BUILD_VERSION_FULL % 10) {
                             case 1:
                             case 2:
                                 abi = "store bundled " + Build.CPU_ABI + " " + Build.CPU_ABI2;
@@ -7613,7 +7612,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                                 break;
                         }
-                        cell.setText(LocaleController.formatString("TelegramVersion", R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) %s", pInfo.versionName, code, abi)));
+                        cell.setText(LocaleController.formatString("TelegramVersion", R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) %s", BuildVars.BUILD_VERSION_STRING, code, abi)));
                     } catch (Exception e) {
                         FileLog.e(e);
                     }

@@ -68,7 +68,7 @@ public class ApplicationLoader extends Application {
     public static boolean canDrawOverlays;
     public static volatile long mainInterfacePausedStageQueueTime;
 
-    public static boolean hasPlayServices;
+    public static boolean hasPlayServices = true;
 
     @Override
     protected void attachBaseContext(Context base) {

@@ -418,7 +418,7 @@ public class FileRefController extends BaseController {
             } else if ("update".equals(string)) {
                 TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
                 try {
-                    req.source = "com.android.vending";
+                    req.source = BuildVars.BUILD_VENDOR;
                 } catch (Exception ignore) {
 
                 }
