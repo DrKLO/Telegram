@@ -2145,6 +2145,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM downloading_documents").stepThis().dispose();
                 database.executeFast("DELETE FROM attach_menu_bots").stepThis().dispose();
                 database.executeFast("DELETE FROM animated_emoji").stepThis().dispose();
+                database.executeFast("DELETE FROM stickers_v2").stepThis().dispose();
 
                 cursor = database.queryFinalized("SELECT did FROM dialogs WHERE 1");
                 while (cursor.next()) {

@@ -46,6 +46,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.os.SystemClock;
@@ -472,6 +473,40 @@ public class AndroidUtilities {
                 }
             }), 36);
         }
+    }
+
+    public static void googleVoiceClientService_performAction(Intent intent, boolean isVerified, Bundle options) {
+        if (!isVerified) {
+            return;
+        }
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                int currentAccount = UserConfig.selectedAccount;
+                ApplicationLoader.postInitApplication();
+                if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
+                    return;
+                }
+                String text = intent.getStringExtra("android.intent.extra.TEXT");
+                if (!TextUtils.isEmpty(text)) {
+                    String contactUri = intent.getStringExtra("com.google.android.voicesearch.extra.RECIPIENT_CONTACT_URI");
+                    String id = intent.getStringExtra("com.google.android.voicesearch.extra.RECIPIENT_CONTACT_CHAT_ID");
+                    long uid = Long.parseLong(id);
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
+                    if (user == null) {
+                        user = MessagesStorage.getInstance(currentAccount).getUserSync(uid);
+                        if (user != null) {
+                            MessagesController.getInstance(currentAccount).putUser(user, true);
+                        }
+                    }
+                    if (user != null) {
+                        ContactsController.getInstance(currentAccount).markAsContacted(contactUri);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(text, user.id, null, null, null, true, null, null, null, true, 0, null, false);
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
     }
 
     private static class LinkSpec {
@@ -2528,18 +2563,8 @@ public class AndroidUtilities {
         }
     }*/
 
-    public static void startAppCenter(Activity context) {
-
-    }
-
-    private static long lastUpdateCheckTime;
-
-    public static void checkForUpdates() {
-
-    }
-
     public static void appCenterLog(Throwable e) {
-
+        ApplicationLoader.appCenterLog(e);
     }
 
     public static boolean shouldShowClipboardToast() {

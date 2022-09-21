@@ -67,7 +67,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 146;
+    public static final int LAYER = 147;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
@@ -9787,13 +9787,17 @@ public class TLRPC {
 
         public StickerSet set;
         public ArrayList<TL_stickerPack> packs = new ArrayList<>();
+        public ArrayList<TL_stickerKeyword> keywords = new ArrayList<>();
         public ArrayList<Document> documents = new ArrayList<>();
 
         public static TL_messages_stickerSet TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             TL_messages_stickerSet result = null;
             switch (constructor) {
-                case 0xb60a24a6:
+                case 0x6e153f16:
                     result = new TL_messages_stickerSet();
+                    break;
+                case 0xb60a24a6:
+                    result = new TL_messages_stickerSet_layer146();
                     break;
                 case 0xd3f924eb:
                     result = new TL_messages_stickerSetNotModified();
@@ -9809,7 +9813,7 @@ public class TLRPC {
         }
     }
 
-    public static class TL_messages_stickerSet extends messages_StickerSet {
+    public static class TL_messages_stickerSet_layer146 extends TL_messages_stickerSet {
         public static int constructor = 0xb60a24a6;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
@@ -9854,6 +9858,82 @@ public class TLRPC {
             stream.writeInt32(count);
             for (int a = 0; a < count; a++) {
                 packs.get(a).serializeToStream(stream);
+            }
+            stream.writeInt32(0x1cb5c415);
+            count = documents.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                documents.get(a).serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class TL_messages_stickerSet extends messages_StickerSet {
+        public static int constructor = 0x6e153f16;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            set = StickerSet.TLdeserialize(stream, stream.readInt32(exception), exception);
+            int magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            int count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                TL_stickerPack object = TL_stickerPack.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                packs.add(object);
+            }
+            magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                TL_stickerKeyword object = TL_stickerKeyword.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                keywords.add(object);
+            }
+            magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                Document object = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                documents.add(object);
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            set.serializeToStream(stream);
+            stream.writeInt32(0x1cb5c415);
+            int count = packs.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                packs.get(a).serializeToStream(stream);
+            }
+            stream.writeInt32(0x1cb5c415);
+            count = keywords.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                keywords.get(a).serializeToStream(stream);
             }
             stream.writeInt32(0x1cb5c415);
             count = documents.size();
@@ -29122,6 +29202,9 @@ public class TLRPC {
                     result = new TL_stickerSetMultiCovered();
                     break;
                 case 0x1aed5ee5:
+                    result = new TL_stickerSetFullCovered_layer146();
+                    break;
+                case 0x40d13c0e:
                     result = new TL_stickerSetFullCovered();
                     break;
                 case 0x6410a5d2:
@@ -29173,11 +29256,54 @@ public class TLRPC {
         }
     }
 
-    public static class TL_stickerSetFullCovered extends StickerSetCovered {
-        public static int constructor = 0x1aed5ee5;
+    public static class TL_stickerKeyword extends TLObject {
+        public static int constructor = 0xfcfeb29c;
 
-        public ArrayList<TL_stickerPack> packs = new ArrayList<>();
-        public ArrayList<Document> documents = new ArrayList<>();
+        public long document_id;
+        public ArrayList<String> keyword = new ArrayList<>();
+
+        public static TL_stickerKeyword TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            if (TL_stickerKeyword.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_stickerKeyword", constructor));
+                } else {
+                    return null;
+                }
+            }
+            TL_stickerKeyword result = new TL_stickerKeyword();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            document_id = stream.readInt64(exception);
+            int magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            int count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                keyword.add(stream.readString(exception));
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(document_id);
+            stream.writeInt32(0x1cb5c415);
+            int count = keyword.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                stream.writeString(keyword.get(a));
+            }
+        }
+    }
+
+    public static class TL_stickerSetFullCovered_layer146 extends TL_stickerSetFullCovered {
+        public static int constructor = 0x1aed5ee5;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             set = StickerSet.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -29221,6 +29347,86 @@ public class TLRPC {
             stream.writeInt32(count);
             for (int a = 0; a < count; a++) {
                 packs.get(a).serializeToStream(stream);
+            }
+            stream.writeInt32(0x1cb5c415);
+            count = documents.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                documents.get(a).serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class TL_stickerSetFullCovered extends StickerSetCovered {
+        public static int constructor = 0x40d13c0e;
+
+        public ArrayList<TL_stickerPack> packs = new ArrayList<>();
+        public ArrayList<TL_stickerKeyword> keywords = new ArrayList<>();
+        public ArrayList<Document> documents = new ArrayList<>();
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            set = StickerSet.TLdeserialize(stream, stream.readInt32(exception), exception);
+            int magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            int count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                TL_stickerPack object = TL_stickerPack.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                packs.add(object);
+            }
+            magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                TL_stickerKeyword object = TL_stickerKeyword.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                keywords.add(object);
+            }
+            magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                Document object = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                documents.add(object);
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            set.serializeToStream(stream);
+            stream.writeInt32(0x1cb5c415);
+            int count = packs.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                packs.get(a).serializeToStream(stream);
+            }
+            stream.writeInt32(0x1cb5c415);
+            count = keywords.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                keywords.get(a).serializeToStream(stream);
             }
             stream.writeInt32(0x1cb5c415);
             count = documents.size();

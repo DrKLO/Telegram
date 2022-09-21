@@ -65,6 +65,7 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.Reactions.ReactionsUtils;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersArchiveAlert;
@@ -1781,6 +1782,7 @@ public class MediaDataController extends BaseController {
                     if (res != null && hash != 0) {
                         loadFeaturedHash[emoji ? 1 : 0] = hash;
                     }
+                    loadingFeaturedStickers[emoji ? 1 : 0] = false;
                     loadFeaturedStickers(emoji, false, false);
                 }, res == null && !cache ? 1000 : 0);
                 if (res == null) {
@@ -6668,11 +6670,68 @@ public class MediaDataController extends BaseController {
         });
     }
 
+    public void getAnimatedEmojiByKeywords(String query, Utilities.Callback<ArrayList<Long>> onResult) {
+        if (query == null) {
+            if (onResult != null) {
+                onResult.run(new ArrayList<>());
+            }
+            return;
+        }
+        final ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = getStickerSets(TYPE_EMOJIPACKS);
+        final ArrayList<TLRPC.StickerSetCovered> featuredStickerSets = getFeaturedEmojiSets();
+        Utilities.searchQueue.postRunnable(() -> {
+            ArrayList<Long> fullMatch = new ArrayList<>();
+            ArrayList<Long> halfMatch = new ArrayList<>();
+            String queryLowercased = query.toLowerCase();
+            for (int i = 0; i < stickerSets.size(); ++i) {
+                if (stickerSets.get(i).keywords != null) {
+                    ArrayList<TLRPC.TL_stickerKeyword> keywords = stickerSets.get(i).keywords;
+                    for (int j = 0; j < keywords.size(); ++j) {
+                        for (int k = 0; k < keywords.get(j).keyword.size(); ++k) {
+                            String keyword = keywords.get(j).keyword.get(k);
+                            if (queryLowercased.equals(keyword)) {
+                                fullMatch.add(keywords.get(j).document_id);
+                            } else if (queryLowercased.contains(keyword) || keyword.contains(queryLowercased)) {
+                                halfMatch.add(keywords.get(j).document_id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (int i = 0; i < featuredStickerSets.size(); ++i) {
+                if (featuredStickerSets.get(i) instanceof TLRPC.TL_stickerSetFullCovered &&
+                    ((TLRPC.TL_stickerSetFullCovered) featuredStickerSets.get(i)).keywords != null) {
+                    ArrayList<TLRPC.TL_stickerKeyword> keywords = ((TLRPC.TL_stickerSetFullCovered) featuredStickerSets.get(i)).keywords;
+                    for (int j = 0; j < keywords.size(); ++j) {
+                        for (int k = 0; k < keywords.get(j).keyword.size(); ++k) {
+                            String keyword = keywords.get(j).keyword.get(k);
+                            if (queryLowercased.equals(keyword)) {
+                                fullMatch.add(keywords.get(j).document_id);
+                            } else if (queryLowercased.contains(keyword) || keyword.contains(queryLowercased)) {
+                                halfMatch.add(keywords.get(j).document_id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            fullMatch.addAll(halfMatch);
+            if (onResult != null) {
+                onResult.run(fullMatch);
+            }
+        });
+    }
+
     public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, boolean allowAnimated) {
-        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, null, allowAnimated);
+        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, null, allowAnimated, null);
     }
 
     public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, final CountDownLatch sync, boolean allowAnimated) {
+        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, sync, allowAnimated, null);
+    }
+
+    public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, final CountDownLatch sync, boolean allowAnimated, Integer maxAnimatedPerEmoji) {
         if (callback == null) {
             return;
         }
@@ -6784,7 +6843,7 @@ public class MediaDataController extends BaseController {
             });
             String aliasFinal = alias;
             if (allowAnimated && SharedConfig.suggestAnimatedEmoji) {
-                fillWithAnimatedEmoji(result, null, () -> {
+                fillWithAnimatedEmoji(result, maxAnimatedPerEmoji, () -> {
                     if (sync != null) {
                         callback.run(result, aliasFinal);
                         sync.countDown();
@@ -6826,7 +6885,8 @@ public class MediaDataController extends BaseController {
             ArrayList<KeywordResult> animatedResult = new ArrayList<>();
             ArrayList<TLRPC.Document> animatedEmoji = new ArrayList<>();
             final int maxAnimatedPerEmoji = maxAnimatedPerEmojiInput == null ? (result.size() > 5 ? 1 : (result.size() > 2 ? 2 : 3)) : maxAnimatedPerEmojiInput;
-            for (int i = 0; i < Math.min(15, result.size()); ++i) {
+            int len = maxAnimatedPerEmojiInput == null ? Math.min(15, result.size()) : result.size();
+            for (int i = 0; i < len; ++i) {
                 String emoji = result.get(i).emoji;
                 if (emoji == null) {
                     continue;
@@ -6859,17 +6919,6 @@ public class MediaDataController extends BaseController {
                             for (int d = 0; d < set.documents.size(); ++d) {
                                 TLRPC.Document document = set.documents.get(d);
                                 if (document != null && document.attributes != null && !animatedEmoji.contains(document)) {
-                                    boolean duplicate = false;
-                                    for (int l = 0; l < animatedEmoji.size(); ++l) {
-                                        if (animatedEmoji.get(l).id == document.id) {
-                                            duplicate = true;
-                                            break;
-                                        }
-                                    }
-                                    if (duplicate) {
-                                        continue;
-                                    }
-
                                     TLRPC.TL_documentAttributeCustomEmoji attribute = null;
                                     for (int k = 0; k < document.attributes.size(); ++k) {
                                         TLRPC.DocumentAttribute attr = document.attributes.get(k);
@@ -6880,9 +6929,18 @@ public class MediaDataController extends BaseController {
                                     }
 
                                     if (attribute != null && emoji.equals(attribute.alt) && (isPremium || attribute.free)) {
-                                        animatedEmoji.add(document);
-                                        if (animatedEmoji.size() >= maxAnimatedPerEmoji) {
-                                            break;
+                                        boolean duplicate = false;
+                                        for (int l = 0; l < animatedEmoji.size(); ++l) {
+                                            if (animatedEmoji.get(l).id == document.id) {
+                                                duplicate = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!duplicate) {
+                                            animatedEmoji.add(document);
+                                            if (animatedEmoji.size() >= maxAnimatedPerEmoji) {
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -6906,17 +6964,6 @@ public class MediaDataController extends BaseController {
                         for (int d = 0; d < documents.size(); ++d) {
                             TLRPC.Document document = documents.get(d);
                             if (document != null && document.attributes != null && !animatedEmoji.contains(document)) {
-                                boolean duplicate = false;
-                                for (int l = 0; l < animatedEmoji.size(); ++l) {
-                                    if (animatedEmoji.get(l).id == document.id) {
-                                        duplicate = true;
-                                        break;
-                                    }
-                                }
-                                if (duplicate) {
-                                    continue;
-                                }
-
                                 TLRPC.TL_documentAttributeCustomEmoji attribute = null;
                                 for (int k = 0; k < document.attributes.size(); ++k) {
                                     TLRPC.DocumentAttribute attr = document.attributes.get(k);
@@ -6927,9 +6974,18 @@ public class MediaDataController extends BaseController {
                                 }
 
                                 if (attribute != null && emoji.equals(attribute.alt) && (isPremium || attribute.free)) {
-                                    animatedEmoji.add(document);
-                                    if (animatedEmoji.size() >= maxAnimatedPerEmoji) {
-                                        break;
+                                    boolean duplicate = false;
+                                    for (int l = 0; l < animatedEmoji.size(); ++l) {
+                                        if (animatedEmoji.get(l).id == document.id) {
+                                            duplicate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!duplicate) {
+                                        animatedEmoji.add(document);
+                                        if (animatedEmoji.size() >= maxAnimatedPerEmoji) {
+                                            break;
+                                        }
                                     }
                                 }
                             }

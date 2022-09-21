@@ -986,10 +986,16 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
         }
         if (sortedSizes.isEmpty() || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
+            ArrayList<Size> sizes = sortedSizes;
             if (!sortedSizes.isEmpty()) {
-                return CameraController.chooseOptimalSize(sortedSizes, 480, 270, aspectRatio);
+                sizes = sortedSizes;
             } else {
-                return CameraController.chooseOptimalSize(previewSizes, 480, 270, aspectRatio);
+                sizes = previewSizes;
+            }
+            if (Build.MANUFACTURER.equalsIgnoreCase("Xiaomi")) {
+                return CameraController.chooseOptimalSize(sizes, 640, 480, aspectRatio);
+            } else {
+                return CameraController.chooseOptimalSize(sizes, 480, 270, aspectRatio);
             }
         }
         Collections.sort(sortedSizes, (o1, o2) -> {

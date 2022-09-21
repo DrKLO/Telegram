@@ -706,6 +706,22 @@ public class ActionBarPopupWindow extends PopupWindow {
         wm.updateViewLayout(container, p);
     }
 
+    public void setFocusableFlag(boolean enable) {
+        View container = getContentView().getRootView();
+        Context context = getContentView().getContext();
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
+
+        if (p != null) {
+            if (enable) {
+                p.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
+            } else {
+                p.flags &= ~WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
+            }
+            wm.updateViewLayout(container, p);
+        }
+    }
+
     private void dismissDim() {
         View container = getContentView().getRootView();
         Context context = getContentView().getContext();

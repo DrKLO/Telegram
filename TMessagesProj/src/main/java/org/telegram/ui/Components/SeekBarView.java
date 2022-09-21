@@ -15,6 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.StateSet;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -34,7 +35,7 @@ public class SeekBarView extends FrameLayout {
     private int thumbSize;
     private int selectorWidth;
     private int thumbX;
-    private AnimatedFloat animatedThumbX = new AnimatedFloat(this, 150, CubicBezierInterpolator.DEFAULT);
+    private AnimatedFloat animatedThumbX = new AnimatedFloat(this, 0, 80, CubicBezierInterpolator.EASE_OUT);
     private int thumbDX;
     private float progressToSet = -100;
     private boolean pressed;
@@ -101,9 +102,7 @@ public class SeekBarView extends FrameLayout {
             public void setProgress(float progress) {
                 pressed = true;
                 SeekBarView.this.setProgress(progress);
-                if (delegate != null) {
-                    delegate.onSeekBarDrag(true, progress);
-                }
+                setSeekBarDrag(true, progress);
                 pressed = false;
             }
 
@@ -203,12 +202,12 @@ public class SeekBarView extends FrameLayout {
                     if (twoSided) {
                         float w = (getMeasuredWidth() - selectorWidth) / 2;
                         if (thumbX >= w) {
-                            delegate.onSeekBarDrag(false, (thumbX - w) / w);
+                            setSeekBarDrag(false, (thumbX - w) / w);
                         } else {
-                            delegate.onSeekBarDrag(false, -Math.max(0.01f, 1.0f - (w - thumbX) / w));
+                            setSeekBarDrag(false, -Math.max(0.01f, 1.0f - (w - thumbX) / w));
                         }
                     } else {
-                        delegate.onSeekBarDrag(true, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
+                        setSeekBarDrag(true, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
                     }
                 }
                 if (Build.VERSION.SDK_INT >= 21 && hoverDrawable != null) {
@@ -261,12 +260,12 @@ public class SeekBarView extends FrameLayout {
                         if (twoSided) {
                             float w = (getMeasuredWidth() - selectorWidth) / 2;
                             if (thumbX >= w) {
-                                delegate.onSeekBarDrag(false, (thumbX - w) / w);
+                                setSeekBarDrag(false, (thumbX - w) / w);
                             } else {
-                                delegate.onSeekBarDrag(false, -Math.max(0.01f, 1.0f - (w - thumbX) / w));
+                                setSeekBarDrag(false, -Math.max(0.01f, 1.0f - (w - thumbX) / w));
                             }
                         } else {
-                            delegate.onSeekBarDrag(false, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
+                            setSeekBarDrag(false, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
                         }
                     }
                     if (Build.VERSION.SDK_INT >= 21 && hoverDrawable != null) {
@@ -278,6 +277,22 @@ public class SeekBarView extends FrameLayout {
             }
         }
         return false;
+    }
+
+    int lastValue;
+    private void setSeekBarDrag(boolean stop, float progress) {
+        if (delegate != null) {
+            delegate.onSeekBarDrag(stop, progress);
+        }
+        if (separatorsCount > 1) {
+            int value = Math.round((separatorsCount - 1) * progress);
+            if (!stop && value != lastValue) {
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception ignore) {}
+            }
+            lastValue = value;
+        }
     }
 
     public float getProgress() {
@@ -357,16 +372,6 @@ public class SeekBarView extends FrameLayout {
         int y = (getMeasuredHeight() - thumbSize) / 2;
         innerPaint1.setColor(getThemedColor(Theme.key_player_progressBackground));
         canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() - selectorWidth / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
-        if (!twoSided && separatorsCount > 1) {
-            for (int i = 0; i < separatorsCount; ++i) {
-                canvas.drawCircle(
-                    AndroidUtilities.lerp(selectorWidth / 2, getMeasuredWidth() - selectorWidth / 2, i / ((float) separatorsCount - 1f)),
-                    getMeasuredHeight() / 2,
-                    AndroidUtilities.dp(1.6f),
-                    innerPaint1
-                );
-            }
-        }
         if (bufferedProgress > 0) {
             innerPaint1.setColor(getThemedColor(Theme.key_player_progressCachedBackground));
             canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + bufferedProgress * (getMeasuredWidth() - selectorWidth), getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
@@ -380,20 +385,6 @@ public class SeekBarView extends FrameLayout {
             }
         } else {
             canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
-            if (separatorsCount > 1) {
-                for (int i = 0; i < separatorsCount; ++i) {
-                    float cx = AndroidUtilities.lerp(selectorWidth / 2, getMeasuredWidth() - selectorWidth / 2, i / ((float) separatorsCount - 1f));
-                    if (cx > thumbX + selectorWidth / 2) {
-                        break;
-                    }
-                    canvas.drawCircle(
-                        cx,
-                        getMeasuredHeight() / 2,
-                        AndroidUtilities.dp(1.4f),
-                        outerPaint1
-                    );
-                }
-            }
         }
         if (hoverDrawable != null) {
             int dx = thumbX + selectorWidth / 2 - AndroidUtilities.dp(16);

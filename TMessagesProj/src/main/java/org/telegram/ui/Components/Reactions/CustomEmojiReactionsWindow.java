@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -17,13 +16,14 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
@@ -40,7 +40,6 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.ReactionsContainerLayout;
@@ -75,6 +74,10 @@ public class CustomEmojiReactionsWindow {
     BaseFragment baseFragment;
     Theme.ResourcesProvider resourcesProvider;
 
+    float yTranslation;
+    float keyboardHeight;
+    private boolean wasFocused;
+
     public CustomEmojiReactionsWindow(BaseFragment baseFragment, List<ReactionsLayoutInBubble.VisibleReaction> reactions, HashSet<ReactionsLayoutInBubble.VisibleReaction> selectedReactions, ReactionsContainerLayout reactionsContainerLayout, Theme.ResourcesProvider resourcesProvider) {
         this.reactions = reactions;
         this.baseFragment = baseFragment;
@@ -87,21 +90,45 @@ public class CustomEmojiReactionsWindow {
                     dismiss();
                     return true;
                 }
-                return false;
+                return super.dispatchKeyEvent(event);
             }
 
             @Override
             protected void dispatchSetPressed(boolean pressed) {
 
             }
+
+            @Override
+            protected boolean fitSystemWindows(Rect insets) {
+                if (keyboardHeight != insets.bottom && wasFocused) {
+                    keyboardHeight = insets.bottom;
+                    updateWindowPosition();
+                }
+                return super.fitSystemWindows(insets);
+            }
+
         };
         windowView.setOnClickListener(v -> dismiss());
+
+        // sizeNotifierFrameLayout.setFitsSystemWindows(true);
 
         containerView = new ContainerView(context);
         selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(baseFragment, context, false, null, SelectAnimatedEmojiDialog.TYPE_REACTIONS, resourcesProvider) {
             @Override
+            protected void onInputFocus() {
+                if (!wasFocused) {
+                    wasFocused = true;
+                    windowManager.updateViewLayout(windowView, createLayoutParams(true));
+                    if (baseFragment instanceof ChatActivity) {
+                        ((ChatActivity) baseFragment).needEnterText();
+                    }
+                }
+            }
+
+            @Override
             protected void onReactionClick(ImageViewEmoji emoji, ReactionsLayoutInBubble.VisibleReaction reaction) {
                 reactionsContainerLayout.onReactionClicked(emoji, reaction, false);
+                AndroidUtilities.hideKeyboard(windowView);
             }
 
             @Override
@@ -117,6 +144,7 @@ public class CustomEmojiReactionsWindow {
                     return;
                 }
                 reactionsContainerLayout.onReactionClicked(emojiView, ReactionsLayoutInBubble.VisibleReaction.fromCustomEmoji(documentId), false);
+                AndroidUtilities.hideKeyboard(windowView);
             }
         };
         selectAnimatedEmojiDialog.setOnLongPressedListener(new SelectAnimatedEmojiDialog.onLongPressedListener() {
@@ -142,31 +170,7 @@ public class CustomEmojiReactionsWindow {
         containerView.addView(selectAnimatedEmojiDialog, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0));
         windowView.addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 16, 16, 16, 16));
         windowView.setClipChildren(false);
-        EditTextBoldCursor editTextBoldCursor = new EditTextBoldCursor(context) {
-
-            boolean focusable = false;
-
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent event) {
-                if (!focusable) {
-                    WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-                    lp.width = lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-                    lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
-                    lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
-                    lp.format = PixelFormat.TRANSLUCENT;
-                    windowManager.updateViewLayout(windowView, lp);
-                }
-                return super.dispatchTouchEvent(event);
-            }
-        };
-        editTextBoldCursor.setBackgroundColor(Color.BLACK);
-        //containerView.addView(editTextBoldCursor, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50));
-
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.width = lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
-        lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
-        lp.format = PixelFormat.TRANSLUCENT;
+        WindowManager.LayoutParams lp = createLayoutParams(false);
 
         windowManager = baseFragment.getParentActivity().getWindowManager();
         windowManager.addView(windowView, lp);
@@ -184,18 +188,52 @@ public class CustomEmojiReactionsWindow {
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 7);
     }
 
+    private void updateWindowPosition() {
+        if (dismissed) {
+            return;
+        }
+        float y = yTranslation;
+        if (y + containerView.getMeasuredHeight() > windowView.getMeasuredHeight() - keyboardHeight - AndroidUtilities.dp(32)) {
+            y = windowView.getMeasuredHeight() - keyboardHeight - containerView.getMeasuredHeight() - AndroidUtilities.dp(32);
+        }
+        if (y < 0) {
+            y = 0;
+        }
+        containerView.animate().translationY(y).setDuration(250).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+    }
+
+    private WindowManager.LayoutParams createLayoutParams(boolean focusable) {
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.width = lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
+        lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+        if (focusable) {
+            lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
+        } else {
+            lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
+        }
+        lp.format = PixelFormat.TRANSLUCENT;
+        return lp;
+    }
+
     private void showUnlockPremiumAlert() {
         if (baseFragment instanceof ChatActivity) {
             baseFragment.showDialog(new PremiumFeatureBottomSheet(baseFragment, PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI, false));
         }
     }
 
+    int[] location = new int[2];
+
     private void createTransition(boolean enter) {
         fromRect.set(reactionsContainerLayout.rect);
         fromRadius = reactionsContainerLayout.radius;
-        int[] location = new int[2];
-        reactionsContainerLayout.getLocationOnScreen(location);
-        float y = location[1] - AndroidUtilities.dp(44) - AndroidUtilities.dp(34);
+
+        int[] windowLocation = new int[2];
+        if (enter) {
+            reactionsContainerLayout.getLocationOnScreen(location);
+        }
+        windowView.getLocationOnScreen(windowLocation);
+        float y = location[1] - windowLocation[1] - AndroidUtilities.dp(44) - AndroidUtilities.dp(34);
         if (y + containerView.getMeasuredHeight() > windowView.getMeasuredHeight() - AndroidUtilities.dp(32)) {
             y = windowView.getMeasuredHeight() - AndroidUtilities.dp(32) - containerView.getMeasuredHeight();
         }
@@ -203,9 +241,17 @@ public class CustomEmojiReactionsWindow {
             y = AndroidUtilities.dp(16);
         }
 
-        containerView.setTranslationX(location[0] - AndroidUtilities.dp(2));
-        containerView.setTranslationY(y);
-        fromRect.offset(location[0] - containerView.getX(), location[1] - containerView.getY());
+        containerView.setTranslationX(location[0] - windowLocation[0] - AndroidUtilities.dp(2));
+        if (!enter) {
+            yTranslation = containerView.getTranslationY();
+        } else {
+            yTranslation = y;
+            containerView.setTranslationY(yTranslation);
+        }
+
+
+        Log.d("kek", "" + reactionsContainerLayout.rect.top + " " + location[1] + " " + windowLocation[1] + " " + containerView.getY());
+        fromRect.offset(location[0] - windowLocation[0] - containerView.getX(), location[1] - windowLocation[1] - containerView.getY());
 
         reactionsContainerLayout.setCustomEmojiEnterProgress(enterTransitionProgress);
 
@@ -267,7 +313,11 @@ public class CustomEmojiReactionsWindow {
         }
         Bulletin.hideVisible();
         dismissed = true;
+        AndroidUtilities.hideKeyboard(windowView);
         createTransition(false);
+        if (wasFocused && baseFragment instanceof ChatActivity) {
+            ((ChatActivity) baseFragment).onEditTextDialogClose(true, true);
+        }
     }
 
     public void onDismissListener(Runnable onDismiss) {
@@ -412,12 +462,12 @@ public class CustomEmojiReactionsWindow {
                                 fromY -= reactionsContainerLayout.recyclerListView.getY();
                             }
                             float toX = toImageView.getX() + selectAnimatedEmojiDialog.getX() + selectAnimatedEmojiDialog.emojiGridView.getX();
-                            float toY = toImageView.getY() + selectAnimatedEmojiDialog.getY() + selectAnimatedEmojiDialog.emojiGridView.getY();
+                            float toY = toImageView.getY() + selectAnimatedEmojiDialog.getY() + selectAnimatedEmojiDialog.gridViewContainer.getY() + selectAnimatedEmojiDialog.emojiGridView.getY();
                             float toImageViewSize = toImageView.getMeasuredWidth();
                             if (toImageView.selected) {
                                 float sizeAfterScale = toImageViewSize * (0.8f + 0.2f * 0.3f);
-                                toX += (toImageViewSize - sizeAfterScale) /2f;
-                                toY += (toImageViewSize - sizeAfterScale) /2f;
+                                toX += (toImageViewSize - sizeAfterScale) / 2f;
+                                toY += (toImageViewSize - sizeAfterScale) / 2f;
                                 toImageViewSize = sizeAfterScale;
                             }
 
@@ -472,7 +522,7 @@ public class CustomEmojiReactionsWindow {
                                         (int) AndroidUtilities.lerp(fromRoundRadiusRt, toRoundRadiusRt, enterTransitionProgress),
                                         (int) AndroidUtilities.lerp(fromRoundRadiusRb, toRoundRadiusRb, enterTransitionProgress),
                                         (int) AndroidUtilities.lerp(fromRoundRadiusLb, toRoundRadiusLb, enterTransitionProgress)
-                                        );
+                                );
                                 holderView.loopImageView.draw(canvas);
                                 holderView.loopImageView.draw(canvas);
                                 imageReceiver.setRoundRadius(radiusTmp);
@@ -491,7 +541,7 @@ public class CustomEmojiReactionsWindow {
                                 holderView.enterImageView.getImageReceiver().setAlpha(oldAlpha);
                             } else {
                                 ImageReceiver imageReceiver = holderView.loopImageView.getImageReceiver();
-                                if (holderView.loopImageView.animatedEmojiDrawable != null &&  holderView.loopImageView.animatedEmojiDrawable.getImageReceiver() != null) {
+                                if (holderView.loopImageView.animatedEmojiDrawable != null && holderView.loopImageView.animatedEmojiDrawable.getImageReceiver() != null) {
                                     imageReceiver = holderView.loopImageView.animatedEmojiDrawable.getImageReceiver();
                                 }
                                 float oldAlpha = imageReceiver.getAlpha();

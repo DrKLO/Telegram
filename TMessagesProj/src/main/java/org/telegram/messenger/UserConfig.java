@@ -259,11 +259,11 @@ public class UserConfig extends BaseController {
             TLRPC.User oldUser = currentUser;
             currentUser = user;
             clientUserId = user.id;
-            checkPremium(oldUser, user);
+            checkPremiumSelf(oldUser, user);
         }
     }
 
-    private void checkPremium(TLRPC.User oldUser, TLRPC.User newUser) {
+    private void checkPremiumSelf(TLRPC.User oldUser, TLRPC.User newUser) {
         if (oldUser == null || (newUser != null && oldUser.premium != newUser.premium)) {
             AndroidUtilities.runOnUIThread(() -> {
                 getMessagesController().updatePremium(newUser.premium);
@@ -271,6 +271,7 @@ public class UserConfig extends BaseController {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.premiumStatusChangedGlobal);
 
                 getMediaDataController().loadPremiumPromo(false);
+                getMediaDataController().loadReactions(false, true);
             });
         }
     }
@@ -368,7 +369,7 @@ public class UserConfig extends BaseController {
                 }
             }
             if (currentUser != null) {
-                checkPremium(null, currentUser);
+                checkPremiumSelf(null, currentUser);
                 clientUserId = currentUser.id;
             }
             configLoaded = true;

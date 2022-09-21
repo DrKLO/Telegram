@@ -181,7 +181,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
         subtitleTextView.setTextSize(14);
         subtitleTextView.setGravity(Gravity.LEFT);
-        subtitleTextView.setPadding(0, 0, AndroidUtilities.dp(12), 0);
+        subtitleTextView.setPadding(0, 0, AndroidUtilities.dp(10), 0);
         addView(subtitleTextView);
 
         if (parentFragment != null) {
@@ -231,7 +231,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     public void setTitleExpand(boolean titleExpand) {
-        int newRightPadding = titleExpand ? AndroidUtilities.dp(16) : 0;
+        int newRightPadding = titleExpand ? AndroidUtilities.dp(10) : 0;
         if (titleTextView.getPaddingRight() != newRightPadding) {
             titleTextView.setPadding(0, AndroidUtilities.dp(6), newRightPadding, AndroidUtilities.dp(12));
             requestLayout();
@@ -401,6 +401,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         titleTextLargerCopyView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleTextLargerCopyView.setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
         titleTextLargerCopyView.setRightDrawable(titleTextView.getRightDrawable());
+        titleTextLargerCopyView.setRightDrawableOutside(titleTextView.getRightDrawableOutside());
         titleTextLargerCopyView.setLeftDrawable(titleTextView.getLeftDrawable());
         titleTextLargerCopyView.setText(titleTextView.getText());
         titleTextLargerCopyView.animate().alpha(0).setDuration(350).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {

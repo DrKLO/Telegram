@@ -143,6 +143,7 @@
     <string name="PaymentEmailToProvider">Email address will be passed to %1$s as billing info.</string>
     <string name="PaymentPhoneEmailToProvider">Phone and email address will be passed to %1$s as billing info.</string>
     <string name="PaymentInfoHint">You paid **%1$s** for **%2$s**.</string>
+    <string name="PaymentAppNotFoundForDeeplink">No app found to handle this deep link.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">New conversation</string>
     <string name="AutoNightModeOff">Auto-Night Mode is off</string>
@@ -1722,6 +1723,7 @@
     <string name="NoStickersFound">No stickers found</string>
     <string name="NoGIFsFound">No GIFs found</string>
     <string name="NoEmojiFound">No emoji found</string>
+    <string name="NoReactionsFound">No reactions found</string>
     <string name="NoMasks">No masks yet</string>
     <string name="EmojiSuggestions">Emoji suggestions</string>
     <string name="EmojiSuggestionsInfo">**Telegram** lets you find emoji by thousands of keywords, but there is always something missing. If you want to suggest a new emoji replacement, you can help us by visiting:</string>
@@ -5619,4 +5621,11 @@
     <string name="PremiumPreviewReactions2">Infinite Reactions</string>
     <string name="PremiumPreviewEmojiStatus">Emoji Status</string>
     <string name="PremiumPreviewEmojiStatusDescription">Add any of thousands emojis next to your name to display current activity.</string>
+    <string name="MicrophoneForVoiceMessages">Microphone for voice messages</string>
+    <string name="MicrophoneForVoiceMessagesBuiltIn">Built-In</string>
+    <string name="MicrophoneForVoiceMessagesSco">Headset</string>
+    <string name="MicrophoneForVoiceMessagesScoIfConnected">Headset (if connected)</string>
+    <string name="MicrophoneForVoiceMessagesScoHint">Using a headset microphone may reduce background noise but will slightly decrease audio quality.</string>
+    <string name="ReactionInDialog">%s Reaction</string>
+    <string name="SearchReactionsHint">Search reactions</string>
 </resources>
