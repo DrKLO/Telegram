@@ -427,7 +427,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             thumbDrawable = svgThumb;
         } else if ("application/x-tgsticker".equals(document.mime_type)) {
             String probableCacheKey = (cacheType != 0 ? cacheType + "_" : "") + documentId + "@" + filter;
-            if (cacheType == CACHE_TYPE_KEYBOARD || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey)) {
+            if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW || (cacheType == CACHE_TYPE_KEYBOARD || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey))) {
                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
                 if (svgThumb != null && MessageObject.isAnimatedStickerDocument(document, true)) {
                     svgThumb.overrideWidthAndHeight(512, 512);
@@ -644,7 +644,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             TLRPC.InputStickerSet set = MessageObject.getInputStickerSet(document);
             return canOverrideColorCached = (
                 set instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses ||
-                set instanceof TLRPC.TL_inputStickerSetID && set.id == 773947703670341676L
+                set instanceof TLRPC.TL_inputStickerSetID && (set.id == 773947703670341676L || set.id == 2964141614563343L)
             );
         }
         return false;

@@ -22,6 +22,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -40,10 +44,6 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -801,7 +801,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                             } else if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 3;
                             }
-                            if (found != 0) {
+                            if (found != 0 && (!contact.phones.isEmpty() || !contact.shortPhones.isEmpty())) {
                                 if (found == 3) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(contact.first_name, contact.last_name, q));
                                 } else if (found == 1) {
@@ -838,7 +838,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                                 found = 2;
                             }
 
-                            if (found != 0) {
+                            if (found != 0 && user.phone != null) {
                                 if (found == 1) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
                                 } else {

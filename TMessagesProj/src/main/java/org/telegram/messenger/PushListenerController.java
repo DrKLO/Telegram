@@ -3,6 +3,7 @@ package org.telegram.messenger;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.SparseBooleanArray;
 
 import androidx.annotation.IntDef;
 import androidx.collection.LongSparseArray;
@@ -329,9 +330,27 @@ public class PushListenerController {
                                 ids.add(Utilities.parseInt(messagesArgs[a]));
                             }
                             deletedMessages.put(-channel_id, ids);
-                            NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages);
+                            NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, false);
 
                             MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialogId, ids, channel_id);
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
+                            }
+                        } else if ("READ_REACTION".equals(loc_key)) {
+                            String messages = custom.getString("messages");
+                            String[] messagesArgs = messages.split(",");
+                            LongSparseArray<ArrayList<Integer>> deletedMessages = new LongSparseArray<>();
+                            ArrayList<Integer> ids = new ArrayList<>();
+                            SparseBooleanArray sparseBooleanArray = new SparseBooleanArray();
+                            for (int a = 0; a < messagesArgs.length; a++) {
+                                int messageId = Utilities.parseInt(messagesArgs[a]);
+                                ids.add(messageId);
+                                sparseBooleanArray.put(messageId, false);
+                            }
+                            deletedMessages.put(-channel_id, ids);
+                            NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, true);
+
+                            MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, sparseBooleanArray);
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                             }

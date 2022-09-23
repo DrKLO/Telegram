@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.Manifest;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -30,6 +31,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,6 +39,7 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Keep;
@@ -99,6 +102,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ThemeActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -136,6 +140,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int saveToGalleryOption2Row;
     private int saveToGallerySectionRow;
     private int distanceRow;
+    private int bluetoothScoRow;
     private int enableAnimationsRow;
     private int settings2Row;
 
@@ -255,7 +260,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
-//            sizeBar.setSeparatorsCount(endFontSize - startFontSize);
+            sizeBar.setSeparatorsCount(endFontSize - startFontSize + 1);
             sizeBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
                 @Override
                 public void onSeekBarDrag(boolean stop, float progress) {
@@ -339,7 +344,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
-//            sizeBar.setSeparatorsCount(endRadius - startRadius);
+            sizeBar.setSeparatorsCount(endRadius - startRadius + 1);
             sizeBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
                 @Override
                 public void onSeekBarDrag(boolean stop, float progress) {
@@ -512,6 +517,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         saveToGalleryOption2Row = -1;
         saveToGallerySectionRow = -1;
         distanceRow = -1;
+        bluetoothScoRow = -1;
         settings2Row = -1;
 
         swipeGestureHeaderRow = -1;
@@ -610,6 +616,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             directShareRow = rowCount++;
             enableAnimationsRow = rowCount++;
             raiseToSpeakRow = rowCount++;
+            bluetoothScoRow = rowCount++;
             sendByEnterRow = rowCount++;
             if (SharedConfig.canBlurChat()) {
                 chatBlurRow = rowCount++;
@@ -1008,21 +1015,83 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 if (getParentActivity() == null) {
                     return;
                 }
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("DistanceUnitsTitle", R.string.DistanceUnitsTitle));
-                builder.setItems(new CharSequence[]{
-                        LocaleController.getString("DistanceUnitsAutomatic", R.string.DistanceUnitsAutomatic),
-                        LocaleController.getString("DistanceUnitsKilometers", R.string.DistanceUnitsKilometers),
-                        LocaleController.getString("DistanceUnitsMiles", R.string.DistanceUnitsMiles)
-                }, (dialog, which) -> {
-                    SharedConfig.setDistanceSystemType(which);
-                    RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(distanceRow);
+                showDialog(new AlertDialog.Builder(getParentActivity())
+                        .setTitle(LocaleController.getString("DistanceUnitsTitle", R.string.DistanceUnitsTitle))
+                        .setItems(new CharSequence[]{
+                                LocaleController.getString("DistanceUnitsAutomatic", R.string.DistanceUnitsAutomatic),
+                                LocaleController.getString("DistanceUnitsKilometers", R.string.DistanceUnitsKilometers),
+                                LocaleController.getString("DistanceUnitsMiles", R.string.DistanceUnitsMiles)
+                        }, (dialog, which) -> {
+                            SharedConfig.setDistanceSystemType(which);
+                            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(distanceRow);
+                            if (holder != null) {
+                                listAdapter.onBindViewHolder(holder, distanceRow);
+                            }
+                        })
+                        .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                        .create());
+            } else if (position == bluetoothScoRow) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                AtomicReference<Dialog> dialogRef = new AtomicReference<>();
+
+                LinearLayout linearLayout = new LinearLayout(context);
+                linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+                TextView textView = new TextView(context);
+                textView.setText(LocaleController.getString(R.string.MicrophoneForVoiceMessagesBuiltIn));
+                textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                textView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(12), AndroidUtilities.dp(21), AndroidUtilities.dp(12));
+                textView.setBackground(Theme.AdaptiveRipple.rect(getThemedColor(Theme.key_windowBackgroundWhite)));
+                textView.setOnClickListener(v -> {
+                    SharedConfig.recordViaSco = false;
+                    SharedConfig.saveConfig();
+                    dialogRef.get().dismiss();
+
+                    RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(bluetoothScoRow);
                     if (holder != null) {
-                        listAdapter.onBindViewHolder(holder, distanceRow);
+                        listAdapter.onBindViewHolder(holder, bluetoothScoRow);
                     }
                 });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showDialog(builder.create());
+                linearLayout.addView(textView);
+
+                LinearLayout scoLinearLayout = new LinearLayout(context);
+                scoLinearLayout.setOrientation(LinearLayout.VERTICAL);
+                scoLinearLayout.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(12), AndroidUtilities.dp(21), AndroidUtilities.dp(12));
+                scoLinearLayout.setBackground(Theme.AdaptiveRipple.rect(getThemedColor(Theme.key_windowBackgroundWhite)));
+                scoLinearLayout.setOnClickListener(v -> {
+                    SharedConfig.recordViaSco = true;
+                    SharedConfig.saveConfig();
+                    dialogRef.get().dismiss();
+
+                    RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(bluetoothScoRow);
+                    if (holder != null) {
+                        listAdapter.onBindViewHolder(holder, bluetoothScoRow);
+                    }
+                });
+                linearLayout.addView(scoLinearLayout);
+
+                textView = new TextView(context);
+                textView.setText(LocaleController.getString(R.string.MicrophoneForVoiceMessagesScoIfConnected));
+                textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                scoLinearLayout.addView(textView);
+
+                textView = new TextView(context);
+                textView.setText(LocaleController.getString(R.string.MicrophoneForVoiceMessagesScoHint));
+                textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                scoLinearLayout.addView(textView);
+
+                Dialog dialog = new AlertDialog.Builder(getParentActivity())
+                        .setTitle(LocaleController.getString(R.string.MicrophoneForVoiceMessages))
+                        .setView(linearLayout)
+                        .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                        .create();
+                dialogRef.set(dialog);
+                showDialog(dialog);
             } else if (position == customTabsRow) {
                 SharedConfig.toggleCustomTabs();
                 if (view instanceof TextCheckCell) {
@@ -2056,6 +2125,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                             value = LocaleController.getString("DistanceUnitsMiles", R.string.DistanceUnitsMiles);
                         }
                         cell.setTextAndValue(LocaleController.getString("DistanceUnits", R.string.DistanceUnits), value, false);
+                    } else if (position == bluetoothScoRow) {
+                        cell.setTextAndValue(LocaleController.getString(R.string.MicrophoneForVoiceMessages), LocaleController.getString(SharedConfig.recordViaSco ? R.string.MicrophoneForVoiceMessagesSco : R.string.MicrophoneForVoiceMessagesBuiltIn), true);
                     }
                     break;
                 }
@@ -2231,7 +2302,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         public int getItemViewType(int position) {
             if (position == scheduleFromRow || position == distanceRow ||
                     position == scheduleToRow || position == scheduleUpdateLocationRow ||
-                    position == contactsReimportRow || position == contactsSortRow) {
+                    position == contactsReimportRow || position == contactsSortRow ||
+                    position == bluetoothScoRow) {
                 return TYPE_TEXT_SETTING;
             } else if (position == automaticBrightnessInfoRow || position == scheduleLocationInfoRow) {
                 return TYPE_TEXT_INFO_PRIVACY;

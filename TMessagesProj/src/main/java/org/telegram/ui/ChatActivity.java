@@ -6289,7 +6289,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         reportSpamButton.setSingleLine(true);
         reportSpamButton.setMaxLines(1);
         reportSpamButton.setGravity(Gravity.CENTER);
-        topChatPanelView.addView(reportSpamButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 1));
+        topChatPanelView.addView(reportSpamButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 1));
         reportSpamButton.setOnClickListener(v2 -> AlertsCreator.showBlockReportSpamAlert(ChatActivity.this, dialog_id, currentUser, currentChat, currentEncryptedChat, reportSpamButton.getTag(R.id.object_tag) != null, chatInfo, param -> {
             if (param == 0) {
                 updateTopPanel(true);
@@ -6354,7 +6354,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (Build.VERSION.SDK_INT >= 21) {
             addToContactsButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_chat_addContact) & 0x19ffffff, 3));
         }
-        topChatPanelView.addView(addToContactsButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 1));
+        topChatPanelView.addView(addToContactsButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 1));
         addToContactsButton.setOnClickListener(v -> {
             if (addToContactsButtonArchive) {
                 getMessagesController().addDialogToFolder(dialog_id, 0, 0, 0);
@@ -6402,11 +6402,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         closeReportSpam.setImageResource(R.drawable.miniplayer_close);
         closeReportSpam.setContentDescription(LocaleController.getString("Close", R.string.Close));
         if (Build.VERSION.SDK_INT >= 21) {
-            closeReportSpam.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_chat_topPanelClose) & 0x19ffffff));
+            closeReportSpam.setBackground(Theme.AdaptiveRipple.circle(getThemedColor(Theme.key_chat_topPanelClose)));
         }
         closeReportSpam.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_topPanelClose), PorterDuff.Mode.MULTIPLY));
         closeReportSpam.setScaleType(ImageView.ScaleType.CENTER);
-        topChatPanelView.addView(closeReportSpam, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
+        topChatPanelView.addView(closeReportSpam, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 0, 6, 2, 0));
         closeReportSpam.setOnClickListener(v -> {
             long did = dialog_id;
             if (currentEncryptedChat != null) {
@@ -6616,7 +6616,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public boolean needSend() {
-                return false;
+                return true;
             }
 
             @Override
@@ -13520,7 +13520,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    private void updateTitle(boolean animated) {
+    public void updateTitle(boolean animated) {
         if (avatarContainer == null) {
             return;
         }
@@ -13551,7 +13551,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 avatarContainer.setTitle(LocaleController.getString("SavedMessages", R.string.SavedMessages));
             } else if (!MessagesController.isSupportUser(currentUser) && getContactsController().contactsDict.get(currentUser.id) == null && (getContactsController().contactsDict.size() != 0 || !getContactsController().isLoadingContacts())) {
                 if (!TextUtils.isEmpty(currentUser.phone)) {
-                    avatarContainer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone));
+                    avatarContainer.setTitle(PhoneFormat.getInstance().format("+" + currentUser.phone), currentUser.scam, currentUser.fake, currentUser.verified, getMessagesController().isPremiumUser(currentUser), currentUser.emoji_status, animated);
                 } else {
                     avatarContainer.setTitle(UserObject.getUserName(currentUser), currentUser.scam, currentUser.fake, currentUser.verified, getMessagesController().isPremiumUser(currentUser), currentUser.emoji_status, animated);
                 }
@@ -13635,7 +13635,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    private void checkAndUpdateAvatar() {
+    public void checkAndUpdateAvatar() {
         if (currentUser != null) {
             TLRPC.User user = getMessagesController().getUser(currentUser.id);
             if (user == null) {
@@ -15817,7 +15817,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (currentChat instanceof TLRPC.TL_channelForbidden) {
                         builder.setMessage(LocaleController.getString("ChannelCantOpenBannedByAdmin", R.string.ChannelCantOpenBannedByAdmin));
                     } else {
-                        builder.setTitle(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
+                        builder.setTitle(LocaleController.getString(R.string.ChannelPrivate));
                         builder.setMessage(LocaleController.getString("ChannelCantOpenPrivate2", R.string.ChannelCantOpenPrivate2));
                     }
                 } else if (reason == 1) {
@@ -15825,7 +15825,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (reason == 2) {
                     builder.setMessage(LocaleController.getString("ChannelCantOpenBanned", R.string.ChannelCantOpenBanned));
                 } else if (reason == 3) {
-                    builder.setTitle(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
+                    builder.setTitle(LocaleController.getString(R.string.ChannelPrivate));
                     builder.setMessage(LocaleController.getString("JoinByPeekChannelText", R.string.JoinByPeekChannelText));
                 }
                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
@@ -20150,7 +20150,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 chatWithAdminTextView.setGravity(Gravity.CENTER_VERTICAL);
                 chatWithAdminTextView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(46), 0);
                 chatWithAdminTextView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
-                topChatPanelView.addView(chatWithAdminTextView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, 0, 0, 0, 0, 1));
+                topChatPanelView.addView(chatWithAdminTextView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, 0, 0, 0, 0, 1));
                 chatWithAdminTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 chatWithAdminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 chatWithAdminTextView.setOnClickListener(new View.OnClickListener() {
@@ -22563,7 +22563,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         }
 
-                        if (stickerSets.size() > 0) {
+                        if (stickerSets.size() > 0 && !getMessagesController().premiumLocked) {
                             View gap = new FrameLayout(contentView.getContext());
                             gap.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuSeparator));
                             popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
@@ -22626,7 +22626,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             scrimPopupWindow.setFocusable(true);
             scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
             scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
-            scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+            scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
             scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
             popupLayout.setFitItems(true);
 

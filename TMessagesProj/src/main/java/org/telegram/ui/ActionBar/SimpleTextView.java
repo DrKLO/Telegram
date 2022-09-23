@@ -972,6 +972,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
         rightDrawableOutside = outside;
     }
 
+    public boolean getRightDrawableOutside() {
+        return rightDrawableOutside;
+    }
+
     public void setRightDrawableOnClick(OnClickListener onClickListener) {
         rightDrawableOnClickListener = onClickListener;
     }

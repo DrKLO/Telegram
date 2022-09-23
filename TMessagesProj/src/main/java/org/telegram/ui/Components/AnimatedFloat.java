@@ -121,7 +121,7 @@ public class AnimatedFloat {
 
     public float set(float mustBe, boolean force) {
         final long now = SystemClock.elapsedRealtime();
-        if (force || firstSet) {
+        if (force || transitionDuration <= 0 || firstSet) {
             value = targetValue = mustBe;
             transition = false;
             firstSet = false;

@@ -506,7 +506,7 @@ public class PhonebookShareAlert extends BottomSheet {
                                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                         android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
                                         clipboard.setPrimaryClip(clip);
-                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                        if (AndroidUtilities.shouldShowClipboardToast()) {
                                             Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                                         }
                                     } catch (Exception e) {
@@ -564,7 +564,7 @@ public class PhonebookShareAlert extends BottomSheet {
                                 layout.textView.setText(LocaleController.getString("TextCopied", R.string.TextCopied));
                                 layout.imageView.setImageResource(R.drawable.msg_info);
                             }
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                            if (AndroidUtilities.shouldShowClipboardToast()) {
                                 Bulletin.make((FrameLayout) containerView, layout, Bulletin.DURATION_SHORT).show();
                             }
                         }

@@ -58,7 +58,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private boolean paused = true;
     private Drawable oldBackgroundDrawable;
     private ActionBarLayout parentLayout;
-    protected AdjustPanLayoutHelper adjustPanLayoutHelper;
+    public AdjustPanLayoutHelper adjustPanLayoutHelper;
     private int emojiHeight;
     private float emojiOffset;
     private boolean animationInProgress;

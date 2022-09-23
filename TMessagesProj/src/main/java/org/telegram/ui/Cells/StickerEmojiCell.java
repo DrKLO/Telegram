@@ -235,7 +235,8 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         if (!UserConfig.getInstance(currentAccount).isPremium()) {
             layoutParams.height = layoutParams.width = AndroidUtilities.dp(24);
             layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            layoutParams.bottomMargin = layoutParams.rightMargin = 0;
+            layoutParams.rightMargin = 0;
+            layoutParams.bottomMargin = AndroidUtilities.dp(8);
             premiumIconView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
         } else {
             layoutParams.height = layoutParams.width = AndroidUtilities.dp(16);

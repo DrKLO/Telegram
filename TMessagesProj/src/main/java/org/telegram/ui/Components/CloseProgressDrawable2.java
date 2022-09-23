@@ -34,9 +34,13 @@ public class CloseProgressDrawable2 extends Drawable {
     private int currentColor;
 
     public CloseProgressDrawable2() {
+        this(2);
+    }
+
+    public CloseProgressDrawable2(float widthDp) {
         super();
         paint.setColor(0xffffffff);
-        paint.setStrokeWidth(AndroidUtilities.dp(2));
+        paint.setStrokeWidth(AndroidUtilities.dp(widthDp));
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStyle(Paint.Style.STROKE);
         side = AndroidUtilities.dp(8);
