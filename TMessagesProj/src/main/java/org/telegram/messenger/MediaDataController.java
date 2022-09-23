@@ -2119,7 +2119,6 @@ public class MediaDataController extends BaseController {
             if (response instanceof TLRPC.TL_messages_stickerSet) {
                 TLRPC.TL_messages_stickerSet stickerSet = (TLRPC.TL_messages_stickerSet) response;
                 getUserConfig().premiumGiftsStickerPack = stickerSet.set.short_name;
-                FileLog.d("premiumGiftsStickerPack, short_name: " + stickerSet.set.short_name)
                 getUserConfig().lastUpdatedPremiumGiftsStickerPack = System.currentTimeMillis();
                 getUserConfig().saveConfig(false);
 
