@@ -62,7 +62,7 @@
 			android:singleLine="true"
 			android:ellipsize="end"
 			android:gravity="left"
-			tools:text="Telegram Call"/>
+			tools:text="Teamgram Call"/>
 
 		<TextView
 			android:id="@+id/subtitle"

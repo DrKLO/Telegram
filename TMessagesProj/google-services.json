@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "457310145225",
+    "firebase_url": "https://nebulachat3.firebaseio.com",
+    "project_id": "nebulachat3",
+    "storage_bucket": "nebulachat3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457310145225:android:4125967cf5bd14c13e9b18",
+        "android_client_info": {
+          "package_name": "org.chatengine.messenger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "457310145225-mcv4587cfkf5tn5led14t28orefbg37j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnTnBwBpDWbBtJtGMhq3kq3IHnhg6_3Zg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "457310145225-mcv4587cfkf5tn5led14t28orefbg37j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457310145225:android:3c9e96cd1954245a3e9b18",
+        "android_client_info": {
+          "package_name": "org.chatengine.messenger.beta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "457310145225-mcv4587cfkf5tn5led14t28orefbg37j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnTnBwBpDWbBtJtGMhq3kq3IHnhg6_3Zg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "457310145225-mcv4587cfkf5tn5led14t28orefbg37j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

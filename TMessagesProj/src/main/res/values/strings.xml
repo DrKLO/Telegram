@@ -5473,7 +5473,7 @@
     <string name="SubscribeToPremiumNoPrice">Subscribe</string>
     <string name="SubscribeToPremiumNotAvailable">Subscription not available</string>
     <string name="SubscribeToPremiumOfficialAppNeeded">**Official app needed**</string>
-    <string name="SubscribeToPremiumOfficialAppNeededDescription">You need an official Teamgram app to subscribe to **Telegram Premium**.\n\nOnce subscribed, you will be able to use the benefits of Teamgram Premium in any apps that support it, including unofficial ones.</string>
+    <string name="SubscribeToPremiumOfficialAppNeededDescription">You need an official Teamgram app to subscribe to **Teamgram Premium**.\n\nOnce subscribed, you will be able to use the benefits of Teamgram Premium in any apps that support it, including unofficial ones.</string>
     <string name="InstallOfficialApp">Install official app</string>
     <string name="GiftSubscriptionFor">Gift Subscription for %1$s</string>
     <string name="GiftPremiumOptionDiscount">-%1$d%%</string>
