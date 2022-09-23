@@ -35,14 +35,6 @@ import java.util.ArrayList;
 
 public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
-    final ArrayList<Limit> limits = new ArrayList<>();
-
-    int rowCount;
-    int headerRow;
-    int limitsStartRow;
-    int limitsStartEnd;
-    int lastViewRow;
-
     FrameLayout titleLayout;
     TextView titleView;
     ImageView titleImage;
@@ -52,12 +44,11 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
 
     float titleProgress;
 
-    PremiumGradient.GradientTools gradientTools;
-    private int totalGradientHeight;
     private BaseFragment baseFragment;
 
     private View divider;
     private PremiumPreviewFragment.SubscriptionTier selectedTier;
+    private Adapter adapter;
 
     public DoubledLimitsBottomSheet(BaseFragment fragment, int currentAccount) {
         this(fragment, currentAccount, null);
@@ -67,71 +58,8 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
         super(fragment, false, false);
         this.selectedTier = subscriptionTier;
         this.baseFragment = fragment;
-        gradientTools = new PremiumGradient.GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
-        gradientTools.x1 = 0;
-        gradientTools.y1 = 0;
-        gradientTools.x2 = 0;
-        gradientTools.y2 = 1f;
 
         clipToActionBar = true;
-        MessagesController messagesController = MessagesController.getInstance(currentAccount);
-        limits.add(new Limit(
-                LocaleController.getString("GroupsAndChannelsLimitTitle", R.string.GroupsAndChannelsLimitTitle),
-                LocaleController.formatString("GroupsAndChannelsLimitSubtitle", R.string.GroupsAndChannelsLimitSubtitle, messagesController.channelsLimitPremium),
-                messagesController.channelsLimitDefault, messagesController.channelsLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("PinChatsLimitTitle", R.string.PinChatsLimitTitle),
-                LocaleController.formatString("PinChatsLimitSubtitle", R.string.PinChatsLimitSubtitle, messagesController.dialogFiltersPinnedLimitPremium),
-                messagesController.dialogFiltersPinnedLimitDefault, messagesController.dialogFiltersPinnedLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("PublicLinksLimitTitle", R.string.PublicLinksLimitTitle),
-                LocaleController.formatString("PublicLinksLimitSubtitle", R.string.PublicLinksLimitSubtitle, messagesController.publicLinksLimitPremium),
-                messagesController.publicLinksLimitDefault, messagesController.publicLinksLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("SavedGifsLimitTitle", R.string.SavedGifsLimitTitle),
-                LocaleController.formatString("SavedGifsLimitSubtitle", R.string.SavedGifsLimitSubtitle, messagesController.savedGifsLimitPremium),
-                messagesController.savedGifsLimitDefault, messagesController.savedGifsLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("FavoriteStickersLimitTitle", R.string.FavoriteStickersLimitTitle),
-                LocaleController.formatString("FavoriteStickersLimitSubtitle", R.string.FavoriteStickersLimitSubtitle, messagesController.stickersFavedLimitPremium),
-                messagesController.stickersFavedLimitDefault, messagesController.stickersFavedLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("BioLimitTitle", R.string.BioLimitTitle),
-                LocaleController.formatString("BioLimitSubtitle", R.string.BioLimitSubtitle, messagesController.stickersFavedLimitPremium),
-                messagesController.aboutLengthLimitDefault, messagesController.aboutLengthLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("CaptionsLimitTitle", R.string.CaptionsLimitTitle),
-                LocaleController.formatString("CaptionsLimitSubtitle", R.string.CaptionsLimitSubtitle, messagesController.stickersFavedLimitPremium),
-                messagesController.captionLengthLimitDefault, messagesController.captionLengthLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("FoldersLimitTitle", R.string.FoldersLimitTitle),
-                LocaleController.formatString("FoldersLimitSubtitle", R.string.FoldersLimitSubtitle, messagesController.dialogFiltersLimitPremium),
-                messagesController.dialogFiltersLimitDefault, messagesController.dialogFiltersLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("ChatPerFolderLimitTitle", R.string.ChatPerFolderLimitTitle),
-                LocaleController.formatString("ChatPerFolderLimitSubtitle", R.string.ChatPerFolderLimitSubtitle, messagesController.dialogFiltersChatsLimitPremium),
-                messagesController.dialogFiltersChatsLimitDefault, messagesController.dialogFiltersChatsLimitPremium
-        ));
-        limits.add(new Limit(
-                LocaleController.getString("ConnectedAccountsLimitTitle", R.string.ConnectedAccountsLimitTitle),
-                LocaleController.formatString("ConnectedAccountsLimitSubtitle", R.string.ConnectedAccountsLimitSubtitle, 4),
-                UserConfig.MAX_ACCOUNT_DEFAULT_COUNT, UserConfig.MAX_ACCOUNT_COUNT
-        ));
-
-        rowCount = 0;
-        headerRow = rowCount++;
-        limitsStartRow = rowCount;
-        rowCount += limits.size();
-        limitsStartEnd = rowCount;
-        //lastViewRow = rowCount++;
 
         titleLayout = new FrameLayout(getContext());
         titleView = new TextView(getContext());
@@ -184,7 +112,7 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
     @Override
     protected void onPreMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onPreMeasure(widthMeasureSpec, heightMeasureSpec);
-        measureGradient(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(heightMeasureSpec));
+        adapter.measureGradient(getContext(), View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(heightMeasureSpec));
     }
 
     @Override
@@ -228,61 +156,9 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
 
     @Override
     protected RecyclerListView.SelectionAdapter createAdapter() {
-        return new RecyclerListView.SelectionAdapter() {
-            @Override
-            public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                return false;
-            }
-
-            @NonNull
-            @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                Context context = parent.getContext();
-                View view;
-                switch (viewType) {
-                    default:
-                    case 0:
-                        LimitCell limitCell = new LimitCell(context);
-                        limitCell.previewView.setParentViewForGradien(containerView);
-                        limitCell.previewView.setStaticGradinet(gradientTools);
-                        view = limitCell;
-                        break;
-                    case 1:
-                        view = new FixedHeightEmptyCell(context, 40 + 24);
-                        break;
-                    case 2:
-                        view = new FixedHeightEmptyCell(context, 16);
-                        break;
-                }
-                view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                return new RecyclerListView.Holder(view);
-            }
-
-            @Override
-            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                if (holder.getItemViewType() == 0) {
-                    LimitCell limitCell = (LimitCell) holder.itemView;
-                    limitCell.setData(limits.get(position - limitsStartRow));
-                    limitCell.previewView.gradientYOffset = limits.get(position - limitsStartRow).yOffset;
-                    limitCell.previewView.gradientTotalHeight = totalGradientHeight;
-                }
-            }
-
-            @Override
-            public int getItemCount() {
-                return rowCount;
-            }
-
-            @Override
-            public int getItemViewType(int position) {
-                if (position == headerRow) {
-                    return 1;
-                } else if (position == lastViewRow) {
-                    return 2;
-                }
-                return 0;
-            }
-        };
+        adapter = new Adapter(currentAccount, false);
+        adapter.containerView = containerView;
+        return adapter;
     }
 
     public void setParentFragment(PremiumPreviewFragment premiumPreviewFragment) {
@@ -317,7 +193,7 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
     }
 
 
-    private class LimitCell extends LinearLayout {
+    private static class LimitCell extends LinearLayout {
 
         TextView title;
         TextView subtitle;
@@ -352,19 +228,6 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
         }
     }
 
-    private void measureGradient(int w, int h) {
-        int yOffset = 0;
-        LimitCell dummyCell = new LimitCell(getContext());
-        for (int i = 0; i < limits.size(); i++) {
-            dummyCell.setData(limits.get(i));
-            dummyCell.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.AT_MOST));
-            limits.get(i).yOffset = yOffset;
-            yOffset += dummyCell.getMeasuredHeight();
-        }
-
-        totalGradientHeight = yOffset;
-    }
-
 
     private static class Limit {
         final String title;
@@ -381,4 +244,183 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
             this.premiumLimit = premiumLimit;
         }
     }
+
+    public static class Adapter extends RecyclerListView.SelectionAdapter {
+
+        int rowCount;
+        int headerRow;
+        int limitsStartRow;
+        int limitsStartEnd;
+        int lastViewRow;
+
+        final ArrayList<Limit> limits = new ArrayList<>();
+
+        PremiumGradient.GradientTools gradientTools;
+        private int totalGradientHeight;
+
+        ViewGroup containerView;
+        boolean drawHeader;
+
+        public Adapter(int currentAccount, boolean drawHeader) {
+            this.drawHeader = drawHeader;
+            gradientTools = new PremiumGradient.GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
+            gradientTools.x1 = 0;
+            gradientTools.y1 = 0;
+            gradientTools.x2 = 0;
+            gradientTools.y2 = 1f;
+
+            MessagesController messagesController = MessagesController.getInstance(currentAccount);
+            limits.add(new Limit(
+                    LocaleController.getString("GroupsAndChannelsLimitTitle", R.string.GroupsAndChannelsLimitTitle),
+                    LocaleController.formatString("GroupsAndChannelsLimitSubtitle", R.string.GroupsAndChannelsLimitSubtitle, messagesController.channelsLimitPremium),
+                    messagesController.channelsLimitDefault, messagesController.channelsLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("PinChatsLimitTitle", R.string.PinChatsLimitTitle),
+                    LocaleController.formatString("PinChatsLimitSubtitle", R.string.PinChatsLimitSubtitle, messagesController.dialogFiltersPinnedLimitPremium),
+                    messagesController.dialogFiltersPinnedLimitDefault, messagesController.dialogFiltersPinnedLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("PublicLinksLimitTitle", R.string.PublicLinksLimitTitle),
+                    LocaleController.formatString("PublicLinksLimitSubtitle", R.string.PublicLinksLimitSubtitle, messagesController.publicLinksLimitPremium),
+                    messagesController.publicLinksLimitDefault, messagesController.publicLinksLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("SavedGifsLimitTitle", R.string.SavedGifsLimitTitle),
+                    LocaleController.formatString("SavedGifsLimitSubtitle", R.string.SavedGifsLimitSubtitle, messagesController.savedGifsLimitPremium),
+                    messagesController.savedGifsLimitDefault, messagesController.savedGifsLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("FavoriteStickersLimitTitle", R.string.FavoriteStickersLimitTitle),
+                    LocaleController.formatString("FavoriteStickersLimitSubtitle", R.string.FavoriteStickersLimitSubtitle, messagesController.stickersFavedLimitPremium),
+                    messagesController.stickersFavedLimitDefault, messagesController.stickersFavedLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("BioLimitTitle", R.string.BioLimitTitle),
+                    LocaleController.formatString("BioLimitSubtitle", R.string.BioLimitSubtitle, messagesController.stickersFavedLimitPremium),
+                    messagesController.aboutLengthLimitDefault, messagesController.aboutLengthLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("CaptionsLimitTitle", R.string.CaptionsLimitTitle),
+                    LocaleController.formatString("CaptionsLimitSubtitle", R.string.CaptionsLimitSubtitle, messagesController.stickersFavedLimitPremium),
+                    messagesController.captionLengthLimitDefault, messagesController.captionLengthLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("FoldersLimitTitle", R.string.FoldersLimitTitle),
+                    LocaleController.formatString("FoldersLimitSubtitle", R.string.FoldersLimitSubtitle, messagesController.dialogFiltersLimitPremium),
+                    messagesController.dialogFiltersLimitDefault, messagesController.dialogFiltersLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("ChatPerFolderLimitTitle", R.string.ChatPerFolderLimitTitle),
+                    LocaleController.formatString("ChatPerFolderLimitSubtitle", R.string.ChatPerFolderLimitSubtitle, messagesController.dialogFiltersChatsLimitPremium),
+                    messagesController.dialogFiltersChatsLimitDefault, messagesController.dialogFiltersChatsLimitPremium
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString("ConnectedAccountsLimitTitle", R.string.ConnectedAccountsLimitTitle),
+                    LocaleController.formatString("ConnectedAccountsLimitSubtitle", R.string.ConnectedAccountsLimitSubtitle, 4),
+                    UserConfig.MAX_ACCOUNT_DEFAULT_COUNT, UserConfig.MAX_ACCOUNT_COUNT
+            ));
+
+            rowCount = 0;
+            headerRow = rowCount++;
+            limitsStartRow = rowCount;
+            rowCount += limits.size();
+            limitsStartEnd = rowCount;
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            Context context = parent.getContext();
+            View view;
+            switch (viewType) {
+                default:
+                case 0:
+                    LimitCell limitCell = new LimitCell(context);
+                    limitCell.previewView.setParentViewForGradien(containerView);
+                    limitCell.previewView.setStaticGradinet(gradientTools);
+                    view = limitCell;
+                    break;
+                case 1:
+                    if (drawHeader) {
+                        FrameLayout titleLayout = new FrameLayout(context) {
+                            @Override
+                            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(86), MeasureSpec.EXACTLY));
+                            }
+                        };
+                        LinearLayout linearLayout = new LinearLayout(context);
+                        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+                        ImageView titleImage = new ImageView(context);
+                        titleImage.setImageDrawable(PremiumGradient.getInstance().createGradientDrawable(ContextCompat.getDrawable(context, R.drawable.other_2x_large)));
+                        linearLayout.addView(titleImage, LayoutHelper.createFrame(40, 28, Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
+
+                        TextView titleView = new TextView(context);
+                        titleView.setText(LocaleController.getString("DoubledLimits", R.string.DoubledLimits));
+                        titleView.setGravity(Gravity.CENTER);
+                        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+                        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        linearLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+
+
+                        titleLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                        view = titleLayout;
+                    } else {
+                        view = new FixedHeightEmptyCell(context, 40 + 24);
+                    }
+                    break;
+                case 2:
+                    view = new FixedHeightEmptyCell(context, 16);
+                    break;
+            }
+            view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            if (holder.getItemViewType() == 0) {
+                LimitCell limitCell = (LimitCell) holder.itemView;
+                limitCell.setData(limits.get(position - limitsStartRow));
+                limitCell.previewView.gradientYOffset = limits.get(position - limitsStartRow).yOffset;
+                limitCell.previewView.gradientTotalHeight = totalGradientHeight;
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return rowCount;
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == headerRow) {
+                return 1;
+            } else if (position == lastViewRow) {
+                return 2;
+            }
+            return 0;
+        }
+
+        public void measureGradient(Context context, int w, int h) {
+            int yOffset = 0;
+            LimitCell dummyCell = new LimitCell(context);
+            for (int i = 0; i < limits.size(); i++) {
+                dummyCell.setData(limits.get(i));
+                dummyCell.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.AT_MOST));
+                limits.get(i).yOffset = yOffset;
+                yOffset += dummyCell.getMeasuredHeight();
+            }
+
+            totalGradientHeight = yOffset;
+        }
+    }
+
 }

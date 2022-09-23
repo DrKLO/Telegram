@@ -518,7 +518,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
-//            sizeBar.setSeparatorsCount(endFontSize - startFontSize);
+            sizeBar.setSeparatorsCount(endFontSize - startFontSize + 1);
             sizeBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
                 @Override
                 public void onSeekBarDrag(boolean stop, float progress) {
@@ -1294,7 +1294,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             deleteView.setOnClickListener(v -> {
                 if (pressedLinkOwnerLayout != null) {
                     AndroidUtilities.addToClipboard(pressedLinkOwnerLayout.getText());
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                    if (AndroidUtilities.shouldShowClipboardToast()) {
                         Toast.makeText(parentActivity, LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -3700,7 +3700,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             @Override
             public void onTextCopied() {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                if (AndroidUtilities.shouldShowClipboardToast()) {
                     BulletinFactory.of(containerView, null).createCopyBulletin(LocaleController.getString("TextCopied", R.string.TextCopied)).show();
                 }
             }

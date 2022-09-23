@@ -146,12 +146,12 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
             if (view instanceof PremiumFeatureCell) {
                 PremiumFeatureCell cell = (PremiumFeatureCell) view;
                 PremiumPreviewFragment.sentShowFeaturePreview(currentAccount, cell.data.type);
-                if (cell.data.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
-                    DoubledLimitsBottomSheet bottomSheet = new DoubledLimitsBottomSheet(fragment, currentAccount);
-                    showDialog(bottomSheet);
-                } else {
+//                if (cell.data.type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
+//                    DoubledLimitsBottomSheet bottomSheet = new DoubledLimitsBottomSheet(fragment, currentAccount);
+//                    showDialog(bottomSheet);
+//                } else {
                     showDialog(new PremiumFeatureBottomSheet(fragment, cell.data.type, false));
-                }
+              //  }
             }
         });
 

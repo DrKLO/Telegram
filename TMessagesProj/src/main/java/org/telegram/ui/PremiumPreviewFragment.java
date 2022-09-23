@@ -71,7 +71,6 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FillLastLinearLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.AboutPremiumView;
-import org.telegram.ui.Components.Premium.DoubledLimitsBottomSheet;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
@@ -508,13 +507,13 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             if (view instanceof PremiumFeatureCell) {
                 PremiumFeatureCell cell = (PremiumFeatureCell) view;
                 PremiumPreviewFragment.sentShowFeaturePreview(currentAccount, cell.data.type);
-                if (cell.data.type == PREMIUM_FEATURE_LIMITS) {
-                    DoubledLimitsBottomSheet bottomSheet = new DoubledLimitsBottomSheet(PremiumPreviewFragment.this, currentAccount, subscriptionTiers.get(selectedTierIndex));
-                    bottomSheet.setParentFragment(PremiumPreviewFragment.this);
-                    showDialog(bottomSheet);
-                } else {
+//                if (cell.data.type == PREMIUM_FEATURE_LIMITS) {
+//                    DoubledLimitsBottomSheet bottomSheet = new DoubledLimitsBottomSheet(PremiumPreviewFragment.this, currentAccount, subscriptionTiers.get(selectedTierIndex));
+//                    bottomSheet.setParentFragment(PremiumPreviewFragment.this);
+//                    showDialog(bottomSheet);
+//                } else {
                     showDialog(new PremiumFeatureBottomSheet(PremiumPreviewFragment.this, cell.data.type, false, subscriptionTiers.get(selectedTierIndex)));
-                }
+               // }
             }
         });
         contentView.addView(listView);

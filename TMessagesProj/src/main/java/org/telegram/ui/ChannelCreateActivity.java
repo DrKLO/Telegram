@@ -587,8 +587,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             avatarEditor.setAnimation(cameraDrawable);
             avatarEditor.setEnabled(false);
             avatarEditor.setClickable(false);
-            avatarEditor.setPadding(AndroidUtilities.dp(2), 0, 0, AndroidUtilities.dp(1));
-            frameLayout.addView(avatarEditor, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));
+            avatarEditor.setPadding(AndroidUtilities.dp(0), 0, 0, AndroidUtilities.dp(1));
+            frameLayout.addView(avatarEditor, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 12, LocaleController.isRTL ? 15 : 0, 12));
 
             avatarProgressView = new RadialProgressView(context);
             avatarProgressView.setSize(AndroidUtilities.dp(30));

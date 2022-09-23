@@ -30,7 +30,8 @@ public class BasePermissionsActivity extends Activity {
             REQUEST_CODE_OPEN_CAMERA = 20,
             REQUEST_CODE_VIDEO_MESSAGE = 150,
             REQUEST_CODE_EXTERNAL_STORAGE_FOR_AVATAR = 151,
-            REQUEST_CODE_SIGN_IN_WITH_GOOGLE = 200;
+            REQUEST_CODE_SIGN_IN_WITH_GOOGLE = 200,
+            REQUEST_CODE_PAYMENT_FORM = 210;
 
     protected int currentAccount = -1;
 

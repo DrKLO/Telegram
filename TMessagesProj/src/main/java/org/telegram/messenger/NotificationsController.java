@@ -418,7 +418,7 @@ public class NotificationsController extends BaseController {
         });
     }
 
-    public void removeDeletedMessagesFromNotifications(LongSparseArray<ArrayList<Integer>> deletedMessages) {
+    public void removeDeletedMessagesFromNotifications(LongSparseArray<ArrayList<Integer>> deletedMessages, boolean isReactions) {
         ArrayList<MessageObject> popupArrayRemove = new ArrayList<>(0);
         notificationsQueue.postRunnable(() -> {
             int old_unread_count = total_unread_count;
@@ -434,6 +434,9 @@ public class NotificationsController extends BaseController {
                     int mid = mids.get(b);
                     MessageObject messageObject = sparseArray.get(mid);
                     if (messageObject != null) {
+                        if (isReactions && !messageObject.isReactionPush) {
+                            continue;
+                        }
                         long dialogId = messageObject.getDialogId();
                         Integer currentCount = pushDialogs.get(dialogId);
                         if (currentCount == null) {

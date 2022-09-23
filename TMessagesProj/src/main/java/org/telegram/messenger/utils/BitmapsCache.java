@@ -3,7 +3,6 @@ package org.telegram.messenger.utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
-import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -70,6 +69,7 @@ public class BitmapsCache {
     volatile boolean recycled;
 
     RandomAccessFile cachedFile;
+    BitmapFactory.Options options;
 
     public void createCache() {
         try {
@@ -327,7 +327,7 @@ public class BitmapsCache {
                 selectedFrame = frameOffsets.get(index);
                 randomAccessFile.seek(selectedFrame.frameOffset);
                 if (bufferTmp == null || bufferTmp.length < selectedFrame.frameSize) {
-                    bufferTmp = new byte[selectedFrame.frameSize];
+                    bufferTmp = new byte[(int) (selectedFrame.frameSize * 1.3f)];
                 }
                 randomAccessFile.readFully(bufferTmp, 0, selectedFrame.frameSize);
                 if (!recycled) {
@@ -337,7 +337,9 @@ public class BitmapsCache {
                     randomAccessFile.close();
                 }
             }
-            BitmapFactory.Options options = new BitmapFactory.Options();
+            if (options == null) {
+                options = new BitmapFactory.Options();
+            }
             options.inBitmap = bitmap;
             BitmapFactory.decodeByteArray(bufferTmp, 0, selectedFrame.frameSize, options);
             return FRAME_RESULT_OK;

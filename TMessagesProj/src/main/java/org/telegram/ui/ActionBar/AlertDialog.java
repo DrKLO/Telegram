@@ -1302,6 +1302,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             alertDialog.topBackgroundColor = backgroundColor;
             return this;
         }
+
         public Builder setTopAnimation(int resId, int backgroundColor) {
             return setTopAnimation(resId, 94, true, backgroundColor);
         }

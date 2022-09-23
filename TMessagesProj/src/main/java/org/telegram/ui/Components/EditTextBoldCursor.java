@@ -639,17 +639,21 @@ public class EditTextBoldCursor extends EditTextEffects {
     }
 
     public void invalidateForce() {
+        invalidate();
         if (!isHardwareAccelerated()) {
-            invalidate();
             return;
         }
         try {
             // on hardware accelerated edittext to invalidate imagespan display list must be invalidated
-            if (mEditorInvalidateDisplayList != null && editor != null) {
-                mEditorInvalidateDisplayList.invoke(editor);
+            if (mEditorInvalidateDisplayList != null) {
+                if (editor == null) {
+                    editor = mEditor.get(this);
+                }
+                if (editor != null) {
+                    mEditorInvalidateDisplayList.invoke(editor);
+                }
             }
         } catch (Exception ignore) {};
-        invalidate();
     }
 
     @Override

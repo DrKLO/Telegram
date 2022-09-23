@@ -484,7 +484,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     public boolean showCustomEmojiReaction() {
-        return allReactionsAvailable;
+        return !MessagesController.getInstance(currentAccount).premiumLocked && allReactionsAvailable;
     }
 
     private boolean showUnlockPremiumButton() {
@@ -1076,7 +1076,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 for (int i = 0; i < recyclerListView.getChildCount(); i++) {
                     if (recyclerListView.getChildAt(i) instanceof ReactionHolderView) {
                         ReactionHolderView holderView = (ReactionHolderView) recyclerListView.getChildAt(i);
-                        if (holderView.hasEnterAnimation) {
+                        if (holderView.hasEnterAnimation && (holderView.loopImageView.getImageReceiver().getLottieAnimation() != null || holderView.loopImageView.getImageReceiver().getAnimation() != null)) {
                             holderView.loopImageView.setVisibility(View.VISIBLE);
                             holderView.enterImageView.setVisibility(View.INVISIBLE);
                             if (holderView.shouldSwitchToLoopView) {

@@ -427,10 +427,18 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
 
     private void updateRows(ArrayList<MessageObject> currentLoadingFilesTmp, ArrayList<MessageObject> recentLoadingFilesTmp) {
         currentLoadingFiles.clear();
-        currentLoadingFiles.addAll(currentLoadingFilesTmp);
+        for (MessageObject object : currentLoadingFilesTmp) {
+            if (!object.isRoundVideo() && !object.isVoice()) {
+                currentLoadingFiles.add(object);
+            }
+        }
 
         recentLoadingFiles.clear();
-        recentLoadingFiles.addAll(recentLoadingFilesTmp);
+        for (MessageObject object : recentLoadingFilesTmp) {
+            if (!object.isRoundVideo() && !object.isVoice()) {
+                recentLoadingFiles.add(object);
+            }
+        }
 
         rowCount = 0;
         downloadingFilesHeader = -1;

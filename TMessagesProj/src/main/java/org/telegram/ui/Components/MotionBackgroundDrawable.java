@@ -27,6 +27,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 
@@ -87,6 +88,8 @@ public class MotionBackgroundDrawable extends Drawable {
     private Bitmap legacyBitmap2;
     private GradientDrawable gradientDrawable = new GradientDrawable();
     private boolean invalidateLegacy;
+
+    private GenericProvider<MotionBackgroundDrawable, Float> animationProgressProvider;
 
     private boolean rotationBack;
 
@@ -231,6 +234,15 @@ public class MotionBackgroundDrawable extends Drawable {
             phase = 7;
         }
         Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+    }
+
+    public float getPosAnimationProgress() {
+        return posAnimationProgress;
+    }
+
+    public void setPosAnimationProgress(float posAnimationProgress) {
+        this.posAnimationProgress = posAnimationProgress;
+        updateAnimation(true);
     }
 
     public void switchToNextPosition() {
@@ -826,6 +838,11 @@ public class MotionBackgroundDrawable extends Drawable {
         updateAnimation(true);
     }
 
+    public void setAnimationProgressProvider(GenericProvider<MotionBackgroundDrawable, Float> animationProgressProvider) {
+        this.animationProgressProvider = animationProgressProvider;
+        updateAnimation(true);
+    }
+
     public void updateAnimation(boolean invalidate) {
         long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
@@ -865,11 +882,19 @@ public class MotionBackgroundDrawable extends Drawable {
                     } else {
                         stageBefore = 3;
                     }
-                    posAnimationProgress += dt / (rotationBack ? 1000.0f : 2000.0f);
+                    if (animationProgressProvider != null) {
+                        posAnimationProgress = animationProgressProvider.provide(this);
+                    } else {
+                        posAnimationProgress += dt / (rotationBack ? 1000.0f : 2000.0f);
+                    }
                     if (posAnimationProgress > 1.0f) {
                         posAnimationProgress = 1.0f;
                     }
-                    progress = interpolator.getInterpolation(posAnimationProgress);
+                    if (animationProgressProvider == null) {
+                        progress = interpolator.getInterpolation(posAnimationProgress);
+                    } else {
+                        progress = posAnimationProgress;
+                    }
                     if (stageBefore == 0 && progress > 0.25f ||
                             stageBefore == 1 && progress > 0.5f ||
                             stageBefore == 2 && progress > 0.75f) {
@@ -906,11 +931,19 @@ public class MotionBackgroundDrawable extends Drawable {
                         }
                     }
                 } else {
-                    posAnimationProgress += dt / (fastAnimation ? 300.0f : 500.0f);
+                    if (animationProgressProvider != null) {
+                        posAnimationProgress = animationProgressProvider.provide(this);
+                    } else {
+                        posAnimationProgress += dt / (fastAnimation ? 300.0f : 500.0f);
+                    }
                     if (posAnimationProgress > 1.0f) {
                         posAnimationProgress = 1.0f;
                     }
-                    progress = interpolator.getInterpolation(posAnimationProgress);
+                    if (animationProgressProvider == null) {
+                        progress = interpolator.getInterpolation(posAnimationProgress);
+                    } else {
+                        progress = posAnimationProgress;
+                    }
                     if (rotationBack) {
                         progress = 1.0f - progress;
                         if (posAnimationProgress >= 1.0f) {
