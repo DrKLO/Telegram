@@ -58,6 +58,7 @@ public class Browser {
     private static CustomTabsServiceConnection customTabsServiceConnection;
     private static String customTabsPackageToBind;
     private static WeakReference<Activity> currentCustomTabsActivity;
+    private static Boolean isDisplayedProgressDialog = false;
 
     private static CustomTabsSession getCurrentSession() {
         return customTabsCurrentSession == null ? null : customTabsCurrentSession.get();
@@ -208,6 +209,7 @@ public class Browser {
                     final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         try {
                             progressDialog[0].dismiss();
+                            isDisplayedProgressDialog = false;
                         } catch (Throwable ignore) {
 
                         }
@@ -226,12 +228,16 @@ public class Browser {
                         }
                     }));
                     AndroidUtilities.runOnUIThread(() -> {
-                        if (progressDialog[0] == null) {
+                        if (progressDialog[0] == null || isDisplayedProgressDialog) {
                             return;
                         }
                         try {
-                            progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true));
+                            progressDialog[0].setOnCancelListener(dialog -> {
+                                ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true);
+                                isDisplayedProgressDialog = false;
+                            });
                             progressDialog[0].show();
+                            isDisplayedProgressDialog = true;
                         } catch (Exception ignore) {
 
                         }
