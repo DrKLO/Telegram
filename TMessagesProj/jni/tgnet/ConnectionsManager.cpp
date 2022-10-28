@@ -1693,16 +1693,14 @@ void ConnectionsManager::initDatacenters() {
     if (!testBackend) {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
-            datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
-            // datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
+            datacenter->addAddressAndPort("43.155.11.190", 10443, 0, "");
             // datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000a", 443, 1, "");
             datacenters[1] = datacenter;
         }
     } else {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
-            datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
-            // datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
+            datacenter->addAddressAndPort("43.155.11.190", 10443, 0, "");
             // datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000e", 443, 1, "");
             datacenters[1] = datacenter;
         }
