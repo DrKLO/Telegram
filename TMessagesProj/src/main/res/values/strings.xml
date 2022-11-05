@@ -8489,4 +8489,5 @@
     <string name="DeleteAllYourMessagesInfo">Are you sure you want **delete all your messages** from this chat?</string>
     <string name="ReallySure">Are you **really sure**?</string>
     <string name="DisableGlobalSearch">Disable Global Search</string>
+    <string name="DisableQuickReaction">Disable quick reaction</string>
 </resources>
