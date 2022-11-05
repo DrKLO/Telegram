@@ -36,7 +36,7 @@ android {
     compileSdkVersion 31
     buildToolsVersion '31.0.0'
 
-    defaultConfig.applicationId = "org.chatengine.messenger"
+    defaultConfig.applicationId = APP_PACKAGE
 
     sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
 
