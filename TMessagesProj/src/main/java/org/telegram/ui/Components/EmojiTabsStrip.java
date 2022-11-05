@@ -10,11 +10,10 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +34,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
+import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -90,7 +90,8 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
     public boolean updateButtonDrawables = true;
 
-    public EmojiTabsStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean includeStandard, boolean includeAnimated, Runnable onSettingsOpen) {
+
+    public EmojiTabsStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean includeStandard, boolean includeAnimated, int type, Runnable onSettingsOpen) {
         super(context);
         this.includeAnimated = includeAnimated;
         this.resourcesProvider = resourcesProvider;
@@ -249,6 +250,9 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         setHorizontalScrollBarEnabled(false);
         addView(contentView);
 
+        if (type == SelectAnimatedEmojiDialog.TYPE_TOPIC_ICON) {
+            recentDrawableId = R.drawable.msg_emoji_smiles;
+        }
         contentView.addView(recentTab = new EmojiTabButton(context, recentDrawableId, false, false));
         recentTab.id = "recent".hashCode();
         if (!includeAnimated) {

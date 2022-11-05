@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
@@ -19,16 +18,16 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class BackButtonMenu {
@@ -46,7 +45,7 @@ public class BackButtonMenu {
         if (thisFragment == null) {
             return null;
         }
-        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        final INavigationLayout parentLayout = thisFragment.getParentLayout();
         final Context context = thisFragment.getParentActivity();
         final View fragmentView = thisFragment.getFragmentView();
         if (parentLayout == null || context == null || fragmentView == null) {
@@ -125,10 +124,10 @@ public class BackButtonMenu {
                 }
                 if (pDialog.stackIndex >= 0) {
                     Long nextFragmentDialogId = null;
-                    if (parentLayout == null || parentLayout.fragmentsStack == null || pDialog.stackIndex >= parentLayout.fragmentsStack.size()) {
+                    if (parentLayout == null || parentLayout.getFragmentStack() == null || pDialog.stackIndex >= parentLayout.getFragmentStack().size()) {
                         nextFragmentDialogId = null;
                     } else {
-                        BaseFragment nextFragment = parentLayout.fragmentsStack.get(pDialog.stackIndex);
+                        BaseFragment nextFragment = parentLayout.getFragmentStack().get(pDialog.stackIndex);
                         if (nextFragment instanceof ChatActivity) {
                             nextFragmentDialogId = ((ChatActivity) nextFragment).getDialogId();
                         } else if (nextFragment instanceof ProfileActivity) {
@@ -136,18 +135,18 @@ public class BackButtonMenu {
                         }
                     }
                     if (nextFragmentDialogId != null && nextFragmentDialogId != pDialog.dialogId) {
-                        for (int j = parentLayout.fragmentsStack.size() - 2; j > pDialog.stackIndex; --j) {
+                        for (int j = parentLayout.getFragmentStack().size() - 2; j > pDialog.stackIndex; --j) {
                             parentLayout.removeFragmentFromStack(j);
                         }
                     } else {
-                        if (parentLayout != null && parentLayout.fragmentsStack != null) {
-                            for (int j = parentLayout.fragmentsStack.size() - 2; j > pDialog.stackIndex; --j) {
-                                if (j >= 0 && j < parentLayout.fragmentsStack.size()) {
+                        if (parentLayout != null && parentLayout.getFragmentStack() != null) {
+                            for (int j = parentLayout.getFragmentStack().size() - 2; j > pDialog.stackIndex; --j) {
+                                if (j >= 0 && j < parentLayout.getFragmentStack().size()) {
                                     parentLayout.removeFragmentFromStack(j);
                                 }
                             }
-                            if (pDialog.stackIndex < parentLayout.fragmentsStack.size()) {
-                                parentLayout.showFragment(pDialog.stackIndex);
+                            if (pDialog.stackIndex < parentLayout.getFragmentStack().size()) {
+                                parentLayout.bringToFront(pDialog.stackIndex);
                                 parentLayout.closeLastFragment(true);
                                 return;
                             }
@@ -214,11 +213,11 @@ public class BackButtonMenu {
         ArrayList<PulledDialog> dialogs = new ArrayList<>();
         if (thisFragment == null)
             return dialogs;
-        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        final INavigationLayout parentLayout = thisFragment.getParentLayout();
         if (parentLayout == null)
             return dialogs;
-        ArrayList<BaseFragment> fragmentsStack = parentLayout.fragmentsStack;
-        ArrayList<PulledDialog> pulledDialogs = parentLayout.pulledDialogs;
+        List<BaseFragment> fragmentsStack = parentLayout.getFragmentStack();
+        List<PulledDialog> pulledDialogs = parentLayout.getPulledDialogs();
         if (fragmentsStack != null) {
             final int count = fragmentsStack.size();
             for (int i = 0; i < count; ++i) {
@@ -306,15 +305,15 @@ public class BackButtonMenu {
         if (thisFragment == null) {
             return;
         }
-        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        INavigationLayout parentLayout = thisFragment.getParentLayout();
         if (parentLayout == null) {
             return;
         }
-        if (parentLayout.pulledDialogs == null) {
-            parentLayout.pulledDialogs = new ArrayList<>();
+        if (parentLayout.getPulledDialogs() == null) {
+            parentLayout.setPulledDialogs(new ArrayList<>());
         }
         boolean alreadyAdded = false;
-        for (PulledDialog d : parentLayout.pulledDialogs) {
+        for (PulledDialog d : parentLayout.getPulledDialogs()) {
             if (d.dialogId == dialogId) {
                 alreadyAdded = true;
                 break;
@@ -330,21 +329,21 @@ public class BackButtonMenu {
             d.folderId = folderId;
             d.chat = chat;
             d.user = user;
-            parentLayout.pulledDialogs.add(d);
+            parentLayout.getPulledDialogs().add(d);
         }
     }
     public static void clearPulledDialogs(BaseFragment thisFragment, int fromIndex) {
         if (thisFragment == null) {
             return;
         }
-        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        final INavigationLayout parentLayout = thisFragment.getParentLayout();
         if (parentLayout == null) {
             return;
         }
-        if (parentLayout.pulledDialogs != null) {
-            for (int i = 0; i < parentLayout.pulledDialogs.size(); ++i) {
-                if (parentLayout.pulledDialogs.get(i).stackIndex > fromIndex) {
-                    parentLayout.pulledDialogs.remove(i);
+        if (parentLayout.getPulledDialogs() != null) {
+            for (int i = 0; i < parentLayout.getPulledDialogs().size(); ++i) {
+                if (parentLayout.getPulledDialogs().get(i).stackIndex > fromIndex) {
+                    parentLayout.getPulledDialogs().remove(i);
                     i--;
                 }
             }

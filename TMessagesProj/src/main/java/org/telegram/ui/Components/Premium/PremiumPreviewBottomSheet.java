@@ -222,16 +222,49 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
         container.getLocationOnScreen(coords);
     }
 
-    private LinkSpanDrawable.LinksTextView titleView;
+    private FrameLayout titleViewContainer;
+    private LinkSpanDrawable.LinksTextView titleView[];
+    private void titleLoaded(CharSequence newText, boolean animated) {
+        if (titleView == null) {
+            return;
+        }
+        titleView[1].setText(newText);
+        if (titleView[1].getVisibility() != View.VISIBLE) {
+            if (animated) {
+                titleView[1].setAlpha(0);
+                titleView[1].setVisibility(View.VISIBLE);
+                titleView[1].animate().alpha(1).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(200).start();
+                titleView[0].animate().alpha(0).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(200).withEndAction(() -> {
+                    titleView[0].setVisibility(View.GONE);
+                }).start();
+
+                ValueAnimator heightUpdate = ValueAnimator.ofFloat(0, 1);
+                heightUpdate.addUpdateListener(anm -> {
+                    float t = (float) anm.getAnimatedValue();
+                    titleViewContainer.getLayoutParams().height = AndroidUtilities.lerp(titleView[0].getHeight(), titleView[1].getHeight(), t);
+                    titleViewContainer.requestLayout();
+                });
+                heightUpdate.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                heightUpdate.setDuration(200);
+                heightUpdate.start();
+            } else {
+                titleView[1].setAlpha(1);
+                titleView[1].setVisibility(View.VISIBLE);
+                titleView[0].setAlpha(0);
+                titleView[0].setVisibility(View.GONE);
+            }
+        }
+    }
+
     private TextView subtitleView;
-    public void setTitle() {
+    public void setTitle(boolean animated) {
         if (titleView == null || subtitleView == null) {
             return;
         }
         if (statusStickerSet != null) {
             final String stickerSetPlaceholder = "<STICKERSET>";
             String string = LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogTitle, ContactsController.formatName(user.first_name, user.last_name), stickerSetPlaceholder);
-            CharSequence charSequence = AndroidUtilities.replaceSingleTag(string, Theme.key_windowBackgroundWhiteBlueButton, null);
+            CharSequence charSequence = AndroidUtilities.replaceSingleTag(string, Theme.key_windowBackgroundWhiteBlueButton, AndroidUtilities.REPLACING_TAG_TYPE_LINK, null);
             SpannableStringBuilder title = charSequence instanceof SpannableStringBuilder ? ((SpannableStringBuilder) charSequence) : new SpannableStringBuilder(charSequence);
             int index = charSequence.toString().indexOf(stickerSetPlaceholder);
             if (index >= 0) {
@@ -251,14 +284,14 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                 SpannableStringBuilder replaceWith;
                 if (sticker != null) {
                     SpannableStringBuilder animatedEmoji = new SpannableStringBuilder("x");
-                    animatedEmoji.setSpan(new AnimatedEmojiSpan(sticker, titleView.getPaint().getFontMetricsInt()), 0, animatedEmoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    animatedEmoji.setSpan(new AnimatedEmojiSpan(sticker, titleView[0].getPaint().getFontMetricsInt()), 0, animatedEmoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     if (stickerSet != null && stickerSet.set != null) {
                         animatedEmoji.append("\u00A0").append(stickerSet.set.title);
                     }
                     replaceWith = animatedEmoji;
                 } else {
                     SpannableStringBuilder loading = new SpannableStringBuilder("xxxxxx");
-                    loading.setSpan(new LoadingSpan(titleView, AndroidUtilities.dp(100)), 0, loading.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    loading.setSpan(new LoadingSpan(titleView[0], AndroidUtilities.dp(100)), 0, loading.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     replaceWith = loading;
                 }
                 title.replace(index, index + stickerSetPlaceholder.length(), replaceWith);
@@ -271,7 +304,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                     @Override
                     public void onClick(@NonNull View view) {}
                 }, index, index + replaceWith.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                titleView.setOnLinkPressListener(l -> {
+                titleView[1].setOnLinkPressListener(l -> {
                     ArrayList<TLRPC.InputStickerSet> inputStickerSets = new ArrayList<>();
                     inputStickerSets.add(statusStickerSet);
                     BaseFragment overridenFragment = new BaseFragment() {
@@ -310,22 +343,26 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                         }
                     }.show();
                 });
+                if (sticker != null) {
+                    titleLoaded(title, animated);
+                } else {
+                    titleView[0].setText(title, null);
+                }
             }
-            titleView.setText(title, null);
             subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserStatusDialogSubtitle)));
         } else if (isEmojiStatus) {
-            titleView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.TelegramPremiumUserStatusDefaultDialogTitle, ContactsController.formatName(user.first_name, user.last_name))));
+            titleView[0].setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.TelegramPremiumUserStatusDefaultDialogTitle, ContactsController.formatName(user.first_name, user.last_name))));
             subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.TelegramPremiumUserStatusDialogSubtitle, ContactsController.formatName(user.first_name, user.last_name))));
         } else if (giftTier != null) {
             if (isOutboundGift) {
-                titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton, null));
-                subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), Theme.key_windowBackgroundWhiteBlueButton, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
             } else {
-                titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
             }
         } else {
-            titleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), Theme.key_windowBackgroundWhiteBlueButton, null));
+            titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserDialogTitle, ContactsController.formatName(user.first_name, user.last_name)), Theme.key_windowBackgroundWhiteBlueButton, AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
             subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserDialogSubtitle)));
         }
     }
@@ -389,38 +426,51 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                         linearLayout.addView(overrideTitleIcon, LayoutHelper.createLinear(140, 140, Gravity.CENTER_HORIZONTAL, Gravity.CENTER, 10, 10, 10, 10));
                     }
 
-                    if (titleView == null) {
+                    if (titleViewContainer == null) {
+                        titleViewContainer = new FrameLayout(context);
+                        titleViewContainer.setClipChildren(false);
+
                         final ColorFilter colorFilter = new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteLinkText), 178), PorterDuff.Mode.MULTIPLY);
-                        titleView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
-                            private Layout lastLayout;
-                            AnimatedEmojiSpan.EmojiGroupedSpans stack;
+                        titleView = new LinkSpanDrawable.LinksTextView[2];
+                        for (int a = 0; a < 2; ++a) {
+                            titleView[a] = new LinkSpanDrawable.LinksTextView(context, resourcesProvider) {
+                                private Layout lastLayout;
+                                AnimatedEmojiSpan.EmojiGroupedSpans stack;
 
-                            @Override
-                            protected void onDetachedFromWindow() {
-                                super.onDetachedFromWindow();
-                                AnimatedEmojiSpan.release(this, stack);
-                                lastLayout = null;
-                            }
-
-                            @Override
-                            protected void dispatchDraw(Canvas canvas) {
-                                super.dispatchDraw(canvas);
-                                if (lastLayout != getLayout()) {
-                                    stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, this, stack, lastLayout = getLayout());
+                                @Override
+                                protected void onDetachedFromWindow() {
+                                    super.onDetachedFromWindow();
+                                    AnimatedEmojiSpan.release(this, stack);
+                                    lastLayout = null;
                                 }
-                                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), stack, 0, null, 0, 0, 0, 1f, colorFilter);
-                            }
-                        };
-                        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                        titleView.setGravity(Gravity.CENTER_HORIZONTAL);
-                        titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-                        titleView.setLinkTextColor(getThemedColor(Theme.key_windowBackgroundWhiteLinkText));
+
+                                @Override
+                                protected void dispatchDraw(Canvas canvas) {
+                                    super.dispatchDraw(canvas);
+                                    if (lastLayout != getLayout()) {
+                                        stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, this, stack, lastLayout = getLayout());
+                                    }
+                                    AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), stack, 0, null, 0, 0, 0, 1f, colorFilter);
+                                }
+
+                                @Override
+                                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(99999999, MeasureSpec.AT_MOST));
+                                }
+                            };
+                            titleView[a].setVisibility(a == 0 ? View.VISIBLE : View.GONE);
+                            titleView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                            titleView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                            titleView[a].setGravity(Gravity.CENTER_HORIZONTAL);
+                            titleView[a].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                            titleView[a].setLinkTextColor(getThemedColor(Theme.key_windowBackgroundWhiteLinkText));
+                            titleViewContainer.addView(titleView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                        }
                     }
-                    if (titleView.getParent() != null) {
-                        ((ViewGroup) titleView.getParent()).removeView(titleView);
+                    if (titleViewContainer.getParent() != null) {
+                        ((ViewGroup) titleViewContainer.getParent()).removeView(titleViewContainer);
                     }
-                    linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_HORIZONTAL, 40, 0, 40, 0));
+                    linearLayout.addView(titleViewContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_HORIZONTAL, 40, 0, 40, 0));
 
                     if (subtitleView == null) {
                         subtitleView = new TextView(context);
@@ -434,7 +484,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
                     }
                     linearLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 16, 9, 16, 20));
 
-                    setTitle();
+                    setTitle(false);
 
                     starParticlesView = new StarParticlesView(context) {
                         @Override
@@ -596,6 +646,12 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
             float cxFrom = -coords[0] + startEnterFromX1 + points[0];
             float cyFrom = -coords[1] + startEnterFromY1 + points[1];
 
+            if (AndroidUtilities.isTablet()) {
+                View v = fragment.getParentLayout().getView();
+                cxFrom += v.getX() + v.getPaddingLeft();
+                cyFrom += v.getY() + v.getPaddingTop();
+            }
+
             float fromSize = startEnterFromScale * startEnterFromDrawable.getIntrinsicWidth();
             float toSize = titleIcon.getMeasuredHeight() * 0.8f;
             float toSclale = toSize / fromSize;
@@ -697,7 +753,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.groupStickersDidLoad) {
             if (statusStickerSet != null && statusStickerSet.id == (long) args[0]) {
-                setTitle();
+                setTitle(true);
             }
         }
     }

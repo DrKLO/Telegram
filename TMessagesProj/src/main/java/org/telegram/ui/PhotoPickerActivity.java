@@ -799,7 +799,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("ClearSearchAlertTitle", R.string.ClearSearchAlertTitle));
                     builder.setMessage(LocaleController.getString("ClearSearchAlert", R.string.ClearSearchAlert));
-                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> {
+                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface, i) -> {
                         if (searchDelegate != null) {
                             searchDelegate.shouldClearRecentSearch();
                         } else {
@@ -900,7 +900,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             public void onStartStopSelection(boolean start) {
                 alertOnlyOnce = start ? 1 : 0;
                 if (start) {
-                    parentLayout.requestDisallowInterceptTouchEvent(true);
+                    parentLayout.getView().requestDisallowInterceptTouchEvent(true);
                 }
                 listView.hideSelector(true);
             }
@@ -1188,7 +1188,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         allowIndices = (selectedAlbum != null || type == 0 || type == 1) && allowOrder;
 
         listView.setEmptyView(emptyView);
-        listView.setAnimateEmptyView(true, 0);
+        listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
         updatePhotosButton(0);
 
         return fragmentView;

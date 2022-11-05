@@ -33,6 +33,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
         }
         long dialogId = intent.getLongExtra("dialog_id", 0);
         int maxId = intent.getIntExtra("max_id", 0);
+        int topicId = intent.getIntExtra("topic_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
         if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
             return;
@@ -45,7 +46,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
                     TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        sendMessage(accountInstance, text, dialogId, maxId);
+                        sendMessage(accountInstance, text, dialogId, topicId, maxId);
                     });
                 });
                 return;
@@ -57,17 +58,31 @@ public class WearReplyReceiver extends BroadcastReceiver {
                     TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        sendMessage(accountInstance, text, dialogId, maxId);
+                        sendMessage(accountInstance, text, dialogId, topicId, maxId);
                     });
                 });
                 return;
             }
         }
-        sendMessage(accountInstance, text, dialogId, maxId);
+        sendMessage(accountInstance, text, dialogId, topicId, maxId);
     }
 
-    private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, int max_id) {
-        accountInstance.getSendMessagesHelper().sendMessage(text.toString(), dialog_id, null, null, null, true, null, null, null, true, 0, null, false);
-        accountInstance.getMessagesController().markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
+    private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, int topicId, int max_id) {
+        MessageObject replyToMsgId = null;
+        if (topicId != 0) {
+            TLRPC.TL_message topicStartMessage = new TLRPC.TL_message();
+            topicStartMessage.message = "";
+            topicStartMessage.id = topicId;
+            topicStartMessage.peer_id = accountInstance.getMessagesController().getPeer(dialog_id);
+            topicStartMessage.action = new TLRPC.TL_messageActionTopicCreate();
+            topicStartMessage.action.title = "";
+            replyToMsgId = new MessageObject(accountInstance.getCurrentAccount(), topicStartMessage, false, false);
+        }
+
+        accountInstance.getSendMessagesHelper().sendMessage(text.toString(), dialog_id, replyToMsgId, null, null, true, null, null, null, true, 0, null, false);
+        //TODO handle topics
+        if (topicId == 0) {
+            accountInstance.getMessagesController().markDialogAsRead(dialog_id, max_id, max_id, 0, false, topicId, 0, true, 0);
+        }
     }
 }

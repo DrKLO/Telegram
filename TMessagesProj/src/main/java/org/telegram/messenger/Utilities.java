@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -112,32 +113,36 @@ public class Utilities {
         if (value == null) {
             return 0;
         }
-        int val = 0;
-        try {
-            int start = -1, end;
-            for (end = 0; end < value.length(); ++end) {
-                char character = value.charAt(end);
-                boolean allowedChar = character == '-' || character >= '0' && character <= '9';
-                if (allowedChar && start < 0) {
-                    start = end;
-                } else if (!allowedChar && start >= 0) {
-                    end++;
-                    break;
+        if (BuildConfig.BUILD_HOST_IS_WINDOWS) {
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.find()) {
+                return Integer.valueOf(matcher.group());
+            }
+        } else {
+            int val = 0;
+            try {
+                int start = -1, end;
+                for (end = 0; end < value.length(); ++end) {
+                    char character = value.charAt(end);
+                    boolean allowedChar = character == '-' || character >= '0' && character <= '9';
+                    if (allowedChar && start < 0) {
+                        start = end;
+                    } else if (!allowedChar && start >= 0) {
+                        end++;
+                        break;
+                    }
                 }
-            }
-            if (start >= 0) {
-                String str = value.subSequence(start, end).toString();
+                if (start >= 0) {
+                    String str = value.subSequence(start, end).toString();
 //                val = parseInt(str);
-                val = Integer.parseInt(str);
-            }
-//            Matcher matcher = pattern.matcher(value);
-//            if (matcher.find()) {
-//                String num = matcher.group(0);
-//                val = Integer.parseInt(num);
-//            }
-        } catch (Exception ignore) {}
-        return val;
+                    val = Integer.parseInt(str);
+                }
+            } catch (Exception ignore) {}
+            return val;
+        }
+        return 0;
     }
+
     private static int parseInt(final String s) {
         int num = 0;
         boolean negative = true;
@@ -463,5 +468,13 @@ public class Utilities {
 
     public static interface Callback<T> {
         public void run(T arg);
+    }
+
+    public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
+        Value v = map.get(key);
+        if (v == null) {
+            return defaultValue;
+        }
+        return v;
     }
 }

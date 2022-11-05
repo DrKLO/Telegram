@@ -117,7 +117,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         if (v != null) {
                             v.vibrate(200);
                         }
-                        AndroidUtilities.shakeView(firstNameField, 2, 0);
+                        AndroidUtilities.shakeView(firstNameField);
                         return;
                     }
                     if (codeField.length() == 0) {
@@ -125,7 +125,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         if (v != null) {
                             v.vibrate(200);
                         }
-                        AndroidUtilities.shakeView(codeField, 2, 0);
+                        AndroidUtilities.shakeView(codeField);
                         return;
                     }
                     if (phoneField.length() == 0) {
@@ -133,7 +133,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         if (v != null) {
                             v.vibrate(200);
                         }
-                        AndroidUtilities.shakeView(phoneField, 2, 0);
+                        AndroidUtilities.shakeView(phoneField);
                         return;
                     }
                     donePressed = true;

@@ -29,7 +29,6 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.transition.Visibility;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -60,7 +59,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.BackupImageView;
@@ -77,6 +75,15 @@ import java.util.ArrayList;
 public class ActionBarMenuItem extends FrameLayout {
 
     private FrameLayout wrappedSearchFrameLayout;
+
+    public void setSearchPaddingStart(int padding) {
+        searchItemPaddingStart = padding;
+        if (searchContainer != null) {
+            ((MarginLayoutParams)searchContainer.getLayoutParams()).leftMargin = AndroidUtilities.dp(padding);
+            searchContainer.setClipChildren(searchItemPaddingStart != 0);
+        }
+
+    }
 
     public static class ActionBarMenuItemSearchListener {
         public void onSearchExpand() {
@@ -171,6 +178,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private float transitionOffset;
     private View showSubMenuFrom;
     private final Theme.ResourcesProvider resourcesProvider;
+    public int searchItemPaddingStart;
 
     private OnClickListener onClickListener;
 
@@ -711,9 +719,9 @@ public class ActionBarMenuItem extends FrameLayout {
             }
         });
 
-       // if (measurePopup) {
-            container.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(40), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
-            measurePopup = false;
+        // if (measurePopup) {
+        container.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(40), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
+        measurePopup = false;
         //}
         processedPopupClick = false;
         popupWindow.setFocusable(true);
@@ -889,35 +897,35 @@ public class ActionBarMenuItem extends FrameLayout {
             ChangeBounds changeBounds = new ChangeBounds();
             changeBounds.setDuration(150);
             transition.addTransition(new Visibility() {
-                        @Override
-                        public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
-                            if (view instanceof SearchFilterView) {
-                                AnimatorSet set = new AnimatorSet();
-                                set.playTogether(
-                                        ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f),
-                                        ObjectAnimator.ofFloat(view, View.SCALE_X, 0.5f, 1f),
-                                        ObjectAnimator.ofFloat(view, View.SCALE_Y, 0.5f, 1f)
-                                );
-                                set.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                                return set;
-                            }
-                            return ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f);
-                        }
-                        @Override
-                        public Animator onDisappear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
-                            if (view instanceof SearchFilterView) {
-                                AnimatorSet set = new AnimatorSet();
-                                set.playTogether(
-                                        ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f),
-                                        ObjectAnimator.ofFloat(view, View.SCALE_X,  view.getScaleX(), 0.5f),
-                                        ObjectAnimator.ofFloat(view, View.SCALE_Y,  view.getScaleX(), 0.5f)
-                                );
-                                set.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                                return set;
-                            }
-                            return ObjectAnimator.ofFloat(view, View.ALPHA, 1f, 0);
-                        }
-                    }.setDuration(150)).addTransition(changeBounds);
+                @Override
+                public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                    if (view instanceof SearchFilterView) {
+                        AnimatorSet set = new AnimatorSet();
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f),
+                                ObjectAnimator.ofFloat(view, View.SCALE_X, 0.5f, 1f),
+                                ObjectAnimator.ofFloat(view, View.SCALE_Y, 0.5f, 1f)
+                        );
+                        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                        return set;
+                    }
+                    return ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f);
+                }
+                @Override
+                public Animator onDisappear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                    if (view instanceof SearchFilterView) {
+                        AnimatorSet set = new AnimatorSet();
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f),
+                                ObjectAnimator.ofFloat(view, View.SCALE_X,  view.getScaleX(), 0.5f),
+                                ObjectAnimator.ofFloat(view, View.SCALE_Y,  view.getScaleX(), 0.5f)
+                        );
+                        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                        return set;
+                    }
+                    return ObjectAnimator.ofFloat(view, View.ALPHA, 1f, 0);
+                }
+            }.setDuration(150)).addTransition(changeBounds);
             transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
             transition.setInterpolator(CubicBezierInterpolator.EASE_OUT);
             int selectedAccount = UserConfig.selectedAccount;
@@ -1194,7 +1202,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     searchField.layout(x, searchField.getTop(), x + searchField.getMeasuredWidth(), searchField.getBottom());
                 }
             };
-            searchContainer.setClipChildren(false);
+            searchContainer.setClipChildren(searchItemPaddingStart != 0);
             wrappedSearchFrameLayout = null;
             if (wrapInScrollView) {
                 wrappedSearchFrameLayout = new FrameLayout(getContext());
@@ -1232,11 +1240,11 @@ public class ActionBarMenuItem extends FrameLayout {
                 };
                 horizontalScrollView.addView(searchContainer, LayoutHelper.createScroll(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 0));
                 horizontalScrollView.setHorizontalScrollBarEnabled(false);
-                horizontalScrollView.setClipChildren(false);
+                horizontalScrollView.setClipChildren(searchItemPaddingStart != 0);
                 wrappedSearchFrameLayout.addView(horizontalScrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 0, 48, 0));
-                parentMenu.addView(wrappedSearchFrameLayout, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 0, 0, 0, 0));
+                parentMenu.addView(wrappedSearchFrameLayout, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, searchItemPaddingStart, 0, 0, 0));
             } else {
-                parentMenu.addView(searchContainer, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 6, 0, 0, 0));
+                parentMenu.addView(searchContainer, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, searchItemPaddingStart + 6, 0, 0, 0));
             }
             searchContainer.setVisibility(GONE);
 
@@ -1370,11 +1378,11 @@ public class ActionBarMenuItem extends FrameLayout {
             searchFilterLayout.setVisibility(View.VISIBLE);
             if (!LocaleController.isRTL) {
                 searchContainer.addView(searchFieldCaption, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 5.5f, 0, 0));
-                searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL, 6, 0, 48, 0));
+                searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_VERTICAL, 6, 0, wrapInScrollView ? 0 : 48, 0));
                 searchContainer.addView(searchFilterLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER_VERTICAL, 0, 0, 48, 0));
             } else {
                 searchContainer.addView(searchFilterLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER_VERTICAL, 0, 0, 48, 0));
-                searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL, 0, 0, wrapInScrollView ? 0 : 48, 0));
+                searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_VERTICAL, 0, 0, wrapInScrollView ? 0 : 48, 0));
                 searchContainer.addView(searchFieldCaption, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 5.5f, 48, 0));
             }
             searchFilterLayout.setClipChildren(false);

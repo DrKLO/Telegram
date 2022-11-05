@@ -39,6 +39,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.util.SparseArray;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.xml.sax.Attributes;
@@ -122,6 +123,7 @@ public class SvgHelper {
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
+        SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
 
         private boolean aspectFill = true;
 
@@ -225,11 +227,15 @@ public class SvgHelper {
                 Object object = commands.get(a);
                 if (object instanceof Matrix) {
                     canvas.save();
-                //    canvas.concat((Matrix) object);
+                    canvas.concat((Matrix) object);
                 } else if (object == null) {
                     canvas.restore();
                 } else {
                     Paint paint;
+                    Paint overridePaint = overridePaintByPosition.get(a);
+                    if (overridePaint == null) {
+                        overridePaint = this.overridePaint;
+                    }
                     if (drawInBackground) {
                         paint = backgroundPaint;
                     } else if (overridePaint != null) {
@@ -351,6 +357,14 @@ public class SvgHelper {
 
         public void setPaint(Paint paint) {
             overridePaint = paint;
+        }
+
+        public void setPaint(Paint paint, int position) {
+            overridePaintByPosition.put(position, paint);
+        }
+
+        public void copyCommandFromPosition(int position) {
+            commands.add(commands.get(position));
         }
     }
 

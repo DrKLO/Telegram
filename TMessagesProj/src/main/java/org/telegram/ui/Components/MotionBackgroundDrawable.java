@@ -281,7 +281,7 @@ public class MotionBackgroundDrawable extends Drawable {
                     }
                     legacyCanvas2.drawBitmap(legacyBitmap, 0, 0, null);
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e(e);
                 if (legacyBitmap2 != null) {
                     legacyBitmap2.recycle();
@@ -475,7 +475,7 @@ public class MotionBackgroundDrawable extends Drawable {
                     legacyBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                     legacyCanvas = new Canvas(legacyBitmap);
                     invalidateLegacy = true;
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     if (legacyBitmap != null) {
                         legacyBitmap.recycle();
                         legacyBitmap = null;

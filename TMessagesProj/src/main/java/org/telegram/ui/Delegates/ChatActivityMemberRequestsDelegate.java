@@ -3,6 +3,7 @@ package org.telegram.ui.Delegates;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
@@ -68,7 +69,9 @@ public class ChatActivityMemberRequestsDelegate {
 
             View pendingRequestsSelector = new View(fragment.getParentActivity());
             pendingRequestsSelector.setBackground(Theme.getSelectorDrawable(false));
-            pendingRequestsSelector.setOnClickListener((v) -> showBottomSheet());
+            pendingRequestsSelector.setOnClickListener((v) -> {
+                showBottomSheet();
+            });
             root.addView(pendingRequestsSelector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 2));
 
             LinearLayout requestsDataLayout = new LinearLayout(fragment.getParentActivity());
@@ -222,6 +225,9 @@ public class ChatActivityMemberRequestsDelegate {
                 public void onAnimationEnd(Animator animation) {
                     if (!appear) {
                         root.setVisibility(View.GONE);
+                    }
+                    if (callback != null) {
+                        callback.onEnterOffsetChanged();
                     }
                 }
             });

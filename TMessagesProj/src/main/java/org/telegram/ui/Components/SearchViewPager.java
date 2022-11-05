@@ -164,7 +164,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         searchListView.setInstantClick(true);
         searchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         searchListView.setLayoutManager(searchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
-        searchListView.setAnimateEmptyView(true, 0);
+        searchListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
         searchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -447,9 +447,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
                 showActionMode(false);
 
-                if (dids.size() > 1 || dids.get(0) == AccountInstance.getInstance(currentAccount).getUserConfig().getClientUserId() || message != null) {
+                if (dids.size() > 1 || dids.get(0).dialogId == AccountInstance.getInstance(currentAccount).getUserConfig().getClientUserId() || message != null) {
                     for (int a = 0; a < dids.size(); a++) {
-                        long did = dids.get(a);
+                        long did = dids.get(a).dialogId;
                         if (message != null) {
                             AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
@@ -457,7 +457,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     }
                     fragment1.finishFragment();
                 } else {
-                    long did = dids.get(0);
+                    long did = dids.get(0).dialogId;
                     Bundle args1 = new Bundle();
                     args1.putBoolean("scrollToTopOnResume", true);
                     if (DialogObject.isEncryptedDialog(did)) {
@@ -706,7 +706,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         for (int i = 0; i < n; i++) {
             View v = viewsByType.valueAt(i);
             if (v instanceof FilteredSearchView) {
-               ((FilteredSearchView) v).messagesDeleted(channelId, markAsDeletedMessages);
+                ((FilteredSearchView) v).messagesDeleted(channelId, markAsDeletedMessages);
             }
         }
 

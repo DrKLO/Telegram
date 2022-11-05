@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.SystemClock;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -19,10 +20,13 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -30,16 +34,19 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ShareDialogCell extends FrameLayout {
 
     private BackupImageView imageView;
     private TextView nameTextView;
+    private SimpleTextView topicTextView;
     private CheckBox2 checkBox;
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
     private TLRPC.User user;
@@ -48,6 +55,8 @@ public class ShareDialogCell extends FrameLayout {
     private float onlineProgress;
     private long lastUpdateTime;
     private long currentDialog;
+
+    private boolean topicWasVisible;
 
     private int currentAccount = UserConfig.selectedAccount;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -79,6 +88,14 @@ public class ShareDialogCell extends FrameLayout {
         nameTextView.setLines(2);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
+
+        topicTextView = new SimpleTextView(context);
+        topicTextView.setTextColor(getThemedColor(type == TYPE_CALL ? Theme.key_voipgroup_nameText : Theme.key_dialogTextBlack));
+        topicTextView.setTextSize(12);
+        topicTextView.setMaxLines(2);
+        topicTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        topicTextView.setAlignment(Layout.Alignment.ALIGN_CENTER);
+        addView(topicTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
 
         checkBox = new CheckBox2(context, 21, resourcesProvider);
         checkBox.setColor(Theme.key_dialogRoundCheckBox, type == TYPE_CALL ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
@@ -122,6 +139,7 @@ public class ShareDialogCell extends FrameLayout {
                 }
                 imageView.setForUserOrChat(user, avatarDrawable);
             }
+            imageView.setRoundRadius(AndroidUtilities.dp(28));
         } else {
             user = null;
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
@@ -134,6 +152,7 @@ public class ShareDialogCell extends FrameLayout {
             }
             avatarDrawable.setInfo(chat);
             imageView.setForUserOrChat(chat, avatarDrawable);
+            imageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(28));
         }
         currentDialog = uid;
         checkBox.setChecked(checked, false);
@@ -145,6 +164,59 @@ public class ShareDialogCell extends FrameLayout {
 
     public void setChecked(boolean checked, boolean animated) {
         checkBox.setChecked(checked, animated);
+        if (!checked) {
+            setTopic(null, true);
+        }
+    }
+
+    public void setTopic(TLRPC.TL_forumTopic topic, boolean animate) {
+        boolean wasVisible = topicWasVisible;
+        boolean visible = topic != null;
+        if (wasVisible != visible || !animate) {
+            SpringAnimation prevSpring = (SpringAnimation) topicTextView.getTag(R.id.spring_tag);
+            if (prevSpring != null) {
+                prevSpring.cancel();
+            }
+
+            if (visible) {
+                topicTextView.setText(ForumUtilities.getTopicSpannedName(topic, topicTextView.getTextPaint()));
+                topicTextView.requestLayout();
+            }
+            if (animate) {
+                SpringAnimation springAnimation = new SpringAnimation(new FloatValueHolder(visible ? 0f : 1000f))
+                        .setSpring(new SpringForce(visible ? 1000f : 0f)
+                                .setStiffness(SpringForce.STIFFNESS_MEDIUM)
+                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                        .addUpdateListener((animation, value, velocity) -> {
+                            value /= 1000f;
+
+                            topicTextView.setAlpha(value);
+                            nameTextView.setAlpha(1f - value);
+
+                            topicTextView.setTranslationX((1f - value) * -AndroidUtilities.dp(10));
+                            nameTextView.setTranslationX(value * AndroidUtilities.dp(10));
+                        })
+                        .addEndListener((animation, canceled, value, velocity) -> {
+                            topicTextView.setTag(R.id.spring_tag, null);
+                        });
+                topicTextView.setTag(R.id.spring_tag, springAnimation);
+                springAnimation.start();
+            } else {
+                if (visible) {
+                    topicTextView.setAlpha(1f);
+                    nameTextView.setAlpha(0f);
+                    topicTextView.setTranslationX(0);
+                    nameTextView.setTranslationX(AndroidUtilities.dp(10));
+                } else {
+                    topicTextView.setAlpha(0f);
+                    nameTextView.setAlpha(1f);
+                    topicTextView.setTranslationX(-AndroidUtilities.dp(10));
+                    nameTextView.setTranslationX(0);
+                }
+            }
+
+            topicWasVisible = visible;
+        }
     }
 
     @Override
@@ -198,7 +270,9 @@ public class ShareDialogCell extends FrameLayout {
         int cy = imageView.getTop() + imageView.getMeasuredHeight() / 2;
         Theme.checkboxSquare_checkPaint.setColor(getThemedColor(Theme.key_dialogRoundCheckBox));
         Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
-        canvas.drawCircle(cx, cy, AndroidUtilities.dp(currentType == TYPE_CREATE ? 24 : 28), Theme.checkboxSquare_checkPaint);
+        int radius = AndroidUtilities.dp(currentType == TYPE_CREATE ? 24 : 28);
+        AndroidUtilities.rectTmp.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, imageView.getRoundRadius()[0], imageView.getRoundRadius()[0], Theme.checkboxSquare_checkPaint);
         super.onDraw(canvas);
     }
 

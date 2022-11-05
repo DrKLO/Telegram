@@ -4542,7 +4542,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         final int childCount = mChildHelper.getUnfilteredChildCount();
         for (int i = 0; i < childCount; i++) {
             final ViewHolder holder = getChildViewHolderInt(mChildHelper.getUnfilteredChildAt(i));
-            if (!holder.shouldIgnore()) {
+            if (holder != null && !holder.shouldIgnore()) {
                 holder.clearOldPosition();
             }
         }
@@ -11645,7 +11645,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          */
         @Deprecated
         public int getViewPosition() {
-            return mViewHolder.getPosition();
+            return mViewHolder == null ? RecyclerView.NO_POSITION : mViewHolder.getPosition();
         }
 
         /**
@@ -11655,7 +11655,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * @return the adapter position this view as of latest layout pass
          */
         public int getViewLayoutPosition() {
-            return mViewHolder.getLayoutPosition();
+            return mViewHolder == null ? RecyclerView.NO_POSITION : mViewHolder.getLayoutPosition();
         }
 
         /**
@@ -11667,7 +11667,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * its up-to-date position cannot be calculated.
          */
         public int getViewAdapterPosition() {
-            return mViewHolder.getAdapterPosition();
+            return mViewHolder == null ? RecyclerView.NO_POSITION :mViewHolder.getAdapterPosition();
         }
     }
 

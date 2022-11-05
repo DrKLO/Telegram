@@ -13,6 +13,7 @@ import android.view.ViewConfiguration;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
@@ -41,7 +42,7 @@ public class ReactionsLayoutInBubble {
     private final static int ANIMATION_TYPE_IN = 1;
     private final static int ANIMATION_TYPE_OUT = 2;
     private final static int ANIMATION_TYPE_MOVE = 3;
-    public boolean drawServiceShaderBackground;
+    public float drawServiceShaderBackground;
 
     private static Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -265,7 +266,7 @@ public class ReactionsLayoutInBubble {
             width = maxWidth;
         }
         height = currentY + (reactionButtons.size() == 0 ? 0 : AndroidUtilities.dp(26));
-        drawServiceShaderBackground = false;
+        drawServiceShaderBackground = 0f;
     }
 
     public void draw(Canvas canvas, float animationProgress, String drawOnlyReaction) {
@@ -580,13 +581,13 @@ public class ReactionsLayoutInBubble {
             }
             AndroidUtilities.rectTmp.set(0, 0, w, height);
             float rad = height / 2f;
-            if (drawServiceShaderBackground) {
+            if (drawServiceShaderBackground > 0) {
                 Paint paint1 = getThemedPaint(Theme.key_paint_chatActionBackground);
                 Paint paint2 = Theme.chat_actionBackgroundGradientDarkenPaint;
                 int oldAlpha = paint1.getAlpha();
                 int oldAlpha2 = paint2.getAlpha();
-                paint1.setAlpha((int) (oldAlpha * alpha));
-                paint2.setAlpha((int) (oldAlpha2 * alpha));
+                paint1.setAlpha((int) (oldAlpha * alpha * drawServiceShaderBackground));
+                paint2.setAlpha((int) (oldAlpha2 * alpha * drawServiceShaderBackground));
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint1);
                 if (hasGradientService()) {
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint2);
@@ -594,7 +595,7 @@ public class ReactionsLayoutInBubble {
                 paint1.setAlpha(oldAlpha);
                 paint2.setAlpha(oldAlpha2);
             }
-            if (!drawServiceShaderBackground && drawOverlayScrim) {
+            if (drawServiceShaderBackground < 1 && drawOverlayScrim) {
                 Theme.MessageDrawable messageBackground = parentView.getCurrentBackgroundDrawable(false);
                 if (messageBackground != null) {
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, messageBackground.getPaint());
@@ -637,13 +638,8 @@ public class ReactionsLayoutInBubble {
         }
 
         private void updateColors(float progress) {
-            if (drawServiceShaderBackground) {
-                lastDrawnTextColor = ColorUtils.blendARGB(fromTextColor, serviceTextColor, progress);
-                lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, serviceBackgroundColor, progress);
-            } else {
-                lastDrawnTextColor = ColorUtils.blendARGB(fromTextColor, textColor, progress);
-                lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, backgroundColor, progress);
-            }
+            lastDrawnTextColor = ColorUtils.blendARGB(fromTextColor, ColorUtils.blendARGB(textColor, serviceTextColor, drawServiceShaderBackground), progress);
+            lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, ColorUtils.blendARGB(backgroundColor, serviceBackgroundColor, drawServiceShaderBackground), progress);
         }
 
         private void drawImage(Canvas canvas, float alpha) {
@@ -699,6 +695,7 @@ public class ReactionsLayoutInBubble {
                     avatarsDarawable.setSize(AndroidUtilities.dp(20));
                     avatarsDarawable.width = AndroidUtilities.dp(100);
                     avatarsDarawable.height = height;
+                    avatarsDarawable.setAvatarsTextSize(AndroidUtilities.dp(22));
                     if (attached) {
                         avatarsDarawable.onAttachedToWindow();
                     }

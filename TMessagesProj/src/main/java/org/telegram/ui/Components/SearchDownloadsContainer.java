@@ -155,7 +155,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                         ArrayList<MessageObject> documents = new ArrayList<>();
                         documents.add(message);
                         PhotoViewer.getInstance().setParentActivity(parentFragment);
-                        PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, new PhotoViewer.EmptyPhotoViewerProvider());
+                        PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, 0, new PhotoViewer.EmptyPhotoViewerProvider());
                         return;
                     }
                     AndroidUtilities.openDocument(message, parentActivity, parentFragment);

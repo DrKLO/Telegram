@@ -63,7 +63,7 @@ public class FragmentContextViewWavesDrawable {
         if (parentView == null) {
             update = false;
         } else {
-            update = parents.size() > 0 && parentView == parents.get(0);
+            update = parents.size() > 0;
         }
         if (top > bottom) {
             return;

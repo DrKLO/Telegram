@@ -34,8 +34,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BlurSettingsBottomSheet;
 
@@ -57,7 +57,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private int backgroundTranslationY;
     private boolean paused = true;
     private Drawable oldBackgroundDrawable;
-    private ActionBarLayout parentLayout;
+    private INavigationLayout parentLayout;
     public AdjustPanLayoutHelper adjustPanLayoutHelper;
     private int emojiHeight;
     private float emojiOffset;
@@ -113,7 +113,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         this(context, null);
     }
 
-    public SizeNotifierFrameLayout(Context context, ActionBarLayout layout) {
+    public SizeNotifierFrameLayout(Context context, INavigationLayout layout) {
         super(context);
         setWillNotDraw(false);
         parentLayout = layout;

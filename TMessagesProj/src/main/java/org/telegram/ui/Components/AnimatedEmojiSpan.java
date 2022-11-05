@@ -68,6 +68,17 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         }
     }
 
+    public static void applyFontMetricsForString(CharSequence text, Paint textPaint) {
+        if (text instanceof Spannable) {
+            AnimatedEmojiSpan[] spans = ((Spannable) text).getSpans(0, text.length(), AnimatedEmojiSpan.class);
+            if (spans != null) {
+                for (int k = 0; k < spans.length; ++k) {
+                    spans[k].applyFontMetrics(textPaint.getFontMetricsInt());
+                }
+            }
+        }
+    }
+
     public long getDocumentId() {
         return document != null ? document.id : documentId;
     }
@@ -81,6 +92,10 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     public void applyFontMetrics(Paint.FontMetricsInt newMetrics, int cacheType) {
         fontMetrics = newMetrics;
         this.cacheType = cacheType;
+    }
+
+    public void applyFontMetrics(Paint.FontMetricsInt newMetrics) {
+        fontMetrics = newMetrics;
     }
 
 
@@ -533,6 +548,10 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         HashMap<Layout, SpansChunk> groupedByLayout = new HashMap<>();
         ArrayList<SpansChunk> backgroundDrawingArray = new ArrayList<>();
 
+        public boolean isEmpty() {
+            return holders.isEmpty();
+        }
+
         public void add(Layout layout, AnimatedEmojiHolder holder) {
             holders.add(holder);
             SpansChunk chunkByLayout = groupedByLayout.get(layout);
@@ -565,8 +584,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         }
 
         public void remove(int i) {
-            AnimatedEmojiHolder holder = holders.get(i);
-            holders.remove(i);
+            AnimatedEmojiHolder holder = holders.remove(i);
             SpansChunk chunkByLayout = groupedByLayout.get(holder.layout);
             if (chunkByLayout != null) {
                 chunkByLayout.remove(holder);
@@ -725,6 +743,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         public void draw(Canvas canvas, List<SpoilerEffect> spoilers, long time, float boundTop, float boundBottom, float drawingYOffset, float alpha, ColorFilter colorFilter) {
             for (int i = 0; i < holders.size(); ++i) {
                 AnimatedEmojiHolder holder = holders.get(i);
+
                 if (holder == null) {
                     continue;
                 }

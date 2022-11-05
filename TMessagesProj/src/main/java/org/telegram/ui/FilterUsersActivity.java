@@ -49,6 +49,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
@@ -1086,7 +1087,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                             if (object instanceof TLRPC.User) {
                                 objectUserName = ((TLRPC.User) object).username;
                             } else {
-                                objectUserName = ((TLRPC.Chat) object).username;
+                                objectUserName = ChatObject.getPublicUsername((TLRPC.Chat) object);
                             }
                             if (position < localCount) {
                                 name = searchResultNames.get(position);

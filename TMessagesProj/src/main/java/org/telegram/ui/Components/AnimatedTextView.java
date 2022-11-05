@@ -1,6 +1,5 @@
 package org.telegram.ui.Components;
 
-
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
@@ -18,6 +17,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -113,10 +113,14 @@ public class AnimatedTextView extends View {
                     if (isRTL) {
                         x = -x + 2 * lwidth - currentLayout[i].getWidth() - fullWidth;
                     }
-                    if ((gravity & Gravity.CENTER_HORIZONTAL) > 0) {
-                        x += (fullWidth - lwidth) / 2f;
-                    } else if ((gravity & Gravity.RIGHT) > 0 || isRTL) {
-                        x += fullWidth - lwidth;
+                    if ((gravity | ~Gravity.LEFT) != ~0) {
+                        if ((gravity | ~Gravity.RIGHT) == ~0) {
+                            x += fullWidth - lwidth;
+                        } else if ((gravity | ~Gravity.CENTER_HORIZONTAL) == ~0) {
+                            x += (fullWidth - lwidth) / 2f;
+                        } else if (isRTL) {
+                            x += fullWidth - lwidth;
+                        }
                     }
                     canvas.translate(x, y);
                     currentLayout[i].draw(canvas);
@@ -134,10 +138,14 @@ public class AnimatedTextView extends View {
                     if (isRTL) {
                         x = -x + 2 * oldWidth - oldLayout[i].getWidth() - fullWidth;
                     }
-                    if ((gravity & Gravity.CENTER_HORIZONTAL) > 0) {
-                        x += (fullWidth - oldWidth) / 2f;
-                    } else if ((gravity & Gravity.RIGHT) > 0 || isRTL) {
-                        x += fullWidth - oldWidth;
+                    if ((gravity | ~Gravity.LEFT) != ~0) {
+                        if ((gravity | ~Gravity.RIGHT) == ~0) {
+                            x += fullWidth - oldWidth;
+                        } else if ((gravity | ~Gravity.CENTER_HORIZONTAL) == ~0) {
+                            x += (fullWidth - oldWidth) / 2f;
+                        } else if (isRTL) {
+                            x += fullWidth - oldWidth;
+                        }
                     }
                     canvas.translate(x, y);
                     oldLayout[i].draw(canvas);
@@ -153,10 +161,14 @@ public class AnimatedTextView extends View {
                         if (isRTL) {
                             x = -x + 2 * currentWidth - currentLayout[i].getWidth() - fullWidth;
                         }
-                        if ((gravity & Gravity.CENTER_HORIZONTAL) > 0) {
-                            x += (fullWidth - currentWidth) / 2f;
-                        } else if ((gravity & Gravity.RIGHT) > 0 || isRTL) {
-                            x += fullWidth - currentWidth;
+                        if ((gravity | ~Gravity.LEFT) != ~0) {
+                            if ((gravity | ~Gravity.RIGHT) == ~0) {
+                                x += fullWidth - currentWidth;
+                            } else if ((gravity | ~Gravity.CENTER_HORIZONTAL) == ~0) {
+                                x += (fullWidth - currentWidth) / 2f;
+                            } else if (isRTL) {
+                                x += fullWidth - currentWidth;
+                            }
                         }
                         canvas.translate(x, 0);
                         currentLayout[i].draw(canvas);
@@ -285,6 +297,10 @@ public class AnimatedTextView extends View {
                     isRTL = this.currentLayout[0].isRtlCharAt(0);
                 } else if (this.oldLayout.length > 0) {
                     isRTL = this.oldLayout[0].isRtlCharAt(0);
+                }
+
+                if (animator != null) {
+                    animator.cancel();
                 }
 
                 this.moveDown = moveDown;
@@ -687,9 +703,7 @@ public class AnimatedTextView extends View {
     private boolean toSetMoveDown;
 
     public AnimatedTextView(Context context) {
-        super(context);
-        drawable = new AnimatedTextDrawable();
-        drawable.setCallback(this);
+        this(context, false, false, false);
     }
 
     public AnimatedTextView(Context context, boolean splitByWords, boolean preserveIndex, boolean startFromEnd) {
@@ -768,12 +782,17 @@ public class AnimatedTextView extends View {
         return drawable.getText();
     }
 
+    public int getTextHeight() {
+        return getPaint().getFontMetricsInt().descent - getPaint().getFontMetricsInt().ascent;
+    }
+
     public void setTextSize(float textSizePx) {
         drawable.setTextSize(textSizePx);
     }
 
     public void setTextColor(int color) {
         drawable.setTextColor(color);
+        invalidate();
     }
 
     public void setTypeface(Typeface typeface) {

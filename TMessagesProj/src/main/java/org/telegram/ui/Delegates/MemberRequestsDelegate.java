@@ -865,7 +865,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             canvas.scale(1f / factor, 1f / factor);
 
             canvas.save();
-            ((LaunchActivity) fragment.getParentActivity()).getActionBarLayout().draw(canvas);
+            ((LaunchActivity) fragment.getParentActivity()).getActionBarLayout().getView().draw(canvas);
             canvas.drawColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.3f)));
             Dialog dialog = fragment.getVisibleDialog();
             if (dialog != null) {

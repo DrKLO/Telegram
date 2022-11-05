@@ -1097,7 +1097,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 0.3f, true);
             chatListView.setEmptyView(emptyViewContainer);
         }
-        chatListView.setAnimateEmptyView(true, 1);
+        chatListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA_SCALE);
 
         undoView = new UndoView(context);
         undoView.setAdditionalTranslationY(AndroidUtilities.dp(51));
@@ -1128,7 +1128,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         ArrayList<CharSequence> items = new ArrayList<>();
         final ArrayList<Integer> options = new ArrayList<>();
 
-        if (selectedObject.type == 0 || selectedObject.caption != null) {
+        if (selectedObject.type == MessageObject.TYPE_TEXT || selectedObject.caption != null) {
             items.add(LocaleController.getString("Copy", R.string.Copy));
             options.add(3);
         }
@@ -1385,13 +1385,13 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 if (path == null || path.length() == 0) {
                     path = getFileLoader().getPathToMessage(selectedObject.messageOwner).toString();
                 }
-                if (selectedObject.type == 3 || selectedObject.type == 1) {
+                if (selectedObject.type == MessageObject.TYPE_VIDEO || selectedObject.type == MessageObject.TYPE_PHOTO) {
                     if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                         selectedObject = null;
                         return;
                     }
-                    MediaController.saveFile(path, getParentActivity(), selectedObject.type == 3 ? 1 : 0, null, null);
+                    MediaController.saveFile(path, getParentActivity(), selectedObject.type == MessageObject.TYPE_VIDEO ? 1 : 0, null, null);
                 }
                 break;
             }
@@ -1571,7 +1571,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         }
         if (messageObject.type == 6) {
             return -1;
-        } else if (messageObject.type == 10 || messageObject.type == 11 || messageObject.type == 16) {
+        } else if (messageObject.type == 10 || messageObject.type == MessageObject.TYPE_ACTION_PHOTO || messageObject.type == MessageObject.TYPE_PHONE_CALL) {
             if (messageObject.getId() == 0) {
                 return -1;
             }
@@ -1619,7 +1619,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
                     return 4;
                 }
-            } else if (messageObject.type == 12) {
+            } else if (messageObject.type == MessageObject.TYPE_CONTACT) {
                 return 8;
             } else if (messageObject.isMediaEmpty()) {
                 return 3;
@@ -1649,7 +1649,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    protected void onRemoveFromParent() {
+    public void onRemoveFromParent() {
         MediaController.getInstance().setTextureView(videoTextureView, null, null, false);
     }
 
@@ -1910,7 +1910,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    protected void onBecomeFullyHidden() {
+    public void onBecomeFullyHidden() {
         if (undoView != null) {
             undoView.hide(true, 0);
         }
@@ -1944,7 +1944,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        if (message.type == 3) {
+        if (message.type == MessageObject.TYPE_VIDEO) {
             builder.setMessage(LocaleController.getString("NoPlayerInstalled", R.string.NoPlayerInstalled));
         } else {
             builder.setMessage(LocaleController.formatString("NoHandleAppInstalled", R.string.NoHandleAppInstalled, message.getDocument().mime_type));
@@ -2063,9 +2063,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public boolean needPlayMessage(MessageObject messageObject) {
+                    public boolean needPlayMessage(MessageObject messageObject, boolean muted) {
                         if (messageObject.isVoice() || messageObject.isRoundVideo()) {
-                            boolean result = MediaController.getInstance().playMessage(messageObject);
+                            boolean result = MediaController.getInstance().playMessage(messageObject, muted);
                             MediaController.getInstance().setVoiceMessagesPlaylist(null, false);
                             return result;
                         } else if (messageObject.isMusic()) {
@@ -2253,10 +2253,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         MessageObject message = cell.getMessageObject();
                         if (message.getInputStickerSet() != null) {
                             showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null));
-                        } else if (message.isVideo() || message.type == 1 || message.type == 0 && !message.isWebpageDocument() || message.isGif()) {
+                        } else if (message.isVideo() || message.type == MessageObject.TYPE_PHOTO || message.type == MessageObject.TYPE_TEXT && !message.isWebpageDocument() || message.isGif()) {
                             PhotoViewer.getInstance().setParentActivity(ChannelAdminLogActivity.this);
-                            PhotoViewer.getInstance().openPhoto(message, null, 0, 0, provider);
-                        } else if (message.type == 3) {
+                            PhotoViewer.getInstance().openPhoto(message, null, 0, 0, 0, provider);
+                        } else if (message.type == MessageObject.TYPE_VIDEO) {
                             try {
                                 File f = null;
                                 if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
@@ -2276,14 +2276,14 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             } catch (Exception e) {
                                 alertUserOpenError(message);
                             }
-                        } else if (message.type == 4) {
+                        } else if (message.type == MessageObject.TYPE_GEO) {
                             if (!AndroidUtilities.isMapsInstalled(ChannelAdminLogActivity.this)) {
                                 return;
                             }
                             LocationActivity fragment = new LocationActivity(0);
                             fragment.setMessageObject(message);
                             presentFragment(fragment);
-                        } else if (message.type == 9 || message.type == 0) {
+                        } else if (message.type == MessageObject.TYPE_FILE || message.type == MessageObject.TYPE_TEXT) {
                             if (message.getDocumentName().toLowerCase().endsWith("attheme")) {
                                 File locFile = null;
                                 if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
@@ -2366,7 +2366,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             ImageLocation imageLocation = ImageLocation.getForPhoto(photoSize, message.messageOwner.action.photo);
                             PhotoViewer.getInstance().openPhoto(photoSize.location, imageLocation, provider);
                         } else {
-                            PhotoViewer.getInstance().openPhoto(message, null, 0, 0, provider);
+                            PhotoViewer.getInstance().openPhoto(message, null, 0, 0, 0, provider);
                         }
                     }
 
@@ -2448,6 +2448,16 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             BulletinFactory.of(ChannelAdminLogActivity.this).createSimpleBulletin(R.raw.linkbroken, LocaleController.getString("LinkHashExpired", R.string.LinkHashExpired)).show();
                         }
 
+                    }
+
+                    @Override
+                    public BaseFragment getBaseFragment() {
+                        return ChannelAdminLogActivity.this;
+                    }
+
+                    @Override
+                    public long getDialogId() {
+                        return -currentChat.id;
                     }
 
                     @Override

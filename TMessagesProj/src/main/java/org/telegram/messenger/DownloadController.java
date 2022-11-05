@@ -24,6 +24,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -1248,6 +1249,8 @@ public class DownloadController extends BaseController implements NotificationCe
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
                 if (reason == 0) {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.formatString("MessageNotFound", R.string.MessageNotFound));
+                } else if (reason == -1) {
+                    LaunchActivity.checkFreeDiscSpaceStatic(2);
                 }
             }
         });

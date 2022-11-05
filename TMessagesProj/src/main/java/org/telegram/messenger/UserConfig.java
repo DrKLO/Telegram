@@ -70,8 +70,10 @@ public class UserConfig extends BaseController {
 
     public String premiumGiftsStickerPack;
     public String genericAnimationsStickerPack;
+    public String defaultTopicIcons;
     public long lastUpdatedPremiumGiftsStickerPack;
     public long lastUpdatedGenericAnimations;
+    public long lastUpdatedDefaultTopicIcons;
 
     public volatile byte[] savedPasswordHash;
     public volatile byte[] savedSaltedPassword;
@@ -405,7 +407,7 @@ public class UserConfig extends BaseController {
         }
     }
 
-    private SharedPreferences getPreferences() {
+    public SharedPreferences getPreferences() {
         if (currentAccount == 0) {
             return ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
         } else {

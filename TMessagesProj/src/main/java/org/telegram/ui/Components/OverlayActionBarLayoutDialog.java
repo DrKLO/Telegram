@@ -17,45 +17,44 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 
-public class OverlayActionBarLayoutDialog extends Dialog implements ActionBarLayout.ActionBarLayoutDelegate {
+public class OverlayActionBarLayoutDialog extends Dialog implements INavigationLayout.INavigationLayoutDelegate {
     private Theme.ResourcesProvider resourcesProvider;
-    private ActionBarLayout actionBarLayout;
+    private INavigationLayout actionBarLayout;
     private FrameLayout frameLayout;
 
     public OverlayActionBarLayoutDialog(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
         this.resourcesProvider = resourcesProvider;
 
-        actionBarLayout = new ActionBarLayout(context) {
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
-                    super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(530), MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(528), MeasureSpec.getSize(heightMeasureSpec)), MeasureSpec.EXACTLY));
-                } else {
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                }
-            }
-        };
-        actionBarLayout.init(new ArrayList<>());
-        actionBarLayout.presentFragment(new EmptyFragment(), false, true, false, false);
+        actionBarLayout = INavigationLayout.newLayout(context);
+        actionBarLayout.setFragmentStack(new ArrayList<>());
+        actionBarLayout.presentFragment(new INavigationLayout.NavigationParams(new EmptyFragment()).setNoAnimation(true));
         actionBarLayout.setDelegate(this);
 
         frameLayout = new FrameLayout(context);
         frameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        frameLayout.addView(actionBarLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+        frameLayout.addView(actionBarLayout.getView(), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
         if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
             frameLayout.setBackgroundColor(0x99000000);
             frameLayout.setOnClickListener(v -> onBackPressed());
             actionBarLayout.setRemoveActionBarExtraHeight(true);
-            VerticalPositionAutoAnimator.attach(actionBarLayout);
+            VerticalPositionAutoAnimator.attach(actionBarLayout.getView());
         }
         setContentView(frameLayout);
+    }
+
+    @Override
+    public void onMeasureOverride(int[] measureSpec) {
+        if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
+            measureSpec[0] = View.MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(530), View.MeasureSpec.getSize(measureSpec[0])), View.MeasureSpec.EXACTLY);
+            measureSpec[1] = View.MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(528), View.MeasureSpec.getSize(measureSpec[1])), View.MeasureSpec.EXACTLY);
+        }
     }
 
     @Override
@@ -107,7 +106,7 @@ public class OverlayActionBarLayoutDialog extends Dialog implements ActionBarLay
     @Override
     public void onBackPressed() {
         actionBarLayout.onBackPressed();
-        if (actionBarLayout.fragmentsStack.size() <= 1) {
+        if (actionBarLayout.getFragmentStack().size() <= 1) {
             dismiss();
         }
     }
@@ -118,25 +117,25 @@ public class OverlayActionBarLayoutDialog extends Dialog implements ActionBarLay
     }
 
     @Override
-    public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
+    public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, INavigationLayout layout) {
         return true;
     }
 
     @Override
-    public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
+    public boolean needAddFragmentToStack(BaseFragment fragment, INavigationLayout layout) {
         return true;
     }
 
     @Override
-    public boolean needCloseLastFragment(ActionBarLayout layout) {
-        if (layout.fragmentsStack.size() <= 1) {
+    public boolean needCloseLastFragment(INavigationLayout layout) {
+        if (layout.getFragmentStack().size() <= 1) {
             dismiss();
         }
         return true;
     }
 
     @Override
-    public void onRebuildAllFragments(ActionBarLayout layout, boolean last) {}
+    public void onRebuildAllFragments(INavigationLayout layout, boolean last) {}
 
     private static final class EmptyFragment extends BaseFragment {
         @Override

@@ -47,6 +47,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -56,10 +57,12 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -142,6 +145,22 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
 
         default void needShowEffectOverlay(ChatActionCell cell, TLRPC.Document document, TLRPC.VideoSize videoSize) {
+        }
+
+        default BaseFragment getBaseFragment() {
+            return null;
+        }
+
+        default long getDialogId() {
+            return 0;
+        }
+
+        default int getTopicId()  {
+            return 0;
+        }
+
+        default boolean canDrawOutboundsContent() {
+            return true;
         }
     }
 
@@ -453,7 +472,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(packName, false, set == null);
                 }
             }
-        } else if (messageObject.type == 11) {
+        } else if (messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
             imageReceiver.setAllowStartLottieAnimation(true);
             imageReceiver.setDelegate(null);
             imageReceiver.setRoundRadius(AndroidUtilities.roundMessageSize / 2);
@@ -499,6 +518,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             imageReceiver.setImageBitmap((Bitmap) null);
         }
         rippleView.setVisibility(messageObject.type == MessageObject.TYPE_GIFT_PREMIUM ? VISIBLE : GONE);
+        ForumUtilities.applyTopicToMessage(messageObject);
         requestLayout();
     }
 
@@ -548,7 +568,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         imageReceiver.onAttachedToWindow();
         setStarsPaused(false);
 
-        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiStack, textLayout);
+        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, canDrawInParent && (delegate != null && !delegate.canDrawOutboundsContent()), animatedEmojiStack, textLayout);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdatePremiumGiftStickers);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
     }
@@ -581,7 +601,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         boolean result = false;
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (delegate != null) {
-                if ((messageObject.type == 11 || messageObject.type == MessageObject.TYPE_GIFT_PREMIUM) && imageReceiver.isInsideImage(x, y)) {
+                if ((messageObject.type == MessageObject.TYPE_ACTION_PHOTO || messageObject.type == MessageObject.TYPE_GIFT_PREMIUM) && imageReceiver.isInsideImage(x, y)) {
                     imagePressed = true;
                     result = true;
                 }
@@ -694,7 +714,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private void openLink(CharacterStyle link) {
         if (delegate != null && link instanceof URLSpan) {
             String url = ((URLSpan) link).getURL();
-            if (url.startsWith("invite") && pressedLink instanceof URLSpanNoUnderline) {
+            if (url.startsWith("topic") && pressedLink instanceof URLSpanNoUnderline) {
+                URLSpanNoUnderline spanNoUnderline = (URLSpanNoUnderline) pressedLink;
+                TLObject object = spanNoUnderline.getObject();
+                if (object instanceof TLRPC.TL_forumTopic) {
+                    TLRPC.TL_forumTopic forumTopic = (TLRPC.TL_forumTopic) object;
+                    ForumUtilities.openTopic(delegate.getBaseFragment(), -delegate.getDialogId(), forumTopic, 0);
+                }
+            } else if (url.startsWith("invite") && pressedLink instanceof URLSpanNoUnderline) {
                 URLSpanNoUnderline spanNoUnderline = (URLSpanNoUnderline) pressedLink;
                 TLObject object = spanNoUnderline.getObject();
                 if (object instanceof TLRPC.TL_chatInviteExported) {
@@ -738,9 +765,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
         spoilersPool.addAll(spoilers);
         spoilers.clear();
-        if (text instanceof Spannable)
+        if (text instanceof Spannable) {
             SpoilerEffect.addSpoilers(this, textLayout, (Spannable) text, spoilersPool, spoilers);
-        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiStack, textLayout);
+        }
+        animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, canDrawInParent && (delegate != null && !delegate.canDrawOutboundsContent()), animatedEmojiStack, textLayout);
 
         textHeight = 0;
         textWidth = 0;
@@ -788,7 +816,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
         int additionalHeight = 0;
         if (messageObject != null) {
-            if (messageObject.type == 11) {
+            if (messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
                 additionalHeight = AndroidUtilities.roundMessageSize + AndroidUtilities.dp(10);
             } else if (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM) {
                 additionalHeight = giftRectSize + AndroidUtilities.dp(12);
@@ -813,26 +841,32 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     private void buildLayout() {
-        CharSequence text;
+        CharSequence text = null;
         MessageObject messageObject = currentMessageObject;
         if (messageObject != null) {
-            if (messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.ttl_seconds != 0) {
-                if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty) {
-                    text = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
-                } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_documentEmpty) {
-                    text = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
+            if (delegate.getTopicId() == 0 && MessageObject.isTopicActionMessage(messageObject)) {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(messageObject.messageOwner));
+                text = ForumUtilities.createActionTextWithTopic(topic, messageObject);
+            }
+            if (text == null) {
+                if (messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.ttl_seconds != 0) {
+                    if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty) {
+                        text = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
+                    } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_documentEmpty) {
+                        text = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
+                    } else {
+                        text = AnimatedEmojiSpan.cloneSpans(messageObject.messageText);
+                    }
                 } else {
                     text = AnimatedEmojiSpan.cloneSpans(messageObject.messageText);
                 }
-            } else {
-                text = AnimatedEmojiSpan.cloneSpans(messageObject.messageText);
             }
         } else {
             text = customText;
         }
         createLayout(text, previousWidth);
         if (messageObject != null) {
-            if (messageObject.type == 11) {
+            if (messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
                 imageReceiver.setImageCoords((previousWidth - AndroidUtilities.roundMessageSize) / 2f, textHeight + AndroidUtilities.dp(19), AndroidUtilities.roundMessageSize, AndroidUtilities.roundMessageSize);
             } else if (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM) {
                 createGiftPremiumLayouts(LocaleController.getString(R.string.ActionGiftPremiumTitle), LocaleController.formatString(R.string.ActionGiftPremiumSubtitle, LocaleController.formatPluralString("Months", messageObject.messageOwner.action.months)), LocaleController.getString(R.string.ActionGiftPremiumView), giftRectSize);
@@ -882,7 +916,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 }
             }
         }
-        if (messageObject != null && (messageObject.type == 11 || messageObject.type == MessageObject.TYPE_GIFT_PREMIUM)) {
+        if (messageObject != null && (messageObject.type == MessageObject.TYPE_ACTION_PHOTO || messageObject.type == MessageObject.TYPE_GIFT_PREMIUM)) {
             imageReceiver.draw(canvas);
         }
 
@@ -900,8 +934,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
             canvas.save();
             SpoilerEffect.clipOutCanvas(canvas, spoilers);
-            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, textLayout, animatedEmojiStack, 0, spoilers, 0, 0, 0, 1f);
             textLayout.draw(canvas);
+            if (delegate == null || delegate.canDrawOutboundsContent()) {
+                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, textLayout, animatedEmojiStack, 0, spoilers, 0, 0, 0, 1f);
+            }
             canvas.restore();
 
             for (SpoilerEffect eff : spoilers) {
@@ -1157,7 +1193,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     @Override
     public void onSuccessDownload(String fileName) {
         MessageObject messageObject = currentMessageObject;
-        if (messageObject != null && messageObject.type == 11) {
+        if (messageObject != null && messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
             TLRPC.PhotoSize strippedPhotoSize = null;
             for (int a = 0, N = messageObject.photoThumbs.size(); a < N; a++) {
                 TLRPC.PhotoSize photoSize = messageObject.photoThumbs.get(a);
@@ -1240,5 +1276,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private Paint getThemedPaint(String paintKey) {
         Paint paint = themeDelegate != null ? themeDelegate.getPaint(paintKey) : null;
         return paint != null ? paint : Theme.getThemePaint(paintKey);
+    }
+
+    public void drawOutboundsContent(Canvas canvas) {
+        canvas.save();
+        canvas.translate(textXLeft, textY);
+        AnimatedEmojiSpan.drawAnimatedEmojis(canvas, textLayout, animatedEmojiStack, 0, spoilers, 0, 0, 0, 1f);
+        canvas.restore();
     }
 }

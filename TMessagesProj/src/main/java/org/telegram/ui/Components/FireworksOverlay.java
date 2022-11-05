@@ -149,7 +149,7 @@ public class FireworksOverlay extends View {
                     rotation -= 360;
                 }
             }
-            return y >= getMeasuredHeight();
+            return y >= getHeightForAnimation();
         }
     }
 
@@ -170,6 +170,20 @@ public class FireworksOverlay extends View {
         }
     }
 
+    private int getHeightForAnimation() {
+        if (getMeasuredHeight() == 0) {
+            return ((View)getParent()).getHeight();
+        }
+        return getMeasuredHeight();
+    }
+
+    private int getWidthForAnimation() {
+        if (getMeasuredWidth() == 0) {
+            return ((View)getParent()).getWidth();
+        }
+        return getMeasuredWidth();
+    }
+
     private Particle createParticle(boolean fall) {
         Particle particle = new Particle();
         particle.type = (byte) Utilities.random.nextInt(2);
@@ -187,16 +201,16 @@ public class FireworksOverlay extends View {
             particle.typeSize = (byte) (4 + Utilities.random.nextFloat() * 4);
         }
         if (fall) {
-            particle.y = -Utilities.random.nextFloat() * getMeasuredHeight() * 1.2f;
-            particle.x = AndroidUtilities.dp(5) + Utilities.random.nextInt(getMeasuredWidth() - AndroidUtilities.dp(10));
+            particle.y = -Utilities.random.nextFloat() * getHeightForAnimation() * 1.2f;
+            particle.x = AndroidUtilities.dp(5) + Utilities.random.nextInt(getWidthForAnimation() - AndroidUtilities.dp(10));
             particle.xFinished = particle.finishedStart;
         } else {
             int xOffset = AndroidUtilities.dp(4 + Utilities.random.nextInt(10));
-            int yOffset = getMeasuredHeight() / 4;
+            int yOffset = getHeightForAnimation() / 4;
             if (particle.side == 0) {
                 particle.x = -xOffset;
             } else {
-                particle.x = getMeasuredWidth() + xOffset;
+                particle.x = getWidthForAnimation() + xOffset;
             }
             particle.moveX = (particle.side == 0 ? 1 : -1) * (AndroidUtilities.dp(1.2f) + Utilities.random.nextFloat() * AndroidUtilities.dp(4));
             particle.moveY = -(AndroidUtilities.dp(4) + Utilities.random.nextFloat() * AndroidUtilities.dp(4));
@@ -242,6 +256,10 @@ public class FireworksOverlay extends View {
         }
     }
 
+    protected void onStop() {
+
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         long newTime = SystemClock.elapsedRealtime();
@@ -277,6 +295,7 @@ public class FireworksOverlay extends View {
                     }
                 });
             }
+            onStop();
         }
     }
 }

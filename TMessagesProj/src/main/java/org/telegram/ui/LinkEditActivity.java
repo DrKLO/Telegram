@@ -282,35 +282,42 @@ public class LinkEditActivity extends BaseFragment {
             buttonTextView.setText(LocaleController.getString("SaveLink", R.string.SaveLink));
         }
 
-        approveCell = new TextCheckCell(context) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                canvas.save();
-                canvas.clipRect(0, 0, getWidth(), getHeight());
-                super.onDraw(canvas);
-                canvas.restore();
-            }
-        };
-        approveCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundUnchecked));
-        approveCell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
-        approveCell.setDrawCheckRipple(true);
-        approveCell.setHeight(56);
-        approveCell.setTag(Theme.key_windowBackgroundUnchecked);
-        approveCell.setTextAndCheck(LocaleController.getString("ApproveNewMembers", R.string.ApproveNewMembers), false, false);
-        approveCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        approveCell.setOnClickListener(view -> {
-            TextCheckCell cell = (TextCheckCell) view;
-            boolean newIsChecked = !cell.isChecked();
-            cell.setBackgroundColorAnimated(newIsChecked, Theme.getColor(newIsChecked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
-            cell.setChecked(newIsChecked);
-            setUsesVisible(!newIsChecked);
-            firstLayout = true;
-        });
-        linearLayout.addView(approveCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
+        TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
+        boolean hasApproveCell = false;
+        if (chatLocal == null || chatLocal.username == null) {
+            hasApproveCell = true;
+            approveCell = new TextCheckCell(context) {
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    canvas.save();
+                    canvas.clipRect(0, 0, getWidth(), getHeight());
+                    super.onDraw(canvas);
+                    canvas.restore();
+                }
+            };
+            approveCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundUnchecked));
+            approveCell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
+            approveCell.setDrawCheckRipple(true);
+            approveCell.setHeight(56);
+            approveCell.setTag(Theme.key_windowBackgroundUnchecked);
+            approveCell.setTextAndCheck(LocaleController.getString("ApproveNewMembers", R.string.ApproveNewMembers), false, false);
+            approveCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            approveCell.setOnClickListener(view -> {
+                TextCheckCell cell = (TextCheckCell) view;
+                boolean newIsChecked = !cell.isChecked();
+                cell.setBackgroundColorAnimated(newIsChecked, Theme.getColor(newIsChecked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
+                cell.setChecked(newIsChecked);
+                setUsesVisible(!newIsChecked);
+                firstLayout = true;
+            });
+            linearLayout.addView(approveCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
+        }
 
         TextInfoPrivacyCell hintCell = new TextInfoPrivacyCell(context);
         hintCell.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-        hintCell.setText(LocaleController.getString("ApproveNewMembersDescription", R.string.ApproveNewMembersDescription));
+        if (hasApproveCell) {
+            hintCell.setText(LocaleController.getString("ApproveNewMembersDescription", R.string.ApproveNewMembersDescription));
+        }
         linearLayout.addView(hintCell);
 
         timeHeaderCell = new HeaderCell(context);
@@ -517,7 +524,7 @@ public class LinkEditActivity extends BaseFragment {
 
         int timeIndex = timeChooseView.getSelectedIndex();
         if (timeIndex < dispalyedDates.size() && dispalyedDates.get(timeIndex) < 0) {
-            AndroidUtilities.shakeView(timeEditText, 2, 0);
+            AndroidUtilities.shakeView(timeEditText);
             Vibrator vibrator = (Vibrator) timeEditText.getContext().getSystemService(Context.VIBRATOR_SERVICE);
             if (vibrator != null) {
                 vibrator.vibrate(200);
@@ -552,7 +559,7 @@ public class LinkEditActivity extends BaseFragment {
                 req.usage_limit = 0;
             }
 
-            req.request_needed = approveCell.isChecked();
+            req.request_needed = approveCell != null && approveCell.isChecked();
             if (req.request_needed) {
                 req.usage_limit = 0;
             }
@@ -620,9 +627,9 @@ public class LinkEditActivity extends BaseFragment {
                 }
             }
 
-            if (inviteToEdit.request_needed != approveCell.isChecked()) {
+            if (inviteToEdit.request_needed != (approveCell != null && approveCell.isChecked())) {
                 req.flags |= 8;
-                req.request_needed = approveCell.isChecked();
+                req.request_needed = (approveCell != null && approveCell.isChecked());
                 if (req.request_needed) {
                     req.flags |= 2;
                     req.usage_limit = 0;
@@ -775,8 +782,10 @@ public class LinkEditActivity extends BaseFragment {
                 chooseUses(invite.usage_limit);
                 usesEditText.setText(Integer.toString(invite.usage_limit));
             }
-            approveCell.setBackgroundColor(Theme.getColor(invite.request_needed ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
-            approveCell.setChecked(invite.request_needed);
+            if (approveCell != null) {
+                approveCell.setBackgroundColor(Theme.getColor(invite.request_needed ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
+                approveCell.setChecked(invite.request_needed);
+            }
             setUsesVisible(!invite.request_needed);
             if (!TextUtils.isEmpty(invite.title)) {
                 SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);

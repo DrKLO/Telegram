@@ -603,7 +603,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                     TLRPC.Chat chat = inactiveChats.get(a);
                     boolean found = false;
                     for (int i = 0; i < 2; i++) {
-                        String name = i == 0 ? chat.title : chat.username;
+                        String name = i == 0 ? chat.title : ChatObject.getPublicUsername(chat);
                         if (name == null) {
                             continue;
                         }

@@ -546,7 +546,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         return x;
     }
 
-    public void focusToPoint(int x, int y) {
+    public void focusToPoint(int x, int y, boolean visible) {
         Rect focusRect = calculateTapArea(x, y, 1f);
         Rect meteringRect = calculateTapArea(x, y, 1.5f);
 
@@ -554,13 +554,19 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             cameraSession.focusToRect(focusRect, meteringRect);
         }
 
-        focusProgress = 0.0f;
-        innerAlpha = 1.0f;
-        outerAlpha = 1.0f;
-        cx = x;
-        cy = y;
-        lastDrawTime = System.currentTimeMillis();
-        invalidate();
+        if (visible) {
+            focusProgress = 0.0f;
+            innerAlpha = 1.0f;
+            outerAlpha = 1.0f;
+            cx = x;
+            cy = y;
+            lastDrawTime = System.currentTimeMillis();
+            invalidate();
+        }
+    }
+
+    public void focusToPoint(int x, int y) {
+        focusToPoint(x, y, true);
     }
 
     public void setZoom(float value) {

@@ -83,6 +83,17 @@ public class ImageLocation {
             return getForPhoto(photoSize, (TLRPC.Photo) object);
         } else if (object instanceof TLRPC.Document) {
             return getForDocument(photoSize, (TLRPC.Document) object);
+        } else if (object instanceof TLRPC.Message) {
+            return getForMessage(photoSize, (TLRPC.Message) object);
+        }
+        return null;
+    }
+
+    public static ImageLocation getForMessage(TLRPC.PhotoSize photoSize, TLRPC.Message message) {
+        if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize) {
+            ImageLocation imageLocation = new ImageLocation();
+            imageLocation.photoSize = photoSize;
+            return imageLocation;
         }
         return null;
     }

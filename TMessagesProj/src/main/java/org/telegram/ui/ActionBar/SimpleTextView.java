@@ -27,13 +27,10 @@ import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
-
-import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -71,6 +68,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private int rightDrawableTopPadding;
     private boolean buildFullLayout;
     private float fullAlpha;
+    private boolean widthWrapContent;
 
     private Drawable wrapBackgroundDrawable;
 
@@ -82,6 +80,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private Paint fadePaint;
     private Paint fadePaintBack;
     private Paint fadeEllpsizePaint;
+    private int fadeEllpsizePaintWidth;
     private int lastWidth;
 
     private int offsetX;
@@ -95,6 +94,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     private boolean rightDrawableOutside;
     private boolean ellipsizeByGradient;
+    private int ellipsizeByGradientWidthDp = 16;
     private int paddingRight;
 
     private int minWidth;
@@ -123,6 +123,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     private AnimatedEmojiSpan.EmojiGroupedSpans emojiStack;
     private boolean attachedToWindow;
+
+    private Layout.Alignment mAlignment = Layout.Alignment.ALIGN_NORMAL;
 
     public SimpleTextView(Context context) {
         super(context);
@@ -196,6 +198,16 @@ public class SimpleTextView extends View implements Drawable.Callback {
         updateFadePaints();
     }
 
+    public void setEllipsizeByGradient(int value) {
+        setEllipsizeByGradient(true);
+        ellipsizeByGradientWidthDp = value;
+        updateFadePaints();
+    }
+
+    public void setWidthWrapContent(boolean value) {
+        widthWrapContent = value;
+    }
+
     private void updateFadePaints() {
         if ((fadePaint == null || fadePaintBack == null) && scrollNonFitText) {
             fadePaint = new Paint();
@@ -206,9 +218,9 @@ public class SimpleTextView extends View implements Drawable.Callback {
             fadePaintBack.setShader(new LinearGradient(0, 0, AndroidUtilities.dp(6), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
             fadePaintBack.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         }
-        if (fadeEllpsizePaint == null && ellipsizeByGradient) {
+        if ((fadeEllpsizePaint == null || fadeEllpsizePaintWidth != AndroidUtilities.dp(ellipsizeByGradientWidthDp)) && ellipsizeByGradient) {
             fadeEllpsizePaint = new Paint();
-            fadeEllpsizePaint.setShader(new LinearGradient(0, 0, AndroidUtilities.dp(16), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+            fadeEllpsizePaint.setShader(new LinearGradient(0, 0, fadeEllpsizePaintWidth = AndroidUtilities.dp(ellipsizeByGradientWidthDp), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
             fadeEllpsizePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         }
     }
@@ -325,7 +337,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                         string = TextUtils.ellipsize(string, textPaint, width, TextUtils.TruncateAt.END);
                     }
                     if (!ellipsizeByGradient && !string.equals(text)) {
-                        fullLayout = StaticLayoutEx.createStaticLayout(text, 0, text.length(), textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, fullTextMaxLines, false);
+                        fullLayout = StaticLayoutEx.createStaticLayout(text, 0, text.length(), textPaint, width, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, fullTextMaxLines, false);
                         if (fullLayout != null) {
                             int end = fullLayout.getLineEnd(0);
                             int start = fullLayout.getLineStart(1);
@@ -338,22 +350,22 @@ public class SimpleTextView extends View implements Drawable.Callback {
                             } else {
                                 part = "…";
                             }
-                            firstLineLayout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                            layout = new StaticLayout(substr, 0, substr.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                            firstLineLayout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
+                            layout = new StaticLayout(substr, 0, substr.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
                             if (layout.getLineLeft(0) != 0) {
                                 part = "\u200F" + part;
                             }
-                            partLayout = new StaticLayout(part, 0, part.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                            fullLayout = StaticLayoutEx.createStaticLayout(full, 0, full.length(), textPaint, width + AndroidUtilities.dp(8) + fullLayoutAdditionalWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width + fullLayoutAdditionalWidth, fullTextMaxLines, false);
+                            partLayout = new StaticLayout(part, 0, part.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
+                            fullLayout = StaticLayoutEx.createStaticLayout(full, 0, full.length(), textPaint, width + AndroidUtilities.dp(8) + fullLayoutAdditionalWidth, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width + fullLayoutAdditionalWidth, fullTextMaxLines, false);
                         }
                     } else {
-                        layout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText || ellipsizeByGradient ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        layout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText || ellipsizeByGradient ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
                         fullLayout = null;
                         partLayout = null;
                         firstLineLayout = null;
                     }
                 } else if (maxLines > 1) {
-                    layout = StaticLayoutEx.createStaticLayout(text, 0, text.length(), textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, maxLines, false);
+                    layout = StaticLayoutEx.createStaticLayout(text, 0, text.length(), textPaint, width, getAlignment(), 1.0f, 0.0f, false, TextUtils.TruncateAt.END, width, maxLines, false);
                 } else {
                     CharSequence string;
                     if (scrollNonFitText || ellipsizeByGradient) {
@@ -365,7 +377,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                         calcOffset(width);
                         return false;
                     }*/
-                    layout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText || ellipsizeByGradient ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    layout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText || ellipsizeByGradient ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), getAlignment(), 1.0f, 0.0f, false);
                 }
 
                 spoilersPool.addAll(spoilers);
@@ -390,6 +402,15 @@ public class SimpleTextView extends View implements Drawable.Callback {
         return true;
     }
 
+    public void setAlignment(Layout.Alignment alignment) {
+        mAlignment = alignment;
+        requestLayout();
+    }
+
+    private Layout.Alignment getAlignment() {
+        return mAlignment;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
@@ -406,6 +427,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
             finalHeight = height;
         } else {
             finalHeight = getPaddingTop() + textHeight + getPaddingBottom();
+        }
+        if (widthWrapContent) {
+//            textWidth = (int) Math.ceil(layout.getLineWidth(0));
+            width = Math.min(width, getPaddingLeft() + textWidth + getPaddingRight() + minusWidth + (rightDrawableOutside && rightDrawable != null ? rightDrawable.getIntrinsicWidth() + drawablePadding : 0));
         }
         setMeasuredDimension(width, finalHeight);
 
@@ -632,7 +657,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     public void setRightPadding(int padding) {
-        paddingRight = padding;
+        if (paddingRight != padding) {
+            paddingRight = padding;
+            invalidate();
+        }
     }
 
     @Override
@@ -803,10 +831,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 canvas.translate(getMaxTextWidth() - paddingRight - AndroidUtilities.dp(6), 0);
                 canvas.drawRect(0, 0, AndroidUtilities.dp(6), getMeasuredHeight(), fadePaintBack);
                 canvas.restore();
-            } else if (ellipsizeByGradient && fadeEllpsizePaint != null) {
+            } else if (ellipsizeByGradient && (!widthWrapContent || textDoesNotFit) && fadeEllpsizePaint != null) {
                 canvas.save();
-                canvas.translate(getMaxTextWidth() - paddingRight - AndroidUtilities.dp(rightDrawable != null && !(rightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) && rightDrawableOutside ? 18 : 16), 0);
-                canvas.drawRect(0, 0, AndroidUtilities.dp(16), getMeasuredHeight(), fadeEllpsizePaint);
+                canvas.translate(getMaxTextWidth() - paddingRight - fadeEllpsizePaintWidth - AndroidUtilities.dp(rightDrawable != null && !(rightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) && rightDrawableOutside ? +2 : 0), 0);
+                canvas.drawRect(0, 0, fadeEllpsizePaintWidth, getMeasuredHeight(), fadeEllpsizePaint);
                 canvas.restore();
             }
             updateScrollAnimation();

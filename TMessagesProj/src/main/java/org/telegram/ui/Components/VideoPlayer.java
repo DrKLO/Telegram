@@ -442,7 +442,6 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             audioUpdateHandler.removeCallbacksAndMessages(null);
             audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
         }
-
     }
 
     public void setPlaybackSpeed(float speed) {

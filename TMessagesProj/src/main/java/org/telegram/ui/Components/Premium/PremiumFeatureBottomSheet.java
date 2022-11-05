@@ -277,9 +277,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 }
                 containerViewsProgress = progress;
                 containerViewsForward = toPosition > selectedPosition;
-                if (premiumFeatures.get(selectedPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
+                if (selectedPosition >= 0 && selectedPosition < premiumFeatures.size() && premiumFeatures.get(selectedPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
                     progressToFullscreenView = 1f - progress;
-                } else if (premiumFeatures.get(toPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
+                } else if (toPosition >= 0 && toPosition < premiumFeatures.size() && premiumFeatures.get(toPosition).type == PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS) {
                     progressToFullscreenView = progress;
                 } else {
                     progressToFullscreenView = 0;

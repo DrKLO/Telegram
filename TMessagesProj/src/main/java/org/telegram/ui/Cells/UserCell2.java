@@ -275,7 +275,7 @@ public class UserCell2 extends FrameLayout {
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
                 if (currentChat.participants_count != 0) {
                     statusTextView.setText(LocaleController.formatPluralString("Subscribers", currentChat.participants_count));
-                } else if (TextUtils.isEmpty(currentChat.username)) {
+                } else if (!ChatObject.isPublic(currentChat)) {
                     statusTextView.setText(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
                 } else {
                     statusTextView.setText(LocaleController.getString("ChannelPublic", R.string.ChannelPublic));
@@ -285,7 +285,7 @@ public class UserCell2 extends FrameLayout {
                     statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
                 } else if (currentChat.has_geo) {
                     statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
-                } else if (TextUtils.isEmpty(currentChat.username)) {
+                } else if (!ChatObject.isPublic(currentChat)) {
                     statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
                 } else {
                     statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));

@@ -44,6 +44,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
+import org.w3c.dom.Text;
 
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
@@ -181,11 +182,35 @@ public class Browser {
         return url.matches("^(https" + (forceHttps ? "" : "?") + "://)?(te\\.?legra\\.ph|graph\\.org).*"); // telegra.ph, te.legra.ph, graph.org
     }
 
+    public static String extractUsername(String link) {
+        if (link == null || TextUtils.isEmpty(link)) {
+            return null;
+        }
+        if (link.startsWith("@")) {
+            return link.substring(1);
+        }
+        if (link.startsWith("t.me/")) {
+            return link.substring(5);
+        }
+        if (link.startsWith("http://t.me/")) {
+            return link.substring(12);
+        }
+        if (link.startsWith("https://t.me/")) {
+            return link.substring(13);
+        }
+        Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(link);
+        if (prefixMatcher.find()) {
+            return prefixMatcher.group(1);
+        }
+        return null;
+    }
+
     public static boolean urlMustNotHaveConfirmation(String url) {
         return (
             isTelegraphUrl(url, false, true) ||
             url.matches("^(https://)?t\\.me/iv\\??.*") || // t.me/iv?
-            url.matches("^(https://)?telegram\\.org/(blog|tour)/?.*") // telegram.org/blog, telegram.org/tour
+            url.matches("^(https://)?telegram\\.org/(blog|tour)/?.*") || // telegram.org/blog, telegram.org/tour
+            url.matches("^(https://)?fragment\\.com/?.*") // fragment.com
         );
     }
 

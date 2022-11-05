@@ -23,15 +23,18 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.Switch;
 
 public class TextCell extends FrameLayout {
 
     public final SimpleTextView textView;
-    public final SimpleTextView valueTextView;
+    public final AnimatedTextView valueTextView;
     public final RLottieImageView imageView;
+    private Switch checkBox;
     private ImageView valueImageView;
     private int leftPadding;
     private boolean needDivider;
@@ -40,20 +43,22 @@ public class TextCell extends FrameLayout {
     private boolean inDialogs;
     private boolean prioritizeTitleOverValue;
     private Theme.ResourcesProvider resourcesProvider;
+    private boolean attached;
+
 
     public TextCell(Context context) {
-        this(context, 23, false, null);
+        this(context, 23, false, false, null);
     }
 
     public TextCell(Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(context, 23, false, resourcesProvider);
+        this(context, 23, false, false, resourcesProvider);
     }
 
     public TextCell(Context context, int left, boolean dialog) {
-        this(context, left, dialog, null);
+        this(context, left, dialog, false, null);
     }
 
-    public TextCell(Context context, int left, boolean dialog, Theme.ResourcesProvider resourcesProvider) {
+    public TextCell(Context context, int left, boolean dialog, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         this.resourcesProvider = resourcesProvider;
@@ -66,9 +71,10 @@ public class TextCell extends FrameLayout {
         textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
 
-        valueTextView = new SimpleTextView(context);
+        valueTextView = new AnimatedTextView(context);
         valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlue2 : Theme.key_windowBackgroundWhiteValueText, resourcesProvider));
-        valueTextView.setTextSize(16);
+        valueTextView.setPadding(0, AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18));
+        valueTextView.setTextSize(AndroidUtilities.dp(16));
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(valueTextView);
@@ -82,7 +88,17 @@ public class TextCell extends FrameLayout {
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(valueImageView);
 
+        if (needCheck) {
+            checkBox = new Switch(context, resourcesProvider);
+            checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
+            addView(checkBox, LayoutHelper.createFrame(37, 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+        }
+
         setFocusable(true);
+    }
+
+    public Switch getCheckBox() {
+        return checkBox;
     }
 
     public void setIsInDialogs() {
@@ -97,7 +113,7 @@ public class TextCell extends FrameLayout {
         return imageView;
     }
 
-    public SimpleTextView getValueTextView() {
+    public AnimatedTextView getValueTextView() {
         return valueTextView;
     }
 
@@ -117,10 +133,10 @@ public class TextCell extends FrameLayout {
 
         if (prioritizeTitleOverValue) {
             textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + leftPadding), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
-            valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(103 + leftPadding) - textView.getTextWidth(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+            valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(103 + leftPadding) - textView.getTextWidth(), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
         } else {
-            valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(leftPadding), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
-            textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + leftPadding) - valueTextView.getTextWidth(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+            valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(leftPadding), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+            textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + leftPadding) - valueTextView.width(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
         }
         if (imageView.getVisibility() == VISIBLE) {
             imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
@@ -128,7 +144,18 @@ public class TextCell extends FrameLayout {
         if (valueImageView.getVisibility() == VISIBLE) {
             valueImageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
         }
+        if (checkBox != null) {
+            checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(37), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+        }
         setMeasuredDimension(width, AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (checkBox != null) {
+            checkBox.setEnabled(enabled);
+        }
     }
 
     @Override
@@ -162,6 +189,11 @@ public class TextCell extends FrameLayout {
             viewLeft = LocaleController.isRTL ? AndroidUtilities.dp(23) : width - valueImageView.getMeasuredWidth() - AndroidUtilities.dp(23);
             valueImageView.layout(viewLeft, viewTop, viewLeft + valueImageView.getMeasuredWidth(), viewTop + valueImageView.getMeasuredHeight());
         }
+        if (checkBox != null && checkBox.getVisibility() == VISIBLE) {
+            viewTop = (height - checkBox.getMeasuredHeight()) / 2;
+            viewLeft = LocaleController.isRTL ? AndroidUtilities.dp(22) : width - checkBox.getMeasuredWidth() - AndroidUtilities.dp(22);
+            checkBox.layout(viewLeft, viewTop, viewLeft + checkBox.getMeasuredWidth(), viewTop + checkBox.getMeasuredHeight());
+        }
     }
 
     public void setTextColor(int color) {
@@ -180,7 +212,7 @@ public class TextCell extends FrameLayout {
     public void setText(String text, boolean divider) {
         imageLeft = 21;
         textView.setText(text);
-        valueTextView.setText(null);
+        valueTextView.setText(null, false);
         imageView.setVisibility(GONE);
         valueTextView.setVisibility(GONE);
         valueImageView.setVisibility(GONE);
@@ -192,7 +224,7 @@ public class TextCell extends FrameLayout {
         imageLeft = 21;
         offsetFromImage = 71;
         textView.setText(text);
-        valueTextView.setText(null);
+        valueTextView.setText(null, false);
         imageView.setImageResource(resId);
         imageView.setVisibility(VISIBLE);
         valueTextView.setVisibility(GONE);
@@ -206,7 +238,7 @@ public class TextCell extends FrameLayout {
         offsetFromImage = 68;
         imageLeft = 18;
         textView.setText(text);
-        valueTextView.setText(null);
+        valueTextView.setText(null, false);
         imageView.setColorFilter(null);
         if (drawable instanceof RLottieDrawable) {
             imageView.setAnimation((RLottieDrawable) drawable);
@@ -230,24 +262,55 @@ public class TextCell extends FrameLayout {
     }
 
     public void setTextAndValue(String text, String value, boolean divider) {
+        setTextAndValue(text, value, false, divider);
+    }
+
+    public void setTextAndValue(String text, String value, boolean animated, boolean divider) {
         imageLeft = 21;
         offsetFromImage = 71;
         textView.setText(text);
-        valueTextView.setText(value);
+        valueTextView.setText(value, animated);
         valueTextView.setVisibility(VISIBLE);
         imageView.setVisibility(GONE);
         valueImageView.setVisibility(GONE);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (checkBox != null) {
+            checkBox.setVisibility(GONE);
+        }
     }
 
     public void setTextAndValueAndIcon(String text, String value, int resId, boolean divider) {
+        setTextAndValueAndIcon(text, value, false, resId, divider);
+    }
+
+    public void setTextAndValueAndIcon(String text, String value, boolean animated, int resId, boolean divider) {
         imageLeft = 21;
         offsetFromImage = 71;
         textView.setText(text);
-        valueTextView.setText(value);
+        valueTextView.setText(value, animated);
         valueTextView.setVisibility(VISIBLE);
         valueImageView.setVisibility(GONE);
+        imageView.setVisibility(VISIBLE);
+        imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
+        imageView.setImageResource(resId);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+        if (checkBox != null) {
+            checkBox.setVisibility(GONE);
+        }
+    }
+
+    public void setTextAndCheckAndIcon(String text, boolean checked, int resId, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = 71;
+        textView.setText(text);
+        valueTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+        if (checkBox != null) {
+            checkBox.setVisibility(VISIBLE);
+            checkBox.setChecked(checked, false);
+        }
         imageView.setVisibility(VISIBLE);
         imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
         imageView.setImageResource(resId);
@@ -259,7 +322,7 @@ public class TextCell extends FrameLayout {
         imageLeft = 21;
         offsetFromImage = 71;
         textView.setText(text);
-        valueTextView.setText(null);
+        valueTextView.setText(null, false);
         valueImageView.setVisibility(VISIBLE);
         valueImageView.setImageDrawable(drawable);
         valueTextView.setVisibility(GONE);
@@ -267,6 +330,9 @@ public class TextCell extends FrameLayout {
         imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+        if (checkBox != null) {
+            checkBox.setVisibility(GONE);
+        }
     }
 
     @Override
@@ -297,5 +363,52 @@ public class TextCell extends FrameLayout {
             setWillNotDraw(!needDivider);
             invalidate();
         }
+    }
+
+    public void setChecked(boolean checked) {
+        checkBox.setChecked(checked, true);
+    }
+
+    public void showEnabledAlpha(boolean show) {
+        float alpha = show ? 0.5f : 1f;
+        if (attached) {
+            if (imageView != null) {
+                imageView.animate().alpha(alpha).start();
+            }
+            if (textView != null) {
+                textView.animate().alpha(alpha).start();
+            }
+            if (valueTextView != null) {
+                valueTextView.animate().alpha(alpha).start();
+            }
+            if (valueImageView != null) {
+                valueImageView.animate().alpha(alpha).start();
+            }
+        } else {
+            if (imageView != null) {
+                imageView.setAlpha(alpha);
+            }
+            if (textView != null) {
+                textView.setAlpha(alpha);
+            }
+            if (valueTextView != null) {
+                valueTextView.setAlpha(alpha);
+            }
+            if (valueImageView != null) {
+                valueImageView.setAlpha(alpha);
+            }
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        attached = true;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        attached = false;
     }
 }

@@ -242,7 +242,7 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
                             } else {
                                 innerMessage = String.format("\uD83C\uDFAE %s", message.messageOwner.media.game.title);
                             }
-                        } else if (message.type == 14) {
+                        } else if (message.type == MessageObject.TYPE_MUSIC) {
                             if (Build.VERSION.SDK_INT >= 18) {
                                 innerMessage = String.format("\uD83C\uDFA7 \u2068%s - %s\u2069", message.getMusicAuthor(), message.getMusicTitle());
                             } else {
@@ -299,7 +299,7 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
                             messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
                         } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                             messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
-                        } else if (message.type == 14) {
+                        } else if (message.type == MessageObject.TYPE_MUSIC) {
                             messageString = String.format("\uD83C\uDFA7 %s - %s", message.getMusicAuthor(), message.getMusicTitle());
                         } else {
                             messageString = message.messageText;
@@ -326,7 +326,7 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         if (dialog != null && dialog.unread_count > 0) {
             rv.setTextViewText(R.id.shortcut_widget_item_badge, String.format("%d", dialog.unread_count));
             rv.setViewVisibility(R.id.shortcut_widget_item_badge, View.VISIBLE);
-            if (accountInstance.getMessagesController().isDialogMuted(dialog.id)) {
+            if (accountInstance.getMessagesController().isDialogMuted(dialog.id, 0)) {
                 rv.setBoolean(R.id.shortcut_widget_item_badge, "setEnabled", false);
                 rv.setInt(R.id.shortcut_widget_item_badge, "setBackgroundResource", R.drawable.widget_badge_muted_background);
             } else {

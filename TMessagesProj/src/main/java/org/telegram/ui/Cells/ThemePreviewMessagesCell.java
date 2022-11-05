@@ -25,8 +25,8 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.LayoutHelper;
@@ -47,13 +47,13 @@ public class ThemePreviewMessagesCell extends LinearLayout {
     private Drawable oldBackgroundDrawable;
     private ChatMessageCell[] cells = new ChatMessageCell[2];
     private Drawable shadowDrawable;
-    private ActionBarLayout parentLayout;
+    private INavigationLayout parentLayout;
     private final int type;
 
     public BaseFragment fragment;
 
     @SuppressLint("ClickableViewAccessibility")
-    public ThemePreviewMessagesCell(Context context, ActionBarLayout layout, int type) {
+    public ThemePreviewMessagesCell(Context context, INavigationLayout layout, int type) {
         super(context);
         this.type = type;
         int currentAccount = UserConfig.selectedAccount;

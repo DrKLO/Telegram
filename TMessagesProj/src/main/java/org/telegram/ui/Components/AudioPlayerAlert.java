@@ -1390,9 +1390,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             final ArrayList<MessageObject> fmessages = new ArrayList<>();
             fmessages.add(messageObject);
             fragment.setDelegate((fragment1, dids, message, param) -> {
-                if (dids.size() > 1 || dids.get(0) == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
+                if (dids.size() > 1 || dids.get(0) .dialogId== UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                     for (int a = 0; a < dids.size(); a++) {
-                        long did = dids.get(a);
+                        long did = dids.get(a).dialogId;
                         if (message != null) {
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
@@ -1400,7 +1400,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     }
                     fragment1.finishFragment();
                 } else {
-                    long did = dids.get(0);
+                    long did = dids.get(0).dialogId;
                     Bundle args1 = new Bundle();
                     args1.putBoolean("scrollToTopOnResume", true);
                     if (DialogObject.isEncryptedDialog(did)) {
@@ -1515,7 +1515,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             blurredView.setTag(1);
             bigAlbumConver.setImageBitmap(coverContainer.getImageReceiver().getBitmap());
             blurredAnimationInProgress = true;
-            BaseFragment fragment = parentActivity.getActionBarLayout().fragmentsStack.get(parentActivity.getActionBarLayout().fragmentsStack.size() - 1);
+            BaseFragment fragment = parentActivity.getActionBarLayout().getFragmentStack().get(parentActivity.getActionBarLayout().getFragmentStack().size() - 1);
             View fragmentView = fragment.getFragmentView();
             int w = (int) (fragmentView.getMeasuredWidth() / 6.0f);
             int h = (int) (fragmentView.getMeasuredHeight() / 6.0f);
@@ -2142,7 +2142,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                                 break;
                             }
                             TLRPC.Document document;
-                            if (messageObject.type == 0) {
+                            if (messageObject.type == MessageObject.TYPE_TEXT) {
                                 document = messageObject.messageOwner.media.webpage.document;
                             } else {
                                 document = messageObject.messageOwner.media.document;

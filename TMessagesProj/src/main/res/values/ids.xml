@@ -10,6 +10,8 @@
     <item name="menu_groupbolditalic" type="id"/>
     <item name="parent_tag" type="id"/>
     <item name="object_tag" type="id"/>
+    <item name="spring_tag" type="id"/>
+    <item name="spring_was_translation_x_tag" type="id"/>
     <item name="fit_width_tag" type="id"/>
     <item name="index_tag" type="id"/>
     <item name="svg_tag" type="id"/>
@@ -21,6 +23,7 @@
     <item name="acc_action_open_photo" type="id"/>
     <item name="acc_action_chat_preview" type="id"/>
     <item name="acc_action_open_forwarded_origin" type="id"/>
+    <item name="shake_animation" type="id"/>
 
     <item name="timeout_callback" type="id"/>
 

@@ -71,6 +71,10 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         return MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() - codePointCount;
     }
 
+    public int getCodePointCount() {
+        return codePointCount;
+    }
+
     public interface PhotoViewerCaptionEnterViewDelegate {
         void onCaptionEnter();
         void onTextChanged(CharSequence text);
@@ -368,7 +372,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         textFieldContainer.addView(doneButton, LayoutHelper.createLinear(48, 48, Gravity.BOTTOM));
         doneButton.setOnClickListener(view -> {
             if (MessagesController.getInstance(currentAccount).getCaptionMaxLengthLimit() - codePointCount < 0) {
-                AndroidUtilities.shakeView(captionLimitView, 2, 0);
+                AndroidUtilities.shakeView(captionLimitView);
                 Vibrator v = (Vibrator) captionLimitView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
                     v.vibrate(200);

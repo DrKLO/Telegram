@@ -77,6 +77,7 @@ public class ConnectionsManager extends BaseController {
     public final static int RequestFlagForceDownload = 32;
     public final static int RequestFlagInvokeAfter = 64;
     public final static int RequestFlagNeedQuickAck = 128;
+    public final static int RequestFlagDoNotWaitFloodWait = 1024;
 
     public final static int ConnectionStateConnecting = 1;
     public final static int ConnectionStateWaitingForNetwork = 2;
@@ -1296,7 +1297,7 @@ public class ConnectionsManager extends BaseController {
                 buffer.writeBytes(bytes);
                 return buffer;
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             } finally {
                 try {
                     if (httpConnectionStream != null) {
@@ -1392,7 +1393,7 @@ public class ConnectionsManager extends BaseController {
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
                 });
-                FileLog.e(e);
+                FileLog.e(e, false);
             }
             return null;
         }

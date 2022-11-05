@@ -137,6 +137,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private int stickersShadowRow;
     private int rowCount;
 
+    private boolean updateSuggestStickers;
+
     private boolean isListeningForFeaturedUpdate;
     ArrayList<TLRPC.TL_messages_stickerSet> frozenEmojiPacks;
 
@@ -429,6 +431,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     cell.setOnClickListener(v -> {
                         Integer which = (Integer) v.getTag();
                         SharedConfig.setSuggestStickers(which);
+                        updateSuggestStickers = true;
                         listAdapter.notifyItemChanged(suggestRow);
                         builder.getDismissRunnable().run();
                     });
@@ -1099,9 +1102,9 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                             if (currentType == MediaDataController.TYPE_IMAGE) {
                                 settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ArchivedStickers), value, R.drawable.msg_archived_stickers, true);
                             } else if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-                                settingsCell.setTextAndValue(LocaleController.getString("ArchivedEmojiPacks", R.string.ArchivedEmojiPacks), value, true);
+                                settingsCell.setTextAndValue(LocaleController.getString("ArchivedEmojiPacks", R.string.ArchivedEmojiPacks), value, false, true);
                             } else {
-                                settingsCell.setTextAndValue(LocaleController.getString("ArchivedMasks", R.string.ArchivedMasks), value, true);
+                                settingsCell.setTextAndValue(LocaleController.getString("ArchivedMasks", R.string.ArchivedMasks), value, false, true);
                             }
                         } else if (position == masksRow) {
                             int type = MediaDataController.TYPE_MASK;
@@ -1128,7 +1131,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                                     value = LocaleController.getString("SuggestStickersNone", R.string.SuggestStickersNone);
                                     break;
                             }
-                            settingsCell.setTextAndValue(LocaleController.getString("SuggestStickers", R.string.SuggestStickers), value, true);
+                            settingsCell.setTextAndValue(LocaleController.getString("SuggestStickers", R.string.SuggestStickers), value, updateSuggestStickers, true);
+                            updateSuggestStickers = false;
                         }
                     }
                     break;
@@ -1441,7 +1445,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     if (!SharedConfig.stickersReorderingHintUsed && currentType != MediaDataController.TYPE_EMOJIPACKS) {
                         SharedConfig.setStickersReorderingHintUsed(true);
                         String stickersReorderHint = LocaleController.getString("StickersReorderHint", R.string.StickersReorderHint);
-                        Bulletin.make(parentLayout, new ReorderingBulletinLayout(mContext, stickersReorderHint, null), ReorderingHintDrawable.DURATION * 2 + 250).show();
+                        Bulletin.make(parentLayout.getLastFragment(), new ReorderingBulletinLayout(mContext, stickersReorderHint, null), ReorderingHintDrawable.DURATION * 2 + 250).show();
                     }
                 }
             } else if (actionModeShowed) {

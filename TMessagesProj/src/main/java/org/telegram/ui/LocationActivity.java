@@ -2538,7 +2538,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    protected void onBecomeFullyHidden() {
+    public void onBecomeFullyHidden() {
         if (undoView[0] != null) {
             undoView[0].hide(true, 0);
         }

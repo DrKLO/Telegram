@@ -241,7 +241,7 @@ public class LinkActionView extends LinearLayout {
 
             FrameLayout container;
             if (bottomSheet == null) {
-                container = fragment.getParentLayout();
+                container = (FrameLayout) fragment.getParentLayout().getOverlayContainerView();
             } else {
                 container = bottomSheet.getContainer();
             }
@@ -343,6 +343,9 @@ public class LinkActionView extends LinearLayout {
             x += v.getX();
             if (v instanceof ScrollView) {
                 y -= v.getScrollY();
+            }
+            if (!(v.getParent() instanceof View)) {
+                break;
             }
             v = (View) v.getParent();
             if (!(v instanceof ViewGroup)) {

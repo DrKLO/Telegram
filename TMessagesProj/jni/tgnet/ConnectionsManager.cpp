@@ -1299,7 +1299,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";
                                 static std::string slowmodeWait = "SLOWMODE_WAIT_";
-                                discardResponse = true;
+                                discardResponse = (request->requestFlags & RequestFlagIgnoreFloodWait) == 0;
                                 if (error->error_message.find(floodWait) != std::string::npos) {
                                     std::string num = error->error_message.substr(floodWait.size(), error->error_message.size() - floodWait.size());
                                     waitTime = atoi(num.c_str());

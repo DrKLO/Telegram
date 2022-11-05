@@ -198,6 +198,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int previousUpdatedType;
     private boolean previousByLocation;
 
+    private boolean updateRecordViaSco;
+    private boolean updateDistance;
+
     private GpsLocationListener gpsLocationListener = new GpsLocationListener();
     private GpsLocationListener networkLocationListener = new GpsLocationListener();
 
@@ -443,11 +446,16 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private boolean setFontSize(int size) {
         if (size != SharedConfig.fontSize) {
             SharedConfig.fontSize = size;
-            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            SharedConfig.fontSizeIsDefault = false;
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            if (preferences == null) {
+                return false;
+            }
             SharedPreferences.Editor editor = preferences.edit();
             editor.putInt("fons_size", SharedConfig.fontSize);
             editor.commit();
-            Theme.chat_msgTextPaint.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize));
+
+            Theme.createCommonMessageResources();
 
             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(textSizeRow);
             if (holder != null && holder.itemView instanceof TextSizeCell) {
@@ -1023,6 +1031,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                                 LocaleController.getString("DistanceUnitsMiles", R.string.DistanceUnitsMiles)
                         }, (dialog, which) -> {
                             SharedConfig.setDistanceSystemType(which);
+                            updateDistance = true;
                             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(distanceRow);
                             if (holder != null) {
                                 listAdapter.onBindViewHolder(holder, distanceRow);
@@ -1048,6 +1057,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 textView.setOnClickListener(v -> {
                     SharedConfig.recordViaSco = false;
                     SharedConfig.saveConfig();
+                    updateRecordViaSco = true;
                     dialogRef.get().dismiss();
 
                     RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(bluetoothScoRow);
@@ -1064,6 +1074,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 scoLinearLayout.setOnClickListener(v -> {
                     SharedConfig.recordViaSco = true;
                     SharedConfig.saveConfig();
+                    updateRecordViaSco = true;
                     dialogRef.get().dismiss();
 
                     RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(bluetoothScoRow);
@@ -1263,7 +1274,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
             AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
@@ -2124,9 +2135,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         } else {
                             value = LocaleController.getString("DistanceUnitsMiles", R.string.DistanceUnitsMiles);
                         }
-                        cell.setTextAndValue(LocaleController.getString("DistanceUnits", R.string.DistanceUnits), value, false);
+                        cell.setTextAndValue(LocaleController.getString("DistanceUnits", R.string.DistanceUnits), value, updateDistance, false);
+                        updateDistance = false;
                     } else if (position == bluetoothScoRow) {
-                        cell.setTextAndValue(LocaleController.getString(R.string.MicrophoneForVoiceMessages), LocaleController.getString(SharedConfig.recordViaSco ? R.string.MicrophoneForVoiceMessagesSco : R.string.MicrophoneForVoiceMessagesBuiltIn), true);
+                        cell.setTextAndValue(LocaleController.getString(R.string.MicrophoneForVoiceMessages), LocaleController.getString(SharedConfig.recordViaSco ? R.string.MicrophoneForVoiceMessagesSco : R.string.MicrophoneForVoiceMessagesBuiltIn), updateRecordViaSco, true);
+                        updateRecordViaSco = false;
                     }
                     break;
                 }

@@ -14,7 +14,8 @@ public enum BotWebViewVibrationEffect {
     NOTIFICATION_ERROR(new long[] {14,48,14,48,14,48,20}, new int[] {200,0,200,0,255,0,145}, new long[] {40,60,40,60,65,60,40}),
     NOTIFICATION_SUCCESS(new long[] {14,65,14}, new int[] {175,0,255}, new long[] {50,60,65}),
     NOTIFICATION_WARNING(new long[] {14,64,14}, new int[] {225,0,175}, new long[] {65,60,40}),
-    SELECTION_CHANGE(new long[] {1}, new int[] {65}, new long[] {30});
+    SELECTION_CHANGE(new long[] {1}, new int[] {65}, new long[] {30}),
+    APP_ERROR(new long[] {30,10,150,10}, new int[] {0,100,0,100}, new long[] {40,60,40,60,65,60,40});
 
     public final long[] timings;
     public final int[] amplitudes;
@@ -38,5 +39,13 @@ public enum BotWebViewVibrationEffect {
         }
 
         return (VibrationEffect) vibrationEffect;
+    }
+
+    public void vibrate() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AndroidUtilities.getVibrator().vibrate(getVibrationEffectForOreo());
+        } else {
+            AndroidUtilities.getVibrator().vibrate(fallbackTimings, -1);
+        }
     }
 }

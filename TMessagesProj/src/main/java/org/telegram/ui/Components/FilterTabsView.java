@@ -38,6 +38,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -239,13 +240,18 @@ public class FilterTabsView extends FrameLayout {
         @SuppressLint("DrawAllocation")
         @Override
         protected void onDraw(Canvas canvas) {
-            boolean reorderEnabled = (!currentTab.isDefault || UserConfig.getInstance(UserConfig.selectedAccount).isPremium());
+            boolean reorderEnabled = true;
             boolean showRemove = !currentTab.isDefault && reorderEnabled;
             if (reorderEnabled && editingAnimationProgress != 0) {
                 canvas.save();
                 float p = editingAnimationProgress * (currentPosition % 2 == 0 ? 1.0f : -1.0f);
-                canvas.translate(AndroidUtilities.dp(0.66f) * p, 0);
-                canvas.rotate(p, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
+                float s = (float) Math.sin((p + (currentPosition % 2)) * Math.PI * 2.5f);
+                float a = (float) (SystemClock.elapsedRealtime() / 400f * Math.PI * (currentPosition % 2 == 0 ? 1.0f : -1.0f));
+                canvas.translate(
+                    (float) (Math.cos(a) * AndroidUtilities.dp(0.33f) * (currentPosition % 2 == 0 ? 1.0f : -1.0f)),
+                    (float) (Math.sin(a) * -AndroidUtilities.dp(0.33f))
+                );
+                canvas.rotate(1.4f * s, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
             }
             String key;
             String animateToKey;
@@ -1270,7 +1276,7 @@ public class FilterTabsView extends FrameLayout {
         if (isEditing || editingAnimationProgress != 0.0f) {
             if (editingForwardAnimation) {
                 boolean lessZero = editingAnimationProgress <= 0;
-                editingAnimationProgress += dt / 120.0f;
+                editingAnimationProgress += dt / 420.0f;
                 if (!isEditing && lessZero && editingAnimationProgress >= 0) {
                     editingAnimationProgress = 0;
                 }
@@ -1280,7 +1286,7 @@ public class FilterTabsView extends FrameLayout {
                 }
             } else {
                 boolean greaterZero = editingAnimationProgress >= 0;
-                editingAnimationProgress -= dt / 120.0f;
+                editingAnimationProgress -= dt / 420.0f;
                 if (!isEditing && greaterZero && editingAnimationProgress <= 0) {
                     editingAnimationProgress = 0;
                 }
@@ -1622,6 +1628,46 @@ public class FilterTabsView extends FrameLayout {
             listView.setItemAnimator(itemAnimator);
             notifyItemMoved(fromIndex, toIndex);
         }
+
+        public void moveElementToStart(int theIndex) {
+            int count = tabs.size();
+            if (theIndex < 0 || theIndex >= count) {
+                return;
+            }
+            ArrayList<MessagesController.DialogFilter> filters = MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters;
+            int temp = positionToStableId.get(theIndex),
+                temp2 = tabs.get(theIndex).id;
+            for (int i = theIndex - 1; i >= 0; --i) {
+//                notifyItemMoved(i, i + 1);
+                positionToStableId.put(i + 1, positionToStableId.get(i));
+            }
+            MessagesController.DialogFilter filter = filters.remove(theIndex);
+            filter.order = 0;
+            filters.add(0, filter);
+            positionToStableId.put(0, temp);
+            tabs.add(0, tabs.remove(theIndex));
+            tabs.get(0).id = temp2;
+            for (int i = 0; i <= theIndex; ++i) {
+                tabs.get(i).id = i;
+                filters.get(i).order = i;
+            }
+            for (int i = 0; i <= theIndex; ++i) {
+                if (currentPosition == i) {
+                    currentPosition = selectedTabId = i == theIndex ? 0 : i + 1;
+                }
+                if (previousPosition == i) {
+                    previousPosition = previousId = i == theIndex ? 0 : i + 1;
+                }
+            }
+            notifyItemMoved(theIndex, 0);
+
+            delegate.onPageReorder(tabs.get(theIndex).id, temp2);
+
+            updateTabsWidths();
+
+            orderChanged = true;
+            listView.setItemAnimator(itemAnimator);
+        }
     }
 
     public class TouchHelperCallback extends ItemTouchHelper.Callback {
@@ -1633,7 +1679,7 @@ public class FilterTabsView extends FrameLayout {
 
         @Override
         public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-            if (!isEditing || (viewHolder.getAdapterPosition() == 0 && tabs.get(0).isDefault && !UserConfig.getInstance(UserConfig.selectedAccount).isPremium())) {
+            if (MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked && (!isEditing || (viewHolder.getAdapterPosition() == 0 && tabs.get(0).isDefault && !UserConfig.getInstance(UserConfig.selectedAccount).isPremium()))) {
                 return makeMovementFlags(0, 0);
             }
             return makeMovementFlags(ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, 0);
@@ -1641,11 +1687,25 @@ public class FilterTabsView extends FrameLayout {
 
         @Override
         public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
-            if ((source.getAdapterPosition() == 0 || target.getAdapterPosition() == 0) && !UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+            if (MessagesController.getInstance(UserConfig.selectedAccount).premiumLocked && ((source.getAdapterPosition() == 0 || target.getAdapterPosition() == 0) && !UserConfig.getInstance(UserConfig.selectedAccount).isPremium())) {
                 return false;
             }
             adapter.swapElements(source.getAdapterPosition(), target.getAdapterPosition());
             return true;
+        }
+
+        private void resetDefaultPosition() {
+            if (UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+                return;
+            }
+            for (int i = 0; i < tabs.size(); ++i) {
+                if (tabs.get(i).isDefault && i != 0) {
+                    adapter.moveElementToStart(i);
+                    listView.scrollToPosition(0);
+                    onDefaultTabMoved();
+                    break;
+                }
+            }
         }
 
         @Override
@@ -1654,6 +1714,9 @@ public class FilterTabsView extends FrameLayout {
                 listView.cancelClickRunnables(false);
                 viewHolder.itemView.setPressed(true);
                 viewHolder.itemView.setBackgroundColor(Theme.getColor(backgroundColorKey));
+            } else {
+                AndroidUtilities.cancelRunOnUIThread(this::resetDefaultPosition);
+                AndroidUtilities.runOnUIThread(this::resetDefaultPosition, 320);
             }
             super.onSelectedChanged(viewHolder, actionState);
         }
@@ -1722,6 +1785,10 @@ public class FilterTabsView extends FrameLayout {
                 }
             }
         }
+    }
+
+    protected void onDefaultTabMoved() {
+
     }
 
 }

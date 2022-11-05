@@ -104,6 +104,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -3201,7 +3202,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     }
                     if (pageBlock instanceof TLRPC.TL_pageBlockChannel) {
                         TLRPC.TL_pageBlockChannel pageBlockChannel = (TLRPC.TL_pageBlockChannel) pageBlock;
-                        MessagesController.getInstance(currentAccount).openByUserName(pageBlockChannel.channel.username, parentFragment, 2);
+                        MessagesController.getInstance(currentAccount).openByUserName(ChatObject.getPublicUsername(pageBlockChannel.channel), parentFragment, 2);
                         close(false, true);
                     } else if (pageBlock instanceof TL_pageBlockRelatedArticlesChild) {
                         TL_pageBlockRelatedArticlesChild pageBlockRelatedArticlesChild = (TL_pageBlockRelatedArticlesChild) pageBlock;
@@ -4161,7 +4162,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             messageObject.messageOwner.media.webpage = webPage;
                             TLRPC.TL_messages_messages messagesRes = new TLRPC.TL_messages_messages();
                             messagesRes.messages.add(messageObject.messageOwner);
-                            MessagesStorage.getInstance(currentAccount).putMessages(messagesRes, messageObject.getDialogId(), -2, 0, false, messageObject.scheduled);
+                            MessagesStorage.getInstance(currentAccount).putMessages(messagesRes, messageObject.getDialogId(), -2, 0, false, messageObject.scheduled, 0);
                         }
                         pagesStack.set(0, webPage);
                         if (pagesStack.size() == 1) {
@@ -4194,7 +4195,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             if (messageObject != null) {
                                 TLRPC.TL_messages_messages messagesRes = new TLRPC.TL_messages_messages();
                                 messagesRes.messages.add(messageObject.messageOwner);
-                                MessagesStorage.getInstance(currentAccount).putMessages(messagesRes, messageObject.getDialogId(), -2, 0, false, messageObject.scheduled);
+                                MessagesStorage.getInstance(currentAccount).putMessages(messagesRes, messageObject.getDialogId(), -2, 0, false, messageObject.scheduled, 0);
                             }
                         }
                     }
@@ -4652,7 +4653,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     }
 
     private void loadChannel(final BlockChannelCell cell, WebpageAdapter adapter, TLRPC.Chat channel) {
-        if (loadingChannel || TextUtils.isEmpty(channel.username)) {
+        if (loadingChannel || !ChatObject.isPublic(channel)) {
             return;
         }
         loadingChannel = true;
@@ -6025,7 +6026,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             float y = event.getY();
             if (channelCell.getVisibility() == VISIBLE && y > channelCell.getTranslationY() && y < channelCell.getTranslationY() + AndroidUtilities.dp(39)) {
                 if (parentAdapter.channelBlock != null && event.getAction() == MotionEvent.ACTION_UP) {
-                    MessagesController.getInstance(currentAccount).openByUserName(parentAdapter.channelBlock.channel.username, parentFragment, 2);
+                    MessagesController.getInstance(currentAccount).openByUserName(ChatObject.getPublicUsername(parentAdapter.channelBlock.channel), parentFragment, 2);
                     close(false, true);
                 }
                 return true;
@@ -9909,7 +9910,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             float y = event.getY();
             if (channelCell.getVisibility() == VISIBLE && y > channelCell.getTranslationY() && y < channelCell.getTranslationY() + AndroidUtilities.dp(39)) {
                 if (parentAdapter.channelBlock != null && event.getAction() == MotionEvent.ACTION_UP) {
-                    MessagesController.getInstance(currentAccount).openByUserName(parentAdapter.channelBlock.channel.username, parentFragment, 2);
+                    MessagesController.getInstance(currentAccount).openByUserName(ChatObject.getPublicUsername(parentAdapter.channelBlock.channel), parentFragment, 2);
                     close(false, true);
                 }
                 return true;
@@ -11212,6 +11213,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     }
 
     public boolean openPhoto(TLRPC.PageBlock block, WebpageAdapter adapter) {
+        if (parentFragment == null || parentFragment.getParentActivity() == null) {
+            return false;
+        }
         final int index;
         final List<TLRPC.PageBlock> pageBlocks;
         if (!(block instanceof TLRPC.TL_pageBlockVideo) || WebPageUtils.isVideo(adapter.currentPage, block)) {

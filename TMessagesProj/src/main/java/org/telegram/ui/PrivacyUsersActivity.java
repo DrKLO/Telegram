@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -440,7 +441,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                                 subtitle = LocaleController.formatPluralString("Members", chat.participants_count);
                             } else if (chat.has_geo) {
                                 subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                            } else if (TextUtils.isEmpty(chat.username)) {
+                            } else if (!ChatObject.isPublic(chat)) {
                                 subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate);
                             } else {
                                 subtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic);
