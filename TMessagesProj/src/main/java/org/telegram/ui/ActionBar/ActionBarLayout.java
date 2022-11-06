@@ -505,25 +505,25 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     @Override
     public void onResume() {
-        if (transitionAnimationInProgress) {
-            if (currentAnimation != null) {
-                currentAnimation.cancel();
-                currentAnimation = null;
-            }
-            if (animationRunnable != null) {
-                AndroidUtilities.cancelRunOnUIThread(animationRunnable);
-                animationRunnable = null;
-            }
-            if (waitingForKeyboardCloseRunnable != null) {
-                AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
-                waitingForKeyboardCloseRunnable = null;
-            }
-            if (onCloseAnimationEndRunnable != null) {
-                onCloseAnimationEnd();
-            } else if (onOpenAnimationEndRunnable != null) {
-                onOpenAnimationEnd();
-            }
-        }
+//        if (transitionAnimationInProgress) {
+//            if (currentAnimation != null) {
+//                currentAnimation.cancel();
+//                currentAnimation = null;
+//            }
+//            if (animationRunnable != null) {
+//                AndroidUtilities.cancelRunOnUIThread(animationRunnable);
+//                animationRunnable = null;
+//            }
+//            if (waitingForKeyboardCloseRunnable != null) {
+//                AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
+//                waitingForKeyboardCloseRunnable = null;
+//            }
+//            if (onCloseAnimationEndRunnable != null) {
+//                onCloseAnimationEnd();
+//            } else if (onOpenAnimationEndRunnable != null) {
+//                onOpenAnimationEnd();
+//            }
+//        }
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onResume();
@@ -2175,6 +2175,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     private void onCloseAnimationEnd() {
         if (transitionAnimationInProgress && onCloseAnimationEndRunnable != null) {
+            if (currentAnimation != null) {
+                currentAnimation.cancel();
+            }
             transitionAnimationInProgress = false;
             layoutToIgnore = null;
             transitionAnimationPreviewMode = false;

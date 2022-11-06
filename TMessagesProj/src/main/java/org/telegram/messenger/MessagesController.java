@@ -62,6 +62,7 @@ import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.TopicsFragment;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -587,7 +588,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (topics != null) {
                     for (int i = 0; i < topics.size(); i++) {
                         TLRPC.TL_forumTopic topic = topics.get(i);
-                        getMessagesController().markDialogAsRead(did, topic.top_message, 0, topic.topMessage.date, false, topic.id, 0, true, 0);
+                        getMessagesController().markDialogAsRead(did, topic.top_message, 0, topic.topMessage != null ? topic.topMessage.date : 0, false, topic.id, 0, true, 0);
                         getMessagesStorage().updateRepliesMaxReadId(-did, topic.id, topic.top_message, 0, true);
                     }
                 }
@@ -3705,8 +3706,24 @@ public class MessagesController extends BaseController implements NotificationCe
         if (oldUser != null && !TextUtils.isEmpty(oldUser.username)) {
             objectsByUsernames.remove(oldUser.username.toLowerCase());
         }
+        if (oldUser != null && oldUser.usernames != null) {
+            for (int i = 0; i < oldUser.usernames.size(); ++i) {
+                TLRPC.TL_username u = oldUser.usernames.get(i);
+                if (u != null && u.username != null) {
+                    objectsByUsernames.remove(u.username.toLowerCase());
+                }
+            }
+        }
         if (!TextUtils.isEmpty(user.username)) {
             objectsByUsernames.put(user.username.toLowerCase(), user);
+        }
+        if (user != null && user.usernames != null) {
+            for (int i = 0; i < user.usernames.size(); ++i) {
+                TLRPC.TL_username u = user.usernames.get(i);
+                if (u != null && u.username != null && u.active) {
+                    objectsByUsernames.put(u.username.toLowerCase(), user);
+                }
+            }
         }
         updateEmojiStatusUntilUpdate(user.id, user.emoji_status);
         if (user.min) {
@@ -3813,7 +3830,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (chat.usernames != null) {
             for (int i = 0; i < chat.usernames.size(); ++i) {
                 TLRPC.TL_username u = chat.usernames.get(i);
-                if (u != null && !TextUtils.isEmpty(u.username)) {
+                if (u != null && !TextUtils.isEmpty(u.username) && u.active) {
                     objectsByUsernames.put(u.username.toLowerCase(), chat);
                 }
             }
@@ -4397,12 +4414,12 @@ public class MessagesController extends BaseController implements NotificationCe
                     fullUsers.put(user.id, userFull);
                     loadingFullUsers.remove(user.id);
                     loadedFullUsers.add(user.id);
-                    String names = user.first_name + user.last_name + user.username;
+                    String names = user.first_name + user.last_name + UserObject.getPublicUsername(user);
                     ArrayList<TLRPC.User> users = new ArrayList<>();
                     users.add(userFull.user);
                     putUsers(users, false);
                     getMessagesStorage().putUsersAndChats(users, null, false, true);
-                    if (!names.equals(userFull.user.first_name + userFull.user.last_name + userFull.user.username)) {
+                    if (!names.equals(userFull.user.first_name + userFull.user.last_name + UserObject.getPublicUsername(userFull.user))) {
                         getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_NAME);
                     }
                     if (userFull.user.photo != null && userFull.user.photo.has_video) {
@@ -6225,6 +6242,16 @@ public class MessagesController extends BaseController implements NotificationCe
         getMessagesStorage().loadUserInfo(user, force, classGuid, fromMessageId);
     }
 
+    public void updateUsernameActiveness(TLObject object, String username, boolean active) {
+        if (TextUtils.isEmpty(username)) {
+            return;
+        }
+        objectsByUsernames.remove(username);
+        if (active) {
+            objectsByUsernames.put(username.toLowerCase(), object);
+        }
+    }
+
     public void processUserInfo(TLRPC.User user, TLRPC.UserFull info, boolean fromCache, boolean force, int classGuid, ArrayList<Integer> pinnedMessages, HashMap<Integer, MessageObject> pinnedMessagesMap, int totalPinnedCount, boolean pinnedEndReached) {
         AndroidUtilities.runOnUIThread(() -> {
             if (fromCache) {
@@ -7203,7 +7230,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     private void loadMessagesInternal(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, boolean fromCache, int minDate, int classGuid, int load_type, int last_message_id, int mode, int threadMessageId, int loadIndex, int first_unread, int unread_count, int last_date, boolean queryFromServer, int mentionsCount, boolean loadDialog, boolean processMessages, boolean isTopic) {
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("load messages in chat " + dialogId + " count " + count + " max_id " + max_id + " cache " + fromCache + " mindate = " + minDate + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " mode " + mode + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic " + isTopic);
+            FileLog.d("load messages in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + fromCache + " mindate = " + minDate + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " mode " + mode + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic " + isTopic);
         }
         if ((threadMessageId == 0 || isTopic) && mode != 2 && (fromCache || DialogObject.isEncryptedDialog(dialogId))) {
             getMessagesStorage().getMessages(dialogId, mergeDialogId, loadInfo, count, max_id, offset_date, minDate, classGuid, load_type, mode == 1, threadMessageId, loadIndex, processMessages, isTopic);
@@ -7435,7 +7462,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public void processLoadedMessages(TLRPC.messages_Messages messagesRes, int resCount, long dialogId, long mergeDialogId, int count, int max_id, int offset_date, boolean isCache, int classGuid,
                                       int first_unread, int last_message_id, int unread_count, int last_date, int load_type, boolean isEnd, int mode, int threadMessageId, int loadIndex, boolean queryFromServer, int mentionsCount, boolean needProcess, boolean isTopic) {
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("processLoadedMessages size " + messagesRes.messages.size() + " in chat " + dialogId + " count " + count + " max_id " + max_id + " cache " + isCache + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic" + isTopic);
+            FileLog.d("processLoadedMessages size " + messagesRes.messages.size() + " in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + isCache + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic" + isTopic);
         }
 
         long startProcessTime = SystemClock.elapsedRealtime();
@@ -14465,7 +14492,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             for (int i = 0; i < update.usernames.size(); ++i) {
                                 String username = update.usernames.get(i).username;
-                                if (!TextUtils.isEmpty(username)) {
+                                if (!TextUtils.isEmpty(username) && update.usernames.get(i).active) {
                                     objectsByUsernames.put(username, currentUser);
                                 }
                             }
@@ -16398,9 +16425,17 @@ public class MessagesController extends BaseController implements NotificationCe
             if (type == 0) {
                 fragment.presentFragment(new ProfileActivity(args));
             } else if (type == 2) {
-                fragment.presentFragment(new ChatActivity(args), true, true);
+                if (ChatObject.isForum(chat)) {
+                    fragment.presentFragment(new TopicsFragment(args), true, true);
+                } else {
+                    fragment.presentFragment(new ChatActivity(args), true, true);
+                }
             } else {
-                fragment.presentFragment(new ChatActivity(args), closeLast);
+                if (ChatObject.isForum(chat)) {
+                    fragment.presentFragment(new TopicsFragment(args), closeLast);
+                } else {
+                    fragment.presentFragment(new ChatActivity(args), closeLast);
+                }
             }
         }
     }
