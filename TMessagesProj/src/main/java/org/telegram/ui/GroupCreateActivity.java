@@ -1511,7 +1511,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             if (object instanceof TLRPC.User) {
                                 TLRPC.User user = (TLRPC.User) object;
                                 name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
-                                username = user.username;
+                                username = UserObject.getPublicUsername(user);
                             } else {
                                 TLRPC.Chat chat = (TLRPC.Chat) object;
                                 name = chat.title;

@@ -1720,7 +1720,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     image.params = new HashMap<>();
                     image.params.put("id", result.id);
                     image.params.put("query_id", "" + res.query_id);
-                    image.params.put("bot_name", user.username);
+                    image.params.put("bot_name", UserObject.getPublicUsername(user));
 
                     searchResult.add(image);
 

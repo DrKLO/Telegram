@@ -2599,7 +2599,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                                         if (found == 1) {
                                             dialogSearchResult.name = AndroidUtilities.generateSearchName(user.first_name, user.last_name, q);
                                         } else {
-                                            dialogSearchResult.name = AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q);
+                                            dialogSearchResult.name = AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q);
                                         }
                                         dialogSearchResult.object = user;
                                         dialogSearchResult.dialog.id = user.id;
@@ -2687,7 +2687,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                                     if (found == 1) {
                                         dialogSearchResult.name = AndroidUtilities.generateSearchName(user.first_name, user.last_name, q);
                                     } else {
-                                        dialogSearchResult.name = AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q);
+                                        dialogSearchResult.name = AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q);
                                     }
                                     searchResults.add(dialogSearchResult);
                                 }

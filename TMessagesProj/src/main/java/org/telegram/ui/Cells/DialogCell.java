@@ -1186,7 +1186,7 @@ public class DialogCell extends BaseCell {
                                             }
                                             if (smallThumb != null) {
                                                 hasVideoThumb = hasVideoThumb || (message.isVideo() || message.isRoundVideo());
-                                                if (thumbsCount < 2) {
+                                                if (i < 2) {
                                                     thumbsCount++;
                                                     drawPlay[i] = message.isVideo() || message.isRoundVideo();
                                                     int size = message.type == MessageObject.TYPE_PHOTO && bigThumb != null ? bigThumb.size : 0;

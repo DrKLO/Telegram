@@ -427,6 +427,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     cell.setTag(a);
                     cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
                     cell.setTextAndValue(items[a], SharedConfig.suggestStickers == a);
+                    cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
                     linearLayout.addView(cell);
                     cell.setOnClickListener(v -> {
                         Integer which = (Integer) v.getTag();

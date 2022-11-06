@@ -1150,7 +1150,7 @@ public class Bulletin {
     public static class LottieLayout extends ButtonLayout {
 
         public RLottieImageView imageView;
-        public TextView textView;
+        public LinkSpanDrawable.LinksTextView textView;
 
         private int textColor;
 
@@ -1162,6 +1162,7 @@ public class Bulletin {
             addView(imageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.START | Gravity.CENTER_VERTICAL));
 
             textView = new LinkSpanDrawable.LinksTextView(context);
+            textView.setDisablePaddingsOffset(true);
             textView.setSingleLine();
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -1449,7 +1450,7 @@ public class Bulletin {
             rect.set(AndroidUtilities.dp(1), AndroidUtilities.dp(1), getMeasuredWidth() - AndroidUtilities.dp(1), getMeasuredHeight() - AndroidUtilities.dp(1));
             if (prevSeconds != newSeconds) {
                 prevSeconds = newSeconds;
-                timeLeftString = String.format("%d", Math.max(1, newSeconds));
+                timeLeftString = String.format("%d", Math.max(0, newSeconds));
                 if (timeLayout != null) {
                     timeLayoutOut = timeLayout;
                     timeReplaceProgress = 0;
@@ -1492,7 +1493,7 @@ public class Bulletin {
                 canvas.restore();
             }
 
-            canvas.drawArc(rect, -90, -360 * (timeLeft / 5000.0f), false, progressPaint);
+            canvas.drawArc(rect, -90, -360 * (Math.max(0, timeLeft) / 5000.0f), false, progressPaint);
 
             if (lastUpdateTime != 0) {
                 long newTime = System.currentTimeMillis();

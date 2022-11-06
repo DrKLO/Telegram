@@ -199,40 +199,6 @@ public class TopicsController extends BaseController {
         }
     }
 
-    private void updateDialogUnreadCount(long chatId) {
-        int[] counters = getForumUnreadCount(chatId);
-        int unread = counters[0];
-        int unread_mentions = counters[1];
-//        getMessagesStorage().getStorageQueue().postRunnable(() -> {
-//            SQLiteDatabase database = getMessagesStorage().getDatabase();
-//            try {
-//                SQLiteCursor cursor = database.queryFinalized("SELECT unread_count, unread_count_i FROM dialogs WHERE did = " + (-chatId));
-//                boolean needUpdate = false;
-//                if (cursor.next()) {
-//                    int currentUnreadCount = cursor.intValue(0);
-//                    int currentUnreadMentions = cursor.intValue(1);
-//                    if ((unread > 0) != (currentUnreadCount > 0) || (unread_mentions > 0) != (currentUnreadMentions > 0)) {
-//                        needUpdate = true;
-//                    }
-//                    Log.d("kek", "update dialog read by topics " + chatId + "  " + unread + " " + unread_mentions + "    current " + currentUnreadCount + " " + currentUnreadMentions + " update " + needUpdate);
-//                }
-//                cursor.dispose();
-//                if (needUpdate) {
-//                    database.executeFast(String.format(Locale.US, "UPDATE dialogs SET unread_count = %d, unread_count_i - %d WHERE did = %d", unread, unread_mentions, -chatId)).stepThis().dispose();
-//                    SQLiteCursor cursor2 = database.queryFinalized("SELECT unread_count, unread_count_i FROM dialogs WHERE did = " + (-chatId));
-//                    if (cursor2.next()) {
-//                        int currentUnreadCount = cursor2.intValue(0);
-//                        Log.d("kek", "currentUnreadCount " + currentUnreadCount);
-//                    }
-//                    cursor2.dispose();
-//                    getMessagesStorage().resetAllUnreadCounters(false);
-//                }
-//            } catch (Throwable e) {
-//                e.printStackTrace();
-//            }
-//        });
-    }
-
     private long messageHash(int messageId, long chatId) {
         return chatId + ((long) messageId << 12);
     }
@@ -753,10 +719,12 @@ public class TopicsController extends BaseController {
             endIsReached.delete(chatId);
             clearLoadingOffset(chatId);
 
+
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
             if (chat != null && chat.forum) {
                 preloadTopics(chatId);
             }
+            sortTopics(chatId);
         });
     }
 

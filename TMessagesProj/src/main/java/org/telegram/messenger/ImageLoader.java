@@ -28,6 +28,7 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.exifinterface.media.ExifInterface;
@@ -1653,7 +1654,7 @@ public class ImageLoader {
         return filter != null && filter.endsWith("avatar");
     }
 
-    private BitmapDrawable getFromMemCache(String key) {
+    public BitmapDrawable getFromMemCache(String key) {
         BitmapDrawable drawable = memCache.get(key);
         if (drawable == null) {
             drawable = smallImagesMemCache.get(key);

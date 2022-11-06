@@ -645,7 +645,7 @@ public class CalendarActivity extends BaseFragment {
                             }
                         } else {
                             PeriodDay day = getDayAtCoord(e.getX(), e.getY());
-                            if (day != null && parentLayout.getFragmentStack().size() >= 2) {
+                            if (day != null && parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
                                 BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
                                 if (fragment instanceof ChatActivity) {
                                     finishFragment();

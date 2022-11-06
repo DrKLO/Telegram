@@ -310,6 +310,31 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_SHORT);
     }
 
+    public Bulletin createCaptionLimitBulletin(int count, Runnable callback) {
+        Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
+        layout.setAnimation(R.raw.caption_limit);
+        String str = LocaleController.formatPluralString("ChannelCaptionLimitPremiumPromo", count);
+        SpannableStringBuilder spannable = SpannableStringBuilder.valueOf(AndroidUtilities.replaceTags(str));
+        int indexStart = str.indexOf('*'), indexEnd = str.indexOf('*', indexStart + 1);
+        spannable.replace(indexStart, indexEnd + 1, str.substring(indexStart + 1, indexEnd));
+        spannable.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                callback.run();
+            }
+
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setUnderlineText(false);
+            }
+        }, indexStart, indexEnd - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        layout.textView.setText(spannable);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(3);
+        return create(layout, 5000);
+    }
+
     public Bulletin createRestrictVoiceMessagesPremiumBulletin() {
         Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
         layout.setAnimation(R.raw.voip_muted);

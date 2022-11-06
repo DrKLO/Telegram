@@ -298,7 +298,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             if (dialogId < 0) {
                 if (topicId != 0) {
                     TLRPC.TL_forumTopic forumTopic = getMessagesController().getTopicsController().findTopic(-dialogId, topicId);
-                    ForumUtilities.setTopicIcon(avatarContainer.getAvatarImageView(), forumTopic);
+                    ForumUtilities.setTopicIcon(avatarContainer.getAvatarImageView(), forumTopic, true);
                     avatarContainer.setTitle(forumTopic.title);
                 } else {
                     TLRPC.Chat chatLocal = getMessagesController().getChat(-dialogId);

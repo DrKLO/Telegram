@@ -43,7 +43,9 @@ public class ForumUtilities {
         }
         if (forumTopic.icon_emoji_id != 0) {
             backupImageView.setImageDrawable(null);
-            backupImageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, UserConfig.selectedAccount, forumTopic.icon_emoji_id));
+            if (backupImageView.animatedEmojiDrawable == null || forumTopic.icon_emoji_id != backupImageView.animatedEmojiDrawable.getDocumentId()) {
+                backupImageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(largeIcon ? AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC_LARGE : AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, UserConfig.selectedAccount, forumTopic.icon_emoji_id));
+            }
         } else {
             backupImageView.setAnimatedEmojiDrawable(null);
             backupImageView.setImageDrawable(createTopicDrawable(forumTopic));
@@ -70,7 +72,7 @@ public class ForumUtilities {
     }
 
     public static void openTopic(BaseFragment baseFragment, long chatId, TLRPC.TL_forumTopic topic, int fromMessageId) {
-        if (baseFragment == null) {
+        if (baseFragment == null || topic == null) {
             return;
         }
         TLRPC.Chat chatLocal = baseFragment.getMessagesController().getChat(chatId);

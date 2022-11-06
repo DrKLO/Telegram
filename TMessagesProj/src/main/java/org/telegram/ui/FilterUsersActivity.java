@@ -1288,7 +1288,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                             if (object instanceof TLRPC.User) {
                                 TLRPC.User user = (TLRPC.User) object;
                                 names[0] = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
-                                username = user.username;
+                                username = UserObject.getPublicUsername(user);
                                 if (UserObject.isReplyUser(user)) {
                                     names[2] = LocaleController.getString("RepliesTitle", R.string.RepliesTitle).toLowerCase();
                                 } else if (user.self) {

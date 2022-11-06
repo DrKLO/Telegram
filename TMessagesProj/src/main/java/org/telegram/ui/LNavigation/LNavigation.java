@@ -661,6 +661,10 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             return false;
         }
 
+        if (!fragmentStack.isEmpty() && getChildCount() < 2) {
+            rebuildFragments(REBUILD_FLAG_REBUILD_LAST);
+        }
+
         if (getParentActivity().getCurrentFocus() != null) {
             AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
         }
@@ -945,6 +949,9 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
     public boolean addFragmentToStack(BaseFragment fragment, int position, boolean fromPresent) {
         if (!fromPresent && (delegate != null && !delegate.needAddFragmentToStack(fragment, this) || !fragment.onFragmentCreate())) {
             return false;
+        }
+        if (!fragmentStack.isEmpty() && getChildCount() < 2) {
+            rebuildFragments(REBUILD_FLAG_REBUILD_LAST);
         }
         fragment.setParentLayout(this);
         if (position == -1 || position >= fragmentStack.size()) {

@@ -120,12 +120,14 @@ public class SvgHelper {
         private ImageReceiver parentImageReceiver;
         private int[] currentColor = new int[2];
         private String currentColorKey;
+        private Integer overrideColor;
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
         SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
 
         private boolean aspectFill = true;
+        private boolean aspectCenter = false;
 
         @Override
         public int getIntrinsicHeight() {
@@ -139,6 +141,10 @@ public class SvgHelper {
 
         public void setAspectFill(boolean value) {
             aspectFill = value;
+        }
+
+        public void setAspectCenter(boolean value) {
+            aspectCenter = value;
         }
 
         public void overrideWidthAndHeight(int w, int h) {
@@ -219,7 +225,7 @@ public class SvgHelper {
 
             canvas.save();
             canvas.translate(x, y);
-            if (!aspectFill) {
+            if (!aspectFill || aspectCenter) {
                 canvas.translate((w - width * scale) / 2, (h - height * scale) / 2);
             }
             canvas.scale(scale, scale);
@@ -309,7 +315,7 @@ public class SvgHelper {
         }
 
         public void setupGradient(String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
-            int color = Theme.getColor(colorKey, resourcesProvider);
+            int color = overrideColor == null ? Theme.getColor(colorKey, resourcesProvider) : overrideColor;
             int index = drawInBackground ? 1 : 0;
             currentResourcesProvider = resourcesProvider;
             if (currentColor[index] != color) {
@@ -353,6 +359,14 @@ public class SvgHelper {
                     }
                 }
             }
+        }
+
+        public void setColorKey(String colorKey) {
+            currentColorKey = colorKey;
+        }
+
+        public void setColor(int color) {
+            overrideColor = color;
         }
 
         public void setPaint(Paint paint) {

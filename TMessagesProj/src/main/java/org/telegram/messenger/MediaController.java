@@ -2488,10 +2488,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public void setTextureView(TextureView textureView, AspectRatioFrameLayout aspectRatioFrameLayout, FrameLayout container, boolean set) {
-        setTextureView(textureView, aspectRatioFrameLayout, container, set, false);
+        setTextureView(textureView, aspectRatioFrameLayout, container, set, null);
     }
 
-    public void setTextureView(TextureView textureView, AspectRatioFrameLayout aspectRatioFrameLayout, FrameLayout container, boolean set, boolean forcePip) {
+    public void setTextureView(TextureView textureView, AspectRatioFrameLayout aspectRatioFrameLayout, FrameLayout container, boolean set, Runnable afterPip) {
         if (textureView == null) {
             return;
         }
@@ -2507,12 +2507,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         isDrawingWasReady = aspectRatioFrameLayout != null && aspectRatioFrameLayout.isDrawingReady();
         currentTextureView = textureView;
-        if (forcePip && pipRoundVideoView == null) {
+        if (afterPip != null && pipRoundVideoView == null) {
             try {
                 pipRoundVideoView = new PipRoundVideoView();
-                AndroidUtilities.runOnUIThread(() -> {
-                    pipRoundVideoView.show(baseActivity, () -> cleanupPlayer(true, true));
-                }, 350);
+                pipRoundVideoView.show(baseActivity, () -> cleanupPlayer(true, true));
             } catch (Exception e) {
                 pipRoundVideoView = null;
             }

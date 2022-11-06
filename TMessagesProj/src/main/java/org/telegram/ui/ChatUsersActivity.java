@@ -14,20 +14,16 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.SparseIntArray;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
@@ -69,11 +65,10 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.GigagroupConvertAlert;
-import org.telegram.ui.Components.IntSeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
+import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.UndoView;
 
@@ -202,210 +197,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
         default void didKickParticipant(long userId) {
 
-        }
-    }
-
-    private class ChooseView extends View {
-
-        private final Paint paint;
-        private final TextPaint textPaint;
-        private final SeekBarAccessibilityDelegate accessibilityDelegate;
-
-        private int circleSize;
-        private int gapSize;
-        private int sideSide;
-        private int lineSize;
-
-        private boolean moving;
-        private boolean startMoving;
-        private float startX;
-
-        private int startMovingItem;
-
-        private ArrayList<String> strings = new ArrayList<>();
-        private ArrayList<Integer> sizes = new ArrayList<>();
-
-        public ChooseView(Context context) {
-            super(context);
-
-            paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(13));
-
-            for (int a = 0; a < 7; a++) {
-                String string;
-                switch (a) {
-                    case 0:
-                        string = LocaleController.getString("SlowmodeOff", R.string.SlowmodeOff);
-                        break;
-                    case 1:
-                        string = LocaleController.formatString("SlowmodeSeconds", R.string.SlowmodeSeconds, 10);
-                        break;
-                    case 2:
-                        string = LocaleController.formatString("SlowmodeSeconds", R.string.SlowmodeSeconds, 30);
-                        break;
-                    case 3:
-                        string = LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 1);
-                        break;
-                    case 4:
-                        string = LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 5);
-                        break;
-                    case 5:
-                        string = LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 15);
-                        break;
-                    case 6:
-                    default:
-                        string = LocaleController.formatString("SlowmodeHours", R.string.SlowmodeHours, 1);
-                        break;
-                }
-                strings.add(string);
-                sizes.add((int) Math.ceil(textPaint.measureText(string)));
-            }
-
-            accessibilityDelegate = new IntSeekBarAccessibilityDelegate() {
-                @Override
-                public int getProgress() {
-                    return selectedSlowmode;
-                }
-
-                @Override
-                public void setProgress(int progress) {
-                    setItem(progress);
-                }
-
-                @Override
-                public int getMaxValue() {
-                    return strings.size() - 1;
-                }
-
-                @Override
-                protected CharSequence getContentDescription(View host) {
-                    if (selectedSlowmode == 0) {
-                        return LocaleController.getString("SlowmodeOff", R.string.SlowmodeOff);
-                    } else {
-                        return formatSeconds(getSecondsForIndex(selectedSlowmode));
-                    }
-                }
-            };
-        }
-
-        @Override
-        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
-            super.onInitializeAccessibilityNodeInfo(info);
-            accessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(this, info);
-        }
-
-        @Override
-        public boolean performAccessibilityAction(int action, Bundle arguments) {
-            return super.performAccessibilityAction(action, arguments) || accessibilityDelegate.performAccessibilityActionInternal(this, action, arguments);
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            float x = event.getX();
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                getParent().requestDisallowInterceptTouchEvent(true);
-                for (int a = 0; a < strings.size(); a++) {
-                    int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                    if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                        startMoving = a == selectedSlowmode;
-                        startX = x;
-                        startMovingItem = selectedSlowmode;
-                        break;
-                    }
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (startMoving) {
-                    if (Math.abs(startX - x) >= AndroidUtilities.getPixelsInCM(0.5f, true)) {
-                        moving = true;
-                        startMoving = false;
-                    }
-                } else if (moving) {
-                    for (int a = 0; a < strings.size(); a++) {
-                        int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                        int diff = lineSize / 2 + circleSize / 2 + gapSize;
-                        if (x > cx - diff && x < cx + diff) {
-                            if (selectedSlowmode != a) {
-                                setItem(a);
-                            }
-                            break;
-                        }
-                    }
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                if (!moving) {
-                    for (int a = 0; a < strings.size(); a++) {
-                        int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                        if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                            if (selectedSlowmode != a) {
-                                setItem(a);
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    if (selectedSlowmode != startMovingItem) {
-                        setItem(selectedSlowmode);
-                    }
-                }
-                startMoving = false;
-                moving = false;
-            }
-            return true;
-        }
-
-        private void setItem(int index) {
-            if (info == null) {
-                return;
-            }
-            selectedSlowmode = index;
-            listViewAdapter.notifyItemChanged(slowmodeInfoRow);
-            invalidate();
-        }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(74), MeasureSpec.EXACTLY));
-            circleSize = AndroidUtilities.dp(6);
-            gapSize = AndroidUtilities.dp(2);
-            sideSide = AndroidUtilities.dp(22);
-            lineSize = (getMeasuredWidth() - circleSize * strings.size() - gapSize * 2 * (strings.size() - 1)  - sideSide * 2) / (strings.size() - 1);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            int cy = getMeasuredHeight() / 2 + AndroidUtilities.dp(11);
-
-            for (int a = 0; a < strings.size(); a++) {
-                int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                if (a <= selectedSlowmode) {
-                    paint.setColor(Theme.getColor(Theme.key_switchTrackChecked));
-                } else {
-                    paint.setColor(Theme.getColor(Theme.key_switchTrack));
-                }
-                canvas.drawCircle(cx, cy, a == selectedSlowmode ? AndroidUtilities.dp(6) : circleSize / 2, paint);
-                if (a != 0) {
-                    int x = cx - circleSize / 2 - gapSize - lineSize;
-                    int width = lineSize;
-                    if (a == selectedSlowmode || a == selectedSlowmode + 1) {
-                        width -= AndroidUtilities.dp(3);
-                    }
-                    if (a == selectedSlowmode + 1) {
-                        x += AndroidUtilities.dp(3);
-                    }
-                    canvas.drawRect(x, cy - AndroidUtilities.dp(1), x + width, cy + AndroidUtilities.dp(1), paint);
-                }
-                int size = sizes.get(a);
-                String text = strings.get(a);
-                if (a == 0) {
-                    canvas.drawText(text, AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
-                } else if (a == strings.size() - 1) {
-                    canvas.drawText(text, getMeasuredWidth() - size - AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
-                } else {
-                    canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
-                }
-            }
         }
     }
 
@@ -2682,13 +2473,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                         continue;
                                     }
                                     name = UserObject.getUserName(user).toLowerCase();
-                                    username = user.username;
+                                    username = UserObject.getPublicUsername(user);
                                     firstName = user.first_name;
                                     lastName = user.last_name;
                                 } else {
                                     TLRPC.Chat chat = getMessagesController().getChat(-peerId);
                                     name = chat.title.toLowerCase();
-                                    username = chat.username;
+                                    username = ChatObject.getPublicUsername(chat);
                                     firstName = chat.title;
                                     lastName = null;
                                 }
@@ -2734,10 +2525,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                 }
 
                                 int found = 0;
+                                String username;
                                 for (String q : search) {
                                     if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                         found = 1;
-                                    } else if (user.username != null && user.username.startsWith(q)) {
+                                    } else if ((username = UserObject.getPublicUsername(user)) != null && username.startsWith(q)) {
                                         found = 2;
                                     }
 
@@ -2745,7 +2537,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                         if (found == 1) {
                                             resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
                                         } else {
-                                            resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                            resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q));
                                         }
                                         resultArray.add(user);
                                         resultMap.put(user.id, user);
@@ -2921,7 +2713,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         if (peerId >= 0) {
                             TLRPC.User user = getMessagesController().getUser(peerId);
                             if (user != null) {
-                                un = user.username;
+                                un = UserObject.getPublicUsername(user);
                             }
                             peerObject = user;
                         } else {
@@ -3154,8 +2946,26 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     break;
                 case 9:
                 default:
-                    view = new ChooseView(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    SlideChooseView chooseView = new SlideChooseView(mContext);
+                    view = chooseView;
+                    chooseView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    chooseView.setOptions(
+                        selectedSlowmode,
+                        LocaleController.getString("SlowmodeOff", R.string.SlowmodeOff),
+                        LocaleController.formatString("SlowmodeSeconds", R.string.SlowmodeSeconds, 10),
+                        LocaleController.formatString("SlowmodeSeconds", R.string.SlowmodeSeconds, 30),
+                        LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 1),
+                        LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 5),
+                        LocaleController.formatString("SlowmodeMinutes", R.string.SlowmodeMinutes, 15),
+                        LocaleController.formatString("SlowmodeHours", R.string.SlowmodeHours, 1)
+                    );
+                    chooseView.setCallback(which -> {
+                        if (info == null) {
+                            return;
+                        }
+                        selectedSlowmode = which;
+//                        listViewAdapter.notifyItemChanged(slowmodeInfoRow);
+                    });
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -3645,7 +3455,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             }
         };
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ManageChatUserCell.class, ManageChatTextCell.class, TextCheckCell2.class, TextSettingsCell.class, ChooseView.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ManageChatUserCell.class, ManageChatTextCell.class, TextCheckCell2.class, TextSettingsCell.class, SlideChooseView.class}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));

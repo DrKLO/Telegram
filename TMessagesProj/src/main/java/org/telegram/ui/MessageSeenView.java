@@ -75,6 +75,7 @@ public class MessageSeenView extends FrameLayout {
 
         avatarsImageView = new AvatarsImageView(context, false);
         avatarsImageView.setStyle(AvatarsDarawable.STYLE_MESSAGE_SEEN);
+        avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(22));
         addView(avatarsImageView, LayoutHelper.createFrame(24 + 12 + 12 + 8, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));

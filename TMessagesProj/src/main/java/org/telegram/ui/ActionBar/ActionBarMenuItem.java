@@ -14,6 +14,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -144,6 +145,8 @@ public class ActionBarMenuItem extends FrameLayout {
     private ArrayList<SearchFilterView> searchFilterViews = new ArrayList<>();
     private TextView searchFieldCaption;
     private ImageView clearButton;
+    private AnimatorSet clearButtonAnimator;
+    private View searchAdditionalButton;
     protected RLottieImageView iconView;
     protected TextView textView;
     private FrameLayout searchContainer;
@@ -181,6 +184,8 @@ public class ActionBarMenuItem extends FrameLayout {
     public int searchItemPaddingStart;
 
     private OnClickListener onClickListener;
+
+    private boolean fixBackground;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor) {
         this(context, menu, backgroundColor, iconColor, false);
@@ -231,6 +236,20 @@ public class ActionBarMenuItem extends FrameLayout {
 
     public void setLongClickEnabled(boolean value) {
         longClickEnabled = value;
+    }
+
+    public void setFixBackground(boolean fixBackground) {
+        this.fixBackground = fixBackground;
+        invalidate();
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        if (fixBackground) {
+            getBackground().draw(canvas);
+        }
+
+        super.draw(canvas);
     }
 
     @Override
@@ -719,9 +738,9 @@ public class ActionBarMenuItem extends FrameLayout {
             }
         });
 
-        // if (measurePopup) {
-        container.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(40), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
-        measurePopup = false;
+       // if (measurePopup) {
+            container.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(40), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
+            measurePopup = false;
         //}
         processedPopupClick = false;
         popupWindow.setFocusable(true);
@@ -897,35 +916,35 @@ public class ActionBarMenuItem extends FrameLayout {
             ChangeBounds changeBounds = new ChangeBounds();
             changeBounds.setDuration(150);
             transition.addTransition(new Visibility() {
-                @Override
-                public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
-                    if (view instanceof SearchFilterView) {
-                        AnimatorSet set = new AnimatorSet();
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f),
-                                ObjectAnimator.ofFloat(view, View.SCALE_X, 0.5f, 1f),
-                                ObjectAnimator.ofFloat(view, View.SCALE_Y, 0.5f, 1f)
-                        );
-                        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                        return set;
-                    }
-                    return ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f);
-                }
-                @Override
-                public Animator onDisappear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
-                    if (view instanceof SearchFilterView) {
-                        AnimatorSet set = new AnimatorSet();
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f),
-                                ObjectAnimator.ofFloat(view, View.SCALE_X,  view.getScaleX(), 0.5f),
-                                ObjectAnimator.ofFloat(view, View.SCALE_Y,  view.getScaleX(), 0.5f)
-                        );
-                        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                        return set;
-                    }
-                    return ObjectAnimator.ofFloat(view, View.ALPHA, 1f, 0);
-                }
-            }.setDuration(150)).addTransition(changeBounds);
+                        @Override
+                        public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                            if (view instanceof SearchFilterView) {
+                                AnimatorSet set = new AnimatorSet();
+                                set.playTogether(
+                                        ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f),
+                                        ObjectAnimator.ofFloat(view, View.SCALE_X, 0.5f, 1f),
+                                        ObjectAnimator.ofFloat(view, View.SCALE_Y, 0.5f, 1f)
+                                );
+                                set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                                return set;
+                            }
+                            return ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f);
+                        }
+                        @Override
+                        public Animator onDisappear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                            if (view instanceof SearchFilterView) {
+                                AnimatorSet set = new AnimatorSet();
+                                set.playTogether(
+                                        ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f),
+                                        ObjectAnimator.ofFloat(view, View.SCALE_X,  view.getScaleX(), 0.5f),
+                                        ObjectAnimator.ofFloat(view, View.SCALE_Y,  view.getScaleX(), 0.5f)
+                                );
+                                set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                                return set;
+                            }
+                            return ObjectAnimator.ofFloat(view, View.ALPHA, 1f, 0);
+                        }
+                    }.setDuration(150)).addTransition(changeBounds);
             transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
             transition.setInterpolator(CubicBezierInterpolator.EASE_OUT);
             int selectedAccount = UserConfig.selectedAccount;
@@ -1108,6 +1127,10 @@ public class ActionBarMenuItem extends FrameLayout {
         return setIsSearchField(value, false);
     }
 
+    public void setSearchAdditionalButton(View searchAdditionalButton) {
+        this.searchAdditionalButton = searchAdditionalButton;
+    }
+
     public ActionBarMenuItem setIsSearchField(boolean value, boolean wrapInScrollView) {
         if (parentMenu == null) {
             return this;
@@ -1122,6 +1145,9 @@ public class ActionBarMenuItem extends FrameLayout {
                     super.setVisibility(visibility);
                     if (clearButton != null) {
                         clearButton.setVisibility(visibility);
+                    }
+                    if (searchAdditionalButton != null) {
+                        searchAdditionalButton.setVisibility(visibility);
                     }
                     if (wrappedSearchFrameLayout != null) {
                         wrappedSearchFrameLayout.setVisibility(visibility);
@@ -1142,6 +1168,9 @@ public class ActionBarMenuItem extends FrameLayout {
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     if (!wrapInScrollView) {
                         measureChildWithMargins(clearButton, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                        if (searchAdditionalButton != null) {
+                            measureChildWithMargins(searchAdditionalButton, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                        }
                     }
                     int width;
                     if (!LocaleController.isRTL) {
@@ -1155,7 +1184,7 @@ public class ActionBarMenuItem extends FrameLayout {
                         ignoreRequestLayout = true;
                         measureChildWithMargins(searchFilterLayout, widthMeasureSpec, width, heightMeasureSpec, 0);
                         int filterWidth = searchFilterLayout.getVisibility() == View.VISIBLE ? searchFilterLayout.getMeasuredWidth() : 0;
-                        measureChildWithMargins(searchField, widthMeasureSpec, width + filterWidth, heightMeasureSpec, 0);
+                        measureChildWithMargins(searchField, widthMeasureSpec, width + filterWidth + (searchAdditionalButton != null ? searchAdditionalButton.getMeasuredWidth() : 0), heightMeasureSpec, 0);
                         ignoreRequestLayout = false;
                         setMeasuredDimension(Math.max(filterWidth + searchField.getMeasuredWidth(), minWidth), MeasureSpec.getSize(heightMeasureSpec));
                     } else {
@@ -1405,6 +1434,12 @@ public class ActionBarMenuItem extends FrameLayout {
                         clearButton.setScaleY(1.0f);
                     }
                 }
+
+                @Override
+                public void draw(Canvas canvas) {
+                    getBackground().draw(canvas);
+                    super.draw(canvas);
+                }
             };
             clearButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
                 @Override
@@ -1412,6 +1447,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     return parentMenu.parentActionBar.itemsColor;
                 }
             });
+            clearButton.setBackground(Theme.createSelectorDrawable(parentMenu.parentActionBar.itemsActionModeBackgroundColor, 1));
             clearButton.setScaleType(ImageView.ScaleType.CENTER);
             clearButton.setAlpha(0.0f);
             clearButton.setRotation(45);
@@ -1464,9 +1500,37 @@ public class ActionBarMenuItem extends FrameLayout {
                     (searchFieldCaption == null || searchFieldCaption.getVisibility() != VISIBLE)) {
                 if (clearButton.getTag() != null) {
                     clearButton.setTag(null);
-                    clearButton.clearAnimation();
+                    if (clearButtonAnimator != null) {
+                        clearButtonAnimator.cancel();
+                    }
                     if (animateClear) {
-                        clearButton.animate().setInterpolator(new DecelerateInterpolator()).alpha(0.0f).setDuration(180).scaleY(0.0f).scaleX(0.0f).rotation(45).withEndAction(() -> clearButton.setVisibility(INVISIBLE)).start();
+                        AnimatorSet animator = new AnimatorSet().setDuration(180);
+                        animator.setInterpolator(new DecelerateInterpolator());
+                        ValueAnimator progressAnimator = ValueAnimator.ofFloat(0, 1);
+                        progressAnimator.addUpdateListener(animation -> {
+                            float val = (float) animation.getAnimatedValue();
+                            if (searchAdditionalButton != null) {
+                                searchAdditionalButton.setTranslationX(AndroidUtilities.dp(32) * val);
+                            }
+                        });
+                        animator.playTogether(
+                                ObjectAnimator.ofFloat(clearButton, View.ALPHA, 0f),
+                                ObjectAnimator.ofFloat(clearButton, View.SCALE_X, 0f),
+                                ObjectAnimator.ofFloat(clearButton, View.SCALE_Y, 0f),
+                                ObjectAnimator.ofFloat(clearButton, View.ROTATION, 45),
+                                progressAnimator
+                        );
+                        animator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                clearButton.setVisibility(INVISIBLE);
+
+                                clearButtonAnimator = null;
+                            }
+                        });
+                        animator.start();
+
+                        clearButtonAnimator = animator;
                     } else {
                         clearButton.setAlpha(0.0f);
                         clearButton.setRotation(45);
@@ -1479,15 +1543,44 @@ public class ActionBarMenuItem extends FrameLayout {
             } else {
                 if (clearButton.getTag() == null) {
                     clearButton.setTag(1);
-                    clearButton.clearAnimation();
+                    if (clearButtonAnimator != null) {
+                        clearButtonAnimator.cancel();
+                    }
                     clearButton.setVisibility(VISIBLE);
                     if (animateClear) {
-                        clearButton.animate().setInterpolator(new DecelerateInterpolator()).alpha(1.0f).setDuration(180).scaleY(1.0f).scaleX(1.0f).rotation(0).start();
+                        AnimatorSet animator = new AnimatorSet().setDuration(180);
+                        animator.setInterpolator(new DecelerateInterpolator());
+                        ValueAnimator progressAnimator = ValueAnimator.ofFloat(1, 0);
+                        progressAnimator.addUpdateListener(animation -> {
+                            float val = (float) animation.getAnimatedValue();
+                            if (searchAdditionalButton != null) {
+                                searchAdditionalButton.setTranslationX(AndroidUtilities.dp(32) * val);
+                            }
+                        });
+                        animator.playTogether(
+                                ObjectAnimator.ofFloat(clearButton, View.ALPHA, 1f),
+                                ObjectAnimator.ofFloat(clearButton, View.SCALE_X, 1f),
+                                ObjectAnimator.ofFloat(clearButton, View.SCALE_Y, 1f),
+                                ObjectAnimator.ofFloat(clearButton, View.ROTATION, 0),
+                                progressAnimator
+                        );
+                        animator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                clearButtonAnimator = null;
+                            }
+                        });
+                        animator.start();
+
+                        clearButtonAnimator = animator;
                     } else {
                         clearButton.setAlpha(1.0f);
                         clearButton.setRotation(0);
                         clearButton.setScaleX(1.0f);
                         clearButton.setScaleY(1.0f);
+                        if (searchAdditionalButton != null) {
+                            searchAdditionalButton.setTranslationX(0);
+                        }
                         animateClear = true;
                     }
                 }
@@ -1732,6 +1825,10 @@ public class ActionBarMenuItem extends FrameLayout {
 
     public FrameLayout getSearchContainer() {
         return searchContainer;
+    }
+
+    public ImageView getSearchClearButton() {
+        return clearButton;
     }
 
     @Override

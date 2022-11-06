@@ -6075,6 +6075,9 @@ public class MediaDataController extends BaseController {
 
     public void saveDraft(long dialogId, int threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, boolean noWebpage, boolean clean) {
         TLRPC.DraftMessage draftMessage;
+        if (getMessagesController().isForum(dialogId) && threadId == 0) {
+            replyToMessage = null;
+        }
         if (!TextUtils.isEmpty(message) || replyToMessage != null) {
             draftMessage = new TLRPC.TL_draftMessage();
         } else {
@@ -6128,6 +6131,9 @@ public class MediaDataController extends BaseController {
     }
 
     public void saveDraft(long dialogId, int threadId, TLRPC.DraftMessage draft, TLRPC.Message replyToMessage, boolean fromServer) {
+        if (getMessagesController().isForum(dialogId) && threadId == 0 && TextUtils.isEmpty(draft.message)) {
+            draft.reply_to_msg_id = 0;
+        }
         SharedPreferences.Editor editor = draftPreferences.edit();
         MessagesController messagesController = getMessagesController();
         if (draft == null || draft instanceof TLRPC.TL_draftMessageEmpty) {

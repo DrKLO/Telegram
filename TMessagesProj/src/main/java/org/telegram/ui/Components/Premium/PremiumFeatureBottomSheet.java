@@ -420,7 +420,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
                 premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.UnlockPremiumReactions));
                 premiumButtonView.setIcon(R.raw.unlock_icon);
-            } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
+            } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || startType == PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED || startType == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT) {
                 premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.AboutTelegramPremium));
             } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS) {
                 premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.UnlockPremiumIcons));
@@ -603,6 +603,12 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS) {
                     title.setText(LocaleController.getString("PremiumPreviewAppIcon", R.string.PremiumPreviewAppIcon));
                     description.setText(LocaleController.getString("PremiumPreviewAppIconDescription2", R.string.PremiumPreviewAppIconDescription2));
+                } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED) {
+                    title.setText(LocaleController.getString(R.string.PremiumPreviewDownloadSpeed));
+                    description.setText(LocaleController.getString(R.string.PremiumPreviewDownloadSpeedDescription2));
+                } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT) {
+                    title.setText(LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagement));
+                    description.setText(LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription2));
                 }
                 topViewOnFullHeight = false;
             } else {

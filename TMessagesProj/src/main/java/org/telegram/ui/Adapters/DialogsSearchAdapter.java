@@ -1116,7 +1116,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
                 if (obj instanceof TLRPC.User) {
                     user = (TLRPC.User) obj;
-                    un = user.username;
+                    un = UserObject.getPublicUsername(user);
                 } else if (obj instanceof TLRPC.Chat) {
                     chat = MessagesController.getInstance(currentAccount).getChat(((TLRPC.Chat) obj).id);
                     if (chat == null) {
@@ -1159,8 +1159,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 if (position >= 0 && position < searchResult.size() && user == null) {
                     name = searchResultNames.get(position);
-                    if (name != null && user != null && user.username != null && user.username.length() > 0) {
-                        if (name.toString().startsWith("@" + user.username)) {
+                    String username1 = UserObject.getPublicUsername(user);
+                    if (name != null && user != null && username1 != null) {
+                        if (name.toString().startsWith("@" + username1)) {
                             username = name;
                             name = null;
                         }

@@ -49,7 +49,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.Layout;
 import android.text.Spannable;
@@ -701,8 +700,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             }
                         } else {
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                            if (user != null && user.username != null) {
-                                url1 = "https://t.me/" + user.username + "/" + messageId + "?t=" + finalTimestamp;
+                            String username = UserObject.getPublicUsername(user);
+                            if (user != null && username != null) {
+                                url1 = "https://t.me/" + username + "/" + messageId + "?t=" + finalTimestamp;
                             }
                         }
                     }
@@ -3939,7 +3939,28 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         animatingImageView.setAnimationValues(animationValues);
         windowView.addView(animatingImageView, LayoutHelper.createFrame(40, 40));
 
-        containerView = new FrameLayoutDrawer(activity);
+        containerView = new FrameLayoutDrawer(activity) {
+            private Bulletin.Delegate delegate = new Bulletin.Delegate() {
+                @Override
+                public int getBottomOffset(int tag) {
+                    return getHeight() - captionEditText.getTop();
+                }
+            };
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+
+                Bulletin.addDelegate(this, delegate);
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+
+                Bulletin.removeDelegate(this);
+            }
+        };
         containerView.setFocusable(false);
 
         containerView.setClipChildren(true);
@@ -5372,9 +5393,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         pickerViewSendButton.setOnClickListener(v -> {
             if (captionEditText.getCaptionLimitOffset() < 0) {
                 AndroidUtilities.shakeView(captionLimitView);
-                Vibrator vibrator = (Vibrator) captionLimitView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
-                if (vibrator != null) {
-                    vibrator.vibrate(200);
+                try {
+                    captionLimitView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                } catch (Exception ignored) {}
+
+                if (!MessagesController.getInstance(currentAccount).premiumLocked && MessagesController.getInstance(currentAccount).captionLengthLimitPremium > captionEditText.getCodePointCount()) {
+                    showCaptionLimitBulletin(containerView);
                 }
                 return;
             }
@@ -6065,7 +6089,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             ignoreDidSetImage = false;
         });
 
-        captionEditText = new PhotoViewerCaptionEnterView(activityContext, containerView, windowView, resourcesProvider) {
+        captionEditText = new PhotoViewerCaptionEnterView(this, activityContext, containerView, windowView, resourcesProvider) {
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
                 try {
@@ -6350,8 +6374,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             int len = mentionsAdapter.getResultLength();
             if (object instanceof TLRPC.User) {
                 TLRPC.User user = (TLRPC.User) object;
-                if (user.username != null) {
-                    captionEditText.replaceWithText(start, len, "@" + user.username + " ", false);
+                String username = UserObject.getPublicUsername(user);
+                if (username != null) {
+                    captionEditText.replaceWithText(start, len, "@" + username + " ", false);
                 } else {
                     String name = UserObject.getFirstName(user);
                     Spannable spannable = new SpannableString(name + " ");
@@ -6410,6 +6435,25 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             playButtonAccessibilityOverlay.setFocusable(true);
             containerView.addView(playButtonAccessibilityOverlay, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
         }
+    }
+
+    public void showCaptionLimitBulletin(FrameLayout view) {
+        if (!(parentFragment instanceof ChatActivity) || !ChatObject.isChannelAndNotMegaGroup(((ChatActivity) parentFragment).getCurrentChat())) {
+            return;
+        }
+        BulletinFactory.of(view, resourcesProvider).createCaptionLimitBulletin(MessagesController.getInstance(currentAccount).captionLengthLimitPremium, ()->{
+            closePhoto(false, false);
+            if (parentAlert != null) {
+                parentAlert.dismiss(true);
+            }
+            if (parentFragment != null) {
+                parentFragment.presentFragment(new PremiumPreviewFragment("caption_limit"));
+            }
+        }).show();
+    }
+
+    public ChatAttachAlert getParentAlert() {
+        return parentAlert;
     }
 
     private ValueAnimator navBarAnimator;

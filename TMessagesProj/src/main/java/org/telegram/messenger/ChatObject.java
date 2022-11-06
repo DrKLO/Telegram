@@ -25,7 +25,6 @@ import org.telegram.ui.GroupCallActivity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1698,6 +1697,13 @@ public class ChatObject {
     }
     public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
         return canManageTopics(chat) || isMyTopic(currentAccount, chat, topicId);
+    }
+
+    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+        return chat != null && canDeleteTopic(currentAccount, chat, MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chat.id, topicId));
+    }
+    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, TLRPC.TL_forumTopic topic) {
+        return canUserDoAction(chat, ACTION_DELETE_MESSAGES) || isMyTopic(currentAccount, topic) && topic.topMessage != null && topic.topicStartMessage != null && topic.topMessage.id - topic.topicStartMessage.id <= Math.max(1, topic.groupedMessages == null ? 0 : topic.groupedMessages.size()) && MessageObject.peersEqual(topic.from_id, topic.topMessage.from_id);
     }
 
     public static boolean isMyTopic(int currentAccount, TLRPC.TL_forumTopic topic) {

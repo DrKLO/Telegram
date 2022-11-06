@@ -10,6 +10,7 @@ public class CubicBezierInterpolator implements Interpolator {
     public static final CubicBezierInterpolator EASE_OUT_QUINT = new CubicBezierInterpolator(.23, 1, .32, 1);
     public static final CubicBezierInterpolator EASE_IN = new CubicBezierInterpolator(.42, 0, 1, 1);
     public static final CubicBezierInterpolator EASE_BOTH = new CubicBezierInterpolator(.42, 0, .58, 1);
+    public static final CubicBezierInterpolator EASE_OUT_BACK = new CubicBezierInterpolator(.34, 1.56, .64, 1);
 
     protected PointF start;
     protected PointF end;

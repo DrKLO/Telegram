@@ -40,6 +40,7 @@ dependencies {
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation 'com.google.mlkit:language-id:16.1.1'
     implementation 'com.android.billingclient:billing:5.0.0'
+    implementation 'com.google.code.gson:gson:2.10'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }

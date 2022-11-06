@@ -10,25 +10,38 @@ package org.telegram.messenger;
 
 import android.util.Log;
 
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.util.HashSet;
 import java.util.Locale;
 
 public class FileLog {
     private OutputStreamWriter streamWriter = null;
     private FastDateFormat dateFormat = null;
     private DispatchQueue logQueue = null;
+
     private File currentFile = null;
     private File networkFile = null;
     private File tonlibFile = null;
     private boolean initied;
 
+    private OutputStreamWriter tlStreamWriter = null;
+    private File tlRequestsFile = null;
+
     private final static String tag = "tmessages";
+    private final static String mtproto_tag = "MTProto";
 
     private static volatile FileLog Instance = null;
     public static FileLog getInstance() {
@@ -51,11 +64,128 @@ public class FileLog {
         init();
     }
 
+
+    private static Gson gson;
+    private static HashSet<String> excludeRequests;
+
+    public static void dumpResponseAndRequest(TLObject request, TLObject response, TLRPC.TL_error error, long requestMsgId, long startRequestTimeInMillis, int requestToken) {
+        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || request == null) {
+            return;
+        }
+        String requestSimpleName = request.getClass().getSimpleName();
+        checkGson();
+
+        if (excludeRequests.contains(requestSimpleName)) {
+            return;
+        }
+        try {
+            String req = "req -> " + requestSimpleName + " : " + gson.toJson(request);
+            String res = "null";
+            if (response != null) {
+                res = "res -> " + response.getClass().getSimpleName() + " : " + gson.toJson(response);
+            } else if (error != null) {
+                res = "err -> " + error.getClass().getSimpleName() + " : " + gson.toJson(error);
+            }
+            String finalRes = res;
+            long time = System.currentTimeMillis();
+            FileLog.getInstance().logQueue.postRunnable(() -> {
+                try {
+                    String metadata = "requestMsgId=" + requestMsgId + " requestingTime=" + (System.currentTimeMillis() - startRequestTimeInMillis) +  " request_token=" + requestToken;
+                    FileLog.getInstance().tlStreamWriter.write(getInstance().dateFormat.format(time) + " " + metadata);
+                    FileLog.getInstance().tlStreamWriter.write(req);
+                    FileLog.getInstance().tlStreamWriter.write("\n");
+                    FileLog.getInstance().tlStreamWriter.write(finalRes);
+                    FileLog.getInstance().tlStreamWriter.write("\n\n");
+                    FileLog.getInstance().tlStreamWriter.flush();
+
+                    Log.d(mtproto_tag, metadata);
+                    Log.d(mtproto_tag, req);
+                    Log.d(mtproto_tag, finalRes);
+                    Log.d(mtproto_tag, " ");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static void dumpUnparsedMessage(TLObject message, long messageId) {
+        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || message == null) {
+            return;
+        }
+        try {
+            getInstance().dateFormat.format(System.currentTimeMillis());
+            String messageStr = "receive message -> " + message.getClass().getSimpleName() + " : " + gson.toJson(message);
+            String res = "null";
+            long time = System.currentTimeMillis();
+            FileLog.getInstance().logQueue.postRunnable(() -> {
+                try {
+                    String metadata = getInstance().dateFormat.format(time);// + " msgId=" + messageId;
+
+                    FileLog.getInstance().tlStreamWriter.write(metadata);
+                    FileLog.getInstance().tlStreamWriter.write(messageStr);
+                    FileLog.getInstance().tlStreamWriter.write("\n\n");
+                    FileLog.getInstance().tlStreamWriter.flush();
+
+                    Log.d(mtproto_tag, "msgId=" + messageId);
+                    Log.d(mtproto_tag, messageStr);
+                    Log.d(mtproto_tag, " ");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static void checkGson() {
+        if (gson == null) {
+            HashSet<String> privateFields = new HashSet<>();
+            privateFields.add("message");
+            privateFields.add("phone");
+            privateFields.add("about");
+            privateFields.add("status_text");
+            privateFields.add("bytes");
+            privateFields.add("secret");
+            privateFields.add("stripped_thumb");
+
+            privateFields.add("networkType");
+            privateFields.add("disableFree");
+
+            //exclude file loading
+            excludeRequests = new HashSet<>();
+            excludeRequests.add("TL_upload_getFile");
+            excludeRequests.add("TL_upload_getWebFile");
+
+            gson = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
+
+                @Override
+                public boolean shouldSkipField(FieldAttributes f) {
+                    if (privateFields.contains(f.getName())) {
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean shouldSkipClass(Class<?> clazz) {
+                    return false;
+                }
+            }).create();
+        }
+    }
+
+
+
     public void init() {
         if (initied) {
             return;
         }
         dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
+        String date = dateFormat.format(System.currentTimeMillis());
         try {
             File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
             if (sdCard == null) {
@@ -63,7 +193,9 @@ public class FileLog {
             }
             File dir = new File(sdCard.getAbsolutePath() + "/logs");
             dir.mkdirs();
-            currentFile = new File(dir, dateFormat.format(System.currentTimeMillis()) + ".txt");
+
+            currentFile = new File(dir, date + ".txt");
+            tlRequestsFile = new File(dir, date + "_mtproto.txt");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -72,8 +204,13 @@ public class FileLog {
             currentFile.createNewFile();
             FileOutputStream stream = new FileOutputStream(currentFile);
             streamWriter = new OutputStreamWriter(stream);
-            streamWriter.write("-----start log " + dateFormat.format(System.currentTimeMillis()) + "-----\n");
+            streamWriter.write("-----start log " + date + "-----\n");
             streamWriter.flush();
+
+            FileOutputStream tlStream = new FileOutputStream(tlRequestsFile);
+            tlStreamWriter = new OutputStreamWriter(tlStream);
+            tlStreamWriter.write("-----start log " + date + "-----\n");
+            tlStreamWriter.flush();
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -10,7 +10,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
@@ -59,6 +58,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int STANDARD_LOTTIE_FRAME = 8;
     public static final int CACHE_TYPE_ALERT_EMOJI_STATUS = 9;
     public static final int CACHE_TYPE_FORUM_TOPIC = 10;
+    public static final int CACHE_TYPE_FORUM_TOPIC_LARGE = 11;
 
     private static HashMap<Integer, HashMap<Long, AnimatedEmojiDrawable>> globalEmojiCache;
     @NonNull
@@ -458,6 +458,8 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
             imageReceiver.setAutoRepeatCount(2);
+        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE) {
+            imageReceiver.setAutoRepeatCount(1);
         }
 
         if (cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
@@ -808,6 +810,8 @@ public class AnimatedEmojiDrawable extends Drawable {
                 if (imageReceiver != null) {
                     if (drawable.cacheType == CACHE_TYPE_EMOJI_STATUS || drawable.cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || drawable.cacheType == CACHE_TYPE_FORUM_TOPIC) {
                         imageReceiver.setAutoRepeatCount(2);
+                    } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE) {
+                        imageReceiver.setAutoRepeatCount(1);
                     }
                     imageReceiver.startAnimation();
                 }

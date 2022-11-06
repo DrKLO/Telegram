@@ -733,7 +733,8 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
 
     public void loadFlickerAndSettingsItem(int currentAccount, long botId, ActionBarMenuSubItem settingsItem) {
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(botId);
-        if (user.username != null && Objects.equals(user.username, DURGER_KING_USERNAME)) {
+        String username = UserObject.getPublicUsername(user);
+        if (username != null && Objects.equals(username, DURGER_KING_USERNAME)) {
             flickerView.setVisibility(VISIBLE);
             flickerView.setAlpha(1f);
             flickerView.setImageDrawable(SvgHelper.getDrawable(R.raw.durgerking_placeholder, getColor(Theme.key_windowBackgroundGray)));

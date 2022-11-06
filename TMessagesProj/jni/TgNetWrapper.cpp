@@ -104,7 +104,7 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
     if (onWriteToSocket != nullptr) {
         onWriteToSocket = env->NewGlobalRef(onWriteToSocket);
     }
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([onComplete, instanceNum](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([onComplete, instanceNum](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         TL_api_response *resp = (TL_api_response *) response;
         jlong ptr = 0;
         jint errorCode = 0;
@@ -279,7 +279,7 @@ class Delegate : public ConnectiosManagerDelegate {
     
     void onUnparsedMessageReceived(int64_t reqMessageId, NativeByteBuffer *buffer, ConnectionType connectionType, int32_t instanceNum) {
         if (connectionType == ConnectionTypeGeneric) {
-            jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onUnparsedMessageReceived, (jlong) (intptr_t) buffer, instanceNum);
+            jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onUnparsedMessageReceived, (jlong) (intptr_t) buffer, instanceNum, reqMessageId);
         }
     }
     
@@ -488,7 +488,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_RequestDelegateInternal == 0) {
         return JNI_FALSE;
     }
-    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(JILjava/lang/String;IJ)V");
+    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(JILjava/lang/String;IJJ)V");
     if (jclass_RequestDelegateInternal_run == 0) {
         return JNI_FALSE;
     }
@@ -523,7 +523,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_ConnectionsManager == 0) {
         return JNI_FALSE;
     }
-    jclass_ConnectionsManager_onUnparsedMessageReceived = env->GetStaticMethodID(jclass_ConnectionsManager, "onUnparsedMessageReceived", "(JI)V");
+    jclass_ConnectionsManager_onUnparsedMessageReceived = env->GetStaticMethodID(jclass_ConnectionsManager, "onUnparsedMessageReceived", "(JIJ)V");
     if (jclass_ConnectionsManager_onUnparsedMessageReceived == 0) {
         return JNI_FALSE;
     }

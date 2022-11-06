@@ -3013,6 +3013,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private int runCommentRequest(int intentAccount, AlertDialog progressDialog, Integer messageId, Integer commentId, Integer threadId, TLRPC.Chat chat) {
+        return runCommentRequest(intentAccount, progressDialog, messageId, commentId, threadId, chat, null);
+    }
+
+    private int runCommentRequest(int intentAccount, AlertDialog progressDialog, Integer messageId, Integer commentId, Integer threadId, TLRPC.Chat chat, Runnable onOpened) {
         if (chat == null) {
             return 0;
         }
@@ -3050,15 +3054,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             if (topic != null) {
                                 Bundle args = new Bundle();
                                 args.putLong("chat_id", -arrayList.get(0).getDialogId());
-                                args.putInt("message_id", Math.max(1, messageId));
+                                if (messageId != topic.id) {
+                                    args.putInt("message_id", Math.max(1, messageId));
+                                }
                                 ChatActivity chatActivity = new ChatActivity(args);
-                                chatActivity.setThreadMessages(arrayList, chat, req.msg_id, res.read_inbox_max_id, res.read_outbox_max_id, topic);
+                                chatActivity.setThreadMessages(arrayList, chat, req.msg_id, topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
                                 if (commentId != null) {
                                     chatActivity.setHighlightMessageId(commentId);
-                                } else if (threadId != null) {
+                                } else if (threadId != null && messageId != topic.id) {
                                     chatActivity.setHighlightMessageId(messageId);
                                 }
                                 presentFragment(chatActivity);
+                                if (onOpened != null) {
+                                    onOpened.run();
+                                }
                             }
                         }));
                         chatOpened = true;
@@ -3088,7 +3097,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
             }
             try {
-                progressDialog.dismiss();
+                if (progressDialog != null) {
+                    progressDialog.dismiss();
+                }
+                if (onOpened != null) {
+                    onOpened.run();
+                }
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -3393,7 +3407,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                     } else {
                                                         args1.putLong("chat_id", -did);
                                                     }
-                                                    args1.putString("attach_bot", user.username);
+                                                    args1.putString("attach_bot", UserObject.getPublicUsername(user));
                                                     if (setAsAttachBot != null) {
                                                         args1.putString("attach_bot_start_command", setAsAttachBot);
                                                     }
@@ -3712,7 +3726,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             topicId = messageId;
                                         }
                                         if (topicId != null && topicId != 0) {
-                                            openForumFromLink(-dialog_id, topicId, messageId, () -> {
+                                            openForumFromLink(dialog_id, topicId, messageId, () -> {
                                                 try {
                                                     progressDialog.dismiss();
                                                 } catch (Exception e) {
@@ -3741,7 +3755,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                 if (!LaunchActivity.this.isFinishing()) {
                                                     BaseFragment voipLastFragment;
                                                     if (livestream == null || !(lastFragment instanceof ChatActivity) || ((ChatActivity) lastFragment).getDialogId() != dialog_id) {
-                                                        if (lastFragment instanceof ChatActivity && ((ChatActivity) lastFragment).getDialogId() == dialog_id) {
+                                                        if (lastFragment instanceof ChatActivity && ((ChatActivity) lastFragment).getDialogId() == dialog_id && messageId == null) {
                                                             ChatActivity chatActivity = (ChatActivity) lastFragment;
                                                             ViewGroup v = chatActivity.getChatListView();
                                                             AndroidUtilities.shakeViewSpring(v, 5);
@@ -4274,7 +4288,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 args.putInt("message_id", messageId);
                 TLRPC.Chat chatLocal = MessagesController.getInstance(currentAccount).getChat(channelId);
                 if (chatLocal != null && chatLocal.forum) {
-                    openForumFromLink(-channelId, messageId, null, null);
+                    openForumFromLink(-channelId, 0, messageId,  () -> {
+                        try {
+                            progressDialog.dismiss();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
                 } else {
                     BaseFragment lastFragment = !mainFragmentsStack.isEmpty() ? mainFragmentsStack.get(mainFragmentsStack.size() - 1) : null;
                     if (lastFragment == null || MessagesController.getInstance(intentAccount).checkCanOpenChat(args, lastFragment)) {
@@ -4337,46 +4357,46 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private void openForumFromLink(long dialogId, int topicId, Integer messageId, Runnable onOpened) {
-        TLRPC.TL_channels_getForumTopicsByID getForumTopicsByID = new TLRPC.TL_channels_getForumTopicsByID();
-        getForumTopicsByID.channel = MessagesController.getInstance(currentAccount).getInputChannel(-dialogId);
-        getForumTopicsByID.topics.add(topicId);
-        ConnectionsManager.getInstance(currentAccount).sendRequest(getForumTopicsByID, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
-            if (error2 == null) {
-                TLRPC.TL_messages_forumTopics topics = (TLRPC.TL_messages_forumTopics) response2;
-                SparseArray<TLRPC.Message> messagesMap = new SparseArray<>();
-                for (int i = 0; i < topics.messages.size(); i++) {
-                    messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
-                }
-                MessagesController.getInstance(currentAccount).putUsers(topics.users, false);
-                MessagesController.getInstance(currentAccount).putChats(topics.chats, false);
+        if (messageId == null) {
+            Bundle bundle = new Bundle();
+            bundle.putLong("chat_id", -dialogId);
+            presentFragment(new TopicsFragment(bundle));
 
-                MessagesController.getInstance(currentAccount).getTopicsController().processTopics(-dialogId, topics.topics, messagesMap, false, TopicsController.LOAD_TYPE_LOAD_UNKNOWN, -1);
-            }
-            TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-dialogId, topicId);
-            if (topic != null) {
-                TLRPC.Chat chatLocal = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                Bundle args2 = new Bundle();
-                args2.putLong("chat_id", -dialogId);
-                if (messageId != null && !messageId.equals(topicId)) {
-                    args2.putLong("message_id", messageId);
-                }
-                args2.putInt("unread_count", topic.unread_count);
-                args2.putBoolean("historyPreloaded", false);
-                ChatActivity chatActivity = new ChatActivity(args2);
-                TLRPC.Message message2 = topic.topicStartMessage;
-                ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                messageObjects.add(new MessageObject(currentAccount, message2, false, false));
-                chatActivity.setThreadMessages(messageObjects, chatLocal, topic.id, topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
-                presentFragment(chatActivity);
-            } else {
-                Bundle bundle = new Bundle();
-                bundle.putLong("chat_id", -dialogId);
-                presentFragment(new TopicsFragment(bundle));
-            }
             if (onOpened != null) {
                 onOpened.run();
             }
-        }));
+            return;
+        }
+        TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
+        req.channel = MessagesController.getInstance(currentAccount).getInputChannel(-dialogId);
+        req.id.add(messageId);
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
+            AndroidUtilities.runOnUIThread(() -> {
+                TLRPC.Message message = null;
+                if (res instanceof TLRPC.messages_Messages) {
+                    ArrayList<TLRPC.Message> messages = ((TLRPC.messages_Messages) res).messages;
+                    for (int i = 0; i < messages.size(); ++i) {
+                        if (messages.get(i) != null && messages.get(i).id == messageId) {
+                            message = messages.get(i);
+                            break;
+                        }
+                    }
+                }
+
+                if (message != null) {
+                    runCommentRequest(currentAccount, null, message.id, null, MessageObject.getTopicId(message), MessagesController.getInstance(currentAccount).getChat(-dialogId), onOpened);
+                    return;
+                }
+
+                Bundle bundle = new Bundle();
+                bundle.putLong("chat_id", -dialogId);
+                presentFragment(new TopicsFragment(bundle));
+
+                if (onOpened != null) {
+                    onOpened.run();
+                }
+            });
+        });
     }
 
     private List<TLRPC.TL_contact> findContacts(String userName, String userPhone, boolean allowSelf) {
@@ -4444,7 +4464,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         break;
                                     }
                                 }
-                                if (!found && user.username != null && user.username.startsWith(q)) {
+                                String username = UserObject.getPublicUsername(user);
+                                if (!found && username != null && username.startsWith(q)) {
                                     found = true;
                                 }
                                 if (found) {

@@ -695,33 +695,6 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     nextRecentReaction.setTag(null);
                 }
             }
-//            if (pullingLeftOffsetProgress > 0.8f) {
-//                if (nextRecentReaction.getTag() == null) {
-//                    nextRecentReaction.setTag(1f);
-//                    if (nextRecentReaction.getVisibility() == View.GONE) {
-//                        nextRecentReaction.resetAnimation();
-//                        nextRecentReaction.setVisibility(View.VISIBLE);
-//                        nextRecentReaction.play(0);
-//                        nextRecentReaction.setScaleX(1f);
-//                        nextRecentReaction.setScaleY(1f);
-//                    } else {
-//                        nextRecentReaction.animate().setListener(null).cancel();
-//                        nextRecentReaction.animate().scaleX(1f).scaleY(1f).setDuration(100).start();
-//                    }
-//
-//                }
-//
-//            } else {
-//                if (nextRecentReaction.getTag() != null) {
-//                    nextRecentReaction.setTag(null);
-//                    nextRecentReaction.animate().scaleX(0f).scaleY(0f).setDuration(100).setListener(new AnimatorListenerAdapter() {
-//                        @Override
-//                        public void onAnimationEnd(Animator animation) {
-//                            nextRecentReaction.setVisibility(View.GONE);
-//                        }
-//                    }).start();
-//                }
-//            }
         }
 
         if (skipDraw && reactionsWindow != null) {
@@ -811,7 +784,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             pullingOffsetX = leftProgress * progress * AndroidUtilities.dp(46);
         }
         if (view.currentReaction.equals(pressedReaction)) {
-            View imageView = showCustomEmojiReaction() ? view.loopImageView : view.enterImageView;
+            View imageView = view.loopImageView.getVisibility() == View.VISIBLE ? view.loopImageView : view.enterImageView;
             view.setPivotX(view.getMeasuredWidth() >> 1);
             view.setPivotY(imageView.getY() + imageView.getMeasuredHeight());
             view.setScaleX(pressedViewScale);

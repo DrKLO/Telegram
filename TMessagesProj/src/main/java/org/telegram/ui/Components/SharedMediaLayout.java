@@ -6334,10 +6334,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             }
 
                             int found = 0;
+                            String username;
                             for (String q : search) {
                                 if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
-                                } else if (user.username != null && user.username.startsWith(q)) {
+                                } else if ((username = UserObject.getPublicUsername(user)) != null && username.startsWith(q)) {
                                     found = 2;
                                 }
 
@@ -6345,7 +6346,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                                     if (found == 1) {
                                         resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
                                     } else {
-                                        resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q));
                                     }
                                     resultArray2.add(o);
                                     break;
@@ -6450,7 +6451,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 return;
             }
 
-            String un = user.username;
+            String un = UserObject.getPublicUsername(user);
             SpannableStringBuilder name = null;
 
             int count = searchAdapterHelper.getGroupSearch().size();

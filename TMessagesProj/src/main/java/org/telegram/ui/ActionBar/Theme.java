@@ -69,6 +69,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -1619,6 +1620,10 @@ public class Theme {
                 currentColors.put(key_chat_outTextSelectionCursor, textSelectionHandle(outBubble, accentColor));
             }
 
+            float accentHue = getHue(getColor(key_windowBackgroundWhiteBlueText));
+            currentColors.put(key_chat_outBubbleLocationPlaceholder, locationPlaceholderColor(accentHue, outBubble, isDarkTheme));
+            currentColors.put(key_chat_inBubbleLocationPlaceholder, locationPlaceholderColor(accentHue, inBubble, isDarkTheme));
+
             Integer inMsgLink = currentColors.get(key_chat_messageLinkIn);
             if (inMsgLink == null) {
                 inMsgLink = getColor(key_chat_messageLinkIn);
@@ -1653,6 +1658,10 @@ public class Theme {
                 tempHSV[0] = hue;
             }
             return Color.HSVToColor(Color.alpha(color), tempHSV);
+        }
+        private float getHue(int color) {
+            Color.colorToHSV(color, tempHSV);
+            return tempHSV[0];
         }
         private int bubbleSelectedOverlay(int bubble, int accentColor) {
             Color.colorToHSV(accentColor, tempHSV);
@@ -1692,6 +1701,22 @@ public class Theme {
             tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] - .1f));
             tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? .1f : 0)));
             return Color.HSVToColor(0x33, tempHSV);
+        }
+        private int locationPlaceholderColor(float accentHue, int bubbleColor, boolean isDarkTheme) {
+            if (isDarkTheme) {
+                return 0x1effffff;
+            } else {
+                Color.colorToHSV(bubbleColor, tempHSV);
+                if (tempHSV[1] <= 0 || tempHSV[2] >= 1 || tempHSV[2] <= 0) {
+                    tempHSV[0] = accentHue;
+                    tempHSV[1] = .2f;
+                } else {
+                    tempHSV[0] = MathUtils.clamp(tempHSV[0] + .22f, 0, 1);
+                    tempHSV[1] = MathUtils.clamp(tempHSV[1] - .35f, 0, 1);
+                }
+                tempHSV[2] = MathUtils.clamp(tempHSV[2] - .65f, 0, 1);
+                return Color.HSVToColor(0x5a, tempHSV);
+            }
         }
         private int averageColor(HashMap<String, Integer> colors, String ...keys) {
             int r = 0, g = 0, b = 0, c = 0;
@@ -3699,6 +3724,8 @@ public class Theme {
     public static final String key_chat_recordedVoiceHighlight = "key_chat_recordedVoiceHighlight";
     public static final String key_chat_TextSelectionCursor = "chat_TextSelectionCursor";
     public static final String key_chat_outTextSelectionCursor = "chat_outTextSelectionCursor";
+    public static final String key_chat_inBubbleLocationPlaceholder = "chat_inBubbleLocationPlaceholder";
+    public static final String key_chat_outBubbleLocationPlaceholder = "chat_outBubbleLocationPlaceholder";
     public static final String key_chat_BlurAlpha = "chat_BlurAlpha";
 
     public static final String key_voipgroup_listSelector = "voipgroup_listSelector";
@@ -4719,6 +4746,8 @@ public class Theme {
         defaultColors.put(key_chat_inTextSelectionHighlight, 0x5062A9E3);
         defaultColors.put(key_chat_TextSelectionCursor, 0xFF419FE8);
         defaultColors.put(key_chat_outTextSelectionCursor, 0xFF419FE8);
+        defaultColors.put(key_chat_outBubbleLocationPlaceholder, 0x1e307311);
+        defaultColors.put(key_chat_inBubbleLocationPlaceholder, 0x1e506373);
         defaultColors.put(key_chat_BlurAlpha, 0xFF000000);
 
         defaultColors.put(key_statisticChartSignature, 0x7f252529);

@@ -375,6 +375,8 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         private OnLinkPress onPressListener;
         private OnLinkPress onLongPressListener;
 
+        private boolean disablePaddingsOffset;
+
         public LinksTextView(Context context) {
             this(context, null);
         }
@@ -391,6 +393,10 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             this.isCustomLinkCollector = true;
             this.links = customLinkCollector;
             this.resourcesProvider = resourcesProvider;
+        }
+
+        public void setDisablePaddingsOffset(boolean disablePaddingsOffset) {
+            this.disablePaddingsOffset = disablePaddingsOffset;
         }
 
         public void setOnLinkPressListener(OnLinkPress listener) {
@@ -473,7 +479,9 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         protected void onDraw(Canvas canvas) {
             if (!isCustomLinkCollector) {
                 canvas.save();
-                canvas.translate(getPaddingLeft(), getPaddingTop());
+                if (!disablePaddingsOffset) {
+                    canvas.translate(getPaddingLeft(), getPaddingTop());
+                }
                 if (links.draw(canvas)) {
                     invalidate();
                 }

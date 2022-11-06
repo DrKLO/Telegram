@@ -1284,7 +1284,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 RecyclerView.ViewHolder holder = listView.findContainingViewHolder(child);
                 if (holder != null && holder.itemView instanceof GroupCallUserCell) {
                     GroupCallUserCell cell = (GroupCallUserCell) holder.itemView;
-                    cell.getParticipant().lastVisibleDate = time;
+                    if (cell.getParticipant() != null) {
+                        cell.getParticipant().lastVisibleDate = time;
+                    }
                 }
             }
         } else if (id == NotificationCenter.userInfoDidLoad) {

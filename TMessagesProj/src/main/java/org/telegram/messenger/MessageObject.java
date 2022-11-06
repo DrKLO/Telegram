@@ -244,6 +244,9 @@ public class MessageObject {
     public ImageLocation mediaThumb;
     public ImageLocation mediaSmallThumb;
 
+    public Object lastGeoWebFileSet;
+    public Object lastGeoWebFileLoaded;
+
     // forwarding preview params
     public boolean hideSendersName;
     public TLRPC.Peer sendAsPeer;
@@ -2450,7 +2453,7 @@ public class MessageObject {
             } else {
                 name = ContactsController.formatName(user.first_name, user.last_name);
             }
-            username = user.username;
+            username = UserObject.getPublicUsername(user);
             id = user.id;
         } else {
             TLRPC.Chat chat = (TLRPC.Chat) object;

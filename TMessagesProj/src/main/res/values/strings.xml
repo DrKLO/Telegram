@@ -4909,7 +4909,7 @@
     <string name="AccDescrShowAccounts">Show accounts</string>
     <string name="AccDescrHideAccounts">Hide accounts</string>
     <string name="AccDescrGoToMessage">Go to message</string>
-
+    <string name="AccDescrPremiumSpeed">Increase speed</string>
     <string name="AccDescrCancelReply">Cancel reply</string>
     <string name="AccDescrCancelForward">Cancel forward</string>
     <string name="AccDescrCancelEdit">Cancel editing</string>
@@ -5481,6 +5481,7 @@
     <string name="PremiumPreviewUploadsDescription">Increased upload size from 2Gb to 4Gb per document, unlimited storage overall.</string>
     <string name="PremiumPreviewDownloadSpeed">Faster Download Speed</string>
     <string name="PremiumPreviewDownloadSpeedDescription">No more limits on the speed with which media and documents are downloaded.</string>
+    <string name="PremiumPreviewDownloadSpeedDescription2">Subscribe to Telegram Premium to download media and files at the fastest possible speed.</string>
     <string name="PremiumPreviewNoAds">No Ads</string>
     <string name="PremiumPreviewNoAdsDescription">No more ads in public channels where Telegram sometimes shows ads.</string>
     <string name="PremiumPreviewReactions">Unique Reactions</string>
@@ -5591,6 +5592,7 @@
     <string name="ChatsLeaveAlert"><![CDATA[>Are you sure you want to leave the selected chats?]]></string>
     <string name="PremiumPreviewReactionsDescription">Additional animated reactions on messages, available only to Premium subscribers.</string>
     <string name="PremiumPreviewAdvancedChatManagementDescription">Tools to set the default folder, auto-archive and hide new chats from non-contacts.</string>
+    <string name="PremiumPreviewAdvancedChatManagementDescription2">Subscribers of Telegram Premium can set the default folder, auto-archive and hide new chats from non-contacts.</string>
     <string name="TelegramPremiumUserDialogTitle">**%s** is a subscriber of Telegram Premium.</string>
     <string name="TelegramPremiumUserDialogSubtitle">Owners of **Telegram Premium** accounts have exclusive access to multiple additional features.</string>
     <string name="TelegramPremiumUserStatusDialogTitle">%1$s set this emoji from **%2$s** as their current status.</string>
@@ -5768,4 +5770,9 @@
     <string name="TopicIconChangedToInReply">changed topic icon to %s</string>
     <string name="TopicChangeIconAndTitleToInReply">changed the topic title and icon to %s</string>
     <string name="SelectTopicIconHint">Select Topic Icon</string>
+    <string name="PremiumSpeedPromo">Increase Speed</string>
+    <string name="ChannelCaptionLimitPremiumPromo_one">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** character.</string>
+    <string name="ChannelCaptionLimitPremiumPromo_few">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
+    <string name="ChannelCaptionLimitPremiumPromo_many">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
+    <string name="ChannelCaptionLimitPremiumPromo_other">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
 </resources>
