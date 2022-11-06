@@ -5546,6 +5546,7 @@
     <string name="LimitReachedAccountsPremium">Sorry, you can\'t add more than **%1$d** accounts.</string>
     <string name="PremiumPreviewVoiceToText">Voice-to-Text Conversion</string>
     <string name="PremiumPreviewVoiceToTextDescription">Ability to read the transcript of any incoming voice message.</string>
+    <string name="PremiumPreviewVoiceToTextDescription2">Subscribe to Telegram Premium to be able to convert voice and video messages to text.</string>
     <string name="PremiumPreviewAdvancedChatManagement">Advanced Chat Management</string>
     <string name="PremiumStickersShort">Premium</string>
     <string name="PremiumStickers">Premuim Stickers</string>

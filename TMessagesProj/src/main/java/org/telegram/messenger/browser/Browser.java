@@ -44,7 +44,6 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
-import org.w3c.dom.Text;
 
 import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
@@ -372,7 +371,11 @@ public class Browser {
             }
             intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
             intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, context.getPackageName());
-            context.startActivity(intent);
+            if (internalUri && context instanceof LaunchActivity) {
+                ((LaunchActivity) context).onNewIntent(intent);
+            } else {
+                context.startActivity(intent);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }

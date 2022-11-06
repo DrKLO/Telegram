@@ -2268,7 +2268,6 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM topics").stepThis().dispose();
                 database.executeFast("DELETE FROM media_holes_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM media_topics").stepThis().dispose();
-                database.executeFast("DELETE FROM media_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM media_counts_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM chat_pinned_v2").stepThis().dispose();
                 database.executeFast("DELETE FROM chat_pinned_count").stepThis().dispose();
@@ -2330,7 +2329,7 @@ public class MessagesStorage extends BaseController {
                         database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
                         MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
                         if (messageId != -1) {
-                            MessagesStorage.createFirstHoles(did, state5, state6, messageId);
+                            MessagesStorage.createFirstHoles(did, state5, state6, messageId, 0);
                         }
                     }
                     cursor.dispose();
@@ -2383,6 +2382,17 @@ public class MessagesStorage extends BaseController {
     private void saveTopicsInternal(long dialogId, List<TLRPC.TL_forumTopic> topics, boolean replace, boolean inTransaction) {
         SQLitePreparedStatement state = null;
         try {
+            HashSet<Integer> existingTopics = new HashSet<>();
+            for (int i = 0; i < topics.size(); i++) {
+                TLRPC.TL_forumTopic topic = topics.get(i);
+                SQLiteCursor cursor = database.queryFinalized("SELECT did FROM topics WHERE did = " + dialogId + " AND topic_id = " + topic.id);
+                boolean exist = cursor.next();
+                cursor.dispose();
+                cursor = null;
+                if (exist) {
+                    existingTopics.add(i);
+                }
+            }
             if (replace) {
                 database.executeFast("DELETE FROM topics WHERE did = " + dialogId).stepThis().dispose();
             }
@@ -2393,6 +2403,8 @@ public class MessagesStorage extends BaseController {
 
             for (int i = 0; i < topics.size(); i++) {
                 TLRPC.TL_forumTopic topic = topics.get(i);
+                boolean exist = existingTopics.contains(i);
+
                 state.requery();
                 state.bindLong(1, dialogId);
                 state.bindInteger(2, topic.id);
@@ -2416,8 +2428,21 @@ public class MessagesStorage extends BaseController {
                 messageData.reuse();
                 data.reuse();
 
-                closeHolesInTable("messages_holes_topics", dialogId, topic.top_message,  topic.top_message, topic.id);
-                closeHolesInMedia(dialogId, topic.top_message, topic.top_message, -1, 0);
+                if (exist) {
+                    closeHolesInTable("messages_holes_topics", dialogId, topic.top_message, topic.top_message, topic.id);
+                    closeHolesInMedia(dialogId, topic.top_message, topic.top_message, -1, 0);
+                } else {
+                    database.executeFast(String.format(Locale.ENGLISH, "DELETE FROM messages_holes_topics WHERE uid = %d AND topic_id = %d", dialogId, topic.id)).stepThis().dispose();
+                    database.executeFast(String.format(Locale.ENGLISH, "DELETE FROM media_holes_topics WHERE uid = %d AND topic_id = %d", dialogId, topic.id)).stepThis().dispose();
+                    database.executeFast(String.format(Locale.ENGLISH, "DELETE FROM messages_topics WHERE uid = %d AND topic_id = %d", dialogId, topic.id)).stepThis().dispose();
+                    database.executeFast(String.format(Locale.ENGLISH, "DELETE FROM media_topics WHERE uid = %d AND topic_id = %d", dialogId, topic.id)).stepThis().dispose();
+
+                    SQLitePreparedStatement state_holes = database.executeFast("REPLACE INTO messages_holes_topics VALUES(?, ?, ?, ?)");
+                    SQLitePreparedStatement state_media_holes = database.executeFast("REPLACE INTO media_holes_topics VALUES(?, ?, ?, ?, ?)");
+                    createFirstHoles(dialogId, state_holes, state_media_holes, topic.top_message, topic.id);
+                    state_holes.dispose();
+                    state_holes.dispose();
+                }
             }
             resetAllUnreadCounters(false);
 
@@ -4739,7 +4764,7 @@ public class MessagesStorage extends BaseController {
                         state5 = database.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
                         state6 = database.executeFast("REPLACE INTO media_holes_v2 VALUES(?, ?, ?, ?)");
                         if (messageId != -1) {
-                            createFirstHoles(did, state5, state6, messageId);
+                            createFirstHoles(did, state5, state6, messageId, 0);
                         }
                         state5.dispose();
                         state5 = null;
@@ -5208,41 +5233,53 @@ public class MessagesStorage extends BaseController {
                 if (dialogs != null) {
                     database.beginTransaction();
                     SQLitePreparedStatement state = database.executeFast("UPDATE messages_v2 SET data = ? WHERE mid = ? AND uid = ?");
+                    SQLitePreparedStatement state_topics = database.executeFast("UPDATE messages_topics SET data = ? WHERE mid = ? AND uid = ?");
                     for (int b = 0, N2 = dialogs.size(); b < N2; b++) {
                         long dialogId = dialogs.keyAt(b);
                         ArrayList<Integer> mids = dialogs.valueAt(b);
                         for (int a = 0, N = mids.size(); a < N; a++) {
                             Integer mid = mids.get(a);
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, dialogId));
-                            if (cursor.next()) {
-                                NativeByteBuffer data = cursor.byteBufferValue(0);
-                                if (data != null) {
-                                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                    message.readAttachPath(data, getUserConfig().clientUserId);
-                                    data.reuse();
-                                    if (message.media instanceof TLRPC.TL_messageMediaPoll) {
-                                        TLRPC.TL_messageMediaPoll media = (TLRPC.TL_messageMediaPoll) message.media;
-                                        if (poll != null) {
-                                            media.poll = poll;
-                                        }
-                                        if (results != null) {
-                                            MessageObject.updatePollResults(media, results);
-                                        }
-
-                                        data = new NativeByteBuffer(message.getObjectSize());
-                                        message.serializeToStream(data);
-                                        state.requery();
-                                        state.bindByteBuffer(1, data);
-                                        state.bindInteger(2, mid);
-                                        state.bindLong(3, dialogId);
-                                        state.step();
-                                        data.reuse();
-                                    }
+                            boolean foundMessage = false;
+                            for (int k = 0; k < 2; k++) {
+                                boolean isTopic = k == 1;
+                                if (isTopic) {
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM messages_topics WHERE mid = %d AND uid = %d", mid, dialogId));
+                                } else {
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, dialogId));
                                 }
-                            } else {
+                                SQLitePreparedStatement currentState = isTopic ? state_topics : state;
+                                if (cursor.next()) {
+                                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                                    if (data != null) {
+                                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                        message.readAttachPath(data, getUserConfig().clientUserId);
+                                        data.reuse();
+                                        if (message.media instanceof TLRPC.TL_messageMediaPoll) {
+                                            TLRPC.TL_messageMediaPoll media = (TLRPC.TL_messageMediaPoll) message.media;
+                                            if (poll != null) {
+                                                media.poll = poll;
+                                            }
+                                            if (results != null) {
+                                                MessageObject.updatePollResults(media, results);
+                                            }
+
+                                            data = new NativeByteBuffer(message.getObjectSize());
+                                            message.serializeToStream(data);
+                                            currentState.requery();
+                                            currentState.bindByteBuffer(1, data);
+                                            currentState.bindInteger(2, mid);
+                                            currentState.bindLong(3, dialogId);
+                                            currentState.step();
+                                            data.reuse();
+                                        }
+                                    }
+                                    foundMessage = true;
+                                }
+                                cursor.dispose();
+                            }
+                            if (!foundMessage) {
                                 database.executeFast(String.format(Locale.US, "DELETE FROM polls_v2 WHERE mid = %d AND uid = %d", mid, dialogId)).stepThis().dispose();
                             }
-                            cursor.dispose();
                         }
                     }
                     state.dispose();
@@ -14975,19 +15012,27 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public static void createFirstHoles(long did, SQLitePreparedStatement state5, SQLitePreparedStatement state6, int messageId) throws Exception {
+    public static void createFirstHoles(long did, SQLitePreparedStatement state5, SQLitePreparedStatement state6, int messageId, int topicId) throws Exception {
         state5.requery();
-        state5.bindLong(1, did);
-        state5.bindInteger(2, messageId == 1 ? 1 : 0);
-        state5.bindInteger(3, messageId);
+        int pointer = 1;
+        state5.bindLong(pointer++, did);
+        if (topicId != 0) {
+            state5.bindInteger(pointer++, topicId);
+        }
+        state5.bindInteger(pointer++, messageId == 1 ? 1 : 0);
+        state5.bindInteger(pointer++, messageId);
         state5.step();
 
         for (int b = 0; b < MediaDataController.MEDIA_TYPES_COUNT; b++) {
             state6.requery();
-            state6.bindLong(1, did);
-            state6.bindInteger(2, b);
-            state6.bindInteger(3, messageId == 1 ? 1 : 0);
-            state6.bindInteger(4, messageId);
+            pointer = 1;
+            state6.bindLong(pointer++, did);
+            if (topicId != 0) {
+                state6.bindInteger(pointer++, topicId);
+            }
+            state6.bindInteger(pointer++, b);
+            state6.bindInteger(pointer++, messageId == 1 ? 1 : 0);
+            state6.bindInteger(pointer++, messageId);
             state6.step();
         }
     }
@@ -15157,7 +15202,7 @@ public class MessagesStorage extends BaseController {
                             closeHolesInTable("messages_holes", dialog.id, message.id, message.id, 0);
                             closeHolesInMedia(dialog.id, message.id, message.id, -1, 0);
                         } else {
-                            createFirstHoles(dialog.id, state_holes, state_media_holes, message.id);
+                            createFirstHoles(dialog.id, state_holes, state_media_holes, message.id, 0);
                         }
                     }
 
