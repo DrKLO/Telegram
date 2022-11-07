@@ -18,8 +18,6 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.annotation.NonNull;
-
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -43,6 +41,8 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.NotificationsSettingsActivity;
+
+import java.util.Locale;
 
 public class ProfileSearchCell extends BaseCell implements NotificationCenter.NotificationCenterDelegate {
 
@@ -338,9 +338,10 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
 
         if (drawCount) {
             TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
-            if (dialog != null && dialog.unread_count != 0) {
-                lastUnreadCount = dialog.unread_count;
-                String countString = String.format("%d", dialog.unread_count);
+            int unreadCount = MessagesController.getInstance(currentAccount).getDialogUnreadCount(dialog);
+            if (unreadCount != 0) {
+                lastUnreadCount = unreadCount;
+                String countString = String.format(Locale.US, "%d", unreadCount);
                 countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(countString)));
                 countLayout = new StaticLayout(countString, Theme.dialogs_countTextPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                 int w = countWidth + AndroidUtilities.dp(18);
@@ -410,9 +411,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         } else {
             if (ChatObject.isChannel(chat) && !chat.megagroup) {
                 if (chat.participants_count != 0) {
-                    statusString = LocaleController.formatPluralString("Subscribers", chat.participants_count);
+                    statusString = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
                 } else {
-                    if (TextUtils.isEmpty(chat.username)) {
+                    if (!ChatObject.isPublic(chat)) {
                         statusString = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
                     } else {
                         statusString = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
@@ -420,11 +421,11 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 }
             } else {
                 if (chat.participants_count != 0) {
-                    statusString = LocaleController.formatPluralString("Members", chat.participants_count);
+                    statusString = LocaleController.formatPluralStringComma("Members", chat.participants_count);
                 } else {
                     if (chat.has_geo) {
                         statusString = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                    } else if (TextUtils.isEmpty(chat.username)) {
+                    } else if (!ChatObject.isPublic(chat)) {
                         statusString = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                     } else {
                         statusString = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
@@ -554,6 +555,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
         }
 
+        avatarImage.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(23));
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 && user != null || (mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 && chat != null) {
@@ -586,7 +588,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             }
             if (!continueUpdate && drawCount && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
                 TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
-                if (dialog != null && dialog.unread_count != lastUnreadCount) {
+                if (dialog != null && MessagesController.getInstance(currentAccount).getDialogUnreadCount(dialog) != lastUnreadCount) {
                     continueUpdate = true;
                 }
             }
@@ -667,7 +669,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         if (countLayout != null) {
             int x = countLeft - AndroidUtilities.dp(5.5f);
             rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
-            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
+            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id, 0) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));
             countLayout.draw(canvas);

@@ -621,7 +621,7 @@ void ConnectionsManager::cleanUp(bool resetKeys, int32_t datacenterId) {
                 auto error = new TL_error();
                 error->code = -1000;
                 error->text = "";
-                request->onComplete(nullptr, error, 0, 0);
+                request->onComplete(nullptr, error, 0, 0, request->messageId);
                 delete error;
             }
             iter = requestsQueue.erase(iter);
@@ -643,7 +643,7 @@ void ConnectionsManager::cleanUp(bool resetKeys, int32_t datacenterId) {
                 auto error = new TL_error();
                 error->code = -1000;
                 error->text = "";
-                request->onComplete(nullptr, error, 0, 0);
+                request->onComplete(nullptr, error, 0, 0, request->messageId);
                 delete error;
             }
             iter = runningRequests.erase(iter);
@@ -1180,7 +1180,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
         for (auto iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
             Request *request = iter->get();
             if (request->respondsToMessageId(requestMid)) {
-                request->onComplete(response, nullptr, connection->currentNetworkType, timeMessage);
+                request->onComplete(response, nullptr, connection->currentNetworkType, timeMessage, requestMid);
                 request->completed = true;
                 runningRequests.erase(iter);
                 break;
@@ -1299,7 +1299,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";
                                 static std::string slowmodeWait = "SLOWMODE_WAIT_";
-                                discardResponse = true;
+                                discardResponse = (request->requestFlags & RequestFlagIgnoreFloodWait) == 0;
                                 if (error->error_message.find(floodWait) != std::string::npos) {
                                     std::string num = error->error_message.substr(floodWait.size(), error->error_message.size() - floodWait.size());
                                     waitTime = atoi(num.c_str());
@@ -1357,10 +1357,10 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                     if (!discardResponse) {
                         if (implicitError != nullptr || error2 != nullptr) {
                             isError = true;
-                            request->onComplete(nullptr, implicitError != nullptr ? implicitError : error2, connection->currentNetworkType, timeMessage);
+                            request->onComplete(nullptr, implicitError != nullptr ? implicitError : error2, connection->currentNetworkType, timeMessage, request->messageId);
                             delete error2;
                         } else {
-                            request->onComplete(response->result.get(), nullptr, connection->currentNetworkType, timeMessage);
+                            request->onComplete(response->result.get(), nullptr, connection->currentNetworkType, timeMessage, request->messageId);
                         }
                     }
 
@@ -2073,7 +2073,7 @@ void ConnectionsManager::requestSaltsForDatacenter(Datacenter *datacenter, bool 
     requestingSaltsForDc.push_back(id);
     auto request = new TL_get_future_salts();
     request->num = 32;
-    sendRequest(request, [&, datacenter, id, media](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    sendRequest(request, [&, datacenter, id, media](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         auto iter = std::find(requestingSaltsForDc.begin(), requestingSaltsForDc.end(), id);
         if (iter != requestingSaltsForDc.end()) {
             requestingSaltsForDc.erase(iter);
@@ -2108,7 +2108,7 @@ void ConnectionsManager::registerForInternalPushUpdates() {
     request->token_type = 7;
     request->token = to_string_uint64((uint64_t) pushSessionId);
 
-    sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         if (error == nullptr) {
             registeredForInternalPush = true;
             if (LOGS_ENABLED) DEBUG_D("registered for internal push");
@@ -2308,7 +2308,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         auto error = new TL_error();
                         error->code = -123;
                         error->text = "RETRY_LIMIT";
-                        request->onComplete(nullptr, error, connection->currentNetworkType, 0);
+                        request->onComplete(nullptr, error, connection->currentNetworkType, 0, request->messageId);
                         delete error;
                         iter = runningRequests.erase(iter);
                         continue;
@@ -2965,7 +2965,7 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround) {
     }
 
     auto request = new TL_help_getConfig();
-    sendRequest(request, [&, workaround](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+    sendRequest(request, [&, workaround](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
         if ((!workaround && !updatingDcSettings) || (workaround && !updatingDcSettingsWorkaround)) {
             return;
         }
@@ -3085,7 +3085,7 @@ void ConnectionsManager::moveToDatacenter(uint32_t datacenterId) {
     if (currentUserId) {
         auto request = new TL_auth_exportAuthorization();
         request->dc_id = datacenterId;
-        sendRequest(request, [&, datacenterId](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+        sendRequest(request, [&, datacenterId](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
             if (error == nullptr) {
                 movingAuthorization = std::move(((TL_auth_exportedAuthorization *) response)->bytes);
                 authorizeOnMovingDatacenter();
@@ -3117,7 +3117,7 @@ void ConnectionsManager::authorizeOnMovingDatacenter() {
         auto request = new TL_auth_importAuthorization();
         request->id = currentUserId;
         request->bytes = std::move(movingAuthorization);
-        sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
+        sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
             if (error == nullptr) {
                 authorizedOnMovingDatacenter();
             } else {

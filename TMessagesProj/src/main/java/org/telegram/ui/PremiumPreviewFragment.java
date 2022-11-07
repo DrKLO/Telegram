@@ -49,6 +49,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
@@ -844,6 +845,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.billingProductDetailsUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         getNotificationCenter().addObserver(this, NotificationCenter.premiumPromoUpdated);
+
+        if (getMediaDataController().getPremiumPromo() != null) {
+            for (TLRPC.Document document : getMediaDataController().getPremiumPromo().videos) {
+                FileLoader.getInstance(currentAccount).loadFile(document, null, FileLoader.PRIORITY_HIGH, 0);
+            }
+        }
 
         return super.onFragmentCreate();
     }

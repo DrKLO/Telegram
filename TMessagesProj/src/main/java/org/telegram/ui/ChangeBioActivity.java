@@ -120,7 +120,7 @@ public class ChangeBioActivity extends BaseFragment {
                     if (v != null) {
                         v.vibrate(200);
                     }
-                    AndroidUtilities.shakeView(checkTextView, 2, 0);
+                    AndroidUtilities.shakeView(checkTextView);
                 }
                 return result;
             }

@@ -124,6 +124,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int resetNotificationsSectionRow;
     private int rowCount = 0;
 
+    private boolean updateVibrate;
+    private boolean updateRingtone;
+    private boolean updateRepeatNotifications;
+
     @Override
     public boolean onFragmentCreate() {
         MessagesController.getInstance(currentAccount).loadSignUpNotificationsSettings();
@@ -210,6 +214,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 String key = entry.getKey();
                 if (key.startsWith("notify2_")) {
                     key = key.replace("notify2_", "");
+                    if (key.contains("_")) {
+                        //it's topic
+                        continue;
+                    }
 
                     long did = Utilities.parseLong(key);
                     if (did != 0 && did != selfId) {
@@ -586,7 +594,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 if (position == callsVibrateRow) {
                     key = "vibrate_calls";
                 }
-                showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), 0, key, () -> adapter.notifyItemChanged(position)));
+                showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), 0, 0, key, () -> {
+                    updateVibrate = true;
+                    adapter.notifyItemChanged(position);
+                }));
             } else if (position == repeatRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications));
@@ -615,6 +626,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     }
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     preferences.edit().putInt("repeat_messages", minutes).commit();
+                    updateRepeatNotifications = true;
                     adapter.notifyItemChanged(position);
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -664,6 +676,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     editor.putString("CallsRingtone", "NoSound");
                     editor.putString("CallsRingtonePath", "NoSound");
                 }
+                updateRingtone = true;
             }
             editor.commit();
             adapter.notifyItemChanged(requestCode);
@@ -912,20 +925,22 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         if (value.equals("NoSound")) {
                             value = LocaleController.getString("NoSound", R.string.NoSound);
                         }
-                        textCell.setTextAndValue(LocaleController.getString("VoipSettingsRingtone", R.string.VoipSettingsRingtone), value, false);
+                        textCell.setTextAndValue(LocaleController.getString("VoipSettingsRingtone", R.string.VoipSettingsRingtone), value, updateRingtone, false);
+                        updateRingtone = false;
                     } else if (position == callsVibrateRow) {
                         int value = preferences.getInt("vibrate_calls", 0);
                         if (value == 0) {
-                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), updateVibrate, true);
                         } else if (value == 1) {
-                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), true);
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), updateVibrate, true);
                         } else if (value == 2) {
-                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled), true);
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled), updateVibrate, true);
                         } else if (value == 3) {
-                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), true);
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), updateVibrate, true);
                         } else if (value == 4) {
-                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent), true);
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent), updateVibrate, true);
                         }
+                        updateVibrate = false;
                     } else if (position == repeatRow) {
                         int minutes = preferences.getInt("repeat_messages", 60);
                         String value;
@@ -936,7 +951,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         } else {
                             value = LocaleController.formatPluralString("Hours", minutes / 60);
                         }
-                        textCell.setTextAndValue(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications), value, false);
+                        textCell.setTextAndValue(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications), value, updateRepeatNotifications, false);
+                        updateRepeatNotifications = false;
                     }
                     break;
                 }

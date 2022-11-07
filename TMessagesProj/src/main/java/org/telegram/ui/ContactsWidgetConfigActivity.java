@@ -34,11 +34,11 @@ public class ContactsWidgetConfigActivity extends ExternalActionActivity {
             });
 
             if (AndroidUtilities.isTablet()) {
-                if (layersActionBarLayout.fragmentsStack.isEmpty()) {
+                if (layersActionBarLayout.getFragmentStack().isEmpty()) {
                     layersActionBarLayout.addFragmentToStack(fragment);
                 }
             } else {
-                if (actionBarLayout.fragmentsStack.isEmpty()) {
+                if (actionBarLayout.getFragmentStack().isEmpty()) {
                     actionBarLayout.addFragmentToStack(fragment);
                 }
             }

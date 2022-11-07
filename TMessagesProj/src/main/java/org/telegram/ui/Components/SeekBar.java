@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class SeekBar {
 
@@ -24,10 +25,14 @@ public class SeekBar {
         default void onSeekBarContinuousDrag(float progress) {
 
         }
+
+        default void onSeekBarPressed() {}
+        default void onSeekBarReleased() {}
     }
 
     private static Paint paint;
     private static int thumbWidth;
+    private float thumbProgress;
     private int thumbX = 0;
     private int draggingThumbX = 0;
     private int thumbDX = 0;
@@ -47,6 +52,7 @@ public class SeekBar {
     private float currentRadius;
     private long lastUpdateTime;
     private View parentView;
+    private float alpha = 1f;
 
     public SeekBar(View parent) {
         if (paint == null) {
@@ -112,8 +118,13 @@ public class SeekBar {
         backgroundSelectedColor = selected;
     }
 
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+    }
+
     public void setProgress(float progress) {
-        thumbX = (int) Math.ceil((width - thumbWidth) * progress);
+        thumbProgress = progress;
+        thumbX = (int) Math.ceil((width - thumbWidth) * thumbProgress);
         if (thumbX < 0) {
             thumbX = 0;
         } else if (thumbX > width - thumbWidth) {
@@ -144,6 +155,7 @@ public class SeekBar {
     public void setSize(int w, int h) {
         width = w;
         height = h;
+        setProgress(thumbProgress);
     }
 
     public int getWidth() {
@@ -155,6 +167,12 @@ public class SeekBar {
     }
 
     public void draw(Canvas canvas) {
+        if (alpha <= 0) {
+            return;
+        }
+        if (alpha < 1) {
+            canvas.saveLayerAlpha(0, 0, width, height, (int) (255 * alpha), Canvas.ALL_SAVE_FLAG);
+        }
         rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, width - thumbWidth / 2, height / 2 + lineHeight / 2);
         paint.setColor(selected ? backgroundSelectedColor : backgroundColor);
         canvas.drawRoundRect(rect, thumbWidth / 2, thumbWidth / 2, paint);
@@ -192,5 +210,9 @@ public class SeekBar {
         }
 
         canvas.drawCircle((pressed ? draggingThumbX : thumbX) + thumbWidth / 2, height / 2, currentRadius, paint);
+
+        if (alpha < 1) {
+            canvas.restore();
+        }
     }
 }

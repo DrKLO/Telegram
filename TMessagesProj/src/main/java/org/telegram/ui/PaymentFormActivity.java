@@ -109,12 +109,12 @@ import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EditTextSettingsCell;
@@ -3063,16 +3063,16 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     }
 
     public int getOtherSameFragmentDiff() {
-        if (parentLayout == null || parentLayout.fragmentsStack == null) {
+        if (parentLayout == null || parentLayout.getFragmentStack() == null) {
             return 0;
         }
-        int cur = parentLayout.fragmentsStack.indexOf(this);
+        int cur = parentLayout.getFragmentStack().indexOf(this);
         if (cur == -1) {
-            cur = parentLayout.fragmentsStack.size();
+            cur = parentLayout.getFragmentStack().size();
         }
         int i = cur;
-        for (int a = 0; a < parentLayout.fragmentsStack.size(); a++) {
-            BaseFragment fragment = parentLayout.fragmentsStack.get(a);
+        for (int a = 0; a < parentLayout.getFragmentStack().size(); a++) {
+            BaseFragment fragment = parentLayout.getFragmentStack().get(a);
             if (fragment instanceof PaymentFormActivity) {
                 i = a;
                 break;
@@ -3124,7 +3124,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    protected void onBecomeFullyVisible() {
+    public void onBecomeFullyVisible() {
         super.onBecomeFullyVisible();
 
         if (currentStep == STEP_CHECKOUT) {
@@ -3136,7 +3136,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen && !backward) {
             if (webView != null) {
                 if (currentStep != STEP_CHECKOUT) {
@@ -3372,10 +3372,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private boolean onCheckoutSuccess(ActionBarLayout parentLayout, Activity parentActivity) {
+    private boolean onCheckoutSuccess(INavigationLayout parentLayout, Activity parentActivity) {
         if (botUser.username != null && botUser.username.equalsIgnoreCase(getMessagesController().premiumBotUsername) && invoiceSlug == null || invoiceSlug != null && getMessagesController().premiumInvoiceSlug != null && Objects.equals(invoiceSlug, getMessagesController().premiumInvoiceSlug)) {
             if (parentLayout != null) {
-                for (BaseFragment fragment : new ArrayList<>(parentLayout.fragmentsStack)) {
+                for (BaseFragment fragment : new ArrayList<>(parentLayout.getFragmentStack())) {
                     if (fragment instanceof ChatActivity || fragment instanceof PremiumPreviewFragment) {
                         fragment.removeSelfFromStack();
                     }
@@ -4030,7 +4030,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             doneItem.getContentView().setVisibility(View.INVISIBLE);
                         }
 
-                        ActionBarLayout parentLayout = getParentLayout();
+                        INavigationLayout parentLayout = getParentLayout();
                         Activity parentActivity = getParentActivity();
                         getMessagesController().newMessageCallback = message -> {
                             if (MessageObject.getPeerId(message.peer_id) == botUser.id && message.action instanceof TLRPC.TL_messageActionPaymentSent) {
@@ -4089,7 +4089,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         try {
             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignored) {}
-        AndroidUtilities.shakeView(view, 2, 0);
+        AndroidUtilities.shakeView(view);
     }
 
     private void setDonePressed(boolean value) {
@@ -4123,7 +4123,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             try {
                 inputFields[FIELD_SAVEDPASSWORD].performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignored) {}
-            AndroidUtilities.shakeView(inputFields[FIELD_SAVEDPASSWORD], 2, 0);
+            AndroidUtilities.shakeView(inputFields[FIELD_SAVEDPASSWORD]);
             return;
         }
         final String password = inputFields[FIELD_SAVEDPASSWORD].getText().toString();
@@ -4168,7 +4168,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                     try {
                                         inputFields[FIELD_SAVEDPASSWORD].performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     } catch (Exception ignored) {}
-                                    AndroidUtilities.shakeView(inputFields[FIELD_SAVEDPASSWORD], 2, 0);
+                                    AndroidUtilities.shakeView(inputFields[FIELD_SAVEDPASSWORD]);
                                     inputFields[FIELD_SAVEDPASSWORD].setText("");
                                 } else {
                                     AlertsCreator.processError(currentAccount, error1, PaymentFormActivity.this, req1);

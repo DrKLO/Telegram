@@ -47,7 +47,7 @@ class NativeByteBuffer;
 class Handshake;
 class ConnectionSocket;
 
-typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime)> onCompleteFunc;
+typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
 typedef std::function<void()> onWriteToSocketFunc;
 typedef std::function<void(int64_t messageId)> fillParamsFunc;
@@ -169,7 +169,8 @@ enum RequestFlag {
     RequestFlagInvokeAfter = 64,
     RequestFlagNeedQuickAck = 128,
     RequestFlagUseUnboundKey = 256,
-    RequestFlagResendAfter = 512
+    RequestFlagResendAfter = 512,
+    RequestFlagIgnoreFloodWait = 1024
 };
 
 inline std::string to_string_int32(int32_t value) {

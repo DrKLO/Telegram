@@ -110,6 +110,17 @@ public class AudioVisualizerDrawable {
 
     float rotation;
 
+    public void draw(Canvas canvas, float cx, float cy, boolean outOwner, float alpha, Theme.ResourcesProvider resourcesProvider) {
+        if (outOwner) {
+            p1.setColor(Theme.getColor(Theme.key_chat_outLoader, resourcesProvider));
+            p1.setAlpha((int) (ALPHA * alpha));
+        } else {
+            p1.setColor(Theme.getColor(Theme.key_chat_inLoader, resourcesProvider));
+            p1.setAlpha((int) (ALPHA * alpha));
+        }
+        this.draw(canvas, cx, cy);
+    }
+
     public void draw(Canvas canvas, float cx, float cy, boolean outOwner, Theme.ResourcesProvider resourcesProvider) {
         if (outOwner) {
             p1.setColor(Theme.getColor(Theme.key_chat_outLoader, resourcesProvider));

@@ -12,6 +12,7 @@ public class MessageCustomParamsHelper {
                 !message.voiceTranscriptionOpen &&
                 !message.voiceTranscriptionFinal &&
                 !message.voiceTranscriptionRated &&
+                !message.voiceTranscriptionForce &&
                 message.voiceTranscriptionId == 0 &&
                 !message.premiumEffectWasPlayed;
     }
@@ -20,6 +21,7 @@ public class MessageCustomParamsHelper {
         toMessage.voiceTranscription = fromMessage.voiceTranscription;
         toMessage.voiceTranscriptionOpen = fromMessage.voiceTranscriptionOpen;
         toMessage.voiceTranscriptionFinal = fromMessage.voiceTranscriptionFinal;
+        toMessage.voiceTranscriptionForce = fromMessage.voiceTranscriptionForce;
         toMessage.voiceTranscriptionRated = fromMessage.voiceTranscriptionRated;
         toMessage.voiceTranscriptionId = fromMessage.voiceTranscriptionId;
         toMessage.premiumEffectWasPlayed = fromMessage.premiumEffectWasPlayed;
@@ -66,11 +68,13 @@ public class MessageCustomParamsHelper {
         private Params_v1(TLRPC.Message message) {
             this.message = message;
             flags += message.voiceTranscription != null ? 1 : 0;
+            flags += message.voiceTranscriptionForce ? 2 : 0;
         }
 
         @Override
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(VERSION);
+            flags = message.voiceTranscriptionForce ? (flags | 2) : (flags &~ 2);
             stream.writeInt32(flags);
             if ((flags & 1) != 0) {
                 stream.writeString(message.voiceTranscription);
@@ -89,6 +93,7 @@ public class MessageCustomParamsHelper {
             if ((flags & 1) != 0) {
                 message.voiceTranscription = stream.readString(exception);
             }
+            message.voiceTranscriptionForce = (flags & 2) != 0;
             message.voiceTranscriptionOpen = stream.readBool(exception);
             message.voiceTranscriptionFinal = stream.readBool(exception);
             message.voiceTranscriptionRated = stream.readBool(exception);

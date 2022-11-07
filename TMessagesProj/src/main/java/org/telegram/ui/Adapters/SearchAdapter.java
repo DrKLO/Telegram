@@ -15,18 +15,22 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
@@ -38,9 +42,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import androidx.collection.LongSparseArray;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -187,14 +188,15 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                                 break;
                             }
                         }
-                        if (found == 0 && user.username != null && user.username.startsWith(q)) {
+                        String username = UserObject.getPublicUsername(user);
+                        if (found == 0 && username != null && username.startsWith(q)) {
                             found = 2;
                         }
                         if (found != 0) {
                             if (found == 1) {
                                 resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
                             } else {
-                                resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q));
                             }
                             resultArray.add(user);
                             break;
@@ -320,7 +322,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                         id = ((TLRPC.User) object).id;
                         self = ((TLRPC.User) object).self;
                     } else if (object instanceof TLRPC.Chat) {
-                        un = ((TLRPC.Chat) object).username;
+                        un = ChatObject.getPublicUsername((TLRPC.Chat) object);
                         id = ((TLRPC.Chat) object).id;
                     }
 

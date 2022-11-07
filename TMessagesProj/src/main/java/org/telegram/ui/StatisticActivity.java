@@ -212,7 +212,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsAll.size() > 0) {
                     int lastPostId = recentPostsAll.get(0).counters.msg_id;
                     int count = recentPostsAll.size();
-                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, false, 0, 0, true);
+                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, false, 0, 0, true, false);
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -1878,7 +1878,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 for (int i = 0; i < messages.size(); i++) {
                     messageObjects.add(new MessageObject(currentAccount, messages.get(i), false, true));
                 }
-                getMessagesStorage().putMessages(messages, false, true, true, 0, false);
+                getMessagesStorage().putMessages(messages, false, true, true, 0, false, 0);
             }
 
             AndroidUtilities.runOnUIThread(() -> {
@@ -2656,7 +2656,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     boolean[] needShowBulletin = new boolean[1];
                     ChatRightsEditActivity newFragment = new ChatRightsEditActivity(user.id, chat.id, finalCurrentParticipant.channelParticipant.admin_rights, null, finalCurrentParticipant.channelParticipant.banned_rights, finalCurrentParticipant.channelParticipant.rank, ChatRightsEditActivity.TYPE_ADMIN, true, finalIsAdmin, null) {
                         @Override
-                        protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+                        public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
                             if (!isOpen && backward && needShowBulletin[0] && BulletinFactory.canShowBulletin(fragment)) {
                                 BulletinFactory.createPromoteToAdminBulletin(fragment, user.first_name).show();
                             }

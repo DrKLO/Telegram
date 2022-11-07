@@ -55,6 +55,10 @@ public class AvatarsImageView extends View {
         avatarsDarawable.setObject(a, currentAccount, object);
     }
 
+    public void setAvatarsTextSize(int size) {
+        avatarsDarawable.setAvatarsTextSize(size);
+    }
+
     public void reset() {
         avatarsDarawable.reset();
     }

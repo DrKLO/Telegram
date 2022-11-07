@@ -95,6 +95,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     private ActionBarMenuItem searchItem;
     private MapOverlayView overlayView;
 
+    private boolean doNotDrawMap;
     private IMapsProvider.IMap map;
     private IMapsProvider.IMapView mapView;
     private IMapsProvider.ICameraUpdate forceUpdate;
@@ -466,7 +467,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
                 canvas.save();
                 canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - clipSize);
-                boolean result = super.drawChild(canvas, child, drawingTime);
+                boolean result = doNotDrawMap ? false : super.drawChild(canvas, child, drawingTime);
                 canvas.restore();
                 return result;
             }
@@ -944,6 +945,10 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     void onDestroy() {
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.locationPermissionDenied);
+        doNotDrawMap = true;
+        if (mapViewClip != null) {
+            mapViewClip.invalidate();
+        }
         try {
             if (map != null) {
                 map.setMyLocationEnabled(false);
@@ -1292,7 +1297,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
         if (checkGpsEnabled && getParentActivity() != null) {
             checkGpsEnabled = false;
-            if (!getParentActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)) {
+            Activity parentActivity;
+            PackageManager packageManager;
+            if ((parentActivity = getParentActivity()) != null && (packageManager = parentActivity.getPackageManager()) != null && !packageManager.hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)) {
                 return;
             }
             try {
@@ -1418,14 +1425,14 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 } else {
                     location = null;
                 }
-                if (location != null) {
+                if (location != null && map != null) {
                     map.moveCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(location));
                 }
             }
 
             if (locationDenied && isTypeSend()) {
 //                adapter.setOverScrollHeight(overScrollHeight + top);
-//                // TODO(dkaraush): fix ripple effect on buttons
+//                // TODO: fix ripple effect on buttons
                 final int count = adapter.getItemCount();
                 for (int i = 1; i < count; ++i) {
                     holder = listView.findViewHolderForAdapterPosition(i);

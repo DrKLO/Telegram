@@ -194,7 +194,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
-        if (!passwordEntered) {
+        if (!passwordEntered || delegate != null) {
             actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
@@ -427,13 +427,15 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         updateRows();
 
-        if (passwordEntered) {
+        if (passwordEntered && delegate == null) {
             actionBar.setTitle(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle));
         } else {
             actionBar.setTitle(null);
         }
         if (delegate != null) {
-            titleTextView.setText(LocaleController.getString("PleaseEnterCurrentPasswordTransfer", R.string.PleaseEnterCurrentPasswordTransfer));
+            titleTextView.setText(LocaleController.getString(R.string.YourPassword));
+            subtitleTextView.setText(LocaleController.getString(R.string.PleaseEnterCurrentPasswordTransfer));
+            subtitleTextView.setVisibility(View.VISIBLE);
         } else {
             titleTextView.setText(LocaleController.getString(R.string.YourPassword));
             subtitleTextView.setVisibility(View.VISIBLE);
@@ -725,7 +727,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
         if (isOpen) {
             if (forgotPasswordOnShow) {

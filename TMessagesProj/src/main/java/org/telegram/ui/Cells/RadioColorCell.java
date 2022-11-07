@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import org.telegram.ui.Components.RadioButton;
 public class RadioColorCell extends FrameLayout {
 
     private TextView textView;
+    private TextView text2View;
     private RadioButton radioButton;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -48,24 +50,52 @@ public class RadioColorCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 51), 13, (LocaleController.isRTL ? 51 : 21), 0));
+
+        text2View = new TextView(context);
+        text2View.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        text2View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        text2View.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        text2View.setVisibility(View.GONE);
+        addView(text2View, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 51), 13 + 16 + 8, (LocaleController.isRTL ? 51 : 21), 0));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
+        if (text2View.getVisibility() == View.VISIBLE) {
+            text2View.measure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(21 + 51), MeasureSpec.EXACTLY),
+                heightMeasureSpec
+            );
+        }
+        super.onMeasure(
+            MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50) + (text2View.getVisibility() == View.VISIBLE ? AndroidUtilities.dp(4) + text2View.getMeasuredHeight() : 0), MeasureSpec.EXACTLY)
+        );
     }
 
     public void setCheckColor(int color1, int color2) {
         radioButton.setColor(color1, color2);
     }
 
-    public void setTextAndValue(String text, boolean checked) {
+    public void setTextAndValue(CharSequence text, boolean checked) {
         textView.setText(text);
+        text2View.setVisibility(View.GONE);
+        radioButton.setChecked(checked, false);
+    }
+
+    public void setTextAndText2AndValue(CharSequence text, CharSequence text2, boolean checked) {
+        textView.setText(text);
+        text2View.setVisibility(View.VISIBLE);
+        text2View.setText(text2);
         radioButton.setChecked(checked, false);
     }
 
     public void setChecked(boolean checked, boolean animated) {
         radioButton.setChecked(checked, animated);
+    }
+
+    public boolean isChecked() {
+        return radioButton.isChecked();
     }
 
     @Override

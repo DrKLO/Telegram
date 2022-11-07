@@ -358,6 +358,17 @@ TL_restrictionReason *TL_restrictionReason::TLdeserialize(NativeByteBuffer *stre
     return result;
 }
 
+TL_username *TL_username::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_username::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_username", constructor);
+        return nullptr;
+    }
+    TL_username *result = new TL_username();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
 void TL_restrictionReason::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     platform = stream->readString(&error);
     reason = stream->readString(&error);
@@ -369,6 +380,21 @@ void TL_restrictionReason::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(platform);
     stream->writeString(reason);
     stream->writeString(text);
+}
+
+void TL_username::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    editable = (flags & 1) != 0;
+    active = (flags & 2) != 0;
+    username = stream->readString(&error);
+}
+
+void TL_username::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    flags = editable ? (flags | 1) : (flags &~ 1);
+    flags = active ? (flags | 2) : (flags &~ 2);
+    stream->writeInt32(flags);
+    stream->writeString(username);
 }
 
 User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -400,6 +426,7 @@ void TL_userEmpty::serializeToStream(NativeByteBuffer *stream) {
 
 void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
+    flags2 = stream->readInt32(&error);
     id = stream->readInt64(&error);
     if ((flags & 1) != 0) {
         access_hash = stream->readInt64(&error);
@@ -446,6 +473,22 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
     }
     if ((flags & 4194304) != 0) {
         lang_code = stream->readString(&error);
+    }
+    if ((flags2 & 1) != 0) {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        for (int32_t a = 0; a < count; a++) {
+            TL_username *object = TL_username::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+            if (object == nullptr) {
+                return;
+            }
+            usernames.push_back(std::unique_ptr<TL_username>(object));
+        }
     }
 }
 

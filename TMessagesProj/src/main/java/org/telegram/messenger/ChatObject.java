@@ -54,6 +54,7 @@ public class ChatObject {
     public static final int ACTION_EDIT_MESSAGES = 12;
     public static final int ACTION_DELETE_MESSAGES = 13;
     public static final int ACTION_MANAGE_CALLS = 14;
+    public static final int ACTION_MANAGE_TOPICS = 15;
 
     public final static int VIDEO_FRAME_NO_FRAME = 0;
     public final static int VIDEO_FRAME_REQUESTING = 1;
@@ -72,6 +73,14 @@ public class ChatObject {
                     return true;
                 }
             }
+        }
+        return false;
+    }
+
+    public static boolean isForum(int currentAccount, long dialogId) {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        if (chat != null) {
+            return chat.forum;
         }
         return false;
     }
@@ -1402,6 +1411,7 @@ public class ChatObject {
             case ACTION_EMBED_LINKS:
             case ACTION_SEND_POLLS:
             case ACTION_VIEW:
+            case ACTION_MANAGE_TOPICS:
                 return true;
         }
         return false;
@@ -1417,6 +1427,7 @@ public class ChatObject {
             case ACTION_EDIT_MESSAGES:
             case ACTION_DELETE_MESSAGES:
             case ACTION_BLOCK_USERS:
+            case ACTION_MANAGE_TOPICS:
                 return true;
         }
         return false;
@@ -1446,6 +1457,8 @@ public class ChatObject {
                 return rights.send_polls;
             case ACTION_VIEW:
                 return rights.view_messages;
+            case ACTION_MANAGE_TOPICS:
+                return rights.manage_topics;
         }
         return false;
     }
@@ -1473,6 +1486,9 @@ public class ChatObject {
             switch (action) {
                 case ACTION_PIN:
                     value = chat.admin_rights.pin_messages;
+                    break;
+                case ACTION_MANAGE_TOPICS:
+                    value = chat.admin_rights.manage_topics;
                     break;
                 case ACTION_CHANGE_INFO:
                     value = chat.admin_rights.change_info;
@@ -1556,7 +1572,7 @@ public class ChatObject {
     }
 
     public static boolean canSendAsPeers(TLRPC.Chat chat) {
-        return ChatObject.isChannel(chat) && chat.megagroup && (!TextUtils.isEmpty(chat.username) || chat.has_geo || chat.has_link);
+        return ChatObject.isChannel(chat) && chat.megagroup && (ChatObject.isPublic(chat) || chat.has_geo || chat.has_link);
     }
 
     public static boolean isChannel(TLRPC.Chat chat) {
@@ -1573,6 +1589,10 @@ public class ChatObject {
 
     public static boolean isChannelAndNotMegaGroup(TLRPC.Chat chat) {
         return isChannel(chat) && !isMegagroup(chat);
+    }
+
+    public static boolean isForum(TLRPC.Chat chat) {
+        return chat != null && chat.forum;
     }
 
     public static boolean isMegagroup(int currentAccount, long chatId) {
@@ -1664,6 +1684,40 @@ public class ChatObject {
         return canUserDoAction(chat, ACTION_PIN) || ChatObject.isChannel(chat) && !chat.megagroup && chat.admin_rights != null && chat.admin_rights.edit_messages;
     }
 
+    public static boolean canCreateTopic(TLRPC.Chat chat) {
+        return canUserDoAction(chat, ACTION_MANAGE_TOPICS);
+    }
+
+    public static boolean canManageTopics(TLRPC.Chat chat) {
+        return canUserDoAdminAction(chat, ACTION_MANAGE_TOPICS);
+    }
+
+    public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, TLRPC.TL_forumTopic topic) {
+        return canManageTopics(chat) || isMyTopic(currentAccount, topic);
+    }
+    public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+        return canManageTopics(chat) || isMyTopic(currentAccount, chat, topicId);
+    }
+
+    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+        return chat != null && canDeleteTopic(currentAccount, chat, MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chat.id, topicId));
+    }
+    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, TLRPC.TL_forumTopic topic) {
+        return canUserDoAction(chat, ACTION_DELETE_MESSAGES) || isMyTopic(currentAccount, topic) && topic.topMessage != null && topic.topicStartMessage != null && topic.topMessage.id - topic.topicStartMessage.id <= Math.max(1, topic.groupedMessages == null ? 0 : topic.groupedMessages.size()) && MessageObject.peersEqual(topic.from_id, topic.topMessage.from_id);
+    }
+
+    public static boolean isMyTopic(int currentAccount, TLRPC.TL_forumTopic topic) {
+        return topic != null && (topic.my || topic.from_id instanceof TLRPC.TL_peerUser && topic.from_id.user_id == UserConfig.getInstance(currentAccount).clientUserId);
+    }
+
+    public static boolean isMyTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+        return chat != null && chat.forum && isMyTopic(currentAccount, chat.id, topicId);
+    }
+
+    public static boolean isMyTopic(int currentAccount, long chatId, int topicId) {
+        return isMyTopic(currentAccount, MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chatId, topicId));
+    }
+
     public static boolean isChannel(long chatId, int currentAccount) {
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
         return chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden;
@@ -1697,6 +1751,7 @@ public class ChatObject {
         currentBannedRights += bannedRights.invite_users ? 1 : 0;
         currentBannedRights += bannedRights.change_info ? 1 : 0;
         currentBannedRights += bannedRights.pin_messages ? 1 : 0;
+        currentBannedRights += bannedRights.manage_topics ? 1 : 0;
         currentBannedRights += bannedRights.until_date;
         return currentBannedRights;
     }
@@ -1707,6 +1762,53 @@ public class ChatObject {
 
     public static TLRPC.ChatPhoto getPhoto(TLRPC.Chat chat) {
         return hasPhoto(chat) ? chat.photo : null;
+    }
+
+    public static String getPublicUsername(TLRPC.Chat chat) {
+        return getPublicUsername(chat, false);
+    }
+
+    public static String getPublicUsername(TLRPC.Chat chat, boolean editable) {
+        if (chat == null) {
+            return null;
+        }
+        if (!TextUtils.isEmpty(chat.username) && !editable) {
+            return chat.username;
+        }
+        if (chat.usernames != null) {
+            for (int i = 0; i < chat.usernames.size(); ++i) {
+                TLRPC.TL_username u = chat.usernames.get(i);
+                if (u != null && (u.active && !editable || u.editable) && !TextUtils.isEmpty(u.username)) {
+                    return u.username;
+                }
+            }
+        }
+        if (!TextUtils.isEmpty(chat.username) && editable && (chat.usernames == null || chat.usernames.size() <= 0)) {
+            return chat.username;
+        }
+        return null;
+    }
+
+    public static boolean hasPublicLink(TLRPC.Chat chat, String username) {
+        if (chat == null) {
+            return false;
+        }
+        if (!TextUtils.isEmpty(chat.username)) {
+            return chat.username.equalsIgnoreCase(username);
+        }
+        if (chat.usernames != null) {
+            for (int i = 0; i < chat.usernames.size(); ++i) {
+                TLRPC.TL_username u = chat.usernames.get(i);
+                if (u != null && u.active && !TextUtils.isEmpty(u.username) && u.username.equalsIgnoreCase(username)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean isPublic(TLRPC.Chat chat) {
+        return !TextUtils.isEmpty(getPublicUsername(chat));
     }
 
     public static class VideoParticipant {

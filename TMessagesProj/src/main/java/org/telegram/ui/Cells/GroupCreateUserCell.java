@@ -375,7 +375,7 @@ public class GroupCreateUserCell extends FrameLayout {
                         }
                     } else if (currentChat.has_geo) {
                         statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
-                    } else if (TextUtils.isEmpty(currentChat.username)) {
+                    } else if (!ChatObject.isPublic(currentChat)) {
                         if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
                             statusTextView.setText(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
                         } else {

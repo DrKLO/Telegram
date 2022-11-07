@@ -8,6 +8,9 @@
 
 package org.telegram.ui;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
@@ -26,6 +29,11 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.collection.ArraySet;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,14 +80,6 @@ import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.collection.ArraySet;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SimpleItemAnimator;
-
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class MessageStatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -444,8 +444,8 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
         avatarContainer.setOnClickListener(view -> {
-            if (getParentLayout().fragmentsStack.size() > 1) {
-                BaseFragment previousFragemnt = getParentLayout().fragmentsStack.get(getParentLayout().fragmentsStack.size() - 2);
+            if (getParentLayout().getFragmentStack().size() > 1) {
+                BaseFragment previousFragemnt = getParentLayout().getFragmentStack().get(getParentLayout().getFragmentStack().size() - 2);
                 if (previousFragemnt instanceof ChatActivity &&  ((ChatActivity) previousFragemnt).getCurrentChat().id  == chatId) {
                     finishFragment();
                     return;

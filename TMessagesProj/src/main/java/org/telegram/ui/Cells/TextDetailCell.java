@@ -13,8 +13,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
@@ -24,17 +27,20 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 
 public class TextDetailCell extends FrameLayout {
 
     private final TextView textView;
-    private final TextView valueTextView;
+    private final LinkSpanDrawable.LinksTextView valueTextView;
     private final TextView showMoreTextView = null;
     private final ImageView imageView;
     private boolean needDivider;
     private boolean contentDescriptionValueFirst;
+    private boolean multiline;
 
     private Theme.ResourcesProvider resourcesProvider;
 
@@ -43,6 +49,10 @@ public class TextDetailCell extends FrameLayout {
     }
 
     public TextDetailCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, resourcesProvider, false);
+    }
+
+    public TextDetailCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean multiline) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
@@ -57,15 +67,27 @@ public class TextDetailCell extends FrameLayout {
         textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 8, 23, 0));
 
-        valueTextView = new TextView(context);
+        valueTextView = new LinkSpanDrawable.LinksTextView(context);
+        valueTextView.setOnLinkLongPressListener(span -> {
+            if (span != null) {
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception ignore) {};
+                span.onClick(valueTextView);
+            }
+        });
+        if (this.multiline = multiline) {
+            setMinimumHeight(AndroidUtilities.dp(60));
+        } else {
+            valueTextView.setLines(1);
+            valueTextView.setSingleLine(true);
+        }
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        valueTextView.setLines(1);
-        valueTextView.setMaxLines(1);
-        valueTextView.setSingleLine(true);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33, 23, 0));
+        valueTextView.setEllipsize(TextUtils.TruncateAt.END);
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33, 23, 10));
 
         imageView = new ImageView(context);
         imageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -74,14 +96,23 @@ public class TextDetailCell extends FrameLayout {
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        boolean hit = valueTextView.hit((int) ev.getX() - valueTextView.getLeft(), (int) ev.getY() - valueTextView.getTop()) != null;
+        if (hit) {
+            return true;
+        }
+        return super.onTouchEvent(ev);
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
             MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-            MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY)
+            multiline ? heightMeasureSpec : MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY)
         );
     }
 
-    public void setTextAndValue(String text, String value, boolean divider) {
+    public void setTextAndValue(CharSequence text, CharSequence value, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);
         needDivider = divider;
@@ -93,6 +124,7 @@ public class TextDetailCell extends FrameLayout {
     }
 
     public void setImage(Drawable drawable, CharSequence imageContentDescription) {
+        ((MarginLayoutParams) valueTextView.getLayoutParams()).rightMargin = !LocaleController.isRTL && drawable != null ? AndroidUtilities.dp(28 + 12 + 12 + 6) : AndroidUtilities.dp(23);
         imageView.setImageDrawable(drawable);
         imageView.setFocusable(drawable != null);
         imageView.setContentDescription(imageContentDescription);

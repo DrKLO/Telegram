@@ -46,10 +46,12 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.TopicsFragment;
 
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -93,14 +95,16 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatusDrawable;
 
-    public ChatAvatarContainer(Context context, ChatActivity chatActivity, boolean needTime) {
-        this(context, chatActivity, needTime, null);
+    public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime) {
+        this(context, baseFragment, needTime, null);
     }
     
-    public ChatAvatarContainer(Context context, ChatActivity chatActivity, boolean needTime, Theme.ResourcesProvider resourcesProvider) {
+    public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        parentFragment = chatActivity;
+        if (baseFragment instanceof ChatActivity) {
+            parentFragment = (ChatActivity) baseFragment;
+        }
 
         final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
         avatarImageView = new BackupImageView(context) {
@@ -117,9 +121,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
             }
         };
-        if (parentFragment != null) {
-            sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(chatActivity);
-            if (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2) {
+        if (baseFragment instanceof ChatActivity || baseFragment instanceof TopicsFragment) {
+            sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(baseFragment);
+            if (parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2)) {
                 avatarImageView.setVisibility(GONE);
             }
         }
@@ -175,6 +179,11 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
                 super.setTranslationY(translationY);
             }
+
+            @Override
+            public void setVisibility(int visibility) {
+                super.setVisibility(visibility);
+            }
         };
         subtitleTextView.setEllipsizeByGradient(true);
         subtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
@@ -211,7 +220,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
-            if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
+            if ((!parentFragment.isThreadChat() || parentFragment.isTopic) && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
                 setOnClickListener(v -> openProfile(false));
             }
 
@@ -351,6 +360,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         } else if (chat != null) {
             Bundle args = new Bundle();
             args.putLong("chat_id", chat.id);
+            if (parentFragment.isTopic) {
+                args.putInt("topic_id", parentFragment.getThreadMessage().getId());
+            }
             ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
             fragment.setChatInfo(parentFragment.getCurrentChatInfo());
             fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
@@ -672,7 +684,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         CharSequence newSubtitle;
         boolean useOnlineColor = false;
         if (printString == null || printString.length() == 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
-            if (parentFragment.isThreadChat()) {
+            if (parentFragment.isThreadChat() && !parentFragment.isTopic) {
                 if (titleTextView.getTag() != null) {
                     return;
                 }
@@ -710,7 +722,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 return;
             }
             setTypingAnimation(false);
-            if (chat != null) {
+            if (parentFragment.isTopic && chat != null) {
+                newSubtitle =  LocaleController.formatString("TopicProfileStatus", R.string.TopicProfileStatus, chat.title);
+            } else if (chat != null) {
                 TLRPC.ChatFull info = parentFragment.getCurrentChatInfo();
                 if (ChatObject.isChannel(chat)) {
                     if (info != null && info.participants_count != 0) {
@@ -736,14 +750,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                             } else {
                                 if (chat.has_geo) {
                                     newSubtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation).toLowerCase();
-                                } else if (!TextUtils.isEmpty(chat.username)) {
+                                } else if (ChatObject.isPublic(chat)) {
                                     newSubtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
                                 } else {
                                     newSubtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                                 }
                             }
                         } else {
-                            if ((chat.flags & TLRPC.CHAT_FLAG_IS_PUBLIC) != 0) {
+                            if (ChatObject.isPublic(chat)) {
                                 newSubtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
                             } else {
                                 newSubtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
@@ -849,7 +863,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         avatarDrawable.setInfo(chat);
         if (avatarImageView != null) {
             avatarImageView.setForUserOrChat(chat, avatarDrawable);
+            avatarImageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
         }
+
     }
 
     public void setUserAvatar(TLRPC.User user) {
@@ -909,6 +925,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (avatarImageView != null) {
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }
+            avatarImageView.setRoundRadius(chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
         }
     }
 

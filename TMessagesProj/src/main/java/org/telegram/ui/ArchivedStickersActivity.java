@@ -236,12 +236,12 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         isInTransition = true;
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         isInTransition = false;
         if (doOnTransitionEnd != null) {
             doOnTransitionEnd.run();

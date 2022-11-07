@@ -385,6 +385,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
                 container.removeTransition(TextMessageEnterTransition.this);
                 messageView.setEnterTransitionInProgress(false);
+                messageView.getTransitionParams().lastDrawingBackgroundRect.set(messageView.getBackgroundDrawableLeft(), messageView.getBackgroundDrawableTop(), messageView.getBackgroundDrawableRight(), messageView.getBackgroundDrawableBottom());
                 chatActivityEnterView.setTextTransitionIsRunning(false);
                 chatActivityEnterView.getEditField().setAlpha(1f);
                 chatActivity.getReplyNameTextView().setAlpha(1f);
@@ -530,6 +531,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             chatActivity.getReplyNameTextView().setAlpha(0f);
             chatActivity.getReplyObjectTextView().setAlpha(0f);
 
+            float replyHeight = AndroidUtilities.lerp(AndroidUtilities.dp(35), AndroidUtilities.dp(7) + Theme.chat_replyNamePaint.getTextSize() + Theme.chat_replyTextPaint.getTextSize(), progressX);
+            int offset = (int) Math.min(AndroidUtilities.dp(10), (replyHeight - AndroidUtilities.dp(35)) / 1.5f + AndroidUtilities.dp(10));
+
             float fromReplayX = replyFromStartX - container.getX();
             float fromReplayY = replyFromStartY - container.getY();
             float toReplayX = messageViewX + messageView.replyStartX;
@@ -538,7 +542,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             int replyMessageColor;
             int replyOwnerMessageColor;
             int replyLineColor;
-            if (currentMessageObject.hasValidReplyMessageObject() && (currentMessageObject.replyMessageObject.type == 0 || !TextUtils.isEmpty(currentMessageObject.replyMessageObject.caption)) && !(currentMessageObject.replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame || currentMessageObject.replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice)) {
+            if (currentMessageObject.hasValidReplyMessageObject() && (currentMessageObject.replyMessageObject.type == MessageObject.TYPE_TEXT || !TextUtils.isEmpty(currentMessageObject.replyMessageObject.caption)) && !(currentMessageObject.replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame || currentMessageObject.replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice)) {
                 replyMessageColor = getThemedColor(Theme.key_chat_outReplyMessageText);
             } else {
                 replyMessageColor = getThemedColor(Theme.key_chat_outReplyMediaMessageText);
@@ -562,18 +566,18 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             float replyY = (fromReplayY + AndroidUtilities.dp(12) * progress) * (1f - progress) + toReplayY * progress;
 
             Theme.chat_replyLinePaint.setColor(ColorUtils.setAlphaComponent(replyLineColor, (int) (Color.alpha(replyLineColor) * progressX)));
-            canvas.drawRect(replyX, replyY, replyX + AndroidUtilities.dp(2), replyY + AndroidUtilities.dp(35), Theme.chat_replyLinePaint);
+            canvas.drawRect(replyX, replyY, replyX + AndroidUtilities.dp(2), replyY + AndroidUtilities.lerp(AndroidUtilities.dp(35), messageView.replyHeight, progressX), Theme.chat_replyLinePaint);
 
             canvas.save();
-            canvas.translate(AndroidUtilities.dp(10) * progressX, 0);
+            canvas.translate(offset * progressX, 0);
 
             if (messageView.needReplyImage) {
                 canvas.save();
-                messageView.replyImageReceiver.setImageCoords(replyX, replyY, AndroidUtilities.dp(35), AndroidUtilities.dp(35));
+                messageView.replyImageReceiver.setImageCoords(replyX, replyY, replyHeight, replyHeight);
                 messageView.replyImageReceiver.draw(canvas);
                 canvas.translate(replyX, replyY);
                 canvas.restore();
-                canvas.translate(AndroidUtilities.dp(44), 0);
+                canvas.translate(offset - AndroidUtilities.dp(1) + replyHeight, 0);
             }
 
             float replyToMessageX = toReplayX - replyMessageDx;
@@ -591,7 +595,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
             if (messageView.replyTextLayout != null) {
                 canvas.save();
-                canvas.translate(replyMessageX, replyY + AndroidUtilities.dp(19));
+                canvas.translate(replyMessageX, replyY + AndroidUtilities.lerp(AndroidUtilities.dp(19), Theme.chat_replyNamePaint.getTextSize() + AndroidUtilities.dp(5), progressX));
 
                 canvas.save();
                 SpoilerEffect.clipOutCanvas(canvas, messageView.replySpoilers);

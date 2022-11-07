@@ -321,7 +321,7 @@ public class WebviewActivity extends BaseFragment {
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen && !backward && webView != null) {
             webView.loadUrl(currentUrl);
         }

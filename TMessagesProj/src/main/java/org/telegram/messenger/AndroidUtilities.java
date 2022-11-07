@@ -10,8 +10,6 @@ package org.telegram.messenger;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -55,6 +53,8 @@ import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.system.ErrnoException;
+import android.system.OsConstants;
 import android.telephony.TelephonyManager;
 import android.text.Layout;
 import android.text.Selection;
@@ -66,6 +66,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
@@ -122,10 +123,10 @@ import org.telegram.messenger.utils.CustomHtml;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
@@ -172,12 +173,16 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AndroidUtilities {
     public final static int LIGHT_STATUS_BAR_OVERLAY = 0x0f000000, DARK_STATUS_BAR_OVERLAY = 0x33000000;
+
+    public final static int REPLACING_TAG_TYPE_LINK = 0;
+    public final static int REPLACING_TAG_TYPE_BOLD = 1;
 
     public final static String TYPEFACE_ROBOTO_MEDIUM = "fonts/rmedium.ttf";
 
@@ -421,10 +426,10 @@ public class AndroidUtilities {
     }
 
     public static CharSequence replaceSingleTag(String str, Runnable runnable) {
-        return replaceSingleTag(str, null, runnable);
+        return replaceSingleTag(str, null, 0, runnable);
     }
 
-    public static CharSequence replaceSingleTag(String str, String colorKey, Runnable runnable) {
+    public static CharSequence replaceSingleTag(String str, String colorKey, int type, Runnable runnable) {
         int startIndex = str.indexOf("**");
         int endIndex = str.indexOf("**", startIndex + 1);
         str = str.replace("**", "");
@@ -436,24 +441,36 @@ public class AndroidUtilities {
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
         if (index >= 0) {
-            spannableStringBuilder.setSpan(new ClickableSpan() {
+            if (type == REPLACING_TAG_TYPE_LINK) {
+                spannableStringBuilder.setSpan(new ClickableSpan() {
 
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setUnderlineText(false);
-                    if (colorKey != null) {
-                        ds.setColor(Theme.getColor(colorKey));
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                        if (colorKey != null) {
+                            ds.setColor(Theme.getColor(colorKey));
+                        }
                     }
-                }
 
-                @Override
-                public void onClick(@NonNull View view) {
-                    if (runnable != null) {
-                        runnable.run();
+                    @Override
+                    public void onClick(@NonNull View view) {
+                        if (runnable != null) {
+                            runnable.run();
+                        }
                     }
-                }
-            }, index, index + len, 0);
+                }, index, index + len, 0);
+            } else {
+                spannableStringBuilder.setSpan(new CharacterStyle() {
+                    @Override
+                    public void updateDrawState(TextPaint textPaint) {
+                        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        int wasAlpha = textPaint.getAlpha();
+                        textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+                        textPaint.setAlpha(wasAlpha);
+                    }
+                }, index, index + len, 0);
+            }
         }
         return spannableStringBuilder;
     }
@@ -705,6 +722,9 @@ public class AndroidUtilities {
     }
 
     public static int calcBitmapColor(Bitmap bitmap) {
+        if (bitmap == null) {
+            return 0;
+        }
         try {
             Bitmap b = Bitmaps.createScaledBitmap(bitmap, 1, 1, true);
             if (b != null) {
@@ -864,6 +884,30 @@ public class AndroidUtilities {
                 0, 0, 1, 0, brightness,
                 0, 0, 0, 1, 0
         }));
+    }
+
+    public static void adjustHueColorMatrix(ColorMatrix cm, float value) {
+        value = cleanValue(value, 180f) / 180f * (float) Math.PI;
+        if (value == 0) {
+            return;
+        }
+        float cosVal = (float) Math.cos(value);
+        float sinVal = (float) Math.sin(value);
+        float lumR = 0.213f;
+        float lumG = 0.715f;
+        float lumB = 0.072f;
+        float[] mat = new float[]
+                {
+                        lumR + cosVal * (1 - lumR) + sinVal * (-lumR), lumG + cosVal * (-lumG) + sinVal * (-lumG), lumB + cosVal * (-lumB) + sinVal * (1 - lumB), 0, 0,
+                        lumR + cosVal * (-lumR) + sinVal * (0.143f), lumG + cosVal * (1 - lumG) + sinVal * (0.140f), lumB + cosVal * (-lumB) + sinVal * (-0.283f), 0, 0,
+                        lumR + cosVal * (-lumR) + sinVal * (-(1 - lumR)), lumG + cosVal * (-lumG) + sinVal * (lumG), lumB + cosVal * (1 - lumB) + sinVal * (lumB), 0, 0,
+                        0f, 0f, 0f, 1f, 0f,
+                        0f, 0f, 0f, 0f, 1f};
+        cm.postConcat(new ColorMatrix(mat));
+    }
+
+    protected static float cleanValue(float p_val, float p_limit) {
+        return Math.min(p_limit, Math.max(-p_limit, p_val));
     }
 
     public static void multiplyBrightnessColorMatrix(ColorMatrix colorMatrix, float v) {
@@ -2026,9 +2070,13 @@ public class AndroidUtilities {
         return ch == '-' || ch == '~';
     }
 
+    public static boolean isTabletForce() {
+        return ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+    }
+
     public static boolean isTabletInternal() {
         if (isTablet == null) {
-            isTablet = ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+            isTablet = isTabletForce();
         }
         return isTablet;
     }
@@ -2471,24 +2519,29 @@ public class AndroidUtilities {
                         uptime + 5 < SharedConfig.lastPauseTime);
     }
 
-    public static void shakeView(final View view, final float x, final int num) {
+    public static void shakeView(final View view) {
         if (view == null) {
             return;
         }
-        if (num == 6) {
-            view.setTranslationX(0);
-            return;
+        final float N = 4;
+        Object animator = view.getTag(R.id.shake_animation);
+        if (animator instanceof ValueAnimator) {
+            ((ValueAnimator) animator).cancel();
         }
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(view, "translationX", dp(x)));
-        animatorSet.setDuration(50);
-        animatorSet.addListener(new AnimatorListenerAdapter() {
+        ValueAnimator va = ValueAnimator.ofFloat(0, 1);
+        va.addUpdateListener(anm -> {
+            float x = (float) anm.getAnimatedValue();
+            view.setTranslationX((float) ((4 * x * (1 - x)) * Math.sin(N * (x * Math.PI)) * AndroidUtilities.dp(N)));
+        });
+        va.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                shakeView(view, num == 5 ? 0 : -x, num + 1);
+                view.setTranslationX(0);
             }
         });
-        animatorSet.start();
+        va.setDuration(300);
+        va.start();
+        view.setTag(R.id.shake_animation, va);
     }
 
     public static void shakeViewSpring(View view) {
@@ -2505,13 +2558,28 @@ public class AndroidUtilities {
 
     public static void shakeViewSpring(View view, float shiftDp, Runnable endCallback) {
         int shift = dp(shiftDp);
-        new SpringAnimation(view, DynamicAnimation.TRANSLATION_X, 0)
-                .setSpring(new SpringForce(0).setStiffness(600f))
+        if (view.getTag(R.id.spring_tag) != null) {
+            ((SpringAnimation)view.getTag(R.id.spring_tag)).cancel();
+        }
+        Float wasX = (Float) view.getTag(R.id.spring_was_translation_x_tag);
+        if (wasX != null) {
+            view.setTranslationX(wasX);
+        }
+        view.setTag(R.id.spring_was_translation_x_tag, view.getTranslationX());
+
+        float translationX = view.getTranslationX();
+        SpringAnimation springAnimation = new SpringAnimation(view, DynamicAnimation.TRANSLATION_X, translationX)
+                .setSpring(new SpringForce(translationX).setStiffness(600f))
                 .setStartVelocity(-shift * 100)
                 .addEndListener((animation, canceled, value, velocity) -> {
                     if (endCallback != null) endCallback.run();
-                })
-                .start();
+
+                    view.setTranslationX(translationX);
+                    view.setTag(R.id.spring_tag, null);
+                    view.setTag(R.id.spring_was_translation_x_tag, null);
+                });
+        view.setTag(R.id.spring_tag, springAnimation);
+        springAnimation.start();
     }
 
     /*public static String ellipsize(String text, int maxLines, int maxWidth, TextPaint paint) {
@@ -3117,7 +3185,11 @@ public class AndroidUtilities {
                     parentFragment.presentFragment(new ThemePreviewActivity(themeInfo));
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    Map<String, Integer> colorsReplacement = new HashMap<>();
+                    colorsReplacement.put("info1.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info2.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, parentFragment.getThemedColor(Theme.key_dialogTopBackground), colorsReplacement);
+                    builder.setTopAnimationIsNew(true);
                     builder.setMessage(LocaleController.getString("IncorrectTheme", R.string.IncorrectTheme));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                     parentFragment.showDialog(builder.create());
@@ -3163,7 +3235,11 @@ public class AndroidUtilities {
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    Map<String, Integer> colorsReplacement = new HashMap<>();
+                    colorsReplacement.put("info1.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info2.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, parentFragment.getThemedColor(Theme.key_dialogTopBackground), colorsReplacement);
+                    builder.setTopAnimationIsNew(true);
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                     builder.setMessage(LocaleController.formatString("NoHandleAppInstalled", R.string.NoHandleAppInstalled, message.getDocument().mime_type));
                     if (parentFragment != null) {
@@ -3229,7 +3305,7 @@ public class AndroidUtilities {
         if (f == null || !f.exists()) {
             f = FileLoader.getInstance(message.currentAccount).getPathToMessage(message.messageOwner);
         }
-        String mimeType = message.type == 9 || message.type == 0 ? message.getMimeType() : null;
+        String mimeType = message.type == MessageObject.TYPE_FILE || message.type == MessageObject.TYPE_TEXT ? message.getMimeType() : null;
         return openForView(f, message.getFileName(), mimeType, activity, resourcesProvider);
     }
 
@@ -4243,11 +4319,11 @@ public class AndroidUtilities {
         return false;
     }
 
-    public static void scrollToFragmentRow(ActionBarLayout parentLayout, String rowName) {
+    public static void scrollToFragmentRow(INavigationLayout parentLayout, String rowName) {
         if (parentLayout == null || rowName == null) {
             return;
         }
-        BaseFragment openingFragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1);
+        BaseFragment openingFragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 1);
         try {
             Field listViewField = openingFragment.getClass().getDeclaredField("listView");
             listViewField.setAccessible(true);
@@ -4304,6 +4380,9 @@ public class AndroidUtilities {
     }
 
     public static void updateImageViewImageAnimated(ImageView imageView, Drawable newIcon) {
+        if (imageView.getDrawable() == newIcon) {
+            return;
+        }
         ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(150);
         AtomicBoolean changed = new AtomicBoolean();
         animator.addUpdateListener(animation -> {
@@ -4352,6 +4431,45 @@ public class AndroidUtilities {
             view.animate().setListener(null).cancel();
             view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
             view.setTag(null);
+        }
+    }
+
+    public static void updateViewShow(View view, boolean show) {
+        updateViewShow(view, show, true, true);
+    }
+
+    public static void updateViewShow(View view, boolean show, boolean scale, boolean animated) {
+        updateViewShow(view, show, scale, animated, null);
+    }
+
+    public static void updateViewShow(View view, boolean show, boolean scale, boolean animated, Runnable onDone) {
+        if (view == null) {
+            return;
+        }
+        if (view.getParent() == null) {
+            animated = false;
+        }
+
+        view.animate().setListener(null).cancel();
+        if (!animated) {
+            view.setVisibility(show ? View.VISIBLE : View.GONE);
+            view.setTag(show ? 1 : null);
+            view.setAlpha(1f);
+            view.setScaleX(scale && !show ? 0f : 1f);
+            view.setScaleY(scale && !show ? 0f : 1f);
+            if (onDone != null) {
+                onDone.run();
+            }
+        } else if (show) {
+            if (view.getVisibility() != View.VISIBLE) {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(0f);
+                view.setScaleX(scale ? 0 : 1);
+                view.setScaleY(scale ? 0 : 1);
+            }
+            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone).start();
+        } else {
+            view.animate().alpha(0).scaleY(scale ? 0 : 1).scaleX(scale ? 0 : 1).setListener(new HideViewAfterAnimation(view)).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone).start();
         }
     }
 
@@ -4470,5 +4588,30 @@ public class AndroidUtilities {
             newStart[0] = st;
         }
         return (st > 0 || len < text.length()) ? text.subSequence(st, len) : text;
+    }
+
+    // detect Error NO SPaCe left on device :(
+    public static boolean isENOSPC(Exception e) {
+        return (
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
+                        e instanceof IOException &&
+                        (e.getCause() instanceof ErrnoException &&
+                                ((ErrnoException) e.getCause()).errno == OsConstants.ENOSPC) ||
+                        (e.getMessage() != null && e.getMessage().equalsIgnoreCase("no space left on device"))
+        );
+    }
+
+    public static CharSequence replaceCharSequence(String what, CharSequence from, CharSequence obj) {
+        SpannableStringBuilder spannableStringBuilder;
+        if (from instanceof SpannableStringBuilder) {
+            spannableStringBuilder = (SpannableStringBuilder) from;
+        } else {
+            spannableStringBuilder = new SpannableStringBuilder(from);
+        }
+        int index = TextUtils.indexOf(from, what);
+        if (index >= 0) {
+            spannableStringBuilder.replace(index, index + what.length(), obj);
+        }
+        return spannableStringBuilder;
     }
 }

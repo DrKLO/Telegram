@@ -50,7 +50,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         super(context);
 
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+        avatarDrawable.setTextSize(AndroidUtilities.dp(20));
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(18));
@@ -63,7 +63,8 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setMaxLines(1);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 60, 0));
+        textView.setEllipsizeByGradient(24);
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 14, 0));
 
         status = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, AndroidUtilities.dp(20));
         textView.setRightDrawable(status);
@@ -141,14 +142,18 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         if (user.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) user.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
             textView.setDrawablePadding(AndroidUtilities.dp(4));
             status.set(((TLRPC.TL_emojiStatusUntil) user.emoji_status).document_id, true);
+            textView.setRightDrawableOutside(true);
         } else if (user.emoji_status instanceof TLRPC.TL_emojiStatus) {
             textView.setDrawablePadding(AndroidUtilities.dp(4));
             status.set(((TLRPC.TL_emojiStatus) user.emoji_status).document_id, true);
+            textView.setRightDrawableOutside(true);
         } else if (MessagesController.getInstance(account).isPremiumUser(user)) {
             textView.setDrawablePadding(AndroidUtilities.dp(6));
             status.set(PremiumGradient.getInstance().premiumStarDrawableMini, true);
+            textView.setRightDrawableOutside(true);
         } else {
             status.set((Drawable) null, true);
+            textView.setRightDrawableOutside(false);
         }
         status.setColor(Theme.getColor(Theme.key_chats_verifiedBackground));
         imageView.getImageReceiver().setCurrentAccount(account);
@@ -163,10 +168,12 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
     @Override
     protected void onDraw(Canvas canvas) {
         if (UserConfig.getActivatedAccountsCount() <= 1 || !NotificationsController.getInstance(accountNumber).showBadgeNumber) {
+            textView.setRightPadding(0);
             return;
         }
         int counter = MessagesStorage.getInstance(accountNumber).getMainUnreadCount();
         if (counter <= 0) {
+            textView.setRightPadding(0);
             return;
         }
 
@@ -181,6 +188,8 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.dialogs_countPaint);
 
         canvas.drawText(text, rect.left + (rect.width() - textWidth) / 2, countTop + AndroidUtilities.dp(16), Theme.dialogs_countTextPaint);
+
+        textView.setRightPadding(countWidth + AndroidUtilities.dp(14 + 12));
     }
 
     @Override

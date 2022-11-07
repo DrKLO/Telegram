@@ -13,10 +13,14 @@ import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
@@ -25,21 +29,20 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HashtagSearchCell;
@@ -55,11 +58,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-
-import androidx.collection.LongSparseArray;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -1118,13 +1116,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
                 if (obj instanceof TLRPC.User) {
                     user = (TLRPC.User) obj;
-                    un = user.username;
+                    un = UserObject.getPublicUsername(user);
                 } else if (obj instanceof TLRPC.Chat) {
                     chat = MessagesController.getInstance(currentAccount).getChat(((TLRPC.Chat) obj).id);
                     if (chat == null) {
                         chat = (TLRPC.Chat) obj;
                     }
-                    un = chat.username;
+                    un = ChatObject.getPublicUsername(chat);
                 } else if (obj instanceof TLRPC.EncryptedChat) {
                     encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(((TLRPC.EncryptedChat) obj).id);
                     user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
@@ -1161,8 +1159,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 if (position >= 0 && position < searchResult.size() && user == null) {
                     name = searchResultNames.get(position);
-                    if (name != null && user != null && user.username != null && user.username.length() > 0) {
-                        if (name.toString().startsWith("@" + user.username)) {
+                    String username1 = UserObject.getPublicUsername(user);
+                    if (name != null && user != null && username1 != null) {
+                        if (name.toString().startsWith("@" + username1)) {
                             username = name;
                             name = null;
                         }
@@ -1219,9 +1218,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (chat != null && chat.participants_count != 0) {
                     String membersString;
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        membersString = LocaleController.formatPluralString("Subscribers", chat.participants_count);
+                        membersString = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count, ' ');
                     } else {
-                        membersString = LocaleController.formatPluralString("Members", chat.participants_count);
+                        membersString = LocaleController.formatPluralStringComma("Members", chat.participants_count, ' ');
                     }
                     if (username instanceof SpannableStringBuilder) {
                         ((SpannableStringBuilder) username).append(", ").append(membersString);
@@ -1381,7 +1380,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = (MessageObject) getItem(position);
-                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
+                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 break;
             }
             case VIEW_TYPE_HASHTAG_CELL: {

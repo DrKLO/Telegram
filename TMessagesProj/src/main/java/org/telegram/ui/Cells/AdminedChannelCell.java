@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -89,7 +90,7 @@ public class AdminedChannelCell extends FrameLayout {
         currentChannel = channel;
         avatarDrawable.setInfo(channel);
         nameTextView.setText(channel.title);
-        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(url + channel.username);
+        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(url + ChatObject.getPublicUsername(channel));
         stringBuilder.setSpan(new URLSpanNoUnderline(""), url.length(), stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         statusTextView.setText(stringBuilder);
         avatarImageView.setForUserOrChat(channel, avatarDrawable);

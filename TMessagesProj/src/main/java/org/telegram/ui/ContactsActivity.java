@@ -214,7 +214,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    protected void onTransitionAnimationProgress(boolean isOpen, float progress) {
+    public void onTransitionAnimationProgress(boolean isOpen, float progress) {
         super.onTransitionAnimationProgress(isOpen, progress);
         if (fragmentView != null) {
             fragmentView.invalidate();
@@ -338,7 +338,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) ? 1 : 0;
         } else if (channelId != 0) {
             TLRPC.Chat chat = getMessagesController().getChat(channelId);
-            inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) && TextUtils.isEmpty(chat.username) ? 2 : 0;
+            inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) && !ChatObject.isPublic(chat) ? 2 : 0;
         } else {
             inviteViaLink = 0;
         }
@@ -410,7 +410,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setEmptyView(emptyView);
-        listView.setAnimateEmptyView(true, 0);
+        listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
 
         listView.setOnItemClickListener((view, position) -> {
             if (listView.getAdapter() == searchListViewAdapter) {
@@ -998,10 +998,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    protected AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
+    public AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
         ValueAnimator valueAnimator = isOpen ? ValueAnimator.ofFloat(1f, 0) : ValueAnimator.ofFloat(0, 1f);
         ViewGroup parent = (ViewGroup) fragmentView.getParent();
-        BaseFragment previousFragment = parentLayout.fragmentsStack.size() > 1 ? parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2) : null;
+        BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1 ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2) : null;
         DialogsActivity dialogsActivity = null;
         if (previousFragment instanceof DialogsActivity) {
             dialogsActivity = (DialogsActivity) previousFragment;
@@ -1025,7 +1025,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         if (floatingButtonContainer != null) {
             ((ViewGroup) fragmentView).removeView(floatingButtonContainer);
-            ((FrameLayout) parent.getParent()).addView(floatingButtonContainer);
+            parentLayout.getOverlayContainerView().addView(floatingButtonContainer);
         }
         valueAnimator.setDuration(150);
         valueAnimator.setInterpolator(new DecelerateInterpolator(1.5f));

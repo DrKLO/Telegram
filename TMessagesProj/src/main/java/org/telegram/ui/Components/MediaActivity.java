@@ -297,6 +297,22 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         return fragmentView;
     }
 
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        if (!sharedMediaLayout.isSwipeBackEnabled()) {
+            return false;
+        }
+        return sharedMediaLayout.isCurrentTabFirst();
+    }
+
+    @Override
+    public boolean canBeginSlide() {
+        if (!sharedMediaLayout.isSwipeBackEnabled()) {
+            return false;
+        }
+        return super.canBeginSlide();
+    }
+
     private void updateMediaCount() {
         int id = sharedMediaLayout.getClosestTab();
         int[] mediaCount = sharedMediaPreloader.getLastMediaCount();

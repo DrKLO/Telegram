@@ -589,10 +589,10 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         actionBar.hideActionMode();
                         actionBar.closeSearchField();
 
-                        if (dids.size() > 1 || dids.get(0) == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
+                        if (dids.size() > 1 || dids.get(0).dialogId == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                             updateRowsSelection();
                             for (int a = 0; a < dids.size(); a++) {
-                                long did = dids.get(a);
+                                long did = dids.get(a).dialogId;
                                 if (message != null) {
                                     SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                                 }
@@ -602,7 +602,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             }
                             fragment1.finishFragment();
                         } else {
-                            long did = dids.get(0);
+                            long did = dids.get(0).dialogId;
                             Bundle args1 = new Bundle();
                             args1.putBoolean("scrollToTopOnResume", true);
                             if (DialogObject.isEncryptedDialog(did)) {

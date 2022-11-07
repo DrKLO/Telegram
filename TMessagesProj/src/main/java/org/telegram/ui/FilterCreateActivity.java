@@ -957,7 +957,7 @@ public class FilterCreateActivity extends BaseFragment {
                             String status;
                             if (chat.participants_count != 0) {
                                 status = LocaleController.formatPluralString("Members", chat.participants_count);
-                            } else if (TextUtils.isEmpty(chat.username)) {
+                            } else if (!ChatObject.isPublic(chat)) {
                                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
                                     status = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate);
                                 } else {

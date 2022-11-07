@@ -39,6 +39,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.util.SparseArray;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.xml.sax.Attributes;
@@ -119,11 +120,14 @@ public class SvgHelper {
         private ImageReceiver parentImageReceiver;
         private int[] currentColor = new int[2];
         private String currentColorKey;
+        private Integer overrideColor;
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
+        SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
 
         private boolean aspectFill = true;
+        private boolean aspectCenter = false;
 
         @Override
         public int getIntrinsicHeight() {
@@ -137,6 +141,10 @@ public class SvgHelper {
 
         public void setAspectFill(boolean value) {
             aspectFill = value;
+        }
+
+        public void setAspectCenter(boolean value) {
+            aspectCenter = value;
         }
 
         public void overrideWidthAndHeight(int w, int h) {
@@ -217,7 +225,7 @@ public class SvgHelper {
 
             canvas.save();
             canvas.translate(x, y);
-            if (!aspectFill) {
+            if (!aspectFill || aspectCenter) {
                 canvas.translate((w - width * scale) / 2, (h - height * scale) / 2);
             }
             canvas.scale(scale, scale);
@@ -225,11 +233,15 @@ public class SvgHelper {
                 Object object = commands.get(a);
                 if (object instanceof Matrix) {
                     canvas.save();
-                //    canvas.concat((Matrix) object);
+                    canvas.concat((Matrix) object);
                 } else if (object == null) {
                     canvas.restore();
                 } else {
                     Paint paint;
+                    Paint overridePaint = overridePaintByPosition.get(a);
+                    if (overridePaint == null) {
+                        overridePaint = this.overridePaint;
+                    }
                     if (drawInBackground) {
                         paint = backgroundPaint;
                     } else if (overridePaint != null) {
@@ -303,7 +315,7 @@ public class SvgHelper {
         }
 
         public void setupGradient(String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
-            int color = Theme.getColor(colorKey, resourcesProvider);
+            int color = overrideColor == null ? Theme.getColor(colorKey, resourcesProvider) : overrideColor;
             int index = drawInBackground ? 1 : 0;
             currentResourcesProvider = resourcesProvider;
             if (currentColor[index] != color) {
@@ -349,8 +361,24 @@ public class SvgHelper {
             }
         }
 
+        public void setColorKey(String colorKey) {
+            currentColorKey = colorKey;
+        }
+
+        public void setColor(int color) {
+            overrideColor = color;
+        }
+
         public void setPaint(Paint paint) {
             overridePaint = paint;
+        }
+
+        public void setPaint(Paint paint, int position) {
+            overridePaintByPosition.put(position, paint);
+        }
+
+        public void copyCommandFromPosition(int position) {
+            commands.add(commands.get(position));
         }
     }
 

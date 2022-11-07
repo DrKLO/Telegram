@@ -587,6 +587,14 @@ public class NativeByteBuffer extends AbstractSerializedData {
         return buffer.remaining();
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        if (!reused) {
+            reuse();
+        }
+        super.finalize();
+    }
+
     public static native long native_getFreeBuffer(int length);
     public static native ByteBuffer native_getJavaByteBuffer(long address);
     public static native int native_limit(long address);

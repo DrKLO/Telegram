@@ -37,7 +37,7 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
                 SharedPreferences preferences = FeedWidgetConfigActivity.this.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putInt("account" + creatingAppWidgetId, fragment1.getCurrentAccount());
-                editor.putLong("dialogId" + creatingAppWidgetId, dids.get(0));
+                editor.putLong("dialogId" + creatingAppWidgetId, dids.get(0).dialogId);
                 editor.commit();
 
                 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(FeedWidgetConfigActivity.this);
@@ -50,11 +50,11 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
             });
 
             if (AndroidUtilities.isTablet()) {
-                if (layersActionBarLayout.fragmentsStack.isEmpty()) {
+                if (layersActionBarLayout.getFragmentStack().isEmpty()) {
                     layersActionBarLayout.addFragmentToStack(fragment);
                 }
             } else {
-                if (actionBarLayout.fragmentsStack.isEmpty()) {
+                if (actionBarLayout.getFragmentStack().isEmpty()) {
                     actionBarLayout.addFragmentToStack(fragment);
                 }
             }

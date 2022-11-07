@@ -266,6 +266,17 @@ public class AvatarsDarawable {
         xRefP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
     }
 
+    public void setAvatarsTextSize(int newTextSize) {
+        for (int a = 0; a < 3; a++) {
+            if (currentStates[a] != null && currentStates[a].avatarDrawable != null) {
+                currentStates[a].avatarDrawable.setTextSize(newTextSize);
+            }
+            if (animatingStates[a] != null && animatingStates[a].avatarDrawable != null) {
+                animatingStates[a].avatarDrawable.setTextSize(newTextSize);
+            }
+        }
+    }
+
     public void setObject(int index, int account, TLObject object) {
         animatingStates[index].id = 0;
         animatingStates[index].participant = null;

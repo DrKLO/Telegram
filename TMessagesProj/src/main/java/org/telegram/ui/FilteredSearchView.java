@@ -943,7 +943,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = messages.get(position);
                 boolean animated = cell.getMessage() != null && cell.getMessage().getId() == messageObject.getId();
-                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
+                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 if (uiCallback.actionModeShowing()) {
                     messageHashIdTmp.set(messageObject.getId(), messageObject.getDialogId());
                     cell.setChecked(uiCallback.isSelected(messageHashIdTmp), animated);
@@ -982,7 +982,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         }
         if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
             PhotoViewer.getInstance().setParentActivity(parentFragment);
-            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, provider);
+            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, 0, provider);
             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
         } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC || currentSearchFilter.filterType == FiltersView.FILTER_TYPE_VOICE) {
             if (view instanceof SharedAudioCell) {
@@ -1000,11 +1000,11 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                             ArrayList<MessageObject> documents = new ArrayList<>();
                             documents.add(message);
                             PhotoViewer.getInstance().setParentActivity(parentFragment);
-                            PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, provider);
+                            PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, 0, provider);
                             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
                         } else {
                             PhotoViewer.getInstance().setParentActivity(parentFragment);
-                            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, provider);
+                            PhotoViewer.getInstance().openPhoto(messages, index, 0, 0, 0, provider);
                             photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
                         }
                         return;
@@ -1536,7 +1536,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 DialogCell cell = ((DialogCell) holder.itemView);
                 MessageObject messageObject = messages.get(position);
 
-                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
+                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 cell.useSeparator = position != getItemCount() - 1;
                 boolean animated = cell.getMessage() != null && cell.getMessage().getId() == messageObject.getId();
                 cell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {

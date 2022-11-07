@@ -257,12 +257,16 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                         ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
                     }
                 } else if (accent != null && accent.info == null) {
+                    int intensity = (int) (accent.patternIntensity * 100);
+                    if (item.previewDrawable instanceof MotionBackgroundDrawable) {
+                        ((MotionBackgroundDrawable) item.previewDrawable).setPatternBitmap(intensity);
+                    }
                     ChatThemeController.chatThemeQueue.postRunnable(() -> {
                         Bitmap bitmap = SvgHelper.getBitmap(R.raw.default_pattern, AndroidUtilities.dp(PATTERN_BITMAP_MAXWIDTH), AndroidUtilities.dp(PATTERN_BITMAP_MAXHEIGHT), Color.BLACK, AndroidUtilities.density);
                         AndroidUtilities.runOnUIThread(() -> {
                             if (item.previewDrawable instanceof MotionBackgroundDrawable) {
                                 MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) item.previewDrawable;
-                                motionBackgroundDrawable.setPatternBitmap(100, prescaleBitmap(bitmap), true);
+                                motionBackgroundDrawable.setPatternBitmap(intensity, prescaleBitmap(bitmap), true);
                                 motionBackgroundDrawable.setPatternColorFilter(patternColor);
                                 invalidate();
                             }

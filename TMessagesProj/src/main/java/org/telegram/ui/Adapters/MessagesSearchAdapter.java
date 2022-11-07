@@ -12,6 +12,8 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
@@ -21,8 +23,6 @@ import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.RecyclerView;
 
 public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -86,7 +86,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
             DialogCell cell = (DialogCell) holder.itemView;
             cell.useSeparator = true;
             MessageObject messageObject = (MessageObject) getItem(position);
-            cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, true);
+            cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, true, false);
         }
     }
 

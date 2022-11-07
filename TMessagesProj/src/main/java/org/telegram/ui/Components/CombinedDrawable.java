@@ -182,4 +182,8 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
         unscheduleSelf(what);
     }
+
+    public Drawable getBackgroundDrawable() {
+        return background;
+    }
 }

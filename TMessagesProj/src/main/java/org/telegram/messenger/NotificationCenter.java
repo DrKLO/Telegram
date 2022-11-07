@@ -9,7 +9,6 @@
 package org.telegram.messenger;
 
 import android.os.SystemClock;
-import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.UiThread;
@@ -262,6 +261,8 @@ public class NotificationCenter {
     public static final int userEmojiStatusUpdated = totalEvents++;
     public static final int requestPermissions = totalEvents++;
     public static final int permissionsGranted = totalEvents++;
+    public static int topicsDidLoaded = totalEvents++;
+    public static int chatSwithcedToForum = totalEvents++;
 
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();

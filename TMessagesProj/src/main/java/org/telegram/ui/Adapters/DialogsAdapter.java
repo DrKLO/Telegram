@@ -607,7 +607,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                             if (chat.participants_count != 0) {
                                 subtitle = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
                             } else {
-                                if (TextUtils.isEmpty(chat.username)) {
+                                if (!ChatObject.isPublic(chat)) {
                                     subtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
                                 } else {
                                     subtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
@@ -619,7 +619,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                             } else {
                                 if (chat.has_geo) {
                                     subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                                } else if (TextUtils.isEmpty(chat.username)) {
+                                } else if (!ChatObject.isPublic(chat)) {
                                     subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                                 } else {
                                     subtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();

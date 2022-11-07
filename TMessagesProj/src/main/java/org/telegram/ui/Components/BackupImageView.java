@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -218,6 +219,25 @@ public class BackupImageView extends View {
         this.animatedEmojiDrawable = animatedEmojiDrawable;
         if (attached && animatedEmojiDrawable != null) {
             animatedEmojiDrawable.addView(this);
+        }
+    }
+
+    ValueAnimator roundRadiusAnimator;
+    
+    public void animateToRoundRadius(int animateToRad) {
+        if (getRoundRadius()[0] != animateToRad) {
+            if (roundRadiusAnimator != null) {
+                roundRadiusAnimator.cancel();
+            }
+            roundRadiusAnimator = ValueAnimator.ofInt(getRoundRadius()[0], animateToRad);
+            roundRadiusAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    setRoundRadius((Integer) animation.getAnimatedValue());
+                }
+            });
+            roundRadiusAnimator.setDuration(200);
+            roundRadiusAnimator.start();
         }
     }
 }

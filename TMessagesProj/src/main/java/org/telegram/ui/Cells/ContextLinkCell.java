@@ -143,7 +143,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         linkImageView = new ImageReceiver(this);
         linkImageView.setLayerNum(1);
         linkImageView.setUseSharedAnimationQueue(true);
-        letterDrawable = new LetterDrawable(resourcesProvider);
+        letterDrawable = new LetterDrawable(resourcesProvider, LetterDrawable.STYLE_DEFAULT);
         radialProgress = new RadialProgress2(this);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setFocusable(true);

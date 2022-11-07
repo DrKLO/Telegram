@@ -58,6 +58,7 @@ public class RadialProgress2 {
     private int circleRadius;
     private boolean isPressed;
     private boolean isPressedMini;
+    public float overrideCircleAlpha = 1f;
 
     private int backgroundStroke;
 
@@ -110,6 +111,10 @@ public class RadialProgress2 {
         circlePaint.setStrokeWidth(value);
         circlePaint.setStyle(Paint.Style.STROKE);
         invalidateParent();
+    }
+
+    public int getRadius() {
+        return circleRadius;
     }
 
     public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
@@ -171,6 +176,10 @@ public class RadialProgress2 {
     }
 
     public void setProgressRect(int left, int top, int right, int bottom) {
+        progressRect.set(left, top, right, bottom);
+    }
+
+    public void setProgressRect(float left, float top, float right, float bottom) {
         progressRect.set(left, top, right, bottom);
     }
 
@@ -365,7 +374,7 @@ public class RadialProgress2 {
         }
 
         int originalAlpha = circlePaint.getAlpha();
-        circlePaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha));
+        circlePaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha * overrideCircleAlpha));
         originalAlpha = circleMiniPaint.getAlpha();
         circleMiniPaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha));
 

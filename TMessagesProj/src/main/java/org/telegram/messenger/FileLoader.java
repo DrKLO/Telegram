@@ -13,6 +13,7 @@ import android.util.SparseArray;
 
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -736,6 +737,8 @@ public class FileLoader extends BaseController {
 
                 if (document != null && parentObject instanceof MessageObject && reason == 0) {
                     getDownloadController().onDownloadFail((MessageObject) parentObject, reason);
+                } else if (reason == -1) {
+                    LaunchActivity.checkFreeDiscSpaceStatic(2);
                 }
             }
 

@@ -2044,7 +2044,10 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 if (section < sections.size()) {
                     ArrayList<MessageObject> arrayList = sectionArrays.get(sections.get(section));
                     if (arrayList != null) {
-                        return arrayList.get(position - (section == 0 && searchResult.isEmpty() ? 0 : 1));
+                        int p = position - (section == 0 && searchResult.isEmpty() ? 0 : 1);
+                        if (p >= 0 && p < arrayList.size()) {
+                            return arrayList.get(p);
+                        }
                     }
                 }
             }

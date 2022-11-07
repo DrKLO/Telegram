@@ -13,6 +13,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +35,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -44,9 +46,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -435,12 +440,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         rowCount = 0;
         filterHelpRow = rowCount++;
         int count = getMessagesController().dialogFilters.size();
-        if (!getUserConfig().isPremium()) {
-            count--;
-            showAllChats = false;
-        } else {
-            showAllChats = true;
-        }
+        showAllChats = true;
         if (!suggestedFilters.isEmpty() && count < 10) {
             recommendedHeaderRow = rowCount++;
             recommendedStartRow = rowCount;
@@ -910,6 +910,26 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             orderChanged = true;
             notifyItemMoved(fromIndex, toIndex);
         }
+
+        public void moveElementToStart(int index) {
+            int idx1 = index;
+            int count = filtersEndRow - filtersStartRow;
+            if (!showAllChats) {
+                idx1++;
+                count++;
+            }
+
+            if (idx1 < 0 || idx1 >= count) {
+                return;
+            }
+            ArrayList<MessagesController.DialogFilter> filters = getMessagesController().dialogFilters;
+            filters.add(0, filters.remove(index));
+            for (int i = 0; i <= index; ++i) {
+                filters.get(i).order = i;
+            }
+            orderChanged = true;
+            notifyItemMoved(filtersStartRow + index, filtersStartRow);
+        }
     }
 
     public class TouchHelperCallback extends ItemTouchHelper.Callback {
@@ -921,7 +941,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-            boolean canMove = getUserConfig().isPremium() || !((viewHolder.itemView instanceof FilterCell) && ((FilterCell) viewHolder.itemView).currentFilter.isDefault());
+            boolean canMove = getUserConfig().isPremium() || !((viewHolder.itemView instanceof FilterCell) && ((FilterCell) viewHolder.itemView).currentFilter.isDefault()) || true;
             if (viewHolder.getItemViewType() != 2 || !canMove) {
                 return makeMovementFlags(0, 0);
             }
@@ -930,7 +950,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
 
         @Override
         public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
-            boolean canMove = getUserConfig().isPremium() || !((target.itemView instanceof FilterCell) && ((FilterCell) target.itemView).currentFilter.isDefault());
+            boolean canMove = getUserConfig().isPremium() || !((target.itemView instanceof FilterCell) && ((FilterCell) target.itemView).currentFilter.isDefault()) || true;
             if (source.getItemViewType() != target.getItemViewType() || !canMove) {
                 return false;
             }
@@ -943,11 +963,29 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
         }
 
+        private void resetDefaultPosition() {
+            if (UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+                return;
+            }
+            ArrayList<MessagesController.DialogFilter> filters = getMessagesController().dialogFilters;
+            for (int i = 0; i < filters.size(); ++i) {
+                if (filters.get(i).isDefault() && i != 0) {
+                    adapter.moveElementToStart(i);
+                    listView.scrollToPosition(0);
+                    onDefaultTabMoved();
+                    break;
+                }
+            }
+        }
+
         @Override
         public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
             if (actionState != ItemTouchHelper.ACTION_STATE_IDLE) {
                 listView.cancelClickRunnables(false);
                 viewHolder.itemView.setPressed(true);
+            } else {
+                AndroidUtilities.cancelRunOnUIThread(this::resetDefaultPosition);
+                AndroidUtilities.runOnUIThread(this::resetDefaultPosition, 320);
             }
             super.onSelectedChanged(viewHolder, actionState);
         }
@@ -962,6 +1000,15 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             super.clearView(recyclerView, viewHolder);
             viewHolder.itemView.setPressed(false);
         }
+    }
+
+    protected void onDefaultTabMoved() {
+        try {
+            fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        } catch (Exception ignore) {}
+        BulletinFactory.of(this).createSimpleBulletin(R.raw.filter_reorder, AndroidUtilities.replaceTags(LocaleController.formatString("LimitReachedReorderFolder", R.string.LimitReachedReorderFolder, LocaleController.getString(R.string.FilterAllChats))), LocaleController.getString("PremiumMore", R.string.PremiumMore), Bulletin.DURATION_PROLONG, () -> {
+            showDialog(new PremiumFeatureBottomSheet(FiltersSetupActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, true));
+        }).show();
     }
 
     @Override

@@ -527,7 +527,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    protected AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
+    public AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
         if (isOnLogout) {
             AnimatorSet set = new AnimatorSet().setDuration(50);
             set.playTogether(ValueAnimator.ofFloat());

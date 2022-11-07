@@ -133,4 +133,12 @@ public class DocumentObject {
         }
         return pathThumb;
     }
+
+    public static SvgHelper.SvgDrawable getSvgThumb(int resourceId, String colorKey, float alpha) {
+        SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawable(resourceId, 0xffff0000);
+        if (pathThumb != null) {
+            pathThumb.setupGradient(colorKey, alpha, false);
+        }
+        return pathThumb;
+    }
 }

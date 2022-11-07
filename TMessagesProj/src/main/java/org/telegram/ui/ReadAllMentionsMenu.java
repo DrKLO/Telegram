@@ -11,6 +11,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -19,7 +20,7 @@ public class ReadAllMentionsMenu {
     public final static int TYPE_REACTIONS = 0;
     public final static int TYPE_MENTIONS = 1;
 
-    public static ActionBarPopupWindow show(int type, Activity activity, FrameLayout contentView, View mentionButton, Theme.ResourcesProvider resourcesProvider, Runnable onRead) {
+    public static ActionBarPopupWindow show(int type, Activity activity, INavigationLayout navigationLayout, FrameLayout contentView, View mentionButton, Theme.ResourcesProvider resourcesProvider, Runnable onRead) {
         ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(activity);
         popupWindowLayout.setMinimumWidth(AndroidUtilities.dp(200));
 
@@ -47,6 +48,11 @@ public class ReadAllMentionsMenu {
 
         float x = mentionButton.getX() + mentionButton.getWidth() - popupWindowLayout.getMeasuredWidth() + AndroidUtilities.dp(8);
         float y = mentionButton.getY() - popupWindowLayout.getMeasuredHeight();
+        if (AndroidUtilities.isTablet()) {
+            View v = navigationLayout.getView();
+            x += v.getX() + v.getPaddingLeft();
+            y += v.getY() + v.getPaddingTop();
+        }
         scrimPopupWindow.showAtLocation(contentView, Gravity.LEFT | Gravity.TOP, (int) x, (int) y);
         return scrimPopupWindow;
     }

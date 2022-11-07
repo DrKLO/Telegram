@@ -55,6 +55,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
@@ -331,7 +332,8 @@ public class EditWidgetActivity extends BaseFragment {
                         FileLog.e(e);
                     }
 
-                    MessageObject message = getMessagesController().dialogMessage.get(dialog.id);
+                    ArrayList<MessageObject> messages = getMessagesController().dialogMessage.get(dialog.id);
+                    MessageObject message = messages != null && messages.size() > 0 ? messages.get(0) : null;
                     if (message != null) {
                         TLRPC.User fromUser = null;
                         TLRPC.Chat fromChat = null;
@@ -398,7 +400,7 @@ public class EditWidgetActivity extends BaseFragment {
                                         } else {
                                             innerMessage = String.format("\uD83C\uDFAE %s", message.messageOwner.media.game.title);
                                         }
-                                    } else if (message.type == 14) {
+                                    } else if (message.type == MessageObject.TYPE_MUSIC) {
                                         if (Build.VERSION.SDK_INT >= 18) {
                                             innerMessage = String.format("\uD83C\uDFA7 \u2068%s - %s\u2069", message.getMusicAuthor(), message.getMusicTitle());
                                         } else {
@@ -455,7 +457,7 @@ public class EditWidgetActivity extends BaseFragment {
                                         messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
-                                    } else if (message.type == 14) {
+                                    } else if (message.type == MessageObject.TYPE_MUSIC) {
                                         messageString = String.format("\uD83C\uDFA7 %s - %s", message.getMusicAuthor(), message.getMusicTitle());
                                     } else {
                                         messageString = message.messageText;
@@ -482,7 +484,7 @@ public class EditWidgetActivity extends BaseFragment {
                     if (dialog.unread_count > 0) {
                         ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_badge)).setText(String.format("%d", dialog.unread_count));
                         cells[a].findViewById(R.id.shortcut_widget_item_badge).setVisibility(VISIBLE);
-                        if (getMessagesController().isDialogMuted(dialog.id)) {
+                        if (getMessagesController().isDialogMuted(dialog.id, 0)) {
                             cells[a].findViewById(R.id.shortcut_widget_item_badge).setBackgroundResource(R.drawable.widget_counter_muted);
                         } else {
                             cells[a].findViewById(R.id.shortcut_widget_item_badge).setBackgroundResource(R.drawable.widget_counter);
@@ -800,7 +802,12 @@ public class EditWidgetActivity extends BaseFragment {
                     if (getParentActivity() == null) {
                         return;
                     }
-                    getMessagesStorage().putWidgetDialogs(currentWidgetId, selectedDialogs);
+
+                    ArrayList<MessagesStorage.TopicKey> topicKeys = new ArrayList<>();
+                    for (int i = 0; i < selectedDialogs.size(); i++) {
+                        topicKeys.add(MessagesStorage.TopicKey.of(selectedDialogs.get(i), 0));
+                    }
+                    getMessagesStorage().putWidgetDialogs(currentWidgetId, topicKeys);
 
                     SharedPreferences preferences = getParentActivity().getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();

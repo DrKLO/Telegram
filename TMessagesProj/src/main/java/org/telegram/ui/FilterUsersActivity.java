@@ -49,6 +49,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
@@ -1086,7 +1087,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                             if (object instanceof TLRPC.User) {
                                 objectUserName = ((TLRPC.User) object).username;
                             } else {
-                                objectUserName = ((TLRPC.Chat) object).username;
+                                objectUserName = ChatObject.getPublicUsername((TLRPC.Chat) object);
                             }
                             if (position < localCount) {
                                 name = searchResultNames.get(position);
@@ -1287,7 +1288,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                             if (object instanceof TLRPC.User) {
                                 TLRPC.User user = (TLRPC.User) object;
                                 names[0] = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
-                                username = user.username;
+                                username = UserObject.getPublicUsername(user);
                                 if (UserObject.isReplyUser(user)) {
                                     names[2] = LocaleController.getString("RepliesTitle", R.string.RepliesTitle).toLowerCase();
                                 } else if (user.self) {

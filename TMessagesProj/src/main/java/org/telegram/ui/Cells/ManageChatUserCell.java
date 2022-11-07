@@ -316,7 +316,7 @@ public class ManageChatUserCell extends FrameLayout {
                     }
                 } else if (currentChat.has_geo) {
                     statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
-                } else if (TextUtils.isEmpty(currentChat.username)) {
+                } else if (!ChatObject.isPublic(currentChat)) {
                     statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
                 } else {
                     statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));

@@ -8,20 +8,32 @@
 
 package org.telegram.ui;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -47,15 +59,20 @@ import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.CircularProgressDrawable;
+import org.telegram.ui.Components.CrossfadeDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.InviteLinkBottomSheet;
 import org.telegram.ui.Components.JoinToSendSettingsView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkActionView;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class ChatEditTypeActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -69,6 +86,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private TextInfoPrivacyCell checkTextView;
     private LinearLayout linearLayout;
     private ActionBarMenuItem doneButton;
+    private CrossfadeDrawable doneButtonDrawable;
 
     private LinearLayout linearLayoutTypeContainer;
     private RadioButtonCell radioButtonCell1;
@@ -84,6 +102,14 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private TextInfoPrivacyCell infoCell;
     private TextSettingsCell textCell;
     private TextSettingsCell textCell2;
+    private UsernamesListView usernamesListView;
+
+    private boolean ignoreScroll;
+
+    private ArrayList<TLRPC.TL_username> editableUsernames = new ArrayList<>();
+    private ArrayList<TLRPC.TL_username> usernames = new ArrayList<>();
+    private ChangeUsernameActivity.UsernameCell editableUsernameCell;
+    private ArrayList<String> loadingUsernames = new ArrayList<>();
 
     // Saving content restrictions block
     private LinearLayout saveContainer;
@@ -144,10 +170,10 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 }
             }
         }
-        isPrivate = !isForcePublic && TextUtils.isEmpty(currentChat.username);
+        isPrivate = !isForcePublic && !ChatObject.isPublic(currentChat);
         isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
         isSaveRestricted = currentChat.noforwards;
-        if (isForcePublic && TextUtils.isEmpty(currentChat.username) || isPrivate && currentChat.creator) {
+        if (isForcePublic && !ChatObject.isPublic(currentChat) || isPrivate && currentChat.creator) {
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
             req.username = "1";
             req.channel = new TLRPC.TL_inputChannelEmpty();
@@ -160,6 +186,26 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         }
         if (isPrivate && info != null) {
             getMessagesController().loadFullChat(chatId, classGuid, true);
+        }
+        if (currentChat != null) {
+            editableUsernames.clear();
+            usernames.clear();
+            for (int i = 0; i < currentChat.usernames.size(); ++i) {
+                if (currentChat.usernames.get(i).active)
+                    usernames.add(currentChat.usernames.get(i));
+            }
+            for (int i = 0; i < currentChat.usernames.size(); ++i) {
+                if (!currentChat.usernames.get(i).active)
+                    usernames.add(currentChat.usernames.get(i));
+            }
+//            for (int i = 0; i < usernames.size(); ++i) {
+//                if (usernames.get(i) == null ||
+//                    currentChat.username != null && currentChat.username.equals(usernames.get(i).username) ||
+//                    usernames.get(i).editable
+//                ) {
+//                    editableUsernames.add(usernames.remove(i--));
+//                }
+//            }
         }
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
         return super.onFragmentCreate();
@@ -191,7 +237,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    protected void onBecomeFullyVisible() {
+    public void onBecomeFullyVisible() {
         super.onBecomeFullyVisible();
         if (isForcePublic && usernameTextView != null) {
             usernameTextView.requestFocus();
@@ -216,13 +262,31 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
+        Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
+        checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
+        doneButtonDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
+        doneButton = menu.addItemWithWidth(done_button, doneButtonDrawable, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
 
         fragmentView = new ScrollView(context) {
             @Override
             public boolean requestChildRectangleOnScreen(View child, Rect rectangle, boolean immediate) {
                 rectangle.bottom += AndroidUtilities.dp(60);
                 return super.requestChildRectangleOnScreen(child, rectangle, immediate);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent ev) {
+                switch (ev.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        return !ignoreScroll && super.onTouchEvent(ev);
+                    default:
+                        return super.onTouchEvent(ev);
+                }
+            }
+
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                return !ignoreScroll && super.onInterceptTouchEvent(ev);
             }
         };
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
@@ -367,7 +431,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 if (ignoreTextChanges) {
                     return;
                 }
-                checkUserName(usernameTextView.getText().toString());
+                String username = usernameTextView.getText().toString();
+                if (editableUsernameCell != null) {
+                    editableUsernameCell.updateUsername(username);
+                }
+                checkUserName(username);
             }
 
             @Override
@@ -416,6 +484,8 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         adminedInfoCell = new ShadowSectionCell(context);
         linearLayout.addView(adminedInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        linearLayout.addView(usernamesListView = new UsernamesListView(context), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        usernamesListView.setVisibility(isPrivate || usernames.isEmpty() ? View.GONE : View.VISIBLE);
 
         manageLinksTextView = new TextCell(context);
         manageLinksTextView.setBackgroundDrawable(Theme.getSelectorDrawable(true));
@@ -460,15 +530,37 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
         saveContainer.addView(saveRestrictInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        if (!isPrivate && currentChat.username != null) {
+        String username = ChatObject.getPublicUsername(currentChat, true);
+        if (!isPrivate && username != null) {
             ignoreTextChanges = true;
-            usernameTextView.setText(currentChat.username);
-            usernameTextView.setSelection(currentChat.username.length());
+            usernameTextView.setText(username);
+            usernameTextView.setSelection(username.length());
             ignoreTextChanges = false;
         }
         updatePrivatePublic();
 
         return fragmentView;
+    }
+
+    private Runnable enableDoneLoading = () -> updateDoneProgress(true);
+    private ValueAnimator doneButtonDrawableAnimator;
+    private void updateDoneProgress(boolean loading) {
+        if (!loading) {
+            AndroidUtilities.cancelRunOnUIThread(enableDoneLoading);
+        }
+        if (doneButtonDrawable != null) {
+            if (doneButtonDrawableAnimator != null) {
+                doneButtonDrawableAnimator.cancel();
+            }
+            doneButtonDrawableAnimator = ValueAnimator.ofFloat(doneButtonDrawable.getProgress(), loading ? 1f : 0);
+            doneButtonDrawableAnimator.addUpdateListener(a -> {
+                doneButtonDrawable.setProgress((float) a.getAnimatedValue());
+                doneButtonDrawable.invalidateSelf();
+            });
+            doneButtonDrawableAnimator.setDuration((long) (200 * Math.abs(doneButtonDrawable.getProgress() - (loading ? 1f : 0))));
+            doneButtonDrawableAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            doneButtonDrawableAnimator.start();
+        }
     }
 
     private void showPremiumIncreaseLimitDialog() {
@@ -508,6 +600,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     }
 
     private void processDone() {
+        AndroidUtilities.runOnUIThread(enableDoneLoading, 200);
         if (currentChat.noforwards != isSaveRestricted) {
             getMessagesController().toggleChatNoForwards(chatId, currentChat.noforwards = isSaveRestricted);
         }
@@ -544,22 +637,422 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         }
     }
 
+    private Boolean editableUsernameWasActive, editableUsernameUpdated;
+
+    private class UsernamesListView extends RecyclerListView {
+        private final int VIEW_TYPE_HEADER = 0;
+        private final int VIEW_TYPE_USERNAME = 1;
+        private final int VIEW_TYPE_HELP = 2;
+
+        private Adapter adapter;
+        private LinearLayoutManager layoutManager;
+        private ItemTouchHelper itemTouchHelper;
+
+        public UsernamesListView(Context context) {
+            super(context);
+
+            setAdapter(adapter = new Adapter());
+            setLayoutManager(layoutManager = new LinearLayoutManager(context));
+            setOnItemClickListener(new OnItemClickListener() {
+                @Override
+                public void onItemClick(View view, int position) {
+                    if (view instanceof ChangeUsernameActivity.UsernameCell) {
+                        TLRPC.TL_username username = ((ChangeUsernameActivity.UsernameCell) view).currentUsername;
+                        if (username == null) {
+                            return;
+                        }
+                        if (username.editable) {
+                            if (fragmentView instanceof ScrollView) {
+                                ((ScrollView) fragmentView).smoothScrollTo(0, linkContainer.getTop() - AndroidUtilities.dp(128));
+                            }
+                            usernameTextView.requestFocus();
+                            AndroidUtilities.showKeyboard(usernameTextView);
+                            return;
+                        }
+
+                        new AlertDialog.Builder(getContext(), getResourceProvider())
+                            .setTitle(username.active ? LocaleController.getString("UsernameDeactivateLink", R.string.UsernameDeactivateLink) : LocaleController.getString("UsernameActivateLink", R.string.UsernameActivateLink))
+                            .setMessage(username.active ? LocaleController.getString("UsernameDeactivateLinkChannelMessage", R.string.UsernameDeactivateLinkChannelMessage) : LocaleController.getString("UsernameActivateLinkChannelMessage", R.string.UsernameActivateLinkChannelMessage))
+                            .setPositiveButton(username.active ? LocaleController.getString("Hide", R.string.Hide) : LocaleController.getString("Show", R.string.Show), (di, e) -> {
+                                if (username.editable) {
+                                    if (editableUsernameWasActive == null) {
+                                        editableUsernameWasActive = username.active;
+                                    }
+                                    editableUsernameUpdated = (username.active = !username.active);
+                                } else {
+                                    TLRPC.TL_channels_toggleUsername req = new TLRPC.TL_channels_toggleUsername();
+                                    TLRPC.TL_inputChannel inputChannel = new TLRPC.TL_inputChannel();
+                                    inputChannel.channel_id = currentChat.id;
+                                    inputChannel.access_hash = currentChat.access_hash;
+                                    req.channel = inputChannel;
+                                    req.username = username.username;
+                                    final boolean wasActive = username.active;
+                                    req.active = !username.active;
+                                    getConnectionsManager().sendRequest(req, (res, err) -> {
+                                        AndroidUtilities.runOnUIThread(() -> {
+                                            loadingUsernames.remove(req.username);
+                                            if (res instanceof TLRPC.TL_boolTrue) {
+                                                toggleUsername(username, !wasActive);
+                                            } else if (err != null && "USERNAMES_ACTIVE_TOO_MUCH".equals(err.text)) {
+                                                AndroidUtilities.runOnUIThread(() -> {
+                                                    new AlertDialog.Builder(getContext(), resourcesProvider)
+                                                        .setTitle(LocaleController.getString("UsernameActivateErrorTitle", R.string.UsernameActivateErrorTitle))
+                                                        .setMessage(LocaleController.getString("UsernameActivateErrorMessage", R.string.UsernameActivateErrorMessage))
+                                                        .setPositiveButton(LocaleController.getString("OK", R.string.OK), (d, v) -> {
+                                                            toggleUsername(username, wasActive, true);
+                                                            checkDoneButton();
+                                                        })
+                                                        .show();
+                                                });
+                                            } else {
+                                                toggleUsername(username, wasActive, true);
+                                                checkDoneButton();
+                                            }
+                                            getMessagesController().updateUsernameActiveness(currentChat, username.username, username.active);
+                                        });
+                                    });
+                                    loadingUsernames.add(username.username);
+                                    ((ChangeUsernameActivity.UsernameCell) view).setLoading(true);
+                                }
+                                checkDoneButton();
+//                                toggleUsername(username, username.active);
+                            })
+                            .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (di, e) -> {
+                                di.dismiss();
+                            })
+                            .show();
+                    }
+                }
+            });
+
+            itemTouchHelper = new ItemTouchHelper(new TouchHelperCallback());
+            itemTouchHelper.attachToRecyclerView(this);
+        }
+
+        public void toggleUsername(TLRPC.TL_username username, boolean newActive) {
+            toggleUsername(username, newActive, false);
+        }
+
+        public void toggleUsername(TLRPC.TL_username username, boolean newActive, boolean shake) {
+            for (int i = 0; i < usernames.size(); ++i) {
+                if (usernames.get(i) == username) {
+                    toggleUsername(1 + i, newActive, shake);
+                    break;
+                }
+            }
+        }
+
+        public void toggleUsername(int position, boolean newActive) {
+            toggleUsername(position, newActive, false);
+        }
+
+        public void toggleUsername(int position, boolean newActive, boolean shake) {
+            if (position - 1 < 0 || position - 1 >= usernames.size()) {
+                return;
+            }
+            TLRPC.TL_username username = usernames.get(position - 1);
+            if (username == null) {
+                return;
+            }
+
+            int toIndex = -1;
+            boolean changed = username.active != newActive;
+            if (changed) {
+                if (username.active = newActive) {
+                    int firstInactive = -1;
+                    for (int i = 0; i < usernames.size(); ++i) {
+                        if (!usernames.get(i).active) {
+                            firstInactive = i;
+                            break;
+                        }
+                    }
+                    if (firstInactive >= 0) {
+                        toIndex = 1 + Math.max(0, firstInactive - 1);
+                    }
+                } else {
+                    int lastActive = -1;
+                    for (int i = 0; i < usernames.size(); ++i) {
+                        if (usernames.get(i).active) {
+                            lastActive = i;
+                        }
+                    }
+                    if (lastActive >= 0) {
+                        toIndex = 1 + Math.min(usernames.size() - 1, lastActive + 1);
+                    }
+                }
+            }
+
+            for (int i = 0; i < getChildCount(); ++i) {
+                View child = getChildAt(i);
+                if (getChildAdapterPosition(child) == position) {
+                    if (shake) {
+                        AndroidUtilities.shakeView(child);
+                    }
+                    if (child instanceof ChangeUsernameActivity.UsernameCell) {
+                        ((ChangeUsernameActivity.UsernameCell) child).setLoading(loadingUsernames.contains(username.username));
+                        ((ChangeUsernameActivity.UsernameCell) child).update();
+                    }
+                    break;
+                }
+            }
+
+            if (toIndex >= 0 && position != toIndex) {
+                adapter.moveElement(position, toIndex);
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthSpec, int heightSpec) {
+            super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(999999999, MeasureSpec.AT_MOST));
+        }
+
+        public class TouchHelperCallback extends ItemTouchHelper.Callback {
+
+            @Override
+            public boolean isLongPressDragEnabled() {
+                return true;
+            }
+
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+                if (viewHolder.getItemViewType() != VIEW_TYPE_USERNAME || !((ChangeUsernameActivity.UsernameCell) viewHolder.itemView).active) {
+                    return makeMovementFlags(0, 0);
+                }
+                return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
+                if (source.getItemViewType() != target.getItemViewType() ||
+                    target.itemView instanceof ChangeUsernameActivity.UsernameCell && !((ChangeUsernameActivity.UsernameCell) target.itemView).active) {
+                    return false;
+                }
+                adapter.swapElements(source.getAdapterPosition(), target.getAdapterPosition());
+                return true;
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+
+            @Override
+            public void onSelectedChanged(ViewHolder viewHolder, int actionState) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
+                    ignoreScroll = false;
+                    sendReorder();
+                } else {
+                    ignoreScroll = true;
+                    cancelClickRunnables(false);
+                    viewHolder.itemView.setPressed(true);
+                }
+                super.onSelectedChanged(viewHolder, actionState);
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                viewHolder.itemView.setPressed(false);
+            }
+        }
+
+        private boolean needReorder = false;
+        private void sendReorder() {
+            if (!needReorder || currentChat == null) {
+                return;
+            }
+            needReorder = false;
+            TLRPC.TL_channels_reorderUsernames req = new TLRPC.TL_channels_reorderUsernames();
+            TLRPC.TL_inputChannel inputChannel = new TLRPC.TL_inputChannel();
+            inputChannel.channel_id = currentChat.id;
+            inputChannel.access_hash = currentChat.access_hash;
+            req.channel = inputChannel;
+            ArrayList<String> usernames = new ArrayList<>();
+            for (int i = 0; i < editableUsernames.size(); ++i) {
+                if (editableUsernames.get(i).active)
+                    usernames.add(editableUsernames.get(i).username);
+            }
+            for (int i = 0; i < ChatEditTypeActivity.this.usernames.size(); ++i) {
+                if (ChatEditTypeActivity.this.usernames.get(i).active)
+                    usernames.add(ChatEditTypeActivity.this.usernames.get(i).username);
+            }
+            req.order = usernames;
+            getConnectionsManager().sendRequest(req, (res, err) -> {
+                if (res instanceof TLRPC.TL_boolTrue) {}
+            });
+            updateChat();
+        }
+
+        private void updateChat() {
+            currentChat.usernames.clear();
+            currentChat.usernames.addAll(editableUsernames);
+            currentChat.usernames.addAll(ChatEditTypeActivity.this.usernames);
+            getMessagesController().putChat(currentChat, true);
+        }
+
+        private class Adapter extends RecyclerListView.SelectionAdapter {
+
+            public void swapElements(int fromIndex, int toIndex) {
+                int index1 = fromIndex - 1;
+                int index2 = toIndex - 1;
+                if (index1 >= usernames.size() || index2 >= usernames.size()) {
+                    return;
+                }
+                if (fromIndex != toIndex) {
+                    needReorder = true;
+                }
+
+                swapListElements(usernames, index1, index2);
+
+                notifyItemMoved(fromIndex, toIndex);
+
+                int end = 1 + usernames.size() - 1;
+                if (fromIndex == end || toIndex == end) {
+                    notifyItemChanged(fromIndex, 3);
+                    notifyItemChanged(toIndex, 3);
+                }
+            }
+
+            private void swapListElements(List<TLRPC.TL_username> list, int index1, int index2) {
+                TLRPC.TL_username username1 = list.get(index1);
+                list.set(index1, list.get(index2));
+                list.set(index2, username1);
+            }
+
+            public void moveElement(int fromIndex, int toIndex) {
+                int index1 = fromIndex - 1;
+                int index2 = toIndex - 1;
+                if (index1 >= usernames.size() || index2 >= usernames.size()) {
+                    return;
+                }
+
+                TLRPC.TL_username username = usernames.remove(index1);
+                usernames.add(index2, username);
+
+                notifyItemMoved(fromIndex, toIndex);
+
+                for (int i = 0; i < usernames.size(); ++i)
+                    notifyItemChanged(1 + i);
+            }
+
+            @NonNull
+            @Override
+            public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                switch (viewType) {
+                    case VIEW_TYPE_HEADER:
+                        return new RecyclerListView.Holder(new HeaderCell(getContext(), resourcesProvider));
+                    case VIEW_TYPE_USERNAME:
+                        return new RecyclerListView.Holder(new ChangeUsernameActivity.UsernameCell(getContext(), resourcesProvider) {
+                            @Override
+                            protected String getUsernameEditable() {
+                                if (usernameTextView == null)
+                                    return null;
+                                return usernameTextView.getText().toString();
+                            }
+                        });
+                    case VIEW_TYPE_HELP:
+                        return new RecyclerListView.Holder(new TextInfoPrivacyCell(getContext(), resourcesProvider));
+                }
+                return null;
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+                switch (holder.getItemViewType()) {
+                    case VIEW_TYPE_HEADER:
+                        ((HeaderCell) holder.itemView).setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                        ((HeaderCell) holder.itemView).setText(LocaleController.getString("UsernamesChannelHeader", R.string.UsernamesChannelHeader));
+                        break;
+                    case VIEW_TYPE_USERNAME:
+                        TLRPC.TL_username username = usernames.get(position - 1);
+                        if (((ChangeUsernameActivity.UsernameCell) holder.itemView).editable) {
+                            editableUsernameCell = null;
+                        }
+                        ((ChangeUsernameActivity.UsernameCell) holder.itemView).set(username, position < usernames.size(), false);
+                        if (username != null && username.editable) {
+                            editableUsernameCell = (ChangeUsernameActivity.UsernameCell) holder.itemView;
+                        }
+                        break;
+                    case VIEW_TYPE_HELP:
+                        ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString("UsernamesChannelHelp", R.string.UsernamesChannelHelp));
+                        ((TextInfoPrivacyCell) holder.itemView).setBackgroundDrawable(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        break;
+                }
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                if (position == 0) {
+                    return VIEW_TYPE_HEADER;
+                } else if (position <= usernames.size()) {
+                    return VIEW_TYPE_USERNAME;
+                } else {
+                    return VIEW_TYPE_HELP;
+                }
+            }
+
+            @Override
+            public int getItemCount() {
+                return 2 + usernames.size();
+            }
+
+            @Override
+            public boolean isEnabled(ViewHolder holder) {
+                return holder.getItemViewType() == VIEW_TYPE_USERNAME;
+            }
+        }
+
+        private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            int fromIndex = 1, toIndex = 1 + usernames.size() - 1;
+
+            int top = Integer.MAX_VALUE;
+            int bottom = Integer.MIN_VALUE;
+
+            for (int i = 0; i < getChildCount(); ++i) {
+                View child = getChildAt(i);
+                if (child == null) {
+                    continue;
+                }
+                int position = getChildAdapterPosition(child);
+                if (position >= fromIndex && position <= toIndex) {
+                    top = Math.min(child.getTop(), top);
+                    bottom = Math.max(child.getBottom(), bottom);
+                }
+            }
+
+            if (top < bottom) {
+                backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                canvas.drawRect(0, top, getWidth(), bottom, backgroundPaint);
+            }
+
+            super.dispatchDraw(canvas);
+        }
+    }
+
     private boolean trySetUsername() {
         if (getParentActivity() == null) {
             return false;
         }
-        if (!isPrivate && ((currentChat.username == null && usernameTextView.length() != 0) || (currentChat.username != null && !currentChat.username.equalsIgnoreCase(usernameTextView.getText().toString())))) {
+        String wasUsername = ChatObject.getPublicUsername(currentChat, true);
+        if (!isPrivate && ((wasUsername == null && usernameTextView.length() != 0) || (wasUsername != null && !wasUsername.equalsIgnoreCase(usernameTextView.getText().toString())))) {
             if (usernameTextView.length() != 0 && !lastNameAvailable) {
                 Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
                     v.vibrate(200);
                 }
-                AndroidUtilities.shakeView(checkTextView, 2, 0);
+                AndroidUtilities.shakeView(checkTextView);
+                updateDoneProgress(false);
                 return false;
             }
         }
 
-        String oldUserName = currentChat.username != null ? currentChat.username : "";
+        String oldUserName = wasUsername != null ? wasUsername : "";
         String newUserName = isPrivate ? "" : usernameTextView.getText().toString();
         if (!oldUserName.equals(newUserName)) {
             if (!ChatObject.isChannel(currentChat)) {
@@ -572,11 +1065,89 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 });
                 return false;
             } else {
-                getMessagesController().updateChannelUserName(chatId, newUserName);
-                currentChat.username = newUserName;
+                getMessagesController().updateChannelUserName(this, chatId, newUserName, () -> {
+                    currentChat = getMessagesController().getChat(chatId);
+                    processDone();
+                }, () -> {
+                    updateDoneProgress(false);
+                });
+                return false;
             }
         }
+
+        if (!tryDeactivateAllLinks()/* || !tryActivateEditableUsername()*/) {
+            return false;
+        }
         return true;
+    }
+
+    private boolean deactivatingLinks = false;
+    private boolean tryDeactivateAllLinks() {
+        if (!isPrivate || currentChat.usernames == null) {
+            return true;
+        }
+        if (deactivatingLinks) {
+            return false;
+        }
+        deactivatingLinks = true;
+        boolean hasActive = false;
+        for (int i = 0; i < currentChat.usernames.size(); ++i) {
+            final TLRPC.TL_username username = currentChat.usernames.get(i);
+            if (username != null && username.active && !username.editable) {
+                hasActive = true;
+            }
+        }
+        if (hasActive) {
+            TLRPC.TL_channels_deactivateAllUsernames req = new TLRPC.TL_channels_deactivateAllUsernames();
+            req.channel = MessagesController.getInputChannel(currentChat);
+            getConnectionsManager().sendRequest(req, (res, err) -> {
+                if (res instanceof TLRPC.TL_boolTrue) {
+                    for (int i = 0; i < currentChat.usernames.size(); ++i) {
+                        final TLRPC.TL_username username = currentChat.usernames.get(i);
+                        if (username != null && username.active && !username.editable) {
+                            username.active = false;
+                        }
+                    }
+                }
+                deactivatingLinks = false;
+                AndroidUtilities.runOnUIThread(this::processDone);
+            });
+        }
+        return !hasActive;
+    }
+
+    private boolean activatingEditableLink = false;
+    private boolean tryActivateEditableUsername() {
+        if (isPrivate || usernames == null || editableUsernameWasActive == null || editableUsernameUpdated == null || editableUsernameWasActive == editableUsernameUpdated) {
+            return true;
+        }
+        if (activatingEditableLink) {
+            return false;
+        }
+        activatingEditableLink = true;
+        String username = null;
+        for (int i = 0; i < usernames.size(); ++i) {
+            if (usernames.get(i) != null && usernames.get(i).editable) {
+                username = usernames.get(i).username;
+            }
+        }
+        if (username == null) {
+            activatingEditableLink = false;
+            return true;
+        }
+        TLRPC.TL_channels_toggleUsername req = new TLRPC.TL_channels_toggleUsername();
+        req.channel = MessagesController.getInputChannel(currentChat);
+        req.active = editableUsernameUpdated;
+        req.username = username;
+        getConnectionsManager().sendRequest(req, (res, err) -> {
+            activatingEditableLink = false;
+            if (err == null) {
+                AndroidUtilities.runOnUIThread(this::processDone);
+            } else {
+                updateDoneProgress(false);
+            }
+        });
+        return false;
     }
 
     private void loadAdminedChannels() {
@@ -605,9 +1176,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         if (isChannel) {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, getMessagesController().linkPrefix + "/" + channel.username, channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(channel), channel.title)));
                         } else {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, getMessagesController().linkPrefix + "/" + channel.username, channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(channel), channel.title)));
                         }
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), (dialogInterface, i) -> {
@@ -704,17 +1275,33 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             joinContainer.setVisibility(!isChannel && !isPrivate ? View.VISIBLE : View.GONE);
             joinContainer.showJoinToSend(info != null && info.linked_chat_id != 0);
         }
+        if (usernamesListView != null) {
+            usernamesListView.setVisibility(isPrivate || usernames.isEmpty() ? View.GONE : View.VISIBLE);
+        }
         checkDoneButton();
     }
 
     private void checkDoneButton() {
-        if (isPrivate || usernameTextView.length() > 0) {
+        if (isPrivate || usernameTextView.length() > 0 || hasActiveLink()) {
             doneButton.setEnabled(true);
             doneButton.setAlpha(1.0f);
         } else {
             doneButton.setEnabled(false);
             doneButton.setAlpha(0.5f);
         }
+    }
+
+    public boolean hasActiveLink() {
+        if (usernames == null) {
+            return false;
+        }
+        for (int i = 0; i < usernames.size(); ++i) {
+            TLRPC.TL_username u = usernames.get(i);
+            if (u != null && u.active && !TextUtils.isEmpty(u.username)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean checkUserName(final String name) {

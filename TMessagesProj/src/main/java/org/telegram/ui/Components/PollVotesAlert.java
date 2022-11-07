@@ -36,6 +36,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -63,8 +64,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 
 import androidx.annotation.Keep;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -141,7 +144,7 @@ public class PollVotesAlert extends BottomSheet {
 
         private TextView textView;
         private TextView middleTextView;
-        private TextView righTextView;
+        private AnimatedTextView righTextView;
 
         public SectionCell(Context context) {
             super(context);
@@ -161,7 +164,7 @@ public class PollVotesAlert extends BottomSheet {
             middleTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
             middleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
 
-            righTextView = new TextView(getContext()) {
+            righTextView = new AnimatedTextView(getContext()) {
                 @Override
                 public boolean post(Runnable action) {
                     return containerView.post(action);
@@ -171,10 +174,18 @@ public class PollVotesAlert extends BottomSheet {
                 public boolean postDelayed(Runnable action, long delayMillis) {
                     return containerView.postDelayed(action, delayMillis);
                 }
+
+                @Override
+                public void invalidate() {
+                    super.invalidate();
+                    if (SectionCell.this == listView.getPinnedHeader()) {
+                        listView.invalidate();
+                    }
+                }
             };
-            righTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            righTextView.setTextSize(AndroidUtilities.dp(14));
             righTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
-            righTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+            righTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT));
             righTextView.setOnClickListener(v -> onCollapseClick());
 
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 0, (LocaleController.isRTL ? 16 : 0), 0));
@@ -208,7 +219,7 @@ public class PollVotesAlert extends BottomSheet {
 
         }
 
-        public void setText(String left, int percent, int votesCount, int collapsed) {
+        public void setText(String left, int percent, int votesCount, int collapsed, boolean animated) {
             textView.setText(Emoji.replaceEmoji(left, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
             String p = String.format("%d", percent);
             SpannableStringBuilder builder;
@@ -221,14 +232,14 @@ public class PollVotesAlert extends BottomSheet {
             middleTextView.setText(builder);
             if (collapsed == 0) {
                 if (poll.quiz) {
-                    righTextView.setText(LocaleController.formatPluralString("Answer", votesCount));
+                    righTextView.setText(LocaleController.formatPluralString("Answer", votesCount), animated);
                 } else {
-                    righTextView.setText(LocaleController.formatPluralString("Vote", votesCount));
+                    righTextView.setText(LocaleController.formatPluralString("Vote", votesCount), animated);
                 }
             } else if (collapsed == 1) {
-                righTextView.setText(LocaleController.getString("PollExpand", R.string.PollExpand));
+                righTextView.setText(LocaleController.getString("PollExpand", R.string.PollExpand), animated);
             } else {
-                righTextView.setText(LocaleController.getString("PollCollapse", R.string.PollCollapse));
+                righTextView.setText(LocaleController.getString("PollCollapse", R.string.PollCollapse), animated);
             }
         }
     }
@@ -732,8 +743,22 @@ public class PollVotesAlert extends BottomSheet {
                 super.dispatchDraw(canvas);
             }
         };
+        DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+        itemAnimator.setAddDuration(150);
+        itemAnimator.setMoveDuration(350);
+        itemAnimator.setChangeDuration(0);
+        itemAnimator.setRemoveDuration(0);
+        itemAnimator.setDelayAnimations(false);
+        itemAnimator.setMoveInterpolator(new OvershootInterpolator(1.1f));
+        itemAnimator.setTranslationInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        listView.setItemAnimator(itemAnimator);
         listView.setClipToPadding(false);
-        listView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false) {
+            @Override
+            protected int getExtraLayoutSpace(RecyclerView.State state) {
+                return AndroidUtilities.dp(4000);
+            }
+        });
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
@@ -759,7 +784,8 @@ public class PollVotesAlert extends BottomSheet {
                     if (votesList.collapsedCount == votesList.votes.size()) {
                         votesList.collapsed = false;
                     }
-                    listAdapter.notifyDataSetChanged();
+                    animateSectionUpdates(null);
+                    listAdapter.update(true);
                     return;
                 }
                 loadingMore.add(votesList);
@@ -781,7 +807,8 @@ public class PollVotesAlert extends BottomSheet {
                         parentFragment.getMessagesController().putUsers(res.users, false);
                         votesList.votes.addAll(res.votes);
                         votesList.next_offset = res.next_offset;
-                        listAdapter.notifyDataSetChanged();
+                        animateSectionUpdates(null);
+                        listAdapter.update(true);
                     }
                 }));
             } else if (view instanceof UserCell) {
@@ -1014,7 +1041,17 @@ public class PollVotesAlert extends BottomSheet {
         }
 
         public Object getItem(int section, int position) {
-            return null;
+            if (section == 0) {
+                return 293145;
+            }
+            section--;
+            if (position == 0) {
+                return -928312;
+            } else if (section >= 0 && section < voters.size() && position - 1 < voters.get(section).getCount()) {
+                return Objects.hash(voters.get(section).votes.get(position - 1).user_id);
+            } else {
+                return -182734;
+            }
         }
 
         @Override
@@ -1052,7 +1089,8 @@ public class PollVotesAlert extends BottomSheet {
                     if (list.collapsed) {
                         list.collapsedCount = 10;
                     }
-                    listAdapter.notifyDataSetChanged();
+                    animateSectionUpdates(this);
+                    listAdapter.update(true);
                 }
             };
         }
@@ -1069,12 +1107,14 @@ public class PollVotesAlert extends BottomSheet {
                 section -= 1;
                 view.setAlpha(1.0f);
                 VotesList votesList = voters.get(section);
-                TLRPC.MessageUserVote vote = votesList.votes.get(0);
                 for (int a = 0, N = poll.answers.size(); a < N; a++) {
                     TLRPC.TL_pollAnswer answer = poll.answers.get(a);
                     if (Arrays.equals(answer.option, votesList.option)) {
                         Button button = votesPercents.get(votesList);
-                        sectionCell.setText(answer.text, button.percent, button.votesCount, votesList.getCollapsed());
+                        if (button == null) {
+                            continue;
+                        }
+                        sectionCell.setText(answer.text, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), false);
                         sectionCell.setTag(R.id.object_tag, votesList);
                         break;
                     }
@@ -1107,6 +1147,7 @@ public class PollVotesAlert extends BottomSheet {
                 default: {
                     TextCell textCell = new TextCell(mContext, 23, true);
                     textCell.setOffsetFromImage(65);
+                    textCell.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
                     textCell.setColors(Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhiteBlueText4);
                     view = textCell;
                     break;
@@ -1127,7 +1168,10 @@ public class PollVotesAlert extends BottomSheet {
                         TLRPC.TL_pollAnswer answer = poll.answers.get(a);
                         if (Arrays.equals(answer.option, votesList.option)) {
                             Button button = votesPercents.get(votesList);
-                            sectionCell.setText(answer.text, button.percent, button.votesCount, votesList.getCollapsed());
+                            if (button == null) {
+                                continue;
+                            }
+                            sectionCell.setText(answer.text, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), false);
                             sectionCell.setTag(R.id.object_tag, votesList);
                             break;
                         }
@@ -1193,6 +1237,51 @@ public class PollVotesAlert extends BottomSheet {
             position[0] = 0;
             position[1] = 0;
         }
+    }
+
+    public int calcPercent(byte[] option) {
+        if (option == null) {
+            return 0;
+        }
+        int all = 0;
+        int count = 0;
+        for (int i = 0; i < voters.size(); ++i) {
+            VotesList votesList = voters.get(i);
+            if (votesList != null) {
+                all += votesList.count;
+                if (Arrays.equals(votesList.option, option)) {
+                    count += votesList.count;
+                }
+            }
+        }
+        if (all <= 0) {
+            return 0;
+        }
+        return (int) Math.round(count / (float) all * 100);
+    }
+
+    public void animateSectionUpdates(View view) {
+        for (int i = -2; i < listView.getChildCount(); ++i) {
+            View child = i == -2 ? view : (i == -1 ? listView.getPinnedHeader() : listView.getChildAt(i));
+            if (child instanceof SectionCell && child.getTag(R.id.object_tag) instanceof VotesList) {
+                SectionCell sectionCell = (SectionCell) child;
+                VotesList votesList = (VotesList) child.getTag(R.id.object_tag);
+                for (int a = 0, N = poll.answers.size(); a < N; a++) {
+                    TLRPC.TL_pollAnswer answer = poll.answers.get(a);
+                    if (Arrays.equals(answer.option, votesList.option)) {
+                        Button button = votesPercents.get(votesList);
+                        if (button == null) {
+                            continue;
+                        }
+                        sectionCell.setText(answer.text, calcPercent(votesList.option), votesList.count, votesList.getCollapsed(), true);
+                        sectionCell.setTag(R.id.object_tag, votesList);
+                        break;
+                    }
+                }
+            }
+        }
+        listView.relayoutPinnedHeader();
+        listView.invalidate();
     }
 
     @Override

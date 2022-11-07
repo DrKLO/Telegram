@@ -1,15 +1,9 @@
 package org.telegram.ui.Components;
 
-import android.app.DownloadManager;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Environment;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.util.TypedValue;
@@ -19,10 +13,9 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
-import androidx.core.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -36,7 +29,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.PremiumPreviewFragment;
 
-import java.io.File;
+import java.util.ArrayList;
 
 public final class BulletinFactory {
 
@@ -143,13 +136,13 @@ public final class BulletinFactory {
         this.resourcesProvider = resourcesProvider;
     }
 
-    public Bulletin createSimpleBulletin(int iconRawId, String text) {
+    public Bulletin createSimpleBulletin(int iconRawId, CharSequence text) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(iconRawId, 36, 36);
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
-        return create(layout, Bulletin.DURATION_SHORT);
+        return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
     }
 
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence subtext) {
@@ -157,10 +150,14 @@ public final class BulletinFactory {
         layout.setAnimation(iconRawId, 36, 36);
         layout.titleTextView.setText(text);
         layout.subtitleTextView.setText(subtext);
-        return create(layout, Bulletin.DURATION_SHORT);
+        return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
     }
 
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence button, Runnable onButtonClick) {
+        return createSimpleBulletin(iconRawId, text, button, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG, onButtonClick);
+    }
+
+    public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence button, int duration, Runnable onButtonClick) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(iconRawId, 36, 36);
         layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -168,7 +165,7 @@ public final class BulletinFactory {
         layout.textView.setMaxLines(3);
         layout.textView.setText(text);
         layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
-        return create(layout, Bulletin.DURATION_SHORT);
+        return create(layout, duration);
     }
 
     public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text, String button, Runnable onButtonClick) {
@@ -179,6 +176,58 @@ public final class BulletinFactory {
         layout.textView.setMaxLines(2);
         layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
         return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createUndoBulletin(CharSequence text, Runnable onUndo, Runnable onAction) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        layout.setTimer();
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(LocaleController.getString("Undo", R.string.Undo)).setUndoAction(onUndo).setDelayedAction(onAction));
+        return create(layout, Bulletin.DURATION_PROLONG);
+    }
+
+    public Bulletin createUsersBulletin(ArrayList<TLRPC.User> users, CharSequence text) {
+        final Bulletin.UsersLayout layout = new Bulletin.UsersLayout(getContext(), resourcesProvider);
+        int count = 0;
+        if (users != null) {
+            for (int i = 0; i < users.size(); ++i) {
+                if (count >= 3)
+                    break;
+                TLRPC.User user = users.get(i);
+                if (user != null) {
+                    layout.avatarsImageView.setCount(++count);
+                    layout.avatarsImageView.setObject(count - 1, UserConfig.selectedAccount, user);
+                }
+            }
+        }
+        layout.avatarsImageView.commitTransition(false);
+        layout.textView.setSingleLine(true);
+        layout.textView.setLines(1);
+        layout.textView.setText(text);
+        layout.textView.setTranslationX(-(3 - count) * AndroidUtilities.dp(12));
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createUsersAddedBulletin(ArrayList<TLRPC.User> users, TLRPC.Chat chat) {
+        CharSequence text;
+        if (users == null || users.size() == 0) {
+            text = null;
+        } else if (users.size() == 1) {
+            if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                text = AndroidUtilities.replaceTags(LocaleController.formatString("HasBeenAddedToChannel", R.string.HasBeenAddedToChannel, "**" + UserObject.getUserName(users.get(0)) + "**"));
+            } else {
+                text = AndroidUtilities.replaceTags(LocaleController.formatString("HasBeenAddedToGroup", R.string.HasBeenAddedToGroup, "**" + UserObject.getUserName(users.get(0)) + "**"));
+            }
+        } else {
+            if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                text = AndroidUtilities.replaceTags(LocaleController.formatPluralString("AddedMembersToChannel", users.size()));
+            } else {
+                text = AndroidUtilities.replaceTags(LocaleController.formatPluralString("AddedMembersToGroup", users.size()));
+            }
+        }
+        return createUsersBulletin(users, text);
     }
 
     public Bulletin createEmojiBulletin(String emoji, String text) {
@@ -259,6 +308,31 @@ public final class BulletinFactory {
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
         return create(layout, Bulletin.DURATION_SHORT);
+    }
+
+    public Bulletin createCaptionLimitBulletin(int count, Runnable callback) {
+        Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
+        layout.setAnimation(R.raw.caption_limit);
+        String str = LocaleController.formatPluralString("ChannelCaptionLimitPremiumPromo", count);
+        SpannableStringBuilder spannable = SpannableStringBuilder.valueOf(AndroidUtilities.replaceTags(str));
+        int indexStart = str.indexOf('*'), indexEnd = str.indexOf('*', indexStart + 1);
+        spannable.replace(indexStart, indexEnd + 1, str.substring(indexStart + 1, indexEnd));
+        spannable.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                callback.run();
+            }
+
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setUnderlineText(false);
+            }
+        }, indexStart, indexEnd - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        layout.textView.setText(spannable);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(3);
+        return create(layout, 5000);
     }
 
     public Bulletin createRestrictVoiceMessagesPremiumBulletin() {
@@ -460,6 +534,11 @@ public final class BulletinFactory {
     @CheckResult
     public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, boolean video, int backgroundColor, int textColor) {
         return of(containerLayout, null).createDownloadBulletin(video ? FileType.VIDEO : FileType.PHOTO, 1, backgroundColor, textColor);
+    }
+
+    @CheckResult
+    public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, int amount, boolean video, int backgroundColor, int textColor) {
+        return of(containerLayout, null).createDownloadBulletin(video ? (amount > 1 ? FileType.VIDEOS : FileType.VIDEO) : (amount > 1 ? FileType.PHOTOS : FileType.PHOTO), amount, backgroundColor, textColor);
     }
 
     @CheckResult

@@ -307,6 +307,7 @@ public class Switch extends View {
         } else {
             iconDrawable = null;
         }
+        invalidate();
     }
 
     public boolean hasIcon() {

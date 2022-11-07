@@ -35,8 +35,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.ChatActivity;
@@ -234,9 +234,9 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
         }
 
         if (getBaseFragment() != null) {
-            List<BaseFragment> fragments = new ArrayList<>(((LaunchActivity) getBaseFragment().getParentActivity()).getActionBarLayout().fragmentsStack);
+            List<BaseFragment> fragments = new ArrayList<>(((LaunchActivity) getBaseFragment().getParentActivity()).getActionBarLayout().getFragmentStack());
 
-            ActionBarLayout layout = getBaseFragment().getParentLayout();
+            INavigationLayout layout = getBaseFragment().getParentLayout();
             ChatActivity lastChatActivity = null;
             for (BaseFragment fragment : fragments) {
                 if (fragment instanceof ChatActivity) {

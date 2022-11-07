@@ -21,10 +21,10 @@ import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 
 import java.util.ArrayList;
 
@@ -50,6 +50,7 @@ public class SeekBarWaveform {
     private int innerColor;
     private int outerColor;
     private int selectedColor;
+    private float alpha = 1f;
 
     private float clearProgress = 1f;
     private boolean isUnread;
@@ -106,6 +107,10 @@ public class SeekBarWaveform {
         messageObject = object;
     }
 
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+    }
+
     public void setParentView(View view) {
         parentView = view;
         loadingFloat.setParent(view);
@@ -123,6 +128,7 @@ public class SeekBarWaveform {
                 pressed = true;
                 thumbDX = (int) (x - thumbX);
                 startDraging = false;
+                delegate.onSeekBarPressed();
                 return true;
             }
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
@@ -131,6 +137,7 @@ public class SeekBarWaveform {
                     delegate.onSeekBarDrag((float) thumbX / (float) width);
                 }
                 pressed = false;
+                delegate.onSeekBarReleased();
                 return true;
             }
         } else if (action == MotionEvent.ACTION_MOVE) {
@@ -190,6 +197,7 @@ public class SeekBarWaveform {
     }
 
     public void setSize(int w, int h, int fromW, int toW) {
+        int wasWidth = width;
         width = w;
         height = h;
         if (heights == null || heights.length != (int) (width / AndroidUtilities.dpf2(3))) {
@@ -260,7 +268,7 @@ public class SeekBarWaveform {
     }
 
     public void draw(Canvas canvas, View parentView) {
-        if (waveformBytes == null || width == 0) {
+        if (waveformBytes == null || width == 0 || alpha <= 0) {
             return;
         }
         float totalBarsCount = width / AndroidUtilities.dpf2(3);
@@ -330,13 +338,13 @@ public class SeekBarWaveform {
         if (alpha > 0) {
             canvas.save();
             canvas.clipPath(alphaPath);
-            drawFill(canvas, alpha);
+            drawFill(canvas, alpha * this.alpha);
             canvas.restore();
         }
 
         canvas.save();
         canvas.clipPath(path);
-        drawFill(canvas, 1f);
+        drawFill(canvas, this.alpha);
         canvas.restore();
     }
 
