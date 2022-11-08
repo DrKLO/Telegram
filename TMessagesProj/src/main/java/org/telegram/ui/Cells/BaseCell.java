@@ -11,11 +11,19 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
 public abstract class BaseCell extends ViewGroup {
+    public interface BaseCellDelegate {
+        default void didEnterWithKeyboard(BaseCell cell) {
+        }
+    }
+    private BaseCellDelegate delegate;
+
+    public void setDelegate(BaseCellDelegate delegate) { this.delegate = delegate; }
 
     private final class CheckForTap implements Runnable {
         public void run() {
@@ -47,6 +55,27 @@ public abstract class BaseCell extends ViewGroup {
     private CheckForLongPress pendingCheckForLongPress = null;
     private int pressCount = 0;
     private CheckForTap pendingCheckForTap = null;
+
+    private boolean isSelectButton(int keycode) {
+        switch(keycode) {
+            case KeyEvent.KEYCODE_BUTTON_SELECT:
+            case KeyEvent.KEYCODE_BUTTON_A:
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_NUMPAD_ENTER:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(isSelectButton(keyCode)) {
+            delegate.didEnterWithKeyboard(this);
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 
     public BaseCell(Context context) {
         super(context);
