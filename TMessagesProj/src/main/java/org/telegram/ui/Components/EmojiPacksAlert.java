@@ -930,6 +930,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
     @Override
     public void dismiss() {
         super.dismiss();
+        customEmojiPacks.recycle();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4);
     }
 
