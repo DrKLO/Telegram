@@ -133,6 +133,8 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
         setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 8 : 18), 0, AndroidUtilities.dp(LocaleController.isRTL ? 18 : 8), 0);
         rightIcon.setImageResource(icon);
+        int iconWidth = AndroidUtilities.dp(24 + 5);
+        ((FrameLayout.LayoutParams) textView.getLayoutParams()).setMargins(LocaleController.isRTL ? iconWidth : 0, 0, LocaleController.isRTL ? 0:iconWidth, 0);
     }
 
     public void setTextAndIcon(CharSequence text, int icon) {
