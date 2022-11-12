@@ -8,7 +8,7 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 
 public class ReactionsUtils {
 
-    public static final String APPEAR_ANIMATION_FILTER = "30_30_nolimit_pcache";
+    public static final String APPEAR_ANIMATION_FILTER = "30_30_nolimit";
     public static final String SELECT_ANIMATION_FILTER = "60_60_pcache";
     public static final String ACTIVATE_ANIMATION_FILTER = "30_30_pcache";
 

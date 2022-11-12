@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.net.Uri;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
@@ -73,6 +74,7 @@ import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -116,8 +118,16 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
 
     private int repeatLoad = 0;
 
+    private boolean highlightLinkDesktopDevice;
+    private boolean fragmentOpened;
+
     public SessionsActivity(int type) {
         currentType = type;
+    }
+
+    public SessionsActivity setHighlightLinkDesktopDevice() {
+        this.highlightLinkDesktopDevice = true;
+        return this;
     }
 
     @Override
@@ -133,6 +143,21 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.newSessionReceived);
+    }
+
+    @Override
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationEnd(isOpen, backward);
+
+        if (isOpen && !backward) {
+            fragmentOpened = true;
+            for (int i = 0; i < listView.getChildCount(); i++) {
+                View ch = listView.getChildAt(i);
+                if (ch instanceof ScanQRCodeView) {
+                    ((ScanQRCodeView) ch).buttonTextView.invalidate();
+                }
+            }
+        }
     }
 
     @Override
@@ -902,11 +927,16 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
 
         BackupImageView imageView;
         TextView textView;
+        TextView buttonTextView;
+        CellFlickerDrawable flickerDrawable = new CellFlickerDrawable();
 
         public ScanQRCodeView(@NonNull Context context) {
             super(context);
             imageView = new BackupImageView(context);
             addView(imageView, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
+
+            flickerDrawable.repeatEnabled = false;
+            flickerDrawable.animationSpeedScale = 1.2f;
 
             imageView.setOnClickListener(new OnClickListener() {
                 @Override
@@ -964,7 +994,19 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
 
             textView.setText(spanned);
 
-            TextView buttonTextView = new TextView(context);
+            buttonTextView = new TextView(context) {
+                @Override
+                public void draw(Canvas canvas) {
+                    super.draw(canvas);
+
+                    if (flickerDrawable.progress <= 1f && highlightLinkDesktopDevice && fragmentOpened) {
+                        AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+                        flickerDrawable.setParentWidth(getMeasuredWidth());
+                        flickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(8), null);
+                        invalidate();
+                    }
+                }
+            };
             buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             buttonTextView.setGravity(Gravity.CENTER);
             buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

@@ -1662,8 +1662,10 @@
     <string name="UsernamePlaceholder">Your Username</string>
     <string name="UsernameLinkPlaceholder">username</string>
     <string name="UsernameInUse">Sorry, this username is already taken.</string>
+    <string name="UsernameInUsePurchase">This link is already taken.\nHowever, it is currently available for purchase. **Learn more…**</string>
     <string name="UsernameInvalid">Sorry, this username is invalid.</string>
     <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
+    <string name="UsernameInvalidShortPurchase">A username must have at least 5 characters.\nHowever, it is currently available for purchase. **Learn more…**</string>
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
     <string name="UsernameHelp">You can choose a username on **Telegram**. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use **a–z**, **0–9** and underscores. Minimum length is **5** characters.</string>
@@ -3454,6 +3456,7 @@
     <string name="TooManyCommunitiesHintEdit">Sorry, you are a member of too many groups and channels. For technical reasons, you need to leave some first before changing this setting in your groups.</string>
     <string name="UserChannelTooMuchJoin">Sorry, the target user is a member of too many groups and channels. Please ask them to leave some first.</string>
     <!--Alert messages-->
+    <string name="LimitReachedPinnedTopics">Sorry, you can\'t pin more than %d topics to the top.</string>
     <string name="DeleteAllMessagesAlert">Warning! This will **delete all messages** in this chat for **both** participants.</string>
     <string name="DeleteAllMessagesChannelAlert">Warning! This will **delete all messages** in this channel.</string>
     <string name="DeleteAllMessagesSavedAlert">Warning! This will **delete all messages** in this chat.</string>
@@ -5696,6 +5699,7 @@
     <string name="RestartTopic">Reopen topic</string>
     <string name="CloseTopics">Close topics</string>
     <string name="RestartTopics">Reopen topics</string>
+    <string name="OpenAllTopics">All Topics</string>
     <string name="TopicViewAsTopics">View as topics</string>
     <string name="DeleteSelectedTopics">Are you sure you want delete these topics?</string>
     <string name="DeleteSelectedTopic">Are you sure you want delete %s?</string>
@@ -5776,4 +5780,5 @@
     <string name="ChannelCaptionLimitPremiumPromo_few">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
     <string name="ChannelCaptionLimitPremiumPromo_many">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
     <string name="ChannelCaptionLimitPremiumPromo_other">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
+    <string name="AllChats">All Chats</string>
 </resources>

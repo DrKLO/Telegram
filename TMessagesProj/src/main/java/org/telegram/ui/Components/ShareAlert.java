@@ -1723,7 +1723,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         topicsGridView.setScaleY(0.75f + value * 0.25f);
         topicsGridView.setAlpha(value);
 
-        RecyclerListView mainGridView = getMainGridView();
+        RecyclerListView mainGridView = gridView;
         mainGridView.setPivotX(cell.getX() + cell.getWidth() / 2f);
         mainGridView.setPivotY(cell.getY() + cell.getHeight() / 2f);
         mainGridView.setScaleX(1f + value * 0.25f);
@@ -1746,8 +1746,14 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         for (int i = 0; i < mainGridView.getChildCount(); i++) {
             View v = mainGridView.getChildAt(i);
             if (v instanceof ShareDialogCell) {
-                v.setTranslationX((v.getX() - cell.getX()) * 0.75f * moveValue);
-                v.setTranslationY((v.getY() - cell.getY()) * 0.75f * moveValue);
+                v.setTranslationX((v.getX() - cell.getX()) * 0.5f * moveValue);
+                v.setTranslationY((v.getY() - cell.getY()) * 0.5f * moveValue);
+
+                if (v != cell) {
+                    v.setAlpha(1f - Math.min(value, 0.5f) / 0.5f);
+                } else {
+                    v.setAlpha(1f - value);
+                }
             }
         }
         for (int i = 0; i < topicsGridView.getChildCount(); i++) {

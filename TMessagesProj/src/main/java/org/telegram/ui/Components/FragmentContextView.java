@@ -68,6 +68,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -486,6 +487,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
 
         avatars = new AvatarsImageView(context, false);
+        avatars.setAvatarsTextSize(AndroidUtilities.dp(21));
         avatars.setDelegate(() -> updateAvatars(true));
         avatars.setVisibility(GONE);
         addView(avatars, LayoutHelper.createFrame(108, 36, Gravity.LEFT | Gravity.TOP));
@@ -1973,7 +1975,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     frameLayout.invalidate();
                 }
 
-                updateAvatars(avatars.avatarsDarawable.wasDraw && updateAnimated);
+                updateAvatars(avatars.avatarsDrawable.wasDraw && updateAnimated);
             } else {
                 if (voIPService != null && voIPService.groupCall != null) {
                     updateAvatars(currentStyle == STYLE_ACTIVE_GROUP_CALL);
@@ -2044,14 +2046,14 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     private void updateAvatars(boolean animated) {
         if (!animated) {
-            if (avatars.avatarsDarawable.transitionProgressAnimator != null) {
-                avatars.avatarsDarawable.transitionProgressAnimator.cancel();
-                avatars.avatarsDarawable.transitionProgressAnimator = null;
+            if (avatars.avatarsDrawable.transitionProgressAnimator != null) {
+                avatars.avatarsDrawable.transitionProgressAnimator.cancel();
+                avatars.avatarsDrawable.transitionProgressAnimator = null;
             }
         }
         ChatObject.Call call;
         TLRPC.User userCall;
-        if (avatars.avatarsDarawable.transitionProgressAnimator == null) {
+        if (avatars.avatarsDrawable.transitionProgressAnimator == null) {
             int currentAccount;
             if (currentStyle == STYLE_INACTIVE_GROUP_CALL) {
                 if (chatActivity != null) {
@@ -2264,42 +2266,5 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
-    }
-
-    public interface ChatActivityInterface {
-
-        default ChatObject.Call getGroupCall() {
-            return null;
-        }
-
-        default TLRPC.Chat getCurrentChat() {
-            return null;
-        }
-
-        default TLRPC.User getCurrentUser() {
-            return null;
-        }
-
-        long getDialogId();
-
-        default void scrollToMessageId(int id, int i, boolean b, int i1, boolean b1, int i2) {
-
-        }
-
-        default boolean shouldShowImport() {
-            return false;
-        }
-
-        default boolean openedWithLivestream() {
-            return false;
-        }
-
-        default long getMergeDialogId() {
-            return 0;
-        }
-
-        default int getTopicId() {
-            return 0;
-        }
     }
 }

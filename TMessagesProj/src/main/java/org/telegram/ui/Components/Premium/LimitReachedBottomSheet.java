@@ -120,6 +120,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         } else if (type == TYPE_TO_MANY_COMMUNITIES) {
             loadInactiveChannels();
         }
+        updatePremiumButtonText();
     }
 
     @Override
@@ -128,7 +129,6 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         Context context = containerView.getContext();
 
         premiumButtonView = new PremiumButtonView(context, true);
-        updatePremiumButtonText();
 
         if (!hasFixedSize) {
             divider = new View(context) {

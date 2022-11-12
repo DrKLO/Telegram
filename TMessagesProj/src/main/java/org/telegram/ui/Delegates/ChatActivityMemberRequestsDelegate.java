@@ -3,7 +3,6 @@ package org.telegram.ui.Delegates;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
@@ -81,7 +80,7 @@ public class ChatActivityMemberRequestsDelegate {
             avatarsView = new AvatarsImageView(fragment.getParentActivity(), false) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    int width = avatarsDarawable.count == 0 ? 0 : (20 * (avatarsDarawable.count - 1) + 24);
+                    int width = avatarsDrawable.count == 0 ? 0 : (20 * (avatarsDrawable.count - 1) + 24);
                     super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(width), MeasureSpec.EXACTLY), heightMeasureSpec);
                 }
             };

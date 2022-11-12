@@ -38,6 +38,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -686,6 +687,28 @@ public class AnimatedEmojiDrawable extends Drawable {
     public ImageReceiver getImageReceiver() {
         return imageReceiver;
     }
+
+    private static HashMap<Long, Integer> dominantColors;
+    public static int getDominantColor(AnimatedEmojiDrawable yourDrawable) {
+        if (yourDrawable == null) {
+            return 0;
+        }
+        long documentId = yourDrawable.getDocumentId();
+        if (documentId == 0) {
+            return 0;
+        }
+        if (dominantColors == null) {
+            dominantColors = new HashMap<>();
+        }
+        Integer color = dominantColors.get(documentId);
+        if (color == null) {
+            if (yourDrawable.getImageReceiver() != null && yourDrawable.getImageReceiver().getBitmap() != null) {
+                dominantColors.put(documentId, color = PremiumLockIconView.getDominantColor(yourDrawable.getImageReceiver().getBitmap()));
+            }
+        }
+        return color == null ? 0 : color;
+    }
+
 
     public static class WrapSizeDrawable extends Drawable {
 

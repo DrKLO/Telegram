@@ -1899,6 +1899,10 @@ public class RecyclerListView extends RecyclerView {
 
     int emptyViewAnimateToVisibility;
 
+    public void checkIfEmpty() {
+        checkIfEmpty(updateEmptyViewAnimated());
+    }
+
     private void checkIfEmpty(boolean animated) {
         if (isHidden) {
             return;

@@ -21,7 +21,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.DashPathEffect;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -932,7 +931,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         private boolean isRecent;
         private AnimatedEmojiSpan span;
         private EmojiPack pack;
-        private ImageReceiver.BackgroundThreadDrawHolder backgroundThreadDrawHolder;
+        private ImageReceiver.BackgroundThreadDrawHolder[] backgroundThreadDrawHolder = new ImageReceiver.BackgroundThreadDrawHolder[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         float pressedProgress;
         ValueAnimator backAnimator;
 
@@ -2829,13 +2828,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     }
 
                     drawable.update(time);
-                    imageView.backgroundThreadDrawHolder = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder);
-                    imageView.backgroundThreadDrawHolder.time = time;
-                    imageView.backgroundThreadDrawHolder.overrideAlpha = 1f;
+                    imageView.backgroundThreadDrawHolder[threadIndex] = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder[threadIndex], threadIndex);
+                    imageView.backgroundThreadDrawHolder[threadIndex].time = time;
+                    imageView.backgroundThreadDrawHolder[threadIndex].overrideAlpha = 1f;
                     drawable.setAlpha(255);
                     int topOffset = (int) (imageView.getHeight() * .03f);
                     AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft() - startOffset, topOffset, imageView.getRight() - imageView.getPaddingRight() - startOffset, topOffset + imageView.getMeasuredHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom());
-                    imageView.backgroundThreadDrawHolder.setBounds(AndroidUtilities.rectTmp2);
+                    imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
                     imageView.drawable = drawable;
                     imageView.imageReceiver = drawable.getImageReceiver();
                     drawInBackgroundViews.add(imageView);
@@ -2847,7 +2846,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 for (int i = 0; i < drawInBackgroundViews.size(); i++) {
                     ImageViewEmoji imageView = drawInBackgroundViews.get(i);
                     if (imageView.drawable != null) {
-                        imageView.drawable.draw(canvas, imageView.backgroundThreadDrawHolder, false);
+                        imageView.drawable.draw(canvas, imageView.backgroundThreadDrawHolder[threadIndex], false);
                     }
                 }
             }
@@ -2914,7 +2913,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 for (int i = 0; i < drawInBackgroundViews.size(); i++) {
                     ImageViewEmoji imageView = drawInBackgroundViews.get(i);
                     if (imageView.backgroundThreadDrawHolder != null) {
-                        imageView.backgroundThreadDrawHolder.release();
+                        imageView.backgroundThreadDrawHolder[threadIndex].release();
                     }
                 }
                 emojiGridView.invalidate();

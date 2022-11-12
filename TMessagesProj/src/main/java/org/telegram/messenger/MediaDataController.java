@@ -34,6 +34,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
+import android.util.Pair;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
@@ -65,7 +66,6 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
-import org.telegram.ui.Components.Reactions.ReactionsUtils;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersArchiveAlert;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -523,7 +523,7 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    private void processLoadedPremiumPromo(TLRPC.TL_help_premiumPromo premiumPromo, int date, boolean cache) {
+    public void processLoadedPremiumPromo(TLRPC.TL_help_premiumPromo premiumPromo, int date, boolean cache) {
         this.premiumPromo = premiumPromo;
         premiumPromoUpdateDate = date;
         getMessagesController().putUsers(premiumPromo.users, cache);
@@ -638,7 +638,7 @@ public class MediaDataController extends BaseController {
         reactionsUpdateDate = date;
         if (reactions != null) {
             AndroidUtilities.runOnUIThread(() -> {
-                preloadReactions();
+                preloadDefaultReactions();
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reactionsDidLoad);
             });
         }
@@ -651,7 +651,7 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    public void preloadReactions() {
+    public void preloadDefaultReactions() {
         if (reactionsList == null || reactionsCacheGenerated) {
             return;
         }
@@ -659,13 +659,15 @@ public class MediaDataController extends BaseController {
         ArrayList<TLRPC.TL_availableReaction> arrayList = new ArrayList<>(reactionsList);
         for (int i = 0; i < arrayList.size(); i++) {
             TLRPC.TL_availableReaction reaction = arrayList.get(i);
+            preloadImage(ImageLocation.getForDocument(reaction.activate_animation), null);
+            preloadImage(ImageLocation.getForDocument(reaction.appear_animation), null);
+        }
+
+        for (int i = 0; i < arrayList.size(); i++) {
+            TLRPC.TL_availableReaction reaction = arrayList.get(i);
             int size = ReactionsEffectOverlay.sizeForBigReaction();
             preloadImage(ImageLocation.getForDocument(reaction.around_animation), ReactionsEffectOverlay.getFilterForAroundAnimation(), true);
-            preloadImage(ImageLocation.getForDocument(reaction.effect_animation), size + "_" + size);
-            preloadImage(ImageLocation.getForDocument(reaction.activate_animation), null);
-            preloadImage(ImageLocation.getForDocument(reaction.appear_animation), ReactionsUtils.APPEAR_ANIMATION_FILTER);
-
-            preloadImage(ImageLocation.getForDocument(reaction.center_icon), null);
+            preloadImage(ImageLocation.getForDocument(reaction.effect_animation), null);
         }
     }
 
@@ -675,6 +677,9 @@ public class MediaDataController extends BaseController {
 
     private void preloadImage(ImageLocation location, String filter, boolean log) {
         ImageReceiver imageReceiver = new ImageReceiver();
+        imageReceiver.setAllowStartAnimation(false);
+        imageReceiver.setAllowStartLottieAnimation(false);
+        imageReceiver.setAllowDecodeSingleFrame(false);
         imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
             if (set) {
                 RLottieDrawable rLottieDrawable = imageReceiver.getLottieAnimation();
@@ -6059,6 +6064,19 @@ public class MediaDataController extends BaseController {
             return null;
         }
         return threads.get(threadId);
+    }
+
+    public Pair<Integer, TLRPC.DraftMessage> getOneThreadDraft(long dialogId) {
+        SparseArray<TLRPC.DraftMessage> threads = drafts.get(dialogId);
+        if (threads == null || threads.size() <= 0) {
+            return null;
+        }
+        for (int i = 0; i < threads.size(); ++i) {
+            if (threads.keyAt(i) != 0) {
+                return new Pair(threads.keyAt(i), threads.valueAt(i));
+            }
+        }
+        return null;
     }
 
     public TLRPC.Message getDraftMessage(long dialogId, int threadId) {

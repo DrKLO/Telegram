@@ -534,8 +534,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         public SharedMediaPreloader(BaseFragment fragment) {
             parentFragment = fragment;
-            if (fragment instanceof FragmentContextView.ChatActivityInterface) {
-                FragmentContextView.ChatActivityInterface chatActivity = (FragmentContextView.ChatActivityInterface) fragment;
+            if (fragment instanceof ChatActivityInterface) {
+                ChatActivityInterface chatActivity = (ChatActivityInterface) fragment;
                 dialogId = chatActivity.getDialogId();
                 mergeDialogId = chatActivity.getMergeDialogId();
                 topicId = chatActivity.getTopicId();

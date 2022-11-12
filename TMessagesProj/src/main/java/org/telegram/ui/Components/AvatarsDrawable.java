@@ -30,7 +30,7 @@ import org.telegram.ui.Cells.GroupCallUserCell;
 
 import java.util.Random;
 
-public class AvatarsDarawable {
+public class AvatarsDrawable {
 
     public final static int STYLE_GROUP_CALL_TOOLTIP = 10;
     public final static int STYLE_MESSAGE_SEEN = 11;
@@ -198,9 +198,9 @@ public class AvatarsDarawable {
         overrideSize = size;
     }
 
-    public void animateFromState(AvatarsDarawable avatarsDarawable, int currentAccount, boolean createAnimator) {
-        if (avatarsDarawable.transitionProgressAnimator != null) {
-            avatarsDarawable.transitionProgressAnimator.cancel();
+    public void animateFromState(AvatarsDrawable avatarsDrawable, int currentAccount, boolean createAnimator) {
+        if (avatarsDrawable.transitionProgressAnimator != null) {
+            avatarsDrawable.transitionProgressAnimator.cancel();
             if (transitionInProgress) {
                 transitionInProgress = false;
                 swapStates();
@@ -209,7 +209,7 @@ public class AvatarsDarawable {
         TLObject[] objects = new TLObject[3];
         for (int i = 0; i < 3; i++) {
             objects[i] = currentStates[i].object;
-            setObject(i, currentAccount, avatarsDarawable.currentStates[i].object);
+            setObject(i, currentAccount, avatarsDrawable.currentStates[i].object);
         }
         commitTransition(false);
         for (int i = 0; i < 3; i++) {
@@ -246,7 +246,7 @@ public class AvatarsDarawable {
 
     Random random = new Random();
 
-    public AvatarsDarawable(View parent, boolean inCall) {
+    public AvatarsDrawable(View parent, boolean inCall) {
         this.parent = parent;
         for (int a = 0; a < 3; a++) {
             currentStates[a] = new DrawingState();

@@ -17,7 +17,6 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -437,6 +436,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             );
             showButtonCheck.setOnClickListener(e -> {
                 preferences.edit().putBoolean("translate_button", !getValue()).apply();
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateSearchSettings);
             });
             addView(showButtonCheck, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 

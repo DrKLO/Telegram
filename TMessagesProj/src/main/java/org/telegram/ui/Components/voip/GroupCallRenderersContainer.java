@@ -46,7 +46,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AvatarsDarawable;
+import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.CrossOutDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -326,7 +326,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         };
 
         speakingMembersAvatars = new AvatarsImageView(context, true);
-        speakingMembersAvatars.setStyle(AvatarsDarawable.STYLE_GROUP_CALL_TOOLTIP);
+        speakingMembersAvatars.setStyle(AvatarsDrawable.STYLE_GROUP_CALL_TOOLTIP);
 
         speakingMembersToast.setClipChildren(false);
         speakingMembersToast.setClipToPadding(false);

@@ -17,7 +17,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -66,7 +65,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
-public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
+public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements DialogCell.DialogCellDelegate {
     public final static int VIEW_TYPE_DIALOG = 0,
         VIEW_TYPE_FLICKER = 1,
         VIEW_TYPE_RECENTLY_VIEWED = 2,
@@ -413,6 +412,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                     DialogCell dialogCell = new DialogCell(parentFragment, mContext, true, false, currentAccount, null);
                     dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
                     dialogCell.setPreloader(preloader);
+                    dialogCell.setDialogCellDelegate(this);
                     view = dialogCell;
                 }
                 break;
@@ -887,6 +887,21 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
+    @Override
+    public void onButtonClicked(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public void onButtonLongPress(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public boolean canClickButtonInside() {
+        return selectedDialogs.isEmpty();
+    }
+
     public static class DialogsPreloader {
 
         private final int MAX_REQUEST_COUNT = 4;
@@ -1063,6 +1078,5 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height);
         }
-
     }
 }

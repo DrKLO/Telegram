@@ -1281,114 +1281,127 @@ public class FileLoadOperation {
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("finished preloading file to " + cacheFileTemp + " loaded " + totalPreloadedBytes + " of " + totalBytesCount);
             }
+            delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
         } else {
-            if (cacheIvTemp != null) {
-                cacheIvTemp.delete();
-                cacheIvTemp = null;
-            }
-            if (cacheFileParts != null) {
-                cacheFileParts.delete();
-                cacheFileParts = null;
-            }
-            if (cacheFilePreload != null) {
-                cacheFilePreload.delete();
-                cacheFilePreload = null;
-            }
-            if (cacheFileTemp != null) {
-                if (ungzip) {
-                    try {
-                        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(cacheFileTemp));
-                        FileLoader.copyFile(gzipInputStream, cacheFileGzipTemp, 1024 * 1024 * 2);
-                        gzipInputStream.close();
-                        cacheFileTemp.delete();
-                        cacheFileTemp = cacheFileGzipTemp;
-                        ungzip = false;
-                    } catch (ZipException zipException) {
-                        ungzip = false;
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("unable to ungzip temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
+            final File cacheIvTempFinal = cacheIvTemp;
+            final File cacheFilePartsFinal = cacheFileParts;
+            final File cacheFilePreloadFinal = cacheFilePreload;
+            final File cacheFileTempFinal = cacheFileTemp;
+            Utilities.globalQueue.postRunnable(() -> {
+                if (cacheIvTempFinal != null) {
+                    cacheIvTempFinal.delete();
+                }
+                if (cacheFilePartsFinal != null) {
+                    cacheFilePartsFinal.delete();
+                }
+                if (cacheFilePreloadFinal != null) {
+                    cacheFilePreloadFinal.delete();
+                }
+                File cacheFileTempLocal = cacheFileTempFinal;
+                if (cacheFileTempLocal != null) {
+                    if (ungzip) {
+                        try {
+                            GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(cacheFileTempLocal));
+                            FileLoader.copyFile(gzipInputStream, cacheFileGzipTemp, 1024 * 1024 * 2);
+                            gzipInputStream.close();
+                            cacheFileTempLocal.delete();
+                            cacheFileTempLocal = cacheFileGzipTemp;
+                            ungzip = false;
+                        } catch (ZipException zipException) {
+                            ungzip = false;
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.e("unable to ungzip temp = " + cacheFileTempFinal + " to final = " + cacheFileFinal);
+                            }
                         }
                     }
-                }
-                if (!ungzip) {
-                    boolean renameResult;
-                    if (parentObject instanceof TLRPC.TL_theme) {
-                        try {
-                            renameResult = AndroidUtilities.copyFile(cacheFileTemp, cacheFileFinal);
-                        } catch (Exception e) {
-                            renameResult = false;
-                            FileLog.e(e);
-                        }
-                    } else {
-                        try {
-                            if (pathSaveData != null) {
-                                synchronized (lockObject) {
-                                    cacheFileFinal = new File(storePath, storeFileName);
-                                    int count = 1;
-                                    while (cacheFileFinal.exists()) {
-                                        int lastDotIndex = storeFileName.lastIndexOf('.');
-                                        String newFileName;
-                                        if (lastDotIndex > 0) {
-                                            newFileName = storeFileName.substring(0, lastDotIndex) + " (" + count + ")" + storeFileName.substring(lastDotIndex);
-                                        } else {
-                                            newFileName = storeFileName + " (" + count + ")";
+                    if (!ungzip) {
+                        boolean renameResult;
+                        if (parentObject instanceof TLRPC.TL_theme) {
+                            try {
+                                renameResult = AndroidUtilities.copyFile(cacheFileTempLocal, cacheFileFinal);
+                            } catch (Exception e) {
+                                renameResult = false;
+                                FileLog.e(e);
+                            }
+                        } else {
+                            try {
+                                if (pathSaveData != null) {
+                                    synchronized (lockObject) {
+                                        cacheFileFinal = new File(storePath, storeFileName);
+                                        int count = 1;
+                                        while (cacheFileFinal.exists()) {
+                                            int lastDotIndex = storeFileName.lastIndexOf('.');
+                                            String newFileName;
+                                            if (lastDotIndex > 0) {
+                                                newFileName = storeFileName.substring(0, lastDotIndex) + " (" + count + ")" + storeFileName.substring(lastDotIndex);
+                                            } else {
+                                                newFileName = storeFileName + " (" + count + ")";
+                                            }
+                                            cacheFileFinal = new File(storePath, newFileName);
+                                            count++;
                                         }
-                                        cacheFileFinal = new File(storePath, newFileName);
-                                        count++;
                                     }
                                 }
+                                renameResult = cacheFileTempLocal.renameTo(cacheFileFinal);
+                            } catch (Exception e) {
+                                renameResult = false;
+                                FileLog.e(e);
                             }
-                            renameResult = cacheFileTemp.renameTo(cacheFileFinal);
-                        } catch (Exception e) {
-                            renameResult = false;
-                            FileLog.e(e);
                         }
-                    }
-                    if (!renameResult) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
+                        if (!renameResult) {
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.e("unable to rename temp = " + cacheFileTempLocal + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
+                            }
+                            renameRetryCount++;
+                            if (renameRetryCount < 3) {
+                                state = stateDownloading;
+                                Utilities.stageQueue.postRunnable(() -> {
+                                    try {
+                                        onFinishLoadingFile(increment);
+                                    } catch (Exception e) {
+                                        onFail(false, 0);
+                                    }
+                                }, 200);
+                                return;
+                            }
+                            cacheFileFinal = cacheFileTempLocal;
+                        } else {
+                            if (pathSaveData != null && cacheFileFinal.exists()) {
+                                delegate.saveFilePath(pathSaveData, cacheFileFinal);
+                            }
                         }
-                        renameRetryCount++;
-                        if (renameRetryCount < 3) {
-                            state = stateDownloading;
-                            Utilities.stageQueue.postRunnable(() -> {
-                                try {
-                                    onFinishLoadingFile(increment);
-                                } catch (Exception e) {
-                                    onFail(false, 0);
-                                }
-                            }, 200);
-                            return;
-                        }
-                        cacheFileFinal = cacheFileTemp;
                     } else {
-                        if (pathSaveData != null && cacheFileFinal.exists()) {
-                            delegate.saveFilePath(pathSaveData, cacheFileFinal);
+                        Utilities.stageQueue.postRunnable(() -> {
+                            onFail(false, 0);
+                        });
+                        return;
+                    }
+                }
+                Utilities.stageQueue.postRunnable(() -> {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime));
+                    }
+                    if (increment) {
+                        if (currentType == ConnectionsManager.FileTypeAudio) {
+                            StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_AUDIOS, 1);
+                        } else if (currentType == ConnectionsManager.FileTypeVideo) {
+                            StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_VIDEOS, 1);
+                        } else if (currentType == ConnectionsManager.FileTypePhoto) {
+                            StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
+                        } else if (currentType == ConnectionsManager.FileTypeFile) {
+                            StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
                         }
                     }
-                } else {
-                    onFail(false, 0);
-                    return;
-                }
-            }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime));
-            }
-            if (increment) {
-                if (currentType == ConnectionsManager.FileTypeAudio) {
-                    StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_AUDIOS, 1);
-                } else if (currentType == ConnectionsManager.FileTypeVideo) {
-                    StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_VIDEOS, 1);
-                } else if (currentType == ConnectionsManager.FileTypePhoto) {
-                    StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
-                } else if (currentType == ConnectionsManager.FileTypeFile) {
-                    StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
-                }
-            }
+                    delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
+                });
+            });
+            cacheIvTemp = null;
+            cacheFileParts = null;
+            cacheFilePreload = null;
         }
-        delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
+
     }
 
     private void delayRequestInfo(RequestInfo requestInfo) {

@@ -378,15 +378,18 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                     if (userFull == null) {
                         MessagesController.getInstance(currentAccount).loadFullUser(user, currentGuid, false);
                     } else {
-                        if (userFull.profile_photo != null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
-                            TLRPC.VideoSize videoSize = userFull.profile_photo.video_sizes.get(0);
-                            for (int i = 0; i < userFull.profile_photo.video_sizes.size(); i++) {
-                                if ("p".equals(userFull.profile_photo.video_sizes.get(i).type)) {
-                                    videoSize = userFull.profile_photo.video_sizes.get(i);
-                                    break;
+                        if (userFull.profile_photo != null) {
+                            TLRPC.Photo photo = userFull.profile_photo;
+                            if (photo != null && photo.video_sizes != null && !photo.video_sizes.isEmpty()) {
+                                TLRPC.VideoSize videoSize = photo.video_sizes.get(0);
+                                for (int i = 0; i < photo.video_sizes.size(); i++) {
+                                    if ("p".equals(photo.video_sizes.get(i).type)) {
+                                        videoSize = photo.video_sizes.get(i);
+                                        break;
+                                    }
                                 }
+                                videoLocation = ImageLocation.getForPhoto(videoSize, photo);
                             }
-                            videoLocation = ImageLocation.getForPhoto(videoSize, userFull.profile_photo);
                         }
                     }
                 }
@@ -1470,7 +1473,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             if (time == 0) {
                                 time = System.currentTimeMillis();
                             }
-                            ((SvgHelper.SvgDrawable) drawable).drawInternal(canvas, true, time, backgroundThreadDrawHolder.imageX, backgroundThreadDrawHolder.imageY, backgroundThreadDrawHolder.imageW, backgroundThreadDrawHolder.imageH);
+                            ((SvgHelper.SvgDrawable) drawable).drawInternal(canvas, true, backgroundThreadDrawHolder.threadIndex, time, backgroundThreadDrawHolder.imageX, backgroundThreadDrawHolder.imageY, backgroundThreadDrawHolder.imageW, backgroundThreadDrawHolder.imageH);
                         } else {
                             drawable.draw(canvas);
                         }
@@ -1487,9 +1490,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private void drawBitmapDrawable(Canvas canvas, BitmapDrawable bitmapDrawable, BackgroundThreadDrawHolder backgroundThreadDrawHolder, int alpha) {
         if (backgroundThreadDrawHolder != null) {
             if (bitmapDrawable instanceof RLottieDrawable) {
-                ((RLottieDrawable) bitmapDrawable).drawInBackground(canvas, backgroundThreadDrawHolder.imageX, backgroundThreadDrawHolder.imageY, backgroundThreadDrawHolder.imageW, backgroundThreadDrawHolder.imageH, alpha, backgroundThreadDrawHolder.colorFilter);
+                ((RLottieDrawable) bitmapDrawable).drawInBackground(canvas, backgroundThreadDrawHolder.imageX, backgroundThreadDrawHolder.imageY, backgroundThreadDrawHolder.imageW, backgroundThreadDrawHolder.imageH, alpha, backgroundThreadDrawHolder.colorFilter, backgroundThreadDrawHolder.threadIndex);
             } else if (bitmapDrawable instanceof AnimatedFileDrawable) {
-                ((AnimatedFileDrawable) bitmapDrawable).drawInBackground(canvas, backgroundThreadDrawHolder.imageX, backgroundThreadDrawHolder.imageY, backgroundThreadDrawHolder.imageW, backgroundThreadDrawHolder.imageH, alpha, backgroundThreadDrawHolder.colorFilter);
+                ((AnimatedFileDrawable) bitmapDrawable).drawInBackground(canvas, backgroundThreadDrawHolder.imageX, backgroundThreadDrawHolder.imageY, backgroundThreadDrawHolder.imageW, backgroundThreadDrawHolder.imageH, alpha, backgroundThreadDrawHolder.colorFilter, backgroundThreadDrawHolder.threadIndex);
             } else {
                 Bitmap bitmap = bitmapDrawable.getBitmap();
                 if (bitmap != null) {
@@ -1508,9 +1511,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         } else {
             bitmapDrawable.setAlpha(alpha);
             if (bitmapDrawable instanceof RLottieDrawable) {
-                ((RLottieDrawable) bitmapDrawable).drawInternal(canvas, false, currentTime);
+                ((RLottieDrawable) bitmapDrawable).drawInternal(canvas, false, currentTime, 0);
             } else if (bitmapDrawable instanceof AnimatedFileDrawable) {
-                ((AnimatedFileDrawable) bitmapDrawable).drawInternal(canvas, false, currentTime);
+                ((AnimatedFileDrawable) bitmapDrawable).drawInternal(canvas, false, currentTime, 0);
             } else {
                 bitmapDrawable.draw(canvas);
             }
@@ -2895,10 +2898,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return fileLoadingPriority;
     }
 
-    public BackgroundThreadDrawHolder setDrawInBackgroundThread(BackgroundThreadDrawHolder holder) {
+    public BackgroundThreadDrawHolder setDrawInBackgroundThread(BackgroundThreadDrawHolder holder, int threadIndex) {
         if (holder == null) {
             holder = new BackgroundThreadDrawHolder();
         }
+        holder.threadIndex = threadIndex;
         holder.animation = getAnimation();
         holder.lottieDrawable = getLottieAnimation();
         for (int i = 0; i < 4; i++) {
@@ -2931,6 +2935,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         public boolean animationNotReady;
         public float overrideAlpha;
         public long time;
+        public int threadIndex;
         private AnimatedFileDrawable animation;
         private RLottieDrawable lottieDrawable;
         private int[] roundRadius = new int[4];

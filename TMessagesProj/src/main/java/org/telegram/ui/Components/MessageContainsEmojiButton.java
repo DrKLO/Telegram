@@ -149,6 +149,8 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                     mainText = parts[0];
                     endText = parts[1];
                     loadingDrawable = new LoadingDrawable(resourcesProvider);
+                    loadingDrawable.colorKey1 = Theme.key_actionBarDefaultSubmenuBackground;
+                    loadingDrawable.colorKey2 = Theme.key_listSelector;
                     loadingDrawable.paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(4)));
                 }
             }

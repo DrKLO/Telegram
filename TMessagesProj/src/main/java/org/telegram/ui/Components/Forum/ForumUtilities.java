@@ -1,10 +1,10 @@
 package org.telegram.ui.Components.Forum;
 
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
 
@@ -71,6 +71,16 @@ public class ForumUtilities {
         return combinedDrawable;
     }
 
+    public static Drawable createSmallTopicDrawable(String text, int color) {
+        ForumBubbleDrawable forumBubbleDrawable = new ForumBubbleDrawable(color);
+        LetterDrawable letterDrawable = new LetterDrawable(null, LetterDrawable.STYLE_SMALL_TOPIC_DRAWABLE);
+        String title = text.trim().toUpperCase();
+        letterDrawable.setTitle(title.length() >= 1 ? title.substring(0, 1) : "");
+        CombinedDrawable combinedDrawable = new CombinedDrawable(forumBubbleDrawable, letterDrawable, 0, 0);
+        combinedDrawable.setFullsize(true);
+        return combinedDrawable;
+    }
+
     public static void openTopic(BaseFragment baseFragment, long chatId, TLRPC.TL_forumTopic topic, int fromMessageId) {
         if (baseFragment == null || topic == null) {
             return;
@@ -78,8 +88,12 @@ public class ForumUtilities {
         TLRPC.Chat chatLocal = baseFragment.getMessagesController().getChat(chatId);
         Bundle args = new Bundle();
         args.putLong("chat_id", chatId);
+
         if (fromMessageId != 0) {
             args.putInt("message_id", fromMessageId);
+        } else if (topic.read_inbox_max_id == 0) {
+            //scroll to first message in topic
+            args.putInt("message_id", topic.id);
         }
         args.putInt("unread_count", topic.unread_count);
         args.putBoolean("historyPreloaded", false);
@@ -104,11 +118,11 @@ public class ForumUtilities {
         baseFragment.presentFragment(chatActivity);
     }
 
-    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, TextPaint paint) {
+    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint) {
         return getTopicSpannedName(topic, paint, null);
     }
 
-    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, TextPaint paint, ForumBubbleDrawable[] drawableToSet) {
+    public static CharSequence getTopicSpannedName(TLRPC.ForumTopic topic, Paint paint, ForumBubbleDrawable[] drawableToSet) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         if (topic instanceof TLRPC.TL_forumTopic) {
             TLRPC.TL_forumTopic forumTopic = (TLRPC.TL_forumTopic) topic;
@@ -116,6 +130,7 @@ public class ForumUtilities {
                 sb.append(" ");
                 AnimatedEmojiSpan span;
                 sb.setSpan(span = new AnimatedEmojiSpan(forumTopic.icon_emoji_id, .95f, paint == null ? null : paint.getFontMetricsInt()), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                span.top = true;
                 span.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_EMOJI_STATUS;
             } else {
                 sb.append(" ");

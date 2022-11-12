@@ -1271,7 +1271,7 @@ public class Bulletin {
             super(context, resourcesProvider);
 
             avatarsImageView = new AvatarsImageView(context, false);
-            avatarsImageView.setStyle(AvatarsDarawable.STYLE_MESSAGE_SEEN);
+            avatarsImageView.setStyle(AvatarsDrawable.STYLE_MESSAGE_SEEN);
             addView(avatarsImageView, LayoutHelper.createFrameRelatively(24 + 12 + 12 + 8, 48, Gravity.START | Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
 
             textView = new LinkSpanDrawable.LinksTextView(context);

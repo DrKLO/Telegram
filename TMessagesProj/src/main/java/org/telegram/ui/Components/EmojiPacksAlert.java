@@ -312,11 +312,11 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         }
 
                         drawable.update(time);
-                        imageView.backgroundThreadDrawHolder = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder);
-                        imageView.backgroundThreadDrawHolder.time = time;
+                        imageView.backgroundThreadDrawHolder[threadIndex] = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder[threadIndex], threadIndex);
+                        imageView.backgroundThreadDrawHolder[threadIndex].time = time;
                         drawable.setAlpha(255);
                         AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(),  imageView.getPaddingTop(), imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom());
-                        imageView.backgroundThreadDrawHolder.setBounds(AndroidUtilities.rectTmp2);
+                        imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
                         imageView.imageReceiver = drawable.getImageReceiver();
                         drawInBackgroundViews.add(imageView);
                     }
@@ -350,7 +350,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 public void drawInBackground(Canvas canvas) {
                     for (int i = 0; i < drawInBackgroundViews.size(); i++) {
                         EmojiImageView imageView = drawInBackgroundViews.get(i);
-                        imageView.imageReceiver.draw(canvas, imageView.backgroundThreadDrawHolder);
+                        imageView.imageReceiver.draw(canvas, imageView.backgroundThreadDrawHolder[threadIndex]);
                     }
                 }
 
@@ -394,7 +394,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                     super.onFrameReady();
                     for (int i = 0; i < drawInBackgroundViews.size(); i++) {
                         EmojiImageView imageView = drawInBackgroundViews.get(i);
-                        imageView.backgroundThreadDrawHolder.release();
+                        imageView.backgroundThreadDrawHolder[threadIndex].release();
                     }
                     containerView.invalidate();
                 }
@@ -1138,7 +1138,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }
     }
     private class EmojiImageView extends View {
-        public ImageReceiver.BackgroundThreadDrawHolder backgroundThreadDrawHolder;
+        public ImageReceiver.BackgroundThreadDrawHolder[] backgroundThreadDrawHolder = new ImageReceiver.BackgroundThreadDrawHolder[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         public ImageReceiver imageReceiver;
 
         public EmojiImageView(Context context) {

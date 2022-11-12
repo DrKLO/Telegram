@@ -1200,11 +1200,11 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
         bool ignoreResult = false;
         if (hasResult) {
             TLObject *object = response->result.get();
-            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received rpc_result with %s", connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), typeid(*object).name());
+            if (LOGS_ENABLED) DEBUG_D("message_id %lld connection(%p, account%u, dc%u, type %d) received rpc_result with %s", messageId, connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), typeid(*object).name());
         }
         RpcError *error = hasResult ? dynamic_cast<RpcError *>(response->result.get()) : nullptr;
         if (error != nullptr) {
-            if (LOGS_ENABLED) DEBUG_E("connection(%p, account%u, dc%u, type %d) rpc error %d: %s", connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), error->error_code, error->error_message.c_str());
+            if (LOGS_ENABLED) DEBUG_E("message_id %lld connection(%p, account%u, dc%u, type %d) rpc error %d: %s", messageId, connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), error->error_code, error->error_message.c_str());
             if (error->error_code == 303) {
                 uint32_t migrateToDatacenterId = DEFAULT_DATACENTER_ID;
 

@@ -5907,6 +5907,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (drawerLayoutAdapter != null) {
                 drawerLayoutAdapter.notifyDataSetChanged();
             }
+            MessagesController.getMainSettings(currentAccount).edit().remove("transcribeButtonPressed").apply();
         } else if (id == NotificationCenter.requestPermissions) {
             int type = (int) args[0];
             String[] permissions = null;
