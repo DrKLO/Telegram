@@ -1053,7 +1053,7 @@
     <string name="GroupEmptyTitle2">Groepskenmerken:</string>
     <string name="GroupDescription1">Tot 200000 leden</string>
     <string name="GroupDescription2">Blijvende chatgeschiedenis</string>
-    <string name="GroupDescription3">Publieke links zoals t.me/titel</string>
+    <string name="GroupDescription3">Publieke links zoals teamgram.me/titel</string>
     <string name="GroupDescription4">Beheerders met aangepaste rechten</string>
     <string name="ChatYourSelfDescription1">Berichten naartoe door te sturen</string>
     <string name="ChatYourSelfDescription2">Media en bestanden te bewaren</string>
@@ -1886,7 +1886,7 @@
     <string name="TelegramFAQ">Veelgestelde vragen</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFeatures">Teamgram Features</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TeamgramTips</string>
+    <string name="TelegramFeaturesUrl">https://teamgram.me/TeamgramTips</string>
     <string name="AddAccount">Account toevoegen</string>
     <string name="SelectAccount">Account kiezen</string>
     <string name="TelegramFaqUrl">https://teamgram.org/faq</string>

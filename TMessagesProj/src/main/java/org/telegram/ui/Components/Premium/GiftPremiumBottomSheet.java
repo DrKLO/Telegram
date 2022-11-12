@@ -265,7 +265,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
         if (BuildVars.useInvoiceBilling()) {
             if (getBaseFragment().getParentActivity() instanceof LaunchActivity) {
                 Uri uri = Uri.parse(tier.giftOption.bot_url);
-                if (uri.getHost().equals("t.me")) {
+                if (uri.getHost().equals("teamgram.me")) {
                     if (!uri.getPath().startsWith("/$") && !uri.getPath().startsWith("/invoice/")) {
                         ((LaunchActivity) getBaseFragment().getParentActivity()).setNavigateToPremiumBot(true);
                     } else {

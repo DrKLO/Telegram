@@ -696,12 +696,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         if (DialogObject.isChatDialog(dialogId)) {
                             TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                             if (currentChat != null && currentChat.username != null) {
-                                url1 = "https://t.me/" + currentChat.username + "/" + messageId + "?t=" + finalTimestamp;
+                                url1 = "https://teamgram.me/" + currentChat.username + "/" + messageId + "?t=" + finalTimestamp;
                             }
                         } else {
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                             if (user != null && user.username != null) {
-                                url1 = "https://t.me/" + user.username + "/" + messageId + "?t=" + finalTimestamp;
+                                url1 = "https://teamgram.me/" + user.username + "/" + messageId + "?t=" + finalTimestamp;
                             }
                         }
                     }

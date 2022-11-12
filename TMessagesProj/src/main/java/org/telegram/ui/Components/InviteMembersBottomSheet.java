@@ -175,7 +175,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     TLRPC.ChatFull chatInfo = MessagesController.getInstance(currentAccount).getChatFull(chatId);
                     String link = null;
                     if (chat != null && !TextUtils.isEmpty(chat.username)) {
-                        link = "https://t.me/" + chat.username;
+                        link = "https://teamgram.me/" + chat.username;
                     } else if (chatInfo != null &&  chatInfo.exported_invite != null) {
                         link = chatInfo.exported_invite.link;
                     } else {

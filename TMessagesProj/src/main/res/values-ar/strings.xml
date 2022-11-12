@@ -1053,7 +1053,7 @@
     <string name="GroupEmptyTitle2">يمكن للمجموعات أن:</string>
     <string name="GroupDescription1">تضمَّ حتى 200,000 عضو</string>
     <string name="GroupDescription2">تمتلكَ سجل محادثة موحدًا</string>
-    <string name="GroupDescription3">تمتلك روابط عامة مثل t.me/title</string>
+    <string name="GroupDescription3">تمتلك روابط عامة مثل teamgram.me/title</string>
     <string name="GroupDescription4">يديرَها مشرفون بصلاحيات مختلفة</string>
     <string name="ChatYourSelfDescription1">قم بتحويل الرسائل إلى هنا لحفظها</string>
     <string name="ChatYourSelfDescription2">أرسل الوسائط والملفات لحفظها</string>
@@ -1886,7 +1886,7 @@
     <string name="TelegramFAQ">الأسئلة الشائعة</string>
     <string name="TelegramFaq">الأسئلة الشائعة</string>
     <string name="TelegramFeatures">ميزات تيليجرام</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TelegramTipsAR/128</string>
+    <string name="TelegramFeaturesUrl">https://teamgram.me/TelegramTipsAR/128</string>
     <string name="AddAccount">إضافة حساب</string>
     <string name="SelectAccount">اختيار حساب</string>
     <string name="TelegramFaqUrl">https://teamgram.org/faq/ar</string>

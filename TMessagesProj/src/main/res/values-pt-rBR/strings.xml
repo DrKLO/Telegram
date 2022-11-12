@@ -1053,7 +1053,7 @@
     <string name="GroupEmptyTitle2">Grupos podem ter:</string>
     <string name="GroupDescription1">Até 200.000 membros</string>
     <string name="GroupDescription2">"Histórico persistente do chat "</string>
-    <string name="GroupDescription3">Links públicos, como t.me/nome</string>
+    <string name="GroupDescription3">Links públicos, como teamgram.me/nome</string>
     <string name="GroupDescription4">Admins com permissões diferentes</string>
     <string name="ChatYourSelfDescription1">Salve mensagens aqui ao encaminhar</string>
     <string name="ChatYourSelfDescription2">Salve mídias e arquivos aqui ao enviar</string>
@@ -1886,7 +1886,7 @@
     <string name="TelegramFAQ">Perguntas Frequentes</string>
     <string name="TelegramFaq">Perguntas Frequentes</string>
     <string name="TelegramFeatures">Recursos do Teamgram</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TeamgramTipsBR</string>
+    <string name="TelegramFeaturesUrl">https://teamgram.me/TeamgramTipsBR</string>
     <string name="AddAccount">Adicionar&#160;Conta</string>
     <string name="SelectAccount">Selecionar Conta</string>
     <string name="TelegramFaqUrl">https://teamgram.org/faq/pt-br</string>

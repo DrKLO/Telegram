@@ -1053,7 +1053,7 @@
     <string name="GroupEmptyTitle2">그룹은</string>
     <string name="GroupDescription1">200,000명까지 참가할 수 있습니다</string>
     <string name="GroupDescription2">대화 내용이 보존됩니다</string>
-    <string name="GroupDescription3">공개 링크를 t.me/제목으로 둘 수 있습니다</string>
+    <string name="GroupDescription3">공개 링크를 teamgram.me/제목으로 둘 수 있습니다</string>
     <string name="GroupDescription4">여러 권한의 관리자를 세울 수 있습니다</string>
     <string name="ChatYourSelfDescription1">여기로 메시지를 전달해 저장하세요</string>
     <string name="ChatYourSelfDescription2">미디어와 파일을 보내어 저장하세요</string>
@@ -1886,7 +1886,7 @@
     <string name="TelegramFAQ">자주 묻는 질문</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
     <string name="TelegramFeatures">텔레그램 기능 소개</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TeamgramTipsKo</string>
+    <string name="TelegramFeaturesUrl">https://teamgram.me/TeamgramTipsKo</string>
     <string name="AddAccount">계정 추가</string>
     <string name="SelectAccount">계정을 선택하세요</string>
     <string name="TelegramFaqUrl">https://teamgram.org/faq/ko</string>

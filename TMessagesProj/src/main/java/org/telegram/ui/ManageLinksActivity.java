@@ -816,7 +816,7 @@ public class ManageLinksActivity extends BaseFragment {
                     linkActionView.setCanEdit(adminId == getAccountInstance().getUserConfig().clientUserId);
                     if (isPublic && adminId == getAccountInstance().getUserConfig().clientUserId) {
                         if (info != null) {
-                            linkActionView.setLink("https://t.me/" + currentChat.username);
+                            linkActionView.setLink("https://teamgram.me/" + currentChat.username);
                             linkActionView.setUsers(0, null);
                             linkActionView.hideRevokeOption(true);
                         }
@@ -1290,10 +1290,10 @@ public class ManageLinksActivity extends BaseFragment {
                 SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);
                 Emoji.replaceEmoji(builder, titleView.getPaint().getFontMetricsInt(), (int) titleView.getPaint().getTextSize(), false);
                 titleView.setText(builder);
-            } else if (invite.link.startsWith("https://t.me/+")) {
-                titleView.setText(invite.link.substring("https://t.me/+".length()));
-            } else if (invite.link.startsWith("https://t.me/joinchat/")) {
-                titleView.setText(invite.link.substring("https://t.me/joinchat/".length()));
+            } else if (invite.link.startsWith("https://teamgram.me/+")) {
+                titleView.setText(invite.link.substring("https://teamgram.me/+".length()));
+            } else if (invite.link.startsWith("https://teamgram.me/joinchat/")) {
+                titleView.setText(invite.link.substring("https://teamgram.me/joinchat/".length()));
             } else if (invite.link.startsWith("https://")) {
                 titleView.setText(invite.link.substring("https://".length()));
             } else {

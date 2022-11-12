@@ -99,7 +99,7 @@ public class PermanentLinkBottomSheet extends BottomSheet {
 
         TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(chatId);
         if (chat != null && chat.username != null) {
-            linkActionView.setLink("https://t.me/" + chat.username);
+            linkActionView.setLink("https://teamgram.me/" + chat.username);
             manage.setVisibility(View.GONE);
         } else if (info != null && info.exported_invite != null) {
             linkActionView.setLink(info.exported_invite.link);

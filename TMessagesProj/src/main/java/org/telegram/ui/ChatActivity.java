@@ -24706,12 +24706,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (DialogObject.isChatDialog(dialogId)) {
                             TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                             if (currentChat != null && currentChat.username != null) {
-                                link = "https://t.me/" + currentChat.username + "/" + messageId + "?t=" + finalTimestamp;
+                                link = "https://teamgram.me/" + currentChat.username + "/" + messageId + "?t=" + finalTimestamp;
                             }
                         } else {
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                             if (user != null && user.username != null) {
-                                link = "https://t.me/" + user.username + "/" + messageId + "?t=" + finalTimestamp;
+                                link = "https://teamgram.me/" + user.username + "/" + messageId + "?t=" + finalTimestamp;
                             }
                         }
                         if (link == null) {
@@ -24995,7 +24995,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (messageObject != null && messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage != null && messageObject.messageOwner.media.webpage.cached_page != null) {
                         String lowerUrl = urlFinal.toLowerCase();
                         String lowerUrl2 = messageObject.messageOwner.media.webpage.url.toLowerCase();
-                        if ((lowerUrl.contains("telegram.org/blog") || Browser.isTelegraphUrl(lowerUrl, false) || lowerUrl.contains("t.me/iv")) && (lowerUrl.contains(lowerUrl2) || lowerUrl2.contains(lowerUrl))) {
+                        if ((lowerUrl.contains("telegram.org/blog") || Browser.isTelegraphUrl(lowerUrl, false) || lowerUrl.contains("teamgram.me/iv")) && (lowerUrl.contains(lowerUrl2) || lowerUrl2.contains(lowerUrl))) {
                             ArticleViewer.getInstance().setParentActivity(getParentActivity(), ChatActivity.this);
                             ArticleViewer.getInstance().open(messageObject);
                             return;
@@ -27033,8 +27033,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         } else if (currentChat.username != null) {
             String username = currentChat.username.toLowerCase();
             if (publicMsgUrlPattern == null) {
-                publicMsgUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)/([0-9]+)");
-                voiceChatUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)\\?(voicechat+)");
+                publicMsgUrlPattern = Pattern.compile("(https://)?teamgram.me/([0-9a-zA-Z_]+)/([0-9]+)");
+                voiceChatUrlPattern = Pattern.compile("(https://)?teamgram.me/([0-9a-zA-Z_]+)\\?(voicechat+)");
             }
             Matcher matcher = publicMsgUrlPattern.matcher(urlFinal);
             if (matcher.find(2) && matcher.find(3) && username.equals(matcher.group(2).toLowerCase())) {
@@ -27096,7 +27096,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else {
             if (privateMsgUrlPattern == null) {
-                privateMsgUrlPattern = Pattern.compile("(https://)?t.me/c/([0-9]+)/([0-9]+)");
+                privateMsgUrlPattern = Pattern.compile("(https://)?teamgram.me/c/([0-9]+)/([0-9]+)");
             }
 
             Matcher matcher = privateMsgUrlPattern.matcher(urlFinal);
