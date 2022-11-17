@@ -434,7 +434,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             return false;
         }
         for (MessageObject obj : selectedFiles.values()) {
-            if (obj.getDocument() != null && obj.getDocument().size >= 500 * 1024 * 1024) {
+            if (obj.getDocument() != null && obj.getDocument().size >= 300 * 1024 * 1024) {
                 return true;
             }
         }

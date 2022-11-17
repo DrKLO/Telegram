@@ -29,6 +29,8 @@ public class LoadingDrawable extends Drawable {
     private long start = -1;
     private LinearGradient gradient;
     private int gradientColor1, gradientColor2;
+    public String colorKey1 = Theme.key_dialogBackground;
+    public String colorKey2 = Theme.key_dialogBackgroundGray;
     private int gradientWidth;
 
     public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -46,8 +48,8 @@ public class LoadingDrawable extends Drawable {
             return;
         }
         int gwidth = Math.min(AndroidUtilities.dp(400), bounds.width());
-        int color1 = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
-        int color2 = Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider);
+        int color1 = Theme.getColor(colorKey1, resourcesProvider);
+        int color2 = Theme.getColor(colorKey2, resourcesProvider);
         if (gradient == null || gwidth != gradientWidth || color1 != gradientColor1 || color2 != gradientColor2) {
             gradientWidth = gwidth;
             gradientColor1 = color1;

@@ -42,6 +42,7 @@ import android.os.Build;
 import android.util.SparseArray;
 
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -108,10 +109,10 @@ public class SvgHelper {
         protected int height;
         private static int[] parentPosition = new int[2];
 
-        private Bitmap[] backgroundBitmap = new Bitmap[2];
-        private Canvas[] backgroundCanvas = new Canvas[2];
-        private LinearGradient[] placeholderGradient = new LinearGradient[2];
-        private Matrix[] placeholderMatrix = new Matrix[2];
+        private Bitmap[] backgroundBitmap = new Bitmap[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private Canvas[] backgroundCanvas = new Canvas[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private LinearGradient[] placeholderGradient = new LinearGradient[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private Matrix[] placeholderMatrix = new Matrix[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         private static float totalTranslation;
         private static float gradientWidth;
         private static long lastUpdateTime;
@@ -154,10 +155,10 @@ public class SvgHelper {
 
         @Override
         public void draw(Canvas canvas) {
-            drawInternal(canvas, false, System.currentTimeMillis(), getBounds().left, getBounds().top, getBounds().width(), getBounds().height());
+            drawInternal(canvas, false, 0, System.currentTimeMillis(), getBounds().left, getBounds().top, getBounds().width(), getBounds().height());
         }
 
-        public void drawInternal(Canvas canvas, boolean drawInBackground, long time, float x, float y, float w, float h) {
+        public void drawInternal(Canvas canvas, boolean drawInBackground, int threadIndex, long time, float x, float y, float w, float h) {
             if (currentColorKey != null) {
                 setupGradient(currentColorKey, currentResourcesProvider, colorAlpha, drawInBackground);
             }
@@ -205,7 +206,7 @@ public class SvgHelper {
                     offset = 0;
                 }
 
-                int index = drawInBackground ? 1 : 0;
+                int index = drawInBackground ? 1 + threadIndex : 0;
                 if (placeholderMatrix[index] != null) {
                     placeholderMatrix[index].reset();
                     if (drawInBackground) {
@@ -363,6 +364,11 @@ public class SvgHelper {
 
         public void setColorKey(String colorKey) {
             currentColorKey = colorKey;
+        }
+
+        public void setColorKey(String colorKey, Theme.ResourcesProvider resourcesProvider) {
+            currentColorKey = colorKey;
+            currentResourcesProvider = resourcesProvider;
         }
 
         public void setColor(int color) {

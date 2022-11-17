@@ -16,7 +16,6 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
 
 public class SeekBar {
 
@@ -153,6 +152,9 @@ public class SeekBar {
     }
 
     public void setSize(int w, int h) {
+        if (width == w && height == h) {
+            return;
+        }
         width = w;
         height = h;
         setProgress(thumbProgress);

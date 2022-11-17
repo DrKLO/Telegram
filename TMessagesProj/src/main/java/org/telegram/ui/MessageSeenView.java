@@ -33,7 +33,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.AvatarsDarawable;
+import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -74,7 +74,7 @@ public class MessageSeenView extends FrameLayout {
         addView(titleView, LayoutHelper.createFrame(0, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 40, 0, 0, 0));
 
         avatarsImageView = new AvatarsImageView(context, false);
-        avatarsImageView.setStyle(AvatarsDarawable.STYLE_MESSAGE_SEEN);
+        avatarsImageView.setStyle(AvatarsDrawable.STYLE_MESSAGE_SEEN);
         avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(22));
         addView(avatarsImageView, LayoutHelper.createFrame(24 + 12 + 12 + 8, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 

@@ -2383,10 +2383,14 @@ public class MessagesStorage extends BaseController {
         SQLitePreparedStatement state = null;
         try {
             HashSet<Integer> existingTopics = new HashSet<>();
+            HashMap<Integer, Integer> pinnedValues = new HashMap<>();
             for (int i = 0; i < topics.size(); i++) {
                 TLRPC.TL_forumTopic topic = topics.get(i);
-                SQLiteCursor cursor = database.queryFinalized("SELECT did FROM topics WHERE did = " + dialogId + " AND topic_id = " + topic.id);
+                SQLiteCursor cursor = database.queryFinalized("SELECT did, pinned FROM topics WHERE did = " + dialogId + " AND topic_id = " + topic.id);
                 boolean exist = cursor.next();
+                if (exist) {
+                    pinnedValues.put(i, cursor.intValue(2));
+                }
                 cursor.dispose();
                 cursor = null;
                 if (exist) {
@@ -2422,7 +2426,11 @@ public class MessagesStorage extends BaseController {
                 state.bindInteger(8, topic.unread_mentions_count);
                 state.bindInteger(9, topic.unread_reactions_count);
                 state.bindInteger(10, topic.read_outbox_max_id);
-                state.bindInteger(11, topic.pinned ? 1 : 0);
+                if (topic.isShort && pinnedValues.containsKey(i)) {
+                    state.bindInteger(11, pinnedValues.get(i));
+                } else {
+                    state.bindInteger(11, topic.pinned ? 1 + topic.pinnedOrder : 0);
+                }
 
                 state.step();
                 messageData.reuse();
@@ -2487,8 +2495,9 @@ public class MessagesStorage extends BaseController {
                     }
                     if ((flags & TopicsController.TOPIC_FLAG_PIN) != 0) {
                         topicToUpdate.pinned = fromTopic.pinned;
+                        topicToUpdate.pinnedOrder = fromTopic.pinnedOrder;
                     }
-                    boolean pinned = topicToUpdate.pinned;
+                    int pinnedOrder = topicToUpdate.pinned ? 1 + topicToUpdate.pinnedOrder : 0;
                     if ((flags & TopicsController.TOPIC_FLAG_CLOSE) != 0) {
                         topicToUpdate.closed = fromTopic.closed;
                     }
@@ -2497,7 +2506,7 @@ public class MessagesStorage extends BaseController {
                     NativeByteBuffer data = new NativeByteBuffer(topicToUpdate.getObjectSize());
                     topicToUpdate.serializeToStream(data);
                     state.bindByteBuffer(1, data);
-                    state.bindInteger(2, pinned ? 1 : 0);
+                    state.bindInteger(2, pinnedOrder);
                     state.bindLong(3, dialogId);
                     state.bindInteger(4, topicToUpdate.id);
                     state.step();
@@ -2522,7 +2531,7 @@ public class MessagesStorage extends BaseController {
             ArrayList<TLRPC.TL_forumTopic> topics = null;
             SQLiteCursor cursor = null;
             try {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT top_message, data, topic_message, unread_count, max_read_id, unread_mentions, unread_reactions, read_outbox FROM topics WHERE did = %d ORDER BY pinned DESC", dialogId));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT top_message, data, topic_message, unread_count, max_read_id, unread_mentions, unread_reactions, read_outbox, pinned FROM topics WHERE did = %d ORDER BY pinned ASC", dialogId));
 
                 SparseArray<ArrayList<TLRPC.TL_forumTopic>> topicsByTopMessageId = null;
                 HashSet<Integer> topMessageIds = null;
@@ -2559,6 +2568,8 @@ public class MessagesStorage extends BaseController {
                             topic.unread_mentions_count = cursor.intValue(5);
                             topic.unread_reactions_count = cursor.intValue(6);
                             topic.read_outbox_max_id = cursor.intValue(7);
+                            topic.pinnedOrder = cursor.intValue(8) - 1;
+                            topic.pinned = topic.pinnedOrder >= 0;
                         }
 
                         data.reuse();
@@ -10759,31 +10770,34 @@ public class MessagesStorage extends BaseController {
         SQLiteCursor cursor = null;
         try {
             long dialogId = -chatId;
-            state = database.executeFast("UPDATE messages_v2 SET replies_data = ? WHERE mid = ? AND uid = ?");
-            TLRPC.MessageReplies currentReplies = null;
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT replies_data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, dialogId));
-            if (cursor.next()) {
-                NativeByteBuffer data = cursor.byteBufferValue(0);
-                if (data != null) {
-                    currentReplies = TLRPC.MessageReplies.TLdeserialize(data, data.readInt32(false), false);
+            if (!isForum(-chatId)) {
+                state = database.executeFast("UPDATE messages_v2 SET replies_data = ? WHERE mid = ? AND uid = ?");
+                TLRPC.MessageReplies currentReplies = null;
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT replies_data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, dialogId));
+                if (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        currentReplies = TLRPC.MessageReplies.TLdeserialize(data, data.readInt32(false), false);
+                        data.reuse();
+                    }
+                }
+                cursor.dispose();
+
+                cursor = null;
+                if (currentReplies != null) {
+                    currentReplies.read_max_id = readMaxId;
+                    state.requery();
+                    NativeByteBuffer data = new NativeByteBuffer(currentReplies.getObjectSize());
+                    currentReplies.serializeToStream(data);
+                    state.bindByteBuffer(1, data);
+                    state.bindInteger(2, mid);
+                    state.bindLong(3, dialogId);
+                    state.step();
                     data.reuse();
                 }
+                state.dispose();
+                state = null;
             }
-            cursor.dispose();
-            cursor = null;
-            if (currentReplies != null) {
-                currentReplies.read_max_id = readMaxId;
-                state.requery();
-                NativeByteBuffer data = new NativeByteBuffer(currentReplies.getObjectSize());
-                currentReplies.serializeToStream(data);
-                state.bindByteBuffer(1, data);
-                state.bindInteger(2, mid);
-                state.bindLong(3, dialogId);
-                state.step();
-                data.reuse();
-            }
-            state.dispose();
-            state = null;
 
 
             cursor = database.queryFinalized(String.format(Locale.US, "SELECT max_read_id FROM topics WHERE did = %d AND topic_id = %d", -chatId, mid));
@@ -11908,7 +11922,7 @@ public class MessagesStorage extends BaseController {
                         topicUpdate.topicId = topicKey.topicId;
                         topicUpdate.reloadTopic = true;
                         topicUpdatesInUi.add(topicUpdate);
-                        FileLog.d("unknown topic need reload" + topicKey.dialogId + " " + topicKey.topicId);
+                        FileLog.d("unknown topic need reload " + topicKey.dialogId + " " + topicKey.topicId);
                         continue;
                     }
                     Integer newMessagesInteger = topicsNewUnreadMessages.get(topicKey);
@@ -12096,7 +12110,6 @@ public class MessagesStorage extends BaseController {
 
     private void createOrEditTopic(long dialogId, TLRPC.Message message) {
         TLRPC.TL_forumTopic forumTopic = new TLRPC.TL_forumTopic();
-
 
         forumTopic.topicStartMessage = message;
         forumTopic.top_message = message.id;

@@ -1,6 +1,8 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -12,9 +14,12 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -23,7 +28,9 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.TopicsFragment;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +48,7 @@ public class BackButtonMenu {
         int filterId;
     }
 
-    public static ActionBarPopupWindow show(BaseFragment thisFragment, View backButton, long currentDialogId, Theme.ResourcesProvider resourcesProvider) {
+    public static ActionBarPopupWindow show(BaseFragment thisFragment, View backButton, long currentDialogId, int topicId, Theme.ResourcesProvider resourcesProvider) {
         if (thisFragment == null) {
             return null;
         }
@@ -51,7 +58,14 @@ public class BackButtonMenu {
         if (parentLayout == null || context == null || fragmentView == null) {
             return null;
         }
-        ArrayList<PulledDialog> dialogs = getStackedHistoryDialogs(thisFragment, currentDialogId);
+        ArrayList<PulledDialog> dialogs;
+        if (topicId != 0) {
+          new ArrayList<>();
+            dialogs = getStackedHistoryForTopic(thisFragment, currentDialogId, topicId);
+        } else {
+            dialogs = getStackedHistoryDialogs(thisFragment, currentDialogId);
+        }
+
         if (dialogs.size() <= 0) {
             return null;
         }
@@ -72,7 +86,11 @@ public class BackButtonMenu {
             cell.setMinimumWidth(AndroidUtilities.dp(200));
 
             BackupImageView imageView = new BackupImageView(context);
-            imageView.setRoundRadius(AndroidUtilities.dp(32));
+            if (chat == null && user == null) {
+                imageView.setRoundRadius(0);
+            } else {
+                imageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16));
+            }
             cell.addView(imageView, LayoutHelper.createFrameRelatively(32, 32, Gravity.START | Gravity.CENTER_VERTICAL, 13, 0, 0, 0));
 
             TextView titleView = new TextView(context);
@@ -85,6 +103,7 @@ public class BackButtonMenu {
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setSmallSize(true);
             Drawable thumb = avatarDrawable;
+            boolean addDivider = false;
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 if (chat.photo != null && chat.photo.strippedBitmap != null) {
@@ -115,6 +134,13 @@ public class BackButtonMenu {
                     imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
                 }
                 titleView.setText(name);
+            } else {
+                Drawable drawable = ContextCompat.getDrawable(context, R.drawable.msg_viewchats).mutate();
+                imageView.setImageDrawable(drawable);
+                imageView.setSize(AndroidUtilities.dp(24), AndroidUtilities.dp(24));
+                imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+                titleView.setText(LocaleController.getString("AllChats", R.string.AllChats));
+                addDivider = true;
             }
 
             cell.setBackground(Theme.getSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), false));
@@ -140,13 +166,12 @@ public class BackButtonMenu {
                         }
                     } else {
                         if (parentLayout != null && parentLayout.getFragmentStack() != null) {
-                            for (int j = parentLayout.getFragmentStack().size() - 2; j > pDialog.stackIndex; --j) {
-                                if (j >= 0 && j < parentLayout.getFragmentStack().size()) {
-                                    parentLayout.removeFragmentFromStack(j);
-                                }
+                            ArrayList<BaseFragment> fragments = new ArrayList<>(parentLayout.getFragmentStack());
+                            for (int j = fragments.size() - 2; j > pDialog.stackIndex; --j) {
+                                fragments.get(j).removeSelfFromStack();
                             }
                             if (pDialog.stackIndex < parentLayout.getFragmentStack().size()) {
-                                parentLayout.bringToFront(pDialog.stackIndex);
+                               // parentLayout.bringToFront(pDialog.stackIndex);
                                 parentLayout.closeLastFragment(true);
                                 return;
                             }
@@ -156,6 +181,12 @@ public class BackButtonMenu {
                 goToPulledDialog(thisFragment, pDialog);
             });
             layout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+            if (addDivider) {
+                FrameLayout gap = new FrameLayout(context);
+                gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
+                gap.setTag(R.id.fit_width_tag, 1);
+                layout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+            }
         }
 
         ActionBarPopupWindow scrimPopupWindow = new ActionBarPopupWindow(layout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
@@ -188,6 +219,30 @@ public class BackButtonMenu {
         return scrimPopupWindow;
     }
 
+    private static ArrayList<PulledDialog> getStackedHistoryForTopic(BaseFragment thisFragment, long currentDialogId, int topicId) {
+        ArrayList<PulledDialog> dialogs = new ArrayList<>();
+        if (thisFragment.getParentLayout().getFragmentStack().size() > 1 && thisFragment.getParentLayout().getFragmentStack().get(thisFragment.getParentLayout().getFragmentStack().size() - 2) instanceof TopicsFragment) {
+            PulledDialog pulledDialog = new PulledDialog();
+            dialogs.add(pulledDialog);
+            pulledDialog.stackIndex = 0;
+            pulledDialog.activity = DialogsActivity.class;
+
+            pulledDialog = new PulledDialog();
+            dialogs.add(pulledDialog);
+            pulledDialog.stackIndex = thisFragment.getParentLayout().getFragmentStack().size() - 2;
+            pulledDialog.activity = TopicsFragment.class;
+            pulledDialog.chat = MessagesController.getInstance(thisFragment.getCurrentAccount()).getChat(-currentDialogId);
+            return dialogs;
+        } else {
+            PulledDialog pulledDialog = new PulledDialog();
+            dialogs.add(pulledDialog);
+            pulledDialog.stackIndex = -1;
+            pulledDialog.activity = TopicsFragment.class;
+            pulledDialog.chat = MessagesController.getInstance(thisFragment.getCurrentAccount()).getChat(-currentDialogId);
+            return dialogs;
+        }
+    }
+
     public static void goToPulledDialog(BaseFragment fragment, PulledDialog dialog) {
         if (dialog == null) {
             return;
@@ -206,6 +261,13 @@ public class BackButtonMenu {
             Bundle bundle = new Bundle();
             bundle.putLong("dialog_id", dialog.dialogId);
             fragment.presentFragment(new ProfileActivity(bundle), true);
+        } if (dialog.activity == TopicsFragment.class) {
+            Bundle bundle = new Bundle();
+            bundle.putLong("chat_id", dialog.chat.id);
+            fragment.presentFragment(new TopicsFragment(bundle), true);
+        } if (dialog.activity == DialogsActivity.class) {
+
+            fragment.presentFragment(new DialogsActivity(null), true);
         }
     }
 

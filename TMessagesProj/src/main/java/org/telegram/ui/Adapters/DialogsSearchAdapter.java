@@ -1035,7 +1035,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 view = new GraySectionCell(mContext);
                 break;
             case VIEW_TYPE_DIALOG_CELL:
-                view = new DialogCell(null, mContext, false, true);
+                view = new DialogCell(null, mContext, false, true) {
+                    @Override
+                    protected boolean isForumCell() {
+                        return false;
+                    }
+                };
                 break;
             case VIEW_TYPE_LOADING:
                 FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);

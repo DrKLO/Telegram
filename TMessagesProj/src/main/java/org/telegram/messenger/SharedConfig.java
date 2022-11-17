@@ -356,7 +356,7 @@ public class SharedConfig {
                     if (updateVersionString == null) {
                         updateVersionString = BuildVars.BUILD_VERSION_STRING;
                     }
-                    if (pendingAppUpdateBuildVersion != updateVersion || pendingAppUpdate.version == null || updateVersionString.compareTo(pendingAppUpdate.version) >= 0) {
+                    if (pendingAppUpdateBuildVersion != updateVersion || pendingAppUpdate.version == null || updateVersionString.compareTo(pendingAppUpdate.version) >= 0 || BuildVars.DEBUG_PRIVATE_VERSION) {
                         pendingAppUpdate = null;
                         AndroidUtilities.runOnUIThread(SharedConfig::saveConfig);
                     }

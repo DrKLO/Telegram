@@ -723,6 +723,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
             setTypingAnimation(false);
             if (parentFragment.isTopic && chat != null) {
+                int count = parentFragment.getThreadMessage().getRepliesCount();
+             //   newSubtitle = LocaleController.formatPluralString("messages", count, count);
                 newSubtitle =  LocaleController.formatString("TopicProfileStatus", R.string.TopicProfileStatus, chat.title);
             } else if (chat != null) {
                 TLRPC.ChatFull info = parentFragment.getCurrentChatInfo();

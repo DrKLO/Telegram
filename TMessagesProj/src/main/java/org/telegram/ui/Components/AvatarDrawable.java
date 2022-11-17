@@ -10,9 +10,11 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
@@ -32,7 +34,8 @@ import org.telegram.ui.ActionBar.Theme;
 public class AvatarDrawable extends Drawable {
 
     private TextPaint namePaint;
-    private int color;
+    private boolean hasGradient;
+    private int color, color2;
     private boolean needApplyColorAccent;
     private StaticLayout textLayout;
     private float textWidth;
@@ -45,6 +48,14 @@ public class AvatarDrawable extends Drawable {
     private boolean smallSize;
     private StringBuilder stringBuilder = new StringBuilder(5);
     private int roundRadius = -1;
+
+    private int gradientTop, gradientBottom;
+    private int gradientColor1, gradientColor2;
+    private LinearGradient gradient;
+
+    private int gradientTop2, gradientBottom2;
+    private int gradientColor21, gradientColor22;
+    private LinearGradient gradient2;
 
     public static final int AVATAR_TYPE_NORMAL = 0;
     public static final int AVATAR_TYPE_SAVED = 1;
@@ -106,7 +117,7 @@ public class AvatarDrawable extends Drawable {
         isProfile = value;
     }
 
-    private static int getColorIndex(long id) {
+    public static int getColorIndex(long id) {
         if (id >= 0 && id < 7) {
             return (int) id;
         }
@@ -165,33 +176,55 @@ public class AvatarDrawable extends Drawable {
     public void setAvatarType(int value) {
         avatarType = value;
         if (avatarType == AVATAR_TYPE_REGISTER) {
-            color = Theme.getColor(Theme.key_chats_actionBackground);
+            hasGradient = false;
+            color = color2 = Theme.getColor(Theme.key_chats_actionBackground);
         } else if (avatarType == AVATAR_TYPE_ARCHIVED) {
-            color = getThemedColor(Theme.key_avatar_backgroundArchivedHidden);
+            hasGradient = false;
+            color = color2 = getThemedColor(Theme.key_avatar_backgroundArchivedHidden);
         } else if (avatarType == AVATAR_TYPE_REPLIES) {
+            hasGradient = true;
             color = getThemedColor(Theme.key_avatar_backgroundSaved);
+            color2 = getThemedColor(Theme.key_avatar_background2Saved);
         } else if (avatarType == AVATAR_TYPE_SAVED) {
+            hasGradient = true;
             color = getThemedColor(Theme.key_avatar_backgroundSaved);
+            color2 = getThemedColor(Theme.key_avatar_background2Saved);
         } else if (avatarType == AVATAR_TYPE_SHARES) {
+            hasGradient = true;
             color = getThemedColor(Theme.keys_avatar_background[getColorIndex(5)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(5)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_CONTACTS) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(5)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(5)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_NON_CONTACTS) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(4)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_GROUPS) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(3)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(3)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_CHANNELS) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(1)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(1)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_BOTS) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(0)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(0)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_MUTED) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(6)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(6)]);
+        } else if (avatarType == AVATAR_TYPE_FILTER_READ) {
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(5)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(5)]);
         } else {
-            if (avatarType == AVATAR_TYPE_FILTER_CONTACTS) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(5)]);
-            } else if (avatarType == AVATAR_TYPE_FILTER_NON_CONTACTS) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
-            } else if (avatarType == AVATAR_TYPE_FILTER_GROUPS) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(3)]);
-            } else if (avatarType == AVATAR_TYPE_FILTER_CHANNELS) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(1)]);
-            } else if (avatarType == AVATAR_TYPE_FILTER_BOTS) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(0)]);
-            } else if (avatarType == AVATAR_TYPE_FILTER_MUTED) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(6)]);
-            } else if (avatarType == AVATAR_TYPE_FILTER_READ) {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(5)]);
-            } else {
-                color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
-            }
+            hasGradient = true;
+            color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
+            color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(4)]);
         }
         needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_REPLIES;
     }
@@ -216,7 +249,15 @@ public class AvatarDrawable extends Drawable {
     }
 
     public void setColor(int value) {
+        hasGradient = false;
+        color = color2 = value;
+        needApplyColorAccent = false;
+    }
+
+    public void setColor(int value, int value2) {
+        hasGradient = true;
         color = value;
+        color2 = value2;
         needApplyColorAccent = false;
     }
 
@@ -232,8 +273,42 @@ public class AvatarDrawable extends Drawable {
         return needApplyColorAccent ? Theme.changeColorAccent(color) : color;
     }
 
+    public int getColor2() {
+        return needApplyColorAccent ? Theme.changeColorAccent(color2) : color2;
+    }
+
+    private String takeFirstCharacter(String text) {
+        StringBuilder sequence = new StringBuilder(16);
+        boolean isInJoin = false;
+        int codePoint;
+        for (int i = 0; i < text.length(); i = text.offsetByCodePoints(i, 1)) {
+            codePoint = text.codePointAt(i);
+            if (codePoint == 0x200D || codePoint == 0x1f1ea) {
+                isInJoin = true;
+                if (sequence.length() == 0)
+                    continue;
+            } else {
+                if ((sequence.length() > 0) && (!isInJoin))
+                    break;
+                isInJoin = false;
+            }
+            sequence.appendCodePoint(codePoint);
+        }
+        if (isInJoin) {
+            for (int i = sequence.length()-1; i >= 0; --i) {
+                if (sequence.charAt(i) == 0x200D)
+                    sequence.deleteCharAt(i);
+                else
+                    break;
+            }
+        }
+        return sequence.toString();
+    }
+
     public void setInfo(long id, String firstName, String lastName, String custom) {
+        hasGradient = true;
         color = getThemedColor(Theme.keys_avatar_background[getColorIndex(id)]);
+        color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(id)]);
         needApplyColorAccent = id == 5; // Tinting manually set blue color
 
         avatarType = AVATAR_TYPE_NORMAL;
@@ -249,28 +324,27 @@ public class AvatarDrawable extends Drawable {
             stringBuilder.append(custom);
         } else {
             if (firstName != null && firstName.length() > 0) {
-                stringBuilder.appendCodePoint(firstName.codePointAt(0));
+                stringBuilder.append(takeFirstCharacter(firstName));
             }
             if (lastName != null && lastName.length() > 0) {
-                Integer lastch = null;
-                for (int a = lastName.length() - 1; a >= 0; a--) {
-                    if (lastch != null && lastName.charAt(a) == ' ') {
-                        break;
-                    }
-                    lastch = lastName.codePointAt(a);
+                String lastNameLastWord = lastName;
+                int index;
+                if ((index = lastNameLastWord.lastIndexOf(' ')) >= 0) {
+                    lastNameLastWord = lastNameLastWord.substring(index + 1);
                 }
                 if (Build.VERSION.SDK_INT > 17) {
                     stringBuilder.append("\u200C");
                 }
-                stringBuilder.appendCodePoint(lastch);
+                stringBuilder.append(takeFirstCharacter(lastNameLastWord));
             } else if (firstName != null && firstName.length() > 0) {
                 for (int a = firstName.length() - 1; a >= 0; a--) {
                     if (firstName.charAt(a) == ' ') {
                         if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
+                            int index = stringBuilder.length();
                             if (Build.VERSION.SDK_INT > 17) {
                                 stringBuilder.append("\u200C");
                             }
-                            stringBuilder.appendCodePoint(firstName.codePointAt(a + 1));
+                            stringBuilder.append(takeFirstCharacter(firstName.substring(index)));
                             break;
                         }
                     }
@@ -304,7 +378,17 @@ public class AvatarDrawable extends Drawable {
         }
         int size = bounds.width();
         namePaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_avatar_text), alpha));
-        Theme.avatar_backgroundPaint.setColor(ColorUtils.setAlphaComponent(getColor(), alpha));
+        if (hasGradient) {
+            int color = ColorUtils.setAlphaComponent(getColor(), alpha);
+            int color2 = ColorUtils.setAlphaComponent(getColor2(), alpha);
+            if (gradient == null || gradientBottom != bounds.height() || gradientColor1 != color || gradientColor2 != color2) {
+                gradient = new LinearGradient(0, 0, 0, gradientBottom = bounds.height(), gradientColor1 = color, gradientColor2 = color2, Shader.TileMode.CLAMP);
+            }
+            Theme.avatar_backgroundPaint.setShader(gradient);
+        } else {
+            Theme.avatar_backgroundPaint.setShader(null);
+            Theme.avatar_backgroundPaint.setColor(ColorUtils.setAlphaComponent(getColor(), alpha));
+        }
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         if (roundRadius > 0) {

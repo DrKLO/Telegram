@@ -85,6 +85,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private ConcurrentHashMap<Integer, TLRPC.EncryptedChat> encryptedChats = new ConcurrentHashMap<>(10, 1.0f, 2);
     private ConcurrentHashMap<Long, TLRPC.User> users = new ConcurrentHashMap<>(100, 1.0f, 2);
     private ConcurrentHashMap<String, TLObject> objectsByUsernames = new ConcurrentHashMap<>(100, 1.0f, 2);
+    public static int stableIdPointer = 100;
 
     private HashMap<Long, TLRPC.Chat> activeVoiceChatsMap = new HashMap<>();
 
@@ -365,6 +366,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public int reactionsUserMaxPremium;
     public int reactionsInChatMax;
     public int forumUpgradeParticipantsMin;
+    public int topicsPinnedLimit;
 
     public int uploadMaxFileParts;
     public int uploadMaxFilePartsPremium;
@@ -592,6 +594,13 @@ public class MessagesController extends BaseController implements NotificationCe
                         getMessagesStorage().updateRepliesMaxReadId(-did, topic.id, topic.top_message, 0, true);
                     }
                 }
+                getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                    getMessagesStorage().resetAllUnreadCounters(false);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        getMessagesController().sortDialogs(null);
+                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
+                    });
+                });
             });
         });
     }
@@ -1103,6 +1112,7 @@ public class MessagesController extends BaseController implements NotificationCe
         premiumLocked = mainPreferences.getBoolean("premiumLocked", false);
         transcribeButtonPressed = mainPreferences.getInt("transcribeButtonPressed", 0);
         forumUpgradeParticipantsMin = mainPreferences.getInt("forumUpgradeParticipantsMin", 200);
+        topicsPinnedLimit = mainPreferences.getInt("topicsPinnedLimit", 3);
         BuildVars.GOOGLE_AUTH_CLIENT_ID = mainPreferences.getString("googleAuthClientId", BuildVars.GOOGLE_AUTH_CLIENT_ID);
 
         Set<String> currencySet = mainPreferences.getStringSet("directPaymentsCurrency", null);
@@ -2619,6 +2629,16 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             break;
                         }
+                        case "topics_pinned_limit": {
+                            if (value.value instanceof TLRPC.TL_jsonNumber) {
+                                TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
+                                if (number.value != topicsPinnedLimit) {
+                                    topicsPinnedLimit = (int) number.value;
+                                    editor.putInt("topicsPinnedLimit", topicsPinnedLimit);
+                                    changed = true;
+                                }
+                            }
+                        }
                     }
                 }
                 if (changed) {
@@ -3361,7 +3381,7 @@ public class MessagesController extends BaseController implements NotificationCe
         editor = emojiPreferences.edit();
         editor.putLong("lastGifLoadTime", 0).putLong("lastStickersLoadTime", 0).putLong("lastStickersLoadTimeMask", 0).putLong("lastStickersLoadTimeFavs", 0).commit();
         editor = mainPreferences.edit();
-        editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("gifhint").remove("reminderhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").remove("showFiltersTooltip").commit();
+        editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("gifhint").remove("reminderhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").remove("showFiltersTooltip").remove("transcribeButtonPressed").commit();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         SharedPreferences.Editor widgetEditor = null;
@@ -12546,6 +12566,8 @@ public class MessagesController extends BaseController implements NotificationCe
             return ((TLRPC.TL_updateReadChannelInbox) update).channel_id;
         } else if (update instanceof TLRPC.TL_updateChannelPinnedTopic) {
             return ((TLRPC.TL_updateChannelPinnedTopic) update).channel_id;
+        } else if (update instanceof TLRPC.TL_updateChannelPinnedTopics) {
+            return ((TLRPC.TL_updateChannelPinnedTopics) update).channel_id;
         } else if (update instanceof TLRPC.TL_updateReadChannelDiscussionInbox) {
             return ((TLRPC.TL_updateReadChannelDiscussionInbox) update).channel_id;
         } else if (update instanceof TLRPC.TL_updateReadChannelDiscussionOutbox) {
@@ -13898,7 +13920,10 @@ public class MessagesController extends BaseController implements NotificationCe
                 stillUnreadMessagesCount.put(dialogId, update.still_unread_count);
                 dialogs_read_inbox_max.put(dialogId, Math.max(value, update.max_id));
                 FileLog.d("TL_updateReadChannelInbox " + dialogId + "  new unread = " + update.still_unread_count + " max id = " + update.max_id + " from get diff " + fromGetDifference);
-            } else if (baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopic) {
+            } else if (
+                baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopic ||
+                baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopics
+            ) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
                 }
@@ -14791,14 +14816,21 @@ public class MessagesController extends BaseController implements NotificationCe
                     } else if (baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopic) {
                         TLRPC.TL_updateChannelPinnedTopic update = (TLRPC.TL_updateChannelPinnedTopic) baseUpdate;
 
-                        ArrayList<TLRPC.TL_forumTopic> topics = getTopicsController().getTopics(update.channel_id);
-                        if (topics != null) {
-                            for (int i = 0; i < topics.size(); ++i) {
-                                topics.get(i).pinned = update.topic_id == topics.get(i).id;
-                            }
+                        ArrayList<Integer> newOrder = getTopicsController().getCurrentPinnedOrder(update.channel_id);
+                        newOrder.remove((Integer) update.topic_id);
+                        if (update.pinned) {
+                            newOrder.add(0, update.topic_id);
                         }
+                        getTopicsController().applyPinnedOrder(update.channel_id, newOrder);
 
-                        updateMask |= UPDATE_MASK_SELECT_DIALOG;
+                    } else if (baseUpdate instanceof TLRPC.TL_updateChannelPinnedTopics) {
+                        TLRPC.TL_updateChannelPinnedTopics update = (TLRPC.TL_updateChannelPinnedTopics) baseUpdate;
+
+                        if ((update.flags & 1) > 0) {
+                            getTopicsController().applyPinnedOrder(update.channel_id, update.order);
+                        } else {
+                            getTopicsController().reloadTopics(update.channel_id, false);
+                        }
                     } else if (baseUpdate instanceof TLRPC.TL_updatePhoneCallSignalingData) {
                         TLRPC.TL_updatePhoneCallSignalingData data = (TLRPC.TL_updatePhoneCallSignalingData) baseUpdate;
                         VoIPService svc = VoIPService.getSharedInstance();

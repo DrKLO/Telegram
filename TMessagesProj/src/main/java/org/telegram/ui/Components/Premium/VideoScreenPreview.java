@@ -244,8 +244,8 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                     }
                 }
                 attachFileName = FileLoader.getAttachFileName(document);
-                imageReceiver.setImage(null, null, drawable, null, null, 1);
-                FileLoader.getInstance(currentAccount).loadFile(document, null, FileLoader.PRIORITY_HIGH, 0);
+                imageReceiver.setImage(null, null, drawable, null, premiumPromo, 1);
+                FileLoader.getInstance(currentAccount).loadFile(document, premiumPromo, FileLoader.PRIORITY_HIGH, 0);
                 this.document = document;
                 Utilities.globalQueue.postRunnable(() -> {
                     File file = FileLoader.getInstance(currentAccount).getPathToAttach(document);
@@ -577,7 +577,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                             "&dc=" + document.dc_id +
                             "&size=" + document.size +
                             "&mime=" + URLEncoder.encode(document.mime_type, "UTF-8") +
-                            "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(document) +
+                            "&rid=" + FileLoader.getInstance(currentAccount).getFileReference(MediaDataController.getInstance(currentAccount).getPremiumPromo()) +
                             "&name=" + URLEncoder.encode(FileLoader.getDocumentFileName(document), "UTF-8") +
                             "&reference=" + Utilities.bytesToHex(document.file_reference != null ? document.file_reference : new byte[0]);
                     uri = Uri.parse("tg://" + attachFileName + params);

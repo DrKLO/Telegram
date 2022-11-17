@@ -69,7 +69,9 @@ public class FileRefController extends BaseController {
     }
 
     public static String getKeyForParentObject(Object parentObject) {
-        if (parentObject instanceof TLRPC.TL_availableReaction) {
+        if (parentObject instanceof TLRPC.TL_help_premiumPromo) {
+            return "premium_promo";
+        } else if (parentObject instanceof TLRPC.TL_availableReaction) {
             return "available_reaction_" + ((TLRPC.TL_availableReaction) parentObject).reaction;
         } else if (parentObject instanceof TLRPC.BotInfo) {
             TLRPC.BotInfo botInfo = (TLRPC.BotInfo) parentObject;
@@ -317,7 +319,18 @@ public class FileRefController extends BaseController {
     }
 
     private void requestReferenceFromServer(Object parentObject, String locationKey, String parentKey, Object[] args) {
-        if (parentObject instanceof TLRPC.TL_availableReaction) {
+        if (parentObject instanceof TLRPC.TL_help_premiumPromo) {
+            TLRPC.TL_help_getPremiumPromo req = new TLRPC.TL_help_getPremiumPromo();
+            getConnectionsManager().sendRequest(req, (response, error) -> {
+                int date = (int) (System.currentTimeMillis() / 1000);
+                if (response instanceof TLRPC.TL_help_premiumPromo) {
+                    TLRPC.TL_help_premiumPromo r = (TLRPC.TL_help_premiumPromo) response;
+                    getMediaDataController().processLoadedPremiumPromo(r, date, false);
+                }
+
+                onRequestComplete(locationKey, parentKey, response, true, false);
+            });
+        } else if (parentObject instanceof TLRPC.TL_availableReaction) {
             TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
             req.hash = 0;
             getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true, false));
@@ -674,7 +687,9 @@ public class FileRefController extends BaseController {
     private boolean onRequestComplete(String locationKey, String parentKey, TLObject response, boolean cache, boolean fromCache) {
         boolean found = false;
         String cacheKey = parentKey;
-        if (response instanceof TLRPC.TL_account_wallPapers) {
+        if (response instanceof TLRPC.TL_help_premiumPromo) {
+            cacheKey = "premium_promo";
+        } else if (response instanceof TLRPC.TL_account_wallPapers) {
             cacheKey = "wallpaper";
         } else if (response instanceof TLRPC.TL_messages_savedGifs) {
             cacheKey = "gif";
@@ -752,6 +767,14 @@ public class FileRefController extends BaseController {
                         if (BuildVars.DEBUG_VERSION) {
                             FileLog.d("file ref not found in messages, replacing message");
                         }
+                    }
+                }
+            } else if (response instanceof TLRPC.TL_help_premiumPromo) {
+                TLRPC.TL_help_premiumPromo premiumPromo = (TLRPC.TL_help_premiumPromo) response;
+                for (TLRPC.Document document : premiumPromo.videos) {
+                    result = getFileReference(document, requester.location, needReplacement, locationReplacement);
+                    if (result != null) {
+                        break;
                     }
                 }
             } else if (response instanceof TLRPC.TL_messages_availableReactions) {

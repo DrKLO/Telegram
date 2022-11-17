@@ -2126,15 +2126,18 @@ public class LoginActivity extends BaseFragment {
                         for (int i = 0; i < help_countriesList.countries.size(); i++) {
                             TLRPC.TL_help_country c = help_countriesList.countries.get(i);
                             for (int k = 0; k < c.country_codes.size(); k++) {
-                                CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
-                                countryWithCode.name = c.default_name;
-                                countryWithCode.code = c.country_codes.get(k).country_code;
-                                countryWithCode.shortname = c.iso2;
+                                TLRPC.TL_help_countryCode countryCode = c.country_codes.get(k);
+                                if (countryCode != null) {
+                                    CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
+                                    countryWithCode.name = c.default_name;
+                                    countryWithCode.code = countryCode.country_code;
+                                    countryWithCode.shortname = c.iso2;
 
-                                countriesArray.add(countryWithCode);
-                                codesMap.put(c.country_codes.get(k).country_code, countryWithCode);
-                                if (c.country_codes.get(k).patterns.size() > 0) {
-                                    phoneFormatMap.put(c.country_codes.get(k).country_code, c.country_codes.get(k).patterns);
+                                    countriesArray.add(countryWithCode);
+                                    codesMap.put(countryCode.country_code, countryWithCode);
+                                    if (countryCode.patterns.size() > 0) {
+                                        phoneFormatMap.put(countryCode.country_code, countryCode.patterns);
+                                    }
                                 }
                             }
                         }

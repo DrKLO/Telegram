@@ -70,7 +70,7 @@ public class ReactedHeaderView extends FrameLayout {
         addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 40, 0, 62, 0));
 
         avatarsImageView = new AvatarsImageView(context, false);
-        avatarsImageView.setStyle(AvatarsDarawable.STYLE_MESSAGE_SEEN);
+        avatarsImageView.setStyle(AvatarsDrawable.STYLE_MESSAGE_SEEN);
         addView(avatarsImageView, LayoutHelper.createFrameRelatively(24 + 12 + 12 + 8, LayoutHelper.MATCH_PARENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         iconView = new ImageView(context);

@@ -18,6 +18,7 @@ public class DispatchQueuePoolBackground {
     private int totalTasksCount;
     private boolean cleanupScheduled;
 
+    public static final String THREAD_PREFIX = "DispatchQueuePoolThreadSafety_";
 
     static ArrayList<Runnable> updateTaskCollection;
     private static DispatchQueuePoolBackground backgroundQueue;
@@ -62,7 +63,7 @@ public class DispatchQueuePoolBackground {
             if (!busyQueues.isEmpty() && (totalTasksCount / 2 <= busyQueues.size() || queues.isEmpty() && createdCount >= maxCount)) {
                 queue = busyQueues.remove(0);
             } else if (queues.isEmpty()) {
-                queue = new DispatchQueue("DispatchQueuePoolThreadSafety" + guid + "_" + Utilities.random.nextInt());
+                queue = new DispatchQueue(THREAD_PREFIX + guid + "_" + Utilities.random.nextInt());
                 queue.setPriority(Thread.MAX_PRIORITY);
                 createdCount++;
             } else {
@@ -104,6 +105,10 @@ public class DispatchQueuePoolBackground {
 
     @UiThread
     public static void execute(Runnable runnable) {
+        execute(runnable, false);
+    }
+    @UiThread
+    public static void execute(Runnable runnable, boolean now) {
         if (BuildVars.DEBUG_PRIVATE_VERSION && Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
             throw new RuntimeException("wrong thread");
         }
@@ -113,10 +118,16 @@ public class DispatchQueuePoolBackground {
             } else {
                 updateTaskCollection = new ArrayList<>(100);
             }
-            AndroidUtilities.runOnUIThread(finishCollectUpdateRunnable);
+            if (!now) {
+                AndroidUtilities.runOnUIThread(finishCollectUpdateRunnable);
+            }
         }
 
         updateTaskCollection.add(runnable);
+        if (now) {
+            AndroidUtilities.cancelRunOnUIThread(finishCollectUpdateRunnable);
+            finishCollectUpdateRunnable.run();
+        }
     }
 
     private static void finishCollectUpdateRunnables() {
@@ -127,7 +138,7 @@ public class DispatchQueuePoolBackground {
         ArrayList<Runnable> arrayList = updateTaskCollection;
         updateTaskCollection = null;
         if (backgroundQueue == null) {
-            backgroundQueue = new DispatchQueuePoolBackground(Math.max(1, Runtime.getRuntime().availableProcessors() - 2));
+            backgroundQueue = new DispatchQueuePoolBackground(Math.max(1, Runtime.getRuntime().availableProcessors()));
         }
         Utilities.globalQueue.postRunnable(() -> {
             backgroundQueue.execute(arrayList);

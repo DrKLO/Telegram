@@ -18,6 +18,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 
@@ -68,11 +69,10 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 148;
+    public static final int LAYER = 149;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
-
         public TL_statsDateRangeDays period;
         public TL_statsAbsValueAndPrev members;
         public TL_statsAbsValueAndPrev messages;
@@ -3112,6 +3112,7 @@ public class TLRPC {
         public ArrayList<Message> messages = new ArrayList<>();
         public ArrayList<Chat> chats = new ArrayList<>();
         public ArrayList<User> users = new ArrayList<>();
+        public ArrayList<TL_forumTopic> topics = new ArrayList<>();
         public int flags;
         public boolean inexact;
         public int pts;
@@ -3129,7 +3130,7 @@ public class TLRPC {
                 case 0x8c718e87:
                     result = new TL_messages_messages();
                     break;
-                case 0x64479808:
+                case 0xc776ba4e:
                     result = new TL_messages_channelMessages();
                     break;
                 case 0x74535f21:
@@ -3315,8 +3316,7 @@ public class TLRPC {
     }
 
     public static class TL_messages_channelMessages extends messages_Messages {
-        public static int constructor = 0x64479808;
-
+        public static int constructor = 0xc776ba4e;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -3340,6 +3340,21 @@ public class TLRPC {
                     return;
                 }
                 messages.add(object);
+            }
+            magic = stream.readInt32(exception);
+            if (magic != 0x1cb5c415) {
+                if (exception) {
+                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                }
+                return;
+            }
+            count = stream.readInt32(exception);
+            for (int a = 0; a < count; a++) {
+                TL_forumTopic object = TL_forumTopic.TLdeserialize(stream, stream.readInt32(exception), exception);
+                if (object == null) {
+                    return;
+                }
+                topics.add(object);
             }
             magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
@@ -3387,6 +3402,12 @@ public class TLRPC {
             stream.writeInt32(count);
             for (int a = 0; a < count; a++) {
                 messages.get(a).serializeToStream(stream);
+            }
+            stream.writeInt32(0x1cb5c415);
+            count = topics.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                topics.get(a).serializeToStream(stream);
             }
             stream.writeInt32(0x1cb5c415);
             count = chats.size();
@@ -30931,7 +30952,10 @@ public class TLRPC {
                 case 0x14b85813:
                     result = new TL_updateBotMenuButton();
                     break;
-                case 0xf694b0ae:
+                case 0xfe198602:
+                    result = new TL_updateChannelPinnedTopics();
+                    break;
+                case 0x192efbe3:
                     result = new TL_updateChannelPinnedTopic();
                     break;
             }
@@ -33144,18 +33168,28 @@ public class TLRPC {
         }
     }
 
-    public static class TL_updateChannelPinnedTopic extends Update {
-        public static int constructor = 0xf694b0ae;
+    public static class TL_updateChannelPinnedTopics extends Update {
+        public static int constructor = 0xfe198602;
 
         public int flags;
         public long channel_id;
-        public int topic_id;
+        public ArrayList<Integer> order = new ArrayList<>();
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             channel_id = stream.readInt64(exception);
             if ((flags & 1) != 0) {
-                topic_id = stream.readInt32(exception);
+                int magic = stream.readInt32(exception);
+                if (magic != 0x1cb5c415) {
+                    if (exception) {
+                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
+                    }
+                    return;
+                }
+                int count = stream.readInt32(exception);
+                for (int a = 0; a < count; a++) {
+                    order.add(stream.readInt32(exception));
+                }
             }
         }
 
@@ -33164,8 +33198,37 @@ public class TLRPC {
             stream.writeInt32(flags);
             stream.writeInt64(channel_id);
             if ((flags & 1) != 0) {
-                stream.writeInt32(topic_id);
+                stream.writeInt32(0x1cb5c415);
+                int count = order.size();
+                stream.writeInt32(count);
+                for (int a = 0; a < count; a++) {
+                    stream.writeInt32(order.get(a));
+                }
             }
+        }
+    }
+
+    public static class TL_updateChannelPinnedTopic extends Update {
+        public static int constructor = 0x192efbe3;
+
+        public int flags;
+        public boolean pinned;
+        public long channel_id;
+        public int topic_id;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            pinned = (flags & 1) != 0;
+            channel_id = stream.readInt64(exception);
+            topic_id = stream.readInt32(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = pinned ? (flags | 1) : (flags &~ 1);
+            stream.writeInt32(flags);
+            stream.writeInt64(channel_id);
+            stream.writeInt32(topic_id);
         }
     }
 
@@ -61570,6 +61633,7 @@ public class TLRPC {
 
     public static class TL_dialog extends Dialog {
         public static int constructor = 0xa8edd0f5;
+        public int stableId = MessagesController.stableIdPointer++;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -64032,10 +64096,8 @@ public class TLRPC {
         }
     }
 
-    public static class TL_forumTopicDeleted extends ForumTopic {
+    public static class TL_forumTopicDeleted extends TL_forumTopic {
         public static int constructor = 0x23f109b;
-
-        public int id;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             id = stream.readInt32(exception);
@@ -64103,6 +64165,7 @@ public class TLRPC {
         public boolean my;
         public boolean closed;
         public boolean pinned;
+        public boolean isShort;
         public int id;
         public int date;
         public String title;
@@ -64121,10 +64184,14 @@ public class TLRPC {
         public ArrayList<MessageObject> groupedMessages; // custom
         public Message topMessage; // custom
         public String searchQuery; //custom
+        public int pinnedOrder; // custom
 
         public static TL_forumTopic TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             TL_forumTopic result = null;
             switch (constructor) {
+                case 0x23f109b:
+                    result = new TL_forumTopicDeleted();
+                    break;
                 case 0x5920d6dc:
                     result = new TL_forumTopic_layer147();
                     break;
@@ -64146,6 +64213,7 @@ public class TLRPC {
             my = (flags & 2) != 0;
             closed = (flags & 4) != 0;
             pinned = (flags & 8) != 0;
+            isShort = (flags & 32) != 0;
             id = stream.readInt32(exception);
             date = stream.readInt32(exception);
             title = stream.readString(exception);
@@ -64171,6 +64239,7 @@ public class TLRPC {
             flags = my ? (flags | 2) : (flags &~ 2);
             flags = closed ? (flags | 4) : (flags &~ 4);
             flags = pinned ? (flags | 8) : (flags &~ 8);
+            flags = isShort ? (flags | 32) : (flags &~ 32);
             stream.writeInt32(flags);
             stream.writeInt32(id);
             stream.writeInt32(date);
@@ -64612,6 +64681,32 @@ public class TLRPC {
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
             channel.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_channels_reorderPinnedForumTopics extends TLObject {
+        public static int constructor = 0x2950a18f;
+
+        public int flags;
+        public boolean force;
+        public InputChannel channel;
+        public ArrayList<Integer> order = new ArrayList<>();
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = force ? (flags | 1) : (flags &~ 1);
+            stream.writeInt32(flags);
+            channel.serializeToStream(stream);
+            stream.writeInt32(0x1cb5c415);
+            int count = order.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                stream.writeInt32(order.get(a));
+            }
         }
     }
     //functions

@@ -10,7 +10,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,6 +25,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TopicExceptionCell;
+import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -100,7 +100,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                 }
 
                 if (items.get(position).viewType == VIEW_TYPE_TOPIC) {
-                    TLRPC.TL_forumTopic topic = (TLRPC.TL_forumTopic) items.get(position).object;
+                    TLRPC.TL_forumTopic topic = (TLRPC.TL_forumTopic) items.get(position).topic;
                     Bundle bundle = new Bundle();
                     bundle.putLong("dialog_id", dialogId);
                     bundle.putInt("topic_id", topic.id);
@@ -199,32 +199,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
         items.add(new Item(VIEW_TYPE_DIVIDER, null));
 
         if (adapter != null) {
-            if (!animated) {
-                adapter.notifyDataSetChanged();
-            } else {
-                ArrayList<Item> finalOldItems = oldItems;
-                DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                    @Override
-                    public int getOldListSize() {
-                        return finalOldItems.size();
-                    }
-
-                    @Override
-                    public int getNewListSize() {
-                        return items.size();
-                    }
-
-                    @Override
-                    public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                        return items.get(newItemPosition).compare(finalOldItems.get(oldItemPosition));
-                    }
-
-                    @Override
-                    public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                        return false;
-                    }
-                }).dispatchUpdatesTo(adapter);
-            }
+            adapter.setItems(oldItems, items);
         }
     }
 
@@ -232,7 +207,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
         exceptionsTopics = notificationsExceptionTopics;
     }
 
-    private class Adapter extends RecyclerListView.SelectionAdapter {
+    private class Adapter extends AdapterWithDiffUtils {
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -268,8 +243,8 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (items.get(position).viewType == VIEW_TYPE_TOPIC) {
                 TopicExceptionCell cell = (TopicExceptionCell) holder.itemView;
-                cell.setTopic(dialogId, (TLRPC.TL_forumTopic) items.get(position).object);
-                cell.drawDivider = !(position != items.size() - 1 && items.get(position +1).viewType != VIEW_TYPE_TOPIC);
+                cell.setTopic(dialogId, items.get(position).topic);
+                cell.drawDivider = !(position != items.size() - 1 && items.get(position + 1).viewType != VIEW_TYPE_TOPIC);
             }
         }
 
@@ -289,23 +264,26 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
         }
     }
 
-    private class Item {
-        final int viewType;
-        final TLRPC.TL_forumTopic object;
+    private class Item extends AdapterWithDiffUtils.Item {
+        final TLRPC.TL_forumTopic topic;
 
         private Item(int viewType, TLRPC.TL_forumTopic object) {
-            this.viewType = viewType;
-            this.object = object;
+            super(viewType, false);
+            this.topic = object;
         }
 
-        boolean compare(Item item) {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Item item = (Item) o;
             if (viewType != item.viewType) {
                 return false;
             }
-            if (object != null && item.object != null && object.id == item.object.id) {
-                return true;
+            if (topic != null && item.topic != null) {
+                return topic.id == item.topic.id;
             }
-            return false;
+            return true;
         }
     }
 }

@@ -61,6 +61,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -80,7 +81,9 @@ import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.TypefaceSpan;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -585,19 +588,19 @@ public class ChangeUsernameActivity extends BaseFragment {
     }
 
     private UsernameHelpCell helpCell;
-    private TextView statusTextView;
+    private LinkSpanDrawable.LinksTextView statusTextView;
 
     private class UsernameHelpCell extends FrameLayout {
 
         private TextView text1View;
-        private TextView text2View;
+        private LinkSpanDrawable.LinksTextView text2View;
 
         public UsernameHelpCell(Context context) {
             super(context);
 
             helpCell = this;
 
-            setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(10), AndroidUtilities.dp(21), AndroidUtilities.dp(17));
+            setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(17));
             setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             setClipChildren(false);
 
@@ -607,13 +610,50 @@ public class ChangeUsernameActivity extends BaseFragment {
             text1View.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             text1View.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
             text1View.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+            text1View.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
 
-            text2View = statusTextView = new TextView(context);
+            text2View = statusTextView = new LinkSpanDrawable.LinksTextView(context) {
+                @Override
+                public void setText(CharSequence text, BufferType type) {
+                    if (text != null) {
+                        SpannableStringBuilder tagsString = AndroidUtilities.replaceTags(text.toString());
+                        int index = tagsString.toString().indexOf('\n');
+                        if (index >= 0) {
+                            tagsString.replace(index, index + 1, " ");
+                            tagsString.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_windowBackgroundWhiteRedText4)), 0, index, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        TypefaceSpan[] spans = tagsString.getSpans(0, tagsString.length(), TypefaceSpan.class);
+                        for (int i = 0; i < spans.length; ++i) {
+                            tagsString.setSpan(
+                                new ClickableSpan() {
+                                    @Override
+                                    public void onClick(@NonNull View view) {
+                                        Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
+                                    }
+
+                                    @Override
+                                    public void updateDrawState(@NonNull TextPaint ds) {
+                                        super.updateDrawState(ds);
+                                        ds.setUnderlineText(false);
+                                    }
+                                },
+                                tagsString.getSpanStart(spans[i]),
+                                tagsString.getSpanEnd(spans[i]),
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                            );
+                            tagsString.removeSpan(spans[i]);
+                        }
+                        text = tagsString;
+                    }
+                    super.setText(text, type);
+                }
+            };
             text2View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             text2View.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
             text2View.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             text2View.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
             text2View.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+            text2View.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
 
             addView(text1View, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
             addView(text2View, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
@@ -1120,7 +1160,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 }
             }
         }
-        if (name == null || name.length() < 5) {
+        if (name == null || name.length() < 4) {
             if (alert) {
                 AlertsCreator.showSimpleAlert(this, LocaleController.getString("UsernameInvalidShort", R.string.UsernameInvalidShort));
             } else {
@@ -1196,9 +1236,23 @@ public class ChangeUsernameActivity extends BaseFragment {
                             lastNameAvailable = true;
                         } else {
                             if (statusTextView != null) {
-                                statusTextView.setText(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
-                                statusTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
-                                statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
+                                if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() == 4) {
+                                    statusTextView.setText(LocaleController.getString("UsernameInvalidShort", R.string.UsernameInvalidShort));
+                                    statusTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
+                                } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
+                                    if (req.username.length() == 4) {
+                                        statusTextView.setText(LocaleController.getString("UsernameInvalidShortPurchase", R.string.UsernameInvalidShortPurchase));
+                                    } else {
+                                        statusTextView.setText(LocaleController.getString("UsernameInUsePurchase", R.string.UsernameInUsePurchase));
+                                    }
+                                    statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText8);
+                                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
+                                } else {
+                                    statusTextView.setText(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
+                                    statusTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
+                                }
                                 if (helpCell != null) {
                                     helpCell.update();
                                 }
@@ -1264,6 +1318,15 @@ public class ChangeUsernameActivity extends BaseFragment {
                         FileLog.e(e);
                     }
                     finishFragment();
+                });
+            } else if ("USERNAME_PURCHASE_AVAILABLE".equals(error.text) || "USERNAME_INVALID".equals(error.text)) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    shakeIfOff();
                 });
             } else {
                 AndroidUtilities.runOnUIThread(() -> {

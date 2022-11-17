@@ -30,6 +30,7 @@ public class LetterDrawable extends Drawable {
     public static Paint paint = new Paint();
     private static TextPaint namePaint;
     private static TextPaint namePaintTopic;
+    private static TextPaint namePaintSmallTopic;
     private RectF rect = new RectF();
 
     private StaticLayout textLayout;
@@ -40,6 +41,7 @@ public class LetterDrawable extends Drawable {
 
     public static final int STYLE_DEFAULT = 0;
     public static final int STYLE_TOPIC_DRAWABLE = 1;
+    public static final int STYLE_SMALL_TOPIC_DRAWABLE = 2;
     int style;
     final TextPaint textPaint;
     public float scale = 1f;
@@ -47,7 +49,6 @@ public class LetterDrawable extends Drawable {
     public LetterDrawable() {
         this(null, 0);
     }
-
 
     public LetterDrawable(Theme.ResourcesProvider resourcesProvider, int style) {
         super();
@@ -60,7 +61,7 @@ public class LetterDrawable extends Drawable {
             paint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholder, resourcesProvider));
             namePaint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholderText, resourcesProvider));
             textPaint = namePaint;
-        } else {
+        } else if (style == STYLE_TOPIC_DRAWABLE) {
             if (namePaintTopic == null) {
                 namePaintTopic = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             }
@@ -68,6 +69,14 @@ public class LetterDrawable extends Drawable {
             namePaintTopic.setTextSize(AndroidUtilities.dp(13));
             namePaintTopic.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
             textPaint = namePaintTopic;
+        } else {
+            if (namePaintSmallTopic == null) {
+                namePaintSmallTopic = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            }
+            namePaintSmallTopic.setColor(Color.WHITE);
+            namePaintSmallTopic.setTextSize(Theme.chat_topicTextPaint.getTextSize() * .75f);
+            namePaintSmallTopic.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            textPaint = namePaintSmallTopic;
         }
     }
 
