@@ -153,6 +153,14 @@ public abstract class BaseFragment {
         return parentLayout != null && parentLayout.isInPassivePreviewMode();
     }
 
+    public boolean isActionBarCrossfadeEnabled() {
+        return actionBar != null;
+    }
+
+    public INavigationLayout.BackButtonState getBackButtonState() {
+        return actionBar != null ? actionBar.getBackButtonState() : null;
+    }
+
     public void setInPreviewMode(boolean value) {
         inPreviewMode = value;
         if (actionBar != null) {

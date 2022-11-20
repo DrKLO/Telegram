@@ -839,12 +839,23 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 for (int i = 0 ; i < sharedMediaData.length; i++) {
                     allMessages.addAll(sharedMediaData[i].messages);
                 }
-                Utilities.globalQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        FileLoader.getInstance(account).checkMediaExistance(allMessages);
-                    }
-                });
+                String fileName = (String) args[0];
+                if (fileName != null) {
+                    Utilities.globalQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (int i = 0; i < allMessages.size(); i++) {
+                                if (!fileName.equals(allMessages.get(i).getFileName())) {
+                                    allMessages.remove(i);
+                                    i--;
+                                }
+                            }
+                            if (allMessages.size() > 0) {
+                                FileLoader.getInstance(account).checkMediaExistance(allMessages);
+                            }
+                        }
+                    });
+                }
             }
         }
 

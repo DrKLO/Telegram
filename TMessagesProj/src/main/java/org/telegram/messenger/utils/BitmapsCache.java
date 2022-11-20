@@ -9,6 +9,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueuePoolBackground;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.RLottieDrawable;
 
@@ -47,12 +48,12 @@ public class BitmapsCache {
     static volatile boolean cleanupScheduled;
     byte[] bufferTmp;
 
-    private final static int N = Utilities.clamp(Runtime.getRuntime().availableProcessors(), 8, 1);
+    private final static int N = Utilities.clamp(Runtime.getRuntime().availableProcessors() - 2, 8, 1);
     private static ThreadPoolExecutor bitmapCompressExecutor;
     private final Object mutex = new Object();
     private int frameIndex;
     boolean error;
-    boolean fileExist;
+    volatile boolean fileExist;
     int compressQuality;
 
     final File file;
@@ -89,36 +90,47 @@ public class BitmapsCache {
         File fileTmo = new File(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), "acache");
         file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + ".pcache2");
         useSharedBuffers = w < AndroidUtilities.dp(60) && h < AndroidUtilities.dp(60);
-        fileExist = file.exists();
-        if (fileExist) {
-            RandomAccessFile randomAccessFile = null;
-            try {
-                randomAccessFile = new RandomAccessFile(file, "r");
-                cacheCreated = randomAccessFile.readBoolean();
-                if (cacheCreated && frameOffsets.isEmpty()) {
-                    randomAccessFile.seek(randomAccessFile.readInt());
-                    int count = randomAccessFile.readInt();
-                    fillFrames(randomAccessFile, count);
-                    if (count == 0) {
-                        file.delete();
-                        cacheCreated = false;
-                        fileExist = false;
-                    }
-                }
 
-            } catch (Throwable e) {
-                e.printStackTrace();
-                file.delete();
-                fileExist = false;
-            } finally {
+        // check cache created in file load queue only for high devices
+        if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
+            fileExist = file.exists();
+            if (fileExist) {
+                RandomAccessFile randomAccessFile = null;
                 try {
-                    if (randomAccessFile != null) {
-                        randomAccessFile.close();
+                    randomAccessFile = new RandomAccessFile(file, "r");
+                    cacheCreated = randomAccessFile.readBoolean();
+                    if (cacheCreated && frameOffsets.isEmpty()) {
+                        randomAccessFile.seek(randomAccessFile.readInt());
+                        int count = randomAccessFile.readInt();
+                        if (count > 10_000) {
+                            count = 0;
+                        }
+                        fillFrames(randomAccessFile, count);
+                        if (frameOffsets.size() == 0) {
+                            cacheCreated = false;
+                            fileExist = false;
+                            file.delete();
+                        } else {
+                            cachedFile = randomAccessFile;
+                        }
                     }
-                } catch (IOException e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
+                    file.delete();
+                    fileExist = false;
+                } finally {
+                    try {
+                        if (cachedFile != randomAccessFile && randomAccessFile != null) {
+                            randomAccessFile.close();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+        } else {
+            fileExist = false;
+            cacheCreated = false;
         }
     }
 
@@ -152,25 +164,30 @@ public class BitmapsCache {
 
     public void createCache() {
         try {
-            long time = System.currentTimeMillis();
             if (file.exists()) {
                 RandomAccessFile randomAccessFile = null;
                 try {
                     randomAccessFile = new RandomAccessFile(file, "r");
                     cacheCreated = randomAccessFile.readBoolean();
-                    int framesCount = randomAccessFile.readInt();
-                    if (framesCount == 0) {
-                        cacheCreated = false;
-                    }
                     if (cacheCreated) {
                         frameOffsets.clear();
                         randomAccessFile.seek(randomAccessFile.readInt());
                         int count = randomAccessFile.readInt();
-                        fillFrames(randomAccessFile, count);
-                        randomAccessFile.close();
-                        fileExist = true;
-                        return;
-                    } else {
+                        if (count > 10_000) {
+                            count = 0;
+                        }
+                        if (count > 0) {
+                            fillFrames(randomAccessFile, count);
+                            randomAccessFile.seek(0);
+                            cachedFile = randomAccessFile;
+                            fileExist = true;
+                            return;
+                        } else {
+                            fileExist = false;
+                            cacheCreated = false;
+                        }
+                    }
+                    if (!cacheCreated) {
                         file.delete();
                     }
                 } catch (Throwable e) {
@@ -180,7 +197,7 @@ public class BitmapsCache {
 
                     }
                 } finally {
-                    if (randomAccessFile != null) {
+                    if (cachedFile != randomAccessFile && randomAccessFile != null) {
                         try {
                             randomAccessFile.close();
                         } catch (Throwable e2) {
@@ -207,9 +224,6 @@ public class BitmapsCache {
             finalRandomAccessFile.writeInt(0);
 
             int index = 0;
-            long bitmapFrameTime = 0;
-            long compressTime = 0;
-            long writeFileTime = 0;
             int framePosition = 0;
 
             AtomicBoolean closed = new AtomicBoolean(false);
@@ -250,11 +264,9 @@ public class BitmapsCache {
                     return;
                 }
 
-                long time2 = System.currentTimeMillis();
                 if (source.getNextFrame(bitmap[index]) != 1) {
                     break;
                 }
-                bitmapFrameTime += System.currentTimeMillis() - time2;
                 countDownLatch[index] = new CountDownLatch(1);
 
 
@@ -332,12 +344,10 @@ public class BitmapsCache {
             randomAccessFile.close();
 
             this.frameOffsets.clear();
-//            this.frameOffsets.addAll(frameOffsets);
+            this.frameOffsets.addAll(frameOffsets);
+            cachedFile = new RandomAccessFile(file, "r");
+            cacheCreated = true;
             fileExist = true;
-
-//            if (BuildVars.DEBUG_VERSION) {
-//                FileLog.d("generate cache for time = " + (System.currentTimeMillis() - time) + " drawFrameTime = " + bitmapFrameTime + " comressQuality = " + compressQuality + " fileSize = " + AndroidUtilities.formatFileSize(file.length()) + " " + fileName);
-//            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -348,6 +358,9 @@ public class BitmapsCache {
     }
 
     private void fillFrames(RandomAccessFile randomAccessFile, int count) throws Throwable {
+        if (count == 0) {
+            return;
+        }
         byte[] bytes = new byte[4 * 2 * count];
         randomAccessFile.read(bytes);
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
@@ -385,6 +398,7 @@ public class BitmapsCache {
             synchronized (mutex) {
                 randomAccessFile = new RandomAccessFile(file, "r");
                 cacheCreated = randomAccessFile.readBoolean();
+                randomAccessFile.seek(randomAccessFile.readInt());
                 framesCount = randomAccessFile.readInt();
                 if (framesCount <= 0) {
                     cacheCreated = false;
@@ -435,6 +449,9 @@ public class BitmapsCache {
                 }
             } else {
                 randomAccessFile = cachedFile;
+            }
+            if (frameOffsets.size() == 0) {
+                return FRAME_RESULT_NO_FRAME;
             }
             index = Utilities.clamp(index, frameOffsets.size() - 1, 0);
             selectedFrame = frameOffsets.get(index);

@@ -140,7 +140,6 @@ public class FilePathDatabase {
 
             CountDownLatch syncLatch = new CountDownLatch(1);
             String[] res = new String[1];
-            long time = System.currentTimeMillis();
 
             dispatchQueue.postRunnable(() -> {
                 if (database != null) {

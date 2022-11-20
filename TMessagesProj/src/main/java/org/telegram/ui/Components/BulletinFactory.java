@@ -9,6 +9,7 @@ import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
@@ -203,10 +204,17 @@ public final class BulletinFactory {
             }
         }
         layout.avatarsImageView.commitTransition(false);
-        layout.textView.setSingleLine(true);
-        layout.textView.setLines(1);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
         layout.textView.setText(text);
-        layout.textView.setTranslationX(-(3 - count) * AndroidUtilities.dp(12));
+        if (layout.textView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+            int margin = AndroidUtilities.dp(12 + 56 + 2 - (3 - count) * 12);
+            if (LocaleController.isRTL) {
+                ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = margin;
+            } else {
+                ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).leftMargin = margin;
+            }
+        }
         return create(layout, Bulletin.DURATION_LONG);
     }
 
@@ -216,9 +224,9 @@ public final class BulletinFactory {
             text = null;
         } else if (users.size() == 1) {
             if (ChatObject.isChannelAndNotMegaGroup(chat)) {
-                text = AndroidUtilities.replaceTags(LocaleController.formatString("HasBeenAddedToChannel", R.string.HasBeenAddedToChannel, "**" + UserObject.getUserName(users.get(0)) + "**"));
+                text = AndroidUtilities.replaceTags(LocaleController.formatString("HasBeenAddedToChannel", R.string.HasBeenAddedToChannel, "**" + UserObject.getFirstName(users.get(0)) + "**"));
             } else {
-                text = AndroidUtilities.replaceTags(LocaleController.formatString("HasBeenAddedToGroup", R.string.HasBeenAddedToGroup, "**" + UserObject.getUserName(users.get(0)) + "**"));
+                text = AndroidUtilities.replaceTags(LocaleController.formatString("HasBeenAddedToGroup", R.string.HasBeenAddedToGroup, "**" + UserObject.getFirstName(users.get(0)) + "**"));
             }
         } else {
             if (ChatObject.isChannelAndNotMegaGroup(chat)) {

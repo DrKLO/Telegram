@@ -312,6 +312,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static boolean DISABLE_PROGRESS_VIEW = true;
     private final static int SKELETON_DISAPPEAR_MS = 200;
 
+    private static int SKELETON_LIGHT_OVERLAY_ALPHA = 22;
+    private static float SKELETON_SATURATION = 1.4f;
+
     public final static int DEBUG_SHARE_ALERT_MODE_NORMAL = 0,
             DEBUG_SHARE_ALERT_MODE_LESS = 1,
             DEBUG_SHARE_ALERT_MODE_MORE = 2;
@@ -682,6 +685,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int lastSkeletonCount;
     private int lastSkeletonMessageCount;
     private Paint skeletonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint skeletonServicePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private ColorMatrix skeletonColorMatrix = new ColorMatrix();
     private Theme.MessageDrawable.PathDrawParams skeletonBackgroundCacheParams = new Theme.MessageDrawable.PathDrawParams();
     private Theme.MessageDrawable skeletonBackgroundDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, false, this::getThemedColor);
     private long skeletonLastUpdateTime;
@@ -691,6 +696,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private LinearGradient skeletonGradient;
     private int skeletonColor0;
     private int skeletonColor1;
+
+    private Paint skeletonOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Matrix skeletonOutlineMatrix = new Matrix();
+    private LinearGradient skeletonOutlineGradient;
+
+    {
+        skeletonOutlinePaint.setStyle(Paint.Style.STROKE);
+        skeletonOutlinePaint.setStrokeWidth(AndroidUtilities.dp(1));
+    }
 
     private boolean premiumInvoiceBot;
     private boolean showScrollToMessageError;
@@ -1037,7 +1051,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public List<FloatingDebugController.DebugItem> onGetDebugItems() {
         List<FloatingDebugController.DebugItem> items = new ArrayList<>();
-        if (currentChat != null && ChatObject.isChannel(currentChat)) {
+        if (ChatObject.isChannel(currentChat)) {
+            items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugShareAlert)));
             String mode;
             switch (shareAlertDebugMode) {
                 default:
@@ -1056,6 +1071,33 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }));
 
             items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugShareAlertTopicsSlowMotion), ()-> shareAlertDebugTopicsSlowMotion = !shareAlertDebugTopicsSlowMotion));
+        }
+        if (currentUser == null) {
+            items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugMessageSkeletons)));
+            items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugMessageSkeletonsLightOverlayAlpha), 0, 255, new AnimationProperties.FloatProperty("") {
+                @Override
+                public void setValue(Object object, float value) {
+                    SKELETON_LIGHT_OVERLAY_ALPHA = (int) value;
+                }
+
+                @Override
+                public Object get(Object object) {
+                    return (float) SKELETON_LIGHT_OVERLAY_ALPHA;
+                }
+            }));
+            items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugMessageSkeletonsSaturation), 1f, 10f, new AnimationProperties.FloatProperty("") {
+                @Override
+                public void setValue(Object object, float value) {
+                    SKELETON_SATURATION = value;
+                    skeletonColorMatrix.setSaturation(value);
+                    skeletonServicePaint.setColorFilter(new ColorMatrixColorFilter(skeletonColorMatrix));
+                }
+
+                @Override
+                public Object get(Object object) {
+                    return SKELETON_SATURATION;
+                }
+            }));
         }
 
         return items;
@@ -4833,7 +4875,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             private boolean isSkeletonVisible() {
-                if (justCreatedTopic) {
+                if (justCreatedTopic || currentUser != null || !SharedConfig.animationsEnabled()) {
                     return false;
                 }
                 int childHeight = 0;
@@ -4849,9 +4891,25 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     checkDispatchHideSkeletons(fragmentBeginToShow);
                 }
 
-                boolean visible = (!endReached[0] || mergeDialogId != 0 && !endReached[1] || messages.isEmpty()) && loading && maxTop > 0 && (messages.isEmpty() ? animateProgressViewTo : childHeight != 0);
+                boolean visible = (!endReached[0] || mergeDialogId != 0 && !endReached[1] || messages.isEmpty()) && loading && maxTop > chatListViewPaddingTop && (messages.isEmpty() ? animateProgressViewTo : childHeight != 0);
                 if (!visible && startMessageAppearTransitionMs == 0) {
                     checkDispatchHideSkeletons(fragmentBeginToShow);
+                }
+                if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && !fromPullingDownTransition && !fragmentBeginToShow) {
+                    Drawable wallpaper = themeDelegate.getWallpaperDrawable();
+                    if (fragmentView != null) {
+                        wallpaper = ((SizeNotifierFrameLayout) fragmentView).getBackgroundImage();
+                    }
+                    if (wallpaper instanceof MotionBackgroundDrawable) {
+                        MotionBackgroundDrawable motion = (MotionBackgroundDrawable) wallpaper;
+                        if (((MotionBackgroundDrawable) wallpaper).isIndeterminateAnimation() != visible) {
+                            motion.setIndeterminateAnimation(visible);
+                            motion.setIndeterminateSpeedScale(visible ? 1.5f : 1f);
+                            motion.updateAnimation(true);
+                        } else if (visible) {
+                            motion.updateAnimation(false);
+                        }
+                    }
                 }
                 return visible || startMessageAppearTransitionMs != 0 && System.currentTimeMillis() - startMessageAppearTransitionMs <= SKELETON_DISAPPEAR_MS;
             }
@@ -4882,6 +4940,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
 
                     Paint servicePaint = getThemedPaint(Theme.key_paint_chatActionBackground);
+                    if (skeletonServicePaint.getColor() != servicePaint.getColor()) {
+                        skeletonServicePaint.setColor(servicePaint.getColor());
+                    }
+                    if (skeletonServicePaint.getShader() != servicePaint.getShader()) {
+                        skeletonServicePaint.setShader(servicePaint.getShader());
+                        skeletonColorMatrix.setSaturation(SKELETON_SATURATION);
+                        skeletonServicePaint.setColorFilter(new ColorMatrixColorFilter(skeletonColorMatrix));
+                    }
 
                     for (int i = 0; i < getChildCount(); i++) {
                         View v = getChildAt(i);
@@ -4952,10 +5018,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
 
                     if (isSkeletonVisible()) {
+                        boolean drawService = SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && Theme.hasGradientService();
+                        boolean darkOverlay = ColorUtils.calculateLuminance(getThemedColor(Theme.key_windowBackgroundWhite)) <= 0.7f && Theme.hasGradientService();
+                        boolean blackOverlay = ColorUtils.calculateLuminance(getThemedColor(Theme.key_windowBackgroundWhite)) <= 0.01f && Theme.hasGradientService();
+                        if (drawService) {
+                            Theme.applyServiceShaderMatrix(getMeasuredWidth(), AndroidUtilities.displaySize.y, 0, getY() - contentPanTranslation);
+                        }
+                        int wasDarkenAlpha = Theme.chat_actionBackgroundGradientDarkenPaint.getAlpha();
+                        if (blackOverlay) {
+                            Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha((int) (wasDarkenAlpha * 4f));
+                        }
+
                         float topSkeletonAlpha = startMessageAppearTransitionMs != 0 ? 1f - (System.currentTimeMillis() - startMessageAppearTransitionMs) / (float) SKELETON_DISAPPEAR_MS : 1f;
                         int alpha = skeletonPaint.getAlpha();
-                        int wasServiceAlpha = servicePaint.getAlpha();
-                        servicePaint.setAlpha((int) (wasServiceAlpha * 0.4f * topSkeletonAlpha));
+                        int wasServiceAlpha = skeletonServicePaint.getAlpha();
+                        int wasOutlineAlpha = skeletonOutlinePaint.getAlpha();
+                        skeletonServicePaint.setAlpha((int) (0xFF * topSkeletonAlpha));
                         skeletonPaint.setAlpha((int) (topSkeletonAlpha * alpha));
                         while (lastTop > blurredViewTopOffset) {
                             lastTop -= AndroidUtilities.dp(3f);
@@ -4982,21 +5060,33 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                             int bottom = skeleton.lastBottom;
                             skeletonBackgroundDrawable.setBounds(noAvatar ? AndroidUtilities.dp(3f) : AndroidUtilities.dp(51), bottom - skeleton.height, skeleton.width, bottom);
-                            Theme.applyServiceShaderMatrix(getMeasuredWidth(), AndroidUtilities.displaySize.y, 0, getY() + skeletonBackgroundDrawable.getBounds().top);
-                            skeletonBackgroundDrawable.drawCached(canvas, skeletonBackgroundCacheParams, servicePaint);
+                            if (drawService) {
+                                skeletonBackgroundDrawable.drawCached(canvas, skeletonBackgroundCacheParams, skeletonServicePaint);
+                            }
                             skeletonBackgroundDrawable.drawCached(canvas, skeletonBackgroundCacheParams, skeletonPaint);
+                            if (darkOverlay) {
+                                skeletonBackgroundDrawable.drawCached(canvas, skeletonBackgroundCacheParams, Theme.chat_actionBackgroundGradientDarkenPaint);
+                            }
+                            skeletonBackgroundDrawable.drawCached(canvas, skeletonBackgroundCacheParams, skeletonOutlinePaint);
 
                             if (!noAvatar) {
-                                Theme.applyServiceShaderMatrix(getMeasuredWidth(), AndroidUtilities.displaySize.y, 0, getY() + bottom - AndroidUtilities.dp(42));
-                                canvas.drawCircle(AndroidUtilities.dp(48 - 21), bottom - AndroidUtilities.dp(21), AndroidUtilities.dp(21), servicePaint);
+                                if (drawService) {
+                                    canvas.drawCircle(AndroidUtilities.dp(48 - 21), bottom - AndroidUtilities.dp(21), AndroidUtilities.dp(21), skeletonServicePaint);
+                                }
                                 canvas.drawCircle(AndroidUtilities.dp(48 - 21), bottom - AndroidUtilities.dp(21), AndroidUtilities.dp(21), skeletonPaint);
+                                if (darkOverlay) {
+                                    canvas.drawCircle(AndroidUtilities.dp(48 - 21), bottom - AndroidUtilities.dp(21), AndroidUtilities.dp(21), Theme.chat_actionBackgroundGradientDarkenPaint);
+                                }
+                                canvas.drawCircle(AndroidUtilities.dp(48 - 21), bottom - AndroidUtilities.dp(21), AndroidUtilities.dp(21), skeletonOutlinePaint);
                             }
 
                             lastTop -= skeleton.height;
                         }
 
-                        servicePaint.setAlpha(wasServiceAlpha);
+                        skeletonServicePaint.setAlpha(wasServiceAlpha);
                         skeletonPaint.setAlpha(alpha);
+                        skeletonOutlinePaint.setAlpha(wasOutlineAlpha);
+                        Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha(wasDarkenAlpha);
                         invalidated = false;
                         invalidate();
                     } else if (System.currentTimeMillis() - startMessageAppearTransitionMs > SKELETON_DISAPPEAR_MS) {
@@ -5012,13 +5102,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             private void updateSkeletonColors() {
-                int color0 = ColorUtils.setAlphaComponent(getThemedColor(Theme.key_listSelector), 30);
-                int color1 = ColorUtils.setAlphaComponent(getThemedColor(Theme.key_listSelector), 20);
+                boolean dark = ColorUtils.calculateLuminance(getThemedColor(Theme.key_windowBackgroundWhite)) <= 0.7f;
+                int color0 = ColorUtils.blendARGB(getThemedColor(Theme.key_listSelector), Color.argb(dark ? 0x21 : 0x03, 0xFF, 0xFF, 0xFF), dark ? 0.9f : 0.5f);
+                int color1 = ColorUtils.setAlphaComponent(getThemedColor(Theme.key_listSelector), dark ? 24 : SKELETON_LIGHT_OVERLAY_ALPHA);
                 if (skeletonColor1 != color1 || skeletonColor0 != color0) {
                     skeletonColor0 = color0;
                     skeletonColor1 = color1;
                     skeletonGradient = new LinearGradient(0, 0, skeletonGradientWidth = AndroidUtilities.dp(200), 0, new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
                     skeletonPaint.setShader(skeletonGradient);
+
+                    int outlineColor = Color.argb(dark ? 0x2B : 0x60, 0xFF, 0xFF, 0xFF);
+                    skeletonOutlineGradient = new LinearGradient(0, 0, skeletonGradientWidth, 0, new int[]{Color.TRANSPARENT, outlineColor, outlineColor, Color.TRANSPARENT}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
+                    skeletonOutlinePaint.setShader(skeletonOutlineGradient);
                 }
             }
 
@@ -5040,6 +5135,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 skeletonMatrix.setTranslate(skeletonTotalTranslation, 0);
                 if (skeletonGradient != null) {
                     skeletonGradient.setLocalMatrix(skeletonMatrix);
+                }
+                skeletonOutlineMatrix.setTranslate(skeletonTotalTranslation, 0);
+                if (skeletonOutlineGradient != null) {
+                    skeletonOutlineGradient.setLocalMatrix(skeletonOutlineMatrix);
                 }
             }
 
@@ -8905,6 +9004,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
         return fragmentView;
+    }
+
+    @Override
+    public INavigationLayout.BackButtonState getBackButtonState() {
+        return INavigationLayout.BackButtonState.BACK;
     }
 
     public void onPageDownClicked() {
@@ -13018,6 +13122,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private int getHeightForMessage(MessageObject object) {
+        if (getParentActivity() == null) {
+            return 0;
+        }
         if (dummyMessageCell == null) {
             dummyMessageCell = new ChatMessageCell(getParentActivity(), true, themeDelegate);
         }
@@ -22176,7 +22283,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             final ArrayList<Integer> options = new ArrayList<>();
             View optionsView = null;
 
-            if (!getUserConfig().isPremium() && !getMessagesController().premiumLocked && message.getDocument() != null && message.getDocument().size >= 300 * 1024 * 1024 && FileLoader.getInstance(currentAccount).isLoadingFile(FileLoader.getAttachFileName(message.getDocument()))) {
+            if (!getUserConfig().isPremium() && !getMessagesController().premiumLocked && message.getDocument() != null && message.getDocument().size >= 150 * 1024 * 1024 && FileLoader.getInstance(currentAccount).isLoadingFile(FileLoader.getAttachFileName(message.getDocument()))) {
                 items.add(LocaleController.getString(R.string.PremiumSpeedPromo));
                 options.add(OPTION_SPEED_PROMO);
                 icons.add(R.drawable.msg_speed);

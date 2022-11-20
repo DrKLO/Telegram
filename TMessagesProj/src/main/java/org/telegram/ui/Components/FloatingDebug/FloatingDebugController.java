@@ -5,6 +5,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.LaunchActivity;
 
 public class FloatingDebugController {
@@ -54,16 +55,34 @@ public class FloatingDebugController {
     public static class DebugItem {
         final CharSequence title;
         final DebugItemType type;
-        final Runnable action;
+        Runnable action;
+        float from;
+        float to;
+        AnimationProperties.FloatProperty floatProperty;
 
         public DebugItem(CharSequence title, Runnable action) {
             this.type = DebugItemType.SIMPLE;
             this.title = title;
             this.action = action;
         }
+
+        public DebugItem(CharSequence title) {
+            this.type = DebugItemType.HEADER;
+            this.title = title;
+        }
+
+        public DebugItem(CharSequence title, float from, float to, AnimationProperties.FloatProperty callback) {
+            this.type = DebugItemType.SEEKBAR;
+            this.title = title;
+            this.from = from;
+            this.to = to;
+            this.floatProperty = callback;
+        }
     }
 
     public enum DebugItemType {
-        SIMPLE
+        SIMPLE,
+        HEADER,
+        SEEKBAR
     }
 }

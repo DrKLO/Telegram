@@ -1592,6 +1592,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
+    public boolean isActionBarCrossfadeEnabled() {
+        return false;
+    }
+
+    @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         if (sharedMediaLayout != null) {

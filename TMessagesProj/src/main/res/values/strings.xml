@@ -5735,7 +5735,7 @@
     <string name="FloatingDebugEnable">Enable floating debug</string>
     <string name="FloatingDebugDisable">Disable floating debug</string>
     <string name="DebugClearLocalDatabaseSuccess">Cleared local database.</string>
-    <string name="DebugAltNavigationToggleControls">Toggle navigation stiffness controls</string>
+    <string name="DebugAltNavigationToggleControls">Toggle stiffness controls</string>
     <string name="DebugClearSendMessageAsPeers">Clear Send Message As... peers</string>
     <string name="DebugShareAlertSwitchDialogsMode">Switch sharing alert dialogs mode (%1$s)</string>
     <string name="DebugShareAlertDialogsModeNormal">Normal</string>
@@ -5781,4 +5781,11 @@
     <string name="ChannelCaptionLimitPremiumPromo_many">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
     <string name="ChannelCaptionLimitPremiumPromo_other">Make the caption shorter or subscribe to *Telegram Premium* to double the limit to **%1$s** characters.</string>
     <string name="AllChats">All Chats</string>
+    <string name="DebugShareAlert">Share Alert</string>
+    <string name="DebugDialogsActivity">Dialogs Activity</string>
+    <string name="DebugMessageSkeletons">Message Skeletons</string>
+    <string name="DebugMessageSkeletonsLightOverlayAlpha">Light overlay alpha</string>
+    <string name="DebugMessageSkeletonsSaturation">Saturation</string>
+    <string name="DebugAltNavigation">Alternative navigation</string>
+    <string name="DebugGeneral">General</string>
 </resources>

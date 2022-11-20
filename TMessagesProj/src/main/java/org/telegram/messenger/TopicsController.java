@@ -70,6 +70,8 @@ public class TopicsController extends BaseController {
         if (BuildVars.DEBUG_PRIVATE_VERSION) {
             FileLog.d("load topics " + chatId + " fromCache=" + fromCache + " loadType=" + loadType);
         }
+        topicsIsLoading.put(chatId, 1);
+
         if (fromCache) {
             getMessagesStorage().loadTopics(-chatId, topics -> {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -88,7 +90,6 @@ public class TopicsController extends BaseController {
             return;
         }
 
-        topicsIsLoading.put(chatId, 1);
         TLRPC.TL_channels_getForumTopics getForumTopics = new TLRPC.TL_channels_getForumTopics();
         getForumTopics.channel = getMessagesController().getInputChannel(chatId);
         if (loadType == LOAD_TYPE_PRELOAD) {
@@ -113,6 +114,7 @@ public class TopicsController extends BaseController {
                     messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
                 }
                 AndroidUtilities.runOnUIThread(() -> {
+                    getMessagesStorage().putUsersAndChats(((TLRPC.TL_messages_forumTopics) response).users, ((TLRPC.TL_messages_forumTopics) response).chats, true, false);
                     getMessagesController().putUsers(((TLRPC.TL_messages_forumTopics) response).users, false);
                     getMessagesController().putChats(((TLRPC.TL_messages_forumTopics) response).chats, false);
 
@@ -172,20 +174,19 @@ public class TopicsController extends BaseController {
                             topicsToReload = new ArrayList<>();
                         }
                         topicsToReload.add(newTopic);
-                    } else {
-                        if (newTopic.topicStartMessage == null) {
-                            newTopic.topicStartMessage = new TLRPC.TL_message();
-                            newTopic.topicStartMessage.message = "";
-                            newTopic.topicStartMessage.id = newTopic.id;
-                            newTopic.topicStartMessage.peer_id = getMessagesController().getPeer(-chatId);
-                            newTopic.topicStartMessage.action = new TLRPC.TL_messageActionTopicCreate();
-                            newTopic.topicStartMessage.action.title = newTopic.title;
-                        }
-                        topics.add(newTopic);
-                        topicsMap.put(newTopic.id, newTopic);
-                        topicsByTopMsgId.put(messageHash(newTopic.top_message, chatId), newTopic);
-                        changed = true;
                     }
+                    if (newTopic.topicStartMessage == null) {
+                        newTopic.topicStartMessage = new TLRPC.TL_message();
+                        newTopic.topicStartMessage.message = "";
+                        newTopic.topicStartMessage.id = newTopic.id;
+                        newTopic.topicStartMessage.peer_id = getMessagesController().getPeer(-chatId);
+                        newTopic.topicStartMessage.action = new TLRPC.TL_messageActionTopicCreate();
+                        newTopic.topicStartMessage.action.title = newTopic.title;
+                    }
+                    topics.add(newTopic);
+                    topicsMap.put(newTopic.id, newTopic);
+                    topicsByTopMsgId.put(messageHash(newTopic.top_message, chatId), newTopic);
+                    changed = true;
                 }
             }
         }
@@ -202,15 +203,17 @@ public class TopicsController extends BaseController {
             }
         }
 
-        if (changed) {
-            sortTopics(chatId);
-        }
+
 
         if (topicsToReload != null && loadType != LOAD_TYPE_LOAD_UNKNOWN) {
             reloadTopics(chatId, topicsToReload);
         } else if (loadType == LOAD_TYPE_LOAD_NEXT && topics.size() >= totalCount && totalCount >= 0) {
             endIsReached.put(chatId, 1);
             getUserConfig().getPreferences().edit().putBoolean("topics_end_reached_" + chatId, true).apply();
+        }
+
+        if (changed) {
+            sortTopics(chatId);
         }
 
         getNotificationCenter().postNotificationName(NotificationCenter.topicsDidLoaded, chatId, true);
@@ -367,11 +370,14 @@ public class TopicsController extends BaseController {
         }));
     }
 
-    public void updateMaxReadId(long chatId, int topicId, int readMaxId, int unreadCount) {
+    public void updateMaxReadId(long chatId, int topicId, int readMaxId, int unreadCount, int mentionsUnread) {
         TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
         if (topic != null) {
             topic.read_inbox_max_id = readMaxId;
             topic.unread_count = unreadCount;
+            if (mentionsUnread >= 0) {
+                topic.unread_mentions_count = mentionsUnread;
+            }
             sortTopics(chatId);
         }
     }
@@ -669,14 +675,6 @@ public class TopicsController extends BaseController {
         }
     }
 
-    public TLRPC.Message getLastMessage(long id) {
-        ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(id);
-        if (!topics.isEmpty()) {
-            return topics.get(0).topMessage;
-        }
-        return null;
-    }
-
     LongSparseArray<TopicsLoadOffset> offsets = new LongSparseArray<>();
 
     public TopicsLoadOffset getLoadOffset(long chatId) {
@@ -867,7 +865,7 @@ public class TopicsController extends BaseController {
                 if (topic != null) {
                     topic.read_outbox_max_id = Math.max(topic.read_outbox_max_id, value);
                     updatedChats.add(-topicKey.dialogId);
-                    if (topic.read_outbox_max_id >= topic.topMessage.id) {
+                    if (topic.topMessage != null && topic.read_outbox_max_id >= topic.topMessage.id) {
                         topic.topMessage.unread = false;
                     }
                 }
