@@ -81,10 +81,7 @@ public class TopicsController extends BaseController {
 
                     topicsIsLoading.put(chatId, 0);
                     processTopics(chatId, topics, null, fromCache, loadType, -1);
-
-                    if (!endIsReached(chatId)) {
-                        endIsReached.put(chatId, getUserConfig().getPreferences().getBoolean("topics_end_reached_" + chatId, false) ? 1 : 0);
-                    }
+                    sortTopics(chatId);
                 });
             });
             return;
@@ -121,7 +118,7 @@ public class TopicsController extends BaseController {
                     topicsIsLoading.put(chatId, 0);
                     processTopics(chatId, topics.topics, messagesMap, false, loadType, ((TLRPC.TL_messages_forumTopics) response).count);
                     getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0);
-
+                    sortTopics(chatId);
                     getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true);
 
                     if (!topics.topics.isEmpty() && loadType == LOAD_TYPE_LOAD_NEXT) {

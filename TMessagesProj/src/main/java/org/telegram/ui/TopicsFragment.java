@@ -54,7 +54,6 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TopicsController;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -71,10 +70,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.HintDialogCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TopicSearchCell;
 import org.telegram.ui.Cells.UserCell;
@@ -88,7 +84,6 @@ import org.telegram.ui.Components.ChatNotificationsPopupWrapper;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.FragmentContextView;
@@ -213,6 +208,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
     private FrameLayout topView;
     private RLottieImageView floatingButton;
+    private boolean canShowProgress;
 
     public TopicsFragment(Bundle bundle) {
         super(bundle);
@@ -220,6 +216,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         opnendForSelect = arguments.getBoolean("for_select", false);
         openedForForward = arguments.getBoolean("forward_to", false);
         topicsController = getMessagesController().getTopicsController();
+        canShowProgress = !getUserConfig().getPreferences().getBoolean("topics_end_reached_" + chatId, false);
     }
 
     public static void prepareToSwitchAnimation(ChatActivity chatActivity) {
@@ -1643,7 +1640,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             }
             if (forumTopics.size() == 1 && forumTopics.get(0).topic.id == 1) {
                 forumTopics.clear();
-            } else if (!forumTopics.isEmpty() && !topicsController.endIsReached(chatId)) {
+            } else if (!forumTopics.isEmpty() && !topicsController.endIsReached(chatId) && canShowProgress) {
                 forumTopics.add(new Item(VIEW_TYPE_LOADING_CELL, null));
             }
 
