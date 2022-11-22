@@ -1423,6 +1423,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
 
         if (newLastFragment != null) {
             newLastFragment.prepareFragmentToSlide(false, false);
+            newLastFragment.onTransitionAnimationEnd(true, true);
             newLastFragment.onBecomeFullyVisible();
         }
 
