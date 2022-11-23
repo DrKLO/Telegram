@@ -1357,10 +1357,12 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             lastFragment.onTransitionAnimationStart(false, true);
             if (newLastFragment != null) {
                 newLastFragment.setPaused(false);
+                newLastFragment.onTransitionAnimationStart(true, false);
             }
 
             if (swipeProgress == 0) {
                 customAnimation = lastFragment.onCustomTransitionAnimation(false, () -> {
+                    lastFragment.onTransitionAnimationEnd(false, true);
                     onCloseAnimationEnd(lastFragment, newLastFragment);
 
                     customAnimation = null;
