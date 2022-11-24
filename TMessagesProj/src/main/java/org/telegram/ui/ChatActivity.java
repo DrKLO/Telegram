@@ -12447,7 +12447,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         position++;
                     }
                 }
-                if (top && messages != null && messages.get(position) != null) {
+                if (top && messages != null && messages.size() > 0 && messages.get(position) != null) {
                     long groupId = messages.get(position).getGroupId();
                     while (groupId != 0 && position + 1 < messages.size()) {
                         if (groupId != messages.get(position + 1).getGroupId()) {
@@ -12456,7 +12456,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         position++;
                     }
                 }
-                if (messages != null) {
+                if (messages != null && messages.size() > 0) {
                     position = Math.min(position, messages.size() - 1);
                 }
                 chatScrollHelper.scrollToPosition(chatScrollHelperCallback.position = position, chatScrollHelperCallback.offset = 0, chatScrollHelperCallback.bottom = !top, true);

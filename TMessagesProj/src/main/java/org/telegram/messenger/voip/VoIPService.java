@@ -4026,7 +4026,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			customView.setOnClickPendingIntent(R.id.decline_btn, endPendingIntent);
 			builder.setLargeIcon(avatar);
 
-			incomingNotification.headsUpContentView = incomingNotification.bigContentView = customView;
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+				builder.setColor(0xFF282e31);
+				builder.setColorized(true);
+				builder.setCustomBigContentView(customView);
+			} else {
+				incomingNotification.headsUpContentView = incomingNotification.bigContentView = customView;
+			}
 		}
 		startForeground(ID_INCOMING_CALL_NOTIFICATION, incomingNotification);
 		startRingtoneAndVibration();

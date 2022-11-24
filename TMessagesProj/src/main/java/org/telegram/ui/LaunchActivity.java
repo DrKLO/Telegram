@@ -5198,7 +5198,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         MediaController.getInstance().setBaseActivity(this, false);
-        MediaController.getInstance().setFeedbackView(actionBarLayout.getView(), false);
+        MediaController.getInstance().setFeedbackView(feedbackView, false);
         if (pipRoundVideoView != null) {
             pipRoundVideoView.close(false);
         }
@@ -5240,6 +5240,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         actionBarLayout.onUserLeaveHint();
     }
 
+    View feedbackView;
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -5254,7 +5256,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         checkWasMutedByAdmin(true);
         //FileLog.d("UI resume time = " + (SystemClock.elapsedRealtime() - ApplicationLoader.startTime));
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4096);
-        MediaController.getInstance().setFeedbackView(actionBarLayout.getView(), true);
+        MediaController.getInstance().setFeedbackView(feedbackView = actionBarLayout.getView(), true);
         ApplicationLoader.mainInterfacePaused = false;
         showLanguageAlert(false);
         Utilities.stageQueue.postRunnable(() -> {
