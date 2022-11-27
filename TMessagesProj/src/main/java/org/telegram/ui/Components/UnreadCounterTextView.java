@@ -46,6 +46,8 @@ public class UnreadCounterTextView extends View {
     int counterColor;
     CharSequence lastText;
 
+    String textColorKey = Theme.key_chat_fieldOverlayText;
+
     public UnreadCounterTextView(Context context) {
         super(context);
         textPaint.setTextSize(AndroidUtilities.dp(13));
@@ -202,7 +204,7 @@ public class UnreadCounterTextView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         Layout layout = textLayout;
-        int color = Theme.getColor(isEnabled() ? Theme.key_chat_fieldOverlayText : Theme.key_windowBackgroundWhiteGrayText, getResourceProvider());
+        int color = Theme.getColor(isEnabled() ? textColorKey : Theme.key_windowBackgroundWhiteGrayText, getResourceProvider());
         if (textColor != color) {
             layoutPaint.setColor(textColor = color);
         }
@@ -218,8 +220,8 @@ public class UnreadCounterTextView extends View {
         if (getParent() != null) {
             int contentWidth = getMeasuredWidth();
             int x = (getMeasuredWidth() - contentWidth) / 2;
-            if (rippleColor != Theme.getColor(Theme.key_chat_fieldOverlayText, getResourceProvider()) || selectableBackground == null) {
-                selectableBackground = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(60), 0, ColorUtils.setAlphaComponent(rippleColor = Theme.getColor(Theme.key_chat_fieldOverlayText, getResourceProvider()), 26));
+            if (rippleColor != Theme.getColor(textColorKey, getResourceProvider()) || selectableBackground == null) {
+                selectableBackground = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(60), 0, ColorUtils.setAlphaComponent(rippleColor = Theme.getColor(textColorKey, getResourceProvider()), 26));
                 selectableBackground.setCallback(this);
             }
             int start = (getLeft() + x) <= 0 ? x - AndroidUtilities.dp(20) : x;
@@ -297,5 +299,10 @@ public class UnreadCounterTextView extends View {
                 canvas.drawText(currentCounterString, rect.centerX() - textWidth / 2.0f, rect.top + AndroidUtilities.dp(14.5f), textPaint);
             }
         }
+    }
+
+    public void setTextColorKey(String textColorKey) {
+        this.textColorKey = textColorKey;
+        invalidate();
     }
 }

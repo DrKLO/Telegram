@@ -34,7 +34,8 @@
         <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
 
         <service
-            android:name="org.telegram.messenger.GcmPushListenerService">
+            android:name="org.telegram.messenger.GcmPushListenerService"
+            android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
@@ -48,7 +49,8 @@
         <receiver
             tools:replace="android:enabled"
             android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
-            android:enabled="false">
+            android:enabled="false"
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.android.gms.measurement.UPLOAD" />
             </intent-filter>

@@ -1047,9 +1047,9 @@ public class DialogCell extends BaseCell {
                 updateMessageThumbs();
                 messageNameString = getMessageNameString();
                 messageString = formatTopicsNames();
-                String restrictionReason = MessagesController.getRestrictionReason(message.messageOwner.restriction_reason);
-                buttonString = getMessageStringFormatted(messageFormat, restrictionReason, messageNameString, true);
-                if (applyName && buttonString.length() >= 0) {
+                String restrictionReason = message != null ? MessagesController.getRestrictionReason(message.messageOwner.restriction_reason) : null;
+                buttonString = message != null ? getMessageStringFormatted(messageFormat, restrictionReason, messageNameString, true) : "";
+                if (applyName && buttonString.length() >= 0 && messageNameString != null) {
                     SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(buttonString);
                     spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_chats_name, resourcesProvider), 0, Math.min(spannableStringBuilder.length(), messageNameString.length() + 1), 0);
                     buttonString = spannableStringBuilder;
@@ -2066,10 +2066,10 @@ public class DialogCell extends BaseCell {
             }
             try {
                 CharSequence text = layout.getText();
-                if (text instanceof Spannable) {
-                    FixedWidthSpan[] spans = ((Spannable) text).getSpans(0, text.length(), FixedWidthSpan.class);
+                if (text instanceof Spanned) {
+                    FixedWidthSpan[] spans = ((Spanned) text).getSpans(0, text.length(), FixedWidthSpan.class);
                     if (spans != null && spans.length > 0) {
-                        int spanOffset = ((Spannable) text).getSpanStart(spans[0]);
+                        int spanOffset = ((Spanned) text).getSpanStart(spans[0]);
                         if (spanOffset < 0) {
                             spanOffset = 0;
                         }

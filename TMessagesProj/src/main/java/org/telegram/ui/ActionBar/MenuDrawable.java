@@ -181,7 +181,7 @@ public class MenuDrawable extends Drawable {
                 startXDiff += (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
                 endYDiff += AndroidUtilities.dp(.5f) * currentRotation;
                 endXDiff -= AndroidUtilities.dp(.5f) * currentRotation + (paint.getStrokeWidth() / 2f) * (1f - currentRotation);
-                startYDiff -= AndroidUtilities.dp(.25f) * currentRotation;
+                startYDiff -= AndroidUtilities.dp(.75f) * currentRotation;
                 endYDiff += AndroidUtilities.dp(.25f) * currentRotation;
             }
         } else {

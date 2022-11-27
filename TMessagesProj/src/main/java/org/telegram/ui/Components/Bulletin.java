@@ -1272,10 +1272,10 @@ public class Bulletin {
 
             avatarsImageView = new AvatarsImageView(context, false);
             avatarsImageView.setStyle(AvatarsDrawable.STYLE_MESSAGE_SEEN);
+            avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(18));
             addView(avatarsImageView, LayoutHelper.createFrameRelatively(24 + 12 + 12 + 8, 48, Gravity.START | Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
 
             textView = new LinkSpanDrawable.LinksTextView(context);
-            textView.setSingleLine();
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setEllipsize(TextUtils.TruncateAt.END);

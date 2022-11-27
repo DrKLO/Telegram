@@ -7255,7 +7255,7 @@ public class MediaDataController extends BaseController {
                     @Override
                     public void run() {
                         for (int i = 0; i < previewItems.size(); i++) {
-                            if (previewItems.get(i).chatTheme != null) {
+                            if (previewItems.get(i) != null && previewItems.get(i).chatTheme != null) {
                                 previewItems.get(i).chatTheme.loadPreviewColors(0);
                             }
                         }

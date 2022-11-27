@@ -3117,6 +3117,8 @@ public class Theme {
     public static Drawable chat_commentDrawable;
     public static Drawable chat_commentStickerDrawable;
     public static Drawable chat_commentArrowDrawable;
+    public static Drawable chat_gradientLeftDrawable;
+    public static Drawable chat_gradientRightDrawable;
     public static Drawable[] chat_msgInCallDrawable = new Drawable[2];
     public static Drawable[] chat_msgInCallSelectedDrawable = new Drawable[2];
     public static Drawable[] chat_msgOutCallDrawable = new Drawable[2];
@@ -5043,6 +5045,7 @@ public class Theme {
         fallbackKeys.put(key_topics_unreadCounter, key_chats_unreadCounter);
         fallbackKeys.put(key_topics_unreadCounterMuted, key_chats_message);
 
+        fallbackKeys.put(key_avatar_background2Saved, key_avatar_backgroundSaved);
         fallbackKeys.put(key_avatar_background2Red, key_avatar_backgroundRed);
         fallbackKeys.put(key_avatar_background2Orange, key_avatar_backgroundOrange);
         fallbackKeys.put(key_avatar_background2Violet, key_avatar_backgroundViolet);
@@ -9316,6 +9319,8 @@ public class Theme {
             chat_commentDrawable = resources.getDrawable(R.drawable.msg_msgbubble);
             chat_commentStickerDrawable = resources.getDrawable(R.drawable.msg_msgbubble2);
             chat_commentArrowDrawable = resources.getDrawable(R.drawable.msg_arrowright);
+            chat_gradientLeftDrawable = resources.getDrawable(R.drawable.gradient_left);
+            chat_gradientRightDrawable = resources.getDrawable(R.drawable.gradient_right);
 
             chat_contextResult_shadowUnderSwitchDrawable = resources.getDrawable(R.drawable.header_shadow).mutate();
 
@@ -9641,6 +9646,8 @@ public class Theme {
             setDrawableColorByKey(chat_commentDrawable, key_chat_inInstant);
             setDrawableColorByKey(chat_commentStickerDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_commentArrowDrawable, key_chat_inInstant);
+            setDrawableColorByKey(chat_gradientLeftDrawable, key_chat_stickersHintPanel);
+            setDrawableColorByKey(chat_gradientRightDrawable, key_chat_stickersHintPanel);
 
             for (int a = 0; a < 2; a++) {
                 setDrawableColorByKey(chat_msgInCallDrawable[a], key_chat_inInstant);

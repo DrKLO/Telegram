@@ -386,9 +386,10 @@ public class ReactedUsersListView extends FrameLayout {
             titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
             titleView.setEllipsizeByGradient(true);
             titleView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            titleView.setWidthWrapContent(true);
             titleView.setPadding(0, AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12));
-            addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 58, 0, 36 + 6, 0));
+            titleView.setRightPadding(AndroidUtilities.dp(30));
+            titleView.setTranslationX(LocaleController.isRTL ? AndroidUtilities.dp(30) : 0);
+            addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.CENTER_VERTICAL, 58, 0, 12, 0));
 
             reactView = new BackupImageView(context);
             addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
@@ -411,6 +412,7 @@ public class ReactedUsersListView extends FrameLayout {
             }
             avatarView.setImage(ImageLocation.getForUser(u, ImageLocation.TYPE_SMALL), "50_50", thumb, u);
 
+            boolean hasReactImage = false;
             if (reaction.reaction != null) {
                 ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction.reaction);
                 if (visibleReaction.emojicon != null) {
@@ -418,17 +420,21 @@ public class ReactedUsersListView extends FrameLayout {
                     if (r != null) {
                         SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
                         reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", svgThumb, r);
+                        hasReactImage = true;
                     } else {
                         reactView.setImageDrawable(null);
                     }
                 } else {
                     reactView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId));
+                    hasReactImage = true;
                 }
                 setContentDescription(LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, UserObject.getUserName(u), reaction.reaction));
             } else {
                 reactView.setImageDrawable(null);
                 setContentDescription(LocaleController.formatString("AccDescrPersonHasSeen", R.string.AccDescrPersonHasSeen, UserObject.getUserName(u)));
             }
+            titleView.setRightPadding(AndroidUtilities.dp(hasReactImage ? 30 : 0));
+            titleView.setTranslationX(hasReactImage && LocaleController.isRTL ? AndroidUtilities.dp(30) : 0);
         }
 
         @Override

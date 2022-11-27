@@ -23,6 +23,8 @@ import android.widget.RemoteViewsService;
 
 import androidx.collection.LongSparseArray;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -349,6 +351,8 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         Intent fillInIntent = new Intent();
         fillInIntent.putExtras(extras);
         rv.setOnClickFillInIntent(R.id.shortcut_widget_item, fillInIntent);
+
+        Log.d("kek", "kek " + name);
 
         rv.setViewVisibility(R.id.shortcut_widget_item_divider, position == getCount() ? View.GONE : View.VISIBLE);
 

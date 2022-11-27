@@ -11,7 +11,7 @@
     </queries>
 
     <application android:name="org.telegram.messenger.HuaweiApplicationLoader" tools:replace="name">
-        <service android:name="org.telegram.messenger.GoogleVoiceClientService"/>
+        <service android:name="org.telegram.messenger.GoogleVoiceClientService" android:exported="true"/>
         <activity
             android:name="org.telegram.messenger.GoogleVoiceClientActivity"
             android:exported="true">

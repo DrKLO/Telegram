@@ -2630,6 +2630,38 @@ public class MessagesStorage extends BaseController {
                         }
                     }
 
+                    cursor2.dispose();
+                    if (!topMessageIds.isEmpty()) {
+                        cursor2 = database.queryFinalized("SELECT mid, data FROM messages_topics WHERE uid = " + dialogId + " AND mid IN (" + TextUtils.join(",", topMessageIds) + ")");
+                        try {
+                            while (cursor2.next()) {
+                                int messageId = cursor2.intValue(0);
+                                NativeByteBuffer data = cursor2.byteBufferValue(1);
+                                if (data != null) {
+                                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                    if (message != null) {
+                                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                    }
+                                    data.reuse();
+
+                                    topMessageIds.remove(messageId);
+                                    addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
+
+                                    ArrayList<TLRPC.TL_forumTopic> topicsList = topicsByTopMessageId.get(messageId);
+                                    if (topicsList != null) {
+                                        for (int i = 0; i < topicsList.size(); i++) {
+                                            topicsList.get(i).topMessage = message;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+
+                    loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad, false);
+
                     ArrayList<TLRPC.Chat> chats = new ArrayList<>();
                     ArrayList<TLRPC.User> users = new ArrayList<>();
                     if (!chatsToLoad.isEmpty()) {
@@ -2648,35 +2680,6 @@ public class MessagesStorage extends BaseController {
                         }
                     });
 
-                    cursor2.dispose();
-                    if (!topMessageIds.isEmpty()) {
-                        cursor2 = database.queryFinalized("SELECT mid, data FROM messages_topics WHERE uid = " + dialogId + " AND mid IN (" + TextUtils.join(",", topMessageIds) + ")");
-                        try {
-                            while (cursor2.next()) {
-                                int messageId = cursor2.intValue(0);
-                                NativeByteBuffer data = cursor2.byteBufferValue(1);
-                                if (data != null) {
-                                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                    if (message != null) {
-                                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
-                                    }
-                                    data.reuse();
-
-                                    topMessageIds.remove(messageId);
-                                    ArrayList<TLRPC.TL_forumTopic> topicsList = topicsByTopMessageId.get(messageId);
-                                    if (topicsList != null) {
-                                        for (int i = 0; i < topicsList.size(); i++) {
-                                            topicsList.get(i).topMessage = message;
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    }
-
-                    loadReplyMessages(replyMessageOwners, dialogReplyMessagesIds, usersToLoad, chatsToLoad, false);
                     loadGroupedMessagesForTopics(dialogId, topics);
                 }
 
@@ -10190,6 +10193,7 @@ public class MessagesStorage extends BaseController {
     private int malformedCleanupCount = 0;
     public void checkMalformed(Exception e) {
         if (e != null && e.getMessage() != null && e.getMessage().contains("malformed") && malformedCleanupCount < 3) {
+            FileLog.e("detected database malformed error, cleaning up...");
             malformedCleanupCount++;
             cleanup(false);
         }
@@ -10238,6 +10242,7 @@ public class MessagesStorage extends BaseController {
                 }
             } catch (Exception e) {
                 FileLog.e(e);
+                checkMalformed(e);
             }
         }
         cursor.dispose();
@@ -10812,23 +10817,44 @@ public class MessagesStorage extends BaseController {
             cursor = null;
 
             database.executeFast(String.format(Locale.US, "UPDATE messages_topics SET read_state = read_state | 1 WHERE uid = %d AND topic_id = %d AND mid <= %d AND read_state IN(0,2) AND out = 0", -chatId, mid, readMaxId)).stepThis().dispose();
+            //mark mentions as read
+            database.executeFast(String.format(Locale.US, "UPDATE messages_topics SET read_state = read_state | 2 WHERE uid = %d AND topic_id = %d AND mid <= %d AND read_state IN(0,1) AND out = 0", -chatId, mid, readMaxId)).stepThis().dispose();
 
+            int unreadMentionsCount = -1;
             if (unreadCount < 0) {
                 unreadCount = 0;
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM  messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state IN(0,2) AND out = 0", -chatId, mid, readMaxId));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state IN(0,2) AND out = 0", -chatId, mid, readMaxId));
                 if (cursor.next()) {
                     unreadCount = cursor.intValue(0);
                 }
                 cursor.dispose();
                 cursor = null;
+                if (unreadCount == 0) {
+                    unreadMentionsCount = 0;
+                } else {
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state < 2 AND out = 0", -chatId, mid, readMaxId));
+                    if (cursor.next()) {
+                        unreadMentionsCount = cursor.intValue(0);
+                    }
+                    cursor.dispose();
+                    cursor = null;
+                }
+            } else if (unreadCount == 0) {
+                unreadMentionsCount = 0;
             }
 
+
             if (updateTopic) {
-                database.executeFast(String.format(Locale.ENGLISH, "UPDATE topics SET max_read_id = %d, unread_count = %d WHERE did = %d AND topic_id = %d", readMaxId, unreadCount, -chatId, mid)).stepThis().dispose();
+                if (unreadMentionsCount >= 0) {
+                    database.executeFast(String.format(Locale.ENGLISH, "UPDATE topics SET max_read_id = %d, unread_count = %d, unread_mentions = %d WHERE did = %d AND topic_id = %d", readMaxId, unreadCount, unreadMentionsCount, -chatId, mid)).stepThis().dispose();
+                } else {
+                    database.executeFast(String.format(Locale.ENGLISH, "UPDATE topics SET max_read_id = %d, unread_count = %d WHERE did = %d AND topic_id = %d", readMaxId, unreadCount, -chatId, mid)).stepThis().dispose();
+                }
 
                 int finalUnreadCount = unreadCount;
+                int finalUnreadMentionsCount = unreadMentionsCount;
                 AndroidUtilities.runOnUIThread(() -> {
-                    getMessagesController().getTopicsController().updateMaxReadId(chatId, mid, readMaxId, finalUnreadCount);
+                    getMessagesController().getTopicsController().updateMaxReadId(chatId, mid, readMaxId, finalUnreadCount, finalUnreadMentionsCount);
                 });
 
                 resetForumBadgeIfNeed(-chatId);
@@ -15017,6 +15043,7 @@ public class MessagesStorage extends BaseController {
                 encryptedChats.clear();
                 FileLog.e(e);
                 getMessagesController().processLoadedDialogs(dialogs, encryptedChats, folderId, 0, 100, 1, true, false, true);
+                checkMalformed(e);
             } finally {
                 if (cursor != null) {
                     cursor.dispose();

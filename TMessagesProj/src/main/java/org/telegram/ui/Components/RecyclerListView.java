@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
 
+@SuppressWarnings("JavaReflectionMemberAccess")
 public class RecyclerListView extends RecyclerView {
     public final static int SECTIONS_TYPE_SIMPLE = 0,
             SECTIONS_TYPE_STICKY_HEADERS = 1,
@@ -180,6 +181,18 @@ public class RecyclerListView extends RecyclerView {
     protected final Theme.ResourcesProvider resourcesProvider;
 
     private boolean accessibilityEnabled = true;
+
+    private final static Method initializeScrollbars;
+
+    static {
+        Method notSoFinalInitializeScrollbars;
+        try {
+            notSoFinalInitializeScrollbars = android.view.View.class.getDeclaredMethod("initializeScrollbars", TypedArray.class);
+        } catch (Exception ignored) {
+            notSoFinalInitializeScrollbars = null;
+        }
+        initializeScrollbars = notSoFinalInitializeScrollbars;
+    }
 
     private AccessibilityDelegate accessibilityDelegate = new AccessibilityDelegate() {
         @Override
@@ -1367,10 +1380,9 @@ public class RecyclerListView extends RecyclerView {
                 gotAttributes = true;
             }
             TypedArray a = context.getTheme().obtainStyledAttributes(attributes);
-            @SuppressLint("DiscouragedPrivateApi")
-            Method initializeScrollbars = android.view.View.class.getDeclaredMethod("initializeScrollbars", TypedArray.class);
-            initializeScrollbars.invoke(this, a);
-            a.recycle();
+            if (initializeScrollbars != null) {
+                initializeScrollbars.invoke(this, a);
+            }
         } catch (Throwable e) {
             FileLog.e(e);
         }

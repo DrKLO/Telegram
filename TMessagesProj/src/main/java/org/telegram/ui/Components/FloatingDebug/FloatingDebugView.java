@@ -7,10 +7,13 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
+import android.text.TextPaint;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -21,6 +24,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -38,6 +42,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -45,13 +50,17 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class FloatingDebugView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
     private FrameLayout floatingButtonContainer;
@@ -225,10 +234,16 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
                 switch (FloatingDebugController.DebugItemType.values()[viewType]) {
                     default:
                     case SIMPLE:
-                       v = new AlertDialog.AlertDialogCell(context, null);
-                       v.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                       break;
+                        v = new AlertDialog.AlertDialogCell(context, null);
+                        break;
+                    case HEADER:
+                        v = new HeaderCell(context);
+                        break;
+                    case SEEKBAR:
+                        v = new SeekBarCell(context);
+                        break;
                 }
+                v.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(v);
             }
 
@@ -236,11 +251,28 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 FloatingDebugController.DebugItem item = debugItems.get(position);
                 switch (item.type) {
-                    case SIMPLE:
+                    case SIMPLE: {
                         AlertDialog.AlertDialogCell cell = (AlertDialog.AlertDialogCell) holder.itemView;
                         cell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                         cell.setTextAndIcon(item.title, 0);
                         break;
+                    }
+                    case HEADER: {
+                        HeaderCell cell = (HeaderCell) holder.itemView;
+                        cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+                        cell.setText(item.title);
+                        break;
+                    }
+                    case SEEKBAR: {
+                        SeekBarCell cell = (SeekBarCell) holder.itemView;
+                        cell.title = item.title.toString();
+                        cell.value = (float) item.floatProperty.get(null);
+                        cell.min = item.from;
+                        cell.max = item.to;
+                        cell.callback = item.floatProperty;
+                        cell.invalidate();
+                        break;
+                    }
                 }
             }
 
@@ -450,6 +482,7 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
 
     private List<FloatingDebugController.DebugItem> getBuiltInDebugItems() {
         List<FloatingDebugController.DebugItem> items = new ArrayList<>();
+        items.add(new FloatingDebugController.DebugItem(LocaleController.getString(R.string.DebugGeneral)));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             items.add(new FloatingDebugController.DebugItem(LocaleController.getString(SharedConfig.debugWebView ? R.string.DebugMenuDisableWebViewDebug : R.string.DebugMenuEnableWebViewDebug), ()->{
                 SharedConfig.toggleDebugWebView();
@@ -462,6 +495,37 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
             if (getContext() instanceof Activity) {
                 ((Activity) getContext()).recreate();
             }
+        }));
+        items.add(new FloatingDebugController.DebugItem(Theme.isCurrentThemeDark() ? "Switch to day theme" : "Switch to dark theme", () -> {
+            boolean toDark;
+
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+            String dayThemeName = preferences.getString("lastDayTheme", "Blue");
+            if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
+                dayThemeName = "Blue";
+            }
+            String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
+            if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
+                nightThemeName = "Dark Blue";
+            }
+            Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
+            if (dayThemeName.equals(nightThemeName)) {
+                if (themeInfo.isDark() || dayThemeName.equals("Dark Blue") || dayThemeName.equals("Night")) {
+                    dayThemeName = "Blue";
+                } else {
+                    nightThemeName = "Dark Blue";
+                }
+            }
+
+            if (!Theme.isCurrentThemeDark()) {
+                themeInfo = Theme.getTheme(nightThemeName);
+            } else {
+                themeInfo = Theme.getTheme(dayThemeName);
+            }
+            Theme.ThemeInfo finalThemeInfo = themeInfo;
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, finalThemeInfo, true, null, -1);
+            }, 200);
         }));
         return items;
     }
@@ -510,5 +574,88 @@ public class FloatingDebugView extends FrameLayout implements NotificationCenter
 
     public void dismiss(Runnable callback) {
         callback.run();
+    }
+
+    @SuppressWarnings("unchecked")
+    private class SeekBarCell extends FrameLayout {
+
+        private SeekBarView seekBar;
+        private float min;
+        private float max;
+        private float value;
+        private AnimationProperties.FloatProperty callback;
+        private String title;
+
+        private TextPaint textPaint;
+        private int lastWidth;
+
+        public SeekBarCell(Context context) {
+            super(context);
+
+            setWillNotDraw(false);
+
+            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setTextSize(AndroidUtilities.dp(16));
+
+            seekBar = new SeekBarView(context);
+            seekBar.setReportChanges(true);
+            seekBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+                @Override
+                public void onSeekBarDrag(boolean stop, float progress) {
+                    value = min + (max - min) * progress;
+                    if (stop) {
+                        callback.set(null, value);
+                    }
+                    invalidate();
+                }
+
+                @Override
+                public void onSeekBarPressed(boolean pressed) {}
+
+                @Override
+                public CharSequence getContentDescription() {
+                    return String.valueOf(Math.round(min + (max - min) * seekBar.getProgress()));
+                }
+            });
+            seekBar.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+            addView(seekBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.BOTTOM, 5, 5 + 24, 47, 0));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            canvas.drawText(title, AndroidUtilities.dp(24), AndroidUtilities.dp(24), textPaint);
+
+            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
+            String str = String.format(Locale.ROOT, "%.2f", value);
+            canvas.drawText(str, getMeasuredWidth() - AndroidUtilities.dp(8) - textPaint.measureText(str), AndroidUtilities.dp(28 - 5) + seekBar.getY(), textPaint);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            int width = MeasureSpec.getSize(widthMeasureSpec);
+            if (lastWidth != width) {
+                seekBar.setProgress(((float) callback.get(null) - min) / (float) (max - min));
+                lastWidth = width;
+            }
+        }
+
+        @Override
+        public void invalidate() {
+            super.invalidate();
+            seekBar.invalidate();
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            seekBar.getSeekBarAccessibilityDelegate().onInitializeAccessibilityNodeInfoInternal(this, info);
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, Bundle arguments) {
+            return super.performAccessibilityAction(action, arguments) || seekBar.getSeekBarAccessibilityDelegate().performAccessibilityActionInternal(this, action, arguments);
+        }
     }
 }

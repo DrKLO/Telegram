@@ -110,6 +110,7 @@ public class MotionBackgroundDrawable extends Drawable {
     private ColorFilter legacyBitmapColorFilter;
     private int legacyBitmapColor;
 
+    private float indeterminateSpeedScale = 1f;
     private boolean isIndeterminateAnimation;
     private Paint overrideBitmapPaint;
 
@@ -861,7 +862,7 @@ public class MotionBackgroundDrawable extends Drawable {
             float progress;
             boolean isNeedGenerateGradient = postInvalidateParent || rotatingPreview;
             if (isIndeterminateAnimation) {
-                posAnimationProgress += dt / 12000f;
+                posAnimationProgress += (dt / 12000f) * indeterminateSpeedScale;
                 if (posAnimationProgress >= 1.0f) {
                     posAnimationProgress = 0.0f;
                 }
@@ -1005,6 +1006,18 @@ public class MotionBackgroundDrawable extends Drawable {
 
     public boolean isOneColor() {
         return colors[0] == colors[1] && colors[0] == colors[2] && colors[0] == colors[3];
+    }
+
+    public float getIndeterminateSpeedScale() {
+        return indeterminateSpeedScale;
+    }
+
+    public void setIndeterminateSpeedScale(float indeterminateSpeedScale) {
+        this.indeterminateSpeedScale = indeterminateSpeedScale;
+    }
+
+    public boolean isIndeterminateAnimation() {
+        return isIndeterminateAnimation;
     }
 
     public void setIndeterminateAnimation(boolean isIndeterminateAnimation) {
