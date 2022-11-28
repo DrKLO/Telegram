@@ -305,9 +305,7 @@ void Connection::connect() {
             ipv6 = value % 3 == 0 ? TcpAddressFlagIpv6 : 0;
             ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolIsIpv6 = ipv6 != 0;
         }
-        if (connectionType == ConnectionTypeGeneric) {
-            ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolUsefullData = false;
-        }
+        ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolUsefullData = false;
     } else {
         ipv6 = 0;
     }
