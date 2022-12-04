@@ -34,7 +34,7 @@ public class NotificationsService extends Service {
             notificationManager.createNotificationChannel(channel);
             Intent explainIntent = new Intent("android.intent.action.VIEW");
             explainIntent.setData(Uri.parse("https://github.com/Telegram-FOSS-Team/Telegram-FOSS/blob/master/Notifications.md"));
-            PendingIntent explainPendingIntent = PendingIntent.getActivity(this, 0, explainIntent, 0);
+            PendingIntent explainPendingIntent = PendingIntent.getActivity(this, 0, explainIntent, PendingIntent.FLAG_MUTABLE);
             Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentIntent(explainPendingIntent)
                     .setShowWhen(false)
