@@ -144,7 +144,7 @@ public class MenuDrawable extends Drawable {
 
         canvas.save();
 
-        canvas.translate(getIntrinsicWidth() / 2 - AndroidUtilities.dp(9), getIntrinsicHeight() / 2);
+        canvas.translate(getIntrinsicWidth() / 2 - AndroidUtilities.dp(9) - AndroidUtilities.dp(1) * currentRotation, getIntrinsicHeight() / 2);
         float endYDiff;
         float endXDiff;
         float startYDiff;

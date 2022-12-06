@@ -219,9 +219,9 @@ int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t tim
                     value += listdir(buff, mode, docType, time, subdirs);
                 }
             } else {
-                stat(buff, &attrib);
+                int rc = stat(buff, &attrib);
                 if (mode == 0) {
-                    value += 512 * attrib.st_blocks;
+                    value += rc == 0 ? attrib.st_size : 0;
                 } else if (mode == 1) {
                     if (attrib.st_atim.tv_sec != 0) {
                         if (attrib.st_atim.tv_sec < time) {

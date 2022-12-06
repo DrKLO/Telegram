@@ -188,12 +188,14 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             protected void dispatchDraw(Canvas canvas) {
                 for (Map.Entry<View, Rect> entry : removingViews.entrySet()) {
                     View view = entry.getKey();
-                    Rect bounds = entry.getValue();
-                    canvas.save();
-                    canvas.translate(bounds.left, bounds.top);
-                    canvas.scale(view.getScaleX(), view.getScaleY(), bounds.width() / 2f, bounds.height() / 2f);
-                    view.draw(canvas);
-                    canvas.restore();
+                    if (view != null) {
+                        Rect bounds = entry.getValue();
+                        canvas.save();
+                        canvas.translate(bounds.left, bounds.top);
+                        canvas.scale(view.getScaleX(), view.getScaleY(), bounds.width() / 2f, bounds.height() / 2f);
+                        view.draw(canvas);
+                        canvas.restore();
+                    }
                 }
 
                 int selectFrom = (int) Math.floor(selectT), selectTo = (int) Math.ceil(selectT);

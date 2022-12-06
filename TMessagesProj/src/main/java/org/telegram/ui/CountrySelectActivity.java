@@ -21,6 +21,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -98,8 +99,9 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     @Override
-    public boolean hasForceLightStatusBar() {
-        return true;
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 
     @Override

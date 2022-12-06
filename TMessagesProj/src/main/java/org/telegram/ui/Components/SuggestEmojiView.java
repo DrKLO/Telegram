@@ -299,7 +299,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
         searchRunnable = () -> {
             ArrayList<MediaDataController.KeywordResult> standard = new ArrayList<>(1);
             standard.add(new MediaDataController.KeywordResult(emoji, null));
-            MediaDataController.getInstance(currentAccount).fillWithAnimatedEmoji(standard, 15, () -> {
+            MediaDataController.getInstance(currentAccount).fillWithAnimatedEmoji(standard, 15, false, () -> {
                 if (id == lastQueryId) {
                     lastQuery = emoji;
                     lastQueryType = 2;
@@ -541,16 +541,16 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
 
         float leftAlpha = leftGradientAlpha.set(listView.canScrollHorizontally(-1) ? 1f : 0f);
         if (leftAlpha > 0) {
-            Theme.chat_gradientLeftDrawable.setBounds((int) left, (int) top, (int) left + AndroidUtilities.dp(32), (int) bottom);
-            Theme.chat_gradientLeftDrawable.setAlpha((int) (255 * leftAlpha));
-            Theme.chat_gradientLeftDrawable.draw(canvas);
+            Theme.chat_gradientRightDrawable.setBounds((int) left, (int) top, (int) left + AndroidUtilities.dp(32), (int) bottom);
+            Theme.chat_gradientRightDrawable.setAlpha((int) (255 * leftAlpha));
+            Theme.chat_gradientRightDrawable.draw(canvas);
         }
 
         float rightAlpha = rightGradientAlpha.set(listView.canScrollHorizontally(1) ? 1f : 0f);
         if (rightAlpha > 0) {
-            Theme.chat_gradientRightDrawable.setBounds((int) right - AndroidUtilities.dp(32), (int) top, (int) right, (int) bottom);
-            Theme.chat_gradientRightDrawable.setAlpha((int) (255 * rightAlpha));
-            Theme.chat_gradientRightDrawable.draw(canvas);
+            Theme.chat_gradientLeftDrawable.setBounds((int) right - AndroidUtilities.dp(32), (int) top, (int) right, (int) bottom);
+            Theme.chat_gradientLeftDrawable.setAlpha((int) (255 * rightAlpha));
+            Theme.chat_gradientLeftDrawable.draw(canvas);
         }
 
         canvas.restore();
@@ -670,11 +670,19 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
             }
 
             @Override
+            public void setPressed(boolean pressed) {
+                super.setPressed(pressed);
+                invalidate();
+            }
+
+            @Override
             protected void dispatchDraw(Canvas canvas) {
                 float scale = 0.8f + 0.2f * (1f - pressed.set(isPressed() ? 1f : 0f));
                 if (drawable != null) {
-                    int cx = getWidth() / 2, cy = (getHeight() - getPaddingBottom() + getPaddingTop()) / 2, w = getWidth() - getPaddingLeft() - getPaddingRight(), h = getHeight() - getPaddingTop() - getPaddingBottom();
-                    drawable.setBounds((int) (cx - w / 2 * scale), (int) (cy - h / 2 * scale), (int) (cx + w / 2 * scale), (int) (cy + h / 2 * scale));
+                    int cx = getWidth() / 2;
+                    int cy = (getHeight() - getPaddingBottom() + getPaddingTop()) / 2;
+                    drawable.setBounds(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
+                    canvas.scale(scale, scale, cx, cy);
                     if (drawable instanceof AnimatedEmojiDrawable) {
                         ((AnimatedEmojiDrawable) drawable).setTime(System.currentTimeMillis());
                     }

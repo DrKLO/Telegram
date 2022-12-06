@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -39,11 +40,17 @@ public class TextCell extends FrameLayout {
     private int leftPadding;
     private boolean needDivider;
     private int offsetFromImage = 71;
+    public int heightDp = 48;
     public int imageLeft = 21;
     private boolean inDialogs;
     private boolean prioritizeTitleOverValue;
     private Theme.ResourcesProvider resourcesProvider;
     private boolean attached;
+    private int loadingSize;
+    private boolean drawLoading;
+    private boolean measureDelay;
+    private float loadingProgress;
+    private float drawLoadingProgress;
 
 
     public TextCell(Context context) {
@@ -97,6 +104,10 @@ public class TextCell extends FrameLayout {
         setFocusable(true);
     }
 
+    public boolean isChecked() {
+        return checkBox != null && checkBox.isChecked();
+    }
+
     public Switch getCheckBox() {
         return checkBox;
     }
@@ -129,7 +140,7 @@ public class TextCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = AndroidUtilities.dp(48);
+        int height = AndroidUtilities.dp(heightDp);
 
         if (prioritizeTitleOverValue) {
             textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + leftPadding), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
@@ -301,6 +312,21 @@ public class TextCell extends FrameLayout {
         }
     }
 
+    public void setTextAndCheck(String text, boolean checked, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = 71;
+        textView.setText(text);
+        imageView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+        needDivider = divider;
+        if (checkBox != null) {
+            checkBox.setVisibility(VISIBLE);
+            checkBox.setChecked(checked, false);
+        }
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+    }
+
     public void setTextAndCheckAndIcon(String text, boolean checked, int resId, boolean divider) {
         imageLeft = 21;
         offsetFromImage = 71;
@@ -314,6 +340,23 @@ public class TextCell extends FrameLayout {
         imageView.setVisibility(VISIBLE);
         imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
         imageView.setImageResource(resId);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+    }
+
+    public void setTextAndCheckAndIcon(String text, boolean checked, Drawable resDrawable, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = 71;
+        textView.setText(text);
+        valueTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+        if (checkBox != null) {
+            checkBox.setVisibility(VISIBLE);
+            checkBox.setChecked(checked, false);
+        }
+        imageView.setVisibility(VISIBLE);
+        imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
+        imageView.setImageDrawable(resDrawable);
         needDivider = divider;
         setWillNotDraw(!needDivider);
     }
@@ -410,5 +453,72 @@ public class TextCell extends FrameLayout {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attached = false;
+    }
+
+    public void setDrawLoading(boolean drawLoading, int size, boolean animated) {
+        this.drawLoading = drawLoading;
+        this.loadingSize = size;
+
+        if (!animated) {
+            drawLoadingProgress = drawLoading ? 1f : 0f;
+        } else {
+            measureDelay = true;
+        }
+        invalidate();
+    }
+
+    Paint paint;
+    private boolean incrementLoadingProgress;
+    private int changeProgressStartDelay;
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (drawLoading || drawLoadingProgress != 0) {
+            if (paint == null) {
+                paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                paint.setColor(Theme.getColor(Theme.key_dialogSearchBackground, resourcesProvider));
+            }
+            //LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT;
+            if (incrementLoadingProgress) {
+                loadingProgress += 16 / 1000f;
+                if (loadingProgress > 1f) {
+                    loadingProgress = 1f;
+                    incrementLoadingProgress = false;
+                }
+            } else {
+                loadingProgress -= 16 / 1000f;
+                if (loadingProgress < 0) {
+                    loadingProgress = 0;
+                    incrementLoadingProgress = true;
+                }
+            }
+
+            if (changeProgressStartDelay > 0) {
+                changeProgressStartDelay -= 15;
+            } else if (drawLoading && drawLoadingProgress != 1f) {
+                drawLoadingProgress += 16 / 150f;
+                if (drawLoadingProgress > 1f) {
+                    drawLoadingProgress = 1f;
+                }
+            } else if (!drawLoading && drawLoadingProgress != 0) {
+                drawLoadingProgress -= 16 / 150f;
+                if (drawLoadingProgress < 0) {
+                    drawLoadingProgress = 0;
+                }
+            }
+
+            float alpha = (0.6f + 0.4f * loadingProgress) * drawLoadingProgress;
+            paint.setAlpha((int) (255 * alpha));
+            int cy = getMeasuredHeight() >> 1;
+            AndroidUtilities.rectTmp.set(getMeasuredWidth() - AndroidUtilities.dp(11) - AndroidUtilities.dp(loadingSize), cy - AndroidUtilities.dp(3), getMeasuredWidth() - AndroidUtilities.dp(11), cy + AndroidUtilities.dp(3));
+            if (LocaleController.isRTL) {
+                AndroidUtilities.rectTmp.left = getMeasuredWidth() - AndroidUtilities.rectTmp.left;
+                AndroidUtilities.rectTmp.right = getMeasuredWidth() - AndroidUtilities.rectTmp.right;
+            }
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(3), AndroidUtilities.dp(3), paint);
+            invalidate();
+        }
+        valueTextView.setAlpha(1f - drawLoadingProgress);
+        super.dispatchDraw(canvas);
     }
 }

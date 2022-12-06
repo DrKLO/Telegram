@@ -158,6 +158,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
     private int[] mReusableIntPair = new int[2];
 
     private boolean needFixGap = true;
+    private boolean needFixEndGap = true;
 
     /**
      * Creates a vertical LinearLayoutManager
@@ -958,7 +959,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      */
     private int fixLayoutEndGap(int endOffset, RecyclerView.Recycler recycler,
             RecyclerView.State state, boolean canOffsetChildren) {
-        if (!needFixGap) {
+        if (!needFixGap || !needFixEndGap) {
             return 0;
         }
         int gap = mOrientationHelper.getEndAfterPadding() - endOffset;
@@ -981,7 +982,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
         return fixOffset;
     }
 
-    public int getStarForFixGap() {
+    public int getStartForFixGap() {
         return mOrientationHelper.getStartAfterPadding();
     }
 
@@ -993,7 +994,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
         if (!needFixGap) {
             return 0;
         }
-        int gap = startOffset - getStarForFixGap();
+        int gap = startOffset - getStartForFixGap();
         int fixOffset = 0;
         if (gap > 0) {
             // check if we should fix this gap.
@@ -2600,5 +2601,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
 
     public void setNeedFixGap(boolean needFixGap) {
         this.needFixGap = needFixGap;
+    }
+
+    public void setNeedFixEndGap(boolean needFixEndGap) {
+        this.needFixEndGap = needFixEndGap;
     }
 }

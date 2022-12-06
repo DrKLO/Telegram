@@ -215,11 +215,19 @@ public class TextSettingsCell extends FrameLayout {
         MarginLayoutParams params = (MarginLayoutParams) textView.getLayoutParams();
         if (resId == 0) {
             imageView.setVisibility(GONE);
-            params.leftMargin = 0;
+            if (LocaleController.isRTL) {
+                params.rightMargin = AndroidUtilities.dp(this.padding);
+            } else {
+                params.leftMargin = AndroidUtilities.dp(this.padding);
+            }
         } else {
             imageView.setImageResource(resId);
             imageView.setVisibility(VISIBLE);
-            params.leftMargin = AndroidUtilities.dp(71);
+            if (LocaleController.isRTL) {
+                params.rightMargin = AndroidUtilities.dp(71);
+            } else {
+                params.leftMargin = AndroidUtilities.dp(71);
+            }
         }
     }
 

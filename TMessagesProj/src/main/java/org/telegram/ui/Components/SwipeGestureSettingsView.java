@@ -7,7 +7,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.os.Build;
-import android.os.Bundle;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -96,6 +95,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
                 canvas.drawLine(AndroidUtilities.dp(2), y, getMeasuredWidth() - AndroidUtilities.dp(2), y, pickerDividersPaint);
             }
         };
+        picker.setWrapSelectorWheel(true);
         picker.setMinValue(0);
         picker.setDrawDividers(false);
         hasTabs = !MessagesController.getInstance(currentAccount).dialogFilters.isEmpty();

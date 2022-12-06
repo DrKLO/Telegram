@@ -1,6 +1,8 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
+import android.text.method.LinkMovementMethod;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -16,13 +18,17 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class AutoDeletePopupWrapper {
 
+    public static final int TYPE_GROUP_CREATE = 1;
+
+    private int type;
     View backItem;
     public ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout;
     private final ActionBarMenuSubItem disableItem;
     Callback callback;
     long lastDismissTime;
+    TextView textView;
 
-    public AutoDeletePopupWrapper(Context context, PopupSwipeBackLayout swipeBackLayout, Callback callback, boolean createBackground, Theme.ResourcesProvider resourcesProvider) {
+    public AutoDeletePopupWrapper(Context context, PopupSwipeBackLayout swipeBackLayout, Callback callback, boolean createBackground, int type, Theme.ResourcesProvider resourcesProvider) {
         windowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, createBackground ? R.drawable.popup_fixed_alert : 0, resourcesProvider);
         windowLayout.setFitItems(true);
         this.callback = callback;
@@ -49,10 +55,14 @@ public class AutoDeletePopupWrapper {
             dismiss();
             callback.setAutoDeleteHistory(31 * 24 * 60 * 60, UndoView.ACTION_AUTO_DELETE_ON);
         });
-        item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_customize, LocaleController.getString("AutoDeleteCustom", R.string.AutoDeleteCustom), false, resourcesProvider);
+        String customTitle = LocaleController.getString("AutoDeleteCustom", R.string.AutoDeleteCustom);
+        if (type == TYPE_GROUP_CREATE) {
+            customTitle =  LocaleController.getString("AutoDeleteCustom2", R.string.AutoDeleteCustom2);
+        }
+        item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_customize, customTitle, false, resourcesProvider);
         item.setOnClickListener(view -> {
             dismiss();
-            AlertsCreator.createAutoDeleteDatePickerDialog(context, resourcesProvider, (notify, timeInMinutes) -> {
+            AlertsCreator.createAutoDeleteDatePickerDialog(context, type, resourcesProvider, (notify, timeInMinutes) -> {
                 callback.setAutoDeleteHistory(timeInMinutes * 60, timeInMinutes == 0 ? UndoView.ACTION_AUTO_DELETE_OFF : UndoView.ACTION_AUTO_DELETE_ON);
             });
         });
@@ -61,20 +71,29 @@ public class AutoDeletePopupWrapper {
             dismiss();
             callback.setAutoDeleteHistory(0, UndoView.ACTION_AUTO_DELETE_OFF);
         });
-        disableItem.setColors(Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogTextRed2));
+        if (type != TYPE_GROUP_CREATE) {
+            disableItem.setColors(Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogTextRed2));
+        }
 
-        View gap = new FrameLayout(context);
-        gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
-        gap.setTag(R.id.fit_width_tag, 1);
-        windowLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+        if (type != TYPE_GROUP_CREATE) {
+            FrameLayout gap = new FrameLayout(context);
+            gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
+            View gapShadow = new View(context);
+            gapShadow.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow, resourcesProvider));
+            gap.addView(gapShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            gap.setTag(R.id.fit_width_tag, 1);
+            windowLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
-        TextView textView = new TextView(context);
-        textView.setTag(R.id.fit_width_tag, 1);
-        textView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-        textView.setText(LocaleController.getString("AutoDeletePopupDescription", R.string.AutoDeletePopupDescription));
-        windowLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            textView = new LinkSpanDrawable.LinksTextView(context);
+            textView.setTag(R.id.fit_width_tag, 1);
+            textView.setPadding(AndroidUtilities.dp(13), 0, AndroidUtilities.dp(13), AndroidUtilities.dp(8));
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+            textView.setMovementMethod(LinkMovementMethod.getInstance());
+            textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+            textView.setText(LocaleController.getString("AutoDeletePopupDescription", R.string.AutoDeletePopupDescription));
+            windowLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8, 0, 0));
+        }
     }
 
     private void dismiss() {
@@ -96,9 +115,28 @@ public class AutoDeletePopupWrapper {
         }
     }
 
+    public void allowExtenededHint() {
+        if (textView == null) {
+            return;
+        }
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+        spannableStringBuilder.append(LocaleController.getString("AutoDeletePopupDescription", R.string.AutoDeletePopupDescription));
+        spannableStringBuilder.append("\n\n");
+        spannableStringBuilder.append(AndroidUtilities.replaceSingleTag(LocaleController.getString("AutoDeletePopupDescription2", R.string.AutoDeletePopupDescription2), () -> {
+            callback.showGlobalAutoDeleteScreen();
+        }));
+        textView.setText(spannableStringBuilder);
+    }
+
+    void setType(int i) {
+        type = i;
+    }
 
     public interface Callback {
         void dismiss();
         void setAutoDeleteHistory(int time, int action);
+        default void showGlobalAutoDeleteScreen() {
+
+        }
     }
 }

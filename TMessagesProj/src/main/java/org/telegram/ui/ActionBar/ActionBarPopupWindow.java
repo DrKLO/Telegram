@@ -1019,21 +1019,31 @@ public class ActionBarPopupWindow extends PopupWindow {
         Theme.ResourcesProvider resourcesProvider;
         String colorKey;
 
+        Drawable shadowDrawable;
+
+        public GapView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            this(context, resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
+        }
+
         public GapView(Context context, Theme.ResourcesProvider resourcesProvider, String colorKey) {
             super(context);
             this.resourcesProvider = resourcesProvider;
             this.colorKey = colorKey;
-
-            setBackgroundColor(getThemedColor(colorKey));
-        }
-
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+            this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow, resourcesProvider);
+            setBackgroundColor(Theme.getColor(colorKey, resourcesProvider));
         }
 
         public void setColor(int color) {
             setBackgroundColor(color);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (shadowDrawable != null) {
+                shadowDrawable.setBounds(0, 0, getWidth(), getHeight());
+                shadowDrawable.draw(canvas);
+            }
         }
     }
 }

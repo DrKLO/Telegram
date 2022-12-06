@@ -242,6 +242,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                     cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
                     cell.setTextAndValue(items[a], selected == a);
                     linearLayout.addView(cell);
+                    cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
                     cell.setOnClickListener(v -> {
                         builder.getDismissRunnable().run();
                         Integer which = (Integer) v.getTag();

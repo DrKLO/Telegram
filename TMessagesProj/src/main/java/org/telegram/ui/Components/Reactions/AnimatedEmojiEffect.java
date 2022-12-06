@@ -222,6 +222,7 @@ public class AnimatedEmojiEffect {
                 toY2 = toY1 + bounds.height();
                 duration = 1800;
             }
+            duration /= 1.75f;
             mirror = Utilities.fastRandom.nextBoolean();
             randomRotation = 20 * ((Utilities.fastRandom.nextInt() % 100) / 100f);
         }
@@ -243,7 +244,7 @@ public class AnimatedEmojiEffect {
         }
 
         public void draw(Canvas canvas) {
-            progress += 16f / duration;
+            progress += (float) Math.min(40, 1000f / AndroidUtilities.screenRefreshRate) / duration;
             progress = Utilities.clamp(progress, 1f, 0f);
             float progressInternal = CubicBezierInterpolator.EASE_OUT.getInterpolation(progress);
             float cx = AndroidUtilities.lerp(fromX, toX, progressInternal);

@@ -26,13 +26,29 @@ public class ColoredImageSpan extends ReplacementSpan {
 
     private int size;
 
+    public static final int ALIGN_DEFAULT = 0;
+    public static final int ALIGN_BASELINE = 1;
+    public static final int ALIGN_CENTER = 2;
+    private final int verticalAlignment;
+
     public ColoredImageSpan(int imageRes) {
-        this(ContextCompat.getDrawable(ApplicationLoader.applicationContext, imageRes));
+        this(imageRes, ALIGN_DEFAULT);
     }
 
     public ColoredImageSpan(Drawable drawable) {
+        this(drawable, ALIGN_DEFAULT);
+    }
+
+    public ColoredImageSpan(int imageRes, int verticalAlignment) {
+        this(ContextCompat.getDrawable(ApplicationLoader.applicationContext, imageRes), verticalAlignment);
+    }
+
+    public ColoredImageSpan(Drawable drawable, int verticalAlignment) {
         this.drawable = drawable;
-        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        if (drawable != null) {
+            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        }
+        this.verticalAlignment = verticalAlignment;
     }
 
     public void setSize(int size) {
@@ -57,13 +73,23 @@ public class ColoredImageSpan extends ReplacementSpan {
             drawableColor = color;
             drawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.MULTIPLY));
         }
-        int lineHeight = bottom - top;
-        int drawableHeight = size != 0 ? size : drawable.getIntrinsicHeight();
-        int padding = (lineHeight - drawableHeight) / 2;
 
         canvas.save();
-        canvas.translate(x, top + padding + AndroidUtilities.dp(topOffset));
-        drawable.draw(canvas);
+        int transY = bottom - (drawable != null ? drawable.getBounds().bottom : bottom);
+        if (verticalAlignment == ALIGN_BASELINE) {
+            transY -= paint.getFontMetricsInt().descent;
+        } else if (verticalAlignment == ALIGN_CENTER) {
+            transY = top + (bottom - top) / 2 - (drawable != null ? drawable.getBounds().height() / 2 : 0);
+        } else if (verticalAlignment == ALIGN_DEFAULT) {
+            int lineHeight = bottom - top;
+            int drawableHeight = size != 0 ? size : drawable.getIntrinsicHeight();
+            int padding = (lineHeight - drawableHeight) / 2;
+            transY = top + padding + AndroidUtilities.dp(topOffset);
+        }
+        canvas.translate(x, transY);
+        if (drawable != null) {
+            drawable.draw(canvas);
+        }
         canvas.restore();
     }
 

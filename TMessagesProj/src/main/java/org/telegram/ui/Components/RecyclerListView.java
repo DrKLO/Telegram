@@ -54,6 +54,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -97,6 +98,7 @@ public class RecyclerListView extends RecyclerView {
     private Runnable selectChildRunnable;
     private FastScroll fastScroll;
     private SectionsAdapter sectionsAdapter;
+    public boolean useLayoutPositionOnClick;
 
     private boolean isHidden;
 
@@ -117,6 +119,7 @@ public class RecyclerListView extends RecyclerView {
     private int startSection;
     private int sectionsCount;
     private int sectionOffset;
+    private boolean allowStopHeaveOperations;
 
     @SectionsType
     private int sectionsType;
@@ -1143,7 +1146,11 @@ public class RecyclerListView extends RecyclerView {
                 }
                 currentChildPosition = -1;
                 if (currentChildView != null) {
-                    currentChildPosition = view.getChildPosition(currentChildView);
+                    if (useLayoutPositionOnClick) {
+                        currentChildPosition = view.getChildLayoutPosition(currentChildView);
+                    } else {
+                        currentChildPosition = view.getChildAdapterPosition(currentChildView);
+                    }
                     MotionEvent childEvent = MotionEvent.obtain(0, 0, event.getActionMasked(), event.getX() - currentChildView.getLeft(), event.getY() - currentChildView.getTop(), 0);
                     if (currentChildView.onTouchEvent(childEvent)) {
                         interceptedByChild = true;
@@ -1390,6 +1397,7 @@ public class RecyclerListView extends RecyclerView {
 
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                checkStopHeavyOperations(newState);
                 if (newState != SCROLL_STATE_IDLE && currentChildView != null) {
                     if (selectChildRunnable != null) {
                         AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
@@ -1437,6 +1445,48 @@ public class RecyclerListView extends RecyclerView {
             }
         });
         addOnItemTouchListener(new RecyclerListViewItemClickListener(context));
+    }
+
+    private Paint backgroundPaint;
+    protected void drawSectionBackground(Canvas canvas, int fromAdapterPosition, int toAdapterPosition, int color) {
+        int top = Integer.MAX_VALUE;
+        int bottom = Integer.MIN_VALUE;
+
+        for (int i = 0; i < getChildCount(); ++i) {
+            View child = getChildAt(i);
+            if (child == null) {
+                continue;
+            }
+            int position = getChildAdapterPosition(child);
+            if (position >= fromAdapterPosition && position <= toAdapterPosition) {
+                top = Math.min(child.getTop(), top);
+                bottom = Math.max(child.getBottom(), bottom);
+            }
+        }
+
+        if (top < bottom) {
+            if (backgroundPaint == null) {
+                backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            }
+            backgroundPaint.setColor(color);
+            canvas.drawRect(0, top, getWidth(), bottom, backgroundPaint);
+        }
+    }
+
+    private boolean stoppedAllHeavyOperations;
+
+    private void checkStopHeavyOperations(int newState) {
+        if (newState == SCROLL_STATE_IDLE) {
+            if (stoppedAllHeavyOperations) {
+                stoppedAllHeavyOperations = false;
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
+            }
+        } else {
+            if (!stoppedAllHeavyOperations && allowStopHeaveOperations) {
+                stoppedAllHeavyOperations = true;
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
+            }
+        }
     }
 
     @Override
@@ -1976,7 +2026,7 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
-    protected boolean emptyViewIsVisible() {
+    public boolean emptyViewIsVisible() {
         if (getAdapter() == null || isFastScrollAnimationRunning()) {
             return false;
         }
@@ -2417,6 +2467,11 @@ public class RecyclerListView extends RecyclerView {
         if (itemsEnterAnimator != null) {
             itemsEnterAnimator.onDetached();
         }
+
+        if (stoppedAllHeavyOperations) {
+            stoppedAllHeavyOperations = false;
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
+        }
     }
 
     public void addOverlayView(View view, FrameLayout.LayoutParams layoutParams) {
@@ -2707,5 +2762,9 @@ public class RecyclerListView extends RecyclerView {
 
     public void setAccessibilityEnabled(boolean accessibilityEnabled) {
         this.accessibilityEnabled = accessibilityEnabled;
+    }
+
+    public void setAllowStopHeaveOperations(boolean allowStopHeaveOperations) {
+        this.allowStopHeaveOperations = allowStopHeaveOperations;
     }
 }

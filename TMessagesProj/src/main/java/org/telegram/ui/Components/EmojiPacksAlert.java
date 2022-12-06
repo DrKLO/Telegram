@@ -849,9 +849,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 addButtonView.setVisibility(View.VISIBLE);
                 removeButtonView.setVisibility(View.GONE);
                 if (canInstallPacks.size() == 1) {
-                    addButtonView.setText(LocaleController.formatString("AddStickersCount", R.string.AddStickersCount, LocaleController.formatPluralString("EmojiCountButton", canInstallPacks.get(0).documents.size())));
+                    addButtonView.setText(LocaleController.formatPluralString("AddManyEmojiCount", canInstallPacks.get(0).documents.size()));
                 } else {
-                    addButtonView.setText(LocaleController.formatString("AddStickersCount", R.string.AddStickersCount, LocaleController.formatPluralString("EmojiPackCount", canInstallPacks.size())));
+                    addButtonView.setText(LocaleController.formatPluralString("AddManyEmojiCount", canInstallPacks.size()));
                 }
                 addButtonView.setOnClickListener(ev -> {
                     final int count = canInstallPacks.size();
@@ -881,9 +881,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 addButtonView.setVisibility(View.GONE);
                 removeButtonView.setVisibility(View.VISIBLE);
                 if (installedPacks.size() == 1) {
-                    removeButtonView.setText(LocaleController.formatString("RemoveStickersCount", R.string.RemoveStickersCount, LocaleController.formatPluralString("EmojiCountButton", installedPacks.get(0).documents.size())));
+                    removeButtonView.setText(LocaleController.formatPluralString("RemoveManyEmojiCount", installedPacks.get(0).documents.size()));
                 } else {
-                    removeButtonView.setText(LocaleController.formatString("RemoveStickersCount", R.string.RemoveStickersCount, LocaleController.formatPluralString("EmojiPackCount", installedPacks.size())));
+                    removeButtonView.setText(LocaleController.formatPluralString("RemoveManyEmojiPacksCount", installedPacks.size()));
                 }
 
                 removeButtonView.setOnClickListener(ev -> {
@@ -1500,8 +1500,8 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
             final boolean[] failed = new boolean[1];
             for (int i = 0; i < data.length; ++i) {
-                TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSets.get(i), false, () -> {
-                    if (!failed[0]) {
+                TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSets.get(i), false, (set) -> {
+                    if (set == null && !failed[0]) {
                         failed[0] = true;
                         AndroidUtilities.runOnUIThread(() -> {
                             dismiss();

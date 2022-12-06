@@ -27,6 +27,7 @@ public class VideoEditedInfo {
     public long avatarStartTime = -1;
     public float start;
     public float end;
+    public int compressQuality;
     public int rotationValue;
     public int originalWidth;
     public int originalHeight;

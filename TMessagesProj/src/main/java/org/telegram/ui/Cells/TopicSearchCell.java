@@ -57,6 +57,9 @@ public class TopicSearchCell extends FrameLayout {
             textView.setText(AndroidUtilities.highlightText(topic.title, topic.searchQuery, null));
         }
         ForumUtilities.setTopicIcon(backupImageView, topic);
+        if (backupImageView != null && backupImageView.getImageReceiver() != null && backupImageView.getImageReceiver().getDrawable() instanceof ForumUtilities.GeneralTopicDrawable) {
+            ((ForumUtilities.GeneralTopicDrawable) backupImageView.getImageReceiver().getDrawable()).setColor(Theme.getColor(Theme.key_chats_archiveBackground));
+        }
     }
 
     public TLRPC.TL_forumTopic getTopic() {

@@ -885,16 +885,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         animators.put(holder, animatorSet);
     }
 
-    boolean reset;
-
     @Override
     public void resetAnimation(RecyclerView.ViewHolder holder) {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("reset animation");
         }
-        reset = true;
         super.resetAnimation(holder);
-        reset = false;
     }
 
     @Override

@@ -21,7 +21,6 @@ import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.os.Build;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.Interpolator;
 
@@ -229,7 +228,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         mRemoveAnimations.add(holder);
         if (getRemoveDelay() > 0) {
             // wanted to achieve an effect of next items covering current
-            ((ViewGroup) view.getParent()).bringChildToFront(view);
+            view.bringToFront();
         }
         animation
             .setDuration(getRemoveDuration())
@@ -337,6 +336,14 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     }
 
+    protected void beforeAnimateMoveImpl(final RecyclerView.ViewHolder holder) {
+
+    }
+
+    protected void afterAnimateMoveImpl(final RecyclerView.ViewHolder holder) {
+
+    }
+
     protected void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
         int fromX = moveInfo.fromX;
         int fromY = moveInfo.fromY;
@@ -362,6 +369,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         if (translationInterpolator != null) {
             animation.setInterpolator(translationInterpolator);
         }
+        beforeAnimateMoveImpl(holder);
         animation
             .setDuration(getMoveDuration())
             .setStartDelay(getMoveDelay())
@@ -388,6 +396,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                     dispatchMoveFinished(holder);
                     mMoveAnimations.remove(holder);
                     dispatchFinishedWhenDone();
+
+                    afterAnimateMoveImpl(holder);
                 }
             })
             .start();

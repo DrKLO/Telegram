@@ -287,15 +287,7 @@ public class Switch extends View {
                 onCheckedChangeListener.onCheckedChanged(this, checked);
             }
         }
-        if (drawIconType != iconType) {
-            drawIconType = iconType;
-            if (attachedToWindow && animated) {
-                animateIcon(iconType == 0);
-            } else {
-                cancelIconAnimator();
-                setIconProgress(iconType == 0 ? 1.0f : 0.0f);
-            }
-        }
+        setDrawIconType(iconType, animated);
     }
 
     public void setIcon(int icon) {
@@ -308,6 +300,18 @@ public class Switch extends View {
             iconDrawable = null;
         }
         invalidate();
+    }
+
+    public void setDrawIconType(int iconType, boolean animated) {
+        if (drawIconType != iconType) {
+            drawIconType = iconType;
+            if (attachedToWindow && animated) {
+                animateIcon(iconType == 0);
+            } else {
+                cancelIconAnimator();
+                setIconProgress(iconType == 0 ? 1.0f : 0.0f);
+            }
+        }
     }
 
     public boolean hasIcon() {

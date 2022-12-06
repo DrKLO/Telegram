@@ -164,7 +164,7 @@ public class SvgHelper {
             }
 
             float scale = getScale((int) w, (int) h);
-            if (placeholderGradient != null) {
+            if (placeholderGradient[threadIndex] != null && gradientWidth > 0) {
                 if (drawInBackground) {
                     long dt = time - lastUpdateTime;
                     if (dt > 64) {

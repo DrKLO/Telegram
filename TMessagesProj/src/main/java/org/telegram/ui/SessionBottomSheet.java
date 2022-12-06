@@ -30,6 +30,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.SessionCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
@@ -309,19 +310,22 @@ public class SessionBottomSheet extends BottomSheet {
         }
         String deviceModel = session.device_model.toLowerCase();
         int iconId;
-        String colorKey;
+        String colorKey, colorKey2;
         boolean animation = true;
 
 
         if (deviceModel.contains("safari")) {
             iconId = R.raw.safari_30;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("edge")) {
             iconId = R.raw.edge_30;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("chrome")) {
             iconId = R.raw.chrome_30;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("opera") || deviceModel.contains("firefox") || deviceModel.contains("vivaldi")) {
             animation = false;
             if (deviceModel.contains("opera")) {
@@ -332,32 +336,41 @@ public class SessionBottomSheet extends BottomSheet {
                 iconId = R.drawable.device_web_other;
             }
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (platform.contains("ubuntu")) {
             iconId = R.raw.ubuntu_30;
             colorKey = Theme.key_avatar_backgroundBlue;
+            colorKey2 = Theme.key_avatar_background2Blue;
         } else if (platform.contains("ios")) {
             iconId = deviceModel.contains("ipad") ? R.raw.ipad_30 : R.raw.iphone_30;
             colorKey = Theme.key_avatar_backgroundBlue;
+            colorKey2 = Theme.key_avatar_background2Blue;
         } else if (platform.contains("windows")) {
             iconId = R.raw.windows_30;
             colorKey = Theme.key_avatar_backgroundCyan;
+            colorKey2 = Theme.key_avatar_background2Cyan;
         } else if (platform.contains("macos")) {
             iconId = R.raw.mac_30;
             colorKey = Theme.key_avatar_backgroundCyan;
+            colorKey2 = Theme.key_avatar_background2Cyan;
         } else if (platform.contains("android")) {
             iconId = R.raw.android_30;
             colorKey = Theme.key_avatar_backgroundGreen;
+            colorKey2 = Theme.key_avatar_background2Green;
         } else {
             if (session.app_name.toLowerCase().contains("desktop")) {
                 iconId = R.raw.windows_30;
                 colorKey = Theme.key_avatar_backgroundCyan;
+                colorKey2 = Theme.key_avatar_background2Cyan;
             } else {
                 iconId = R.raw.chrome_30;
                 colorKey = Theme.key_avatar_backgroundPink;
+                colorKey2 = Theme.key_avatar_background2Pink;
             }
         }
 
         imageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey)));
+//        imageView.setBackground(new SessionCell.CircleGradientDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey), Theme.getColor(colorKey2)));
         if (animation) {
             int[] colors = new int[]{0x000000, Theme.getColor(colorKey)};
             imageView.setAnimation(iconId, 50, 50, colors);
@@ -377,7 +390,8 @@ public class SessionBottomSheet extends BottomSheet {
         public ItemView(Context context, boolean needSwitch) {
             super(context);
             iconView = new ImageView(context);
-            addView(iconView, LayoutHelper.createFrame(28, 28, 0, 16, 8, 0, 0));
+            iconView.setScaleType(ImageView.ScaleType.CENTER);
+            addView(iconView, LayoutHelper.createFrame(32, 32, 0, 12, 4, 0, 0));
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);

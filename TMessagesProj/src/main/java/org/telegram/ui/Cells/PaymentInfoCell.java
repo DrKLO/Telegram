@@ -116,7 +116,7 @@ public class PaymentInfoCell extends FrameLayout {
     }
 
     public void setInvoice(TLRPC.TL_messageMediaInvoice invoice, String botname) {
-        setInfo(invoice.title, invoice.description, invoice.photo, botname, invoice);
+        setInfo(invoice.title, invoice.description, invoice.webPhoto, botname, invoice);
     }
 
     public void setReceipt(TLRPC.TL_payments_paymentReceipt receipt, String botname) {

@@ -428,7 +428,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
             boolean value = getValue();
             showButtonCheck = new TextCheckCell(context);
-            showButtonCheck.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_windowBackgroundWhite)));
+            showButtonCheck.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
             showButtonCheck.setTextAndCheck(
                 LocaleController.getString("ShowTranslateButton", R.string.ShowTranslateButton),
                 value,
@@ -441,7 +441,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             addView(showButtonCheck, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             doNotTranslateCell = new TextSettingsCell(context);
-            doNotTranslateCell.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_windowBackgroundWhite)));
+            doNotTranslateCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
             doNotTranslateCell.setOnClickListener(e -> {
                 presentFragment(new RestrictedLanguagesSelectActivity());
                 update();

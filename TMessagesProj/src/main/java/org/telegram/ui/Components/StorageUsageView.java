@@ -20,7 +20,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
-public class StroageUsageView extends FrameLayout {
+public class StorageUsageView extends FrameLayout {
 
     private Paint paintFill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paintCalculcating = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -57,7 +57,7 @@ public class StroageUsageView extends FrameLayout {
 
     CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable(220, 255);
 
-    public StroageUsageView(Context context) {
+    public StorageUsageView(Context context) {
         super(context);
         setWillNotDraw(false);
 
@@ -217,9 +217,8 @@ public class StroageUsageView extends FrameLayout {
                 textSettingsCell.setVisibility(VISIBLE);
                 telegramCacheTextView.setVisibility(View.VISIBLE);
                 telegramDatabaseTextView.setVisibility(GONE);
-                textSettingsCell.setText(LocaleController.getString("ClearTelegramCache", R.string.ClearTelegramCache), false);
+                textSettingsCell.setTextAndValue(LocaleController.getString("ClearTelegramCache", R.string.ClearTelegramCache), AndroidUtilities.formatFileSize(totalSize), true);
                 telegramCacheTextView.setText(LocaleController.formatString("TelegramCacheSize", R.string.TelegramCacheSize, AndroidUtilities.formatFileSize(totalSize + database)));
-
             } else {
                 telegramCacheTextView.setVisibility(View.GONE);
                 telegramDatabaseTextView.setVisibility(VISIBLE);

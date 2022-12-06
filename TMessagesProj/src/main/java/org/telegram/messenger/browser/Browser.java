@@ -424,7 +424,7 @@ public class Browser {
             try {
                 Intent viewIntent = new Intent(Intent.ACTION_VIEW, uri);
                 List<ResolveInfo> allActivities = ApplicationLoader.applicationContext.getPackageManager().queryIntentActivities(viewIntent, 0);
-                if (allActivities != null && allActivities.size() > 1) {
+                if (allActivities != null && allActivities.size() >= 1) {
                     return false;
                 }
             } catch (Exception ignore) {

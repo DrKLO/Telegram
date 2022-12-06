@@ -495,8 +495,10 @@ public class DataSettingsActivity extends BaseFragment {
                     textCell.setCanDisable(false);
                     textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                     if (position == storageUsageRow) {
+                        textCell.setIcon(R.drawable.msg_storage_usage);
                         textCell.setText(LocaleController.getString("StorageUsage", R.string.StorageUsage), true);
                     } else if (position == useLessDataForCallsRow) {
+                        textCell.setIcon(0);
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                         String value = null;
                         switch (preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())) {
@@ -516,8 +518,10 @@ public class DataSettingsActivity extends BaseFragment {
                         textCell.setTextAndValue(LocaleController.getString("VoipUseLessData", R.string.VoipUseLessData), value, updateVoipUseLessData, true);
                         updateVoipUseLessData = false;
                     } else if (position == dataUsageRow) {
+                        textCell.setIcon(R.drawable.msg_data_usage);
                         textCell.setText(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), storageNumRow != -1);
                     } else if (position == storageNumRow) {
+                        textCell.setIcon(0);
                         String dir = storageDirs.get(0).getAbsolutePath();
                         if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
                             for (int a = 0, N = storageDirs.size(); a < N; a++) {
@@ -530,14 +534,18 @@ public class DataSettingsActivity extends BaseFragment {
                         }
                         textCell.setTextAndValue(LocaleController.getString("StoragePath", R.string.StoragePath), dir, false);
                     } else if (position == proxyRow) {
+                        textCell.setIcon(0);
                         textCell.setText(LocaleController.getString("ProxySettings", R.string.ProxySettings), false);
                     } else if (position == resetDownloadRow) {
+                        textCell.setIcon(0);
                         textCell.setCanDisable(true);
                         textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textCell.setText(LocaleController.getString("ResetAutomaticMediaDownload", R.string.ResetAutomaticMediaDownload), false);
                     } else if (position == quickRepliesRow){
+                        textCell.setIcon(0);
                         textCell.setText(LocaleController.getString("VoipQuickReplies", R.string.VoipQuickReplies), false);
                     } else if (position == clearDraftsRow) {
+                        textCell.setIcon(0);
                         textCell.setText(LocaleController.getString("PrivacyDeleteCloudDrafts", R.string.PrivacyDeleteCloudDrafts), false);
                     }
                     break;

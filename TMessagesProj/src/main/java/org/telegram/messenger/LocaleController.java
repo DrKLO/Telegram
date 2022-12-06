@@ -414,7 +414,9 @@ public class LocaleController {
     public static String getLanguageFlag(String countryCode) {
         if (countryCode.length() != 2 || countryCode.equals("YL")) return null;
 
-        if (countryCode.equals("XG")) {
+        if (countryCode.equals("FT")) {
+            return "\uD83C\uDFF4\u200D\u2620\uFE0F";
+        } else if (countryCode.equals("XG")) {
             return "\uD83D\uDEF0";
         } else if (countryCode.equals("XV")){
             return "\uD83C\uDF0D";
@@ -1056,10 +1058,11 @@ public class LocaleController {
         String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
         param = key + "_" + param;
         int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
+        int fallbackResourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
         Object[] argsWithPlural = new Object[args.length + 1];
         argsWithPlural[0] = plural;
         System.arraycopy(args, 0, argsWithPlural, 1, args.length);
-        return formatString(param, key + "_other", resourceId, argsWithPlural);
+        return formatString(param, key + "_other", resourceId, fallbackResourceId, argsWithPlural);
     }
 
     public static String formatPluralStringComma(String key, int plural) {
@@ -1108,10 +1111,10 @@ public class LocaleController {
     }
 
     public static String formatString(String key, int res, Object... args) {
-        return formatString(key, null, res, args);
+        return formatString(key, null, res, 0, args);
     }
 
-    public static String formatString(String key, String fallback, int res, Object... args) {
+    public static String formatString(String key, String fallback, int res, int fallbackRes, Object... args) {
         try {
             String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
             if (value == null) {
@@ -1119,7 +1122,15 @@ public class LocaleController {
                     value = getInstance().localeValues.get(fallback);
                 }
                 if (value == null) {
-                    value = ApplicationLoader.applicationContext.getString(res);
+                    try {
+                        value = ApplicationLoader.applicationContext.getString(res);
+                    } catch (Exception e) {
+                        if (fallbackRes != 0) {
+                            try {
+                                value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                            } catch (Exception ignored) {}
+                        }
+                    }
                 }
             }
 

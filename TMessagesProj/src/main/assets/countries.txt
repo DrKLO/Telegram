@@ -42,6 +42,7 @@
 962;JO;Jordan;X XXXX XXXX
 961;LB;Lebanon
 960;MV;Maldives;XXX XXXX
+888;FT;Anonymous Numbers;XXXX XXXX
 886;TW;Taiwan;XXX XXX XXX
 883;GO;International Networks
 882;GO;International Networks

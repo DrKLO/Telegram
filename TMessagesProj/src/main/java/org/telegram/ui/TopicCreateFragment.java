@@ -6,6 +6,8 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -18,6 +20,7 @@ import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -31,10 +34,13 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.TextCheckCell2;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
@@ -58,6 +64,7 @@ public class TopicCreateFragment extends BaseFragment {
     long selectedEmojiDocumentId;
     int topicId;
 
+    TextCheckCell2 checkBoxCell;
     EditTextBoldCursor editTextBoldCursor;
     SelectAnimatedEmojiDialog selectAnimatedEmojiDialog;
     BackupImageView[] backupImageView = new BackupImageView[2];
@@ -101,7 +108,7 @@ public class TopicCreateFragment extends BaseFragment {
     @Override
     public View createView(Context context) {
         if (topicForEdit != null) {
-            actionBar.setTitle(LocaleController.getString("NewTopic", R.string.EditTopic));
+            actionBar.setTitle(LocaleController.getString("EditTopic", R.string.EditTopic));
         } else {
             actionBar.setTitle(LocaleController.getString("NewTopic", R.string.NewTopic));
         }
@@ -217,11 +224,14 @@ public class TopicCreateFragment extends BaseFragment {
                             editForumRequest.icon_emoji_id = selectedEmojiDocumentId;
                             editForumRequest.flags |= 2;
                         }
+                        if (checkBoxCell != null) {
+                            editForumRequest.hidden = !checkBoxCell.isChecked();
+                            editForumRequest.flags |= 8;
+                        }
                         ConnectionsManager.getInstance(currentAccount).sendRequest(editForumRequest, (response, error) -> {
 
                         });
                     }
-
 
                     topicForEdit.icon_emoji_id = selectedEmojiDocumentId;
                     if (selectedEmojiDocumentId != 0) {
@@ -230,6 +240,9 @@ public class TopicCreateFragment extends BaseFragment {
                         topicForEdit.flags &= ~1;
                     }
                     topicForEdit.title = topicName;
+                    if (checkBoxCell != null) {
+                        topicForEdit.hidden = !checkBoxCell.isChecked();
+                    }
                     getMessagesController().getTopicsController().onTopicEdited(-chatId, topicForEdit);
                     finishFragment();
                 }
@@ -264,7 +277,11 @@ public class TopicCreateFragment extends BaseFragment {
         contentView.addView(linearLayout);
 
         HeaderCell headerCell = new HeaderCell(context);
-        headerCell.setText(LocaleController.getString("CreateTopicTitle", R.string.CreateTopicTitle));
+        if (topicForEdit != null && topicForEdit.id == 1) {
+            headerCell.setText(LocaleController.getString("CreateGeneralTopicTitle", R.string.CreateGeneralTopicTitle));
+        } else {
+            headerCell.setText(LocaleController.getString("CreateTopicTitle", R.string.CreateTopicTitle));
+        }
 
         FrameLayout editTextContainer = new FrameLayout(context);
 
@@ -301,8 +318,9 @@ public class TopicCreateFragment extends BaseFragment {
                 if (!oldFirstSymbol.equals(firstSymbol)) {
                     LetterDrawable letterDrawable = new LetterDrawable(null, LetterDrawable.STYLE_TOPIC_DRAWABLE);
                     letterDrawable.setTitle(firstSymbol);
-                    replaceableIconDrawable.setIcon(letterDrawable, true);
-
+                    if (replaceableIconDrawable != null) {
+                        replaceableIconDrawable.setIcon(letterDrawable, true);
+                    }
                 }
             }
         });
@@ -383,59 +401,85 @@ public class TopicCreateFragment extends BaseFragment {
         emojiContainer.setBackgroundDrawable(combinedDrawable);
         emojiContainer.setClipChildren(false);
 
+        if (topicForEdit == null || topicForEdit.id != 1) {
+            selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(this, getContext(), false, null, SelectAnimatedEmojiDialog.TYPE_TOPIC_ICON, null) {
 
-        selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(this, getContext(), false, null, SelectAnimatedEmojiDialog.TYPE_TOPIC_ICON, null) {
+                private boolean firstLayout = true;
 
-            private boolean firstLayout = true;
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                super.onLayout(changed, left, top, right, bottom);
-                if (firstLayout) {
-                    firstLayout = false;
-                    selectAnimatedEmojiDialog.onShow(null);
-                }
-            }
-
-            protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, Integer until) {
-                boolean setIsFree = false;
-                if (!TextUtils.isEmpty(UserConfig.getInstance(currentAccount).defaultTopicIcons)) {
-                    TLRPC.TL_messages_stickerSet stickerSet = getMediaDataController().getStickerSetByEmojiOrName(UserConfig.getInstance(currentAccount).defaultTopicIcons);
-                    long stickerSetId = stickerSet == null ? 0 : stickerSet.set.id;
-                    long documentSetId = MediaDataController.getStickerSetId(document);
-                    setIsFree = stickerSetId == documentSetId;
+                @Override
+                protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                    super.onLayout(changed, left, top, right, bottom);
+                    if (firstLayout) {
+                        firstLayout = false;
+                        selectAnimatedEmojiDialog.onShow(null);
+                    }
                 }
 
-                selectEmoji(documentId, setIsFree);
-            }
-        };
+                protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, Integer until) {
+                    boolean setIsFree = false;
+                    if (!TextUtils.isEmpty(UserConfig.getInstance(currentAccount).defaultTopicIcons)) {
+                        TLRPC.TL_messages_stickerSet stickerSet = getMediaDataController().getStickerSetByEmojiOrName(UserConfig.getInstance(currentAccount).defaultTopicIcons);
+                        long stickerSetId = stickerSet == null ? 0 : stickerSet.set.id;
+                        long documentSetId = MediaDataController.getStickerSetId(document);
+                        setIsFree = stickerSetId == documentSetId;
+                    }
 
-        selectAnimatedEmojiDialog.setAnimationsEnabled(fragmentBeginToShow);
-        selectAnimatedEmojiDialog.setClipChildren(false);
-        emojiContainer.addView(selectAnimatedEmojiDialog, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 12, 12, 12, 12));
+                    selectEmoji(documentId, setIsFree);
+                }
+            };
 
+            selectAnimatedEmojiDialog.setAnimationsEnabled(fragmentBeginToShow);
+            selectAnimatedEmojiDialog.setClipChildren(false);
+            emojiContainer.addView(selectAnimatedEmojiDialog, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 12, 12, 12, 12));
+
+            Drawable drawable = ForumUtilities.createTopicDrawable("", iconColor);
+            CombinedDrawable topicCombinedDrawable = (CombinedDrawable) drawable;
+            forumBubbleDrawable = (ForumBubbleDrawable) topicCombinedDrawable.getBackgroundDrawable();
+
+            replaceableIconDrawable = new ReplaceableIconDrawable(context);
+            CombinedDrawable combinedDrawable2 = new CombinedDrawable(drawable, replaceableIconDrawable, 0, 0);
+            combinedDrawable2.setFullsize(true);
+
+            selectAnimatedEmojiDialog.setForumIconDrawable(combinedDrawable2);
+
+            defaultIconDrawable = combinedDrawable2;
+
+            replaceableIconDrawable.addView(backupImageView[0]);
+            replaceableIconDrawable.addView(backupImageView[1]);
+
+            backupImageView[0].setImageDrawable(defaultIconDrawable);
+            AndroidUtilities.updateViewVisibilityAnimated(backupImageView[0], true, 1, false);
+            AndroidUtilities.updateViewVisibilityAnimated(backupImageView[1], false, 1, false);
+
+            forumBubbleDrawable.addParent(backupImageView[0]);
+            forumBubbleDrawable.addParent(backupImageView[1]);
+        } else {
+            ImageView imageView = new ImageView(context);
+            imageView.setImageResource(R.drawable.msg_filled_general);
+            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_inMenu), PorterDuff.Mode.MULTIPLY));
+            iconContainer.addView(imageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+
+            emojiContainer.addView(
+                new ActionBarPopupWindow.GapView(context, getResourceProvider()),
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8)
+            );
+
+            checkBoxCell = new TextCheckCell2(context);
+            checkBoxCell.getCheckBox().setDrawIconType(0);
+            checkBoxCell.setTextAndCheck(LocaleController.getString("EditTopicHide", R.string.EditTopicHide), !topicForEdit.hidden, false);
+            checkBoxCell.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)));
+            checkBoxCell.setOnClickListener(e -> {
+                checkBoxCell.setChecked(!checkBoxCell.isChecked());
+            });
+            emojiContainer.addView(checkBoxCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.TOP, 0, 8, 0, 0));
+
+            TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context);
+            infoCell.setText(LocaleController.getString("EditTopicHideInfo", R.string.EditTopicHideInfo));
+            infoCell.setBackground(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow, getResourceProvider()));
+            emojiContainer.addView(infoCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 8 + 50, 0, 0));
+        }
         linearLayout.addView(emojiContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        Drawable drawable = ForumUtilities.createTopicDrawable("", iconColor);
-        CombinedDrawable topicCombinedDrawable = (CombinedDrawable) drawable;
-        forumBubbleDrawable = (ForumBubbleDrawable) topicCombinedDrawable.getBackgroundDrawable();
-
-
-        replaceableIconDrawable = new ReplaceableIconDrawable(context);
-        CombinedDrawable combinedDrawable2 = new CombinedDrawable(drawable, replaceableIconDrawable, 0, 0);
-        combinedDrawable2.setFullsize(true);
-
-        selectAnimatedEmojiDialog.setForumIconDrawable(combinedDrawable2);
-
-        defaultIconDrawable = combinedDrawable2;
-
-        replaceableIconDrawable.addView(backupImageView[0]);
-        replaceableIconDrawable.addView(backupImageView[1]);
-        backupImageView[0].setImageDrawable(defaultIconDrawable);
-        AndroidUtilities.updateViewVisibilityAnimated(backupImageView[0], true, 1, false);
-        AndroidUtilities.updateViewVisibilityAnimated(backupImageView[1], false, 1, false);
-
-        forumBubbleDrawable.addParent(backupImageView[0]);
-        forumBubbleDrawable.addParent(backupImageView[1]);
         if (topicForEdit != null) {
             editTextBoldCursor.setText(topicForEdit.title);
             selectEmoji(topicForEdit.icon_emoji_id, true);
@@ -447,6 +491,9 @@ public class TopicCreateFragment extends BaseFragment {
     }
 
     private void selectEmoji(Long documentId, boolean free) {
+        if (selectAnimatedEmojiDialog == null || replaceableIconDrawable == null) {
+            return;
+        }
         long docId = documentId == null ? 0L : documentId;
         selectAnimatedEmojiDialog.setSelected(docId);
         if (selectedEmojiDocumentId == docId) {
@@ -509,7 +556,9 @@ public class TopicCreateFragment extends BaseFragment {
         }
 
         getNotificationCenter().onAnimationFinish(animationIndex);
-        selectAnimatedEmojiDialog.setAnimationsEnabled(fragmentBeginToShow);
+        if (selectAnimatedEmojiDialog != null) {
+            selectAnimatedEmojiDialog.setAnimationsEnabled(fragmentBeginToShow);
+        }
     }
 
     @Override

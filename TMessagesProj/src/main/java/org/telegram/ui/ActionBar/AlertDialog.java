@@ -44,8 +44,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
@@ -57,7 +59,7 @@ import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import java.util.ArrayList;
 import java.util.Map;
 
-public class AlertDialog extends Dialog implements Drawable.Callback {
+public class AlertDialog extends Dialog implements Drawable.Callback, NotificationCenter.NotificationCenterDelegate {
 
     private View customView;
     private int customViewHeight = LayoutHelper.WRAP_CONTENT;
@@ -594,7 +596,14 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             contentScrollView.addView(scrollContainer, new ScrollView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
-        messageTextView = new SpoilersTextView(getContext(), false);
+        messageTextView = new SpoilersTextView(getContext(), false) {
+            @Override
+            public void setText(CharSequence text, BufferType type) {
+                text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                super.setText(text, type);
+            }
+        };
+        NotificationCenter.listenEmojiLoading(messageTextView);
         messageTextView.setTextColor(getThemedColor(topAnimationIsNew ? Theme.key_windowBackgroundWhiteGrayText : Theme.key_dialogTextBlack));
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
@@ -955,6 +964,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         }
 
         window.setAttributes(params);
+
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
     }
 
     @Override
@@ -1096,7 +1107,17 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     }
 
     @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.emojiLoaded) {
+            if (messageTextView != null) {
+                messageTextView.invalidate();
+            }
+        }
+    }
+
+    @Override
     public void dismiss() {
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (onDismissListener != null) {
             onDismissListener.onDismiss(this);
         }

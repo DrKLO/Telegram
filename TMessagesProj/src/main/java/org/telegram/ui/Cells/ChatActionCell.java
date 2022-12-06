@@ -761,7 +761,13 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private void createLayout(CharSequence text, int width) {
         int maxWidth = width - AndroidUtilities.dp(30);
         invalidatePath = true;
-        textLayout = new StaticLayout(text, (TextPaint) getThemedPaint(Theme.key_paint_chatActionText), maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+        TextPaint paint;
+        if (currentMessageObject != null && currentMessageObject.drawServiceWithDefaultTypeface) {
+            paint = (TextPaint) getThemedPaint(Theme.key_paint_chatActionText2);
+        } else {
+            paint = (TextPaint) getThemedPaint(Theme.key_paint_chatActionText);
+        }
+        textLayout = new StaticLayout(text, paint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
         spoilersPool.addAll(spoilers);
         spoilers.clear();
@@ -845,7 +851,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         MessageObject messageObject = currentMessageObject;
         if (messageObject != null) {
             if (delegate.getTopicId() == 0 && MessageObject.isTopicActionMessage(messageObject)) {
-                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(messageObject.messageOwner));
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-messageObject.getDialogId(), MessageObject.getTopicId(messageObject.messageOwner, true));
                 text = ForumUtilities.createActionTextWithTopic(topic, messageObject);
             }
             if (text == null) {

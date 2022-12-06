@@ -10,6 +10,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class FilePathDatabase {
@@ -21,7 +22,7 @@ public class FilePathDatabase {
     private File cacheFile;
     private File shmCacheFile;
 
-    private final static int LAST_DB_VERSION = 2;
+    private final static int LAST_DB_VERSION = 3;
 
     private final static String DATABASE_NAME = "file_to_path";
     private final static String DATABASE_BACKUP_NAME = "file_to_path_backup";
@@ -56,6 +57,9 @@ public class FilePathDatabase {
             if (createTable) {
                 database.executeFast("CREATE TABLE paths(document_id INTEGER, dc_id INTEGER, type INTEGER, path TEXT, PRIMARY KEY(document_id, dc_id, type));").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS path_in_paths ON paths(path);").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE paths_by_dialog_id(path TEXT PRIMARY KEY, dialog_id INTEGER);").stepThis().dispose();
+
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
                 int version = database.executeInt("PRAGMA user_version");
@@ -94,6 +98,11 @@ public class FilePathDatabase {
             database.executeFast("CREATE INDEX IF NOT EXISTS path_in_paths ON paths(path);").stepThis().dispose();
             database.executeFast("PRAGMA user_version = " + 2).stepThis().dispose();
             version = 2;
+        }
+        if (version == 2) {
+            database.executeFast("CREATE TABLE paths_by_dialog_id(path TEXT PRIMARY KEY, dialog_id INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = " + 3).stepThis().dispose();
+            version = 3;
         }
     }
 
@@ -271,6 +280,7 @@ public class FilePathDatabase {
         dispatchQueue.postRunnable(() -> {
             try {
                 database.executeFast("DELETE FROM paths WHERE 1").stepThis().dispose();
+                database.executeFast("DELETE FROM paths_by_dialog_id WHERE 1").stepThis().dispose();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -298,6 +308,68 @@ public class FilePathDatabase {
             FileLog.e(e);
         }
         return res[0];
+    }
+
+    public void saveFileDialogId(File file, long dialogId) {
+        if (file == null) {
+            return;
+        }
+        dispatchQueue.postRunnable(() -> {
+            SQLitePreparedStatement state = null;
+            try {
+                state = database.executeFast("REPLACE INTO paths_by_dialog_id VALUES(?, ?)");
+                state.requery();
+                state.bindString(1, file.getPath());
+                state.bindLong(2, dialogId);
+                state.step();
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+               if (state != null) {
+                   state.dispose();
+               }
+            }
+        });
+    }
+
+    public long getFileDialogId(File file) {
+        if (file == null) {
+            return 0;
+        }
+        long dialogId = 0;
+        SQLiteCursor cursor = null;
+        try {
+            cursor = database.queryFinalized("SELECT dialog_id FROM paths_by_dialog_id WHERE path = '" + file.getPath() + "'");
+            if (cursor.next()) {
+                dialogId = cursor.longValue(0);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return dialogId;
+    }
+
+    public DispatchQueue getQueue() {
+        return dispatchQueue;
+    }
+
+    public void removeFiles(List<File> filesToRemove) {
+        dispatchQueue.postRunnable(() -> {
+            try {
+                database.beginTransaction();
+                for (int i = 0; i < filesToRemove.size(); i++) {
+                    database.executeFast("DELETE FROM paths_by_dialog_id WHERE path = '" + filesToRemove.get(i).getPath() + "'").stepThis().dispose();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                database.commitTransaction();
+            }
+        });
     }
 
     public static class PathData {

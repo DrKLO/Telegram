@@ -101,7 +101,7 @@ public class BackButtonMenu {
             cell.addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 59, 0, 12, 0));
 
             AvatarDrawable avatarDrawable = new AvatarDrawable();
-            avatarDrawable.setSmallSize(true);
+            avatarDrawable.setScaleSize(.8f);
             Drawable thumb = avatarDrawable;
             boolean addDivider = false;
             if (chat != null) {

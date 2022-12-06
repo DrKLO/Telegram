@@ -594,7 +594,7 @@ public class PinchToZoomHelper {
                 }
             }
         } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) {
-            return ImageLocation.getForWebFile(WebFile.createWithWebDocument(((TLRPC.TL_messageMediaInvoice) message.messageOwner.media).photo));
+            return ImageLocation.getForWebFile(WebFile.createWithWebDocument(((TLRPC.TL_messageMediaInvoice) message.messageOwner.media).webPhoto));
         } else if (message.getDocument() != null) {
             TLRPC.Document document = message.getDocument();
             if (MessageObject.isDocumentHasThumb(message.getDocument())) {

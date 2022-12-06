@@ -203,8 +203,6 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
                 }
                 extras.putInt("currentAccount", accountInstance.getCurrentAccount());
 
-                Log.d("kek", "kek " + name);
-
                 Intent fillInIntent = new Intent();
                 fillInIntent.putExtras(extras);
                 rv.setOnClickFillInIntent(a == 0 ? R.id.contacts_widget_item1 : R.id.contacts_widget_item2, fillInIntent);

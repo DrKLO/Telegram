@@ -115,7 +115,7 @@ public class SlotsDrawable extends RLottieDrawable {
                             if (secondFrameNums[0] == secondFrameCounts[0] - 100) {
                                 playWinAnimation = true;
                                 if (left == ReelValue.sevenWin) {
-                                    Runnable runnable = onFinishCallback.get();
+                                    Runnable runnable = onFinishCallback == null ? null : onFinishCallback.get();
                                     if (runnable != null) {
                                         AndroidUtilities.runOnUIThread(runnable);
                                     }

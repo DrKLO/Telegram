@@ -623,7 +623,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
         return (!mPendingAdditions.isEmpty()
                 || !mPendingChanges.isEmpty()
                 || !mPendingMoves.isEmpty()
-                || !mPendingRemovals.isEmpty()
+                || !mPendingChanges.isEmpty()
                 || !mMoveAnimations.isEmpty()
                 || !mRemoveAnimations.isEmpty()
                 || !mAddAnimations.isEmpty()

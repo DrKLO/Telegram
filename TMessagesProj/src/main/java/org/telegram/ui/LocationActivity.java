@@ -63,6 +63,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -212,6 +213,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     private final static int open_in = 1;
     private final static int share_live_location = 5;
+    private final static int get_directions = 6;
     private final static int map_list_menu_map = 2;
     private final static int map_list_menu_satellite = 3;
     private final static int map_list_menu_hybrid = 4;
@@ -539,6 +541,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     }
                 } else if (id == share_live_location) {
                     openShareLiveLocation(0);
+                } else if (id == get_directions) {
+                    openDirections();
                 }
             }
         });
@@ -549,6 +553,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         } else if (messageObject != null) {
             if (messageObject.isLiveLocation()) {
                 actionBar.setTitle(LocaleController.getString("AttachLiveLocation", R.string.AttachLiveLocation));
+                otherItem = menu.addItem(0, R.drawable.ic_ab_other);
+                otherItem.addSubItem(get_directions, R.drawable.navigate, LocaleController.getString("GetDirections", R.string.GetDirections));
             } else {
                 if (messageObject.messageOwner.media.title != null && messageObject.messageOwner.media.title.length() > 0) {
                     actionBar.setTitle(LocaleController.getString("SharedPlace", R.string.SharedPlace));
@@ -945,28 +951,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, false, null) {
             @Override
             protected void onDirectionClick() {
-                if (Build.VERSION.SDK_INT >= 23) {
-                    Activity activity = getParentActivity();
-                    if (activity != null) {
-                        if (activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            showPermissionAlert(true);
-                            return;
-                        }
-                    }
-                }
-                if (myLocation != null) {
-                    try {
-                        Intent intent;
-                        if (messageObject != null) {
-                            intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, "http://maps.google.com/maps?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long)));
-                        } else {
-                            intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, "http://maps.google.com/maps?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), chatLocation.geo_point.lat, chatLocation.geo_point._long)));
-                        }
-                        getParentActivity().startActivity(intent);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }
+                openDirections();
             }
         });
         adapter.setMyLocationDenied(locationDenied);
@@ -1302,6 +1287,38 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         }
         int color = Theme.getColor(Theme.key_windowBackgroundWhite);
         return AndroidUtilities.computePerceivedBrightness(color) < 0.721f;
+    }
+
+    private void openDirections() {
+        double daddrLat, daddrLong;
+        if (messageObject != null) {
+            daddrLat = messageObject.messageOwner.media.geo.lat;
+            daddrLong = messageObject.messageOwner.media.geo._long;
+        } else {
+            daddrLat = chatLocation.geo_point.lat;
+            daddrLong = chatLocation.geo_point._long;
+        }
+        String domain;
+        if (BuildVars.isHuaweiStoreApp()) {
+            domain = "mapapp://navigation";
+        } else {
+            domain = "http://maps.google.com/maps";
+        }
+        if (myLocation != null) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), daddrLat, daddrLong)));
+                getParentActivity().startActivity(intent);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        } else {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=&daddr=%f,%f", daddrLat, daddrLong)));
+                getParentActivity().startActivity(intent);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
     }
 
     private void updateEmptyView() {

@@ -32,6 +32,7 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.google.zxing.qrcode.encoder.Encoder;
 import com.google.zxing.qrcode.encoder.QRCode;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -51,6 +52,7 @@ public final class QRCodeWriter {
   private float[] radii = new float[8];
   private int imageBloks;
   private int imageBlockX;
+  public boolean includeSideQuads = true;
   private int sideQuadSize;
 
   private int imageSize;
@@ -126,57 +128,11 @@ public final class QRCodeWriter {
     imageBlockX = (inputWidth - imageBloks) / 2;
     imageSize = imageBloks * multiple - 24;
     int imageX = (size - imageSize) / 2;
-
-    boolean isTransparentBackground = Color.alpha(backgroundColor) == 0;
-    Path clipPath = new Path();
-    RectF rectF = new RectF();
-    for (int a = 0; a < 3; a++) {
-      int x, y;
-      if (a == 0) {
-        x = padding;
-        y = padding;
-      } else if (a == 1) {
-        x = size - sideQuadSize * multiple - padding;
-        y = padding;
-      } else {
-        x = padding;
-        y = size - sideQuadSize * multiple - padding;
-      }
-
-      float r;
-      if (isTransparentBackground) {
-        rectF.set(x + multiple, y + multiple, x + (sideQuadSize - 1) * multiple, y + (sideQuadSize - 1) * multiple);
-        r = (sideQuadSize * multiple) / 4.0f * radiusFactor;
-        clipPath.reset();
-        clipPath.addRoundRect(rectF, r, r, Path.Direction.CW);
-        clipPath.close();
-        canvas.save();
-        canvas.clipPath(clipPath, Region.Op.DIFFERENCE);
-      }
-      r = (sideQuadSize * multiple) / 3.0f * radiusFactor;
-      Arrays.fill(radii, r);
-      rect.setColor(color);
-      rect.setBounds(x, y, x + sideQuadSize * multiple, y + sideQuadSize * multiple);
-      rect.draw(canvas);
-      canvas.drawRect(x + multiple, y + multiple, x + (sideQuadSize - 1) * multiple, y + (sideQuadSize - 1) * multiple, blackPaint);
-      if (isTransparentBackground) {
-        canvas.restore();
-      }
-
-      if (!isTransparentBackground) {
-        r = (sideQuadSize * multiple) / 4.0f * radiusFactor;
-        Arrays.fill(radii, r);
-        rect.setColor(backgroundColor);
-        rect.setBounds(x + multiple, y + multiple, x + (sideQuadSize - 1) * multiple, y + (sideQuadSize - 1) * multiple);
-        rect.draw(canvas);
-      }
-
-      r = ((sideQuadSize - 2) * multiple) / 4.0f * radiusFactor;
-      Arrays.fill(radii, r);
-      rect.setColor(color);
-      rect.setBounds(x + multiple * 2, y + multiple * 2, x + (sideQuadSize - 2) * multiple, y + (sideQuadSize - 2) * multiple);
-      rect.draw(canvas);
+    if (includeSideQuads) {
+      blackPaint.setColor(color);
+      drawSideQuadsGradient(canvas, blackPaint, rect, sideQuadSize, multiple, padding, size, radiusFactor, radii, backgroundColor, color);
     }
+    boolean isTransparentBackground = Color.alpha(backgroundColor) == 0;
     float r = multiple / 2.0f * radiusFactor;
 
     for (int y = 0, outputY = padding; y < inputHeight; y++, outputY += multiple) {
@@ -241,6 +197,102 @@ public final class QRCodeWriter {
     return bitmap;
   }
 
+  public static void drawSideQuadsGradient(Canvas canvas, Paint blackPaint, GradientDrawable rect, float sideQuadSize, float multiple, int padding, float size, float radiusFactor, float[] radii, int backgroundColor, int color) {
+    boolean isTransparentBackground = Color.alpha(backgroundColor) == 0;
+    rect.setShape(GradientDrawable.RECTANGLE);
+    rect.setCornerRadii(radii);
+    Path clipPath = new Path();
+    RectF rectF = new RectF();
+    for (int a = 0; a < 3; a++) {
+      float x, y;
+      if (a == 0) {
+        x = padding;
+        y = padding;
+      } else if (a == 1) {
+        x = size - sideQuadSize * multiple - padding;
+        y = padding;
+      } else {
+        x = padding;
+        y = size - sideQuadSize * multiple - padding;
+      }
+
+      float r;
+      if (isTransparentBackground) {
+        rectF.set(x + multiple, y + multiple, x + (sideQuadSize - 1) * multiple, y + (sideQuadSize - 1) * multiple);
+        r = (sideQuadSize * multiple) / 4.0f * radiusFactor;
+        clipPath.reset();
+        clipPath.addRoundRect(rectF, r, r, Path.Direction.CW);
+        clipPath.close();
+        canvas.save();
+        canvas.clipPath(clipPath, Region.Op.DIFFERENCE);
+      }
+      r = (sideQuadSize * multiple) / 3.0f * radiusFactor;
+      Arrays.fill(radii, r);
+      rect.setColor(color);
+      rect.setBounds((int) x, (int) y, (int) (x + sideQuadSize * multiple), (int) (y + sideQuadSize * multiple));
+      rect.draw(canvas);
+      canvas.drawRect(x + multiple, y + multiple, x + (sideQuadSize - 1) * multiple, y + (sideQuadSize - 1) * multiple, blackPaint);
+      if (isTransparentBackground) {
+        canvas.restore();
+      }
+
+      if (!isTransparentBackground) {
+        r = (sideQuadSize * multiple) / 4.0f * radiusFactor;
+        Arrays.fill(radii, r);
+        rect.setColor(backgroundColor);
+        rect.setBounds((int) (x + multiple), (int) (y + multiple), (int) (x + (sideQuadSize - 1) * multiple), (int) (y + (sideQuadSize - 1) * multiple));
+        rect.draw(canvas);
+      }
+
+      r = ((sideQuadSize - 2) * multiple) / 4.0f * radiusFactor;
+      Arrays.fill(radii, r);
+      rect.setColor(color);
+      rect.setBounds((int) (x + multiple * 2), (int) (y + multiple * 2), (int) (x + (sideQuadSize - 2) * multiple), (int) (y + (sideQuadSize - 2) * multiple));
+      rect.draw(canvas);
+    }
+  }
+
+  public static void drawSideQuads(Canvas canvas, float xOffset, float yOffset, Paint blackPaint, float sideQuadSize, float multiple, int padding, float size, float radiusFactor, float[] radii, boolean isTransparentBackground) {
+    Path clipPath = new Path();
+    for (int a = 0; a < 3; a++) {
+      float x, y;
+      if (a == 0) {
+        x = padding;
+        y = padding;
+      } else if (a == 1) {
+        x = size - sideQuadSize * multiple - padding;
+        y = padding;
+      } else {
+        x = padding;
+        y = size - sideQuadSize * multiple - padding;
+      }
+
+      x += xOffset;
+      y += yOffset;
+
+      float r;
+      if (isTransparentBackground) {
+        AndroidUtilities.rectTmp.set(x + multiple, y + multiple, x + (sideQuadSize - 1) * multiple, y + (sideQuadSize - 1) * multiple);
+        r = (sideQuadSize * multiple) / 4.0f * radiusFactor;
+        clipPath.reset();
+        clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+        clipPath.close();
+        canvas.save();
+        canvas.clipPath(clipPath, Region.Op.DIFFERENCE);
+      }
+      r = (sideQuadSize * multiple) / 3.0f * radiusFactor;
+      AndroidUtilities.rectTmp.set(x, y, x + sideQuadSize * multiple, y + sideQuadSize * multiple);
+      canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, blackPaint);
+      if (isTransparentBackground) {
+        canvas.restore();
+      }
+
+      r = ((sideQuadSize - 2) * multiple) / 4.0f * radiusFactor;
+      AndroidUtilities.rectTmp.set(x + multiple * 2, y + multiple * 2, x + (sideQuadSize - 2) * multiple, y + (sideQuadSize - 2) * multiple);
+      canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, blackPaint);
+    }
+  }
+
   private boolean has(int x, int y) {
     if (x >= imageBlockX && x < imageBlockX + imageBloks && y >= imageBlockX && y < imageBlockX + imageBloks) {
       return false;
@@ -256,5 +308,9 @@ public final class QRCodeWriter {
 
   public int getImageSize() {
     return imageSize;
+  }
+
+  public int getSideSize() {
+    return sideQuadSize;
   }
 }

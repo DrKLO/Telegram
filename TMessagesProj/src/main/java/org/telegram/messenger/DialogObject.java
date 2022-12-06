@@ -8,7 +8,10 @@
 
 package org.telegram.messenger;
 
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 
 public class DialogObject {
 
@@ -97,5 +100,67 @@ public class DialogObject {
 
     public static int getFolderId(long dialogId) {
         return (int) dialogId;
+    }
+
+    public static String getDialogTitle(TLObject dialog) {
+        return setDialogPhotoTitle(null, null, dialog);
+    }
+
+    public static String setDialogPhotoTitle(ImageReceiver imageReceiver, AvatarDrawable avatarDrawable, TLObject dialog) {
+        String title = "";
+        if (dialog instanceof TLRPC.User) {
+            TLRPC.User user = (TLRPC.User) dialog;
+            if (UserObject.isReplyUser(user)) {
+                title = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
+                if (avatarDrawable != null) {
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
+                }
+                if (imageReceiver != null) {
+                    imageReceiver.setForUserOrChat(null, avatarDrawable);
+                }
+            } else if (UserObject.isUserSelf(user)) {
+                title = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                if (avatarDrawable != null) {
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                }
+                if (imageReceiver != null) {
+                    imageReceiver.setForUserOrChat(null, avatarDrawable);
+                }
+            } else {
+                title = UserObject.getUserName(user);
+                if (avatarDrawable != null) {
+                    avatarDrawable.setInfo(user);
+                }
+                if (imageReceiver != null) {
+                    imageReceiver.setForUserOrChat(dialog, avatarDrawable);
+                }
+            }
+        } else if (dialog instanceof TLRPC.Chat) {
+            TLRPC.Chat chat = (TLRPC.Chat) dialog;
+            title = chat.title;
+            if (avatarDrawable != null) {
+                avatarDrawable.setInfo(chat);
+            }
+            if (imageReceiver != null) {
+                imageReceiver.setForUserOrChat(dialog, avatarDrawable);
+            }
+        }
+        return title;
+    }
+
+    public static String setDialogPhotoTitle(BackupImageView imageView, TLObject dialog) {
+        if (imageView != null) {
+            return setDialogPhotoTitle(imageView.getImageReceiver(), imageView.getAvatarDrawable(), dialog);
+        }
+        return setDialogPhotoTitle(null, null, dialog);
+    }
+
+    public static String getPublicUsername(TLObject dialog) {
+        if (dialog instanceof TLRPC.Chat) {
+            return ChatObject.getPublicUsername((TLRPC.Chat) dialog);
+        } else if (dialog instanceof TLRPC.User) {
+            return UserObject.getPublicUsername((TLRPC.User) dialog);
+        }
+        return null;
     }
 }

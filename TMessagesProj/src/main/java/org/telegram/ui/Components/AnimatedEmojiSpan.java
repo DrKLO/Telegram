@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -12,6 +13,7 @@ import android.text.style.CharacterStyle;
 import android.text.style.ReplacementSpan;
 import android.util.LongSparseArray;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -829,6 +831,43 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
             }
         }
         return newText;
+    }
+
+    public static class TextViewEmojis extends TextView {
+        public TextViewEmojis(Context context) {
+            super(context);
+        }
+
+        AnimatedEmojiSpan.EmojiGroupedSpans stack;
+        @Override
+        public void setText(CharSequence text, TextView.BufferType type) {
+            super.setText(text, type);
+            stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            stack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, stack, getLayout());
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            AnimatedEmojiSpan.release(this, stack);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), stack, 0, null, 0, 0, 0, 1f);
+        }
     }
 
     public interface InvalidateHolder {
