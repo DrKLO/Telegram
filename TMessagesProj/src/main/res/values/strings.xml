@@ -905,6 +905,8 @@
     <string name="EventLogDeleteTopic">un1 delete topic un2</string>
     <string name="EventLogPinTopic">un1 pin topic un2</string>
     <string name="EventLogUnpinTopic">un1 unpin topic un2</string>
+    <string name="EventLogEnabledAntiSpam">un1 enabled anti-spam</string>
+    <string name="EventLogDisabledAntiSpam">un1 disabled anti-spam</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>

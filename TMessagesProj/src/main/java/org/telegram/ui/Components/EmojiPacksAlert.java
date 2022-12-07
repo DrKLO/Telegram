@@ -201,7 +201,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                             if (drawable == null) {
                                 animatedEmojiDrawables.put(documentId, drawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, documentId));
                             }
-                            drawable.setColorFilter(colorFilter);
+                            drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                             drawable.addView(this);
                             ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.get(child.getTop());
                             if (arrayList == null) {
@@ -317,7 +317,8 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         drawable.setAlpha(255);
                         AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(),  imageView.getPaddingTop(), imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom());
                         imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
-                        imageView.imageReceiver = drawable.getImageReceiver();
+                        drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                        imageView.imageReceiver = drawable.getImageReceiver();;
                         drawInBackgroundViews.add(imageView);
                     }
                 }

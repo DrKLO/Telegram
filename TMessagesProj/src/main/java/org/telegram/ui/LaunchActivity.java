@@ -3043,7 +3043,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 for (int a = 0, N = res.messages.size(); a < N; a++) {
                     arrayList.add(new MessageObject(UserConfig.selectedAccount, res.messages.get(a), true, true));
                 }
-                if (!arrayList.isEmpty()) {
+                if (!arrayList.isEmpty() || chat.forum && threadId != null && threadId == 1) {
                     if (chat.forum) {
                         TLRPC.TL_channels_getForumTopicsByID getForumTopicsByID = new TLRPC.TL_channels_getForumTopicsByID();
                         getForumTopicsByID.channel = MessagesController.getInstance(currentAccount).getInputChannel(chat.id);
@@ -3063,11 +3063,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chat.id, threadId);
                             if (topic != null) {
                                 Bundle args = new Bundle();
-                                args.putLong("chat_id", -arrayList.get(0).getDialogId());
+                                args.putLong("chat_id", chat.id);
                                 if (messageId != topic.id) {
                                     args.putInt("message_id", Math.max(1, messageId));
                                 }
                                 ChatActivity chatActivity = new ChatActivity(args);
+                                if (arrayList.isEmpty()) {
+                                    TLRPC.Message message = new TLRPC.Message();
+                                    message.id = 1;
+                                    message.action = new TLRPC.TL_messageActionChannelMigrateFrom();
+                                    arrayList.add(new MessageObject(currentAccount, message, false, false));
+                                }
                                 chatActivity.setThreadMessages(arrayList, chat, req.msg_id, topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
                                 if (commentId != null) {
                                     chatActivity.setHighlightMessageId(commentId);

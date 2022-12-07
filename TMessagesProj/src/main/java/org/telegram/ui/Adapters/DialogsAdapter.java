@@ -287,7 +287,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         if (itemInternals.get(i).dialog != null) {
             return itemInternals.get(i).dialog;
         } else if (itemInternals.get(i).contact != null) {
-            return itemInternals.get(i).contact;
+            return MessagesController.getInstance(currentAccount).getUser(itemInternals.get(i).contact.user_id);
         } else if (itemInternals.get(i).recentMeUrl != null) {
             return itemInternals.get(i).recentMeUrl;
         }
@@ -731,8 +731,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             }
             case VIEW_TYPE_USER: {
                 UserCell cell = (UserCell) holder.itemView;
-                TLRPC.TL_contact contact = (TLRPC.TL_contact) getItem(i);
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
+                TLRPC.User user = (TLRPC.User) getItem(i);
                 cell.setData(user, null, null, 0);
                 break;
             }
@@ -803,27 +802,28 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         return itemInternals.get(i).viewType;
     }
 
+    public void moveDialogs(RecyclerListView recyclerView, int fromPosition, int toPosition) {
+        ArrayList<TLRPC.Dialog> dialogs = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, false);
+        int fromIndex = fixPosition(fromPosition);
+        int toIndex = fixPosition(toPosition);
+        TLRPC.Dialog fromDialog = dialogs.get(fromIndex);
+        TLRPC.Dialog toDialog = dialogs.get(toIndex);
+        if (dialogsType == 7 || dialogsType == 8) {
+            MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+            int idx1 = filter.pinnedDialogs.get(fromDialog.id);
+            int idx2 = filter.pinnedDialogs.get(toDialog.id);
+            filter.pinnedDialogs.put(fromDialog.id, idx2);
+            filter.pinnedDialogs.put(toDialog.id, idx1);
+        } else {
+            int oldNum = fromDialog.pinnedNum;
+            fromDialog.pinnedNum = toDialog.pinnedNum;
+            toDialog.pinnedNum = oldNum;
+        }
+        Collections.swap(dialogs, fromIndex, toIndex);
+        updateList(recyclerView);
+    }
     @Override
     public void notifyItemMoved(int fromPosition, int toPosition) {
-        if (!fromDiffUtils) {
-            ArrayList<TLRPC.Dialog> dialogs = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, false);
-            int fromIndex = fixPosition(fromPosition);
-            int toIndex = fixPosition(toPosition);
-            TLRPC.Dialog fromDialog = dialogs.get(fromIndex);
-            TLRPC.Dialog toDialog = dialogs.get(toIndex);
-            if (dialogsType == 7 || dialogsType == 8) {
-                MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
-                int idx1 = filter.pinnedDialogs.get(fromDialog.id);
-                int idx2 = filter.pinnedDialogs.get(toDialog.id);
-                filter.pinnedDialogs.put(fromDialog.id, idx2);
-                filter.pinnedDialogs.put(toDialog.id, idx1);
-            } else {
-                int oldNum = fromDialog.pinnedNum;
-                fromDialog.pinnedNum = toDialog.pinnedNum;
-                toDialog.pinnedNum = oldNum;
-            }
-            Collections.swap(dialogs, fromIndex, toIndex);
-        }
         super.notifyItemMoved(fromPosition, toPosition);
     }
 

@@ -123,6 +123,7 @@ public class HeaderCell extends FrameLayout {
     }
 
     public void setText(CharSequence text) {
+        textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setText(text);
     }
 

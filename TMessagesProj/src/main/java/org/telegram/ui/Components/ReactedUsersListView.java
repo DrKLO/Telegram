@@ -433,7 +433,9 @@ public class ReactedUsersListView extends FrameLayout {
                         reactView.setImageDrawable(null);
                     }
                 } else {
-                    reactView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId));
+                    AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId);
+                    drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                    reactView.setAnimatedEmojiDrawable(drawable);
                     hasReactImage = true;
                 }
                 setContentDescription(LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, UserObject.getUserName(u), reaction.reaction));

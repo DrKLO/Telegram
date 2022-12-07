@@ -49,6 +49,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.WindowManager;
 import android.view.animation.OvershootInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -79,6 +80,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -223,6 +226,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public final static int LOCATION_TYPE_GROUP = 4;
     public final static int LOCATION_TYPE_GROUP_VIEW = 5;
     public final static int LOCATION_TYPE_LIVE_VIEW = 6;
+
+    private ActionBarPopupWindow popupWindow;
 
     private Runnable markAsReadRunnable;
 
@@ -542,7 +547,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 } else if (id == share_live_location) {
                     openShareLiveLocation(0);
                 } else if (id == get_directions) {
-                    openDirections();
+                    openDirections(null);
                 }
             }
         });
@@ -951,7 +956,24 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, false, null) {
             @Override
             protected void onDirectionClick() {
-                openDirections();
+                openDirections(null);
+            }
+
+            @Override
+            public void setLiveLocations(ArrayList<LiveLocation> liveLocations) {
+                if (messageObject != null && messageObject.isLiveLocation()) {
+                    int otherPeopleLocations = 0;
+                    if (liveLocations != null) {
+                        for (int i = 0; i < liveLocations.size(); ++i) {
+                            LiveLocation loc = liveLocations.get(i);
+                            if (loc != null && !UserObject.isUserSelf(loc.user)) {
+                                otherPeopleLocations++;
+                            }
+                        }
+                    }
+                    otherItem.setVisibility(otherPeopleLocations == 1 ? View.VISIBLE : View.GONE);
+                }
+                super.setLiveLocations(liveLocations);
             }
         });
         adapter.setMyLocationDenied(locationDenied);
@@ -978,6 +1000,47 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
         });
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (locationType == 2) {
+                Object object = adapter.getItem(position);
+                if (object instanceof LiveLocation) {
+
+                    final LiveLocation location = (LiveLocation) object;
+
+                    ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
+                    ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), true, true, getResourceProvider());
+                    cell.setMinimumWidth(AndroidUtilities.dp(200));
+                    cell.setTextAndIcon(LocaleController.getString("GetDirections", R.string.GetDirections), R.drawable.navigate);
+                    cell.setOnClickListener(e -> {
+                        openDirections(location);
+                        if (popupWindow != null) {
+                            popupWindow.dismiss();
+                        }
+                    });
+                    popupLayout.addView(cell);
+
+                    popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+                        @Override
+                        public void dismiss() {
+                            super.dismiss();
+                            popupWindow = null;
+                        }
+                    };
+                    popupWindow.setOutsideTouchable(true);
+                    popupWindow.setClippingEnabled(true);
+                    popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+                    popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+
+                    int[] loc = new int[2];
+                    view.getLocationInWindow(loc);
+                    popupWindow.showAtLocation(view, Gravity.TOP, 0, loc[1] - AndroidUtilities.dp(48 + 4));
+                    popupWindow.dimBehind();
+
+                    return true;
+                }
+            }
+            return false;
+        });
         listView.setOnItemClickListener((view, position) -> {
             if (locationType == LOCATION_TYPE_GROUP) {
                 if (position == 1) {
@@ -1289,9 +1352,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         return AndroidUtilities.computePerceivedBrightness(color) < 0.721f;
     }
 
-    private void openDirections() {
+    private void openDirections(LiveLocation location) {
         double daddrLat, daddrLong;
-        if (messageObject != null) {
+        if (location != null && location.object != null) {
+            daddrLat = location.object.media.geo.lat;
+            daddrLong = location.object.media.geo._long;
+        } else if (messageObject != null) {
             daddrLat = messageObject.messageOwner.media.geo.lat;
             daddrLong = messageObject.messageOwner.media.geo._long;
         } else {

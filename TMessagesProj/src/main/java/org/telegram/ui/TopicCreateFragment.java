@@ -224,10 +224,20 @@ public class TopicCreateFragment extends BaseFragment {
                             editForumRequest.icon_emoji_id = selectedEmojiDocumentId;
                             editForumRequest.flags |= 2;
                         }
-                        if (checkBoxCell != null) {
-                            editForumRequest.hidden = !checkBoxCell.isChecked();
-                            editForumRequest.flags |= 8;
-                        }
+//                        if (checkBoxCell != null ) {
+//                            editForumRequest.hidden = !checkBoxCell.isChecked();
+//                            editForumRequest.flags |= 8;
+//                        }
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(editForumRequest, (response, error) -> {
+
+                        });
+                    }
+                    if (checkBoxCell != null && topicForEdit.id == 1 && !checkBoxCell.isChecked() != topicForEdit.hidden) {
+                        TLRPC.TL_channels_editForumTopic editForumRequest = new TLRPC.TL_channels_editForumTopic();
+                        editForumRequest.channel = getMessagesController().getInputChannel(chatId);
+                        editForumRequest.topic_id = topicForEdit.id;
+                        editForumRequest.hidden = !checkBoxCell.isChecked();
+                        editForumRequest.flags |= 8;
                         ConnectionsManager.getInstance(currentAccount).sendRequest(editForumRequest, (response, error) -> {
 
                         });
@@ -520,6 +530,7 @@ public class TopicCreateFragment extends BaseFragment {
 
         if (docId != 0) {
             AnimatedEmojiDrawable animatedEmojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, currentAccount, docId);
+            animatedEmojiDrawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
             backupImageView[1].setAnimatedEmojiDrawable(animatedEmojiDrawable);
             backupImageView[1].setImageDrawable(null);
         } else {

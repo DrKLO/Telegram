@@ -182,13 +182,13 @@ public class MessagesController extends BaseController implements NotificationCe
     private LongSparseArray<TLRPC.ChatFull> fullChats = new LongSparseArray<>();
     private LongSparseArray<ChatObject.Call> groupCalls = new LongSparseArray<>();
     private LongSparseArray<ChatObject.Call> groupCallsByChatId = new LongSparseArray<>();
-    private ArrayList<Long> loadingFullUsers = new ArrayList<>();
-    private ArrayList<Long> loadedFullUsers = new ArrayList<>();
-    private ArrayList<Long> loadingFullChats = new ArrayList<>();
-    private ArrayList<Long> loadingGroupCalls = new ArrayList<>();
-    private ArrayList<Long> loadingFullParticipants = new ArrayList<>();
-    private ArrayList<Long> loadedFullParticipants = new ArrayList<>();
-    private ArrayList<Long> loadedFullChats = new ArrayList<>();
+    private HashSet<Long> loadingFullUsers = new HashSet<>();
+    private LongSparseLongArray loadedFullUsers = new LongSparseLongArray();
+    private HashSet<Long> loadingFullChats = new HashSet<>();
+    private HashSet<Long> loadingGroupCalls = new HashSet<>();
+    private HashSet<Long> loadingFullParticipants = new HashSet<>();
+    private HashSet<Long> loadedFullParticipants = new HashSet<>();
+    public LongSparseLongArray loadedFullChats = new LongSparseLongArray();
     private LongSparseArray<LongSparseArray<TLRPC.ChannelParticipant>> channelAdmins = new LongSparseArray<>();
     private LongSparseIntArray loadingChannelAdmins = new LongSparseIntArray();
 
@@ -3955,7 +3955,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (!fromCache) {
                 if (oldChat != null) {
                     if (chat.version != oldChat.version) {
-                        loadedFullChats.remove(chat.id);
+                        loadedFullChats.delete(chat.id);
                     }
                     if (oldChat.participants_count != 0 && chat.participants_count == 0) {
                         chat.participants_count = oldChat.participants_count;
@@ -4328,10 +4328,11 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void loadFullChat(long chatId, int classGuid, boolean force) {
-        boolean loaded = loadedFullChats.contains(chatId);
-//        if (loadingFullChats.contains(chatId) || !force && loaded) {
-//            return;
-//        }
+        long lastLoadedTime = loadedFullChats.get(chatId, 0);
+        boolean loaded = lastLoadedTime > 0;
+        if (loadingFullChats.contains(chatId) || !force && loaded) {
+            return;
+        }
         loadingFullChats.add(chatId);
         TLObject request;
         long dialogId = -chatId;
@@ -4413,7 +4414,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     exportedChats.put(chatId, res.full_chat.exported_invite);
                     loadingFullChats.remove(chatId);
-                    loadedFullChats.add(chatId);
+                    loadedFullChats.put(chatId,  System.currentTimeMillis());
 
                     putUsers(res.users, false);
                     putChats(res.chats, false);
@@ -4450,7 +4451,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void loadFullUser(final TLRPC.User user, int classGuid, boolean force) {
-        if (user == null || loadingFullUsers.contains(user.id) || !force && loadedFullUsers.contains(user.id)) {
+        if (user == null || loadingFullUsers.contains(user.id) || !force && loadedFullUsers.get(user.id) > 0) {
             return;
         }
         loadingFullUsers.add(user.id);
@@ -4491,7 +4492,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     fullUsers.put(user.id, userFull);
                     loadingFullUsers.remove(user.id);
-                    loadedFullUsers.add(user.id);
+                    loadedFullUsers.put(user.id, System.currentTimeMillis());
                     String names = user.first_name + user.last_name + UserObject.getPublicUsername(user);
                     ArrayList<TLRPC.User> users = new ArrayList<>();
                     users.add(userFull.user);
@@ -6302,7 +6303,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public void processChatInfo(long chatId, TLRPC.ChatFull info, ArrayList<TLRPC.User> usersArr, boolean fromCache, boolean force, boolean byChannelUsers, ArrayList<Integer> pinnedMessages, HashMap<Integer, MessageObject> pinnedMessagesMap, int totalPinnedCount, boolean pinnedEndReached) {
         AndroidUtilities.runOnUIThread(() -> {
             if (fromCache && chatId > 0 && !byChannelUsers) {
-                loadFullChat(chatId, 0, force);
+                long lastLoadedTime = loadedFullChats.get(chatId, 0);
+                if (System.currentTimeMillis() - lastLoadedTime > 60 * 1000) {
+                    loadFullChat(chatId, 0, force);
+                }
             }
             if (info != null) {
                 if (fullChats.get(chatId) == null) {
@@ -6341,7 +6345,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public void processUserInfo(TLRPC.User user, TLRPC.UserFull info, boolean fromCache, boolean force, int classGuid, ArrayList<Integer> pinnedMessages, HashMap<Integer, MessageObject> pinnedMessagesMap, int totalPinnedCount, boolean pinnedEndReached) {
         AndroidUtilities.runOnUIThread(() -> {
             if (fromCache) {
-                loadFullUser(user, classGuid, force);
+                long lastLoadedTime = loadedFullUsers.get(user.id, 0);
+                if (System.currentTimeMillis() - lastLoadedTime > 60 * 1000) {
+                    loadFullUser(user, classGuid, force);
+                }
             }
             if (info != null) {
                 if (fullUsers.get(user.id) == null) {
@@ -14324,7 +14331,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 AndroidUtilities.runOnUIThread(() -> LocaleController.getInstance().saveRemoteLocaleStringsForCurrentLocale(update.difference, currentAccount));
             } else if (baseUpdate instanceof TLRPC.TL_updateLangPackTooLong) {
                 TLRPC.TL_updateLangPackTooLong update = (TLRPC.TL_updateLangPackTooLong) baseUpdate;
-                LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, update.lang_code, false);
+                LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, update.lang_code, false, null);
             } else if (baseUpdate instanceof TLRPC.TL_updateRecentReactions) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
@@ -14456,7 +14463,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     topicsReadInbox = new HashMap<>();
                 }
                 MessagesStorage.TopicKey topicKey = MessagesStorage.TopicKey.of(-update.channel_id, update.top_msg_id);
-                topicsReadInbox.put(MessagesStorage.TopicKey.of(-update.channel_id, update.top_msg_id), Math.max(Utilities.getOrDefault(topicsReadInbox, topicKey, 0), update.read_max_id));
+                topicsReadInbox.put(topicKey, Math.max(Utilities.getOrDefault(topicsReadInbox, topicKey, 0), update.read_max_id));
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
                 }

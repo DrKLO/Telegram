@@ -321,7 +321,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         if (dialogId < 0) {
             if (topicId != 0) {
                 TLRPC.TL_forumTopic forumTopic = getMessagesController().getTopicsController().findTopic(-dialogId, topicId);
-                ForumUtilities.setTopicIcon(avatarContainer.getAvatarImageView(), forumTopic, true, resourcesProvider);
+                ForumUtilities.setTopicIcon(avatarContainer.getAvatarImageView(), forumTopic, false, true, resourcesProvider);
                 avatarContainer.setTitle(forumTopic.title);
             } else {
                 TLRPC.Chat chatLocal = getMessagesController().getChat(-dialogId);

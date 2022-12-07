@@ -405,7 +405,7 @@ public class QrActivity extends BaseFragment {
     }
 
     private boolean phoneIsPublic() {
-        final ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance(currentAccount).getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_PHONE);
+        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance(currentAccount).getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_PHONE);
         if (privacyRules == null) {
             return false;
         }
@@ -421,6 +421,23 @@ public class QrActivity extends BaseFragment {
             } else if (rule instanceof TLRPC.TL_privacyValueAllowContacts) {
                 type = 1;
                 break;
+            }
+        }
+        if (type == 2) {
+            privacyRules = ContactsController.getInstance(currentAccount).getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE);
+            if (privacyRules == null || privacyRules.size() == 0) {
+                return true;
+            } else {
+                for (int a = 0; a < privacyRules.size(); a++) {
+                    TLRPC.PrivacyRule rule = privacyRules.get(a);
+                    if (rule instanceof TLRPC.TL_privacyValueAllowAll) {
+                        return true;
+                    } else if (rule instanceof TLRPC.TL_privacyValueDisallowAll) {
+                        return false;
+                    } else if (rule instanceof TLRPC.TL_privacyValueAllowContacts) {
+                        return false;
+                    }
+                }
             }
         }
         return type == 0 || type == 1;

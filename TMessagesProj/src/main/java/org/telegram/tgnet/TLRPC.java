@@ -1877,10 +1877,12 @@ public class TLRPC {
         public static int constructor = 0xfd149899;
 
         public boolean free;
+        public boolean text_color;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             free = (flags & 1) != 0;
+            text_color = (flags & 2) != 0;
             alt = stream.readString(exception);
             stickerset = InputStickerSet.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
@@ -1888,6 +1890,7 @@ public class TLRPC {
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
             flags = free ? (flags | 1) : (flags &~ 1);
+            flags = text_color ? (flags | 2) : (flags &~ 2);
             stream.writeInt32(flags);
             stream.writeString(alt);
             stickerset.serializeToStream(stream);
@@ -41030,6 +41033,9 @@ public class TLRPC {
                 case 0xae168909:
                     result = new TL_channelAdminLogEventActionDeleteTopic();
                     break;
+                case 0x64f36dfc:
+                    result = new TL_channelAdminLogEventActionToggleAntiSpam();
+                    break;
             }
             if (result == null && exception) {
                 throw new RuntimeException(String.format("can't parse magic %x in ChannelAdminLogEventAction", constructor));
@@ -41771,6 +41777,21 @@ public class TLRPC {
             for (int i = 0; i < new_value.size(); ++i) {
                 stream.writeString(new_value.get(i));
             }
+        }
+    }
+
+    public static class TL_channelAdminLogEventActionToggleAntiSpam extends ChannelAdminLogEventAction {
+        public static int constructor = 0x64f36dfc;
+
+        public boolean new_value;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            new_value = stream.readBool(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeBool(new_value);
         }
     }
 

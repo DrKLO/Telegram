@@ -77,7 +77,7 @@ public class FileLog {
         String requestSimpleName = request.getClass().getSimpleName();
         checkGson();
 
-        if (excludeRequests.contains(requestSimpleName)) {
+        if (excludeRequests.contains(requestSimpleName) && error == null) {
             return;
         }
         try {

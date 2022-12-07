@@ -2320,6 +2320,15 @@ public class MessageObject {
                 );
                 messageText = replaceWithLink(messageText, "un2", pinTopic.new_topic);
             }
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionToggleAntiSpam) {
+            TLRPC.TL_channelAdminLogEventActionToggleAntiSpam action = (TLRPC.TL_channelAdminLogEventActionToggleAntiSpam) event.action;
+            messageText = replaceWithLink(
+                action.new_value ?
+                    LocaleController.getString("EventLogEnabledAntiSpam", R.string.EventLogEnabledAntiSpam) :
+                    LocaleController.getString("EventLogDisabledAntiSpam", R.string.EventLogDisabledAntiSpam),
+                "un1",
+                fromUser
+            );
         } else {
             messageText = "unsupported " + event.action;
         }
@@ -6180,7 +6189,7 @@ public class MessageObject {
         for (int a = 0, N = document.attributes.size(); a < N; a++) {
             TLRPC.DocumentAttribute attribute = document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeSticker ||
-                    attribute instanceof TLRPC.TL_documentAttributeCustomEmoji) {
+                attribute instanceof TLRPC.TL_documentAttributeCustomEmoji) {
                 if (attribute.stickerset instanceof TLRPC.TL_inputStickerSetEmpty) {
                     return null;
                 }
@@ -6201,7 +6210,7 @@ public class MessageObject {
         for (int a = 0, N = document.attributes.size(); a < N; a++) {
             TLRPC.DocumentAttribute attribute = document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeCustomEmoji ||
-                    attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                attribute instanceof TLRPC.TL_documentAttributeSticker) {
                 return attribute.alt;
             }
         }
@@ -6229,6 +6238,23 @@ public class MessageObject {
             TLRPC.DocumentAttribute attribute = document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeCustomEmoji) {
                 return ((TLRPC.TL_documentAttributeCustomEmoji) attribute).free;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isTextColorEmoji(TLRPC.Document document) {
+        if (document == null) {
+            return false;
+        }
+        TLRPC.InputStickerSet set = MessageObject.getInputStickerSet(document);
+        for (int a = 0, N = document.attributes.size(); a < N; a++) {
+            TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+            if (attribute instanceof TLRPC.TL_documentAttributeCustomEmoji) {
+                if (attribute.stickerset instanceof TLRPC.TL_inputStickerSetID && attribute.stickerset.id == 1269403972611866647L) {
+                    return true;
+                }
+                return ((TLRPC.TL_documentAttributeCustomEmoji) attribute).text_color;
             }
         }
         return false;
@@ -7375,7 +7401,7 @@ public class MessageObject {
         }
         int maxReactionsCount = MessagesController.getInstance(currentAccount).getMaxUserReactionsCount();
 
-        if (!choosenReactions.isEmpty() && (choosenReactions.contains(newReaction) || fromDoubleTap)) {
+        if (!choosenReactions.isEmpty() && choosenReactions.contains(newReaction)) {
             if (newReaction != null) {
                 newReaction.chosen = false;
                 newReaction.count--;

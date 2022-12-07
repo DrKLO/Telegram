@@ -380,7 +380,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
         selectorPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
         selectorAccentPaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), 30));
-        premiumStarColorFilter = new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY);
+        premiumStarColorFilter = new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
 
         this.emojiX = emojiX;
         final Integer bubbleX = emojiX == null ? null : MathUtils.clamp(emojiX, AndroidUtilities.dp(26), AndroidUtilities.dp(340 - 48));
@@ -482,6 +482,12 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 dismiss.run();
             }
         } : null) {
+
+            @Override
+            protected ColorFilter getEmojiColorFilter() {
+                return premiumStarColorFilter;
+            }
+
             @Override
             protected boolean onTabClick(int index) {
                 if (smoothScrolling) {
@@ -1039,7 +1045,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             canvas.translate(0, -getTranslationY());
             emojiSelectView.drawable.setAlpha((int) (255 * emojiSelectAlpha));
             emojiSelectView.drawable.setBounds(emojiSelectRect);
-            emojiSelectView.drawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), scrimColor, 1f - scrimAlpha), PorterDuff.Mode.MULTIPLY));
+            emojiSelectView.drawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), scrimColor, 1f - scrimAlpha), PorterDuff.Mode.SRC_IN));
             emojiSelectView.drawable.draw(canvas);
             canvas.restore();
         }
@@ -3433,12 +3439,13 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
             private void drawImage(Canvas canvas, Drawable drawable, ImageViewEmoji imageView, float alpha) {
                 if (drawable != null) {
-                    drawable.setColorFilter(premiumStarColorFilter);
                     drawable.setAlpha((int) (255 * alpha));
                     if (drawable instanceof AnimatedEmojiDrawable) {
                         ((AnimatedEmojiDrawable) drawable).draw(canvas, false);
+                        drawable.setColorFilter(premiumStarColorFilter);
                     } else {
                         drawable.draw(canvas);
+                        drawable.setColorFilter(premiumStarColorFilter);
                     }
                     if (imageView.premiumLockIconView != null) {
 
@@ -4228,7 +4235,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 }
                 imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), filter, null, null, thumbDrawable, document.size, null, document, 1);
                 if (imageViewEmoji.drawable instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) imageViewEmoji.drawable).canOverrideColor()) {
-                    imageReceiver.setColorFilter(premiumStarColorFilter);
+                    imageReceiver.setColorFilter(AnimatedEmojiDrawable.isDefaultStatusEmoji((AnimatedEmojiDrawable) imageViewEmoji.drawable) ? premiumStarColorFilter : Theme.chat_animatedEmojiTextColorFilter);
                 }
             }
 

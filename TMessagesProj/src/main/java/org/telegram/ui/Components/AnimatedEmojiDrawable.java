@@ -646,13 +646,35 @@ public class AnimatedEmojiDrawable extends Drawable {
             return canOverrideColorCached;
         }
         if (document != null) {
+            return canOverrideColorCached = (isDefaultStatusEmoji() || MessageObject.isTextColorEmoji(document));
+        }
+        return false;
+    }
+
+    private Boolean isDefaultStatusEmojiCached = null;
+    public boolean isDefaultStatusEmoji() {
+        if (isDefaultStatusEmojiCached != null) {
+            return isDefaultStatusEmojiCached;
+        }
+        if (document != null) {
             TLRPC.InputStickerSet set = MessageObject.getInputStickerSet(document);
-            return canOverrideColorCached = (
+            return isDefaultStatusEmojiCached = (
                 set instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses ||
                 set instanceof TLRPC.TL_inputStickerSetID && (set.id == 773947703670341676L || set.id == 2964141614563343L)
             );
         }
         return false;
+    }
+
+    public static boolean isDefaultStatusEmoji(Drawable drawable) {
+        if (!(drawable instanceof AnimatedEmojiDrawable)) {
+            return false;
+        }
+        return isDefaultStatusEmoji((AnimatedEmojiDrawable) drawable);
+    }
+
+    public static boolean isDefaultStatusEmoji(AnimatedEmojiDrawable drawable) {
+        return drawable != null && drawable.isDefaultStatusEmoji();
     }
 
     @Override
@@ -672,7 +694,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
     @Override
     public void setColorFilter(@Nullable ColorFilter colorFilter) {
-        if (imageReceiver == null) {
+        if (imageReceiver == null || document == null) {
             colorFilterToSet = colorFilter;
         } else if (canOverrideColor()) {
             imageReceiver.setColorFilter(colorFilter);
@@ -848,7 +870,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                 return;
             }
             lastColor = color;
-            colorFilter = color != null ? new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY) : null;
+            colorFilter = color != null ? new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN) : null;
         }
 
         public Integer getColor() {

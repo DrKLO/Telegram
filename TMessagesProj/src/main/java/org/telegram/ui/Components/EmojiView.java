@@ -2836,6 +2836,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft() - startOffset, topOffset, imageView.getRight() - imageView.getPaddingRight() - startOffset, topOffset + imageView.getMeasuredHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom());
                     imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
                     imageView.drawable = drawable;
+                    imageView.drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                     imageView.imageReceiver = drawable.getImageReceiver();
                     drawInBackgroundViews.add(imageView);
                 }
@@ -5086,7 +5087,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 bottomTabContainerBackground.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
             }
         }
-
         if (emojiTabs != null) {
             emojiTabs.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
             emojiTabsShadow.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelShadowLine));

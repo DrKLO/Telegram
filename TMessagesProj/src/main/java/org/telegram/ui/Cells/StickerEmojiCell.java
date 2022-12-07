@@ -143,6 +143,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         currentEmoji = emoji;
         isPremiumSticker = MessageObject.isPremiumSticker(document);
         drawInParentView = false;
+        imageView.setColorFilter(null);
         if (isPremiumSticker) {
             premiumIconView.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             premiumIconView.setWaitingImage();
@@ -167,6 +168,9 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f);
             String imageFilter = fromEmojiPanel ? "66_66_pcache_compress" : "66_66";
+            if (MessageObject.isTextColorEmoji(document)) {
+                imageView.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+            }
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
                 if (fromEmojiPanel) {
                     drawInParentView = true;

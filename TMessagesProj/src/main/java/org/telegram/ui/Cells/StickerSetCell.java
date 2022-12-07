@@ -304,6 +304,7 @@ public class StickerSetCell extends FrameLayout {
         emojis = set.set.emojis;
         sideButtons.setVisibility(emojis ? View.VISIBLE : View.GONE);
         optionsButton.setVisibility(emojis ? View.GONE : View.VISIBLE);
+        imageView.setColorFilter(null);
 
         ArrayList<TLRPC.Document> documents = set.documents;
         if (documents != null && !documents.isEmpty()) {
@@ -340,6 +341,9 @@ public class StickerSetCell extends FrameLayout {
                     imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", svgThumb, 0, set);
                 } else {
                     imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
+                }
+                if (MessageObject.isTextColorEmoji(sticker)) {
+                    imageView.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                 }
             } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, "50_50", "tgs", svgThumb, set);

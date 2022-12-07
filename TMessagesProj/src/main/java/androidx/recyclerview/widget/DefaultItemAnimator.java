@@ -233,6 +233,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         animation
             .setDuration(getRemoveDuration())
             .setStartDelay(getRemoveDelay())
+            .setInterpolator(getRemoveInterpolator())
             .alpha(0)
             .scaleX(1f - animateByScale(view))
             .scaleY(1f - animateByScale(view))
@@ -283,29 +284,30 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             .scaleY(1f)
             .setDuration(getAddDuration())
             .setStartDelay(getAddDelay())
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(Animator animator) {
-                        dispatchAddStarting(holder);
-                    }
+            .setInterpolator(getAddInterpolator())
+            .setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animator) {
+                    dispatchAddStarting(holder);
+                }
 
-                    @Override
-                    public void onAnimationCancel(Animator animator) {
-                        view.setAlpha(1);
-                        if (animateByScale(view) > 0) {
-                            view.setScaleX(1f);
-                            view.setScaleY(1f);
-                        }
+                @Override
+                public void onAnimationCancel(Animator animator) {
+                    view.setAlpha(1);
+                    if (animateByScale(view) > 0) {
+                        view.setScaleX(1f);
+                        view.setScaleY(1f);
                     }
+                }
 
-                    @Override
-                    public void onAnimationEnd(Animator animator) {
-                        animation.setListener(null);
-                        dispatchAddFinished(holder);
-                        mAddAnimations.remove(holder);
-                        dispatchFinishedWhenDone();
-                    }
-                }).start();
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    animation.setListener(null);
+                    dispatchAddFinished(holder);
+                    mAddAnimations.remove(holder);
+                    dispatchFinishedWhenDone();
+                }
+            }).start();
     }
 
     @Override
@@ -368,12 +370,13 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         }
         if (translationInterpolator != null) {
             animation.setInterpolator(translationInterpolator);
+        } else {
+            animation.setInterpolator(getMoveInterpolator());
         }
         beforeAnimateMoveImpl(holder);
         animation
             .setDuration(getMoveDuration())
             .setStartDelay(getMoveDelay())
-            .setInterpolator(getMoveInterpolator())
             .setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -455,6 +458,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                     .scaleY(1f - animateByScale(view));
             }
             oldViewAnim
+                .setInterpolator(getChangeInterpolator())
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationStart(Animator animator) {
@@ -484,6 +488,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 .translationX(0).translationY(0)
                 .setDuration(getChangeAddDuration())
                 .setStartDelay(getChangeDelay() + (getChangeDuration() - getChangeAddDuration()))
+                .setInterpolator(getChangeInterpolator())
                 .alpha(1);
             if (animateByScale(newView) > 0) {
                 newViewAnimation.scaleX(1f).scaleY(1f);

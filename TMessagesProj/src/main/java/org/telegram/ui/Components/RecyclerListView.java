@@ -1459,8 +1459,41 @@ public class RecyclerListView extends RecyclerView {
             }
             int position = getChildAdapterPosition(child);
             if (position >= fromAdapterPosition && position <= toAdapterPosition) {
-                top = Math.min(child.getTop(), top);
-                bottom = Math.max(child.getBottom(), bottom);
+                top = Math.min((int) child.getY(), top);
+                bottom = Math.max((int) child.getY() + child.getHeight(), bottom);
+            }
+        }
+
+        if (top < bottom) {
+            if (backgroundPaint == null) {
+                backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            }
+            backgroundPaint.setColor(color);
+            canvas.drawRect(0, top, getWidth(), bottom, backgroundPaint);
+        }
+    }
+
+    protected void drawItemBackground(Canvas canvas, int adapterPosition, int color) {
+        drawItemBackground(canvas, adapterPosition, -1, color);
+    }
+
+    protected void drawItemBackground(Canvas canvas, int adapterPosition, int height, int color) {
+        int top = Integer.MAX_VALUE;
+        int bottom = Integer.MIN_VALUE;
+
+        for (int i = 0; i < getChildCount(); ++i) {
+            View child = getChildAt(i);
+            if (child == null) {
+                continue;
+            }
+            int position = getChildAdapterPosition(child);
+            if (position == adapterPosition) {
+                top = (int) child.getY();
+                if (height <= 0) {
+                    bottom = top + child.getHeight();
+                } else {
+                    bottom = top + height;
+                }
             }
         }
 

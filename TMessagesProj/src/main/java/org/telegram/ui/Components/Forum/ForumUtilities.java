@@ -48,9 +48,9 @@ public class ForumUtilities {
 
 
     public static void setTopicIcon(BackupImageView backupImageView, TLRPC.TL_forumTopic forumTopic) {
-        setTopicIcon(backupImageView, forumTopic, false, null);
+        setTopicIcon(backupImageView, forumTopic, false, false, null);
     }
-    public static void setTopicIcon(BackupImageView backupImageView, TLRPC.TL_forumTopic forumTopic, boolean largeIcon, Theme.ResourcesProvider resourcesProvider) {
+    public static void setTopicIcon(BackupImageView backupImageView, TLRPC.TL_forumTopic forumTopic, boolean actionBar, boolean largeIcon, Theme.ResourcesProvider resourcesProvider) {
         if (forumTopic == null || backupImageView == null) {
             return;
         }
@@ -60,7 +60,9 @@ public class ForumUtilities {
         } else if (forumTopic.icon_emoji_id != 0) {
             backupImageView.setImageDrawable(null);
             if (backupImageView.animatedEmojiDrawable == null || forumTopic.icon_emoji_id != backupImageView.animatedEmojiDrawable.getDocumentId()) {
-                backupImageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(largeIcon ? AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC_LARGE : AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, UserConfig.selectedAccount, forumTopic.icon_emoji_id));
+                AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(largeIcon ? AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC_LARGE : AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, UserConfig.selectedAccount, forumTopic.icon_emoji_id);
+                drawable.setColorFilter(actionBar ? new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultTitle), PorterDuff.Mode.SRC_IN) : Theme.chat_animatedEmojiTextColorFilter);
+                backupImageView.setAnimatedEmojiDrawable(drawable);
             }
         } else {
             backupImageView.setAnimatedEmojiDrawable(null);
@@ -256,6 +258,9 @@ public class ForumUtilities {
     }
 
     public static void applyTopic(ChatActivity chatActivity, MessagesStorage.TopicKey topicKey) {
+        if (topicKey.topicId == 0) {
+            return;
+        }
         TLRPC.TL_forumTopic topic = chatActivity.getMessagesController().getTopicsController().findTopic(-topicKey.dialogId, topicKey.topicId);
         if (topic == null) {
             return;

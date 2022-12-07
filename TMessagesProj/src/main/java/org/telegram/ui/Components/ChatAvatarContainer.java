@@ -868,7 +868,6 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             avatarImageView.setForUserOrChat(chat, avatarDrawable);
             avatarImageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
         }
-
     }
 
     public void setUserAvatar(TLRPC.User user) {

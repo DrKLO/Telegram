@@ -131,6 +131,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                         }
                     }, 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     emojiDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, document);
+                    emojiDrawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                     emojiDrawable.addView(this);
 
                     SpannableString stickerPack = new SpannableString(stickerPackName);

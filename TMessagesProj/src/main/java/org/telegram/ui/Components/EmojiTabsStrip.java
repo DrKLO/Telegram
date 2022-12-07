@@ -6,6 +6,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -22,6 +23,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
@@ -616,6 +618,10 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         }
     }
 
+    protected ColorFilter getEmojiColorFilter() {
+        return Theme.chat_animatedEmojiTextColorFilter;
+    }
+
     private int selectorColor() {
         return 0x2effffff & Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider);
     }
@@ -629,6 +635,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
         public Integer id;
         public boolean newly;
+        private boolean isAnimatedEmoji;
 
         private ImageView imageView;
         private RLottieDrawable lottieDrawable;
@@ -712,8 +719,17 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                         }
                     }
                 }
+
+                @Override
+                public void setImageDrawable(@Nullable Drawable drawable) {
+                    super.setImageDrawable(drawable);
+                }
             };
             imageView.setImageDrawable(drawable);
+            if (drawable instanceof AnimatedEmojiDrawable) {
+                isAnimatedEmoji = true;
+                imageView.setColorFilter(getEmojiColorFilter());
+            }
             addView(imageView);
 
             lockView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED, resourcesProvider);
@@ -914,7 +930,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
         private void setColor(int color) {
             PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
-            if (imageView != null) {
+            if (imageView != null && !isAnimatedEmoji) {
                 imageView.setColorFilter(colorFilter);
                 imageView.invalidate();
             }

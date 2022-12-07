@@ -23,6 +23,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
 import java.util.ArrayList;
@@ -279,6 +280,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
             }
 
             if (drawable.getImageReceiver() != null) {
+                drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                 drawable.setTime(time);
                 drawable.draw(canvas, drawableBounds, alpha * this.alpha);
 //                drawable.setTime(0);

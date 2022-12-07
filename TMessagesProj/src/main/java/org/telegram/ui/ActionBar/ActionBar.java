@@ -37,6 +37,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
+import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -1621,6 +1622,10 @@ public class ActionBar extends FrameLayout {
     }
 
     public void setTitleAnimated(CharSequence title, boolean fromBottom, long duration) {
+        setTitleAnimated(title, fromBottom, duration, null);
+    }
+
+    public void setTitleAnimated(CharSequence title, boolean fromBottom, long duration, Interpolator interpolator) {
         if (titleTextView[0] == null || title == null) {
             setTitle(title);
             return;
@@ -1648,12 +1653,19 @@ public class ActionBar extends FrameLayout {
         if (!crossfade) {
             titleTextView[0].setTranslationY(fromBottom ? AndroidUtilities.dp(20) : -AndroidUtilities.dp(20));
         }
-        titleTextView[0].animate().alpha(1f).translationY(0).setDuration(duration).start();
+        ViewPropertyAnimator a1 = titleTextView[0].animate().alpha(1f).translationY(0).setDuration(duration);
+        if (interpolator != null) {
+            a1.setInterpolator(interpolator);
+        }
+        a1.start();
 
         titleAnimationRunning = true;
         ViewPropertyAnimator a = titleTextView[1].animate().alpha(0);
         if (!crossfade) {
             a.translationY(fromBottom ? -AndroidUtilities.dp(20) : AndroidUtilities.dp(20));
+        }
+        if (interpolator != null) {
+            a.setInterpolator(interpolator);
         }
         a.setDuration(duration).setListener(new AnimatorListenerAdapter() {
             @Override
