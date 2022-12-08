@@ -1058,7 +1058,7 @@ public class FileLoadOperation {
                 return false;
             }
             started = true;
-            Utilities.stageQueue.postRunnable(() -> {
+            //Utilities.stageQueue.postRunnable(() -> {
                 if (totalBytesCount != 0 && (isPreloadVideoOperation && preloaded[0] || downloadedBytes == totalBytesCount)) {
                     try {
                         onFinishLoadingFile(false);
@@ -1068,7 +1068,7 @@ public class FileLoadOperation {
                 } else {
                     startDownloadRequest();
                 }
-            });
+            //});
         } else {
             started = true;
             try {

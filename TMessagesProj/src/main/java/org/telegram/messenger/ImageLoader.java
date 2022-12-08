@@ -106,7 +106,7 @@ public class ImageLoader {
     private DispatchQueuePriority cacheOutQueue = new DispatchQueuePriority("cacheOutQueue");
     private DispatchQueue cacheThumbOutQueue = new DispatchQueue("cacheThumbOutQueue");
     private DispatchQueue thumbGeneratingQueue = new DispatchQueue("thumbGeneratingQueue");
-    private DispatchQueue imageLoadQueue = new DispatchQueue("imageLoadQueue");
+    private MultiDispatchQueue imageLoadQueue = new MultiDispatchQueue("imageLoadQueue", 2);
     private HashMap<String, String> replacedBitmaps = new HashMap<>();
     private ConcurrentHashMap<String, long[]> fileProgresses = new ConcurrentHashMap<>();
     private HashMap<String, ThumbGenerateTask> thumbGenerateTasks = new HashMap<>();

@@ -784,8 +784,6 @@ public class FileLoader extends BaseController {
                         delegate.fileDidLoaded(fileName, finalFile, parentObject, finalType);
                     }
                 }
-
-                checkDownloadQueue(operation.getQueue(), fileName);
             }
 
             @Override
@@ -829,9 +827,8 @@ public class FileLoader extends BaseController {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("loadFileInternal fileName=" + fileName + " documentName=" + getDocumentFileName(document));
         }
-
-        loaderQueue.add(operation);
-        loaderQueue.checkLoadingOperations();
+        // TODO priorities
+        operation.start();
         return operation;
     }
 
@@ -908,7 +905,7 @@ public class FileLoader extends BaseController {
             uiObject.loadInternalRunnable = runnable;
             loadOperationPathsUI.put(fileName, uiObject);
         }
-        fileLoaderQueue.postRunnable(runnable);
+        runnable.run();
     }
 
     protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final long offset, final boolean priority) {
