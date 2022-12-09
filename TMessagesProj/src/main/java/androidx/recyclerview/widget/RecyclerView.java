@@ -12747,7 +12747,10 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         private long mChangeAddDuration = 250;
         private long mChangeRemoveDuration = 250;
 
-        private TimeInterpolator mMoveInterpolator = null;
+        private TimeInterpolator mAddInterpolator;
+        private TimeInterpolator mMoveInterpolator;
+        private TimeInterpolator mRemoveInterpolator;
+        private TimeInterpolator mChangeInterpolator;
 
         private long mAddDelay = 0;
         private long mRemoveDelay = 0;
@@ -12902,8 +12905,27 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             mMoveInterpolator = interpolator;
         }
 
+        public void setInterpolator(TimeInterpolator interpolator) {
+            mAddInterpolator = interpolator;
+            mMoveInterpolator = interpolator;
+            mRemoveInterpolator = interpolator;
+            mChangeInterpolator = interpolator;
+        }
+
+        public TimeInterpolator getAddInterpolator() {
+            return mAddInterpolator;
+        }
+
         public TimeInterpolator getMoveInterpolator() {
             return mMoveInterpolator;
+        }
+
+        public TimeInterpolator getRemoveInterpolator() {
+            return mRemoveInterpolator;
+        }
+
+        public TimeInterpolator getChangeInterpolator() {
+            return mChangeInterpolator;
         }
 
         /**

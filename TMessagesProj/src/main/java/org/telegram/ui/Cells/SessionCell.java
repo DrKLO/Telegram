@@ -10,12 +10,16 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -23,11 +27,12 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -40,15 +45,13 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 
-import java.util.Locale;
-
 public class SessionCell extends FrameLayout {
 
+    private int currentType;
     private TextView nameTextView;
     private TextView onlineTextView;
     private TextView detailTextView;
@@ -71,6 +74,8 @@ public class SessionCell extends FrameLayout {
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
         linearLayout.setWeightSum(1);
 
+        currentType = type;
+
         if (type == 1) {
             addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 15 : 49), 11, (LocaleController.isRTL ? 49 : 15), 0));
 
@@ -83,19 +88,19 @@ public class SessionCell extends FrameLayout {
         } else {
             placeholderImageView = new BackupImageView(context);
             placeholderImageView.setRoundRadius(AndroidUtilities.dp(10));
-            addView(placeholderImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 13, (LocaleController.isRTL ? 16 : 0), 0));
+            addView(placeholderImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 9, (LocaleController.isRTL ? 16 : 0), 0));
 
             imageView = new BackupImageView(context);
             imageView.setRoundRadius(AndroidUtilities.dp(10));
-            addView(imageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 13, (LocaleController.isRTL ? 16 : 0), 0));
+            addView(imageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 9, (LocaleController.isRTL ? 16 : 0), 0));
 
-            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 15 : 72), 11, (LocaleController.isRTL ? 72 : 15), 0));
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 15 : 72), 7.333f, (LocaleController.isRTL ? 72 : 15), 0));
         }
 
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, type == 0 ? 15 : 16);
         nameTextView.setLines(1);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setMaxLines(1);
@@ -104,7 +109,7 @@ public class SessionCell extends FrameLayout {
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
 
         onlineTextView = new TextView(context);
-        onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, type == 0 ? 12 : 13);
         onlineTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
 
         if (LocaleController.isRTL) {
@@ -127,23 +132,23 @@ public class SessionCell extends FrameLayout {
 
         detailTextView = new TextView(context);
         detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        detailTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        detailTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, type == 0 ? 13 : 14);
         detailTextView.setLines(1);
         detailTextView.setMaxLines(1);
         detailTextView.setSingleLine(true);
         detailTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, 36, rightMargin, 0));
+        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, type == 0 ? 28 : 36, rightMargin, 0));
 
         detailExTextView = new TextView(context);
         detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
-        detailExTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        detailExTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, type == 0 ? 13 : 14);
         detailExTextView.setLines(1);
         detailExTextView.setMaxLines(1);
         detailExTextView.setSingleLine(true);
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, 59, rightMargin, 0));
+        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, type == 0 ? 46 : 59, rightMargin, 0));
     }
 
     private void setContentAlpha(float alpha) {
@@ -172,7 +177,7 @@ public class SessionCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(90) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentType == 0 ? 70 : 90) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setSession(TLObject object, boolean divider) {
@@ -288,50 +293,104 @@ public class SessionCell extends FrameLayout {
         }
         String deviceModel = session.device_model.toLowerCase();
         int iconId;
-        String colorKey;
+        String colorKey, colorKey2;
         if (deviceModel.contains("safari")) {
             iconId = R.drawable.device_web_safari;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else  if (deviceModel.contains("edge")) {
             iconId = R.drawable.device_web_edge;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("chrome")) {
             iconId = R.drawable.device_web_chrome;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("opera")) {
             iconId = R.drawable.device_web_opera;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("firefox")) {
             iconId = R.drawable.device_web_firefox;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (deviceModel.contains("vivaldi")) {
             iconId = R.drawable.device_web_other;
             colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (platform.contains("ios")) {
             iconId = deviceModel.contains("ipad") ? R.drawable.device_tablet_ios : R.drawable.device_phone_ios;
             colorKey = Theme.key_avatar_backgroundBlue;
+            colorKey2 = Theme.key_avatar_background2Blue;
         } else if (platform.contains("windows")) {
             iconId = R.drawable.device_desktop_win;
             colorKey = Theme.key_avatar_backgroundCyan;
+            colorKey2 = Theme.key_avatar_background2Cyan;
         } else if (platform.contains("macos")) {
             iconId = R.drawable.device_desktop_osx;
             colorKey = Theme.key_avatar_backgroundCyan;
+            colorKey2 = Theme.key_avatar_background2Cyan;
         } else if (platform.contains("android")) {
             iconId = deviceModel.contains("tab") ? R.drawable.device_tablet_android : R.drawable.device_phone_android;
             colorKey = Theme.key_avatar_backgroundGreen;
+            colorKey2 = Theme.key_avatar_background2Green;
         } else {
             if (session.app_name.toLowerCase().contains("desktop")) {
                 iconId = R.drawable.device_desktop_other;
                 colorKey = Theme.key_avatar_backgroundCyan;
+                colorKey2 = Theme.key_avatar_background2Cyan;
             } else {
                 iconId = R.drawable.device_web_other;
                 colorKey = Theme.key_avatar_backgroundPink;
+                colorKey2 = Theme.key_avatar_background2Pink;
             }
         }
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
-        CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey)), iconDrawable);
+        Drawable bgDrawable = new CircleGradientDrawable(AndroidUtilities.dp(42), Theme.getColor(colorKey), Theme.getColor(colorKey2));
+        CombinedDrawable combinedDrawable = new CombinedDrawable(bgDrawable, iconDrawable);
         return combinedDrawable;
+    }
+
+    public static class CircleGradientDrawable extends Drawable {
+
+        private Paint paint;
+        private int size, colorTop, colorBottom;
+        public CircleGradientDrawable(int size, int colorTop, int colorBottom) {
+            this.size = size;
+            this.colorTop = colorTop;
+            this.colorBottom = colorBottom;
+            paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setShader(new LinearGradient(0, 0, 0, size, new int[] {colorTop, colorBottom}, new float[] {0, 1}, Shader.TileMode.CLAMP));
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            canvas.drawCircle(getBounds().centerX(), getBounds().centerY(), Math.min(getBounds().width(), getBounds().height()) / 2f, paint);
+        }
+
+        @Override
+        public void setAlpha(int i) {
+            paint.setAlpha(i);
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSPARENT;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return size;
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return size;
+        }
     }
 
     @Override
@@ -373,7 +432,8 @@ public class SessionCell extends FrameLayout {
             }
         }
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int margin = currentType == 1 ? 49 : 21;
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(margin), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(margin) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 
@@ -381,7 +441,7 @@ public class SessionCell extends FrameLayout {
         this.globalGradient = globalGradient;
         showStub = true;
 
-        Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, AndroidUtilities.isTablet() ?  R.drawable.device_tablet_android : R.drawable.device_phone_android).mutate();
+        Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, AndroidUtilities.isTablet() ? R.drawable.device_tablet_android : R.drawable.device_phone_android).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
         CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(Theme.key_avatar_backgroundGreen)), iconDrawable);
         if (placeholderImageView != null) {

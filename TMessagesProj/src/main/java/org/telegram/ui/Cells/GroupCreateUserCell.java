@@ -21,8 +21,10 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -86,7 +88,14 @@ public class GroupCreateUserCell extends FrameLayout {
         avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
         addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : (13 + padding), 6, LocaleController.isRTL ? (13 + padding) : 0, 0));
 
-        nameTextView = new SimpleTextView(context);
+        nameTextView = new SimpleTextView(context) {
+            @Override
+            public boolean setText(CharSequence value, boolean force) {
+                value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                return super.setText(value, force);
+            }
+        };
+        NotificationCenter.listenEmojiLoading(nameTextView);
         nameTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_nameText : Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setTextSize(16);
@@ -203,6 +212,7 @@ public class GroupCreateUserCell extends FrameLayout {
         TLRPC.FileLocation photo = null;
         String newName = null;
 
+        TLRPC.Chat currentChat = null;
         if (currentObject instanceof String) {
             ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(15);
             avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(38);
@@ -332,7 +342,7 @@ public class GroupCreateUserCell extends FrameLayout {
 
                 avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
             } else {
-                TLRPC.Chat currentChat = (TLRPC.Chat) currentObject;
+                currentChat = (TLRPC.Chat) currentObject;
                 if (currentChat.photo != null) {
                     photo = currentChat.photo.photo_small;
                 }
@@ -394,6 +404,8 @@ public class GroupCreateUserCell extends FrameLayout {
             }
         }
 
+
+        avatarImageView.setRoundRadius(currentChat != null && currentChat.forum ? AndroidUtilities.dp(14) : AndroidUtilities.dp(24));
         if (currentStatus != null) {
             statusTextView.setText(currentStatus, true);
             statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
@@ -434,5 +446,9 @@ public class GroupCreateUserCell extends FrameLayout {
             info.setCheckable(true);
             info.setChecked(true);
         }
+    }
+
+    public SimpleTextView getStatusTextView() {
+        return statusTextView;
     }
 }

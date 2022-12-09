@@ -527,4 +527,34 @@ public class UserConfig extends BaseController {
         }
         return null;
     }
+
+
+    int globalTtl = 0;
+    boolean ttlIsLoading = false;
+    long lastLoadingTime;
+
+    public int getGlobalTTl() {
+        return globalTtl;
+    }
+
+    public void loadGlobalTTl() {
+        if (ttlIsLoading || System.currentTimeMillis() - lastLoadingTime < 60 * 1000) {
+            return;
+        }
+        ttlIsLoading = true;
+        TLRPC.TL_messages_getDefaultHistoryTTL getDefaultHistoryTTL = new TLRPC.TL_messages_getDefaultHistoryTTL();
+        getConnectionsManager().sendRequest(getDefaultHistoryTTL, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response != null) {
+                globalTtl = ((TLRPC.TL_defaultHistoryTTL) response).period / 60;
+                getNotificationCenter().postNotificationName(NotificationCenter.didUpdateGlobalAutoDeleteTimer);
+                ttlIsLoading = false;
+                lastLoadingTime = System.currentTimeMillis();
+            }
+        }));
+
+    }
+
+    public void setGlobalTtl(int ttl) {
+        globalTtl = ttl;
+    }
 }

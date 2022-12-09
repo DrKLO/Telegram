@@ -42,6 +42,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -63,7 +64,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     private BackupImageView thumbImageView;
     private TextView nameTextView;
     private TextView extTextView;
-    private TextView dateTextView;
+    private AnimatedEmojiSpan.TextViewEmojis dateTextView;
     private RLottieImageView statusImageView;
     private LineProgressView progressView;
     private CheckBox2 checkBox;
@@ -211,7 +212,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             addView(statusImageView, LayoutHelper.createFrame(14, 14, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 70, 33, LocaleController.isRTL ? 72 : 8, 0));
         }
 
-        dateTextView = new TextView(context);
+        dateTextView = new AnimatedEmojiSpan.TextViewEmojis(context);
         dateTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         dateTextView.setLines(1);
         dateTextView.setMaxLines(1);

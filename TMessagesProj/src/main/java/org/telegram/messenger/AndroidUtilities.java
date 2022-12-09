@@ -475,7 +475,7 @@ public class AndroidUtilities {
         return spannableStringBuilder;
     }
 
-    public static void recycleBitmaps(ArrayList<Bitmap> bitmapToRecycle) {
+    public static void recycleBitmaps(List<Bitmap> bitmapToRecycle) {
         if (bitmapToRecycle != null && !bitmapToRecycle.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> Utilities.globalQueue.postRunnable(() -> {
                 for (int i = 0; i < bitmapToRecycle.size(); i++) {
@@ -524,6 +524,10 @@ public class AndroidUtilities {
                 FileLog.e(e);
             }
         });
+    }
+
+    public static void recycleBitmap(Bitmap image) {
+        recycleBitmaps(Collections.singletonList(image));
     }
 
     private static class LinkSpec {
@@ -2636,7 +2640,7 @@ public class AndroidUtilities {
     }
 
     public static boolean shouldShowClipboardToast() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.hasBuiltInClipboardToasts();
+        return (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.hasBuiltInClipboardToasts()) && Build.VERSION.SDK_INT < 32 /* TODO: Update to TIRAMISU when compileSdkVersion would be 32 */;
     }
 
     public static boolean addToClipboard(CharSequence str) {

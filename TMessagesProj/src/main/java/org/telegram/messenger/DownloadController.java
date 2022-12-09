@@ -1108,14 +1108,26 @@ public class DownloadController extends BaseController implements NotificationCe
 
 
     public void startDownloadFile(TLRPC.Document document, MessageObject parentObject) {
-        if (parentObject.getDocument() == null) {
+        if (parentObject == null) {
+            return;
+        }
+        TLRPC.Document parentDocument = parentObject.getDocument();
+        if (parentDocument == null) {
             return;
         }
         AndroidUtilities.runOnUIThread(() -> {
+            if (parentDocument == null) {
+                return;
+            }
             boolean contains = false;
 
             for (int i = 0; i < recentDownloadingFiles.size(); i++) {
-                if (recentDownloadingFiles.get(i).getDocument() != null && recentDownloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                MessageObject messageObject = recentDownloadingFiles.get(i);
+                if (messageObject == null) {
+                    continue;
+                }
+                TLRPC.Document document1 = messageObject.getDocument();
+                if (document1 != null && document1.id == parentDocument.id) {
                     contains = true;
                     break;
                 }
@@ -1123,7 +1135,12 @@ public class DownloadController extends BaseController implements NotificationCe
 
             if (!contains) {
                 for (int i = 0; i < downloadingFiles.size(); i++) {
-                    if (downloadingFiles.get(i).getDocument() != null && downloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                    MessageObject messageObject = downloadingFiles.get(i);
+                    if (messageObject == null) {
+                        continue;
+                    }
+                    TLRPC.Document document1 = messageObject.getDocument();
+                    if (document1 != null && document1.id == parentDocument.id) {
                         contains = true;
                         break;
                     }

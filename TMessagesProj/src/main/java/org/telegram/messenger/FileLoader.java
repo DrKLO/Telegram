@@ -19,11 +19,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FileLoader extends BaseController {
 
@@ -34,6 +37,30 @@ public class FileLoader extends BaseController {
     public static final int PRIORITY_LOW = 0;
 
     private int priorityIncreasePointer;
+
+    private static Pattern sentPattern;
+
+    public static long getDialogIdFromParent(int currentAccount, Object parentObject) {
+        if (parentObject instanceof String) {
+            String str = (String) parentObject;
+            if (str.startsWith("sent_")) {
+                if (sentPattern == null) {
+                    sentPattern = Pattern.compile("sent_.*_.*_([0-9]+)");
+                }
+                try {
+                    Matcher matcher = sentPattern.matcher(str);
+                    if (matcher.matches()) {
+                        return Long.parseLong(matcher.group(1));
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        } else if (parentObject instanceof MessageObject) {
+            return ((MessageObject) parentObject).getDialogId();
+        }
+        return 0;
+    }
 
     private int getPriorityValue(int priorityType) {
         if (priorityType == PRIORITY_STREAM) {
@@ -49,6 +76,10 @@ public class FileLoader extends BaseController {
         } else {
             return 0;
         }
+    }
+
+    public DispatchQueue getFileLoaderQueue() {
+        return fileLoaderQueue;
     }
 
 
@@ -104,7 +135,6 @@ public class FileLoader extends BaseController {
 
 
     private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<>();
-    private ArrayList<FileLoadOperation> activeFileLoadOperation = new ArrayList<>();
     private ConcurrentHashMap<String, LoadOperationUIObject> loadOperationPathsUI = new ConcurrentHashMap<>(10, 1, 2);
     private HashMap<String, Long> uploadSizes = new HashMap<>();
 
@@ -498,6 +528,30 @@ public class FileLoader extends BaseController {
         }
     }
 
+
+    public void cancelLoadAllFiles() {
+        for (String fileName : loadOperationPathsUI.keySet()) {
+            LoadOperationUIObject uiObject = loadOperationPathsUI.get(fileName);
+            Runnable runnable = uiObject != null ? uiObject.loadInternalRunnable : null;
+            boolean removed = uiObject != null;
+            if (runnable != null) {
+                fileLoaderQueue.cancelRunnable(runnable);
+            }
+            fileLoaderQueue.postRunnable(() -> {
+                FileLoadOperation operation = loadOperationPaths.remove(fileName);
+                if (operation != null) {
+                    FileLoaderPriorityQueue queue = operation.getQueue();
+                    queue.cancel(operation);
+                }
+            });
+//            if (removed && document != null) {
+//                AndroidUtilities.runOnUIThread(() -> {
+//                    getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+//                });
+//            }
+        }
+    }
+
     public boolean isLoadingFile(final String fileName) {
         return fileName != null && loadOperationPathsUI.containsKey(fileName);
     }
@@ -713,8 +767,15 @@ public class FileLoader extends BaseController {
                 if (!operation.isPreloadVideoOperation() && operation.isPreloadFinished()) {
                     return;
                 }
-                if (document != null && parentObject instanceof MessageObject && ((MessageObject) parentObject).putInDownloadsStore) {
-                    getDownloadController().onDownloadComplete((MessageObject) parentObject);
+                long dialogId = getDialogIdFromParent(currentAccount, parentObject);
+                if (dialogId != 0) {
+                    getFileLoader().getFileDatabase().saveFileDialogId(finalFile, dialogId);
+                }
+                if (parentObject instanceof MessageObject) {
+                    MessageObject messageObject = (MessageObject) parentObject;
+                    if (document != null && messageObject.putInDownloadsStore) {
+                        getDownloadController().onDownloadComplete(messageObject);
+                    }
                 }
 
                 if (!operation.isPreloadVideoOperation()) {
@@ -915,7 +976,7 @@ public class FileLoader extends BaseController {
                     }
                 }
             } else if (MessageObject.getMedia(message) instanceof TLRPC.TL_messageMediaInvoice) {
-                TLRPC.WebDocument document = ((TLRPC.TL_messageMediaInvoice) MessageObject.getMedia(message)).photo;
+                TLRPC.WebDocument document = ((TLRPC.TL_messageMediaInvoice) MessageObject.getMedia(message)).webPhoto;
                 if (document != null) {
                     return Utilities.MD5(document.url) + "." + ImageLoader.getHttpUrlExtension(document.url, getMimeTypePart(document.mime_type));
                 }
@@ -1087,7 +1148,7 @@ public class FileLoader extends BaseController {
         return new File(dir, getAttachFileName(attach, ext));
     }
 
-    private FilePathDatabase getFileDatabase() {
+    public FilePathDatabase getFileDatabase() {
         return filePathDatabase;
     }
 
@@ -1497,5 +1558,20 @@ public class FileLoader extends BaseController {
 
     private static class LoadOperationUIObject {
         Runnable loadInternalRunnable;
+    }
+
+    public static byte[] longToBytes(long x) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(x);
+        return buffer.array();
+    }
+
+    public static long bytesToLong(byte[] bytes) {
+        long l = 0;
+        for (int i = 0; i < 8; i++) {
+            l <<= 8;
+            l ^= bytes[i] & 0xFF;
+        }
+        return l;
     }
 }

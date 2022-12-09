@@ -45,6 +45,9 @@ public class TopicExceptionCell extends FrameLayout {
 
     public void setTopic(long dialogId, TLRPC.TL_forumTopic topic) {
         ForumUtilities.setTopicIcon(backupImageView, topic);
+        if (backupImageView != null && backupImageView.getImageReceiver() != null && backupImageView.getImageReceiver().getDrawable() instanceof ForumUtilities.GeneralTopicDrawable) {
+            ((ForumUtilities.GeneralTopicDrawable) backupImageView.getImageReceiver().getDrawable()).setColor(Theme.getColor(Theme.key_chats_archiveBackground));
+        }
         title.setText(topic.title);
         subtitle.setText(MessagesController.getInstance(UserConfig.selectedAccount).getMutedString(dialogId, topic.id));
     }

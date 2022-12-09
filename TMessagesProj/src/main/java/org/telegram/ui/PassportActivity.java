@@ -62,6 +62,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.ColorUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -115,6 +116,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.URLSpanNoUnderline;
@@ -1110,7 +1112,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     if (getParentActivity() == null) {
                         return;
                     }
-                    final TextView message = new TextView(getParentActivity());
+                    final LinkSpanDrawable.LinksTextView message = new LinkSpanDrawable.LinksTextView(getParentActivity());
                     String str2 = LocaleController.getString("PassportInfo2", R.string.PassportInfo2);
                     SpannableStringBuilder spanned = new SpannableStringBuilder(str2);
                     int index1 = str2.indexOf('*');
@@ -2514,12 +2516,14 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         emptyTextView3 = new TextView(context);
         emptyTextView3.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        emptyTextView3.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+        emptyTextView3.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), 0x20), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         emptyTextView3.setGravity(Gravity.CENTER);
         emptyTextView3.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         emptyTextView3.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         emptyTextView3.setGravity(Gravity.CENTER);
         emptyTextView3.setText(LocaleController.getString("PassportNoDocumentsAdd", R.string.PassportNoDocumentsAdd).toUpperCase());
-        emptyLayout.addView(emptyTextView3, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER, 0, 16, 0, 0));
+        emptyLayout.addView(emptyTextView3, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER, 0, 12, 0, 0));
         emptyTextView3.setOnClickListener(v -> openAddDocumentAlert());
 
         for (int a = 0, size = currentForm.values.size(); a < size; a++) {

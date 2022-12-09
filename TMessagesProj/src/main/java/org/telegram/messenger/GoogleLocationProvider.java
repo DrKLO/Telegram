@@ -29,7 +29,7 @@ public class GoogleLocationProvider implements ILocationServiceProvider {
     @Override
     public void init(Context context) {
         locationProviderClient = LocationServices.getFusedLocationProviderClient(context);
-        settingsClient = new SettingsClient(context);
+        settingsClient = LocationServices.getSettingsClient(context);
     }
 
     @Override

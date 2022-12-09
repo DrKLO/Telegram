@@ -12,14 +12,13 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -242,7 +241,7 @@ public class ManageChatUserCell extends FrameLayout {
                 nameTextView.setText(currentName);
             } else {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
-                nameTextView.setText(lastName);
+                nameTextView.setText(Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(15), false));
             }
             if (currrntStatus != null) {
                 statusTextView.setTextColor(statusColor);

@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -381,7 +382,14 @@ public class ReactedUsersListView extends FrameLayout {
             avatarView.setRoundRadius(AndroidUtilities.dp(32));
             addView(avatarView, LayoutHelper.createFrameRelatively(36, 36, Gravity.START | Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
-            titleView = new SimpleTextView(context);
+            titleView = new SimpleTextView(context) {
+                @Override
+                public boolean setText(CharSequence value) {
+                    value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                    return super.setText(value);
+                }
+            };
+            NotificationCenter.listenEmojiLoading(titleView);
             titleView.setTextSize(16);
             titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
             titleView.setEllipsizeByGradient(true);
@@ -425,7 +433,9 @@ public class ReactedUsersListView extends FrameLayout {
                         reactView.setImageDrawable(null);
                     }
                 } else {
-                    reactView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId));
+                    AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, currentAccount, visibleReaction.documentId);
+                    drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                    reactView.setAnimatedEmojiDrawable(drawable);
                     hasReactImage = true;
                 }
                 setContentDescription(LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, UserObject.getUserName(u), reaction.reaction));

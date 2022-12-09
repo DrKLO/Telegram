@@ -24,17 +24,19 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-
-import androidx.core.graphics.ColorUtils;
 
 public class GroupCreateSpan extends View {
 
@@ -76,12 +78,12 @@ public class GroupCreateSpan extends View {
         Object imageParent;
 
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+        avatarDrawable.setTextSize(AndroidUtilities.dp(20));
         if (object instanceof String) {
             imageLocation = null;
             imageParent = null;
             String str = (String) object;
-            avatarDrawable.setSmallSize(true);
+            avatarDrawable.setScaleSize(.8f);
             switch (str) {
                 case "contacts":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
@@ -130,13 +132,13 @@ public class GroupCreateSpan extends View {
             uid = user.id;
             if (UserObject.isReplyUser(user)) {
                 firstName = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
-                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setScaleSize(.8f);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
                 imageLocation = null;
                 imageParent = null;
             } else if (UserObject.isUserSelf(user)) {
                 firstName = LocaleController.getString("SavedMessages", R.string.SavedMessages);
-                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setScaleSize(.8f);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                 imageLocation = null;
                 imageParent = null;
@@ -178,7 +180,10 @@ public class GroupCreateSpan extends View {
             maxNameWidth = (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(32 + 18 + 57 * 2)) / 2;
         }
 
-        CharSequence name = TextUtils.ellipsize(firstName.replace('\n', ' '), textPaint, maxNameWidth, TextUtils.TruncateAt.END);
+        firstName = firstName.replace('\n', ' ');
+        CharSequence name = firstName;
+        name = Emoji.replaceEmoji(name, textPaint.getFontMetricsInt(), AndroidUtilities.dp(12), false);
+        name = TextUtils.ellipsize(name, textPaint, maxNameWidth, TextUtils.TruncateAt.END);
         nameLayout = new StaticLayout(name, textPaint, 1000, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         if (nameLayout.getLineCount() > 0) {
             textWidth = (int) Math.ceil(nameLayout.getLineWidth(0));
@@ -186,6 +191,8 @@ public class GroupCreateSpan extends View {
         }
         imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
         updateColors();
+
+        NotificationCenter.listenEmojiLoading(this);
     }
 
     public void updateColors() {

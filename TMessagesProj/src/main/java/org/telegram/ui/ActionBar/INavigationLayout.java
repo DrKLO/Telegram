@@ -385,4 +385,8 @@ public interface INavigationLayout {
         BACK,
         MENU
     }
+
+    interface IBackButtonDrawable {
+        BackButtonState getBackButtonState();
+    }
 }

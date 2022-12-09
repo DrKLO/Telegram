@@ -128,25 +128,29 @@ public class LocationSharingService extends Service implements NotificationCente
         if (getInfos().isEmpty()) {
             stopSelf();
         }
-        if (builder == null) {
-            Intent intent2 = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
-            intent2.setAction("org.tmessages.openlocations");
-            intent2.addCategory(Intent.CATEGORY_LAUNCHER);
-            PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent2, PendingIntent.FLAG_MUTABLE);
+        try {
+            if (builder == null) {
+                Intent intent2 = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
+                intent2.setAction("org.tmessages.openlocations");
+                intent2.addCategory(Intent.CATEGORY_LAUNCHER);
+                PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent2, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-            builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
-            builder.setWhen(System.currentTimeMillis());
-            builder.setSmallIcon(R.drawable.live_loc);
-            builder.setContentIntent(contentIntent);
-            NotificationsController.checkOtherNotificationsChannel();
-            builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
-            builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
-            Intent stopIntent = new Intent(ApplicationLoader.applicationContext, StopLiveLocationReceiver.class);
-            builder.addAction(0, LocaleController.getString("StopLiveLocation", R.string.StopLiveLocation), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, stopIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+                builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
+                builder.setWhen(System.currentTimeMillis());
+                builder.setSmallIcon(R.drawable.live_loc);
+                builder.setContentIntent(contentIntent);
+                NotificationsController.checkOtherNotificationsChannel();
+                builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
+                builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
+                Intent stopIntent = new Intent(ApplicationLoader.applicationContext, StopLiveLocationReceiver.class);
+                builder.addAction(0, LocaleController.getString("StopLiveLocation", R.string.StopLiveLocation), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, stopIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+            }
+
+            updateNotification(false);
+            startForeground(6, builder.build());
+        } catch (Throwable e) {
+            FileLog.e(e);
         }
-
-        updateNotification(false);
-        startForeground(6, builder.build());
         return Service.START_NOT_STICKY;
     }
 }

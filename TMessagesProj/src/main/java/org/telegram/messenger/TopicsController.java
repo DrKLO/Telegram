@@ -1,6 +1,7 @@
 package org.telegram.messenger;
 
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.SparseArray;
@@ -21,7 +22,6 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +33,8 @@ public class TopicsController extends BaseController {
     public static final int TOPIC_FLAG_ICON = 2;
     public static final int TOPIC_FLAG_PIN = 4;
     public static final int TOPIC_FLAG_CLOSE = 8;
-
+    public static final int TOPIC_FLAG_TOTAL_MESSAGES_COUNT = 16;
+    public static final int TOPIC_FLAG_HIDE = 32;
 
     private static final int MAX_PRELOAD_COUNT = 20;
 
@@ -67,7 +68,7 @@ public class TopicsController extends BaseController {
             return;
         }
 
-        if (BuildVars.DEBUG_PRIVATE_VERSION) {
+        if (BuildVars.LOGS_ENABLED) {
             FileLog.d("load topics " + chatId + " fromCache=" + fromCache + " loadType=" + loadType);
         }
         topicsIsLoading.put(chatId, 1);
@@ -75,7 +76,7 @@ public class TopicsController extends BaseController {
         if (fromCache) {
             getMessagesStorage().loadTopics(-chatId, topics -> {
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                    if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("loaded from cache " + chatId + " topics_count=" + (topics == null ? 0 : topics.size()));
                     }
 
@@ -98,7 +99,7 @@ public class TopicsController extends BaseController {
             getForumTopics.offset_id = loadOffsets.lastMessageId;
             getForumTopics.offset_topic = loadOffsets.lastTopicId;
 
-            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+            if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("offset_date=" + loadOffsets.lastMessageDate + " offset_id=" + loadOffsets.lastMessageId + " offset_topic=" + loadOffsets.lastTopicId);
             }
         }
@@ -111,7 +112,7 @@ public class TopicsController extends BaseController {
                     messagesMap.put(topics.messages.get(i).id, topics.messages.get(i));
                 }
                 AndroidUtilities.runOnUIThread(() -> {
-                    getMessagesStorage().putUsersAndChats(((TLRPC.TL_messages_forumTopics) response).users, ((TLRPC.TL_messages_forumTopics) response).chats, true, false);
+                    getMessagesStorage().putUsersAndChats(((TLRPC.TL_messages_forumTopics) response).users, ((TLRPC.TL_messages_forumTopics) response).chats, true, true);
                     getMessagesController().putUsers(((TLRPC.TL_messages_forumTopics) response).users, false);
                     getMessagesController().putChats(((TLRPC.TL_messages_forumTopics) response).chats, false);
 
@@ -141,6 +142,9 @@ public class TopicsController extends BaseController {
     }
 
     public void processTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> newTopics, SparseArray<TLRPC.Message> messagesMap, boolean fromCache, int loadType, int totalCount) {
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("processTopics=" + "new_topics_size=" + (newTopics == null ? 0 : newTopics.size()) + " fromCache=" + fromCache + " load_type=" + loadType + " totalCount=" + totalCount);
+        }
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         ArrayList<TLRPC.TL_forumTopic> topicsToReload = null;
         LongSparseArray<TLRPC.TL_forumTopic> topicsMap = topicsMapByChatId.get(chatId);
@@ -204,9 +208,10 @@ public class TopicsController extends BaseController {
 
         if (topicsToReload != null && loadType != LOAD_TYPE_LOAD_UNKNOWN) {
             reloadTopics(chatId, topicsToReload);
-        } else if (loadType == LOAD_TYPE_LOAD_NEXT && topics.size() >= totalCount && totalCount >= 0) {
+        } else if (((loadType == LOAD_TYPE_PRELOAD && !fromCache) || loadType == LOAD_TYPE_LOAD_NEXT) && topics.size() >= totalCount && totalCount >= 0) {
             endIsReached.put(chatId, 1);
             getUserConfig().getPreferences().edit().putBoolean("topics_end_reached_" + chatId, true).apply();
+            changed = true;
         }
 
         if (changed) {
@@ -239,7 +244,19 @@ public class TopicsController extends BaseController {
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         if (topics != null) {
             if (openedTopicsBuChatId.get(chatId, 0) > 0) {
-                Collections.sort(topics, Comparator.comparingInt(o -> o.topMessage == null ? Integer.MAX_VALUE : -(o.pinned ? Integer.MAX_VALUE - o.pinnedOrder : o.topMessage.date)));
+//                Comparator.comparingInt(o -> o.topMessage == null ? Integer.MAX_VALUE : -(o.pinned ? Integer.MAX_VALUE - o.pinnedOrder : o.topMessage.date))
+                Collections.sort(topics, (a, b) -> {
+                    if (a.hidden != b.hidden) {
+                        return a.hidden ? -1 : 1;
+                    }
+                    if (a.pinned != b.pinned) {
+                        return a.pinned ? -1 : 1;
+                    }
+                    if (a.pinned && b.pinned) {
+                        return a.pinnedOrder - b.pinnedOrder;
+                    }
+                    return (b.topMessage != null ? b.topMessage.date : 0) - (a.topMessage != null ? a.topMessage.date : 0);
+                });
             }
             if (notify) {
                 getNotificationCenter().postNotificationName(NotificationCenter.topicsDidLoaded, chatId, true);
@@ -405,6 +422,10 @@ public class TopicsController extends BaseController {
     }
 
     public CharSequence getTopicIconName(TLRPC.Chat chat, MessageObject message, TextPaint paint) {
+        return getTopicIconName(chat, message, paint, null);
+    }
+
+    public CharSequence getTopicIconName(TLRPC.Chat chat, MessageObject message, TextPaint paint, Drawable[] drawableToSet) {
         if (message.messageOwner.reply_to == null) {
             return null;
         }
@@ -415,7 +436,7 @@ public class TopicsController extends BaseController {
         if (topicId != 0) {
             TLRPC.TL_forumTopic topic = findTopic(chat.id, topicId);
             if (topic != null) {
-                return ForumUtilities.getTopicSpannedName(topic, paint);
+                return ForumUtilities.getTopicSpannedName(topic, paint, drawableToSet);
             }
         }
         return null;
@@ -464,7 +485,7 @@ public class TopicsController extends BaseController {
     }
 
     public void onTopicEdited(long dialogId, TLRPC.TL_forumTopic forumTopic) {
-        getMessagesStorage().updateTopicData(dialogId, forumTopic, TOPIC_FLAG_ICON + TOPIC_FLAG_TITLE);
+        getMessagesStorage().updateTopicData(dialogId, forumTopic, TOPIC_FLAG_ICON + TOPIC_FLAG_TITLE + TOPIC_FLAG_HIDE);
         sortTopics(-dialogId);
     }
 
@@ -590,6 +611,37 @@ public class TopicsController extends BaseController {
         }
     }
 
+    public void toggleShowTopic(long chatId, int topicId, boolean show) {
+        TLRPC.TL_channels_editForumTopic req = new TLRPC.TL_channels_editForumTopic();
+        req.channel = getMessagesController().getInputChannel(chatId);
+        req.topic_id = topicId;
+        req.flags = 8;
+        boolean wasHidden = show;
+        req.hidden = !show;
+
+        TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
+        if (topic != null) {
+            wasHidden = topic.hidden;
+            topic.hidden = req.hidden;
+            if (topic.hidden) {
+                topic.closed = true;
+//                topic.pinned = true;
+//                ArrayList<Integer> order = getCurrentPinnedOrder(chatId);
+//                order.remove((Integer) topicId);
+//                order.add(0, topicId);
+//                applyPinnedOrder(chatId, order);
+            }
+            updateTopicInUi(-chatId, topic, TOPIC_FLAG_PIN | TOPIC_FLAG_HIDE | TOPIC_FLAG_CLOSE);
+            getMessagesStorage().updateTopicData(-chatId, topic, TOPIC_FLAG_PIN | TOPIC_FLAG_HIDE | TOPIC_FLAG_CLOSE);
+        }
+
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
+            if (err != null) {
+
+            }
+        });
+    }
+
     public void pinTopic(long chatId, int topicId, boolean pin, BaseFragment fragment) {
         TLRPC.TL_channels_updatePinnedForumTopic req = new TLRPC.TL_channels_updatePinnedForumTopic();
         req.channel = getMessagesController().getInputChannel(chatId);
@@ -611,13 +663,15 @@ public class TopicsController extends BaseController {
                         return;
                     }
                     applyPinnedOrder(chatId, prevOrder);
-                    fragment.showDialog(
+                    AndroidUtilities.runOnUIThread(() -> {
+                        fragment.showDialog(
                             new AlertDialog.Builder(fragment.getContext())
-                                    .setTitle(LocaleController.getString("LimitReached", R.string.LimitReached))
-                                    .setMessage(LocaleController.formatString("LimitReachedPinnedTopics", R.string.LimitReachedPinnedTopics, MessagesController.getInstance(currentAccount).topicsPinnedLimit))
-                                    .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
-                                    .create()
-                    );
+                                .setTitle(LocaleController.getString("LimitReached", R.string.LimitReached))
+                                .setMessage(LocaleController.formatString("LimitReachedPinnedTopics", R.string.LimitReachedPinnedTopics, MessagesController.getInstance(currentAccount).topicsPinnedLimit))
+                                .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
+                                .create()
+                        );
+                    });
                 } else if ("PINNED_TOPIC_NOT_MODIFIED".equals(error.text)) {
                     reloadTopics(chatId, false);
                 }
@@ -750,6 +804,9 @@ public class TopicsController extends BaseController {
                             topic.unread_count = update.unreadCount;
                             topic.unread_mentions_count = update.unreadMentions;
                             topicsByTopMsgId.put(messageHash(topic.top_message, -update.dialogId), topic);
+                        }
+                        if (update.totalMessagesCount > 0) {
+                            topic.totalMessagesCount = update.totalMessagesCount;
                         }
                         changedDialogs.add(-update.dialogId);
                     }
@@ -890,6 +947,9 @@ public class TopicsController extends BaseController {
             if ((flags & TOPIC_FLAG_PIN) != 0) {
                 topic.pinned = forumTopic.pinned;
             }
+            if ((flags & TOPIC_FLAG_HIDE) != 0) {
+                topic.hidden = forumTopic.hidden;
+            }
             sortTopics(-dialogId);
         }
     }
@@ -926,6 +986,7 @@ public class TopicsController extends BaseController {
     }
 
     public static class TopicUpdate {
+        public int totalMessagesCount = -1;
         long dialogId;
         int topicId;
         int unreadMentions;
@@ -951,6 +1012,25 @@ public class TopicsController extends BaseController {
             v = 0;
         }
         openedTopicsBuChatId.put(chatId, v);
+    }
 
+    public void getTopicRepliesCount(long dialogId, int topicId) {
+        TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
+        if (topic != null) {
+            if (topic.totalMessagesCount == 0) {
+                TLRPC.TL_messages_getReplies req = new TLRPC.TL_messages_getReplies();
+                req.peer = getMessagesController().getInputPeer(dialogId);
+                req.msg_id = topicId;
+                req.limit = 1;
+                getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (response != null) {
+                        TLRPC.messages_Messages messages = (TLRPC.messages_Messages) response;
+                        topic.totalMessagesCount = messages.count;
+                        getMessagesStorage().updateTopicData(dialogId, topic, TOPIC_FLAG_TOTAL_MESSAGES_COUNT);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.topicsDidLoaded, -dialogId, true);
+                    }
+                }));
+            }
+        }
     }
 }

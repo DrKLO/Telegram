@@ -401,12 +401,13 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         public void setColor(int color) {
             this.color = color;
             final ColorFilter colorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
+            final ColorFilter colorFilterEmoji = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
             for (int i = 0; i < animations.size(); ++i) {
                 Object animation = animations.get(i);
                 if (animation instanceof ImageReceiver) {
                     ((ImageReceiver) animation).setColorFilter(colorFilter);
                 } else if (animation instanceof AnimatedEmojiEffect) {
-                    ((AnimatedEmojiEffect) animation).animatedEmojiDrawable.setColorFilter(colorFilter);
+                    ((AnimatedEmojiEffect) animation).animatedEmojiDrawable.setColorFilter(colorFilterEmoji);
                 }
             }
         }

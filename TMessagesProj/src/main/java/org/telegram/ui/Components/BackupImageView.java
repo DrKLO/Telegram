@@ -30,6 +30,7 @@ public class BackupImageView extends View {
     protected int width = -1;
     protected int height = -1;
     public AnimatedEmojiDrawable animatedEmojiDrawable;
+    private AvatarDrawable avatarDrawable;
     boolean attached;
 
     public BackupImageView(Context context) {
@@ -169,6 +170,13 @@ public class BackupImageView extends View {
         width = w;
         height = h;
         invalidate();
+    }
+
+    public AvatarDrawable getAvatarDrawable() {
+        if (avatarDrawable == null) {
+            avatarDrawable = new AvatarDrawable();
+        }
+        return avatarDrawable;
     }
 
     @Override

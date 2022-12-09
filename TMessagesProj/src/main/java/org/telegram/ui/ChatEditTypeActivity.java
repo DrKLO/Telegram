@@ -490,7 +490,6 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                                 public void onClick(@NonNull View view) {
                                     Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                                 }
-
                                 @Override
                                 public void updateDrawState(@NonNull TextPaint ds) {
                                     super.updateDrawState(ds);
@@ -506,6 +505,46 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                     text = tagsString;
                 }
                 super.setText(text);
+            }
+
+            ValueAnimator translateAnimator;
+            int prevHeight = -1;
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+
+                if (prevHeight != -1 && linearLayout != null) {
+                    ArrayList<View> viewsToTranslate = new ArrayList<>();
+                    boolean passedMe = false;
+                    for (int i = 0; i < linearLayout.getChildCount(); ++i) {
+                        View child = linearLayout.getChildAt(i);
+                        if (passedMe) {
+                            viewsToTranslate.add(child);
+                        } else if (child == this) {
+                            passedMe = true;
+                        }
+                    }
+
+                    float diff = prevHeight - getHeight();
+                    if (translateAnimator != null) {
+                        translateAnimator.cancel();
+                    }
+                    translateAnimator = ValueAnimator.ofFloat(0, 1);
+                    translateAnimator.addUpdateListener(anm -> {
+                        float t = 1f - (float) anm.getAnimatedValue();
+                        for (int i = 0; i < viewsToTranslate.size(); ++i) {
+                            View view = viewsToTranslate.get(i);
+                            if (view != null) {
+                                view.setTranslationY(diff * t);
+                            }
+                        }
+                    });
+                    translateAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                    translateAnimator.setDuration(350);
+                    translateAnimator.start();
+                }
+                prevHeight = getHeight();
             }
         };
         checkTextView.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -846,7 +885,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
         @Override
         protected void onMeasure(int widthSpec, int heightSpec) {
-            super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(999999999, MeasureSpec.AT_MOST));
+            super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(9999999, MeasureSpec.AT_MOST));
         }
 
         public class TouchHelperCallback extends ItemTouchHelper.Callback {

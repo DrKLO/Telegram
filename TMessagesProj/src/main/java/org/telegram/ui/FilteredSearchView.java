@@ -30,6 +30,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -68,6 +69,7 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SearchViewPager;
@@ -434,16 +436,32 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             chatTo = messageObject.messageOwner.peer_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
         }
         if (user != null && chatTo != null) {
+            CharSequence chatTitle = chatTo.title;
+            if (ChatObject.isForum(chatTo)) {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatTo.id, MessageObject.getTopicId(messageObject.messageOwner, true));
+                if (topic != null) {
+                    chatTitle = ForumUtilities.getTopicSpannedName(topic, null);
+                }
+            }
+            chatTitle = Emoji.replaceEmoji(chatTitle, null, AndroidUtilities.dp(12), false);
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
             spannableStringBuilder
                     .append(ContactsController.formatName(user.first_name, user.last_name))
                     .append(' ').append(arrowSpan).append(' ')
-                    .append(chatTo.title);
+                    .append(chatTitle);
             fromName = spannableStringBuilder;
         } else if (user != null) {
             fromName = ContactsController.formatName(user.first_name, user.last_name);
         } else if (chatFrom != null) {
-            fromName = chatFrom.title;
+            CharSequence chatTitle = chatFrom.title;
+            if (ChatObject.isForum(chatFrom)) {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(UserConfig.selectedAccount).getTopicsController().findTopic(chatFrom.id, MessageObject.getTopicId(messageObject.messageOwner, true));
+                if (topic != null) {
+                    chatTitle = ForumUtilities.getTopicSpannedName(topic, null);
+                }
+            }
+            chatTitle = Emoji.replaceEmoji(chatTitle, null, AndroidUtilities.dp(12), false);
+            fromName = chatTitle;
         }
         return fromName == null ? "" : fromName;
     }
@@ -696,7 +714,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         if (finalResultArray != null) {
                             localTipChats.addAll(finalResultArray);
                         }
-                        if (query.length() >= 3 && (LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase().startsWith(query) ||
+                        if (query != null && query.length() >= 3 && (LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase().startsWith(query) ||
                                 "saved messages".startsWith(query))) {
                             boolean found = false;
                             for (int i = 0; i < localTipChats.size(); i++) {
@@ -713,7 +731,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         localTipDates.clear();
                         localTipDates.addAll(dateData);
                         localTipArchive = false;
-                        if (query.length() >= 3 && (LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter).toLowerCase().startsWith(query) ||
+                        if (query != null && query.length() >= 3 && (LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter).toLowerCase().startsWith(query) ||
                                 "archive".startsWith(query))) {
                             localTipArchive = true;
                         }
@@ -943,6 +961,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = messages.get(position);
                 boolean animated = cell.getMessage() != null && cell.getMessage().getId() == messageObject.getId();
+                cell.useFromUserAsAvatar = useFromUserAsAvatar;
                 cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 if (uiCallback.actionModeShowing()) {
                     messageHashIdTmp.set(messageObject.getId(), messageObject.getDialogId());
@@ -967,6 +986,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         }
     }
 
+    private boolean useFromUserAsAvatar;
+    public void setUseFromUserAsAvatar(boolean value) {
+        useFromUserAsAvatar = value;
+    }
 
     private void onItemClick(int index, View view, MessageObject message, int a) {
         if (message == null) {
@@ -1511,7 +1534,12 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             View view;
             switch (viewType) {
                 case 0:
-                    view = new DialogCell(null, parent.getContext(), true, false);
+                    view = new DialogCell(null, parent.getContext(), true, true) {
+                        @Override
+                        public boolean isForumCell() {
+                            return false;
+                        }
+                    };
                     break;
                 case 3:
                     FlickerLoadingView flickerLoadingView = new FlickerLoadingView(parent.getContext());
@@ -1535,7 +1563,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             if (holder.getItemViewType() == 0) {
                 DialogCell cell = ((DialogCell) holder.itemView);
                 MessageObject messageObject = messages.get(position);
-
+                cell.useFromUserAsAvatar = useFromUserAsAvatar;
                 cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false, false);
                 cell.useSeparator = position != getItemCount() - 1;
                 boolean animated = cell.getMessage() != null && cell.getMessage().getId() == messageObject.getId();

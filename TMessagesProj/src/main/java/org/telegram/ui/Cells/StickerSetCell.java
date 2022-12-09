@@ -33,10 +33,10 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -50,10 +50,7 @@ import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
-import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -182,7 +179,14 @@ public class StickerSetCell extends FrameLayout {
             }
         });
 
-        textView = new TextView(context);
+        textView = new TextView(context) {
+            @Override
+            public void setText(CharSequence text, BufferType type) {
+                text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                super.setText(text, type);
+            }
+        };
+        NotificationCenter.listenEmojiLoading(textView);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -300,6 +304,7 @@ public class StickerSetCell extends FrameLayout {
         emojis = set.set.emojis;
         sideButtons.setVisibility(emojis ? View.VISIBLE : View.GONE);
         optionsButton.setVisibility(emojis ? View.GONE : View.VISIBLE);
+        imageView.setColorFilter(null);
 
         ArrayList<TLRPC.Document> documents = set.documents;
         if (documents != null && !documents.isEmpty()) {
@@ -336,6 +341,9 @@ public class StickerSetCell extends FrameLayout {
                     imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", svgThumb, 0, set);
                 } else {
                     imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
+                }
+                if (MessageObject.isTextColorEmoji(sticker)) {
+                    imageView.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                 }
             } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, "50_50", "tgs", svgThumb, set);

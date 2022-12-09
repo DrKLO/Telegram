@@ -560,6 +560,11 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         return fragmentView;
     }
 
+    @Override
+    public boolean isActionBarCrossfadeEnabled() {
+        return false;
+    }
+
     public static void buyPremium(BaseFragment fragment) {
         buyPremium(fragment, "settings");
     }
@@ -1326,8 +1331,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             premiumButtonView.setFlickerDisabled(true);
             return;
         }
-        premiumButtonView.setButton(getPremiumButtonText(currentAccount, subscriptionTiers.get(selectedTierIndex)), v -> buyPremium(this, subscriptionTiers.get(selectedTierIndex), "settings"), animated);
-        premiumButtonView.setFlickerDisabled(false);
+        if (!subscriptionTiers.isEmpty()) {
+            premiumButtonView.setButton(getPremiumButtonText(currentAccount, subscriptionTiers.get(selectedTierIndex)), v -> buyPremium(this, subscriptionTiers.get(selectedTierIndex), "settings"), animated);
+            premiumButtonView.setFlickerDisabled(false);
+        }
     }
 
     @Override

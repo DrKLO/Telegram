@@ -3,6 +3,8 @@ package org.telegram.ui.Components.Reactions;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -483,6 +485,7 @@ public class ReactionsLayoutInBubble {
         public int height;
         ImageReceiver imageReceiver = new ImageReceiver();
         AnimatedEmojiDrawable animatedEmojiDrawable;
+        int animatedEmojiDrawableColor;
         CounterView.CounterDrawable counterDrawable = new CounterView.CounterDrawable(parentView, false, null);
         int backgroundColor;
         int textColor;
@@ -643,6 +646,9 @@ public class ReactionsLayoutInBubble {
 
         private void drawImage(Canvas canvas, float alpha) {
             ImageReceiver imageReceiver = animatedEmojiDrawable != null ? animatedEmojiDrawable.getImageReceiver() : this.imageReceiver;
+            if (animatedEmojiDrawable != null && animatedEmojiDrawableColor != lastDrawnTextColor) {
+                animatedEmojiDrawable.setColorFilter(new PorterDuffColorFilter(animatedEmojiDrawableColor = lastDrawnTextColor, PorterDuff.Mode.SRC_IN));
+            }
             if (drawImage && ((realCount > 1 || !ReactionsEffectOverlay.isPlaying(messageObject.getId(), messageObject.getGroupId(), visibleReaction)) || !isSelected)) {
                 ImageReceiver imageReceiver2 = animatedReactions.get(visibleReaction);
                 boolean drawStaticImage = true;

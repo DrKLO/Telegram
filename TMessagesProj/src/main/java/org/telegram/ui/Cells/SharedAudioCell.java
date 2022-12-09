@@ -32,6 +32,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -55,11 +57,14 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     private int titleY = AndroidUtilities.dp(9);
     private StaticLayout titleLayout;
+    AnimatedEmojiSpan.EmojiGroupedSpans titleLayoutEmojis;
 
     private int descriptionY = AndroidUtilities.dp(29);
+    AnimatedEmojiSpan.EmojiGroupedSpans descriptionLayoutEmojis;
     private StaticLayout descriptionLayout;
 
     private int captionY = AndroidUtilities.dp(29);
+    AnimatedEmojiSpan.EmojiGroupedSpans captionLayoutEmojis;
     private StaticLayout captionLayout;
 
     private MessageObject currentMessageObject;
@@ -159,6 +164,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             }
             CharSequence titleFinal = TextUtils.ellipsize(title, Theme.chat_contextResult_titleTextPaint, maxWidth - dateWidth, TextUtils.TruncateAt.END);
             titleLayout = new StaticLayout(titleFinal, Theme.chat_contextResult_titleTextPaint, maxWidth + AndroidUtilities.dp(4) - dateWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -170,6 +176,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 sequence = TextUtils.ellipsize(AndroidUtilities.ellipsizeCenterEnd(sequence, currentMessageObject.highlightedWords.get(0), maxWidth, captionTextPaint, 130), captionTextPaint, maxWidth, TextUtils.TruncateAt.END);
                 captionLayout = new StaticLayout(sequence, captionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
+            captionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, captionLayoutEmojis, captionLayout);
         }
         try {
             if (viewType == VIEW_TYPE_GLOBAL_SEARCH && (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo())) {
@@ -190,6 +197,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 author = TextUtils.ellipsize(author, paint, maxWidth, TextUtils.TruncateAt.END);
                 descriptionLayout = new StaticLayout(author, paint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
+            descriptionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, descriptionLayoutEmojis, descriptionLayout);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -249,6 +257,10 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
+
+        titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
+        descriptionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, descriptionLayoutEmojis, descriptionLayout);
+        captionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, captionLayoutEmojis, captionLayout);
     }
 
     @Override
@@ -259,6 +271,10 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
+
+        AnimatedEmojiSpan.release(this, titleLayoutEmojis);
+        AnimatedEmojiSpan.release(this, descriptionLayoutEmojis);
+        AnimatedEmojiSpan.release(this, captionLayoutEmojis);
     }
 
     public MessageObject getMessage() {
@@ -617,6 +633,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline) + (LocaleController.isRTL && dateLayout != null ? dateLayout.getWidth() + AndroidUtilities.dp(4) : 0), titleY);
             titleLayout.draw(canvas);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, titleLayout, titleLayoutEmojis, 0, null, 0, 0, 0, 1f);
             canvas.restore();
         }
 
@@ -633,6 +650,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
             descriptionLayout.draw(canvas);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, descriptionLayout, descriptionLayoutEmojis, 0, null, 0, 0, 0, 1f);
             canvas.restore();
         }
 

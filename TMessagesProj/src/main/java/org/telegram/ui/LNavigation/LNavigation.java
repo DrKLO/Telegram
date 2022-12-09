@@ -767,10 +767,16 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             }
 
             fragment.onTransitionAnimationStart(true, false);
+            if (prevFragment != null) {
+                prevFragment.onTransitionAnimationStart(false, false);
+            }
 
             customAnimation = fragment.onCustomTransitionAnimation(true, ()-> {
                 customAnimation = null;
                 fragment.onTransitionAnimationEnd(true, false);
+                if (prevFragment != null) {
+                    prevFragment.onTransitionAnimationEnd(false, false);
+                }
 
                 swipeProgress = 0f;
                 invalidateTranslation();
@@ -804,6 +810,9 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             currentSpringAnimation.addEndListener((animation, canceled, value, velocity) -> {
                 if (animation == currentSpringAnimation) {
                     fragment.onTransitionAnimationEnd(true, false);
+                    if (prevFragment != null) {
+                        prevFragment.onTransitionAnimationEnd(false, false);
+                    }
 
                     swipeProgress = 0f;
                     invalidateTranslation();
@@ -893,10 +902,15 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
 
         try {
             if (bgView != null && fgView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                getParentActivity().getWindow().setNavigationBarColor(ColorUtils.blendARGB(fgView.fragment.getNavigationBarColor(), bgView.fragment.getNavigationBarColor(), swipeProgress));
+                int navColor = ColorUtils.blendARGB(fgView.fragment.getNavigationBarColor(), bgView.fragment.getNavigationBarColor(), swipeProgress);
+                getParentActivity().getWindow().setNavigationBarColor(navColor);
+                AndroidUtilities.setLightNavigationBar(getParentActivity().getWindow(), AndroidUtilities.computePerceivedBrightness(navColor) > 0.721f);
             }
         } catch (Exception ignore) {}
 
+        if (getLastFragment() != null) {
+            getLastFragment().onSlideProgressFront(false, swipeProgress);
+        }
         if (getBackgroundFragment() != null) {
             getBackgroundFragment().onSlideProgress(false, swipeProgress);
         }
@@ -1219,6 +1233,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
 
     @Override
     public void draw(Canvas canvas) {
+        boolean crossfade = isActionBarInCrossfade();
         if (useAlphaAnimations) {
             canvas.save();
             path.rewind();
@@ -1229,12 +1244,16 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
         super.draw(canvas);
 
         if (!isInPreviewMode() && !(useAlphaAnimations && fragmentStack.size() <= 1) && (isSwipeInProgress() || isTransitionAnimationInProgress()) && swipeProgress != 0) {
+            int top = getPaddingTop();
+            if (crossfade) {
+                top += AndroidUtilities.lerp(getBackgroundFragment().getActionBar().getHeight(), getLastFragment().getActionBar().getHeight(), 1f - swipeProgress);
+            }
             int widthNoPaddings = getWidth() - getPaddingLeft() - getPaddingRight();
             dimmPaint.setAlpha((int) (0x7a * (1f - swipeProgress)));
-            canvas.drawRect(getPaddingLeft(), getPaddingTop(), widthNoPaddings * swipeProgress + getPaddingLeft(), getHeight() - getPaddingBottom(), dimmPaint);
+            canvas.drawRect(getPaddingLeft(), top, widthNoPaddings * swipeProgress + getPaddingLeft(), getHeight() - getPaddingBottom(), dimmPaint);
 
             layerShadowDrawable.setAlpha((int) (0xFF * (1f - swipeProgress)));
-            layerShadowDrawable.setBounds((int) (widthNoPaddings * swipeProgress - layerShadowDrawable.getIntrinsicWidth()) + getPaddingLeft(), getPaddingTop(), (int) (widthNoPaddings * swipeProgress) + getPaddingLeft(), getHeight() - getPaddingBottom());
+            layerShadowDrawable.setBounds((int) (widthNoPaddings * swipeProgress - layerShadowDrawable.getIntrinsicWidth()) + getPaddingLeft(), top, (int) (widthNoPaddings * swipeProgress) + getPaddingLeft(), getHeight() - getPaddingBottom());
             layerShadowDrawable.draw(canvas);
         }
         if (useAlphaAnimations) {
@@ -1255,7 +1274,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             canvas.restore();
         }
 
-        if (isActionBarInCrossfade()) {
+        if (crossfade) {
             BaseFragment foregroundFragment = getLastFragment();
             BaseFragment backgroundFragment = getBackgroundFragment();
 
@@ -1280,7 +1299,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
                 backDrawableForcedProgress = 1f;
             }
 
-            AndroidUtilities.rectTmp.set(0, 0, getWidth(), bgActionBar.getHeight());
+            AndroidUtilities.rectTmp.set(0, 0, getWidth(), bgActionBar.getY() + bgActionBar.getHeight());
             canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) (swipeProgress * 0xFF), Canvas.ALL_SAVE_FLAG);
             bgActionBar.onDrawCrossfadeBackground(canvas);
             canvas.restore();
@@ -1290,18 +1309,18 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             canvas.restore();
 
             if (useBackDrawable) {
-                AndroidUtilities.rectTmp.set(0, 0, getWidth(), bgActionBar.getHeight());
+                AndroidUtilities.rectTmp.set(0, 0, getWidth(), bgActionBar.getY() + bgActionBar.getHeight());
                 float progress = backDrawableForcedProgress != null ? backDrawableForcedProgress : swipeProgress;
                 float bgAlpha = 1f - (bgActionBar.getY() / -(bgActionBar.getHeight() - AndroidUtilities.statusBarHeight));
                 float fgAlpha = 1f - (fgActionBar.getY() / -(fgActionBar.getHeight() - AndroidUtilities.statusBarHeight));
                 canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) (AndroidUtilities.lerp(bgAlpha, fgAlpha, 1f - swipeProgress) * 0xFF), Canvas.ALL_SAVE_FLAG);
-                canvas.translate(AndroidUtilities.dp(16) - AndroidUtilities.dp(2) * (1f - progress), AndroidUtilities.dp(16) + (fgActionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0));
+                canvas.translate(AndroidUtilities.dp(16) - AndroidUtilities.dp(1) * (1f - progress), AndroidUtilities.dp(16) + (fgActionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0));
                 menuDrawable.setRotation(backDrawableReverse ? progress : 1f - progress, false);
                 menuDrawable.draw(canvas);
                 canvas.restore();
             }
 
-            AndroidUtilities.rectTmp.set(0, AndroidUtilities.statusBarHeight, getWidth(), bgActionBar.getHeight());
+            AndroidUtilities.rectTmp.set(0, AndroidUtilities.statusBarHeight, getWidth(), bgActionBar.getY() + bgActionBar.getHeight());
             canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) (swipeProgress * 0xFF), Canvas.ALL_SAVE_FLAG);
             canvas.translate(0, bgActionBar.getY());
             bgActionBar.onDrawCrossfadeContent(canvas, false, useBackDrawable, swipeProgress);
@@ -1338,6 +1357,10 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
     }
 
     public void closeLastFragment(boolean animated, boolean forceNoAnimation, float velocityX) {
+        BaseFragment fragment = getLastFragment();
+        if (fragment != null && fragment.closeLastFragment()) {
+            return;
+        }
         if (fragmentStack.isEmpty() || checkTransitionAnimation() || delegate != null && !delegate.needCloseLastFragment(this)) {
             return;
         }
@@ -1417,9 +1440,11 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
         notifyFragmentStackChanged();
 
         FragmentHolderView holderView = getForegroundView();
-        holderView.setFragment(null);
-        removeView(holderView);
-        resetViewProperties(holderView);
+        if (holderView != null) {
+            holderView.setFragment(null);
+            removeView(holderView);
+            resetViewProperties(holderView);
+        }
 
         if (newLastFragment != null) {
             newLastFragment.prepareFragmentToSlide(false, false);
@@ -1431,7 +1456,11 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             BaseFragment prevFragment = getBackgroundFragment();
             prevFragment.setParentLayout(this);
 
-            holderView.setFragment(prevFragment);
+            if (holderView == null) {
+                holderView = onCreateHolderView(prevFragment);
+            } else {
+                holderView.setFragment(prevFragment);
+            }
             holderView.setVisibility(GONE);
             addView(holderView, getChildCount() - 2);
         }

@@ -1606,6 +1606,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     }
 
     public void closeLastFragment(boolean animated, boolean forceNoAnimation) {
+        BaseFragment fragment = getLastFragment();
+        if (fragment != null && fragment.closeLastFragment()) {
+            return;
+        }
         if (delegate != null && !delegate.needCloseLastFragment(this) || checkTransitionAnimation() || fragmentsStack.isEmpty()) {
             return;
         }
@@ -2188,7 +2192,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             oldFragment = null;
             Runnable endRunnable = onCloseAnimationEndRunnable;
             onCloseAnimationEndRunnable = null;
-            endRunnable.run();
+            if (endRunnable != null) {
+                endRunnable.run();
+            }
             checkNeedRebuild();
             checkNeedRebuild();
         }
@@ -2346,19 +2352,19 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         }
     }
 
-    private View findScrollingChild(ViewGroup parent, float x, float y) {
+    public static View findScrollingChild(ViewGroup parent, float x, float y) {
         int n = parent.getChildCount();
         for (int i = 0; i < n; i++) {
             View child = parent.getChildAt(i);
             if (child.getVisibility() != View.VISIBLE) {
                 continue;
             }
-            child.getHitRect(rect);
-            if (rect.contains((int) x, (int) y)) {
+            child.getHitRect(AndroidUtilities.rectTmp2);
+            if (AndroidUtilities.rectTmp2.contains((int) x, (int) y)) {
                 if (child.canScrollHorizontally(-1)) {
                     return child;
                 } else if (child instanceof ViewGroup) {
-                    View v = findScrollingChild((ViewGroup) child, x - rect.left, y - rect.top);
+                    View v = findScrollingChild((ViewGroup) child, x - AndroidUtilities.rectTmp2.left, y - AndroidUtilities.rectTmp2.top);
                     if (v != null) {
                         return v;
                     }

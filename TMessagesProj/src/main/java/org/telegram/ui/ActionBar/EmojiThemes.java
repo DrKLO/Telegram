@@ -245,7 +245,12 @@ public class EmojiThemes {
         if (themeInfo == null) {
             int settingsIndex = getSettingsIndex(index);
             TLRPC.TL_theme tlTheme = getTlTheme(index);
-            Theme.ThemeInfo baseTheme = Theme.getTheme(Theme.getBaseThemeKey(tlTheme.settings.get(settingsIndex)));
+            Theme.ThemeInfo baseTheme;
+            if (tlTheme != null) {
+                baseTheme = Theme.getTheme(Theme.getBaseThemeKey(tlTheme.settings.get(settingsIndex)));
+            } else {
+                baseTheme = Theme.getTheme("Blue");
+            }
             themeInfo = new Theme.ThemeInfo(baseTheme);
             accent = themeInfo.createNewAccent(tlTheme, currentAccount, true, settingsIndex);
             themeInfo.setCurrentAccentId(accent.id);

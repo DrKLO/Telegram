@@ -34,6 +34,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -93,7 +94,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private boolean wasLayout;
 
     private boolean rightDrawableOutside;
-    private boolean ellipsizeByGradient;
+    private boolean ellipsizeByGradient, ellipsizeByGradientLeft;
     private int ellipsizeByGradientWidthDp = 16;
     private int paddingRight;
 
@@ -218,9 +219,17 @@ public class SimpleTextView extends View implements Drawable.Callback {
             fadePaintBack.setShader(new LinearGradient(0, 0, AndroidUtilities.dp(6), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
             fadePaintBack.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         }
-        if ((fadeEllpsizePaint == null || fadeEllpsizePaintWidth != AndroidUtilities.dp(ellipsizeByGradientWidthDp)) && ellipsizeByGradient) {
-            fadeEllpsizePaint = new Paint();
-            fadeEllpsizePaint.setShader(new LinearGradient(0, 0, fadeEllpsizePaintWidth = AndroidUtilities.dp(ellipsizeByGradientWidthDp), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+        boolean ellipsizeLeft = getAlignment() == Layout.Alignment.ALIGN_NORMAL && LocaleController.isRTL || getAlignment() == Layout.Alignment.ALIGN_OPPOSITE && !LocaleController.isRTL;
+        if ((fadeEllpsizePaint == null || fadeEllpsizePaintWidth != AndroidUtilities.dp(ellipsizeByGradientWidthDp) || ellipsizeByGradientLeft != ellipsizeLeft) && ellipsizeByGradient) {
+            if (fadeEllpsizePaint == null) {
+                fadeEllpsizePaint = new Paint();
+            }
+            ellipsizeByGradientLeft = ellipsizeLeft;
+            if (ellipsizeByGradientLeft) {
+                fadeEllpsizePaint.setShader(new LinearGradient(0, 0, fadeEllpsizePaintWidth = AndroidUtilities.dp(ellipsizeByGradientWidthDp), 0, new int[]{0xffffffff, 0}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+            } else {
+                fadeEllpsizePaint.setShader(new LinearGradient(0, 0, fadeEllpsizePaintWidth = AndroidUtilities.dp(ellipsizeByGradientWidthDp), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+            }
             fadeEllpsizePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         }
     }
@@ -254,6 +263,9 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     private void calcOffset(int width) {
+        if (layout == null) {
+            return;
+        }
         if (layout.getLineCount() > 0) {
             textWidth = (int) Math.ceil(layout.getLineWidth(0));
             if (fullLayout != null) {
@@ -282,7 +294,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 offsetX = -AndroidUtilities.dp(8);
             }
             offsetX += getPaddingLeft();
-            textDoesNotFit = textWidth > width;
+            textDoesNotFit = textWidth > (width - paddingRight);
 
             if (fullLayout != null && fullLayoutAdditionalWidth > 0) {
                 fullLayoutLeftCharactersOffset = fullLayout.getPrimaryHorizontal(0) - firstLineLayout.getPrimaryHorizontal(0);
@@ -659,6 +671,34 @@ public class SimpleTextView extends View implements Drawable.Callback {
     public void setRightPadding(int padding) {
         if (paddingRight != padding) {
             paddingRight = padding;
+
+            int width = getMaxTextWidth() - getPaddingLeft() - getPaddingRight() - minusWidth;
+            if (leftDrawable != null) {
+                width -= leftDrawable.getIntrinsicWidth();
+                width -= drawablePadding;
+            }
+            int rightDrawableWidth = 0;
+            if (rightDrawable != null && !rightDrawableOutside) {
+                rightDrawableWidth = (int) (rightDrawable.getIntrinsicWidth() * rightDrawableScale);
+                width -= rightDrawableWidth;
+                width -= drawablePadding;
+            }
+            if (replacedText != null && replacedDrawable != null) {
+                if ((replacingDrawableTextIndex = text.toString().indexOf(replacedText)) < 0) {
+                    width -= replacedDrawable.getIntrinsicWidth();
+                    width -= drawablePadding;
+                }
+            }
+            if (canHideRightDrawable && rightDrawableWidth != 0 && !rightDrawableOutside) {
+                CharSequence string = TextUtils.ellipsize(text, textPaint, width, TextUtils.TruncateAt.END);
+                if (!text.equals(string)) {
+                    rightDrawableHidden = true;
+                    width += rightDrawableWidth;
+                    width += drawablePadding;
+                }
+            }
+            calcOffset(width);
+
             invalidate();
         }
     }
@@ -831,9 +871,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 canvas.translate(getMaxTextWidth() - paddingRight - AndroidUtilities.dp(6), 0);
                 canvas.drawRect(0, 0, AndroidUtilities.dp(6), getMeasuredHeight(), fadePaintBack);
                 canvas.restore();
-            } else if (ellipsizeByGradient && (!widthWrapContent || textDoesNotFit) && fadeEllpsizePaint != null) {
+            } else if (ellipsizeByGradient && textDoesNotFit && fadeEllpsizePaint != null) {
                 canvas.save();
-                canvas.translate(getMaxTextWidth() - paddingRight - fadeEllpsizePaintWidth - AndroidUtilities.dp(rightDrawable != null && !(rightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) && rightDrawableOutside ? +2 : 0), 0);
+                updateFadePaints();
+                if (!ellipsizeByGradientLeft) {
+                    canvas.translate(getMaxTextWidth() - paddingRight - fadeEllpsizePaintWidth - AndroidUtilities.dp(rightDrawable != null && !(rightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) && rightDrawableOutside ? +2 : 0), 0);
+                }
                 canvas.drawRect(0, 0, fadeEllpsizePaintWidth, getMeasuredHeight(), fadeEllpsizePaint);
                 canvas.restore();
             }

@@ -343,7 +343,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             createAfterUpload = true;
                             return;
                         }
-                        doneRequestId = MessagesController.getInstance(currentAccount).createChat(nameTextView.getText().toString(), new ArrayList<>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, false, null, null, ChannelCreateActivity.this);
+                        doneRequestId = MessagesController.getInstance(currentAccount).createChat(nameTextView.getText().toString(), new ArrayList<>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, false, null, null, 0, ChannelCreateActivity.this);
                     } else if (currentStep == 1) {
                         if (!isPrivate) {
                             if (descriptionTextView.length() == 0) {

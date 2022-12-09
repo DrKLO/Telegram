@@ -10,20 +10,17 @@ package org.telegram.ui.Components;
 
 import android.graphics.CornerPathEffect;
 import android.graphics.Path;
-import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
 
 import org.telegram.messenger.AndroidUtilities;
-
-import java.util.ArrayList;
 
 public class LinkPath extends Path {
 
     private Layout currentLayout;
     private int currentLine;
     private float lastTop = -1;
-    private float heightOffset;
+    private float xOffset, yOffset;
     private boolean useRoundRect;
     private boolean allowReset = true;
     private int baselineShift;
@@ -52,10 +49,23 @@ public class LinkPath extends Path {
     }
 
     public void setCurrentLayout(Layout layout, int start, float yOffset) {
+        setCurrentLayout(layout, start, 0, yOffset);
+    }
+
+    public void setCurrentLayout(Layout layout, int start, float xOffset, float yOffset) {
+        if (layout == null) {
+            currentLayout = null;
+            currentLine = 0;
+            lastTop = -1;
+            this.xOffset = xOffset;
+            this.yOffset = yOffset;
+            return;
+        }
         currentLayout = layout;
         currentLine = layout.getLineForOffset(start);
         lastTop = -1;
-        heightOffset = yOffset;
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
         if (Build.VERSION.SDK_INT >= 28) {
             int lineCount = layout.getLineCount();
             if (lineCount > 0) {
@@ -82,48 +92,58 @@ public class LinkPath extends Path {
 
     @Override
     public void addRect(float left, float top, float right, float bottom, Direction dir) {
-        top += heightOffset;
-        bottom += heightOffset;
-        if (lastTop == -1) {
-            lastTop = top;
-        } else if (lastTop != top) {
-            lastTop = top;
-            currentLine++;
-        }
-        float lineRight = currentLayout.getLineRight(currentLine);
-        float lineLeft = currentLayout.getLineLeft(currentLine);
-        if (left >= lineRight || left <= lineLeft && right <= lineLeft) {
+        if (currentLayout == null) {
+            super.addRect(left, top, right, bottom, dir);
             return;
         }
-        if (right > lineRight) {
-            right = lineRight;
-        }
-        if (left < lineLeft) {
-            left = lineLeft;
-        }
-        float y = top;
-        float y2;
-        if (Build.VERSION.SDK_INT >= 28) {
-            y2 = bottom;
-            if (bottom - top > lineHeight) {
-                y2 = heightOffset + (bottom != currentLayout.getHeight() ? (currentLayout.getLineBottom(currentLine) - currentLayout.getSpacingAdd()) : 0);
+        try {
+            top += yOffset;
+            bottom += yOffset;
+            if (lastTop == -1) {
+                lastTop = top;
+            } else if (lastTop != top) {
+                lastTop = top;
+                currentLine++;
             }
-        } else {
-            y2 = bottom - (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);
-        }
-        if (baselineShift < 0) {
-            y2 += baselineShift;
-        } else if (baselineShift > 0) {
-            y += baselineShift;
-        }
-        if (useRoundRect) {
+            float lineRight = currentLayout.getLineRight(currentLine);
+            float lineLeft = currentLayout.getLineLeft(currentLine);
+            if (left >= lineRight || left <= lineLeft && right <= lineLeft) {
+                return;
+            }
+            if (right > lineRight) {
+                right = lineRight;
+            }
+            if (left < lineLeft) {
+                left = lineLeft;
+            }
+            left += xOffset;
+            right += xOffset;
+            float y = top;
+            float y2;
+            if (Build.VERSION.SDK_INT >= 28) {
+                y2 = bottom;
+                if (bottom - top > lineHeight) {
+                    y2 = yOffset + (bottom != currentLayout.getHeight() ? (currentLayout.getLineBottom(currentLine) - currentLayout.getSpacingAdd()) : 0);
+                }
+            } else {
+                y2 = bottom - (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);
+            }
+            if (baselineShift < 0) {
+                y2 += baselineShift;
+            } else if (baselineShift > 0) {
+                y += baselineShift;
+            }
+            if (useRoundRect) {
 //            final CharSequence text = currentLayout.getText();
 //            int startOffset = currentLayout.getOffsetForHorizontal(currentLine, left), endOffset = currentLayout.getOffsetForHorizontal(currentLine, right) + 1;
-            boolean startsWithWhitespace = false; // startOffset >= 0 && startOffset < text.length() && text.charAt(startOffset) == ' ';
-            boolean endsWithWhitespace = false; // endOffset >= 0 && endOffset < text.length() && text.charAt(endOffset) == ' ';
-            super.addRect(left - (startsWithWhitespace ? 0 : getRadius() / 2f), y, right + (endsWithWhitespace ? 0 : getRadius() / 2f), y2, dir);
-        } else {
-            super.addRect(left, y, right, y2, dir);
+                boolean startsWithWhitespace = false; // startOffset >= 0 && startOffset < text.length() && text.charAt(startOffset) == ' ';
+                boolean endsWithWhitespace = false; // endOffset >= 0 && endOffset < text.length() && text.charAt(endOffset) == ' ';
+                super.addRect(left - (startsWithWhitespace ? 0 : getRadius() / 2f), y, right + (endsWithWhitespace ? 0 : getRadius() / 2f), y2, dir);
+            } else {
+                super.addRect(left, y, right, y2, dir);
+            }
+        } catch (Exception e) {
+
         }
     }
 

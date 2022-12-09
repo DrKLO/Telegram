@@ -1,5 +1,10 @@
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -9,6 +14,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -21,6 +27,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -32,11 +40,14 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BringAppForegroundService;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.ByteArrayOutputStream;
@@ -56,11 +67,19 @@ public class PhotoViewerWebView extends FrameLayout {
         YT_PLAYING = 1,
         YT_PAUSED = 2,
         YT_BUFFERING = 3;
+    private final static int YT_ERR_INVALID = 2,
+        YT_ERR_HTML = 5,
+        YT_ERR_NOT_FOUND = 100,
+        YT_ERR_NOT_AVAILABLE_IN_APP = 101,
+        YT_ERR_NOT_AVAILABLE_IN_APP_ALT = 150;
 
     private int currentAccount = UserConfig.selectedAccount;
 
     private PhotoViewer photoViewer;
 
+    private LinearLayout errorLayout;
+    private TextView errorMessage;
+    private TextView errorButton;
     private WebView webView;
     private View progressBarBlackBackground;
     private RadialProgressView progressBar;
@@ -75,6 +94,7 @@ public class PhotoViewerWebView extends FrameLayout {
     private float playbackSpeed;
     private boolean setPlaybackSpeed;
 
+    private boolean hasError;
     private boolean isPlaying;
     private int videoDuration;
     private int currentPosition;
@@ -106,6 +126,59 @@ public class PhotoViewerWebView extends FrameLayout {
 
                 if (photoViewer != null) {
                     photoViewer.checkFullscreenButton();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void onPlayerError(String error) {
+            int errorInt = Integer.parseInt(error);
+            AndroidUtilities.runOnUIThread(()->{
+                errorButton.setVisibility(GONE);
+                webView.setVisibility(GONE);
+
+                if (errorLayout.getVisibility() == View.GONE) {
+                    errorLayout.setVisibility(VISIBLE);
+                    errorLayout.animate().cancel();
+                    errorLayout.animate().alpha(1f).setDuration(150).start();
+                }
+
+                if (progressBar.getAlpha() == 1f) {
+                    progressBar.animate().cancel();
+                    progressBar.animate().alpha(0f).setDuration(150).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            progressBar.setVisibility(GONE);
+                        }
+                    });
+                }
+                if (progressBarBlackBackground.getAlpha() == 1f) {
+                    progressBarBlackBackground.animate().cancel();
+                    progressBarBlackBackground.animate().alpha(0f).setDuration(150).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            progressBarBlackBackground.setVisibility(GONE);
+                        }
+                    });
+                }
+
+                switch (errorInt) {
+                    case YT_ERR_INVALID:
+                        errorMessage.setText(LocaleController.getString(R.string.YouTubeVideoErrorInvalid));
+                        break;
+                    case YT_ERR_HTML:
+                        errorMessage.setText(LocaleController.getString(R.string.YouTubeVideoErrorHTML));
+                        break;
+                    case YT_ERR_NOT_FOUND:
+                        errorMessage.setText(LocaleController.getString(R.string.YouTubeVideoErrorNotFound));
+                        break;
+                    case YT_ERR_NOT_AVAILABLE_IN_APP:
+                    case YT_ERR_NOT_AVAILABLE_IN_APP_ALT:
+                        errorMessage.setText(LocaleController.getString(R.string.YouTubeVideoErrorNotAvailableInApp));
+                        errorButton.setText(LocaleController.getString(R.string.YouTubeVideoErrorOpenExternal));
+                        errorButton.setVisibility(VISIBLE);
+                        errorButton.setOnClickListener(v -> v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(currentWebpage.url))));
+                        break;
                 }
             });
         }
@@ -295,6 +368,26 @@ public class PhotoViewerWebView extends FrameLayout {
 
         addView(webView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
+        errorLayout = new LinearLayout(context);
+        errorLayout.setOrientation(LinearLayout.VERTICAL);
+        errorLayout.setGravity(Gravity.CENTER);
+        errorLayout.setVisibility(GONE);
+        addView(errorLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+        errorMessage = new TextView(context);
+        errorMessage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        errorMessage.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        errorMessage.setGravity(Gravity.CENTER);
+        errorLayout.addView(errorMessage, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
+
+        errorButton = new TextView(context);
+        errorButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        errorButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+        errorButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
+        errorButton.setBackground(Theme.AdaptiveRipple.rect(Theme.key_windowBackgroundWhiteBlueText, 12));
+        errorButton.setVisibility(GONE);
+        errorLayout.addView(errorButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+
         progressBarBlackBackground = new View(context) {
             @Override
             protected void onDraw(Canvas canvas) {
@@ -309,6 +402,10 @@ public class PhotoViewerWebView extends FrameLayout {
         progressBar = new RadialProgressView(context);
         progressBar.setVisibility(View.INVISIBLE);
         addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+    }
+
+    public boolean hasError() {
+        return hasError;
     }
 
     public boolean hasYoutubeStoryboards() {

@@ -318,7 +318,7 @@ public class VideoPlayerSeekBar {
         }
         for (int i = 0; i < links.length; ++i) {
             URLSpanNoUnderline link = links[i];
-            if (link != null && link.getURL().startsWith("video?")) {
+            if (link != null && link.getURL() != null && link.label != null && link.getURL().startsWith("video?")) {
                 Integer seconds = Utilities.parseInt(link.getURL().substring(6));
                 if (seconds != null && seconds >= 0) {
                     float position = seconds * 1000L / (float) videoDuration;
@@ -671,6 +671,9 @@ public class VideoPlayerSeekBar {
             timestampLabelPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             timestampLabelPaint.setTextSize(AndroidUtilities.dp(12));
             timestampLabelPaint.setColor(0xffffffff);
+        }
+        if (text == null) {
+            text = "";
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return StaticLayout.Builder.obtain(text, 0, text.length(), timestampLabelPaint, width)

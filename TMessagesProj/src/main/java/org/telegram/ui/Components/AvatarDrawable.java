@@ -31,6 +31,8 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
+import java.util.ArrayList;
+
 public class AvatarDrawable extends Drawable {
 
     private TextPaint namePaint;
@@ -45,7 +47,7 @@ public class AvatarDrawable extends Drawable {
     private boolean drawDeleted;
     private int avatarType;
     private float archivedAvatarProgress;
-    private boolean smallSize;
+    private float scaleSize = 1f;
     private StringBuilder stringBuilder = new StringBuilder(5);
     private int roundRadius = -1;
 
@@ -72,6 +74,7 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_FILTER_READ = 10;
     public static final int AVATAR_TYPE_FILTER_ARCHIVED = 11;
     public static final int AVATAR_TYPE_REGISTER = 13;
+    public static final int AVATAR_TYPE_OTHER_CHATS = 14;
 
     private int alpha = 255;
     private Theme.ResourcesProvider resourcesProvider;
@@ -169,8 +172,8 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
-    public void setSmallSize(boolean value) {
-        smallSize = value;
+    public void setScaleSize(float value) {
+        scaleSize = value;
     }
 
     public void setAvatarType(int value) {
@@ -181,11 +184,7 @@ public class AvatarDrawable extends Drawable {
         } else if (avatarType == AVATAR_TYPE_ARCHIVED) {
             hasGradient = false;
             color = color2 = getThemedColor(Theme.key_avatar_backgroundArchivedHidden);
-        } else if (avatarType == AVATAR_TYPE_REPLIES) {
-            hasGradient = true;
-            color = getThemedColor(Theme.key_avatar_backgroundSaved);
-            color2 = getThemedColor(Theme.key_avatar_background2Saved);
-        } else if (avatarType == AVATAR_TYPE_SAVED) {
+        } else if (avatarType == AVATAR_TYPE_REPLIES || avatarType == AVATAR_TYPE_SAVED || avatarType == AVATAR_TYPE_OTHER_CHATS) {
             hasGradient = true;
             color = getThemedColor(Theme.key_avatar_backgroundSaved);
             color2 = getThemedColor(Theme.key_avatar_background2Saved);
@@ -226,7 +225,7 @@ public class AvatarDrawable extends Drawable {
             color = getThemedColor(Theme.keys_avatar_background[getColorIndex(4)]);
             color2 = getThemedColor(Theme.keys_avatar_background2[getColorIndex(4)]);
         }
-        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_REPLIES;
+        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_REPLIES && avatarType != AVATAR_TYPE_OTHER_CHATS;
     }
 
     public void setArchivedAvatarHiddenProgress(float progress) {
@@ -278,31 +277,11 @@ public class AvatarDrawable extends Drawable {
     }
 
     private String takeFirstCharacter(String text) {
-        StringBuilder sequence = new StringBuilder(16);
-        boolean isInJoin = false;
-        int codePoint;
-        for (int i = 0; i < text.length(); i = text.offsetByCodePoints(i, 1)) {
-            codePoint = text.codePointAt(i);
-            if (codePoint == 0x200D || codePoint == 0x1f1ea) {
-                isInJoin = true;
-                if (sequence.length() == 0)
-                    continue;
-            } else {
-                if ((sequence.length() > 0) && (!isInJoin))
-                    break;
-                isInJoin = false;
-            }
-            sequence.appendCodePoint(codePoint);
+        ArrayList<Emoji.EmojiSpanRange> ranges = Emoji.parseEmojis(text);
+        if (ranges != null && !ranges.isEmpty() && ranges.get(0).start == 0) {
+            return text.substring(0, ranges.get(0).end);
         }
-        if (isInJoin) {
-            for (int i = sequence.length()-1; i >= 0; --i) {
-                if (sequence.charAt(i) == 0x200D)
-                    sequence.deleteCharAt(i);
-                else
-                    break;
-            }
-        }
-        return sequence.toString();
+        return text.substring(0, text.offsetByCodePoints(0, Math.min(text.codePointCount(0, text.length()), 1)));
     }
 
     public void setInfo(long id, String firstName, String lastName, String custom) {
@@ -429,12 +408,8 @@ public class AvatarDrawable extends Drawable {
         } else if (avatarType != 0) {
             Drawable drawable;
 
-            if (avatarType == AVATAR_TYPE_REPLIES) {
-                drawable = Theme.avatarDrawables[11];
-            } else if (avatarType == AVATAR_TYPE_SAVED) {
+            if (avatarType == AVATAR_TYPE_SAVED) {
                 drawable = Theme.avatarDrawables[0];
-            } else if (avatarType == AVATAR_TYPE_SHARES) {
-                drawable = Theme.avatarDrawables[10];
             } else if (avatarType == AVATAR_TYPE_FILTER_CONTACTS) {
                 drawable = Theme.avatarDrawables[2];
             } else if (avatarType == AVATAR_TYPE_FILTER_NON_CONTACTS) {
@@ -449,16 +424,18 @@ public class AvatarDrawable extends Drawable {
                 drawable = Theme.avatarDrawables[7];
             } else if (avatarType == AVATAR_TYPE_FILTER_READ) {
                 drawable = Theme.avatarDrawables[8];
+            } else if (avatarType == AVATAR_TYPE_SHARES) {
+                drawable = Theme.avatarDrawables[10];
+            } else if (avatarType == AVATAR_TYPE_REPLIES) {
+                drawable = Theme.avatarDrawables[11];
+            } else if (avatarType == AVATAR_TYPE_OTHER_CHATS) {
+                drawable = Theme.avatarDrawables[12];
             } else {
                 drawable = Theme.avatarDrawables[9];
             }
             if (drawable != null) {
-                int w = drawable.getIntrinsicWidth();
-                int h = drawable.getIntrinsicHeight();
-                if (smallSize) {
-                    w *= 0.8f;
-                    h *= 0.8f;
-                }
+                int w = (int) (drawable.getIntrinsicWidth() * scaleSize);
+                int h = (int) (drawable.getIntrinsicHeight() * scaleSize);
                 int x = (size - w) / 2;
                 int y = (size - h) / 2;
                 drawable.setBounds(x, y, x + w, y + h);

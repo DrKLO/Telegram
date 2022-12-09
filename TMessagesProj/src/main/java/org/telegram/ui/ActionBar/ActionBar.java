@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -36,6 +37,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
+import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -48,6 +50,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.FireworksEffect;
@@ -69,8 +72,9 @@ public class ActionBar extends FrameLayout {
         }
     }
 
-    private INavigationLayout.BackButtonState backButtonState;
+    private INavigationLayout.BackButtonState backButtonState = INavigationLayout.BackButtonState.BACK;
     private ImageView backButtonImageView;
+    private BackupImageView avatarSearchImageView;
     private Drawable backButtonDrawable;
     private SimpleTextView[] titleTextView = new SimpleTextView[2];
     private SimpleTextView subtitleTextView;
@@ -117,6 +121,7 @@ public class ActionBar extends FrameLayout {
     private boolean castShadows = true;
 
     protected boolean isSearchFieldVisible;
+    public float searchFieldVisibleAlpha;
     protected int itemsBackgroundColor;
     protected int itemsActionModeBackgroundColor;
     protected int itemsColor;
@@ -130,9 +135,12 @@ public class ActionBar extends FrameLayout {
     private boolean fromBottom;
     private boolean centerScale;
     private CharSequence subtitle;
+    private boolean drawBackButton;
 
     private View.OnTouchListener interceptTouchEventListener;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private PorterDuff.Mode colorFilterMode = PorterDuff.Mode.MULTIPLY;
 
     SizeNotifierFrameLayout contentView;
     boolean blurredBackground;
@@ -158,7 +166,14 @@ public class ActionBar extends FrameLayout {
         });
     }
 
+    public void setColorFilterMode(PorterDuff.Mode colorFilterMode) {
+        this.colorFilterMode = colorFilterMode;
+    }
+
     public INavigationLayout.BackButtonState getBackButtonState() {
+        if (backButtonDrawable instanceof INavigationLayout.IBackButtonDrawable) {
+            return ((INavigationLayout.IBackButtonDrawable) backButtonDrawable).getBackButtonState();
+        }
         return backButtonState;
     }
 
@@ -170,7 +185,7 @@ public class ActionBar extends FrameLayout {
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
         backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
         if (itemsColor != 0) {
-            backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.MULTIPLY));
+            backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, colorFilterMode));
         }
         backButtonImageView.setPadding(AndroidUtilities.dp(1), 0, 0, 0);
         addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
@@ -224,6 +239,23 @@ public class ActionBar extends FrameLayout {
         invalidate();
     }
 
+    public BackupImageView getSearchAvatarImageView() {
+        return avatarSearchImageView;
+    }
+
+    public void setSearchAvatarImageView(BackupImageView backupImageView) {
+        if (avatarSearchImageView == backupImageView) {
+            return;
+        }
+        if (avatarSearchImageView != null) {
+            removeView(avatarSearchImageView);
+        }
+        avatarSearchImageView = backupImageView;
+        if (avatarSearchImageView != null) {
+            addView(avatarSearchImageView);
+        }
+    }
+
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         if (supportsHolidayImage && !titleOverlayShown && !LocaleController.isRTL && ev.getAction() == MotionEvent.ACTION_DOWN) {
@@ -252,8 +284,11 @@ public class ActionBar extends FrameLayout {
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        if (parentFragment != null && parentFragment.getParentLayout().isActionBarInCrossfade()) {
+        if (parentFragment != null && parentFragment.getParentLayout() != null && parentFragment.getParentLayout().isActionBarInCrossfade()) {
             return false;
+        }
+        if (drawBackButton && child == backButtonImageView) {
+            return true;
         }
 
         boolean clip = shouldClipChild(child);
@@ -318,9 +353,6 @@ public class ActionBar extends FrameLayout {
         }
         backButtonImageView.setVisibility(resource == 0 ? GONE : VISIBLE);
         backButtonImageView.setImageResource(resource);
-        if (resource == R.drawable.ic_ab_back) {
-            backButtonState = INavigationLayout.BackButtonState.BACK;
-        }
     }
 
     private void createSubtitleTextView() {
@@ -380,7 +412,12 @@ public class ActionBar extends FrameLayout {
         if (titleTextView[i] != null) {
             return;
         }
-        titleTextView[i] = new SimpleTextView(getContext());
+        titleTextView[i] = new SimpleTextView(getContext()) {
+            @Override
+            public void setAlpha(float alpha) {
+                super.setAlpha(alpha);
+            }
+        };
         titleTextView[i].setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         if (titleColorToSet != 0) {
             titleTextView[i].setTextColor(titleColorToSet);
@@ -691,6 +728,15 @@ public class ActionBar extends FrameLayout {
             }
             actionModeAnimation = new AnimatorSet();
             actionModeAnimation.playTogether(animators);
+            if (backgroundUpdateListener != null) {
+                ValueAnimator alphaUpdate = ValueAnimator.ofFloat(0, 1);
+                alphaUpdate.addUpdateListener(anm -> {
+                    if (backgroundUpdateListener != null) {
+                        backgroundUpdateListener.run();
+                    }
+                });
+                actionModeAnimation.playTogether(alphaUpdate);
+            }
             actionModeAnimation.setDuration(200);
             actionModeAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -844,6 +890,15 @@ public class ActionBar extends FrameLayout {
         }
         actionModeAnimation = new AnimatorSet();
         actionModeAnimation.playTogether(animators);
+        if (backgroundUpdateListener != null) {
+            ValueAnimator alphaUpdate = ValueAnimator.ofFloat(0, 1);
+            alphaUpdate.addUpdateListener(anm -> {
+                if (backgroundUpdateListener != null) {
+                    backgroundUpdateListener.run();
+                }
+            });
+            actionModeAnimation.playTogether(alphaUpdate);
+        }
         actionModeAnimation.setDuration(200);
         actionModeAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -948,7 +1003,16 @@ public class ActionBar extends FrameLayout {
         return actionMode != null && actionModeVisible && ((actionModeTag == null && tag == null) || (actionModeTag != null && actionModeTag.equals(tag)));
     }
 
+    Runnable backgroundUpdateListener;
     AnimatorSet searchVisibleAnimator;
+
+    public void listenToBackgroundUpdate(Runnable invalidate) {
+        backgroundUpdateListener = invalidate;
+    }
+
+    protected boolean onSearchChangedIgnoreTitles() {
+        return false;
+    }
 
     public void onSearchFieldVisibilityChanged(boolean visible) {
         isSearchFieldVisible = visible;
@@ -958,14 +1022,26 @@ public class ActionBar extends FrameLayout {
         searchVisibleAnimator = new AnimatorSet();
         final ArrayList<View> viewsToHide = new ArrayList<>();
 
-        if (titleTextView[0] != null) {
-            viewsToHide.add(titleTextView[0]);
+        final boolean ignoreTitles = onSearchChangedIgnoreTitles();
+        if (!ignoreTitles) {
+            if (titleTextView[0] != null) {
+                viewsToHide.add(titleTextView[0]);
+            }
+
+            if (subtitleTextView != null && !TextUtils.isEmpty(subtitle)) {
+                viewsToHide.add(subtitleTextView);
+                subtitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
+            }
         }
 
-        if (subtitleTextView != null && !TextUtils.isEmpty(subtitle)) {
-            viewsToHide.add(subtitleTextView);
-            subtitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
-        }
+        ValueAnimator alphaUpdate = ValueAnimator.ofFloat(searchFieldVisibleAlpha, visible ? 1f : 0f);
+        alphaUpdate.addUpdateListener(anm -> {
+            searchFieldVisibleAlpha = (float) anm.getAnimatedValue();
+            if (backgroundUpdateListener != null) {
+                backgroundUpdateListener.run();
+            }
+        });
+        searchVisibleAnimator.playTogether(alphaUpdate);
 
         for (int i = 0; i < viewsToHide.size(); i++) {
             View view = viewsToHide.get(i);
@@ -978,6 +1054,10 @@ public class ActionBar extends FrameLayout {
             searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.ALPHA, visible ? 0f : 1f));
             searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.SCALE_Y, visible ? 0.95f : 1f));
             searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.SCALE_X, visible ? 0.95f : 1f));
+        }
+        if (avatarSearchImageView != null) {
+            avatarSearchImageView.setVisibility(View.VISIBLE);
+            searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(avatarSearchImageView, View.ALPHA, visible ? 1f : 0f));
         }
         centerScale = true;
         requestLayout();
@@ -994,7 +1074,7 @@ public class ActionBar extends FrameLayout {
                     }
                 }
 
-                if (visible) {
+                if (visible && !ignoreTitles) {
                     if (titleTextView[0] != null) {
                         titleTextView[0].setVisibility(View.GONE);
                     }
@@ -1002,16 +1082,24 @@ public class ActionBar extends FrameLayout {
                         titleTextView[1].setVisibility(View.GONE);
                     }
                 }
+
+                if (avatarSearchImageView != null) {
+                    if (!visible) {
+                        avatarSearchImageView.setVisibility(View.GONE);
+                    }
+                }
             }
         });
 
         searchVisibleAnimator.setDuration(150).start();
 
-        Drawable drawable = backButtonImageView.getDrawable();
-        if (drawable instanceof MenuDrawable) {
-            MenuDrawable menuDrawable = (MenuDrawable) drawable;
-            menuDrawable.setRotateToBack(true);
-            menuDrawable.setRotation(visible ? 1 : 0, true);
+        if (backButtonImageView != null) {
+            Drawable drawable = backButtonImageView.getDrawable();
+            if (drawable instanceof MenuDrawable) {
+                MenuDrawable menuDrawable = (MenuDrawable) drawable;
+                menuDrawable.setRotateToBack(true);
+                menuDrawable.setRotation(visible ? 1 : 0, true);
+            }
         }
     }
 
@@ -1194,10 +1282,17 @@ public class ActionBar extends FrameLayout {
             }
         }
 
+        if (avatarSearchImageView != null) {
+            avatarSearchImageView.measure(
+                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY)
+            );
+        }
+
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView) {
+            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView || child == avatarSearchImageView) {
                 continue;
             }
             measureChildWithMargins(child, widthMeasureSpec, 0, MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY), 0);
@@ -1250,10 +1345,19 @@ public class ActionBar extends FrameLayout {
             additionalSubtitleTextView.layout(textLeft, additionalTop + textTop, textLeft + additionalSubtitleTextView.getMeasuredWidth(), additionalTop + textTop + additionalSubtitleTextView.getTextHeight());
         }
 
+        if (avatarSearchImageView != null) {
+            avatarSearchImageView.layout(
+                AndroidUtilities.dp(56 + 8),
+                additionalTop + (getCurrentActionBarHeight() - avatarSearchImageView.getMeasuredHeight()) / 2,
+                AndroidUtilities.dp(56 + 8) + avatarSearchImageView.getMeasuredWidth(),
+                additionalTop + (getCurrentActionBarHeight() + avatarSearchImageView.getMeasuredHeight()) / 2
+            );
+        }
+
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView) {
+            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView || child == avatarSearchImageView) {
                 continue;
             }
 
@@ -1476,7 +1580,7 @@ public class ActionBar extends FrameLayout {
             itemsColor = color;
             if (backButtonImageView != null) {
                 if (itemsColor != 0) {
-                    backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.MULTIPLY));
+                    backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, colorFilterMode));
                     Drawable drawable = backButtonImageView.getDrawable();
                     if (drawable instanceof BackDrawable) {
                         ((BackDrawable) drawable).setColor(color);
@@ -1518,6 +1622,10 @@ public class ActionBar extends FrameLayout {
     }
 
     public void setTitleAnimated(CharSequence title, boolean fromBottom, long duration) {
+        setTitleAnimated(title, fromBottom, duration, null);
+    }
+
+    public void setTitleAnimated(CharSequence title, boolean fromBottom, long duration, Interpolator interpolator) {
         if (titleTextView[0] == null || title == null) {
             setTitle(title);
             return;
@@ -1545,12 +1653,19 @@ public class ActionBar extends FrameLayout {
         if (!crossfade) {
             titleTextView[0].setTranslationY(fromBottom ? AndroidUtilities.dp(20) : -AndroidUtilities.dp(20));
         }
-        titleTextView[0].animate().alpha(1f).translationY(0).setDuration(duration).start();
+        ViewPropertyAnimator a1 = titleTextView[0].animate().alpha(1f).translationY(0).setDuration(duration);
+        if (interpolator != null) {
+            a1.setInterpolator(interpolator);
+        }
+        a1.start();
 
         titleAnimationRunning = true;
         ViewPropertyAnimator a = titleTextView[1].animate().alpha(0);
         if (!crossfade) {
             a.translationY(fromBottom ? -AndroidUtilities.dp(20) : AndroidUtilities.dp(20));
+        }
+        if (interpolator != null) {
+            a.setInterpolator(interpolator);
         }
         a.setDuration(duration).setListener(new AnimatorListenerAdapter() {
             @Override
@@ -1709,4 +1824,12 @@ public class ActionBar extends FrameLayout {
     public void setForceSkipTouches(boolean forceSkipTouches) {
         this.forceSkipTouches = forceSkipTouches;
     }
+
+    public void setDrawBackButton(boolean b) {
+        this.drawBackButton = b;
+        if (backButtonImageView != null) {
+            backButtonImageView.invalidate();
+        }
+    }
+
 }

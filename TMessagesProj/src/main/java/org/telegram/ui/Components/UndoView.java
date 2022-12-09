@@ -1053,9 +1053,9 @@ public class UndoView extends FrameLayout {
                 } else {
                     int amount = (Integer) infoObject2;
                     if (count == 1) {
-                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessageToChats", R.string.FwdMessageToChats, LocaleController.formatPluralString("Chats", amount))));
+                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("FwdMessageToManyChats", amount)));
                     } else {
-                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessagesToChats", R.string.FwdMessagesToChats, LocaleController.formatPluralString("Chats", amount))));
+                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("FwdMessagesToManyChats", amount)));
                     }
                     leftImageView.setAnimation(R.raw.forward, 30, 30);
                     hapticDelay = 300;

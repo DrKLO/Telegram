@@ -16,6 +16,7 @@ import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class FileLoadOperation {
     long streamOffset;
 
     public static volatile DispatchQueue filesQueue = new DispatchQueue("writeFileQueue");
+    private boolean forceSmallChunk;
 
     public void setStream(FileLoadOperationStream stream, boolean streamPriority, long streamOffset) {
         this.stream = stream;
@@ -47,6 +49,7 @@ public class FileLoadOperation {
         private TLRPC.TL_upload_file response;
         private TLRPC.TL_upload_webFile responseWeb;
         private TLRPC.TL_upload_cdnFile responseCdn;
+        private boolean forceSmallChunk;
     }
 
     public static class Range {
@@ -186,6 +189,7 @@ public class FileLoadOperation {
     private File tempPath;
     private boolean isForceRequest;
     private int priority;
+    private long fileDialogId;
 
     private boolean ungzip;
 
@@ -203,7 +207,7 @@ public class FileLoadOperation {
     }
 
     private void updateParams() {
-        if (MessagesController.getInstance(currentAccount).getfileExperimentalParams) {
+        if (MessagesController.getInstance(currentAccount).getfileExperimentalParams && !forceSmallChunk) {
             downloadChunkSizeBig = 1024 * 512;
             maxDownloadRequests = 8;
             maxDownloadRequestsBig = 8;
@@ -218,6 +222,7 @@ public class FileLoadOperation {
     public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, long size) {
         updateParams();
         parentObject = parent;
+        fileDialogId = FileLoader.getDialogIdFromParent(currentAccount, parentObject);
         isStream = imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION;
         if (imageLocation.isEncrypted()) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
@@ -324,6 +329,7 @@ public class FileLoadOperation {
         updateParams();
         try {
             parentObject = parent;
+            fileDialogId = FileLoader.getDialogIdFromParent(currentAccount, parentObject);
             if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
                 location = new TLRPC.TL_inputEncryptedFileLocation();
                 location.id = documentLocation.id;
@@ -827,6 +833,7 @@ public class FileLoadOperation {
             finalFileExist = false;
         }
 
+
         if (!finalFileExist) {
             cacheFileTemp = new File(tempPath, fileNameTemp);
             if (ungzip) {
@@ -962,6 +969,11 @@ public class FileLoadOperation {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
+            }
+
+            if (fileDialogId != 0) {
+                FileLoader.getInstance(currentAccount).getFileDatabase().saveFileDialogId(cacheFileParts, fileDialogId);
+                FileLoader.getInstance(currentAccount).getFileDatabase().saveFileDialogId(cacheFileTemp, fileDialogId);
             }
 
             if (cacheFileTemp.exists()) {
@@ -1281,6 +1293,14 @@ public class FileLoadOperation {
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("finished preloading file to " + cacheFileTemp + " loaded " + totalPreloadedBytes + " of " + totalBytesCount);
             }
+            if (fileDialogId != 0) {
+                if (cacheFileTemp != null) {
+                    FileLoader.getInstance(currentAccount).getFileDatabase().removeFiles(Collections.singletonList(cacheFileTemp));
+                }
+                if (cacheFileParts != null) {
+                    FileLoader.getInstance(currentAccount).getFileDatabase().removeFiles(Collections.singletonList(cacheFileParts));
+                }
+            }
             delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
         } else {
             final File cacheIvTempFinal = cacheIvTemp;
@@ -1310,7 +1330,7 @@ public class FileLoadOperation {
                         } catch (ZipException zipException) {
                             ungzip = false;
                         } catch (Throwable e) {
-                            FileLog.e(e);
+                            FileLog.e(e, !(e instanceof FileNotFoundException));
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.e("unable to ungzip temp = " + cacheFileTempFinal + " to final = " + cacheFileFinal);
                             }
@@ -1738,7 +1758,14 @@ public class FileLoadOperation {
                 }
             }
         } else {
-            if (error.text.contains("FILE_MIGRATE_")) {
+            if (error.text.contains("LIMIT_INVALID") && !requestInfo.forceSmallChunk) {
+                if (!forceSmallChunk) {
+                    forceSmallChunk = true;
+                    currentDownloadChunkSize = 0;
+                    pause();
+                    start();
+                }
+            } else if (error.text.contains("FILE_MIGRATE_")) {
                 String errorMsg = error.text.replace("FILE_MIGRATE_", "");
                 Scanner scanner = new Scanner(errorMsg);
                 scanner.useDelimiter("");
@@ -1975,6 +2002,7 @@ public class FileLoadOperation {
             final RequestInfo requestInfo = new RequestInfo();
             requestInfos.add(requestInfo);
             requestInfo.offset = downloadOffset;
+            requestInfo.forceSmallChunk = forceSmallChunk;
 
             if (!isPreloadVideoOperation && supportsPreloading && preloadStream != null && preloadedBytesRanges != null) {
                 PreloadRange range = preloadedBytesRanges.get(requestInfo.offset);
@@ -2014,7 +2042,7 @@ public class FileLoadOperation {
                     continue;
                 }
             }
-
+            requestInfo.forceSmallChunk = forceSmallChunk;
             requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
                 if (!requestInfos.contains(requestInfo)) {
                     return;

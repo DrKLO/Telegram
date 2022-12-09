@@ -1700,9 +1700,17 @@ public class ChatObject {
     }
 
     public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+        if (topicId == 1) {
+            // general topic can't be deleted
+            return false;
+        }
         return chat != null && canDeleteTopic(currentAccount, chat, MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chat.id, topicId));
     }
     public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, TLRPC.TL_forumTopic topic) {
+        if (topic != null && topic.id == 1) {
+            // general topic can't be deleted
+            return false;
+        }
         return canUserDoAction(chat, ACTION_DELETE_MESSAGES) || isMyTopic(currentAccount, topic) && topic.topMessage != null && topic.topicStartMessage != null && topic.topMessage.id - topic.topicStartMessage.id <= Math.max(1, topic.groupedMessages == null ? 0 : topic.groupedMessages.size()) && MessageObject.peersEqual(topic.from_id, topic.topMessage.from_id);
     }
 

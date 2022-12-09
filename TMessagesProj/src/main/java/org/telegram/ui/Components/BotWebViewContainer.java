@@ -9,6 +9,7 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -69,7 +70,11 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -526,6 +531,21 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         if (isPageLoaded) {
             return;
         }
+
+        try {
+            InputStream in = getResources().getAssets().open("bot_clipboard_wrapper.js");
+            BufferedReader r = new BufferedReader(new InputStreamReader(in));
+            StringBuilder script = new StringBuilder();
+            String line;
+            while ((line = r.readLine()) != null) {
+                script.append(line).append("\n");
+            }
+            in.close();
+            evaluateJs(script.toString());
+        } catch (IOException e) {
+            FileLog.e(e);
+        }
+
         AnimatorSet set = new AnimatorSet();
         set.playTogether(
                 ObjectAnimator.ofFloat(webView, View.ALPHA, 1f),
@@ -1335,6 +1355,13 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         @JavascriptInterface
         public void postEvent(String eventType, String eventData) {
             AndroidUtilities.runOnUIThread(() -> onEventReceived(eventType, eventData));
+        }
+
+        @JavascriptInterface
+        public String getClipboardText() {
+            ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            CharSequence text = clipboardManager.getText();
+            return text != null ? text.toString() : null;
         }
     }
 

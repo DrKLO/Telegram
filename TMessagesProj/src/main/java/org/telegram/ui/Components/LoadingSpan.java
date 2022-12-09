@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class LoadingSpan extends ReplacementSpan {
 
@@ -22,6 +23,26 @@ public class LoadingSpan extends ReplacementSpan {
         this.size = size;
         this.drawable = new LoadingDrawable(null);
         this.drawable.paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(4)));
+    }
+
+    public void setColorKeys(String colorKey1, String colorKey2) {
+        this.drawable.colorKey1 = colorKey1;
+        this.drawable.colorKey2 = colorKey2;
+    }
+
+    public void setColorKeys(String colorKey1, String colorKey2, Theme.ResourcesProvider resourcesProvider) {
+        this.drawable.resourcesProvider = resourcesProvider;
+        this.drawable.colorKey1 = colorKey1;
+        this.drawable.colorKey2 = colorKey2;
+    }
+
+    public void setColors(int color1, int color2) {
+        this.drawable.color1 = color1;
+        this.drawable.color2 = color2;
+    }
+
+    public void setView(View view) {
+        this.view = view;
     }
 
     @Override

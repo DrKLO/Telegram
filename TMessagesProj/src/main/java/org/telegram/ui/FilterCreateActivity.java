@@ -322,7 +322,7 @@ public class FilterCreateActivity extends BaseFragment {
                 updateRows();
             } else if (position == includeAddRow || position == excludeAddRow) {
                 ArrayList<Long> arrayList = position == excludeAddRow ? newNeverShow : newAlwaysShow;
-                FilterUsersActivity fragment = new FilterUsersActivity(position == includeAddRow, arrayList, newFilterFlags);
+                UsersSelectActivity fragment = new UsersSelectActivity(position == includeAddRow, arrayList, newFilterFlags);
                 fragment.setDelegate((ids, flags) -> {
                     newFilterFlags = flags;
                     if (position == excludeAddRow) {
