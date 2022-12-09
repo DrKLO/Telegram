@@ -366,12 +366,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         hasHints = folderId == 0 && dialogsType == 0 && !isOnlySelect && !MessagesController.getInstance(currentAccount).hintDialogs.isEmpty();
     }
 
-    public void updateList(RecyclerListView recyclerListView) {
+    public void updateList(RecyclerListView recyclerListView, boolean hasHiddenArchive) {
         oldItems.clear();
         oldItems.addAll(itemInternals);
         updateItemList();
 
-        if (recyclerListView != null && recyclerListView.getChildCount() > 0) {
+        if (recyclerListView != null && recyclerListView.getChildCount() > 0 && recyclerListView.getLayoutManager() != null) {
             LinearLayoutManager layoutManager = ((LinearLayoutManager) recyclerListView.getLayoutManager());
             View view = null;
             int position = -1;
@@ -386,7 +386,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 }
             }
             if (view != null) {
-                layoutManager.scrollToPositionWithOffset(position, view.getTop() - recyclerListView.getPaddingTop());
+                int offset = view.getTop() - recyclerListView.getPaddingTop();
+                if (hasHiddenArchive && position == 0 && view.getTop() - recyclerListView.getPaddingTop() < AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72)) {
+                    position = 1;
+                    offset = 0;
+                }
+                layoutManager.scrollToPositionWithOffset(position, offset);
             }
         }
 
@@ -820,7 +825,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             toDialog.pinnedNum = oldNum;
         }
         Collections.swap(dialogs, fromIndex, toIndex);
-        updateList(recyclerView);
+        updateList(recyclerView, false);
     }
     @Override
     public void notifyItemMoved(int fromPosition, int toPosition) {

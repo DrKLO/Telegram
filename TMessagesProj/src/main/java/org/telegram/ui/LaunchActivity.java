@@ -4851,6 +4851,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             final ChatActivity fragment;
             if (dids.size() <= 1) {
                 final long did = dids.get(0).dialogId;
+                final int topicId = dids.get(0).topicId;
 
                 Bundle args = new Bundle();
                 args.putBoolean("scrollToTopOnResume", true);
@@ -4868,6 +4869,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     return;
                 }
                 fragment = new ChatActivity(args);
+                ForumUtilities.applyTopic(fragment, dids.get(0));
             } else {
                 fragment = null;
             }
