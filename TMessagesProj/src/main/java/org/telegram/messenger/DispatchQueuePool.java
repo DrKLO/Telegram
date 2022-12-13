@@ -5,16 +5,19 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.UiThread;
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 public class DispatchQueuePool {
 
-    private LinkedList<DispatchQueue> queues = new LinkedList<>();
-    private SparseIntArray busyQueuesMap = new SparseIntArray();
-    private LinkedList<DispatchQueue> busyQueues = new LinkedList<>();
-    private int maxCount;
+    private final LinkedList<DispatchQueue> queues = new LinkedList<>();
+    private final SparseIntArray busyQueuesMap = new SparseIntArray();
+    private final LinkedList<DispatchQueue> busyQueues = new LinkedList<>();
+    private final Map<Runnable, DispatchQueue> postedRunnables = new HashMap<>();
+    private final int maxCount;
     private int createdCount;
-    private int guid;
+    private final int guid;
     private int totalTasksCount;
     private boolean cleanupScheduled;
 
@@ -50,6 +53,11 @@ public class DispatchQueuePool {
 
     @UiThread
     public void execute(Runnable runnable) {
+        execute(runnable, 0L);
+    }
+
+    @UiThread
+    public void execute(Runnable runnable, long delay) {
         DispatchQueue queue;
         if (!busyQueues.isEmpty() && (totalTasksCount / 2 <= busyQueues.size() || queues.isEmpty() && createdCount >= maxCount)) {
             queue = busyQueues.remove(0);
@@ -68,7 +76,9 @@ public class DispatchQueuePool {
         busyQueues.add(queue);
         int count = busyQueuesMap.get(queue.index, 0);
         busyQueuesMap.put(queue.index, count + 1);
+        postedRunnables.put(runnable, queue);
         queue.postRunnable(() -> {
+            postedRunnables.remove(runnable);
             runnable.run();
             AndroidUtilities.runOnUIThread(() -> {
                 totalTasksCount--;
@@ -81,6 +91,15 @@ public class DispatchQueuePool {
                     busyQueuesMap.put(queue.index, remainingTasksCount);
                 }
             });
-        });
+        }, delay);
+    }
+
+    @UiThread
+    public void cancelRunnable(Runnable runnable) {
+        DispatchQueue queue = postedRunnables.get(runnable);
+        if (queue != null) {
+            postedRunnables.remove(runnable);
+            queue.cancelRunnable(runnable);
+        }
     }
 }
