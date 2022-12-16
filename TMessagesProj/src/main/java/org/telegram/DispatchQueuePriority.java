@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 public class DispatchQueuePriority {
 
     ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(3, 3, 60, TimeUnit.SECONDS, new PriorityBlockingQueue<>(10, new Comparator<Runnable>() {
-
         @Override
         public int compare(Runnable o1, Runnable o2) {
             int priority1 = 1;
@@ -36,7 +35,6 @@ public class DispatchQueuePriority {
         }
     }
 
-    //TODO see if these are actually the same priority
     public void postRunnable(Runnable runnable) {
         threadPoolExecutor.execute(runnable);
     }
@@ -57,7 +55,6 @@ public class DispatchQueuePriority {
             return;
         }
         threadPoolExecutor.remove(runnable);
-
     }
 
     private static class PriorityRunnable implements Runnable {

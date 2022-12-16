@@ -827,8 +827,23 @@ public class FileLoader extends BaseController {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("loadFileInternal fileName=" + fileName + " documentName=" + getDocumentFileName(document));
         }
-        // TODO priorities
-        operation.start();
+
+        boolean addedToQueue = false;
+        for (String loadingFileName: loadOperationPaths.keySet()) {
+            FileLoadOperation loadingOperation = loadOperationPaths.get(loadingFileName);
+            if (loadingOperation != null) {
+                if(loadingOperation.getQueue() == loaderQueue && loadingOperation.getPriority() > priority) {
+                    loaderQueue.add(operation);
+                    loaderQueue.checkLoadingOperations();
+                    addedToQueue = true;
+                    break;
+                }
+            }
+        }
+        if(!addedToQueue) {
+            operation.start();
+        }
+
         return operation;
     }
 

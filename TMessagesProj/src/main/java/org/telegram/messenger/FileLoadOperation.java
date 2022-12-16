@@ -1058,17 +1058,16 @@ public class FileLoadOperation {
                 return false;
             }
             started = true;
-            //Utilities.stageQueue.postRunnable(() -> {
-                if (totalBytesCount != 0 && (isPreloadVideoOperation && preloaded[0] || downloadedBytes == totalBytesCount)) {
-                    try {
-                        onFinishLoadingFile(false);
-                    } catch (Exception e) {
-                        onFail(true, 0);
-                    }
-                } else {
-                    startDownloadRequest();
+
+            if (totalBytesCount != 0 && (isPreloadVideoOperation && preloaded[0] || downloadedBytes == totalBytesCount)) {
+                try {
+                    onFinishLoadingFile(false);
+                } catch (Exception e) {
+                    onFail(true, 0);
                 }
-            //});
+            } else {
+                startDownloadRequest();
+            }
         } else {
             started = true;
             try {
