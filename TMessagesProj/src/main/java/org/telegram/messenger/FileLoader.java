@@ -784,6 +784,8 @@ public class FileLoader extends BaseController {
                         delegate.fileDidLoaded(fileName, finalFile, parentObject, finalType);
                     }
                 }
+
+                checkDownloadQueue(operation.getQueue(), fileName);
             }
 
             @Override
