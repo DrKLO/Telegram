@@ -922,7 +922,7 @@ public class FileLoader extends BaseController {
             uiObject.loadInternalRunnable = runnable;
             loadOperationPathsUI.put(fileName, uiObject);
         }
-        runnable.run();
+        fileLoaderQueue.postRunnable(runnable);
     }
 
     protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final long offset, final boolean priority) {
