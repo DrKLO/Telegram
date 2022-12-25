@@ -436,6 +436,15 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, darkThemeView);
     }
 
+    public void updateSunDrawable(boolean toDark) {
+        if (toDark) {
+            sunDrawable.setCustomEndFrame(36);
+        } else {
+            sunDrawable.setCustomEndFrame(0);
+        }
+        darkThemeView.playAnimation();
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();

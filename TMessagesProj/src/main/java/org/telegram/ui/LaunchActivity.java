@@ -5674,6 +5674,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         themeSwitchSunView.setVisibility(View.VISIBLE);
                         themeSwitchSunView.invalidate();
                     }
+                    if (sideMenu != null) {
+                        final DrawerProfileCell profileCell = (DrawerProfileCell) sideMenu.getChildAt(0);
+                        profileCell.updateSunDrawable(toDark);
+                    }
                     themeSwitchImageView.setImageBitmap(bitmap);
                     themeSwitchImageView.setVisibility(View.VISIBLE);
                     themeSwitchSunDrawable = darkThemeView.getAnimatedDrawable();
