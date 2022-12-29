@@ -146,8 +146,7 @@ public class EditTextEffects extends EditText {
             invalidateEffects();
 
             Layout layout = getLayout();
-            if (text instanceof Spannable && layout != null) {
-                if (start > layout.getLineCount()) return;
+            if (text instanceof Spannable && layout != null && start <= layout.getLineCount()) {
                 int line = layout.getLineForOffset(start);
                 int x = (int) layout.getPrimaryHorizontal(start);
                 int y = (int) ((layout.getLineTop(line) + layout.getLineBottom(line)) / 2f);
