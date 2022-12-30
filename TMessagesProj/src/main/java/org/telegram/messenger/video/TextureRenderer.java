@@ -22,6 +22,9 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.text.Layout;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -34,14 +37,20 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.EditTextEffects;
 import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
+import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.File;
@@ -72,6 +81,7 @@ public class TextureRenderer {
     private String paintPath;
     private String imagePath;
     private ArrayList<VideoEditedInfo.MediaEntity> mediaEntities;
+    private ArrayList<AnimatedEmojiDrawable> emojiDrawables;
     private int originalWidth;
     private int originalHeight;
     private int transformedWidth;
@@ -420,6 +430,17 @@ public class TextureRenderer {
                         GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
                         drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
                     }
+                } else if (entity.view != null && entity.canvas != null && entity.bitmap != null) {
+                    entity.bitmap.eraseColor(Color.TRANSPARENT);
+                    int lastFrame = (int) entity.currentFrame;
+                    entity.currentFrame += entity.framesPerDraw;
+                    int currentFrame = (int) entity.currentFrame;
+                    EditTextEffects editTextEffects = (EditTextEffects) entity.view;
+                    editTextEffects.incrementFrames(currentFrame - lastFrame);
+                    entity.view.draw(entity.canvas);
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
+                    GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
+                    drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
                 } else {
                     if (entity.bitmap != null) {
                         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
@@ -664,14 +685,69 @@ public class TextureRenderer {
                             }
                         }
                     } else if (entity.type == 1) {
-                        EditTextOutline editText = new EditTextOutline(ApplicationLoader.applicationContext);
+                        EditTextOutline editText = new EditTextOutline(ApplicationLoader.applicationContext) {
+                            {
+                                animatedEmojiOffsetX = AndroidUtilities.dp(8);
+                                animatedEmojiRawDraw = true;
+                                animatedEmojiRawDrawFps = (int) videoFps;
+                            }
+                        };
                         editText.setBackgroundColor(Color.TRANSPARENT);
                         editText.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+                        Typeface typeface;
+                        if (entity.textTypeface != null && (typeface = entity.textTypeface.getTypeface()) != null) {
+                            editText.setTypeface(typeface);
+                        }
                         editText.setTextSize(TypedValue.COMPLEX_UNIT_PX, entity.fontSize);
-                        editText.setText(entity.text);
+                        SpannableString text = new SpannableString(entity.text);
+                        boolean containsAnimated = false;
+                        for (VideoEditedInfo.EmojiEntity e : entity.entities) {
+                            containsAnimated = true;
+                            AnimatedEmojiSpan span;
+                            if (e.document != null) {
+                                span = new AnimatedEmojiSpan(e.document, editText.getPaint().getFontMetricsInt());
+                            } else {
+                                span = new AnimatedEmojiSpan(e.document_id, editText.getPaint().getFontMetricsInt());
+                            }
+                            span.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_RENDERING_VIDEO;
+                            span.documentAbsolutePath = e.documentAbsolutePath;
+                            text.setSpan(span, e.offset, e.offset + e.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        editText.setText(Emoji.replaceEmoji(text, editText.getPaint().getFontMetricsInt(), (int) (editText.getTextSize() * .8f), false));
                         editText.setTextColor(entity.color);
-                        editText.setTypeface(null, Typeface.BOLD);
-                        editText.setGravity(Gravity.CENTER);
+
+                        int gravity;
+                        switch (entity.textAlign) {
+                            default:
+                            case PaintTextOptionsView.ALIGN_LEFT:
+                                gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
+                                break;
+                            case PaintTextOptionsView.ALIGN_CENTER:
+                                gravity = Gravity.CENTER;
+                                break;
+                            case PaintTextOptionsView.ALIGN_RIGHT:
+                                gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+                                break;
+                        }
+
+                        editText.setGravity(gravity);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                            int textAlign;
+                            switch (entity.textAlign) {
+                                default:
+                                case PaintTextOptionsView.ALIGN_LEFT:
+                                    textAlign = LocaleController.isRTL ? View.TEXT_ALIGNMENT_TEXT_END : View.TEXT_ALIGNMENT_TEXT_START;
+                                    break;
+                                case PaintTextOptionsView.ALIGN_CENTER:
+                                    textAlign = View.TEXT_ALIGNMENT_CENTER;
+                                    break;
+                                case PaintTextOptionsView.ALIGN_RIGHT:
+                                    textAlign = LocaleController.isRTL ? View.TEXT_ALIGNMENT_TEXT_START : View.TEXT_ALIGNMENT_TEXT_END;
+                                    break;
+                            }
+                            editText.setTextAlignment(textAlign);
+                        }
+
                         editText.setHorizontallyScrolling(false);
                         editText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
                         editText.setFocusableInTouchMode(true);
@@ -701,6 +777,12 @@ public class TextureRenderer {
                         entity.bitmap = Bitmap.createBitmap(entity.viewWidth, entity.viewHeight, Bitmap.Config.ARGB_8888);
                         Canvas canvas = new Canvas(entity.bitmap);
                         editText.draw(canvas);
+                        if (containsAnimated) {
+                            entity.view = editText;
+                            entity.canvas = canvas;
+                            entity.framesPerDraw = videoFps / 30f;
+                            entity.currentFrame = 0;
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -743,6 +825,9 @@ public class TextureRenderer {
                 }
                 if (entity.animatedFileDrawable != null) {
                     entity.animatedFileDrawable.recycle();
+                }
+                if (entity.view instanceof EditTextEffects) {
+                    ((EditTextEffects) entity.view).recycleEmojis();
                 }
             }
         }

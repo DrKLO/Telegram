@@ -428,7 +428,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     builder.setMessage(AndroidUtilities.replaceTags(message));
                     builder.setPositiveButton(LocaleController.getString("DiscussionUnlink", R.string.DiscussionUnlink), (dialogInterface, i) -> {
                         if (!isChannel || info.linked_chat_id != 0) {
-                            final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), 3)};
+                            final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER)};
                             TLRPC.TL_channels_setDiscussionGroup req = new TLRPC.TL_channels_setDiscussionGroup();
                             if (isChannel) {
                                 req.broadcast = MessagesController.getInputChannel(currentChat);
@@ -481,7 +481,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             if (query) {
                 getMessagesController().loadFullChat(chat.id, 0, true);
                 waitingForFullChat = chat;
-                waitingForFullChatProgressAlert = new AlertDialog(getParentActivity(), 3);
+                waitingForFullChatProgressAlert = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                 AndroidUtilities.runOnUIThread(() -> {
                     if (waitingForFullChatProgressAlert == null) {
                         return;
@@ -561,7 +561,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             });
             return;
         }
-        final AlertDialog[] progressDialog = new AlertDialog[]{createFragment != null ? null : new AlertDialog(getParentActivity(), 3)};
+        final AlertDialog[] progressDialog = new AlertDialog[]{createFragment != null ? null : new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER)};
         TLRPC.TL_channels_setDiscussionGroup req = new TLRPC.TL_channels_setDiscussionGroup();
         req.broadcast = MessagesController.getInputChannel(currentChat);
         req.group = MessagesController.getInputChannel(chat);

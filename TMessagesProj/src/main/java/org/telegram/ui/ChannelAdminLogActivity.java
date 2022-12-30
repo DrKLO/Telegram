@@ -2710,7 +2710,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             linviteLoading = true;
 
                             boolean[] canceled = new boolean[1];
-                            final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
+                            final AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                             progressDialog.setOnCancelListener(dialogInterface -> {
                                 linviteLoading = false;
                                 canceled[0] = true;

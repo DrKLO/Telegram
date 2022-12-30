@@ -3,7 +3,6 @@ package org.telegram.ui.Components;
 
 import android.animation.TimeInterpolator;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.View;
 
 import androidx.core.math.MathUtils;
@@ -120,7 +119,6 @@ public class AnimatedFloat {
     }
 
     public float set(float mustBe, boolean force) {
-        final long now = SystemClock.elapsedRealtime();
         if (force || transitionDuration <= 0 || firstSet) {
             value = targetValue = mustBe;
             transition = false;
@@ -129,9 +127,10 @@ public class AnimatedFloat {
             transition = true;
             targetValue = mustBe;
             startValue = value;
-            transitionStart = now;
+            transitionStart = SystemClock.elapsedRealtime();
         }
         if (transition) {
+            final long now = SystemClock.elapsedRealtime();
             final float t = MathUtils.clamp((now - transitionStart - transitionDelay) / (float) transitionDuration, 0, 1);
             if (now - transitionStart >= transitionDelay) {
                 if (transitionInterpolator == null) {
@@ -152,6 +151,10 @@ public class AnimatedFloat {
             }
         }
         return value;
+    }
+
+    public boolean isInProgress() {
+        return transition;
     }
 
     public float getTransitionProgress() {

@@ -12,6 +12,7 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 
 public class WaveDrawable {
 
@@ -166,6 +167,9 @@ public class WaveDrawable {
     }
 
     private void startFling(float delta) {
+        if (SharedConfig.getLiteMode().enabled()) {
+            return;
+        }
         if (flingAnimator != null) {
             flingAnimator.cancel();
         }
@@ -192,6 +196,9 @@ public class WaveDrawable {
     boolean wasFling;
 
     public void tick(float circleRadius) {
+        if (SharedConfig.getLiteMode().enabled()) {
+            return;
+        }
         long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
         lastUpdateTime = newTime;
@@ -323,6 +330,9 @@ public class WaveDrawable {
     }
 
     public void draw(float cx, float cy, float scale, Canvas canvas) {
+        if (SharedConfig.getLiteMode().enabled()) {
+            return;
+        }
         float waveAmplitude = amplitude < 0.3f ? amplitude / 0.3f : 1f;
         float radiusDiff = AndroidUtilities.dp(10) + AndroidUtilities.dp(50) * WAVE_ANGLE * animateToAmplitude;
 

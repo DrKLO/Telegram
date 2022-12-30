@@ -33,6 +33,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.VoIPService;
@@ -983,6 +984,9 @@ public class GroupCallUserCell extends FrameLayout {
         }
 
         public void draw(Canvas canvas, float cx, float cy, View parentView) {
+            if (SharedConfig.getLiteMode().enabled()) {
+                return;
+            }
             float scaleBlob = 0.8f + 0.4f * amplitude;
             if (showWaves || wavesEnter != 0) {
                 canvas.save();

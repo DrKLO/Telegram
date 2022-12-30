@@ -9,11 +9,16 @@
 package org.telegram.messenger;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 
+import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.Paint.PaintTypeface;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.Point;
 
@@ -57,6 +62,32 @@ public class VideoEditedInfo {
     public boolean needUpdateProgress = false;
     public boolean shouldLimitFps = true;
 
+    public static class EmojiEntity extends TLRPC.TL_messageEntityCustomEmoji {
+
+        public String documentAbsolutePath;
+
+        @Override
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            super.readParams(stream, exception);
+            boolean hasPath = stream.readBool(exception);
+            if (hasPath) {
+                documentAbsolutePath = stream.readString(exception);
+            }
+            if (TextUtils.isEmpty(documentAbsolutePath)) {
+                documentAbsolutePath = null;
+            }
+        }
+
+        @Override
+        public void serializeToStream(AbstractSerializedData stream) {
+            super.serializeToStream(stream);
+            stream.writeBool(!TextUtils.isEmpty(documentAbsolutePath));
+            if (!TextUtils.isEmpty(documentAbsolutePath)) {
+                stream.writeString(documentAbsolutePath);
+            }
+        }
+    }
+
     public static class MediaEntity {
         public byte type;
         public byte subType;
@@ -66,8 +97,11 @@ public class VideoEditedInfo {
         public float width;
         public float height;
         public String text;
+        public ArrayList<EmojiEntity> entities = new ArrayList<>();
         public int color;
         public int fontSize;
+        public PaintTypeface textTypeface;
+        public int textAlign;
         public int viewWidth;
         public int viewHeight;
 
@@ -87,6 +121,7 @@ public class VideoEditedInfo {
         public Bitmap bitmap;
 
         public View view;
+        public Canvas canvas;
         public AnimatedFileDrawable animatedFileDrawable;
 
         public MediaEntity() {
@@ -102,10 +137,18 @@ public class VideoEditedInfo {
             width = data.readFloat(false);
             height = data.readFloat(false);
             text = data.readString(false);
+            int count = data.readInt32(false);
+            for (int i = 0; i < count; ++i) {
+                EmojiEntity entity = new EmojiEntity();
+                data.readInt32(false);
+                entity.readParams(data, false);
+                entities.add(entity);
+            }
             color = data.readInt32(false);
             fontSize = data.readInt32(false);
             viewWidth = data.readInt32(false);
             viewHeight = data.readInt32(false);
+            textAlign = data.readInt32(false);
         }
 
         private void serializeTo(SerializedData data) {
@@ -117,10 +160,15 @@ public class VideoEditedInfo {
             data.writeFloat(width);
             data.writeFloat(height);
             data.writeString(text);
+            data.writeInt32(entities.size());
+            for (int i = 0; i < entities.size(); ++i) {
+                entities.get(i).serializeToStream(data);
+            }
             data.writeInt32(color);
             data.writeInt32(fontSize);
             data.writeInt32(viewWidth);
             data.writeInt32(viewHeight);
+            data.writeInt32(textAlign);
         }
 
         public MediaEntity copy() {
@@ -133,6 +181,7 @@ public class VideoEditedInfo {
             entity.width = width;
             entity.height = height;
             entity.text = text;
+            entity.entities.addAll(entities);
             entity.color = color;
             entity.fontSize = fontSize;
             entity.viewWidth = viewWidth;
@@ -142,6 +191,7 @@ public class VideoEditedInfo {
             entity.textViewHeight = textViewHeight;
             entity.textViewX = textViewX;
             entity.textViewY = textViewY;
+            entity.textAlign = textAlign;
             return entity;
         }
     }

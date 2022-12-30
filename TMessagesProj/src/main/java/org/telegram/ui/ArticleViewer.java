@@ -3687,7 +3687,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         textSelectionHelper.setParentView(listView[0]);
         if (MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
             textSelectionHelper.setOnTranslate((text, fromLang, toLang, onAlertDismiss) -> {
-                TranslateAlert.showAlert(parentActivity, parentFragment, fromLang, toLang, text, false, null, onAlertDismiss);
+                TranslateAlert.showAlert(parentActivity, parentFragment, currentAccount, fromLang, toLang, text, false, null, onAlertDismiss);
             });
         }
         textSelectionHelper.layoutManager = layoutManager[0];

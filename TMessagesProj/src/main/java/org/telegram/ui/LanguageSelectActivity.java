@@ -216,7 +216,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     LocaleController.LocaleInfo prevLocale = LocaleController.getInstance().getCurrentLocaleInfo();
                     boolean sameLang = prevLocale == localeInfo;
 
-                    final AlertDialog progressDialog = new AlertDialog(getContext(), 3);
+                    final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
                     int reqId = LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, currentAccount, () -> {
                         progressDialog.dismiss();
                         if (!sameLang) {
@@ -745,13 +745,16 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0: {
-                    if (!search)
+                    if (!search) {
                         position -= 2;
+                    }
                     TextRadioCell textSettingsCell = (TextRadioCell) holder.itemView;
-                    LocaleController.LocaleInfo localeInfo;
+                    LocaleController.LocaleInfo localeInfo = null;
                     boolean last;
                     if (search) {
-                        localeInfo = searchResult.get(position);
+                        if (position >= 0 && position < searchResult.size()) {
+                            localeInfo = searchResult.get(position);
+                        }
                         last = position == searchResult.size() - 1;
                     } else if (!unofficialLanguages.isEmpty() && position >= 0 && position < unofficialLanguages.size()) {
                         localeInfo = unofficialLanguages.get(position);
@@ -760,13 +763,17 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                         if (!unofficialLanguages.isEmpty()) {
                             position -= unofficialLanguages.size() + 1;
                         }
-                        localeInfo = sortedLanguages.get(position);
+                        if (position >= 0 && position < sortedLanguages.size()) {
+                            localeInfo = sortedLanguages.get(position);
+                        }
                         last = position == sortedLanguages.size() - 1;
                     }
-                    if (localeInfo.isLocal()) {
-                        textSettingsCell.setTextAndValueAndCheck(String.format("%1$s (%2$s)", localeInfo.name, LocaleController.getString("LanguageCustom", R.string.LanguageCustom)), localeInfo.nameEnglish, false, false, !last);
-                    } else {
-                        textSettingsCell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameEnglish, false, false, !last);
+                    if (localeInfo != null) {
+                        if (localeInfo.isLocal()) {
+                            textSettingsCell.setTextAndValueAndCheck(String.format("%1$s (%2$s)", localeInfo.name, LocaleController.getString("LanguageCustom", R.string.LanguageCustom)), localeInfo.nameEnglish, false, false, !last);
+                        } else {
+                            textSettingsCell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameEnglish, false, false, !last);
+                        }
                     }
                     textSettingsCell.setChecked(localeInfo == LocaleController.getInstance().getCurrentLocaleInfo());
                     break;

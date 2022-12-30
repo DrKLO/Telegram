@@ -81,6 +81,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -91,6 +92,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
+import android.view.inspector.WindowInspector;
 import android.webkit.MimeTypeMap;
 import android.widget.EdgeEffect;
 import android.widget.HorizontalScrollView;
@@ -129,8 +131,10 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.ForegroundDetector;
@@ -142,6 +146,8 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
+import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.WallpapersListActivity;
 
@@ -164,6 +170,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -185,6 +192,10 @@ public class AndroidUtilities {
     public final static int REPLACING_TAG_TYPE_BOLD = 1;
 
     public final static String TYPEFACE_ROBOTO_MEDIUM = "fonts/rmedium.ttf";
+    public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
+    public final static String TYPEFACE_ROBOTO_MONO = "fonts/rmono.ttf";
+    public final static String TYPEFACE_MERRIWEATHER_BOLD = "fonts/mw_bold.ttf";
+    public final static String TYPEFACE_COURIER_NEW_BOLD = "fonts/courier_new_bold.ttf";
 
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     public static float touchSlop;
@@ -3698,6 +3709,17 @@ public class AndroidUtilities {
 
             ConnectionsManager.setProxySettings(true, address, p, user, password, secret);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+            if (activity instanceof LaunchActivity) {
+                INavigationLayout layout = ((LaunchActivity) activity).getActionBarLayout();
+                BaseFragment fragment = layout.getLastFragment();
+                if (fragment instanceof ChatActivity) {
+                    ((ChatActivity) fragment).getUndoView().showWithAction(0, UndoView.ACTION_PROXY_ADDED, null);
+                } else {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_SUCCESS, LocaleController.getString(R.string.ProxyAddedSuccess));
+                }
+            } else {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_SUCCESS, LocaleController.getString(R.string.ProxyAddedSuccess));
+            }
             dismissRunnable.run();
         });
         builder.show();
@@ -3981,7 +4003,16 @@ public class AndroidUtilities {
         return (int) (a + f * (b - a));
     }
 
+    public static float lerpAngle(float a, float b, float f) {
+        float delta = ((b - a + 360 + 180) % 360) - 180;
+        return (a + delta * f + 360) % 360;
+    }
+
     public static float lerp(float a, float b, float f) {
+        return a + f * (b - a);
+    }
+
+    public static double lerp(double a, double b, float f) {
         return a + f * (b - a);
     }
 
@@ -4443,10 +4474,14 @@ public class AndroidUtilities {
     }
 
     public static void updateViewShow(View view, boolean show, boolean scale, boolean animated) {
-        updateViewShow(view, show, scale, animated, null);
+        updateViewShow(view, show, scale, 0, animated, null);
     }
 
     public static void updateViewShow(View view, boolean show, boolean scale, boolean animated, Runnable onDone) {
+        updateViewShow(view, show, scale, 0, animated, onDone);
+    }
+
+    public static void updateViewShow(View view, boolean show, boolean scale, float translate, boolean animated, Runnable onDone) {
         if (view == null) {
             return;
         }
@@ -4461,6 +4496,9 @@ public class AndroidUtilities {
             view.setAlpha(1f);
             view.setScaleX(scale && !show ? 0f : 1f);
             view.setScaleY(scale && !show ? 0f : 1f);
+            if (translate != 0) {
+                view.setTranslationY(show ? 0 : AndroidUtilities.dp(-16) * translate);
+            }
             if (onDone != null) {
                 onDone.run();
             }
@@ -4470,10 +4508,23 @@ public class AndroidUtilities {
                 view.setAlpha(0f);
                 view.setScaleX(scale ? 0 : 1);
                 view.setScaleY(scale ? 0 : 1);
+                if (translate != 0) {
+                    view.setTranslationY(AndroidUtilities.dp(-16) * translate);
+                }
             }
-            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone).start();
+            ViewPropertyAnimator animate = view.animate();
+            animate = animate.alpha(1f).scaleY(1f).scaleX(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone);
+            if (translate != 0) {
+                animate.translationY(0);
+            }
+            animate.start();
         } else {
-            view.animate().alpha(0).scaleY(scale ? 0 : 1).scaleX(scale ? 0 : 1).setListener(new HideViewAfterAnimation(view)).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone).start();
+            ViewPropertyAnimator animate = view.animate();
+            animate = animate.alpha(0).scaleY(scale ? 0 : 1).scaleX(scale ? 0 : 1).setListener(new HideViewAfterAnimation(view)).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).withEndAction(onDone);
+            if (translate != 0) {
+                animate.translationY(AndroidUtilities.dp(-16) * translate);
+            }
+            animate.start();
         }
     }
 
@@ -4617,5 +4668,150 @@ public class AndroidUtilities {
             spannableStringBuilder.replace(index, index + what.length(), obj);
         }
         return spannableStringBuilder;
+    }
+
+    public static Bitmap makeBlurBitmap(View view) {
+        if (view == null) {
+            return null;
+        }
+        int w = (int) (view.getWidth() / 6.0f);
+        int h = (int) (view.getHeight() / 6.0f);
+        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.scale(1.0f / 6.0f, 1.0f / 6.0f);
+        canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        view.draw(canvas);
+        Utilities.stackBlurBitmap(bitmap, Math.max(7, Math.max(w, h) / 180));
+        return bitmap;
+    }
+
+    public static void makeGlobalBlurBitmap(Utilities.Callback<Bitmap> onBitmapDone, float amount) {
+        if (onBitmapDone == null) {
+            return;
+        }
+
+        List<View> views = null;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                views = WindowInspector.getGlobalWindowViews();
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Class wmgClass = Class.forName("android.view.WindowManagerGlobal");
+                Object wmgInstance = wmgClass.getMethod("getInstance").invoke(null, (Object[]) null);
+
+                Method getViewRootNames = wmgClass.getMethod("getViewRootNames");
+                Method getRootView = wmgClass.getMethod("getRootView", String.class);
+                String[] rootViewNames = (String[])getViewRootNames.invoke(wmgInstance, (Object[])null);
+
+                views = new ArrayList<>();
+                for (String viewName : rootViewNames) {
+                    views.add((View) getRootView.invoke(wmgInstance, viewName));
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Class wmiClass = Class.forName("android.view.WindowManagerImpl");
+                Object wmiInstance = wmiClass.getMethod("getDefault").invoke(null);
+
+                Field viewsField = wmiClass.getDeclaredField("mViews");
+                viewsField.setAccessible(true);
+                Object viewsObject = viewsField.get(wmiInstance);
+
+                if (viewsObject instanceof List) {
+                    views = (List<View>) viewsField.get(wmiInstance);
+                } else if (viewsObject instanceof View[]) {
+                    views = Arrays.asList((View[]) viewsField.get(wmiInstance));
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("makeGlobalBlurBitmap()", e);
+        }
+
+        if (views == null) {
+            onBitmapDone.run(null);
+            return;
+        }
+
+        final List<View> finalViews = views;
+        //Utilities.themeQueue.postRunnable(() -> {
+        try {
+            int w = (int) (AndroidUtilities.displaySize.x / amount);
+            int h = (int) ((AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) / amount);
+            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            canvas.scale(1.0f / amount, 1.0f / amount);
+            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            int[] location = new int[2];
+            for (int i = 0; i < finalViews.size(); ++i) {
+                View view = finalViews.get(i);
+
+                ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+                if (layoutParams instanceof WindowManager.LayoutParams) {
+                    WindowManager.LayoutParams params = (WindowManager.LayoutParams) layoutParams;
+                    if ((params.flags & WindowManager.LayoutParams.FLAG_DIM_BEHIND) != 0) {
+                        canvas.drawColor(ColorUtils.setAlphaComponent(0xFF000000, (int) (0xFF * params.dimAmount)));
+                    }
+                }
+
+                canvas.save();
+                view.getLocationOnScreen(location);
+                canvas.translate(location[0] / amount, location[1] / amount);
+                try {
+                    view.draw(canvas);
+                } catch (Exception e) {
+
+                }
+                canvas.restore();
+            }
+            Utilities.stackBlurBitmap(bitmap, Math.max((int) amount, Math.max(w, h) / 180));
+            AndroidUtilities.runOnUIThread(() -> {
+                onBitmapDone.run(bitmap);
+            });
+        } catch (Exception e) {
+            FileLog.e(e);
+            AndroidUtilities.runOnUIThread(() -> {
+                onBitmapDone.run(null);
+            });
+        }
+     //   });
+    }
+
+    // rounds percents to be exact 100% in sum
+    public static int[] roundPercents(float[] percents, int[] output) {
+        if (percents == null) {
+            throw new NullPointerException("percents or output is null");
+        }
+        if (output == null) {
+            output = new int[percents.length];
+        }
+        if (percents.length != output.length) {
+            throw new IndexOutOfBoundsException("percents.length != output.length");
+        }
+
+        float sum = 0;
+        for (int i = 0; i < percents.length; ++i) {
+            sum += percents[i];
+        }
+
+        int roundedSum = 0;
+        for (int i = 0; i < percents.length; ++i) {
+            roundedSum += (output[i] = (int) Math.floor(percents[i] / sum * 100));
+        }
+
+        while (roundedSum < 100) {
+            float maxError = 0;
+            int maxErrorIndex = -1;
+            for (int i = 0; i < percents.length; ++i) {
+                float error = (percents[i] / sum) - (output[i] / 100f);
+                if (percents[i] > 0 && error >= maxError) {
+                    maxErrorIndex = i;
+                    maxError = error;
+                }
+            }
+            if (maxErrorIndex < 0) {
+                break;
+            }
+            output[maxErrorIndex]++;
+            roundedSum++;
+        }
+
+        return output;
     }
 }

@@ -657,7 +657,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog2, which2) -> {
                                     AlertDialog progressDialog = null;
                                     if (getParentActivity() != null) {
-                                        progressDialog = new AlertDialog(getParentActivity(), 3);
+                                        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                                         progressDialog.setCanCancel(false);
                                         progressDialog.show();
                                     }

@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -23,86 +24,112 @@ import org.telegram.ui.ActionBar.Theme;
 
 public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
+    private final Drawable headerShadowDrawable;
     protected RecyclerListView recyclerListView;
     protected ActionBar actionBar;
     boolean wasDrawn;
-    private int contentHeight;
+    protected int contentHeight;
     private BaseFragment baseFragment;
     public final boolean hasFixedSize;
     protected boolean clipToActionBar;
+    public NestedSizeNotifierLayout nestedSizeNotifierLayout;
 
     public float topPadding = 0.4f;
+    boolean showShadow = true;
+    private float shadowAlpha = 1f;
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize) {
-        this(fragment, needFocus, hasFixedSize, null);
+        this(fragment, needFocus, hasFixedSize, false, null);
     }
 
-    public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, Theme.ResourcesProvider resourcesProvider) {
+    public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
         super(fragment.getParentActivity(), needFocus, resourcesProvider);
         this.baseFragment = fragment;
         this.hasFixedSize = hasFixedSize;
         Context context = fragment.getParentActivity();
-        Drawable headerShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow).mutate();
-        FrameLayout containerView = new FrameLayout(context) {
+        headerShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow).mutate();
+        FrameLayout containerView;
+        if (useNested) {
+            containerView = nestedSizeNotifierLayout = new NestedSizeNotifierLayout(context) {
 
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                contentHeight = MeasureSpec.getSize(heightMeasureSpec);
-                onPreMeasure(widthMeasureSpec, heightMeasureSpec);
-                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            }
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    contentHeight = MeasureSpec.getSize(heightMeasureSpec);
+                    onPreMeasure(widthMeasureSpec, heightMeasureSpec);
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
 
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                if (!hasFixedSize) {
-                    RecyclerView.ViewHolder holder = recyclerListView.findViewHolderForAdapterPosition(0);
-                    int top = -AndroidUtilities.dp(16);
-                    if (holder != null) {
-                        top = holder.itemView.getBottom() - AndroidUtilities.dp(16);
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    preDrawInternal(canvas, this);
+                    super.dispatchDraw(canvas);
+                    postDrawInternal(canvas, this);
+                }
+
+                @Override
+                protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                    if (!hasFixedSize && clipToActionBar && child == recyclerListView) {
+                        canvas.save();
+                        canvas.clipRect(0, actionBar.getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight());
+                        super.drawChild(canvas, child, drawingTime);
+                        canvas.restore();
+                        return true;
                     }
+                    return super.drawChild(canvas, child, drawingTime);
+                }
 
-                    float progressToFullView = 1f - (top + AndroidUtilities.dp(16)) / (float) AndroidUtilities.dp(56);
-                    if (progressToFullView < 0) {
-                        progressToFullView = 0;
+                @Override
+                public boolean dispatchTouchEvent(MotionEvent event) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < shadowDrawable.getBounds().top) {
+                        dismiss();
                     }
-
-                    AndroidUtilities.updateViewVisibilityAnimated(actionBar, progressToFullView != 0f, 1f, wasDrawn);
-                    shadowDrawable.setBounds(0, top, getMeasuredWidth(), getMeasuredHeight());
-                    shadowDrawable.draw(canvas);
-
-                    onPreDraw(canvas, top, progressToFullView);
+                    return super.dispatchTouchEvent(event);
                 }
-                super.dispatchDraw(canvas);
-                if (actionBar != null && actionBar.getVisibility() == View.VISIBLE && actionBar.getAlpha() != 0) {
-                    headerShadowDrawable.setBounds(0, actionBar.getBottom(), getMeasuredWidth(), actionBar.getBottom() +  headerShadowDrawable.getIntrinsicHeight());
-                    headerShadowDrawable.setAlpha((int) (255 * actionBar.getAlpha()));
-                    headerShadowDrawable.draw(canvas);
-                }
-                wasDrawn = true;
-            }
+            };
+        } else {
+             containerView = new FrameLayout(context) {
 
-            @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (!hasFixedSize && clipToActionBar && child == recyclerListView) {
-                    canvas.save();
-                    canvas.clipRect(0, actionBar.getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight());
-                    super.drawChild(canvas, child, drawingTime);
-                    canvas.restore();
-                    return true;
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    contentHeight = MeasureSpec.getSize(heightMeasureSpec);
+                    onPreMeasure(widthMeasureSpec, heightMeasureSpec);
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 }
-                return super.drawChild(canvas, child, drawingTime);
-            }
 
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < shadowDrawable.getBounds().top) {
-                    dismiss();
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    preDrawInternal(canvas, this);
+                    super.dispatchDraw(canvas);
+                    postDrawInternal(canvas, this);
                 }
-                return super.dispatchTouchEvent(event);
-            }
-        };
+
+                @Override
+                protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                    if (!hasFixedSize && clipToActionBar && child == recyclerListView) {
+                        canvas.save();
+                        canvas.clipRect(0, actionBar.getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight());
+                        super.drawChild(canvas, child, drawingTime);
+                        canvas.restore();
+                        return true;
+                    }
+                    return super.drawChild(canvas, child, drawingTime);
+                }
+
+                @Override
+                public boolean dispatchTouchEvent(MotionEvent event) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < shadowDrawable.getBounds().top) {
+                        dismiss();
+                    }
+                    return super.dispatchTouchEvent(event);
+                }
+            };
+        }
         recyclerListView = new RecyclerListView(context);
         recyclerListView.setLayoutManager(new LinearLayoutManager(context));
+        if (nestedSizeNotifierLayout != null) {
+            nestedSizeNotifierLayout.setBottomSheetContainerView(getContainer());
+            nestedSizeNotifierLayout.setTargetListView(recyclerListView);
+        }
 
         RecyclerListView.SelectionAdapter adapter = createAdapter();
 
@@ -184,7 +211,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             actionBar.setCastShadows(true);
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setTitle(getTitle());
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick(){
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
@@ -206,6 +233,44 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         }
         onViewCreated(containerView);
         updateStatusBar();
+    }
+
+    private void postDrawInternal(Canvas canvas, View parentView) {
+        if (showShadow && shadowAlpha != 1f) {
+            shadowAlpha += 16 / 150f;
+            parentView.invalidate();
+        } else if (!showShadow && shadowAlpha != 0) {
+            shadowAlpha -= 16 / 150f;
+            parentView.invalidate();
+        }
+        shadowAlpha = Utilities.clamp(shadowAlpha, 1f, 0f);
+        if (actionBar != null && actionBar.getVisibility() == View.VISIBLE && actionBar.getAlpha() != 0 && shadowAlpha != 0) {
+            headerShadowDrawable.setBounds(0, actionBar.getBottom(), parentView.getMeasuredWidth(), actionBar.getBottom() + headerShadowDrawable.getIntrinsicHeight());
+            headerShadowDrawable.setAlpha((int) (255 * actionBar.getAlpha() * shadowAlpha));
+            headerShadowDrawable.draw(canvas);
+        }
+        wasDrawn = true;
+    }
+
+    private void preDrawInternal(Canvas canvas, View parent) {
+        if (!hasFixedSize) {
+            RecyclerView.ViewHolder holder = recyclerListView.findViewHolderForAdapterPosition(0);
+            int top = -AndroidUtilities.dp(16);
+            if (holder != null) {
+                top = holder.itemView.getBottom() - AndroidUtilities.dp(16);
+            }
+
+            float progressToFullView = 1f - (top + AndroidUtilities.dp(16)) / (float) AndroidUtilities.dp(56);
+            if (progressToFullView < 0) {
+                progressToFullView = 0;
+            }
+
+            AndroidUtilities.updateViewVisibilityAnimated(actionBar, progressToFullView != 0f, 1f, wasDrawn);
+            shadowDrawable.setBounds(0, top, parent.getMeasuredWidth(), parent.getMeasuredHeight());
+            shadowDrawable.draw(canvas);
+
+            onPreDraw(canvas, top, progressToFullView);
+        }
     }
 
     protected void onPreMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -247,6 +312,17 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         } else if (baseFragment != null) {
             AndroidUtilities.setLightStatusBar(getWindow(), baseFragment.isLightStatusBar());
         }
+    }
+
+    public void updateTitle() {
+        if (actionBar != null) {
+            actionBar.setTitle(getTitle());
+        }
+    }
+
+    public void setShowShadow(boolean show) {
+        showShadow = show;
+        nestedSizeNotifierLayout.invalidate();
     }
 
 }

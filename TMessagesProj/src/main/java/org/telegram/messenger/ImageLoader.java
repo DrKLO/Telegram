@@ -1020,7 +1020,8 @@ public class ImageLoader {
                             cacheOptions.compressQuality = BitmapsCache.COMPRESS_QUALITY_DEFAULT;
                         }
                     }
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, false, size, document, document == null ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false, cacheOptions);
+                    boolean notCreateStream = cacheImage.filter != null && cacheImage.filter.contains("nostream");
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, false, notCreateStream ? 0 : size, notCreateStream ? null : document, document == null && !notCreateStream ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false, cacheOptions);
                     fileDrawable.setIsWebmSticker(MessageObject.isWebM(document) || MessageObject.isVideoSticker(document) || isAnimatedAvatar(cacheImage.filter));
                 } else {
 
@@ -1042,7 +1043,9 @@ public class ImageLoader {
                             cacheOptions.compressQuality = BitmapsCache.COMPRESS_QUALITY_DEFAULT;
                         }
                     }
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, "d".equals(cacheImage.filter), 0, cacheImage.imageLocation.document, null, null, seekTo, cacheImage.currentAccount, false, w, h, cacheOptions);
+                    boolean createDecoder = cacheImage.filter != null && ("d".equals(cacheImage.filter) || cacheImage.filter.contains("_d"));
+                    boolean notCreateStream = cacheImage.filter != null && cacheImage.filter.contains("nostream");
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, createDecoder, 0, notCreateStream ? null : cacheImage.imageLocation.document, null, null, seekTo, cacheImage.currentAccount, false, w, h, cacheOptions);
                     fileDrawable.setIsWebmSticker(MessageObject.isWebM(cacheImage.imageLocation.document) || MessageObject.isVideoSticker(cacheImage.imageLocation.document) || isAnimatedAvatar(cacheImage.filter));
                 }
                 fileDrawable.setLimitFps(limitFps);
@@ -1380,7 +1383,13 @@ public class ImageLoader {
                         opts.inDither = false;
                         if (mediaId != null && mediaThumbPath == null) {
                             if (mediaIsVideo) {
-                                image = MediaStore.Video.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Video.Thumbnails.MINI_KIND, opts);
+                                if (mediaId == 0) {
+                                    AnimatedFileDrawable fileDrawable = new AnimatedFileDrawable(cacheFileFinal, true, 0, null, null, null, 0, 0, true, null);
+                                    image = fileDrawable.getFrameAtTime(0, true);
+                                    fileDrawable.recycle();
+                                } else {
+                                    image = MediaStore.Video.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Video.Thumbnails.MINI_KIND, opts);
+                                }
                             } else {
                                 image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
                             }

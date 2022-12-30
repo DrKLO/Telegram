@@ -118,7 +118,7 @@ void TL_cdnConfig::readParams(NativeByteBuffer *stream, int32_t instanceNum, boo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_cdnConfig, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -173,7 +173,7 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_config, got %x", magic);
         return;
     }
     int32_t count = stream->readInt32(&error);
@@ -456,7 +456,7 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         uint32_t magic = stream->readUint32(&error);
         if (magic != 0x1cb5c415) {
             error = true;
-            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_user, got %x", magic);
             return;
         }
         int32_t count = stream->readInt32(&error);
@@ -474,11 +474,28 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
     if ((flags & 4194304) != 0) {
         lang_code = stream->readString(&error);
     }
+    if ((flags & 1073741824) != 0) {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic == 0x2de11aae) {
+            // emojiStatusEmpty
+        } else if (magic == 0x929b619d) {
+            // emojiStatus
+            int64_t document_id = stream->readInt64(&error);
+        } else if (magic == 0xfa30a8c7) {
+            // emojiStatusUntil
+            int64_t document_id = stream->readInt64(&error);
+            int until = stream->readInt32(&error);
+        } else {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong EmojiStatus magic, got %x", magic);
+            return;
+        }
+    }
     if ((flags2 & 1) != 0) {
         uint32_t magic = stream->readUint32(&error);
         if (magic != 0x1cb5c415) {
             error = true;
-            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_user (2), got %x", magic);
             return;
         }
         int32_t count = stream->readInt32(&error);
@@ -1001,7 +1018,7 @@ void TL_help_termsOfService::readParams(NativeByteBuffer *stream, int32_t instan
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_help_termsOfService, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);

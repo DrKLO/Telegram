@@ -13,7 +13,11 @@ package org.webrtc;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+
 import androidx.annotation.Nullable;
+
+import org.telegram.messenger.BuildVars;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +47,7 @@ public class ThreadUtils {
    * Throws exception if called from other than main thread.
    */
   public static void checkIsOnMainThread() {
-    if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
+    if (BuildVars.DEBUG_PRIVATE_VERSION && Thread.currentThread() != Looper.getMainLooper().getThread()) {
       throw new IllegalStateException("Not on main thread!");
     }
   }

@@ -712,11 +712,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                     if (drawable != null) {
                         drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                         drawable.setAlpha(255);
-                        if (drawable instanceof AnimatedEmojiDrawable) {
-                            ((AnimatedEmojiDrawable) drawable).draw(canvas, false);
-                        } else {
-                            drawable.draw(canvas);
-                        }
+                        drawable.draw(canvas);
                     }
                 }
 

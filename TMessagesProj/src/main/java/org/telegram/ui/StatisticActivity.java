@@ -2572,7 +2572,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
             if (userIsPracticant && currentParticipant == null) {
                 if (progressDialog[0] == null) {
-                    progressDialog[0] = new AlertDialog(fragment.getFragmentView().getContext(), 3);
+                    progressDialog[0] = new AlertDialog(fragment.getFragmentView().getContext(), AlertDialog.ALERT_TYPE_SPINNER);
                     progressDialog[0].showDelayed(300);
                 }
                 TLRPC.TL_channels_getParticipant request = new TLRPC.TL_channels_getParticipant();
@@ -2601,7 +2601,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
             if (userIsPracticant && currentUser == null) {
                 if (progressDialog[0] == null) {
-                    progressDialog[0] = new AlertDialog(fragment.getFragmentView().getContext(), 3);
+                    progressDialog[0] = new AlertDialog(fragment.getFragmentView().getContext(), AlertDialog.ALERT_TYPE_SPINNER);
                     progressDialog[0].showDelayed(300);
                 }
                 TLRPC.TL_channels_getParticipant request = new TLRPC.TL_channels_getParticipant();

@@ -365,7 +365,7 @@ public class FilterCreateActivity extends BaseFragment {
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog, which) -> {
                     AlertDialog progressDialog = null;
                     if (getParentActivity() != null) {
-                        progressDialog = new AlertDialog(getParentActivity(), 3);
+                        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                         progressDialog.setCanCancel(false);
                         progressDialog.show();
                     }
@@ -586,7 +586,7 @@ public class FilterCreateActivity extends BaseFragment {
         }
         AlertDialog progressDialog;
         if (progress) {
-            progressDialog = new AlertDialog(fragment.getParentActivity(), 3);
+            progressDialog = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setCanCancel(false);
             progressDialog.show();
         } else {

@@ -471,6 +471,7 @@ public class BitmapsCache {
             }
             options.inBitmap = bitmap;
             BitmapFactory.decodeByteArray(bufferTmp, 0, selectedFrame.frameSize, options);
+            options.inBitmap = null;
             return FRAME_RESULT_OK;
         } catch (FileNotFoundException e) {
 

@@ -42,6 +42,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -60,6 +61,7 @@ import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
 import org.telegram.ui.Components.Reactions.CustomEmojiReactionsWindow;
+import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.Reactions.ReactionsUtils;
 import org.telegram.ui.PremiumPreviewFragment;
@@ -1064,6 +1066,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                                 holderView.switchedToLoopView = true;
                             }
                         }
+                        holderView.invalidate();
                     }
                 }
             }
@@ -1152,6 +1155,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         public BackupImageView enterImageView;
         public BackupImageView loopImageView;
         public BackupImageView pressedBackupImageView;
+        private ImageReceiver preloadImageReceiver = new ImageReceiver();
         public ReactionsLayoutInBubble.VisibleReaction currentReaction;
         public float sideScale = 1f;
         private boolean isEnter;
@@ -1247,7 +1251,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             resetAnimation();
             currentReaction = react;
             selected = selectedReactions.contains(react);
-            hasEnterAnimation = currentReaction.emojicon != null && (!showCustomEmojiReaction() || allReactionsIsDefault);
+            hasEnterAnimation = currentReaction.emojicon != null && (!showCustomEmojiReaction() || allReactionsIsDefault) && !SharedConfig.getLiteMode().enabled();
             if (currentReaction.emojicon != null) {
                 updateImage(react);
 
@@ -1290,9 +1294,16 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 TLRPC.TL_availableReaction defaultReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(currentReaction.emojicon);
                 if (defaultReaction != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(defaultReaction.activate_animation, Theme.key_windowBackgroundGray, 1.0f);
-                    enterImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.appear_animation), ReactionsUtils.APPEAR_ANIMATION_FILTER, null, null, svgThumb, 0, "tgs", react, 0);
+                    if (SharedConfig.getLiteMode().enabled()) {
+                        enterImageView.getImageReceiver().clearImage();
+                        loopImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), "60_60_firstframe", null, null, hasEnterAnimation ? null : svgThumb, 0, "tgs", currentReaction, 0);
+                    } else {
+                        enterImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.appear_animation), ReactionsUtils.APPEAR_ANIMATION_FILTER, null, null, svgThumb, 0, "tgs", react, 0);
+                        loopImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), ReactionsUtils.SELECT_ANIMATION_FILTER, null, null, hasEnterAnimation ? null : svgThumb, 0, "tgs", currentReaction, 0);
+                    }
                     pressedBackupImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), ReactionsUtils.SELECT_ANIMATION_FILTER, null, null, svgThumb, 0, "tgs", react, 0);
-                    loopImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), ReactionsUtils.SELECT_ANIMATION_FILTER, null, null, hasEnterAnimation ? null : svgThumb, 0, "tgs", currentReaction, 0);
+
+                    MediaDataController.getInstance(currentAccount).preloadImage(preloadImageReceiver, ImageLocation.getForDocument(defaultReaction.around_animation), ReactionsEffectOverlay.getFilterForAroundAnimation());
                 }
             }
         }
@@ -1301,6 +1312,13 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
             resetAnimation();
+            preloadImageReceiver.onAttachedToWindow();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            preloadImageReceiver.onDetachedFromWindow();
         }
 
         public boolean play(int delay) {

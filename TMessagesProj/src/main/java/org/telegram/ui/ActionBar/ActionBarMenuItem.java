@@ -415,6 +415,10 @@ public class ActionBarMenuItem extends FrameLayout {
         popupLayout.setShownFromBottom(value);
     }
 
+    public void setFitSubItems(boolean fit) {
+        popupLayout.setFitItems(fit);
+    }
+
     public void addSubItem(View view, int width, int height) {
         createPopupLayout();
         popupLayout.addView(view, new LinearLayout.LayoutParams(width, height));

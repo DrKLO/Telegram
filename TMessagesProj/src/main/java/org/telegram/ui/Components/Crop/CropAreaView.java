@@ -10,28 +10,32 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.Build;
-import androidx.annotation.Keep;
-
 import android.os.SystemClock;
+import android.text.Layout;
+import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
+
+import androidx.annotation.Keep;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.BubbleActivity;
 
 public class CropAreaView extends ViewGroup {
+
+    public int size;
+    public float left, top;
+
 
     private enum Control {
         NONE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, TOP, LEFT, BOTTOM, RIGHT
@@ -97,6 +101,8 @@ public class CropAreaView extends ViewGroup {
     private boolean freeform = true;
     private Bitmap circleBitmap;
     private Paint eraserPaint;
+    private String subtitle;
+    private StaticLayout subtitleLayout;
 
     private Animator animator;
 
@@ -145,6 +151,28 @@ public class CropAreaView extends ViewGroup {
         bitmapPaint.setColor(0xffffffff);
 
         setWillNotDraw(false);
+    }
+
+    TextPaint subtitlePaint;
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        updateSubtitle();
+    }
+
+    private void updateSubtitle() {
+        if (subtitle != null) {
+            if (subtitlePaint == null) {
+                subtitlePaint = new TextPaint();
+                subtitlePaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 120));
+                subtitlePaint.setTextSize(AndroidUtilities.dp(13));
+                subtitlePaint.setTextAlign(Paint.Align.CENTER);
+            }
+            subtitleLayout = new StaticLayout(subtitle, subtitlePaint, getMeasuredWidth() - AndroidUtilities.dp(120), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        } else {
+            subtitleLayout = null;
+        }
     }
 
     @Override
@@ -330,7 +358,7 @@ public class CropAreaView extends ViewGroup {
         } else {
             float width = getMeasuredWidth() - 2 * sidePadding;
             float height = getMeasuredHeight() - bottomPadding - (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0) - 2 * sidePadding;
-            int size = (int) Math.min(width, height);
+            size = (int) Math.min(width, height);
 
             if (circleBitmap == null || circleBitmap.getWidth() != size) {
                 boolean hasBitmap = circleBitmap != null;
@@ -355,8 +383,8 @@ public class CropAreaView extends ViewGroup {
             if (circleBitmap != null) {
                 bitmapPaint.setAlpha((int) (255 * frameAlpha));
                 dimPaint.setAlpha((int) (0x7f * frameAlpha));
-                float left = sidePadding + (width - size) / 2.0f;
-                float top = sidePadding + (height - size) / 2.0f + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
+                left = sidePadding + (width - size) / 2.0f;
+                top = sidePadding + (height - size) / 2.0f + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
                 float right = left + size;
                 float bottom = top + size;
                 canvas.drawRect(0, 0, getWidth(), (int) top, dimPaint);
@@ -364,6 +392,13 @@ public class CropAreaView extends ViewGroup {
                 canvas.drawRect((int) right, (int) top, getWidth(), (int) bottom, dimPaint);
                 canvas.drawRect(0, (int) bottom, getWidth(), getHeight(), dimPaint);
                 canvas.drawBitmap(circleBitmap, (int) left, (int) top, bitmapPaint);
+
+                if (getMeasuredHeight() > getMeasuredWidth() && subtitleLayout != null) {
+                    canvas.save();
+                    canvas.translate(getMeasuredWidth() / 2f, bottom + AndroidUtilities.dp(16));
+                    subtitleLayout.draw(canvas);
+                    canvas.restore();
+                }
             }
         }
 
@@ -872,5 +907,12 @@ public class CropAreaView extends ViewGroup {
 
     public void getCropRect(RectF rect) {
         rect.set(actualRect);
+    }
+
+    public void setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
+        if (getMeasuredWidth() > 0) {
+            updateSubtitle();
+        }
     }
 }

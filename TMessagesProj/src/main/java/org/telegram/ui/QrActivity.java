@@ -1018,11 +1018,11 @@ public class QrActivity extends BaseFragment {
             Utilities.themeQueue.postRunnable(() -> prepareContent(w, h));
             invalidate();
 
-            checkTimerToken();
+            checkTimerToken.run();
         }
 
-        private void checkTimerToken() {
-            AndroidUtilities.cancelRunOnUIThread(this::checkTimerToken);
+        private Runnable checkTimerToken = () -> {
+            AndroidUtilities.cancelRunOnUIThread(this.checkTimerToken);
             if (!this.hasTimer) {
                 return;
             }
@@ -1072,9 +1072,9 @@ public class QrActivity extends BaseFragment {
                 );
             }
             if (isAttachedToWindow()) {
-                AndroidUtilities.runOnUIThread(this::checkTimerToken, 1000);
+                AndroidUtilities.runOnUIThread(this.checkTimerToken, 1000);
             }
-        }
+        };
 
         void setColors(int c1, int c2, int c3, int c4) {
             gradientDrawable.setColors(c1, c2, c3, c4);
@@ -1255,7 +1255,7 @@ public class QrActivity extends BaseFragment {
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            checkTimerToken();
+            checkTimerToken.run();
         }
 
         @Override

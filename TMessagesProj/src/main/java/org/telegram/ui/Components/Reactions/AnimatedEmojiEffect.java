@@ -10,6 +10,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -42,7 +43,7 @@ public class AnimatedEmojiEffect {
         this.currentAccount = currentAccount;
         this.showGeneric = showGeneric;
         startTime = System.currentTimeMillis();
-        if (!longAnimation && showGeneric) {
+        if (!longAnimation && showGeneric && !SharedConfig.getLiteMode().enabled()) {
             effectImageReceiver = new ImageReceiver();
         }
     }

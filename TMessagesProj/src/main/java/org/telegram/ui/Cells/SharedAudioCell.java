@@ -90,6 +90,8 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     boolean showReorderIcon;
     float showReorderIconProgress;
+    boolean showName = true;
+    float showNameProgress = 0;
 
     public SharedAudioCell(Context context) {
         this(context, VIEW_TYPE_DEFAULT, null);
@@ -285,6 +287,11 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         radialProgress.initMiniIcons();
     }
 
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return onTouchEvent(ev);
+    }
+
     private boolean checkAudioMotionEvent(MotionEvent event) {
         int x = (int) event.getX();
         int y = (int) event.getY();
@@ -302,6 +309,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 invalidate();
                 result = true;
             } else if (checkForButtonPress && radialProgress.getProgressRect().contains(x, y)) {
+                requestDisallowInterceptTouchEvent(true);
                 buttonPressed = true;
                 radialProgress.setPressed(buttonPressed, false);
                 invalidate();
@@ -319,7 +327,9 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 didPressedButton();
                 invalidate();
             }
+            requestDisallowInterceptTouchEvent(false);
         } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            requestDisallowInterceptTouchEvent(false);
             miniButtonPressed = false;
             buttonPressed = false;
             invalidate();
@@ -330,7 +340,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             }
         }
         radialProgress.setPressed(miniButtonPressed, true);
-        return result;
+        return result || buttonPressed;
     }
 
     @Override
@@ -575,6 +585,14 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (showName && showNameProgress != 1f) {
+            showNameProgress += 16 / 150f;
+            invalidate();
+        } else if (!showName && showNameProgress != 0) {
+            showNameProgress -= 16 / 150f;
+            invalidate();
+        }
+        showNameProgress = Utilities.clamp(showNameProgress, 1f, 0);
         if (enterAlpha != 1f && globalGradientView != null) {
             canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), (int) ((1f - enterAlpha) * 255), Canvas.ALL_SAVE_FLAG);
             globalGradientView.setViewType(FlickerLoadingView.AUDIO_TYPE);
@@ -630,11 +648,18 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         }
 
         if (titleLayout != null) {
+            int oldAlpha = Theme.chat_contextResult_titleTextPaint.getAlpha();
+            if (showNameProgress != 1f) {
+                Theme.chat_contextResult_titleTextPaint.setAlpha((int) (oldAlpha * showNameProgress));
+            }
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline) + (LocaleController.isRTL && dateLayout != null ? dateLayout.getWidth() + AndroidUtilities.dp(4) : 0), titleY);
             titleLayout.draw(canvas);
             AnimatedEmojiSpan.drawAnimatedEmojis(canvas, titleLayout, titleLayoutEmojis, 0, null, 0, 0, 0, 1f);
             canvas.restore();
+            if (showNameProgress != 1f) {
+                Theme.chat_contextResult_titleTextPaint.setAlpha(oldAlpha);
+            }
         }
 
         if (captionLayout != null) {
@@ -647,14 +672,22 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         if (descriptionLayout != null) {
             Theme.chat_contextResult_descriptionTextPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
+            int oldAlpha = Theme.chat_contextResult_descriptionTextPaint.getAlpha();
+            if (showNameProgress != 1f) {
+                Theme.chat_contextResult_descriptionTextPaint.setAlpha((int) (oldAlpha * showNameProgress));
+            }
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
             descriptionLayout.draw(canvas);
             AnimatedEmojiSpan.drawAnimatedEmojis(canvas, descriptionLayout, descriptionLayoutEmojis, 0, null, 0, 0, 0, 1f);
             canvas.restore();
+            if (showNameProgress != 1f) {
+                Theme.chat_contextResult_descriptionTextPaint.setAlpha(oldAlpha);
+            }
         }
 
         radialProgress.setProgressColor(getThemedColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
+        radialProgress.setOverlayImageAlpha(showNameProgress);
         radialProgress.draw(canvas);
 
         if (needDivider) {
@@ -678,6 +711,17 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         if (!animated) {
             showReorderIconProgress = show ? 1f : 0;
         }
+        invalidate();
+    }
+
+    public void showName(boolean show, boolean animated) {
+        if (!animated) {
+            showNameProgress = show ? 1f : 0f;
+        }
+        if (showName == show) {
+            return;
+        }
+        showName = show;
         invalidate();
     }
 }

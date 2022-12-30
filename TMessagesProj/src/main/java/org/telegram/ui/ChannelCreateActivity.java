@@ -265,7 +265,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setTitle(LocaleController.getString("StopLoadingTitle", R.string.StopLoadingTitle));
         builder.setMessage(LocaleController.getString("StopLoading", R.string.StopLoading));
         builder.setPositiveButton(LocaleController.getString("WaitMore", R.string.WaitMore), null);
         builder.setNegativeButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {
@@ -571,7 +571,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     } else {
                         cameraDrawable.setCurrentFrame(0, false);
                     }
-                });
+                }, 0);
                 cameraDrawable.setCurrentFrame(0);
                 cameraDrawable.setCustomEndFrame(43);
                 avatarEditor.playAnimation();
@@ -954,7 +954,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
+    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize, boolean isVideo) {
         AndroidUtilities.runOnUIThread(() -> {
             if (photo != null || video != null) {
                 inputPhoto = photo;

@@ -295,6 +295,9 @@ public class ForumUtilities {
                 name = fromChat.title;
             }
 
+            if ((topicEdit.flags & 8) != 0) {
+                return AndroidUtilities.replaceCharSequence("%s", topicEdit.hidden ? LocaleController.getString(R.string.TopicHidden2) :  LocaleController.getString(R.string.TopicShown2), name);
+            }
             if ((topicEdit.flags & 4) != 0) {
                 CharSequence charSequence = AndroidUtilities.replaceCharSequence("%2$s", topicEdit.closed ? LocaleController.getString(R.string.TopicWasClosedAction) :  LocaleController.getString(R.string.TopicWasReopenedAction), ForumUtilities.getTopicSpannedName(topic, null));
                 return AndroidUtilities.replaceCharSequence("%1$s", charSequence, name);

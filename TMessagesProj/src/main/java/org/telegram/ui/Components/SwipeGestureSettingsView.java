@@ -95,11 +95,12 @@ public class SwipeGestureSettingsView extends FrameLayout {
                 canvas.drawLine(AndroidUtilities.dp(2), y, getMeasuredWidth() - AndroidUtilities.dp(2), y, pickerDividersPaint);
             }
         };
-        picker.setWrapSelectorWheel(true);
         picker.setMinValue(0);
         picker.setDrawDividers(false);
         hasTabs = !MessagesController.getInstance(currentAccount).dialogFilters.isEmpty();
         picker.setMaxValue(hasTabs ? strings.length - 1 : strings.length - 2);
+        picker.setAllItemsCount(hasTabs ? strings.length : strings.length - 1);
+        picker.setWrapSelectorWheel(true);
         picker.setFormatter(value -> strings[value]);
         picker.setOnValueChangedListener((picker, oldVal, newVal) -> {
             swapIcons();

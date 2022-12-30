@@ -485,6 +485,10 @@ public class Emoji {
         return emojis;
     }
 
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew) {
+        return replaceEmoji(cs, fontMetrics, AndroidUtilities.dp(16), createNew, null);
+    }
+
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew) {
         return replaceEmoji(cs, fontMetrics, size, createNew, null);
     }
@@ -563,6 +567,16 @@ public class Emoji {
         public void replaceFontMetrics(Paint.FontMetricsInt newMetrics, int newSize) {
             fontMetrics = newMetrics;
             size = newSize;
+        }
+
+        public void replaceFontMetrics(Paint.FontMetricsInt newMetrics) {
+            fontMetrics = newMetrics;
+            if (fontMetrics != null) {
+                size = Math.abs(fontMetrics.descent) + Math.abs(fontMetrics.ascent);
+                if (size == 0) {
+                    size = AndroidUtilities.dp(20);
+                }
+            }
         }
 
         @Override

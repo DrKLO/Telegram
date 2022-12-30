@@ -16,6 +16,13 @@ public class Point {
         this.z = z;
     }
 
+    public Point(double x, double y, double z, boolean edge) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.edge = edge;
+    }
+
     public Point(Point point) {
         x = point.x;
         y = point.y;

@@ -213,7 +213,33 @@ public class Browser {
         );
     }
 
+    public static class Progress {
+        public void init() {}
+        public void end() {
+            end(false);
+        }
+        public void end(boolean replaced) {}
+
+        private Runnable onCancelListener;
+        public void cancel() {
+            cancel(false);
+        }
+        public void cancel(boolean replaced) {
+            if (onCancelListener != null) {
+                onCancelListener.run();
+            }
+            end(replaced);
+        }
+        public void onCancel(Runnable onCancelListener) {
+            this.onCancelListener = onCancelListener;
+        }
+    }
+
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {
+        openUrl(context, uri, allowCustom, tryTelegraph, null);
+    }
+
+    public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph, Progress inCaseLoading) {
         if (context == null || uri == null) {
             return;
         }
@@ -224,18 +250,22 @@ public class Browser {
             try {
                 String host = uri.getHost().toLowerCase();
                 if (isTelegraphUrl(host, true) || uri.toString().toLowerCase().contains("telegram.org/faq") || uri.toString().toLowerCase().contains("telegram.org/privacy")) {
-                    final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(context, 3)};
+                    final AlertDialog[] progressDialog = new AlertDialog[] {
+                        new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER)
+                    };
 
                     Uri finalUri = uri;
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
                     req.message = uri.toString();
                     final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        try {
-                            progressDialog[0].dismiss();
-                        } catch (Throwable ignore) {
-
+                        if (inCaseLoading != null) {
+                            inCaseLoading.end();
+                        } else {
+                            try {
+                                progressDialog[0].dismiss();
+                            } catch (Throwable ignore) {}
+                            progressDialog[0] = null;
                         }
-                        progressDialog[0] = null;
 
                         boolean ok = false;
                         if (response instanceof TLRPC.TL_messageMediaWebPage) {
@@ -249,17 +279,19 @@ public class Browser {
                             openUrl(context, finalUri, allowCustom, false);
                         }
                     }));
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (progressDialog[0] == null) {
-                            return;
-                        }
-                        try {
-                            progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true));
-                            progressDialog[0].show();
-                        } catch (Exception ignore) {
-
-                        }
-                    }, 1000);
+                    if (inCaseLoading != null) {
+                        inCaseLoading.init();
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (progressDialog[0] == null) {
+                                return;
+                            }
+                            try {
+                                progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true));
+                                progressDialog[0].show();
+                            } catch (Exception ignore) {}
+                        }, 1000);
+                    }
                     return;
                 }
             } catch (Exception ignore) {
@@ -372,7 +404,7 @@ public class Browser {
             intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
             intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, context.getPackageName());
             if (internalUri && context instanceof LaunchActivity) {
-                ((LaunchActivity) context).onNewIntent(intent);
+                ((LaunchActivity) context).onNewIntent(intent, inCaseLoading);
             } else {
                 context.startActivity(intent);
             }

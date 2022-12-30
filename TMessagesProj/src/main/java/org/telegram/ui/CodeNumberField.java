@@ -250,7 +250,11 @@ public class CodeNumberField extends EditTextBoldCursor {
                     if (clipboard == null || clipboard.getPrimaryClipDescription() == null) {
                         return false;
                     }
-                    clipboard.getPrimaryClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
+                    ClipDescription description = clipboard.getPrimaryClipDescription();
+                    if (description == null) {
+                        return false;
+                    }
+                    description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
                     ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
                     int i = -1;
                     String text = item == null || item.getText() == null ? "" : item.getText().toString();

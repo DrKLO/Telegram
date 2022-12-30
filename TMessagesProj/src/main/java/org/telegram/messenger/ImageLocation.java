@@ -137,7 +137,7 @@ public class ImageLocation {
             int currentAccount = UserConfig.selectedAccount;
             if (MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video) {
                 final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(user.id);
-                if (userFull != null && userFull.profile_photo !=null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
+                if (userFull != null && userFull.profile_photo != null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
                     TLRPC.VideoSize videoSize = userFull.profile_photo.video_sizes.get(0);
                     for (int i = 0; i < userFull.profile_photo.video_sizes.size(); i++) {
                         if ("p".equals(userFull.profile_photo.video_sizes.get(i).type)) {

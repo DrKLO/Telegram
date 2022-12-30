@@ -15,6 +15,7 @@ import android.os.Build;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -168,7 +169,7 @@ public class SnowflakesEffect {
     }
 
     public void onDraw(View parent, Canvas canvas) {
-        if (parent == null || canvas == null) {
+        if (parent == null || canvas == null || SharedConfig.getLiteMode().enabled()) {
             return;
         }
 

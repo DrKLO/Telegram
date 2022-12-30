@@ -3,7 +3,6 @@ package org.telegram.ui.Components;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.text.Layout;
@@ -152,7 +151,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                     loadingDrawable = new LoadingDrawable(resourcesProvider);
                     loadingDrawable.colorKey1 = Theme.key_actionBarDefaultSubmenuBackground;
                     loadingDrawable.colorKey2 = Theme.key_listSelector;
-                    loadingDrawable.paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(4)));
+                    loadingDrawable.setRadiiDp(4);
                 }
             }
         }
@@ -168,7 +167,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     private int updateLayout(int width, boolean full) {
         if (mainText != lastMainTextText || lastMainTextWidth != width) {
             if (mainText != null) {
-                mainTextLayout = new StaticLayout(mainText, 0, mainText.length(), textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
+                mainTextLayout = new StaticLayout(mainText, 0, mainText.length(), textPaint, Math.max(width, 0), Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
                 if (loadingDrawable != null && loadingBoundsTo == null) {
                     int lastLine = mainTextLayout.getLineCount() - 1;
                     lastLineMargin = (int) mainTextLayout.getPrimaryHorizontal(mainText.length()) + AndroidUtilities.dp(2);
@@ -179,7 +178,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                     if (loadingBoundsFrom == null) {
                         loadingBoundsFrom = new Rect();
                     }
-                    loadingBoundsFrom.set(lastLineMargin, lastLineTop + AndroidUtilities.dp(1.25f), (int) (lastLineMargin + lwidth), (int) bottom + AndroidUtilities.dp(1.25f));
+                    loadingBoundsFrom.set(lastLineMargin, lastLineTop, (int) (lastLineMargin + lwidth), (int) bottom);
                     loadingDrawable.setBounds(loadingBoundsFrom);
                     loadingDrawableBoundsSet = true;
                 }

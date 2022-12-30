@@ -521,18 +521,8 @@ public class DataSettingsActivity extends BaseFragment {
                         textCell.setIcon(R.drawable.msg_data_usage);
                         textCell.setText(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), storageNumRow != -1);
                     } else if (position == storageNumRow) {
-                        textCell.setIcon(0);
-                        String dir = storageDirs.get(0).getAbsolutePath();
-                        if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
-                            for (int a = 0, N = storageDirs.size(); a < N; a++) {
-                                String path = storageDirs.get(a).getAbsolutePath();
-                                if (path.startsWith(SharedConfig.storageCacheDir)) {
-                                    dir = path;
-                                    break;
-                                }
-                            }
-                        }
-                        textCell.setTextAndValue(LocaleController.getString("StoragePath", R.string.StoragePath), dir, false);
+                        textCell.setIcon(R.drawable.msg_storage_path);
+                        textCell.setText(LocaleController.getString("StoragePath", R.string.StoragePath), false);
                     } else if (position == proxyRow) {
                         textCell.setIcon(0);
                         textCell.setText(LocaleController.getString("ProxySettings", R.string.ProxySettings), false);

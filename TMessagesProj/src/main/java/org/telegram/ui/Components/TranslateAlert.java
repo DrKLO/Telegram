@@ -229,8 +229,8 @@ public class TranslateAlert extends Dialog {
     private boolean noforwards;
     private OnLinkPress onLinkPress;
     private Runnable onDismiss;
-    public TranslateAlert(BaseFragment fragment, Context context, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
-        this(fragment, context, -1, null, -1, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
+    public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
+        this(fragment, context, currentAccount, null, -1, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
     }
     public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
         super(context, R.style.TransparentDialog);
@@ -1063,85 +1063,6 @@ public class TranslateAlert extends Dialog {
         public void run(boolean rateLimit);
     }
     private void fetchTranslation(CharSequence text, long minDuration, OnTranslationSuccess onSuccess, OnTranslationFail onFail) {
-//        if (!translateQueue.isAlive()) {
-//            translateQueue.start();
-//        }
-//        translateQueue.postRunnable(() -> {
-//            String uri = "";
-//            HttpURLConnection connection = null;
-//            long start = SystemClock.elapsedRealtime();
-//            try {
-//                uri = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=";
-//                uri += Uri.encode(fromLanguage);
-//                uri += "&tl=";
-//                uri += Uri.encode(toLanguage);
-//                uri += "&dt=t&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
-//                uri += Uri.encode(text.toString());
-//                connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
-//                connection.setRequestMethod("GET");
-//                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36");
-//                connection.setRequestProperty("Content-Type", "application/json");
-//
-//                StringBuilder textBuilder = new StringBuilder();
-//                try (Reader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charset.forName("UTF-8")))) {
-//                    int c = 0;
-//                    while ((c = reader.read()) != -1) {
-//                        textBuilder.append((char) c);
-//                    }
-//                }
-//                String jsonString = textBuilder.toString();
-//
-//                JSONTokener tokener = new JSONTokener(jsonString);
-//                JSONArray array = new JSONArray(tokener);
-//                JSONArray array1 = array.getJSONArray(0);
-//                String sourceLanguage = null;
-//                try {
-//                    sourceLanguage = array.getString(2);
-//                } catch (Exception e2) {}
-//                if (sourceLanguage != null && sourceLanguage.contains("-")) {
-//                    sourceLanguage = sourceLanguage.substring(0, sourceLanguage.indexOf("-"));
-//                }
-//                StringBuilder result = new StringBuilder();
-//                for (int i = 0; i < array1.length(); ++i) {
-//                    String blockText = array1.getJSONArray(i).getString(0);
-//                    if (blockText != null && !blockText.equals("null")) {
-//                        result.append(blockText);
-//                    }
-//                }
-//                if (text.length() > 0 && text.charAt(0) == '\n') {
-//                    result.insert(0, "\n");
-//                }
-//                final String finalResult = result.toString();
-//                final String finalSourceLanguage = sourceLanguage;
-//
-//                long elapsed = SystemClock.elapsedRealtime() - start;
-//                AndroidUtilities.runOnUIThread(() -> {
-//                    if (onSuccess != null) {
-//                        onSuccess.run(finalResult, finalSourceLanguage);
-//                    }
-//                }, Math.max(0, minDuration - elapsed));
-//            } catch (Exception e) {
-//                try {
-//                    Log.e("translate", "failed to translate a text " + (connection != null ? connection.getResponseCode() : null) + " " + (connection != null ? connection.getResponseMessage() : null));
-//                } catch (IOException ioException) {
-//                    ioException.printStackTrace();
-//                }
-//                e.printStackTrace();
-//
-//                if (onFail != null && !dismissed) {
-//                    try {
-//                        final boolean rateLimit = connection != null && connection.getResponseCode() == 429;
-//                        AndroidUtilities.runOnUIThread(() -> {
-//                            onFail.run(rateLimit);
-//                        });
-//                    } catch (Exception e2) {
-//                        AndroidUtilities.runOnUIThread(() -> {
-//                            onFail.run(false);
-//                        });
-//                    }
-//                }
-//            }
-//        });
         final long start = System.currentTimeMillis();
         Utilities.Callback<String> onDone = (string) -> {
             AndroidUtilities.runOnUIThread(() -> {
@@ -1233,8 +1154,8 @@ public class TranslateAlert extends Dialog {
         }
         return alert;
     }
-    public static TranslateAlert showAlert(Context context, BaseFragment fragment, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
-        TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
+    public static TranslateAlert showAlert(Context context, BaseFragment fragment, int currentAccount, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
+        TranslateAlert alert = new TranslateAlert(fragment, context, currentAccount, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
                 fragment.showDialog(alert);

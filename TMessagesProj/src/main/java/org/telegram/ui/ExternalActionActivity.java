@@ -321,7 +321,7 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
 
             final int[] requestId = {0};
 
-            final AlertDialog progressDialog = new AlertDialog(this, 3);
+            final AlertDialog progressDialog = new AlertDialog(this, AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(intentAccount).cancelRequest(requestId[0], true));
 
             progressDialog.show();

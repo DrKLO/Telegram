@@ -36,11 +36,16 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
+import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
+import org.telegram.ui.Components.Paint.ShapeDetector;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class MediaActivity extends BaseFragment implements SharedMediaLayout.SharedMediaPreloaderDelegate {
+public class MediaActivity extends BaseFragment implements SharedMediaLayout.SharedMediaPreloaderDelegate, FloatingDebugProvider {
 
     private SharedMediaLayout.SharedMediaPreloader sharedMediaPreloader;
     private TLRPC.ChatFull currentChatInfo;
@@ -387,5 +392,17 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             color = Theme.getColor(Theme.key_actionBarActionModeDefault);
         }
         return ColorUtils.calculateLuminance(color) > 0.7f;
+    }
+
+    @Override
+    public List<FloatingDebugController.DebugItem> onGetDebugItems() {
+        return Arrays.asList(
+            new FloatingDebugController.DebugItem(
+                (ShapeDetector.isLearning(getContext()) ? "Disable" : "Enable") + " shape detector learning debug",
+                () -> {
+                    ShapeDetector.setLearning(getContext(), !ShapeDetector.isLearning(getContext()));
+                }
+            )
+        );
     }
 }

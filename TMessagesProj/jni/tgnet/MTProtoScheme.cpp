@@ -195,7 +195,7 @@ void TL_resPQ::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &e
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_resPQ, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -455,7 +455,7 @@ void TL_msgs_state_req::readParams(NativeByteBuffer *stream, int32_t instanceNum
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msgs_state_req, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -544,7 +544,7 @@ void TL_msgs_all_info::readParams(NativeByteBuffer *stream, int32_t instanceNum,
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msgs_all_info, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -616,7 +616,7 @@ void TL_msgs_ack::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msgs_ack, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -721,7 +721,7 @@ void TL_msg_resend_req::readParams(NativeByteBuffer *stream, int32_t instanceNum
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_msg_resend_req, got %x", magic);
         return;
     }
     uint32_t count = stream->readUint32(&error);
@@ -1028,7 +1028,7 @@ void TL_jsonArray::readParams(NativeByteBuffer *stream, int32_t instanceNum, boo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_jsonArray, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -1055,7 +1055,7 @@ void TL_jsonObject::readParams(NativeByteBuffer *stream, int32_t instanceNum, bo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_jsonObject, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
