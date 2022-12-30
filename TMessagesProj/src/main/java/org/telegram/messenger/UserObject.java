@@ -65,6 +65,24 @@ public class UserObject {
         return getPublicUsername(user, false);
     }
 
+    public static boolean hasPublicUsername(TLRPC.User user, String username) {
+        if (user == null || username == null) {
+            return false;
+        }
+        if (username.equalsIgnoreCase(user.username)) {
+            return true;
+        }
+        if (user.usernames != null) {
+            for (int i = 0; i < user.usernames.size(); ++i) {
+                TLRPC.TL_username u = user.usernames.get(i);
+                if (u != null && u.active && username.equalsIgnoreCase(u.username)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static String getFirstName(TLRPC.User user) {
         return getFirstName(user, true);
     }
@@ -88,5 +106,9 @@ public class UserObject {
 
     public static TLRPC.UserProfilePhoto getPhoto(TLRPC.User user) {
         return hasPhoto(user) ? user.photo : null;
+    }
+
+    public static boolean hasFallbackPhoto(TLRPC.UserFull userInfo) {
+        return userInfo != null && userInfo.fallback_photo != null && !(userInfo.fallback_photo instanceof TLRPC.TL_photoEmpty);
     }
 }

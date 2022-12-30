@@ -34,6 +34,7 @@ public class AvatarsDrawable {
 
     public final static int STYLE_GROUP_CALL_TOOLTIP = 10;
     public final static int STYLE_MESSAGE_SEEN = 11;
+    private boolean showSavedMessages;
 
     DrawingState[] currentStates = new DrawingState[3];
     DrawingState[] animatingStates = new DrawingState[3];
@@ -316,15 +317,28 @@ public class AvatarsDrawable {
             animatingStates[index].id = id;
         } else if (object instanceof TLRPC.User) {
             currentUser = (TLRPC.User) object;
-            animatingStates[index].avatarDrawable.setInfo(currentUser);
+            if (currentUser.self && showSavedMessages) {
+                animatingStates[index].avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                animatingStates[index].avatarDrawable.setScaleSize(0.6f);
+            } else {
+                animatingStates[index].avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NORMAL);
+                animatingStates[index].avatarDrawable.setScaleSize(1f);
+                animatingStates[index].avatarDrawable.setInfo(currentUser);
+            }
             animatingStates[index].id = currentUser.id;
         } else {
             currentChat = (TLRPC.Chat) object;
+            animatingStates[index].avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NORMAL);
+            animatingStates[index].avatarDrawable.setScaleSize(1f);
             animatingStates[index].avatarDrawable.setInfo(currentChat);
             animatingStates[index].id = -currentChat.id;
         }
         if (currentUser != null) {
-            animatingStates[index].imageReceiver.setForUserOrChat(currentUser, animatingStates[index].avatarDrawable);
+            if (currentUser.self && showSavedMessages) {
+                animatingStates[index].imageReceiver.setImageBitmap(animatingStates[index].avatarDrawable);
+            } else {
+                animatingStates[index].imageReceiver.setForUserOrChat(currentUser, animatingStates[index].avatarDrawable);
+            }
         } else {
             animatingStates[index].imageReceiver.setForUserOrChat(currentChat, animatingStates[index].avatarDrawable);
         }
@@ -568,5 +582,9 @@ public class AvatarsDrawable {
         for (int i = 0; i < animatingStates.length; ++i) {
             setObject(0, 0, null);
         }
+    }
+
+    public void setShowSavedMessages(boolean showSavedMessages) {
+        this.showSavedMessages = showSavedMessages;
     }
 }

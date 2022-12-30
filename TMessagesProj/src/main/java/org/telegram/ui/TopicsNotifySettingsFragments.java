@@ -34,7 +34,6 @@ import java.util.Iterator;
 
 public class TopicsNotifySettingsFragments extends BaseFragment {
 
-
     private final int VIEW_TYPE_ADD_EXCEPTION = 1;
     private final int VIEW_TYPE_TOPIC = 2;
     private final int VIEW_TYPE_DIVIDER = 3;

@@ -3953,7 +3953,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                        // cy += translation;
                         float scale = BlobDrawable.SCALE_BIG_MIN + BlobDrawable.SCALE_BIG * amplitude * 0.5f;
                         canvas.scale(scale * showLightingProgress, scale * showLightingProgress, cx, cy);
-                        if (i == 1) {
+                        if (i == 1 && !SharedConfig.getLiteMode().enabled()) {
                             float scaleLight = 0.7f + BlobDrawable.LIGHT_GRADIENT_SIZE * scheduleButtonsScale;
                             canvas.save();
                             canvas.scale(scaleLight, scaleLight, cx, cy);
@@ -6013,7 +6013,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (user == null) {
             return;
         }
-        final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getContext(), 3)};
+        final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER)};
         TLRPC.TL_phone_inviteToGroupCall req = new TLRPC.TL_phone_inviteToGroupCall();
         req.call = call.getInputGroupCall();
         TLRPC.TL_inputUser inputUser = new TLRPC.TL_inputUser();
@@ -7112,7 +7112,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             TLRPC.User user = accountInstance.getUserConfig().getCurrentUser();
             currentAvatarUpdater.openMenu(user.photo != null && user.photo.photo_big != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty), () -> accountInstance.getMessagesController().deleteUserPhoto(null), dialog -> {
 
-            });
+            }, 0);
         } else if (option == 10) {
             AlertsCreator.createChangeBioAlert(participant.about, peerId, getContext(), currentAccount);
         } else if (option == 11) {
@@ -8355,7 +8355,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
 
         @Override
-        public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize) {
+        public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (photo != null || video != null) {
                     if (peerId > 0) {

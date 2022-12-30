@@ -131,7 +131,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         itemAnimator.setMoveInterpolator(new OvershootInterpolator(1.1f));
         itemAnimator.setTranslationInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
 
-        dialogsSearchAdapter = new DialogsSearchAdapter(context, type, initialDialogsType, itemAnimator) {
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, type, initialDialogsType, itemAnimator, fragment.getAllowGlobalSearch()) {
             @Override
             public void notifyDataSetChanged() {
                 int itemCount = getCurrentItemCount();
@@ -275,7 +275,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     public void updateTabs() {
         viewPagerAdapter.updateItems();
-        fillTabs();
+        fillTabs(false);
         if (tabsView != null) {
             tabsView.finishAddingTabs();
         }

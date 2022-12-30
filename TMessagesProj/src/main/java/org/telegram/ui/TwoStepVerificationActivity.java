@@ -854,7 +854,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             set.start();
             return;
         }
-        progressDialog = new AlertDialog(getParentActivity(), 3);
+        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progressDialog.setCanCancel(false);
         if (delay) {
             progressDialog.showDelayed(300);

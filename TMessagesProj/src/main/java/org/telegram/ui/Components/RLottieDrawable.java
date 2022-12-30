@@ -253,7 +253,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     protected void recycleResources() {
         ArrayList<Bitmap> bitmapToRecycle = new ArrayList<>();
         bitmapToRecycle.add(renderingBitmap);
+        bitmapToRecycle.add(backgroundBitmap);
         bitmapToRecycle.add(nextRenderingBitmap);
+        nextRenderingBitmap = null;
         renderingBitmap = null;
         backgroundBitmap = null;
         AndroidUtilities.recycleBitmaps(bitmapToRecycle);
@@ -933,7 +935,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             newReplaceColors = null;
         }
         loadFrameTask = loadFrameRunnable;
-        if (shouldLimitFps) {
+        if (shouldLimitFps && Thread.currentThread() == ApplicationLoader.applicationHandler.getLooper().getThread()) {
             DispatchQueuePoolBackground.execute(loadFrameTask, frameWaitSync != null);
         } else {
             loadFrameRunnableQueue.execute(loadFrameTask);
@@ -1281,6 +1283,18 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             return 0;
         }
         return 1;
+    }
+
+    private int rawBackgroundBitmapFrame = -1;
+    public void drawFrame(Canvas canvas, int frame) {
+        if (rawBackgroundBitmapFrame != frame || backgroundBitmap == null) {
+            if (backgroundBitmap == null) {
+                backgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            }
+            int result = getFrame(nativePtr, rawBackgroundBitmapFrame = frame, backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
+        }
+        AndroidUtilities.rectTmp2.set(0, 0, width, height);
+        canvas.drawBitmap(backgroundBitmap, AndroidUtilities.rectTmp2, getBounds(), getPaint());
     }
 
     @Override

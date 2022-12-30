@@ -110,7 +110,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
     }
 
     public PremiumPreviewBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user, GiftPremiumBottomSheet.GiftTier gift, Theme.ResourcesProvider resourcesProvider) {
-        super(fragment, false, false, resourcesProvider);
+        super(fragment, false, false, false, resourcesProvider);
         fixNavigationBar();
         this.fragment = fragment;
         topPadding = 0.26f;

@@ -43,6 +43,7 @@ public class FlickerLoadingView extends View {
     public final static int REACTED_TYPE_WITH_EMOJI_HINT = 23;
     public static final int TOPIC_CELL_TYPE = 24;
     public static final int DIALOG_CACHE_CONTROL = 25;
+    public static final int CHECKBOX_TYPE = 26;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -688,6 +689,26 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
+        } else if (viewType == CHECKBOX_TYPE) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                int r = AndroidUtilities.dp(21) >> 1;
+                canvas.drawCircle((LocaleController.isRTL ? getMeasuredWidth() - AndroidUtilities.dp(21) - r : AndroidUtilities.dp(21) + r), h + AndroidUtilities.dp(16) + r, r, paint);
+
+                rectF.set(AndroidUtilities.dp(60), h + AndroidUtilities.dp(21), AndroidUtilities.dp(190), h + AndroidUtilities.dp(29));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                rectF.set(getMeasuredWidth() - AndroidUtilities.dp(16), h + AndroidUtilities.dp(21), getMeasuredWidth() - AndroidUtilities.dp(62), h + AndroidUtilities.dp(29));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
         }
         invalidate();
     }
@@ -807,6 +828,8 @@ public class FlickerLoadingView extends View {
                 return AndroidUtilities.dp(60);
             case DIALOG_CACHE_CONTROL:
                 return AndroidUtilities.dp(51);
+            case CHECKBOX_TYPE:
+                return AndroidUtilities.dp(50) + 1;
         }
         return 0;
     }

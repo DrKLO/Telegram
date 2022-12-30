@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.voip.VoIPService;
 
 import java.util.concurrent.CountDownLatch;
@@ -54,6 +55,9 @@ public class TextureViewRenderer extends TextureView
     Runnable updateScreenRunnable;
 
     public void setBackgroundRenderer(@Nullable TextureView backgroundRenderer) {
+        if (SharedConfig.getLiteMode().enabled()) {
+            return;
+        }
         this.backgroundRenderer = backgroundRenderer;
         if (backgroundRenderer == null) {
             ThreadUtils.checkIsOnMainThread();

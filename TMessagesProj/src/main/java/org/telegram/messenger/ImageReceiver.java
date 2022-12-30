@@ -48,7 +48,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (currentThumbDrawable != null && thumbShader != null) {
             drawDrawable(null, currentThumbDrawable, 255, thumbShader, 0, 0, null);
             return true;
-        } if (staticThumbDrawable != null && thumbShader != null) {
+        }
+        if (staticThumbDrawable != null && thumbShader != null) {
             drawDrawable(null, staticThumbDrawable, 255, thumbShader, 0, 0, null);
             return true;
         }
@@ -190,6 +191,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private int fileLoadingPriority = FileLoader.PRIORITY_NORMAL;
 
     private int currentLayerNum;
+    public boolean ignoreNotifications;
     private int currentOpenedLayerFlags;
     private int isLastFrame;
 
@@ -384,7 +386,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (user.photo != null) {
                 strippedBitmap = user.photo.strippedBitmap;
                 hasStripped = user.photo.stripped_thumb != null;
-                if (animationEnabled && MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video) {
+                if (animationEnabled && MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video && !SharedConfig.getLiteMode().enabled()) {
                     final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(user.id);
                     if (userFull == null) {
                         MessagesController.getInstance(currentAccount).loadFullUser(user, currentGuid, false);
@@ -417,7 +419,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         ImageLocation location = ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL);
         String filter = "50_50";
         if (videoLocation != null) {
-            setImage(videoLocation, "avatar", location, filter, null, null,strippedBitmap, 0, null, parentObject, 0);
+            setImage(videoLocation, "avatar", location, filter, null, null, strippedBitmap, 0, null, parentObject, 0);
             animatedFileDrawableRepeatMaxCount = 3;
         } else {
             if (strippedBitmap != null) {
@@ -958,9 +960,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             setImageBackup.cacheType = currentCacheType;
             setImageBackup.parentObject = currentParentObject;
         }
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReplacedPhotoInMemCache);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopAllHeavyOperations);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.startAllHeavyOperations);
+        if (!ignoreNotifications) {
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReplacedPhotoInMemCache);
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopAllHeavyOperations);
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.startAllHeavyOperations);
+        }
 
         if (staticThumbDrawable != null) {
             staticThumbDrawable = null;
@@ -1001,13 +1005,34 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return false;
     }
 
+    private int bufferedFrame;
+    public void incrementFrames(int inc) {
+        if (currentMediaDrawable instanceof RLottieDrawable) {
+//            RLottieDrawable rlottie = (RLottieDrawable) currentMediaDrawable;
+//            inc = (int) Math.round((float) rlottie.getFramesCount() / rlottie.getDuration() * (1f / 30f));
+//            rlottie.setCurrentFrame(
+//                (rlottie.getCurrentFrame() + inc) % (int) rlottie.getFramesCount()
+//            );
+        } else if (currentMediaDrawable instanceof AnimatedFileDrawable) {
+            int lastFrame = (int) bufferedFrame;
+            bufferedFrame += inc;
+            int currentFrame = (int) bufferedFrame;
+            while (lastFrame != currentFrame) {
+                ((AnimatedFileDrawable) currentMediaDrawable).getNextFrame();
+                currentFrame--;
+            }
+        }
+    }
+
     public boolean onAttachedToWindow() {
         attachedToWindow = true;
         currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
         currentOpenedLayerFlags &= ~currentLayerNum;
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didReplacedPhotoInMemCache);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopAllHeavyOperations);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.startAllHeavyOperations);
+        if (!ignoreNotifications) {
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didReplacedPhotoInMemCache);
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopAllHeavyOperations);
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.startAllHeavyOperations);
+        }
         if (setBackupImage()) {
             return true;
         }

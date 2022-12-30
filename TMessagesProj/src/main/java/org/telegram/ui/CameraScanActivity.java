@@ -35,7 +35,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -142,6 +141,7 @@ public class CameraScanActivity extends BaseFragment {
     public static final int TYPE_MRZ = 0;
     public static final int TYPE_QR = 1;
     public static final int TYPE_QR_LOGIN = 2;
+    public static final int TYPE_QR_WEB_BOT = 3;
 
     public interface CameraScanActivityDelegate {
         default void didFindMrzInfo(MrzRecognizer.Result result) {
@@ -155,20 +155,31 @@ public class CameraScanActivity extends BaseFragment {
         default boolean processQr(String text, Runnable onLoadEnd) {
             return false;
         }
-    }
 
-    public static INavigationLayout[] showAsSheet(BaseFragment parentFragment, boolean gallery, int type, CameraScanActivityDelegate cameraDelegate) {
-        if (parentFragment == null || parentFragment.getParentActivity() == null) {
+        default String getSubtitleText() {
             return null;
         }
-        INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(parentFragment.getParentActivity())};
-        BottomSheet bottomSheet = new BottomSheet(parentFragment.getParentActivity(), false) {
+
+        default void onDismiss() {}
+    }
+
+    public static BottomSheet showAsSheet(BaseFragment parentFragment, boolean gallery, int type, CameraScanActivityDelegate cameraDelegate) {
+        return showAsSheet(parentFragment.getParentActivity(), gallery, type, cameraDelegate);
+    }
+
+    public static BottomSheet showAsSheet(Activity parentActivity, boolean gallery, int type, CameraScanActivityDelegate cameraDelegate) {
+        if (parentActivity == null) {
+            return null;
+        }
+        INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(parentActivity)};
+        BottomSheet bottomSheet = new BottomSheet(parentActivity, false) {
             CameraScanActivity fragment;
             {
                 actionBarLayout[0].setFragmentStack(new ArrayList<>());
                 fragment = new CameraScanActivity(type) {
                     @Override
                     public void finishFragment() {
+                        setFinishing(true);
                         dismiss();
                     }
 
@@ -183,6 +194,9 @@ public class CameraScanActivity extends BaseFragment {
                 actionBarLayout[0].showLastFragment();
                 actionBarLayout[0].getView().setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
                 fragment.setDelegate(cameraDelegate);
+                if (cameraDelegate.getSubtitleText() != null) {
+                    fragment.descriptionText.setText(cameraDelegate.getSubtitleText());
+                }
                 containerView = actionBarLayout[0].getView();
                 setApplyBottomPadding(false);
                 setApplyBottomPadding(false);
@@ -207,6 +221,7 @@ public class CameraScanActivity extends BaseFragment {
             public void dismiss() {
                 super.dismiss();
                 actionBarLayout[0] = null;
+                cameraDelegate.onDismiss();
             }
         };
         bottomSheet.setUseLightStatusBar(false);
@@ -215,7 +230,7 @@ public class CameraScanActivity extends BaseFragment {
         bottomSheet.setUseLightStatusBar(false);
         bottomSheet.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         bottomSheet.show();
-        return actionBarLayout;
+        return bottomSheet;
     }
 
     public CameraScanActivity(int type) {
@@ -304,7 +319,11 @@ public class CameraScanActivity extends BaseFragment {
                     flashButton.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
                 }
                 titleTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(72), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                descriptionText.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.9f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                if (currentType == TYPE_QR_WEB_BOT) {
+                    descriptionText.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(72), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                } else {
+                    descriptionText.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.9f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                }
 
                 setMeasuredDimension(width, height);
             }
@@ -335,6 +354,10 @@ public class CameraScanActivity extends BaseFragment {
                         y = (height - size) / 2 - titleTextView.getMeasuredHeight() - AndroidUtilities.dp(64);
                     }
                     titleTextView.layout(AndroidUtilities.dp(36), y, AndroidUtilities.dp(36) + titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                    if (currentType == TYPE_QR_WEB_BOT) {
+                        y += titleTextView.getMeasuredHeight() + AndroidUtilities.dp(8);
+                        descriptionText.layout(AndroidUtilities.dp(36), y, AndroidUtilities.dp(36) + descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
+                    }
                     recognizedMrzView.layout(0, getMeasuredHeight() - recognizedMrzView.getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight());
 
                     int x;
@@ -352,9 +375,11 @@ public class CameraScanActivity extends BaseFragment {
                     }
                 }
 
-                y = (int) (height * 0.74f);
-                int x = (int) (width * 0.05f);
-                descriptionText.layout(x, y, x + descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
+                if (currentType != TYPE_QR_WEB_BOT) {
+                    y = (int) (height * 0.74f);
+                    int x = (int) (width * 0.05f);
+                    descriptionText.layout(x, y, x + descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
+                }
 
                 updateNormalBounds();
             }
@@ -433,7 +458,7 @@ public class CameraScanActivity extends BaseFragment {
         viewGroup.setOnTouchListener((v, event) -> true);
         fragmentView = viewGroup;
 
-        if (currentType == TYPE_QR || currentType == TYPE_QR_LOGIN) {
+        if (isQr()) {
             fragmentView.postDelayed(this::initCameraView, 450);
         } else {
             initCameraView();
@@ -452,7 +477,7 @@ public class CameraScanActivity extends BaseFragment {
             viewGroup.addView(actionBar);
         }
 
-        if (currentType == TYPE_QR_LOGIN) {
+        if (currentType == TYPE_QR_LOGIN || currentType == TYPE_QR_WEB_BOT) {
             actionBar.setTitle(LocaleController.getString("AuthAnotherClientScan", R.string.AuthAnotherClientScan));
         }
 
@@ -564,7 +589,7 @@ public class CameraScanActivity extends BaseFragment {
             if (needGalleryButton) {
                 //titleTextView.setText(LocaleController.getString("WalletScanCode", R.string.WalletScanCode));
             } else {
-                if (currentType == TYPE_QR) {
+                if (currentType == TYPE_QR || currentType == TYPE_QR_WEB_BOT) {
                     titleTextView.setText(LocaleController.getString("AuthAnotherClientScan", R.string.AuthAnotherClientScan));
                 } else {
                     String text = LocaleController.getString("AuthAnotherClientInfo5", R.string.AuthAnotherClientInfo5);
@@ -601,6 +626,9 @@ public class CameraScanActivity extends BaseFragment {
                 }
             }
             titleTextView.setTextColor(0xffffffff);
+            if (currentType == TYPE_QR_WEB_BOT) {
+                descriptionText.setTextColor(0x99ffffff);
+            }
             recognizedMrzView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             recognizedMrzView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), AndroidUtilities.dp(10));
             if (needGalleryButton) {
@@ -717,17 +745,27 @@ public class CameraScanActivity extends BaseFragment {
 
     private ValueAnimator recognizedAnimator;
     private float recognizedT = 0;
+    private float newRecognizedT = 0;
     private SpringAnimation useRecognizedBoundsAnimator;
     private float useRecognizedBounds = 0;
     private void updateRecognized() {
-        if (recognizedAnimator != null) {
-            recognizedAnimator.cancel();
+        float wasNewRecognizedT = recognizedT;
+        newRecognizedT = recognized ? 1f : 0f;
+        if (wasNewRecognizedT != newRecognizedT) {
+            if (recognizedAnimator != null) {
+                recognizedAnimator.cancel();
+            }
+        } else {
+            return;
         }
-        float newRecognizedT = recognized ? 1f : 0f;
+
         recognizedAnimator = ValueAnimator.ofFloat(recognizedT, newRecognizedT);
         recognizedAnimator.addUpdateListener(a -> {
             recognizedT = (float) a.getAnimatedValue();
             titleTextView.setAlpha(1f - recognizedT);
+            if (currentType == TYPE_QR_WEB_BOT) {
+                descriptionText.setAlpha(1f - recognizedT);
+            }
             flashButton.setAlpha(1f - recognizedT);
             backShadowAlpha = .5f + recognizedT * .25f;
             fragmentView.invalidate();
@@ -988,15 +1026,32 @@ public class CameraScanActivity extends BaseFragment {
                       (recognizeIndex == 0 && res != null && res.bounds == null && !qrLoading) || // first recognition doesn't have bounds
                       (SystemClock.elapsedRealtime() - recognizedStart > 1000 && !qrLoading) // got more than 1 second and nothing is loading
                     ) && recognizedText != null) {
-                    if (cameraView != null && cameraView.getCameraSession() != null) {
+                    if (cameraView != null && cameraView.getCameraSession() != null && currentType != TYPE_QR_WEB_BOT) {
                         CameraController.getInstance().stopPreview(cameraView.getCameraSession());
                     }
+                    String text = recognizedText;
                     AndroidUtilities.runOnUIThread(() -> {
                         if (delegate != null) {
-                            delegate.didFindQr(recognizedText);
+                            delegate.didFindQr(text);
                         }
-                        finishFragment();
+                        if (currentType != TYPE_QR_WEB_BOT) {
+                            finishFragment();
+                        }
                     });
+                    if (currentType == TYPE_QR_WEB_BOT) {
+                        AndroidUtilities.runOnUIThread(()->{
+                            if (isFinishing()) {
+                                return;
+                            }
+
+                            recognizedText = null;
+                            recognized = false;
+                            requestShot.run();
+                            if (!recognized) {
+                                AndroidUtilities.runOnUIThread(this::updateRecognized, 500);
+                            }
+                        });
+                    }
                 } else if (recognized) {
                     long delay = Math.max(16, 1000 / sps - (long) averageProcessTime);
                     handler.postDelayed(() -> {
@@ -1206,14 +1261,10 @@ public class CameraScanActivity extends BaseFragment {
                 return null;
             }
             if (needGalleryButton) {
-                if (!text.startsWith("ton://transfer/")) {
-                    //onNoWalletFound(bitmap != null);
-                    return null;
-                }
                 Uri uri = Uri.parse(text);
                 String path = uri.getPath().replace("/", "");
             } else {
-                if (!text.startsWith("tg://login?token=")) {
+                if (!text.startsWith("tg://login?token=") && currentType != TYPE_QR_WEB_BOT) {
                     onNoQrFound();
                     return null;
                 }
@@ -1239,7 +1290,7 @@ public class CameraScanActivity extends BaseFragment {
 
 
     private boolean isQr() {
-        return currentType == TYPE_QR || currentType == TYPE_QR_LOGIN;
+        return currentType == TYPE_QR || currentType == TYPE_QR_LOGIN || currentType == TYPE_QR_WEB_BOT;
     }
 
     @Override

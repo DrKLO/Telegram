@@ -40,26 +40,35 @@ public class FileLoader extends BaseController {
 
     private static Pattern sentPattern;
 
-    public static long getDialogIdFromParent(int currentAccount, Object parentObject) {
+    public static FilePathDatabase.FileMeta getFileMetadataFromParent(int currentAccount, Object parentObject) {
         if (parentObject instanceof String) {
             String str = (String) parentObject;
             if (str.startsWith("sent_")) {
                 if (sentPattern == null) {
-                    sentPattern = Pattern.compile("sent_.*_.*_([0-9]+)");
+                    sentPattern = Pattern.compile("sent_.*_([0-9]+)_([0-9]+)_([0-9]+)");
                 }
                 try {
                     Matcher matcher = sentPattern.matcher(str);
                     if (matcher.matches()) {
-                        return Long.parseLong(matcher.group(1));
+                        FilePathDatabase.FileMeta fileMeta = new FilePathDatabase.FileMeta();
+                        fileMeta.messageId = Integer.parseInt(matcher.group(1));
+                        fileMeta.dialogId = Long.parseLong(matcher.group(2));
+                        fileMeta.messageType = Integer.parseInt(matcher.group(3));
+                        return fileMeta;
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
         } else if (parentObject instanceof MessageObject) {
-            return ((MessageObject) parentObject).getDialogId();
+            MessageObject messageObject = (MessageObject) parentObject;
+            FilePathDatabase.FileMeta fileMeta = new FilePathDatabase.FileMeta();
+            fileMeta.messageId = messageObject.getId();
+            fileMeta.dialogId = messageObject.getDialogId();
+            fileMeta.messageType = messageObject.type;
+            return fileMeta;
         }
-        return 0;
+        return null;
     }
 
     private int getPriorityValue(int priorityType) {
@@ -767,9 +776,9 @@ public class FileLoader extends BaseController {
                 if (!operation.isPreloadVideoOperation() && operation.isPreloadFinished()) {
                     return;
                 }
-                long dialogId = getDialogIdFromParent(currentAccount, parentObject);
-                if (dialogId != 0) {
-                    getFileLoader().getFileDatabase().saveFileDialogId(finalFile, dialogId);
+                FilePathDatabase.FileMeta fileMeta = getFileMetadataFromParent(currentAccount, parentObject);
+                if (fileMeta != null) {
+                    getFileLoader().getFileDatabase().saveFileDialogId(finalFile, fileMeta);
                 }
                 if (parentObject instanceof MessageObject) {
                     MessageObject messageObject = (MessageObject) parentObject;

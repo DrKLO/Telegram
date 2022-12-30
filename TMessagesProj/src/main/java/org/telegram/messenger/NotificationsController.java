@@ -3853,7 +3853,7 @@ public class NotificationsController extends BaseController {
             }
 
             if (silent != 1 && !notifyDisabled) {
-                if (!isInApp || preferences.getBoolean("EnableInAppPreview", true)) {
+                if (!isInApp || preferences.getBoolean("EnableInAppPreview", true) && lastMessage != null) {
                     if (lastMessage.length() > 100) {
                         lastMessage = lastMessage.substring(0, 100).replace('\n', ' ').trim() + "...";
                     }

@@ -3924,6 +3924,9 @@ public class MessagesStorage extends BaseController {
                     if (photo instanceof TLRPC.TL_photoEmpty) {
                         continue;
                     }
+                    if (photo.file_reference == null) {
+                        photo.file_reference = new byte[0];
+                    }
                     state.requery();
                     int size = photo.getObjectSize();
                     if (messages != null) {
@@ -3940,6 +3943,33 @@ public class MessagesStorage extends BaseController {
                     state.step();
                     data.reuse();
                 }
+                state.dispose();
+                state = null;
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (state != null) {
+                    state.dispose();
+                }
+            }
+        });
+    }
+
+    public void addDialogPhoto(long did, TLRPC.Photo photo) {
+        storageQueue.postRunnable(() -> {
+            SQLitePreparedStatement state = null;
+            try {
+                state = database.executeFast("REPLACE INTO user_photos VALUES(?, ?, ?)");
+
+                state.requery();
+                int size = photo.getObjectSize();
+                NativeByteBuffer data = new NativeByteBuffer(size);
+                photo.serializeToStream(data);
+                state.bindLong(1, did);
+                state.bindLong(2, photo.id);
+                state.bindByteBuffer(3, data);
+                state.step();
+                data.reuse();
                 state.dispose();
                 state = null;
             } catch (Exception e) {
@@ -10650,6 +10680,7 @@ public class MessagesStorage extends BaseController {
                                     object.ttl_seconds = message.media.ttl_seconds;
                                     object.flags |= 4;
                                 }
+                                MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
                                 downloadMediaMask |= type;
                                 state_download.requery();
                                 data = new NativeByteBuffer(object.getObjectSize());
@@ -10658,7 +10689,7 @@ public class MessagesStorage extends BaseController {
                                 state_download.bindInteger(2, type);
                                 state_download.bindInteger(3, message.date);
                                 state_download.bindByteBuffer(4, data);
-                                state_download.bindString(5, "sent_" + (message.peer_id != null ? message.peer_id.channel_id : 0) + "_" + message.id + "_" + DialogObject.getPeerDialogId(message.peer_id));
+                                state_download.bindString(5, "sent_" + (message.peer_id != null ? message.peer_id.channel_id : 0) + "_" + message.id + "_" + DialogObject.getPeerDialogId(message.peer_id) + "_" + messageObject.type);
                                 state_download.step();
                                 data.reuse();
                             }

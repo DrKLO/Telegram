@@ -71,6 +71,7 @@ public class AnimatedTextView extends View {
 
         private Runnable onAnimationFinishListener;
         private boolean allowCancel;
+        public boolean ignoreRTL;
 
         public AnimatedTextDrawable() {
             this(false, false, false);
@@ -113,7 +114,7 @@ public class AnimatedTextView extends View {
                     }
                     canvas.save();
                     int lwidth = j >= 0 ? width : currentWidth;
-                    if (isRTL) {
+                    if (isRTL && !ignoreRTL) {
                         x = -x + 2 * lwidth - currentLayout[i].getWidth() - fullWidth;
                     }
                     if ((gravity | ~Gravity.LEFT) != ~0) {
@@ -121,11 +122,11 @@ public class AnimatedTextView extends View {
                             x += fullWidth - lwidth;
                         } else if ((gravity | ~Gravity.CENTER_HORIZONTAL) == ~0) {
                             x += (fullWidth - lwidth) / 2f;
-                        } else if (isRTL) {
+                        } else if (isRTL && !ignoreRTL) {
                             x += fullWidth - lwidth;
                         }
                     }
-                    canvas.translate(Math.round(x), Math.round(y));
+                    canvas.translate(x, y);
                     currentLayout[i].draw(canvas);
                     canvas.restore();
                 }
@@ -138,7 +139,7 @@ public class AnimatedTextView extends View {
                     float y = textPaint.getTextSize() * moveAmplitude * t * (moveDown ? 1f : -1f);
                     textPaint.setAlpha((int) (alpha * (1f - t)));
                     canvas.save();
-                    if (isRTL) {
+                    if (isRTL && !ignoreRTL) {
                         x = -x + 2 * oldWidth - oldLayout[i].getWidth() - fullWidth;
                     }
                     if ((gravity | ~Gravity.LEFT) != ~0) {
@@ -146,11 +147,11 @@ public class AnimatedTextView extends View {
                             x += fullWidth - oldWidth;
                         } else if ((gravity | ~Gravity.CENTER_HORIZONTAL) == ~0) {
                             x += (fullWidth - oldWidth) / 2f;
-                        } else if (isRTL) {
+                        } else if (isRTL && !ignoreRTL) {
                             x += fullWidth - oldWidth;
                         }
                     }
-                    canvas.translate(Math.round(x), Math.round(y));
+                    canvas.translate(x, y);
                     oldLayout[i].draw(canvas);
                     canvas.restore();
                 }
@@ -161,7 +162,7 @@ public class AnimatedTextView extends View {
                         textPaint.setAlpha(alpha);
                         canvas.save();
                         float x = currentLayoutOffsets[i];
-                        if (isRTL) {
+                        if (isRTL && !ignoreRTL) {
                             x = -x + 2 * currentWidth - currentLayout[i].getWidth() - fullWidth;
                         }
                         if ((gravity | ~Gravity.LEFT) != ~0) {
@@ -169,11 +170,11 @@ public class AnimatedTextView extends View {
                                 x += fullWidth - currentWidth;
                             } else if ((gravity | ~Gravity.CENTER_HORIZONTAL) == ~0) {
                                 x += (fullWidth - currentWidth) / 2f;
-                            } else if (isRTL) {
+                            } else if (isRTL && !ignoreRTL) {
                                 x += fullWidth - currentWidth;
                             }
                         }
-                        canvas.translate(Math.round(x), 0);
+                        canvas.translate(x, 0);
                         currentLayout[i].draw(canvas);
                         canvas.restore();
                     }
@@ -389,6 +390,10 @@ public class AnimatedTextView extends View {
                 return AndroidUtilities.lerp(oldWidth, currentWidth, t);
             }
             return currentWidth;
+        }
+
+        public int getHeight() {
+            return currentHeight;
         }
 
         private StaticLayout makeLayout(CharSequence textPart, int width) {
@@ -706,6 +711,12 @@ public class AnimatedTextView extends View {
             super.setBounds(left, top, right, bottom);
             this.bounds.set(left, top, right, bottom);
         }
+
+        @NonNull
+        @Override
+        public Rect getDirtyBounds() {
+            return this.bounds;
+        }
     }
 
     private AnimatedTextDrawable drawable;
@@ -736,7 +747,7 @@ public class AnimatedTextView extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
-        if (lastMaxWidth != width) {
+        if (lastMaxWidth != width && getLayoutParams().width != 0) {
             drawable.setBounds(getPaddingLeft(), getPaddingTop(), width - getPaddingRight(), height - getPaddingBottom());
             setText(drawable.getText(), false);
         }
@@ -767,6 +778,10 @@ public class AnimatedTextView extends View {
 
     public boolean isAnimating() {
         return drawable.isAnimating();
+    }
+
+    private void setIgnoreRTL(boolean value) {
+        drawable.ignoreRTL = value;
     }
 
     private boolean first = true;

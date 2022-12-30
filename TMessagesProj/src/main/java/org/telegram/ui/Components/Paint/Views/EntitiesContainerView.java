@@ -41,13 +41,6 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
         return count;
     }
 
-    public void bringViewToFront(EntityView view) {
-        if (indexOfChild(view) != getChildCount() - 1) {
-            removeView(view);
-            addView(view, getChildCount());
-        }
-    }
-
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         return ev.getPointerCount() == 2 && delegate.shouldReceiveTouches();

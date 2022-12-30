@@ -11,7 +11,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
@@ -40,6 +39,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,10 +60,19 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_ALERT_EMOJI_STATUS = 9;
     public static final int CACHE_TYPE_FORUM_TOPIC = 10;
     public static final int CACHE_TYPE_FORUM_TOPIC_LARGE = 11;
+    public static final int CACHE_TYPE_RENDERING_VIDEO = 12;
+
+    public int rawDrawIndex;
 
     private static HashMap<Integer, HashMap<Long, AnimatedEmojiDrawable>> globalEmojiCache;
+
     @NonNull
     public static AnimatedEmojiDrawable make(int account, int cacheType, long documentId) {
+        return make(account, cacheType, documentId, null);
+    }
+
+    @NonNull
+    public static AnimatedEmojiDrawable make(int account, int cacheType, long documentId, String absolutePath) {
         if (globalEmojiCache == null) {
             globalEmojiCache = new HashMap<>();
         }
@@ -74,7 +83,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         AnimatedEmojiDrawable drawable = cache.get(documentId);
         if (drawable == null) {
-            cache.put(documentId, drawable = new AnimatedEmojiDrawable(cacheType, account, documentId));
+            cache.put(documentId, drawable = new AnimatedEmojiDrawable(cacheType, account, documentId, absolutePath));
         }
         return drawable;
     }
@@ -150,13 +159,17 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         public void fetchDocument(long id, ReceivedDocument onDone) {
-            checkThread();
-            if (emojiDocumentsCache != null) {
-                TLRPC.Document cacheDocument = emojiDocumentsCache.get(id);
-                if (cacheDocument != null) {
-                    onDone.run(cacheDocument);
-                    return;
+            synchronized (this) {
+                if (emojiDocumentsCache != null) {
+                    TLRPC.Document cacheDocument = emojiDocumentsCache.get(id);
+                    if (cacheDocument != null) {
+                        onDone.run(cacheDocument);
+                        return;
+                    }
                 }
+            }
+            if (!checkThread()) {
+                return;
             }
             if (onDone != null) {
                 if (loadingDocuments == null) {
@@ -186,10 +199,14 @@ public class AnimatedEmojiDrawable extends Drawable {
             });
         }
 
-        private void checkThread() {
-            if (BuildVars.DEBUG_VERSION && Thread.currentThread() != Looper.getMainLooper().getThread()) {
-                throw new IllegalStateException("Wrong thread");
+        private boolean checkThread() {
+            if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
+                if (BuildVars.DEBUG_VERSION) {
+                    FileLog.e("EmojiDocumentFetcher", new IllegalStateException("Wrong thread"));
+                }
+                return false;
             }
+            return true;
         }
 
         private void loadFromDatabase(ArrayList<Long> emojiToLoad) {
@@ -284,14 +301,13 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         public void processDocuments(ArrayList<?> documents) {
-            checkThread();
+            if (!checkThread()) {
+                return;
+            }
             for (int i = 0; i < documents.size(); ++i) {
                 if (documents.get(i) instanceof TLRPC.Document) {
                     TLRPC.Document document = (TLRPC.Document) documents.get(i);
-                    if (emojiDocumentsCache == null) {
-                        emojiDocumentsCache = new HashMap<>();
-                    }
-                    emojiDocumentsCache.put(document.id, document);
+                    putDocument(document);
                     if (loadingDocuments != null) {
                         ArrayList<ReceivedDocument> loadingCallbacks = loadingDocuments.remove(document.id);
                         if (loadingCallbacks != null) {
@@ -305,15 +321,29 @@ public class AnimatedEmojiDrawable extends Drawable {
             }
         }
 
-        public TLRPC.InputStickerSet findStickerSet(long documentId) {
-            if (emojiDocumentsCache == null) {
-                return null;
-            }
-            TLRPC.Document document = emojiDocumentsCache.get(documentId);
+        public void putDocument(TLRPC.Document document) {
             if (document == null) {
-                return null;
+                return;
             }
-            return MessageObject.getInputStickerSet(document);
+            synchronized (this) {
+                if (emojiDocumentsCache == null) {
+                    emojiDocumentsCache = new HashMap<>();
+                }
+                emojiDocumentsCache.put(document.id, document);
+            }
+        }
+
+        public TLRPC.InputStickerSet findStickerSet(long documentId) {
+            synchronized (this) {
+                if (emojiDocumentsCache == null) {
+                    return null;
+                }
+                TLRPC.Document document = emojiDocumentsCache.get(documentId);
+                if (document == null) {
+                    return null;
+                }
+                return MessageObject.getInputStickerSet(document);
+            }
         }
     }
 
@@ -340,6 +370,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     private long documentId;
     private int cacheType;
     private int currentAccount;
+    private String absolutePath;
 
     private ImageReceiver imageReceiver;
     private float alpha = 1f;
@@ -351,7 +382,19 @@ public class AnimatedEmojiDrawable extends Drawable {
         this.documentId = documentId;
         getDocumentFetcher(currentAccount).fetchDocument(documentId, document -> {
             this.document = document;
-            this.initDocument();
+            this.initDocument(false);
+        });
+    }
+
+    public AnimatedEmojiDrawable(int cacheType, int currentAccount, long documentId, String absolutePath) {
+        this.currentAccount = currentAccount;
+        this.cacheType = cacheType;
+        updateSize();
+        this.documentId = documentId;
+        this.absolutePath = absolutePath;
+        getDocumentFetcher(currentAccount).fetchDocument(documentId, document -> {
+            this.document = document;
+            this.initDocument(false);
         });
     }
 
@@ -360,7 +403,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         this.currentAccount = currentAccount;
         this.document = document;
         updateSize();
-        this.initDocument();
+        this.initDocument(false);
     }
 
     private void updateSize() {
@@ -382,34 +425,46 @@ public class AnimatedEmojiDrawable extends Drawable {
         return this.document;
     }
 
-    private void initDocument() {
-        if (document == null || imageReceiver != null) {
+    private void initDocument(boolean force) {
+        if (document == null || (imageReceiver != null && !force)) {
             return;
         }
-        imageReceiver = new ImageReceiver() {
-            @Override
-            public void invalidate() {
-                AnimatedEmojiDrawable.this.invalidate();
-                super.invalidate();
-            }
+        if (imageReceiver == null) {
+            imageReceiver = new ImageReceiver() {
+                @Override
+                public void invalidate() {
+                    AnimatedEmojiDrawable.this.invalidate();
+                    super.invalidate();
+                }
 
-            @Override
-            protected boolean setImageBitmapByKey(Drawable drawable, String key, int type, boolean memCache, int guid) {
-                AnimatedEmojiDrawable.this.invalidate();
-                return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
-            }
+                @Override
+                protected boolean setImageBitmapByKey(Drawable drawable, String key, int type, boolean memCache, int guid) {
+                    AnimatedEmojiDrawable.this.invalidate();
+                    return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
+                }
+            };
         };
+        if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
+            imageReceiver.ignoreNotifications = true;
+        }
         if (colorFilterToSet != null && canOverrideColor()) {
             imageReceiver.setColorFilter(colorFilterToSet);
         }
         if (cacheType != 0) {
+            int cacheType = this.cacheType;
+            if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
+                cacheType = CACHE_TYPE_KEYBOARD;
+            }
             imageReceiver.setUniqKeyPrefix(cacheType + "_");
         }
         imageReceiver.setVideoThumbIsSame(true);
         boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP);
 
         String filter = sizedp + "_" + sizedp;
-        if (cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH)) {
+        if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
+            filter += "_d_nostream";
+        }
+        if (cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH) && cacheType != CACHE_TYPE_RENDERING_VIDEO) {
             filter += "_pcache";
         }
         if (cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_MESSAGES_LARGE) {
@@ -451,11 +506,23 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (onlyStaticPreview) {
             mediaLocation = null;
         }
-        if (cacheType == STANDARD_LOTTIE_FRAME) {
+
+        if (absolutePath != null) {
+            imageReceiver.setImageBitmap(new AnimatedFileDrawable(new File(absolutePath), true, 0, null, null, null, 0, currentAccount, true, 512, 512, null));
+        } else if (cacheType == STANDARD_LOTTIE_FRAME) {
             imageReceiver.setImage(null, null, mediaLocation, mediaFilter, null, null, thumbDrawable, document.size, null, document, 1);
         } else {
-            imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+            if (SharedConfig.getLiteMode().enabled()) {
+                if ("video/webm".equals(document.mime_type)) {
+                    imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                } else {
+                    imageReceiver.setImage(mediaLocation, mediaFilter + "_firstframe", ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+                }
+            } else {
+                imageReceiver.setImage(mediaLocation, mediaFilter, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
+            }
         }
+
 
         if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
             imageReceiver.setAutoRepeatCount(2);
@@ -470,14 +537,14 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setLayerNum(6656);
         }
         imageReceiver.setAspectFit(true);
-        if (cacheType != STANDARD_LOTTIE_FRAME) {
-            imageReceiver.setAllowStartLottieAnimation(true);
-            imageReceiver.setAllowStartAnimation(true);
-            imageReceiver.setAutoRepeat(1);
-        } else {
+        if (cacheType == CACHE_TYPE_RENDERING_VIDEO || cacheType == STANDARD_LOTTIE_FRAME) {
             imageReceiver.setAllowStartAnimation(false);
             imageReceiver.setAllowStartLottieAnimation(false);
             imageReceiver.setAutoRepeat(0);
+        } else {
+            imageReceiver.setAllowStartLottieAnimation(true);
+            imageReceiver.setAllowStartAnimation(true);
+            imageReceiver.setAutoRepeat(1);
         }
         imageReceiver.setAllowDecodeSingleFrame(true);
         int roundRadius = 0;
@@ -522,66 +589,51 @@ public class AnimatedEmojiDrawable extends Drawable {
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        draw(canvas, true);
+        if (imageReceiver == null) {
+            return;
+        }
+        imageReceiver.setImageCoords(getBounds());
+        imageReceiver.setAlpha(alpha);
+        imageReceiver.draw(canvas);
     }
 
-    public void draw(@NonNull Canvas canvas, boolean canTranslate) {
-        if (imageReceiver != null) {
+    public void drawRaw(Canvas canvas, boolean nextFrame, int fps) {
+        if (imageReceiver == null) {
+            return;
+        }
+        if (imageReceiver.getLottieAnimation() != null) {
+            RLottieDrawable rlottie = imageReceiver.getLottieAnimation();
+            if (nextFrame) {
+                int inc = (int) Math.round((float) rlottie.getFramesCount() / (rlottie.getDuration() / 1000f) / 30f);
+                rlottie.currentFrame = (rlottie.currentFrame + inc) % rlottie.getFramesCount();
+            }
+            rlottie.setBounds(getBounds());
+            rlottie.drawFrame(canvas, rlottie.currentFrame);
+        } else if (imageReceiver.getAnimation() != null) {
+            AnimatedFileDrawable webp = imageReceiver.getAnimation();
+            webp.drawFrame(canvas, nextFrame ? fps / 30 : 0);
+        } else {
             imageReceiver.setImageCoords(getBounds());
             imageReceiver.setAlpha(alpha);
             imageReceiver.draw(canvas);
-        } else {
-            shouldDrawPlaceholder = true;
         }
-        drawPlaceholder(canvas, getBounds().centerX(), getBounds().centerY(), getBounds().width() / 2f);
     }
 
     public void draw(Canvas canvas, Rect drawableBounds, float alpha) {
-        if (imageReceiver != null) {
-            imageReceiver.setImageCoords(drawableBounds);
-            imageReceiver.setAlpha(alpha);
-            imageReceiver.draw(canvas);
-        } else {
-            shouldDrawPlaceholder = true;
+        if (imageReceiver == null) {
+            return;
         }
-        if (drawableBounds != null) {
-            drawPlaceholder(canvas, drawableBounds.centerX(), drawableBounds.centerY(), drawableBounds.width() / 2f);
-        }
+        imageReceiver.setImageCoords(drawableBounds);
+        imageReceiver.setAlpha(alpha);
+        imageReceiver.draw(canvas);
     }
 
     public void draw(Canvas canvas, ImageReceiver.BackgroundThreadDrawHolder backgroundThreadDrawHolder, boolean canTranslate) {
-        if (imageReceiver != null) {
-            imageReceiver.setAlpha(alpha);
-            imageReceiver.draw(canvas, backgroundThreadDrawHolder);
-        } else {
-            shouldDrawPlaceholder = true;
+        if (imageReceiver == null) {
+            return;
         }
-        if (backgroundThreadDrawHolder != null) {
-            drawPlaceholder(canvas, backgroundThreadDrawHolder.imageX + backgroundThreadDrawHolder.imageW / 2, backgroundThreadDrawHolder.imageY + backgroundThreadDrawHolder.imageH / 2, backgroundThreadDrawHolder.imageW / 2);
-        }
-    }
-
-    private AnimatedFloat placeholderAlpha = new AnimatedFloat(1f, this::invalidate, 0, 150, new LinearInterpolator());
-    private boolean shouldDrawPlaceholder = false;
-    private void drawPlaceholder(Canvas canvas, float cx, float cy, float r) {
-//        if (!shouldDrawPlaceholder) {
-//            return;
-//        }
-//        float alpha = placeholderAlpha.set(imageReceiver == null ? 1f : 0f);
-//        if (alpha < 0) {
-//            if (imageReceiver != null) {
-//                shouldDrawPlaceholder = false;
-//            }
-//            return;
-//        }
-//        if (placeholderPaint == null) {
-//            placeholderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-//            placeholderPaint.setColor(Theme.isCurrentThemeDark() ? 0x0fffffff : 0x0f000000);
-//        }
-//        int wasAlpha = placeholderPaint.getAlpha();
-//        placeholderPaint.setAlpha((int) (wasAlpha * alpha));
-//        canvas.drawCircle(cx, cy, r, placeholderPaint);
-//        placeholderPaint.setAlpha(wasAlpha);
+        imageReceiver.setAlpha(alpha);
+        imageReceiver.draw(canvas, backgroundThreadDrawHolder);
     }
 
     public void addView(View callback) {
@@ -1091,6 +1143,20 @@ public class AnimatedEmojiDrawable extends Drawable {
                     ((View) parentView.getParent()).invalidate();
                 } else {
                     parentView.invalidate();
+                }
+            }
+        }
+    }
+
+    public static void lightModeChanged() {
+        for (HashMap<Long, AnimatedEmojiDrawable> map :globalEmojiCache.values()) {
+            ArrayList<Long> set = new ArrayList(map.keySet());
+            for (Long documentId : set) {
+                AnimatedEmojiDrawable animatedEmojiDrawable = map.get(documentId);
+                if (animatedEmojiDrawable.attached) {
+                    animatedEmojiDrawable.initDocument(true);
+                } else {
+                    map.remove(documentId);
                 }
             }
         }

@@ -181,6 +181,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private SpringAnimation topicsAnimation;
     private TLRPC.Dialog selectedTopicDialog;
 
+    private SizeNotifierFrameLayout sizeNotifierFrameLayout;
     private ArrayList<DialogsSearchAdapter.RecentSearchObject> recentSearchObjects = new ArrayList<>();
     private LongSparseArray<DialogsSearchAdapter.RecentSearchObject> recentSearchObjectsById = new LongSparseArray<>();
     private final Theme.ResourcesProvider resourcesProvider;
@@ -520,7 +521,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
 
 
-        SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
+        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
             private boolean ignoreLayout = false;
             private RectF rect1 = new RectF();
@@ -534,97 +535,99 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             private int fromOffsetTop;
             private int toOffsetTop;
 
-            AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
+            {
+                adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
 
-                @Override
-                protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
-                    super.onTransitionStart(keyboardVisible, contentHeight);
-                    if (previousScrollOffsetY != scrollOffsetY) {
-                        fromScrollY = previousScrollOffsetY;
-                        toScrollY = scrollOffsetY;
-                        panTranslationMoveLayout = true;
-                        scrollOffsetY = fromScrollY;
-                    } else {
-                        fromScrollY = -1;
-                    }
-
-                    if (topOffset != previousTopOffset) {
-                        fromOffsetTop = 0;
-                        toOffsetTop = 0;
-                        panTranslationMoveLayout = true;
-
-                        if (!keyboardVisible) {
-                            toOffsetTop -= topOffset - previousTopOffset;
+                    @Override
+                    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
+                        super.onTransitionStart(keyboardVisible, contentHeight);
+                        if (previousScrollOffsetY != scrollOffsetY) {
+                            fromScrollY = previousScrollOffsetY;
+                            toScrollY = scrollOffsetY;
+                            panTranslationMoveLayout = true;
+                            scrollOffsetY = fromScrollY;
                         } else {
-                            toOffsetTop += topOffset - previousTopOffset;
+                            fromScrollY = -1;
                         }
-                        scrollOffsetY = keyboardVisible ? fromScrollY : toScrollY;
-                    } else {
-                        fromOffsetTop = -1;
-                    }
-                    gridView.setTopGlowOffset((int) (currentPanTranslationY + scrollOffsetY));
-                    frameLayout.setTranslationY(currentPanTranslationY + scrollOffsetY);
-                    searchEmptyView.setTranslationY(currentPanTranslationY + scrollOffsetY);
-                    invalidate();
-                }
 
-                @Override
-                protected void onTransitionEnd() {
-                    super.onTransitionEnd();
-                    panTranslationMoveLayout = false;
-                    previousScrollOffsetY = scrollOffsetY;
-                    gridView.setTopGlowOffset(scrollOffsetY);
-                    frameLayout.setTranslationY(scrollOffsetY);
-                    searchEmptyView.setTranslationY(scrollOffsetY);
-                    gridView.setTranslationY(0);
-                    searchGridView.setTranslationY(0);
-                }
+                        if (topOffset != previousTopOffset) {
+                            fromOffsetTop = 0;
+                            toOffsetTop = 0;
+                            panTranslationMoveLayout = true;
 
-                @Override
-                protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
-                    super.onPanTranslationUpdate(y, progress, keyboardVisible);
-                    for (int i = 0; i < containerView.getChildCount(); i++) {
-                        if (containerView.getChildAt(i) != pickerBottomLayout && containerView.getChildAt(i) != shadow[1] && containerView.getChildAt(i) != sharesCountLayout
-                                && containerView.getChildAt(i) != frameLayout2 && containerView.getChildAt(i) != writeButtonContainer && containerView.getChildAt(i) != selectedCountView) {
-                            containerView.getChildAt(i).setTranslationY(y);
-                        }
-                    }
-                    currentPanTranslationY = y;
-                    if (fromScrollY != -1) {
-                        float p = keyboardVisible ? progress : (1f - progress);
-                        scrollOffsetY = (int) (fromScrollY * (1f - p) + toScrollY * p);
-                        float translationY = currentPanTranslationY + (fromScrollY - toScrollY) * (1f - p);
-                        gridView.setTranslationY(translationY);
-                        if (keyboardVisible) {
-                            searchGridView.setTranslationY(translationY);
+                            if (!keyboardVisible) {
+                                toOffsetTop -= topOffset - previousTopOffset;
+                            } else {
+                                toOffsetTop += topOffset - previousTopOffset;
+                            }
+                            scrollOffsetY = keyboardVisible ? fromScrollY : toScrollY;
                         } else {
-                            searchGridView.setTranslationY(translationY + gridView.getPaddingTop());
+                            fromOffsetTop = -1;
                         }
-                    } else if (fromOffsetTop != -1) {
-                        scrollOffsetY = (int) (fromOffsetTop * (1f - progress) + toOffsetTop * progress);
-                        float p = keyboardVisible ? (1f - progress) : progress;
-                        if (keyboardVisible) {
-                            gridView.setTranslationY(currentPanTranslationY - (fromOffsetTop - toOffsetTop) * progress);
-                        } else {
-                            gridView.setTranslationY(currentPanTranslationY + (toOffsetTop - fromOffsetTop) * p);
-                        }
+                        gridView.setTopGlowOffset((int) (currentPanTranslationY + scrollOffsetY));
+                        frameLayout.setTranslationY(currentPanTranslationY + scrollOffsetY);
+                        searchEmptyView.setTranslationY(currentPanTranslationY + scrollOffsetY);
+                        invalidate();
                     }
-                    gridView.setTopGlowOffset((int) (scrollOffsetY + currentPanTranslationY));
-                    frameLayout.setTranslationY(scrollOffsetY + currentPanTranslationY);
-                    searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY);
-                    frameLayout2.invalidate();
-                    setCurrentPanTranslationY(currentPanTranslationY);
-                    invalidate();
-                }
 
-                @Override
-                protected boolean heightAnimationEnabled() {
-                    if (isDismissed() || !fullyShown) {
-                        return false;
+                    @Override
+                    protected void onTransitionEnd() {
+                        super.onTransitionEnd();
+                        panTranslationMoveLayout = false;
+                        previousScrollOffsetY = scrollOffsetY;
+                        gridView.setTopGlowOffset(scrollOffsetY);
+                        frameLayout.setTranslationY(scrollOffsetY);
+                        searchEmptyView.setTranslationY(scrollOffsetY);
+                        gridView.setTranslationY(0);
+                        searchGridView.setTranslationY(0);
                     }
-                    return !commentTextView.isPopupVisible();
-                }
-            };
+
+                    @Override
+                    protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+                        super.onPanTranslationUpdate(y, progress, keyboardVisible);
+                        for (int i = 0; i < containerView.getChildCount(); i++) {
+                            if (containerView.getChildAt(i) != pickerBottomLayout && containerView.getChildAt(i) != shadow[1] && containerView.getChildAt(i) != sharesCountLayout
+                                    && containerView.getChildAt(i) != frameLayout2 && containerView.getChildAt(i) != writeButtonContainer && containerView.getChildAt(i) != selectedCountView) {
+                                containerView.getChildAt(i).setTranslationY(y);
+                            }
+                        }
+                        currentPanTranslationY = y;
+                        if (fromScrollY != -1) {
+                            float p = keyboardVisible ? progress : (1f - progress);
+                            scrollOffsetY = (int) (fromScrollY * (1f - p) + toScrollY * p);
+                            float translationY = currentPanTranslationY + (fromScrollY - toScrollY) * (1f - p);
+                            gridView.setTranslationY(translationY);
+                            if (keyboardVisible) {
+                                searchGridView.setTranslationY(translationY);
+                            } else {
+                                searchGridView.setTranslationY(translationY + gridView.getPaddingTop());
+                            }
+                        } else if (fromOffsetTop != -1) {
+                            scrollOffsetY = (int) (fromOffsetTop * (1f - progress) + toOffsetTop * progress);
+                            float p = keyboardVisible ? (1f - progress) : progress;
+                            if (keyboardVisible) {
+                                gridView.setTranslationY(currentPanTranslationY - (fromOffsetTop - toOffsetTop) * progress);
+                            } else {
+                                gridView.setTranslationY(currentPanTranslationY + (toOffsetTop - fromOffsetTop) * p);
+                            }
+                        }
+                        gridView.setTopGlowOffset((int) (scrollOffsetY + currentPanTranslationY));
+                        frameLayout.setTranslationY(scrollOffsetY + currentPanTranslationY);
+                        searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY);
+                        frameLayout2.invalidate();
+                        setCurrentPanTranslationY(currentPanTranslationY);
+                        invalidate();
+                    }
+
+                    @Override
+                    protected boolean heightAnimationEnabled() {
+                        if (isDismissed() || !fullyShown) {
+                            return false;
+                        }
+                        return !commentTextView.isPopupVisible();
+                    }
+                };
+            }
 
             @Override
             protected void onAttachedToWindow() {
@@ -1017,22 +1020,34 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 return;
             }
 
-            for (int i = 0; i < gridView.getChildCount(); i++) {
-                View child = gridView.getChildAt(i);
+            long dialogId = selectedTopicDialog.id;
+            TLRPC.Dialog dialog = selectedTopicDialog;
+
+            selectedDialogs.put(dialogId, dialog);
+            selectedDialogTopics.put(dialog, topic);
+            updateSelectedCount(2);
+
+            if (searchIsVisible || searchWasVisibleBeforeTopics) {
+                TLRPC.Dialog existingDialog = listAdapter.dialogsMap.get(dialog.id);
+                if (existingDialog == null) {
+                    listAdapter.dialogsMap.put(dialog.id, dialog);
+                    listAdapter.dialogs.add(listAdapter.dialogs.isEmpty() ? 0 : 1, dialog);
+                }
+                listAdapter.notifyDataSetChanged();
+                updateSearchAdapter = false;
+                searchView.searchEditText.setText("");
+                checkCurrentList(false);
+            }
+            for (int i = 0; i < getMainGridView().getChildCount(); i++) {
+                View child = getMainGridView().getChildAt(i);
 
                 if (child instanceof ShareDialogCell && ((ShareDialogCell) child).getCurrentDialog() == selectedTopicDialog.id) {
                     ShareDialogCell cell = (ShareDialogCell) child;
 
-                    long dialogId = ((ShareDialogCell) child).getCurrentDialog();
-                    TLRPC.Dialog dialog = listAdapter.dialogsMap.get(dialogId);
-
-                    selectedDialogs.put(dialogId, dialog);
-                    selectedDialogTopics.put(dialog, topic);
                     if (cell != null) {
                         cell.setTopic(topic, true);
                         cell.setChecked(true, true);
                     }
-                    updateSelectedCount(2);
                 }
             }
             collapseTopics();
@@ -1592,6 +1607,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                                 topicsBackActionBar.setAlpha(0);
                                 topicsBackActionBar.setTitle(MessagesController.getInstance(currentAccount).getChat(-dialog.id).title);
                                 topicsBackActionBar.setSubtitle(LocaleController.getString(R.string.SelectTopic));
+                                searchWasVisibleBeforeTopics = searchIsVisible;
 
                                 if (topicsAnimation != null) {
                                     topicsAnimation.cancel();
@@ -1693,6 +1709,12 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         getMainGridView().setVisibility(View.VISIBLE);
         searchView.setVisibility(View.VISIBLE);
 
+        if (searchIsVisible || searchWasVisibleBeforeTopics) {
+            sizeNotifierFrameLayout.adjustPanLayoutHelper.ignoreOnce();
+            searchView.searchEditText.requestFocus();
+            AndroidUtilities.showKeyboard(searchView.searchEditText);
+        }
+
         int[] loc = new int[2];
         View finalCell = cell;
         topicsAnimation = new SpringAnimation(new FloatValueHolder(1000))
@@ -1712,6 +1734,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             shareTopicsAdapter.notifyDataSetChanged();
 
             topicsAnimation = null;
+            searchWasVisibleBeforeTopics = false;
         });
         topicsAnimation.start();
     }
@@ -1723,7 +1746,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         topicsGridView.setScaleY(0.75f + value * 0.25f);
         topicsGridView.setAlpha(value);
 
-        RecyclerListView mainGridView = gridView;
+        RecyclerListView mainGridView = getMainGridView();
         mainGridView.setPivotX(cell.getX() + cell.getWidth() / 2f);
         mainGridView.setPivotY(cell.getY() + cell.getHeight() / 2f);
         mainGridView.setScaleX(1f + value * 0.25f);
@@ -1940,8 +1963,11 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 long key = selectedDialogs.keyAt(a);
                 TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
                 MessageObject replyTopMsg = topic != null ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
+                if (replyTopMsg != null) {
+                    replyTopMsg.isTopicMainMessage = true;
+                }
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(text[0] == null ? null : text[0].toString(), key, null, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
                 }
                 int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg);
                 if (result != 0) {
@@ -2008,7 +2034,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     }
 
     private RecyclerListView getMainGridView() {
-        return searchIsVisible ? searchGridView : gridView;
+        return searchIsVisible || searchWasVisibleBeforeTopics ? searchGridView : gridView;
     }
 
     public void setDelegate(ShareAlertDelegate shareAlertDelegate) {
@@ -3106,17 +3132,22 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     }
 
     private boolean searchIsVisible;
+    private boolean searchWasVisibleBeforeTopics;
 
     private void checkCurrentList(boolean force) {
         boolean searchVisibleLocal = false;
-        if (!TextUtils.isEmpty(searchView.searchEditText.getText()) || (keyboardVisible && searchView.searchEditText.hasFocus())) {
+        if (!TextUtils.isEmpty(searchView.searchEditText.getText()) || (keyboardVisible && searchView.searchEditText.hasFocus()) || searchWasVisibleBeforeTopics) {
             searchVisibleLocal = true;
             updateSearchAdapter = true;
-            AndroidUtilities.updateViewVisibilityAnimated(gridView, false, 0.98f, true);
-            AndroidUtilities.updateViewVisibilityAnimated(searchGridView, true);
+            if (selectedTopicDialog == null) {
+                AndroidUtilities.updateViewVisibilityAnimated(gridView, false, 0.98f, true);
+                AndroidUtilities.updateViewVisibilityAnimated(searchGridView, true);
+            }
         } else {
-            AndroidUtilities.updateViewVisibilityAnimated(gridView, true, 0.98f, true);
-            AndroidUtilities.updateViewVisibilityAnimated(searchGridView, false);
+            if (selectedTopicDialog == null) {
+                AndroidUtilities.updateViewVisibilityAnimated(gridView, true, 0.98f, true);
+                AndroidUtilities.updateViewVisibilityAnimated(searchGridView, false);
+            }
         }
 
         if (searchIsVisible != searchVisibleLocal || force) {

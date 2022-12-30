@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
@@ -37,6 +38,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public final class BulletinFactory {
 
@@ -195,8 +197,12 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_PROLONG);
     }
 
-    public Bulletin createUsersBulletin(ArrayList<TLRPC.User> users, CharSequence text) {
-        final Bulletin.UsersLayout layout = new Bulletin.UsersLayout(getContext(), resourcesProvider);
+    public Bulletin createUsersBulletin(List<TLRPC.User> users, CharSequence text) {
+       return createUsersBulletin(users, text, null);
+    }
+
+    public Bulletin createUsersBulletin(List<TLRPC.User> users, CharSequence text, CharSequence subtitle) {
+        final Bulletin.UsersLayout layout = new Bulletin.UsersLayout(getContext(), subtitle != null, resourcesProvider);
         int count = 0;
         if (users != null) {
             for (int i = 0; i < users.size(); ++i) {
@@ -208,20 +214,48 @@ public final class BulletinFactory {
                     layout.avatarsImageView.setObject(count - 1, UserConfig.selectedAccount, user);
                 }
             }
-        }
-        layout.avatarsImageView.commitTransition(false);
-        layout.textView.setSingleLine(false);
-        layout.textView.setMaxLines(2);
-        layout.textView.setText(text);
-        if (layout.textView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
-            int margin = AndroidUtilities.dp(12 + 56 + 2 - (3 - count) * 12);
-            if (LocaleController.isRTL) {
-                ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = margin;
+            if (users.size() == 1) {
+                layout.avatarsImageView.setTranslationX(AndroidUtilities.dp(4));
+                layout.avatarsImageView.setScaleX(1.2f);
+                layout.avatarsImageView.setScaleY(1.2f);
             } else {
-                ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).leftMargin = margin;
+                layout.avatarsImageView.setScaleX(1f);
+                layout.avatarsImageView.setScaleY(1f);
             }
         }
-        return create(layout, Bulletin.DURATION_LONG);
+        layout.avatarsImageView.commitTransition(false);
+
+
+        if (subtitle != null) {
+            layout.textView.setSingleLine(true);
+            layout.textView.setMaxLines(1);
+            layout.textView.setText(text);
+            layout.subtitleView.setText(subtitle);
+            layout.subtitleView.setSingleLine(true);
+            layout.subtitleView.setMaxLines(1);
+            if (layout.linearLayout.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                int margin = AndroidUtilities.dp(12 + 56 + 2 - (3 - count) * 12);
+                if (LocaleController.isRTL) {
+                    ((ViewGroup.MarginLayoutParams) layout.linearLayout.getLayoutParams()).rightMargin = margin;
+                } else {
+                    ((ViewGroup.MarginLayoutParams) layout.linearLayout.getLayoutParams()).leftMargin = margin;
+                }
+            }
+        } else {
+            layout.textView.setSingleLine(false);
+            layout.textView.setMaxLines(2);
+            layout.textView.setText(text);
+            if (layout.textView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                int margin = AndroidUtilities.dp(12 + 56 + 2 - (3 - count) * 12);
+                if (LocaleController.isRTL) {
+                    ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = margin;
+                } else {
+                    ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).leftMargin = margin;
+                }
+            }
+        }
+
+        return create(layout, Bulletin.DURATION_PROLONG);
     }
 
     public Bulletin createUsersAddedBulletin(ArrayList<TLRPC.User> users, TLRPC.Chat chat) {
@@ -400,6 +434,19 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_SHORT);
     }
 
+    public Bulletin createSuccessBulletin(CharSequence successMessage) {
+        return createSuccessBulletin(successMessage, null);
+    }
+
+    public Bulletin createSuccessBulletin(CharSequence successMessage, Theme.ResourcesProvider resourcesProvider) {
+        Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(R.raw.contact_check);
+        layout.textView.setText(successMessage);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        return create(layout, Bulletin.DURATION_SHORT);
+    }
+
     public Bulletin createCaptionLimitBulletin(int count, Runnable callback) {
         Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
         layout.setAnimation(R.raw.caption_limit);
@@ -518,7 +565,19 @@ public final class BulletinFactory {
     }
 
     private Context getContext() {
-        return fragment != null ? fragment.getParentActivity() : containerLayout.getContext();
+        Context context = null;
+        if (fragment != null) {
+            context = fragment.getParentActivity();
+            if (context == null && fragment.getLayoutContainer() != null) {
+                context = fragment.getLayoutContainer().getContext();
+            }
+        } else if (containerLayout != null) {
+            context = containerLayout.getContext();
+        }
+        if (context == null) {
+            context = ApplicationLoader.applicationContext;
+        }
+        return context;
     }
 
     //region Static Factory

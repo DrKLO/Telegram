@@ -169,8 +169,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         };
         tabsContainer.setOrientation(LinearLayout.HORIZONTAL);
         tabsContainer.setPadding(AndroidUtilities.dp(9.5f), 0, AndroidUtilities.dp(9.5f), 0);
-        tabsContainer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        addView(tabsContainer);
+        addView(tabsContainer, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL));
 
         rectPaint = new Paint();
         rectPaint.setAntiAlias(true);

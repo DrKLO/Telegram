@@ -403,9 +403,10 @@ public class SpoilerEffect extends Drawable {
             Paint shaderPaint = SpoilerEffectBitmapFactory.getInstance().getPaint();
             shaderPaint.setColorFilter(new PorterDuffColorFilter(lastColor, PorterDuff.Mode.SRC_IN));
             canvas.drawRect(getBounds().left, getBounds().top, getBounds().right, getBounds().bottom, SpoilerEffectBitmapFactory.getInstance().getPaint());
-            invalidateSelf();
-
-            SpoilerEffectBitmapFactory.getInstance().checkUpdate();
+            if (!SharedConfig.getLiteMode().enabled()) {
+                invalidateSelf();
+                SpoilerEffectBitmapFactory.getInstance().checkUpdate();
+            }
         }
     }
 
@@ -415,11 +416,13 @@ public class SpoilerEffect extends Drawable {
     public void setVisibleBounds(float left, float top, float right, float bottom) {
         if (visibleRect == null)
             visibleRect = new RectF();
-        visibleRect.left = left;
-        visibleRect.top = top;
-        visibleRect.right = right;
-        visibleRect.bottom = bottom;
-        invalidateSelf();
+        if (visibleRect.left != left || visibleRect.right != right || visibleRect.top != top || visibleRect.bottom != bottom) {
+            visibleRect.left = left;
+            visibleRect.top = top;
+            visibleRect.right = right;
+            visibleRect.bottom = bottom;
+            invalidateSelf();
+        }
     }
 
     private boolean isOutOfBounds(int left, int top, int right, int bottom, float x, float y) {

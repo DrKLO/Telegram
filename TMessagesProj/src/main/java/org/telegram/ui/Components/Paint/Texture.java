@@ -1,10 +1,8 @@
 package org.telegram.ui.Components.Paint;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.opengl.GLES20;
-
-import androidx.core.graphics.ColorUtils;
+import android.os.Build;
 
 import org.telegram.ui.Components.Size;
 
@@ -20,6 +18,14 @@ public class Texture {
         this.bitmap = bitmap;
     }
 
+    public Texture(int width, int height) {
+        this.texture = generateTexture(width, height);
+    }
+
+    public Texture(Size size) {
+        this.texture = generateTexture(size);
+    }
+
     public void cleanResources(boolean recycleBitmap) {
         if (texture == 0) {
             return;
@@ -29,7 +35,7 @@ public class Texture {
         GLES20.glDeleteTextures(1, textures, 0);
         texture = 0;
 
-        if (recycleBitmap) {
+        if (recycleBitmap && bitmap != null && !bitmap.isRecycled()) {
             bitmap.recycle();
         }
     }
@@ -43,7 +49,7 @@ public class Texture {
             return texture;
         }
 
-        if (bitmap.isRecycled()) {
+        if (bitmap == null || bitmap.isRecycled()) {
             return 0;
         }
 
@@ -68,18 +74,23 @@ public class Texture {
         }
         GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, IntBuffer.wrap(pixels));
 
-        int px = bitmap.getPixel(0, 0);
-
-        ByteBuffer buffer = ByteBuffer.allocateDirect(4); //fix for android 9.0
-        buffer.putInt(px).position(0);
-        GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, 1, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
-
+        if (!bitmap.isRecycled() && Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            int px = bitmap.getPixel(0, 0);
+            px = px & 0xff00ff00 | ((px & 0xff) << 16) | ((px >> 16) & 0xff);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(4); //fix for android 9.0
+            buffer.putInt(px).position(0);
+            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, 1, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
+        }
         Utils.HasGLError();
 
         return texture;
     }
 
     public static int generateTexture(Size size) {
+        return generateTexture((int) size.width, (int) size.height);
+    }
+
+    public static int generateTexture(int width, int height) {
         int texture;
         int[] textures = new int[1];
         GLES20.glGenTextures(1, textures, 0);
@@ -92,8 +103,6 @@ public class Texture {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 
-        int width = (int) size.width;
-        int height = (int) size.height;
         int format = GLES20.GL_RGBA;
         int type = GLES20.GL_UNSIGNED_BYTE;
 

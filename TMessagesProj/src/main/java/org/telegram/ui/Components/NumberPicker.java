@@ -632,8 +632,14 @@ public class NumberPicker extends LinearLayout {
     }
 
     public void setWrapSelectorWheel(boolean wrapSelectorWheel) {
-        final boolean wrappingAllowed = !(mMaxValueSet && mMinValueSet) || (mMaxValue - mMinValue) >= mSelectorIndices.length;
+        final boolean wrappingAllowed = !(mMaxValueSet && mMinValueSet) || allItemsCount != null && (mMaxValue - mMinValue + 1) >= allItemsCount;
         mWrapSelectorWheel = wrappingAllowed && (mWrapSelectorWheelSetting = wrapSelectorWheel);
+    }
+
+    private Integer allItemsCount;
+    public void setAllItemsCount(int allItemsCount) {
+        this.allItemsCount = allItemsCount;
+        setWrapSelectorWheel(mWrapSelectorWheelSetting);
     }
 
     public void setOnLongPressUpdateInterval(long intervalMillis) {
@@ -649,6 +655,7 @@ public class NumberPicker extends LinearLayout {
     }
 
     public void setMinValue(int minValue) {
+        mMinValueSet = true;
         if (mMinValue == minValue) {
             return;
         }
@@ -656,7 +663,6 @@ public class NumberPicker extends LinearLayout {
             throw new IllegalArgumentException("minValue must be >= 0");
         }
         mMinValue = minValue;
-        mMinValueSet = true;
         if (mMinValue > mValue) {
             if (mMinValue <= mFantomValue) {
                 mValue = mFantomValue;
@@ -664,9 +670,7 @@ public class NumberPicker extends LinearLayout {
                 mValue = mMinValue;
             }
         }
-        if (mWrapSelectorWheelSetting && mMaxValueSet) {
-            mWrapSelectorWheel = mMaxValue - mMinValue > mSelectorIndices.length;
-        }
+        setWrapSelectorWheel(mWrapSelectorWheelSetting);
         initializeSelectorWheelIndices();
         updateInputTextView();
         tryComputeMaxWidth();
@@ -678,6 +682,7 @@ public class NumberPicker extends LinearLayout {
     }
 
     public void setMaxValue(int maxValue) {
+        mMaxValueSet = true;
         if (mMaxValue == maxValue) {
             return;
         }
@@ -685,7 +690,6 @@ public class NumberPicker extends LinearLayout {
             throw new IllegalArgumentException("maxValue must be >= 0");
         }
         mMaxValue = maxValue;
-        mMaxValueSet = true;
         if (mMaxValue < mValue) {
             if (mMaxValue >= mFantomValue) {
                 mValue = mFantomValue;
@@ -693,9 +697,7 @@ public class NumberPicker extends LinearLayout {
                 mValue = mMaxValue;
             }
         }
-        if (mWrapSelectorWheelSetting && mMinValueSet) {
-            mWrapSelectorWheel = mMaxValue - mMinValue > mSelectorIndices.length;
-        }
+        setWrapSelectorWheel(mWrapSelectorWheelSetting);
         initializeSelectorWheelIndices();
         updateInputTextView();
         tryComputeMaxWidth();
@@ -966,9 +968,9 @@ public class NumberPicker extends LinearLayout {
     }
 
     private int getWrappedSelectorIndex(int selectorIndex) {
-        if (selectorIndex > mMaxValue) {
+        if (mMaxValueSet && selectorIndex > mMaxValue && mMaxValue - mMinValue != 0) {
             return mMinValue + (selectorIndex - mMaxValue) % (mMaxValue - mMinValue) - 1;
-        } else if (selectorIndex < mMinValue) {
+        } else if (mMinValueSet && selectorIndex < mMinValue && mMaxValue - mMinValue != 0) {
             return mMaxValue - (mMinValue - selectorIndex) % (mMaxValue - mMinValue) + 1;
         }
         return selectorIndex;

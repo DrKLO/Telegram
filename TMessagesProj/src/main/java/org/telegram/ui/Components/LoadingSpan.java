@@ -1,7 +1,6 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
-import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.text.style.ReplacementSpan;
 import android.view.View;
@@ -18,11 +17,18 @@ public class LoadingSpan extends ReplacementSpan {
     private View view;
     private LoadingDrawable drawable;
 
+    public int yOffset;
+
     public LoadingSpan(View view, int size) {
+        this(view, size, AndroidUtilities.dp(2));
+    }
+
+    public LoadingSpan(View view, int size, int yOffset) {
         this.view = view;
         this.size = size;
+        this.yOffset = yOffset;
         this.drawable = new LoadingDrawable(null);
-        this.drawable.paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(4)));
+        this.drawable.setRadiiDp(4);
     }
 
     public void setColorKeys(String colorKey1, String colorKey2) {
@@ -47,12 +53,19 @@ public class LoadingSpan extends ReplacementSpan {
 
     @Override
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
+        if (paint != null) {
+            drawable.setColors(
+                Theme.multAlpha(paint.getColor(), .1f),
+                Theme.multAlpha(paint.getColor(), .25f)
+            );
+            drawable.setAlpha(paint.getAlpha());
+        }
         return size;
     }
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-        drawable.setBounds((int) x, top + AndroidUtilities.dp(2), (int) x + size, bottom - AndroidUtilities.dp(2));
+        drawable.setBounds((int) x, top + yOffset, (int) x + size, bottom - AndroidUtilities.dp(2) + yOffset);
         drawable.draw(canvas);
         if (view != null) {
             view.invalidate();
