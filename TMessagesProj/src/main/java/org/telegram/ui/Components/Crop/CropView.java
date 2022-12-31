@@ -739,6 +739,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void maximize(boolean animated) {
+        if (state == null) {
+            return;
+        }
         final float toScale = state.minimumScale;
         areaView.resetAnimator();
         float aspectRatio;

@@ -4274,6 +4274,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 int finalSelectedIndex = selectedIndex;
                                 AndroidUtilities.runOnUIThread(() -> {
                                     if (frozenDialogsList != null) {
+                                        if (finalSelectedIndex < 0 || finalSelectedIndex >= frozenDialogsList.size()) {
+                                            return;
+                                        }
                                         frozenDialogsList.add(finalSelectedIndex, dialog);
                                         viewPages[0].updateList(true);
                                     }
@@ -4481,9 +4484,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (menuDrawable != null && hasFragment()) {
                     menuDrawable.setRotation(progress, false);
                 }
-                actionBar.getTitleTextView().setAlpha(1f - progress);
-                if (actionBar.getTitleTextView().getAlpha() > 0) {
-                    actionBar.getTitleTextView().setVisibility(View.VISIBLE);
+                if (actionBar.getTitleTextView() != null) {
+                    actionBar.getTitleTextView().setAlpha(1f - progress);
+                    if (actionBar.getTitleTextView().getAlpha() > 0) {
+                        actionBar.getTitleTextView().setVisibility(View.VISIBLE);
+                    }
                 }
                 if (proxyItem != null) {
                     proxyItem.setAlpha(1f - progress);
@@ -6244,6 +6249,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else if (obj instanceof ContactsController.Contact) {
                 ContactsController.Contact contact = (ContactsController.Contact) obj;
                 AlertsCreator.createContactInviteDialog(DialogsActivity.this, contact.first_name, contact.last_name, contact.phones.get(0));
+            } else if (obj instanceof TLRPC.TL_forumTopic && rightSlidingDialogContainer != null && rightSlidingDialogContainer.getFragment() instanceof TopicsFragment) {
+                dialogId = ((TopicsFragment) rightSlidingDialogContainer.getFragment()).getDialogId();
+                topicId = ((TLRPC.TL_forumTopic) obj).id;
             }
 
             if (dialogId != 0 && actionBar.isActionModeShowed()) {

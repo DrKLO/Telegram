@@ -91,6 +91,7 @@ import org.telegram.ui.Components.CacheChart;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.LoadingDrawable;
@@ -301,7 +302,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 FileLog.e(e);
             }
 
-            long minDuration = System.currentTimeMillis() - fragmentCreateTime > 25 || true ? 800 : 0;
+            long minDuration = System.currentTimeMillis() - fragmentCreateTime > 45 ? 600 : 0;
             AndroidUtilities.runOnUIThread(() -> {
                 resumeDelayedFragmentAnimation();
                 calculating = false;
@@ -435,6 +436,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         setCacheModel(cacheModel);
                         updateRows();
                         updateChart();
+                        if (cacheChartHeader != null && !calculating && System.currentTimeMillis() - fragmentCreateTime > 120) {
+                            cacheChartHeader.setData(
+                                    totalSize > 0,
+                                    totalDeviceSize <= 0 ? 0 : (float) totalSize / totalDeviceSize,
+                                    totalDeviceFreeSize <= 0 || totalDeviceSize <= 0 ? 0 : (float) (totalDeviceSize - totalDeviceFreeSize) / totalDeviceSize
+                            );
+                        }
                     }
                 });
             });
@@ -885,15 +893,6 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             MediaDataController.getInstance(currentAccount).chekAllMedia(true);
 
             loadDialogEntities();
-
-            updateChart();
-            if (cacheChartHeader != null && !calculating) {
-                cacheChartHeader.setData(
-                    totalSize > 0,
-                    totalDeviceSize <= 0 ? 0 : (float) totalSize / totalDeviceSize,
-                    totalDeviceFreeSize <= 0 || totalDeviceSize <= 0 ? 0 : (float) (totalDeviceSize - totalDeviceFreeSize) / totalDeviceSize
-                );
-            }
         });
     }
 
@@ -1072,6 +1071,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         listView.setItemAnimator(itemAnimator);
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (getParentActivity() == null) {
+                return;
+            }
+            if (position < 0 || position >= itemInners.size()) {
                 return;
             }
             ItemInner item = itemInners.get(position);
@@ -1393,14 +1395,14 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 } else if (i == 1) {
                     subtitle[i].setAlpha(0);
                     subtitle[i].setText(LocaleController.getString("StorageUsageTelegram", R.string.StorageUsageTelegram));
-                    subtitle[i].setVisibility(View.GONE);
+                    subtitle[i].setVisibility(View.INVISIBLE);
                 } else if (i == 2) {
                     subtitle[i].setText(LocaleController.getString("StorageCleared2", R.string.StorageCleared2));
                     subtitle[i].setAlpha(0);
-                    subtitle[i].setVisibility(View.GONE);
+                    subtitle[i].setVisibility(View.INVISIBLE);
                 }
                 subtitle[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-                addView(subtitle[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, i == 2 ? 38 : 32, 0, 0));
+                addView(subtitle[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, i == 2 ? 12 : -6, 0, 0));
             }
 
             bottomImage = new View(context) {
@@ -1457,9 +1459,36 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         private void switchSubtitle(int type) {
             boolean animated = System.currentTimeMillis() - fragmentCreateTime > 40;
-            AndroidUtilities.updateViewShow(subtitle[0], type == 0, false, -.5f, animated, null);
-            AndroidUtilities.updateViewShow(subtitle[1], type == 1, false, -.5f, animated, null);
-            AndroidUtilities.updateViewShow(subtitle[2], type == 2, false, -.5f, animated, null);
+            updateViewVisible(subtitle[0], type == 0, animated);
+            updateViewVisible(subtitle[1], type == 1, animated);
+            updateViewVisible(subtitle[2], type == 2, animated);
+        }
+
+        private void updateViewVisible(View view, boolean show, boolean animated) {
+            if (view == null) {
+                return;
+            }
+            if (view.getParent() == null) {
+                animated = false;
+            }
+
+            view.animate().setListener(null).cancel();
+            if (!animated) {
+                view.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
+                view.setTag(show ? 1 : null);
+                view.setAlpha(show ? 1f : 0f);
+                view.setTranslationY(show ? 0 : AndroidUtilities.dp(8));
+                invalidate();
+            } else if (show) {
+                if (view.getVisibility() != View.VISIBLE) {
+                    view.setVisibility(View.VISIBLE);
+                    view.setAlpha(0f);
+                    view.setTranslationY(AndroidUtilities.dp(8));
+                }
+                view.animate().alpha(1f).translationY(0).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).setUpdateListener(anm -> invalidate()).start();
+            } else {
+                view.animate().alpha(0).translationY(AndroidUtilities.dp(8)).setListener(new HideViewAfterAnimation(view)).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(340).setUpdateListener(anm -> invalidate()).start();
+            }
         }
 
         @Override
@@ -1471,7 +1500,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             int height = AndroidUtilities.dp(90 - 18);
             int maxSubtitleHeight = 0;
             for (int i = 0; i < subtitle.length; ++i) {
-                maxSubtitleHeight = Math.max(maxSubtitleHeight, subtitle[i].getMeasuredHeight());
+                maxSubtitleHeight = Math.max(maxSubtitleHeight, subtitle[i].getMeasuredHeight() - (i == 2 ? AndroidUtilities.dp(16) : 0));
             }
             height += maxSubtitleHeight;
             setMeasuredDimension(fullWidth, height);
@@ -1486,7 +1515,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
-            float barAlpha = Math.max(subtitle[0].getAlpha(), subtitle[1].getAlpha());
+            float barAlpha = 1f - subtitle[2].getAlpha();
 
             float loading = this.loadingFloat.set(this.percent == null ? 1f : 0f);
             float percent = this.percentAnimated.set(this.percent == null ? 0 : this.percent);

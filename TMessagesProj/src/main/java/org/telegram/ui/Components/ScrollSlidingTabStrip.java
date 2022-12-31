@@ -46,6 +46,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -650,7 +651,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                         thumbDrawable = (Drawable) thumb;
                     }
                     if (sticker instanceof TLRPC.Document) {
-                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), "36_36_nolimit", (Drawable) null, null);
+                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), SharedConfig.getLiteMode().enabled() ? "36_36_firstframe" : "36_36_nolimit", (Drawable) null, null);
                     } else {
                         tabView.imageView.setImageDrawable(thumbDrawable);
                     }
@@ -687,22 +688,26 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     tabView.inited = true;
                     SvgHelper.SvgDrawable svgThumb = tabView.svgThumb;
                     BackupImageView imageView = tabView.imageView;
-                    if (MessageObject.isVideoSticker(sticker)) {
-                        if (svgThumb != null) {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
+                    String imageFilter = SharedConfig.getLiteMode().enabled() ? "40_40_firstframe" : "40_40";
+                    if (MessageObject.isVideoSticker(sticker) && sticker.thumbs != null && sticker.thumbs.size() > 0) {
+                        if (SharedConfig.getLiteMode().enabled()) {
+                            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+                            imageView.setImage(ImageLocation.getForDocument(thumb, sticker), "40_40", svgThumb, 0, parentObject);
+                        } else if (svgThumb != null) {
+                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, svgThumb, 0, parentObject);
                         } else {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", imageLocation, null, 0, parentObject);
+                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, imageLocation, null, 0, parentObject);
                         }
                     } else if (MessageObject.isAnimatedStickerDocument(sticker, true)) {
                         if (svgThumb != null) {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
+                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, svgThumb, 0, parentObject);
                         } else {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", imageLocation, null, 0, parentObject);
+                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, imageLocation, null, 0, parentObject);
                         }
                     } else if (imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
-                        imageView.setImage(imageLocation, "40_40", "tgs", svgThumb, parentObject);
+                        imageView.setImage(imageLocation, imageFilter, "tgs", svgThumb, parentObject);
                     } else {
-                        imageView.setImage(imageLocation, null, "webp", svgThumb, parentObject);
+                        imageView.setImage(imageLocation, imageFilter, "webp", svgThumb, parentObject);
                     }
                     String title = null;
                     if (parentObject instanceof TLRPC.TL_messages_stickerSet) {

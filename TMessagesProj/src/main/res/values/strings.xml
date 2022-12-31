@@ -6046,4 +6046,7 @@
     <string name="LightMode">Lite Mode (Beta)</string>
     <string name="EnableLightMode">Enable lite mode</string>
     <string name="LightModeInfoRow">This mode turns off all visual effects in the app. It is recommended only for those devices that are low on CPU and memory.</string>
+    <string name="DeleteAllProxies">Delete All Proxies</string>
+    <string name="DeleteAllProxiesConfirm">Are you sure you want to delete all proxies?</string>
+    <string name="AccDescrSendAs">Send as %1$s</string>
 </resources>

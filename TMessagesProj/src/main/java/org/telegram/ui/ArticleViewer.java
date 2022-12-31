@@ -50,6 +50,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.DynamicDrawableSpan;
 import android.text.style.MetricAffectingSpan;
 import android.text.style.URLSpan;
 import android.util.Property;
@@ -106,6 +107,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -2501,6 +2503,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         } else {
             paint = getTextPaint(richText, richText, parentBlock);
         }
+        text = Emoji.replaceEmoji(text, paint.getFontMetricsInt(), false, null, DynamicDrawableSpan.ALIGN_BASELINE);
         StaticLayout result;
         if (maxLines != 0) {
             if (parentBlock instanceof TLRPC.TL_pageBlockPullquote) {

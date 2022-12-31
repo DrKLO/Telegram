@@ -133,15 +133,16 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
 
         for (int i = 0; i < checkItems.size(); i++) {
             int keepMedia = checkItems.get(i).type;
-            checkItems.get(i).item.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    window.dismiss();
-                    if (currentType >= 0) {
-                        cacheByChatsController.setKeepMedia(currentType, keepMedia);
-                        if (callback != null) {
-                            callback.onKeepMediaChange(currentType, keepMedia);
-                        }
+            checkItems.get(i).item.setOnClickListener(v -> {
+                window.dismiss();
+                if (currentType >= 0) {
+                    cacheByChatsController.setKeepMedia(currentType, keepMedia);
+                    if (callback != null) {
+                        callback.onKeepMediaChange(currentType, keepMedia);
+                    }
+                } else {
+                    if (callback != null) {
+                        callback.onKeepMediaChange(currentType, keepMedia);
                     }
                 }
             });

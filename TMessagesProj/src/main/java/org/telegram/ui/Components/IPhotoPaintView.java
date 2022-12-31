@@ -7,6 +7,7 @@ import android.view.View;
 
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.Paint.RenderView;
 import org.telegram.ui.PhotoViewer;
 
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ public interface IPhotoPaintView {
     void setOnDoneButtonClickedListener(Runnable callback);
     void onBackPressed();
     int getEmojiPadding(boolean panned);
+    RenderView getRenderView();
 
     void updateZoom(boolean zoomedOut);
 

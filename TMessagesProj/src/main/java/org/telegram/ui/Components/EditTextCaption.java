@@ -533,7 +533,7 @@ public class EditTextCaption extends EditTextBoldCursor {
                 try {
                     String html = clipData.getItemAt(0).getHtmlText();
                     Spannable pasted = CopyUtilities.fromHTML(html);
-                    Emoji.replaceEmoji(pasted, getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false, null, true);
+                    Emoji.replaceEmoji(pasted, getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false, null);
                     AnimatedEmojiSpan[] spans = pasted.getSpans(0, pasted.length(), AnimatedEmojiSpan.class);
                     if (spans != null) {
                         for (int k = 0; k < spans.length; ++k) {

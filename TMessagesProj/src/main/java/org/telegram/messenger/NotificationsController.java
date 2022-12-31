@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.Paint;
@@ -53,6 +54,7 @@ import androidx.core.content.FileProvider;
 import androidx.core.content.LocusIdCompat;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.IconCompat;
 
 import com.google.android.exoplayer2.util.Log;
@@ -61,10 +63,12 @@ import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.BubbleActivity;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PopupNotificationActivity;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -133,6 +137,8 @@ public class NotificationsController extends BaseController {
 
     private int notificationId;
     private String notificationGroup;
+
+    private SpoilerEffect mediaSpoilerEffect = new SpoilerEffect();
 
     public static final int SETTING_SOUND_ON = 0;
     public static final int SETTING_SOUND_OFF = 1;
@@ -4396,6 +4402,40 @@ public class NotificationsController extends BaseController {
                     if (preview[0] && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).isLowRamDevice()) {
                         if (!waitingForPasscode && !messageObject.isSecretMedia() && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.isSticker())) {
                             File attach = getFileLoader().getPathToMessage(messageObject.messageOwner);
+                            File blurredAttach;
+                            if (attach.exists() && messageObject.hasMediaSpoilers()) {
+                                blurredAttach = new File(attach.getParentFile(), attach.getName() + ".blur.jpg");
+                                if (!blurredAttach.exists()) {
+                                    try {
+                                        Bitmap bitmap = BitmapFactory.decodeFile(attach.getAbsolutePath());
+
+                                        Bitmap blurBitmap = Utilities.stackBlurBitmapMax(bitmap);
+                                        bitmap.recycle();
+
+                                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(blurBitmap, bitmap.getWidth(), bitmap.getHeight(), true);
+                                        Utilities.stackBlurBitmap(scaledBitmap, 5);
+                                        blurBitmap.recycle();
+
+                                        Canvas canvas = new Canvas(scaledBitmap);
+                                        int sColor = Color.WHITE;
+                                        mediaSpoilerEffect.setColor(ColorUtils.setAlphaComponent(sColor, (int) (Color.alpha(sColor) * 0.325f)));
+                                        mediaSpoilerEffect.setBounds(0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight());
+                                        mediaSpoilerEffect.draw(canvas);
+
+                                        FileOutputStream fos = new FileOutputStream(blurredAttach);
+                                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                                        fos.close();
+
+                                        scaledBitmap.recycle();
+
+                                        attach = blurredAttach;
+                                    } catch (Exception e) {
+                                        FileLog.e(e);
+                                    }
+                                }
+                            } else {
+                                blurredAttach = null;
+                            }
                             NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(message, ((long) messageObject.messageOwner.date) * 1000L, person);
                             String mimeType = messageObject.isSticker() ? "image/webp" : "image/jpeg";
                             Uri uri;
@@ -4423,7 +4463,12 @@ public class NotificationsController extends BaseController {
                                 messagingStyle.addMessage(msg);
                                 Uri uriFinal = uri;
                                 ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                AndroidUtilities.runOnUIThread(() -> ApplicationLoader.applicationContext.revokeUriPermission(uriFinal, Intent.FLAG_GRANT_READ_URI_PERMISSION), 20000);
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    ApplicationLoader.applicationContext.revokeUriPermission(uriFinal, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    if (blurredAttach != null) {
+                                        blurredAttach.delete();
+                                    }
+                                }, 20000);
 
                                 if (!TextUtils.isEmpty(messageObject.caption)) {
                                     messagingStyle.addMessage(messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);

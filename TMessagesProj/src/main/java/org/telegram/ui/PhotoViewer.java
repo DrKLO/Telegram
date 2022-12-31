@@ -12747,7 +12747,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 SecureDocument location = secureDocuments.get(index);
                 f1 = FileLoader.getInstance(currentAccount).getPathToAttach(location, true);
-                f1 = FileLoader.getInstance(currentAccount).getPathToAttach(location, false);
+                f2 = FileLoader.getInstance(currentAccount).getPathToAttach(location, false);
             } else if (currentPathObject != null) {
                 f1 = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_DOCUMENT), currentFileNames[a]);
                 f2 = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), currentFileNames[a]);
@@ -15865,7 +15865,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
             if (currentEditMode == EDIT_MODE_PAINT) {
-                photoPaintView.setTransform(currentScale, currentTranslationX, currentTranslationY, bitmapWidth * scaleToFitX, bitmapHeight * scaleToFitX);
+                photoPaintView.setTransform(currentScale, currentTranslationX, currentTranslationY + (sendPhotoType == SELECT_TYPE_AVATAR ? AndroidUtilities.statusBarHeight / 2f : 0) * photoPaintView.getRenderView().getScaleX(), bitmapWidth * scaleToFitX, bitmapHeight * scaleToFitX);
             }
 
             if (drawCenterImage) {
