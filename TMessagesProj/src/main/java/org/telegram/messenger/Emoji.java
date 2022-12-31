@@ -494,10 +494,10 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly) {
-        return replaceEmoji(cs, fontMetrics, size, createNew, emojiOnly, false);
+        return replaceEmoji(cs, fontMetrics, createNew, emojiOnly, DynamicDrawableSpan.ALIGN_BOTTOM);
     }
 
-    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly, boolean limit) {
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly, int alignment) {
         if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
             return cs;
         }
@@ -534,7 +534,7 @@ public class Emoji {
                 }
                 drawable = Emoji.getEmojiDrawable(emojiRange.code);
                 if (drawable != null) {
-                    span = new EmojiSpan(drawable, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
+                    span = new EmojiSpan(drawable, alignment, fontMetrics);
                     span.emoji = emojiRange.code == null ? null : emojiRange.code.toString();
                     s.setSpan(span, emojiRange.start, emojiRange.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
@@ -553,7 +553,7 @@ public class Emoji {
         public int size = AndroidUtilities.dp(20);
         public String emoji;
 
-        public EmojiSpan(Drawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
+        public EmojiSpan(Drawable d, int verticalAlignment, Paint.FontMetricsInt original) {
             super(d, verticalAlignment);
             fontMetrics = original;
             if (original != null) {

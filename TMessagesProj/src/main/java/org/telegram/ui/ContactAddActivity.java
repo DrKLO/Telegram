@@ -450,7 +450,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         LocaleController.formatString("ResetToOriginalPhotoMessage", R.string.ResetToOriginalPhotoMessage, user.first_name),
                         LocaleController.getString("Reset", R.string.Reset), () -> {
                             avatar = null;
-                            sendPhotoChangedRequest(null, null, null, 0, TYPE_SET);
+                            sendPhotoChangedRequest(null, null,null, null, 0, TYPE_SET);
 
                             TLRPC.User user1 = getMessagesController().getUser(user_id);
                             user1.photo.personal = false;
@@ -701,7 +701,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                     getNotificationCenter().postNotificationName(NotificationCenter.reloadDialogPhotos);
                     getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_AVATAR);
                 }
-                sendPhotoChangedRequest(avatar, photo, video, videoStartTimestamp, photoSelectedTypeFinal);
+                sendPhotoChangedRequest(avatar, bigSize.location, photo, video, videoStartTimestamp, photoSelectedTypeFinal);
                 showAvatarProgress(false, true);
             } else {
                 avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, getMessagesController().getUser(user_id));
@@ -761,7 +761,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         getMessagesController().photoSuggestion.put(message.local_id, imageUpdater);
     }
 
-    private void sendPhotoChangedRequest(TLRPC.FileLocation avatar, TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, int photoSelectedTypeFinal) {
+    private void sendPhotoChangedRequest(TLRPC.FileLocation avatar, TLRPC.FileLocation bigAvatar, TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, int photoSelectedTypeFinal) {
         TLRPC.TL_photos_uploadContactProfilePhoto req = new TLRPC.TL_photos_uploadContactProfilePhoto();
         req.user_id = getMessagesController().getInputUser(user_id);
 
@@ -812,9 +812,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), false);
                     }
 
-                    if (bigSize2 != null && avatar != null) {
+                    if (bigSize2 != null && bigAvatar != null) {
                         File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(bigSize2, true);
-                        File src = FileLoader.getInstance(currentAccount).getPathToAttach(avatar, true);
+                        File src = FileLoader.getInstance(currentAccount).getPathToAttach(bigAvatar, true);
                         src.renameTo(destFile);
                     }
                     PhotoUtilities.applyPhotoToUser(photo2.photo, user, true);

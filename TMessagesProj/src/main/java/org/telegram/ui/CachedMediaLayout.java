@@ -685,11 +685,12 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
             CacheModel.FileInfo file = itemInners.get(position).file;
             boolean animated = file == cell.getTag();
             cell.setTag(file);
+            int size = (int) Math.max(100, AndroidUtilities.getRealScreenSize().x / AndroidUtilities.density);
             if (file.type == TYPE_VIDEOS) {
-                cell.imageReceiver.setImage(ImageLocation.getForPath("vthumb://" + 0 + ":" + file.file.getAbsolutePath()), null, thumb, null, null, 0);
+                cell.imageReceiver.setImage(ImageLocation.getForPath("vthumb://" + 0 + ":" + file.file.getAbsolutePath()), size + "_" + size, thumb, null, null, 0);
                 cell.setVideoText(AndroidUtilities.formatFileSize(file.size), true);
             } else {
-                cell.imageReceiver.setImage(ImageLocation.getForPath("thumb://" + 0 + ":" + file.file.getAbsolutePath()), null, thumb, null, null, 0);
+                cell.imageReceiver.setImage(ImageLocation.getForPath("thumb://" + 0 + ":" + file.file.getAbsolutePath()), size + "_" + size, thumb, null, null, 0);
                 cell.setVideoText(AndroidUtilities.formatFileSize(file.size), false);
             }
             cell.setChecked(cacheModel.isSelected(file), animated);

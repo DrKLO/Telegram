@@ -242,7 +242,7 @@ public class CacheChart extends View {
                 particlesStart = now;
             }
             float time = (now - particlesStart) / 10000f;
-            if (particle != null || !pathBounds.isEmpty()) {
+            if (particle != null) {
                 int sz = particle.getWidth();
 
                 float stepangle = 7f;
@@ -306,7 +306,7 @@ public class CacheChart extends View {
                 canvas.saveLayerAlpha(rectF, 0xFF, Canvas.ALL_SAVE_FLAG);
                 canvas.drawCircle(rectF.centerX(), rectF.centerY(), rectF.width() / 2, uncut);
                 canvas.drawRect(rectF, paint);
-                drawParticles(canvas, rectF.centerX(), rectF.centerY(), x, y, angleCenter - angleSize, angleCenter + angleSize, innerRect.width() / 2f, rectF.width() / 2f, textAlpha, Math.max(0, loading / .75f - .75f) * particlesAlpha);
+                drawParticles(canvas, rectF.centerX(), rectF.centerY(), x, y, 0, 359, innerRect.width() / 2f, rectF.width() / 2f, textAlpha, Math.max(0, loading / .75f - .75f) * particlesAlpha);
                 canvas.drawCircle(innerRect.centerX(), innerRect.centerY(), innerRect.width() / 2, cut);
                 canvas.restore();
             } else {
@@ -732,10 +732,14 @@ public class CacheChart extends View {
         }
     }
 
+    protected int heightDp() {
+        return 200;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec);
-        final int height = dp(200);
+        final int height = dp(heightDp());
 
         final int d = dp(172);
         chartBounds.set(

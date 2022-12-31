@@ -513,6 +513,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 //                    bottomSheet.setParentFragment(PremiumPreviewFragment.this);
 //                    showDialog(bottomSheet);
 //                } else {
+                if (subscriptionTiers.isEmpty()) {
+                    return;
+                }
                     showDialog(new PremiumFeatureBottomSheet(PremiumPreviewFragment.this, cell.data.type, false, subscriptionTiers.get(selectedTierIndex)));
                // }
             }
@@ -715,7 +718,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                                 if (response instanceof TLRPC.Updates) {
                                     fragment.getMessagesController().processUpdates((TLRPC.Updates) response, false);
 
-                                    onSuccess.run();
+                                    AndroidUtilities.runOnUIThread(onSuccess);
                                 } else if (error != null) {
                                     AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(fragment.getCurrentAccount(), error, fragment, req));
                                 }

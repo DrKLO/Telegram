@@ -52,7 +52,6 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 import android.util.Property;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -2146,11 +2145,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                         int position = avatarsViewPager.getRealPosition();
                         TLRPC.Photo photo = avatarsViewPager.getPhoto(position);
-                        if (hasFallbackPhoto && getUserInfo() != null && getUserInfo().fallback_photo != null && getUserInfo().fallback_photo.id == photo.id) {
-                            getUserInfo().fallback_photo = null;
-                            getUserInfo().flags &= ~4194304;
-                            getUserInfo().fallback_photo = null;
-                            getMessagesStorage().updateUserInfo(getUserInfo(), true);
+                        TLRPC.UserFull userFull = getUserInfo();
+                        if (hasFallbackPhoto && userFull != null && userFull.fallback_photo != null && userFull.fallback_photo.id == photo.id) {
+                            userFull.fallback_photo = null;
+                            userFull.flags &= ~4194304;
+                            getMessagesStorage().updateUserInfo(userFull, true);
                             updateProfileData(false);
                         }
                         if (avatarsViewPager.getRealCount() == 1) {
@@ -2360,6 +2359,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         listView.setBottomGlowOffset(0);
                     }
                     initialAnimationExtraHeight = paddingTop - actionBarHeight;
+                    if (playProfileAnimation == 0) {
+                        extraHeight = initialAnimationExtraHeight;
+                    }
                     layoutManager.scrollToPositionWithOffset(0, -actionBarHeight);
                     listView.setPadding(0, paddingTop, 0, paddingBottom);
                     measureChildWithMargins(listView, widthMeasureSpec, 0, heightMeasureSpec, 0);
@@ -8766,7 +8768,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         if (user != null && !TextUtils.isEmpty(vcardPhone)) {
                             text = PhoneFormat.getInstance().format("+" + vcardPhone);
                             phoneNumber = vcardPhone;
-                        } else if (!TextUtils.isEmpty(user.phone)) {
+                        } else if (user != null && !TextUtils.isEmpty(user.phone)) {
                             text = PhoneFormat.getInstance().format("+" + user.phone);
                             phoneNumber = user.phone;
                         } else {
@@ -10427,9 +10429,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     float photoDescriptionProgress = -1;
     private void checkPhotoDescriptionAlpha() {
         float p = photoDescriptionProgress;
-        if (playProfileAnimation == 1 && openAnimationInProgress) {
+        if (playProfileAnimation == 1 && (!fragmentOpened || openAnimationInProgress)) {
             photoDescriptionProgress = 0;
-        } else if (playProfileAnimation == 2 && openAnimationInProgress) {
+        } else if (playProfileAnimation == 2 && (!fragmentOpened || openAnimationInProgress)) {
             photoDescriptionProgress = onlineTextView[1].getAlpha();
         } else {
             if (userId == UserConfig.getInstance(currentAccount).clientUserId) {

@@ -1381,6 +1381,11 @@ public class PhotoPaintView extends FrameLayout implements IPhotoPaintView, Enti
         return 0;
     }
 
+    @Override
+    public RenderView getRenderView() {
+        return renderView;
+    }
+
     private LinearLayout buttonForBrush(final int brush, int icon, String text, boolean selected) {
         LinearLayout button = new LinearLayout(getContext()) {
             @Override

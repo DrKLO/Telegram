@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -9751,6 +9752,9 @@ public class MessagesStorage extends BaseController {
 
             if (updateTopic) {
                 if (unreadMentionsCount >= 0) {
+                    if (BuildVars.DEBUG_PRIVATE_VERSION && unreadMentionsCount > 0) {
+                        FileLog.d("(updateRepliesMaxReadIdInternal) new unread mentions " + unreadMentionsCount + " for dialog_id=" + -chatId + " topic_id=" + mid);
+                    }
                     database.executeFast(String.format(Locale.ENGLISH, "UPDATE topics SET max_read_id = %d, unread_count = %d, unread_mentions = %d WHERE did = %d AND topic_id = %d", readMaxId, unreadCount, unreadMentionsCount, -chatId, mid)).stepThis().dispose();
                 } else {
                     database.executeFast(String.format(Locale.ENGLISH, "UPDATE topics SET max_read_id = %d, unread_count = %d WHERE did = %d AND topic_id = %d", readMaxId, unreadCount, -chatId, mid)).stepThis().dispose();
@@ -10894,6 +10898,9 @@ public class MessagesStorage extends BaseController {
                     int newUnreadMentions = oldMentions + newMentions;
                     int newTotalMessagesCount = oldTotalCount == 0 ? 0 : oldTotalCount + newMessages;
 
+                    if (BuildVars.DEBUG_PRIVATE_VERSION && newUnreadMentions > 0) {
+                        FileLog.d("(putMessagesInternal)" + " new unread mentions " + newUnreadMentions + " for dialog_id=" + topicKey.dialogId + " topic_id=" + topicKey.topicId);
+                    }
                     state_topics_update.requery();
                     state_topics_update.bindInteger(1, newUnreadCount);
                     state_topics_update.bindInteger(2,  messageId);
@@ -11917,6 +11924,9 @@ public class MessagesStorage extends BaseController {
                         int newUnreadCount = Math.max(0, old_unread_count - counts[0]);
                         int newUnreadMentionsCount = Math.max(0, old_mentions_count - counts[1]);
                         int newTotalCount = Math.max(0, old_total_count - counts[2]);
+                        if (BuildVars.DEBUG_PRIVATE_VERSION && newUnreadMentionsCount > 0) {
+                            FileLog.d("(markMessagesAsDeletedInternal) new unread mentions " + newUnreadMentionsCount + " for dialog_id=" + topicKey.dialogId + " topic_id=" + topicKey.topicId);
+                        }
                         state = database.executeFast("UPDATE topics SET unread_count = ?, unread_mentions = ?, total_messages_count = ? WHERE did = ? AND topic_id = ?");
                         state.requery();
                         state.bindInteger(1, newUnreadCount);

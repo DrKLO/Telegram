@@ -85,7 +85,7 @@ import java.util.zip.GZIPInputStream;
  * isc - ignore cache for small images
  * b - need blur image
  * g - autoplay
- * lastframe - return firstframe for Lottie animation
+ * lastframe - return lastframe for Lottie animation
  * firstframe - return firstframe for Lottie animation
  */
 public class ImageLoader {

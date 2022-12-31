@@ -1256,7 +1256,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
         int type = holder.getItemViewType();
-        return type != 1 && type != 3;
+        return type != 1 && type != 4;
     }
 
     @Override

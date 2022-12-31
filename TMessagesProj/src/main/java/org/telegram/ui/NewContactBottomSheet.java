@@ -423,7 +423,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (ignoreOnPhoneChange || ignoreOnPhoneChangePaste) {
+                if (!LoginActivity.ENABLE_PASTED_TEXT_PROCESSING || ignoreOnPhoneChange || ignoreOnPhoneChangePaste) {
                     return;
                 }
 

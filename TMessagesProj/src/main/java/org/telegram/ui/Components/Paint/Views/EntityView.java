@@ -126,6 +126,9 @@ public class EntityView extends FrameLayout {
     }
 
     private boolean onTouchMove(float x, float y) {
+        if (getParent() == null) {
+            return false;
+        }
         float scale = ((View) getParent()).getScaleX();
         float tx = (x - previousLocationX) / scale;
         float ty = (y - previousLocationY) / scale;

@@ -80,9 +80,9 @@ public class PhotoUtilities {
                                 ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), false);
                             }
 
-                            if (bigSize2 != null && smallSize != null && smallSize.location != null) {
+                            if (bigSize2 != null && bigSize != null && bigSize.location != null) {
                                 File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(bigSize2, true);
-                                File src = FileLoader.getInstance(currentAccount).getPathToAttach(smallSize.location, true);
+                                File src = FileLoader.getInstance(currentAccount).getPathToAttach(bigSize.location, true);
                                 src.renameTo(destFile);
                             }
 

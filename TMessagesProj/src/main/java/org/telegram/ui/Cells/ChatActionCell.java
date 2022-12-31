@@ -736,7 +736,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
         if (!result) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
-                if (x >= textX && y >= textY && x <= textX + textWidth && y <= textY + textHeight) {
+                if (textLayout != null && x >= textX && y >= textY && x <= textX + textWidth && y <= textY + textHeight) {
                     y -= textY;
                     x -= textXLeft;
 

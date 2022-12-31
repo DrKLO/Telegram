@@ -1811,6 +1811,11 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     }
 
     @Override
+    public RenderView getRenderView() {
+        return renderView;
+    }
+
+    @Override
     public void setTransform(float scale, float trX, float trY, float imageWidth, float imageHeight) {
         this.scale = scale;
         this.imageWidth = imageWidth;
@@ -2016,7 +2021,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     .setStiffness(1250f)
                     .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
 
-            boolean moveBottomLayout = keyboardVisible || emojiViewVisible;
+            boolean[] moveBottomLayout = new boolean[] { keyboardVisible || emojiViewVisible };
             float bottomLayoutTranslationY = bottomLayout.getTranslationY();
 
             View barView = getBarView();
@@ -2035,7 +2040,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 cancelButton.setProgress(toolsTransformProgress);
 
                 tabsLayout.setTranslationY(AndroidUtilities.dp(32) * toolsTransformProgress);
-                if (moveBottomLayout) {
+                if (adjustPanLayoutHelper.animationInProgress()) {
+                    moveBottomLayout[0] = false;
+                }
+                if (moveBottomLayout[0]) {
                     float progress = show ? toolsTransformProgress : 1f - toolsTransformProgress;
                     bottomLayout.setTranslationY(bottomLayoutTranslationY - AndroidUtilities.dp(40) * progress * (show ? 1 : -1));
                 }
@@ -3121,6 +3129,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             return;
         }
         emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, resourcesProvider);
+        emojiView.allowEmojisForNonPremium(true);
         emojiView.setVisibility(GONE);
         if (AndroidUtilities.isTablet()) {
             emojiView.setForseMultiwindowLayout(true);
