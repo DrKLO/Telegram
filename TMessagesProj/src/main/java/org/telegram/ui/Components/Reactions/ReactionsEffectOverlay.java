@@ -13,6 +13,7 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaDataController;
@@ -743,6 +744,7 @@ public class ReactionsEffectOverlay {
 
         public AnimationView(Context context) {
             super(context);
+            getImageReceiver().setFileLoadingPriority(FileLoader.PRIORITY_HIGH);
         }
 
         boolean wasPlaying;

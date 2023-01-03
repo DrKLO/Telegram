@@ -33,6 +33,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
@@ -49,7 +50,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FeaturedStickerSetCell2 extends FrameLayout {
+public class FeaturedStickerSetCell2 extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final int currentAccount = UserConfig.selectedAccount;
 
@@ -66,6 +67,11 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
     private boolean isLocked;
     private boolean needDivider;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private boolean bindedObserver;
+    private Long waitingForStickerSetId;
+    private boolean unread;
+    private boolean forceInstalled;
 
     public FeaturedStickerSetCell2(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -162,7 +168,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         setWillNotDraw(!needDivider);
 
         textView.setText(stickersSet.set.title);
-        if (unread) {
+        if (this.unread = unread) {
             Drawable drawable = new Drawable() {
 
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -206,14 +212,33 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         valueTextView.setText(LocaleController.formatPluralString(set.set.emojis ? "EmojiCount" : "Stickers", set.set.count));
 
         TLRPC.Document sticker;
-        if (set.cover != null) {
+        if (set instanceof TLRPC.TL_stickerSetNoCovered && set.set != null) {
+            sticker = null;
+            waitingForStickerSetId = set.set.id;
+            if (!bindedObserver) {
+                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+                bindedObserver = true;
+            }
+            TLRPC.TL_messages_stickerSet fullSet = MediaDataController.getInstance(currentAccount).getStickerSet(MediaDataController.getInputStickerSet(set.set), set.set.hash, false);
+            if (fullSet != null && fullSet.documents != null && !fullSet.documents.isEmpty()) {
+                sticker = fullSet.documents.get(0);
+                for (int i = 0; i < fullSet.documents.size(); ++i) {
+                    if (fullSet.documents.get(i).id == set.set.thumb_document_id) {
+                        sticker = fullSet.documents.get(i);
+                        break;
+                    }
+                }
+            }
+        } else if (set.cover != null) {
             sticker = set.cover;
         } else if (!set.covers.isEmpty()) {
             sticker = set.covers.get(0);
-            for (int i = 0; i < set.covers.size(); ++i) {
-                if (set.covers.get(i).id == set.set.thumb_document_id) {
-                    sticker = set.covers.get(i);
-                    break;
+            if (set.set != null) {
+                for (int i = 0; i < set.covers.size(); ++i) {
+                    if (set.covers.get(i).id == set.set.thumb_document_id) {
+                        sticker = set.covers.get(i);
+                        break;
+                    }
                 }
             }
         } else if ((set instanceof TLRPC.TL_stickerSetFullCovered && !((TLRPC.TL_stickerSetFullCovered) set).documents.isEmpty())) {
@@ -269,6 +294,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         }
 
         addButton.setVisibility(VISIBLE);
+        this.forceInstalled = forceInstalled;
         isInstalled = forceInstalled || MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id);
         isLocked = !UserConfig.getInstance(currentAccount).isPremium() && MessageObject.isPremiumEmojiPack(set);
         if (animated) {
@@ -402,5 +428,27 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (bindedObserver) {
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
+            bindedObserver = false;
+        }
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.groupStickersDidLoad) {
+            long setId = (long) args[0];
+            if (waitingForStickerSetId != null && waitingForStickerSetId == setId) {
+                waitingForStickerSetId = null;
+                TLRPC.TL_stickerSetNoCovered setNoCovered = new TLRPC.TL_stickerSetNoCovered();
+                setNoCovered.set = ((TLRPC.TL_messages_stickerSet) args[1]).set;
+                setStickersSet(setNoCovered, needDivider, unread, forceInstalled, true);
+            }
+        }
     }
 }

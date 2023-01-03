@@ -731,7 +731,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
                 BillingController.getInstance().addResultListener(BillingController.PREMIUM_PRODUCT_ID, billingResult -> {
                     if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                        onSuccess.run();
+                        AndroidUtilities.runOnUIThread(onSuccess);
                     }
                 });
 

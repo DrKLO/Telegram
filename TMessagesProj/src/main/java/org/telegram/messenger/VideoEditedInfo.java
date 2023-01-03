@@ -11,7 +11,6 @@ package org.telegram.messenger;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 
 import org.telegram.tgnet.AbstractSerializedData;
@@ -149,6 +148,7 @@ public class VideoEditedInfo {
             viewWidth = data.readInt32(false);
             viewHeight = data.readInt32(false);
             textAlign = data.readInt32(false);
+            textTypeface = PaintTypeface.find(data.readString(false));
         }
 
         private void serializeTo(SerializedData data) {
@@ -169,6 +169,7 @@ public class VideoEditedInfo {
             data.writeInt32(viewWidth);
             data.writeInt32(viewHeight);
             data.writeInt32(textAlign);
+            data.writeString(textTypeface == null ? "" : textTypeface.getKey());
         }
 
         public MediaEntity copy() {
@@ -192,6 +193,7 @@ public class VideoEditedInfo {
             entity.textViewX = textViewX;
             entity.textViewY = textViewY;
             entity.textAlign = textAlign;
+            entity.textTypeface = textTypeface;
             return entity;
         }
     }

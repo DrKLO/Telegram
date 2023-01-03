@@ -633,7 +633,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     }
 
     private void doOnDone() {
-        if (donePressed) {
+        if (donePressed || parentFragment == null || parentFragment.getParentActivity() == null) {
             return;
         }
         if (firstNameField.getEditText().length() == 0) {

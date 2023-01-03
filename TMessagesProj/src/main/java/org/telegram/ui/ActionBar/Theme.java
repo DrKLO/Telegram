@@ -5893,7 +5893,7 @@ public class Theme {
             if (monthOfYear == 0 && dayOfMonth == 1 && hour <= 23) {
                 canStartHolidayAnimation = true;
             } else {
-                canStartHolidayAnimation = BuildVars.DEBUG_VERSION;//false;
+                canStartHolidayAnimation = false;
             }
             if (dialogs_holidayDrawable == null) {
                 if (monthOfYear == 11 && dayOfMonth >= (BuildVars.DEBUG_PRIVATE_VERSION ? 29 : 31) && dayOfMonth <= 31 || monthOfYear == 0 && dayOfMonth == 1) {

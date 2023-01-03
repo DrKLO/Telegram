@@ -701,6 +701,7 @@ public class MediaDataController extends BaseController {
             return;
         }
         imageReceiver.setUniqKeyPrefix("preload");
+        imageReceiver.setFileLoadingPriority(FileLoader.PRIORITY_LOW);
         imageReceiver.setImage(location, filter, null, null, 0, FileLoader.PRELOAD_CACHE_TYPE);
     }
 
@@ -1083,10 +1084,14 @@ public class MediaDataController extends BaseController {
     }
 
     public TLRPC.TL_messages_stickerSet getStickerSet(TLRPC.InputStickerSet inputStickerSet, boolean cacheOnly) {
-        return getStickerSet(inputStickerSet, cacheOnly, null);
+        return getStickerSet(inputStickerSet, null, cacheOnly, null);
     }
 
-    public TLRPC.TL_messages_stickerSet getStickerSet(TLRPC.InputStickerSet inputStickerSet, boolean cacheOnly, Utilities.Callback<TLRPC.TL_messages_stickerSet> onResponse) {
+    public TLRPC.TL_messages_stickerSet getStickerSet(TLRPC.InputStickerSet inputStickerSet, Integer hash, boolean cacheOnly) {
+        return getStickerSet(inputStickerSet, hash, cacheOnly, null);
+    }
+
+    public TLRPC.TL_messages_stickerSet getStickerSet(TLRPC.InputStickerSet inputStickerSet, Integer hash, boolean cacheOnly, Utilities.Callback<TLRPC.TL_messages_stickerSet> onResponse) {
         if (inputStickerSet == null) {
             return null;
         }
@@ -1104,37 +1109,149 @@ public class MediaDataController extends BaseController {
             }
             return cacheSet;
         }
-        if (cacheOnly) {
-            return null;
+        if (inputStickerSet instanceof TLRPC.TL_inputStickerSetID && hash != null) {
+            getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                TLRPC.TL_messages_stickerSet cachedSet = getCachedStickerSetInternal(inputStickerSet.id, hash);
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (cachedSet != null) {
+                        if (onResponse != null) {
+                            onResponse.run(cachedSet);
+                        }
+                        if (cachedSet.set != null) {
+                            stickerSetsById.put(cachedSet.set.id, cachedSet);
+                            stickerSetsByName.put(cachedSet.set.short_name.toLowerCase(), cachedSet);
+                        }
+                        getNotificationCenter().postNotificationName(NotificationCenter.groupStickersDidLoad, cachedSet.set.id, cachedSet);
+                    } else {
+                        fetchStickerSetInternal(inputStickerSet, (ok, set) -> {
+                            if (onResponse != null) {
+                                onResponse.run(set);
+                            }
+                            if (set != null && set.set != null) {
+                                stickerSetsById.put(set.set.id, set);
+                                stickerSetsByName.put(set.set.short_name.toLowerCase(), set);
+                                saveStickerSetIntoCache(set);
+                                getNotificationCenter().postNotificationName(NotificationCenter.groupStickersDidLoad, set.set.id, set);
+                            }
+                        });
+                    }
+                });
+            });
+        } else if (!cacheOnly) {
+            fetchStickerSetInternal(inputStickerSet, (ok, set) -> {
+                if (onResponse != null) {
+                    onResponse.run(set);
+                }
+                if (set != null) {
+                    if (set.set != null) {
+                        stickerSetsById.put(set.set.id, set);
+                        stickerSetsByName.put(set.set.short_name.toLowerCase(), set);
+                        if (inputStickerSet instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses) {
+                            stickerSetDefaultStatuses = set;
+                        }
+                    }
+                    saveStickerSetIntoCache(set);
+                    getNotificationCenter().postNotificationName(NotificationCenter.groupStickersDidLoad, set.set.id, set);
+                }
+            });
+        }
+        return null;
+    }
+
+    private void saveStickerSetIntoCache(TLRPC.TL_messages_stickerSet set) {
+        if (set == null || set.set == null) {
+            return;
+        }
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            try {
+                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO stickersets VALUES(?, ?, ?)");
+                state.requery();
+                NativeByteBuffer data = new NativeByteBuffer(set.getObjectSize());
+                set.serializeToStream(data);
+                state.bindLong(1, set.set.id);
+                state.bindByteBuffer(2, data);
+                state.bindInteger(3, set.set.hash);
+                state.step();
+                data.reuse();
+                state.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    private TLRPC.TL_messages_stickerSet getCachedStickerSetInternal(long id, Integer hash) {
+        TLRPC.TL_messages_stickerSet set = null;
+        SQLiteCursor cursor = null;
+        NativeByteBuffer data = null;
+        try {
+            cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data, hash FROM stickersets WHERE id = " + id + " LIMIT 1");
+            if (cursor.next() && !cursor.isNull(0)) {
+                data = cursor.byteBufferValue(0);
+                if (data != null) {
+                    set = TLRPC.TL_messages_stickerSet.TLdeserialize(data, data.readInt32(false), false);
+                    int cachedHash = cursor.intValue(1);
+                    if (hash != null && hash != cachedHash) {
+                        return null;
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        } finally {
+            if (data != null) {
+                data.reuse();
+            }
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return set;
+    }
+
+    private void fetchStickerSetInternal(long id, Integer hash, Utilities.Callback2<Boolean, TLRPC.TL_messages_stickerSet> onDone) {
+        if (onDone == null) {
+            return;
+        }
+        TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
+        TLRPC.TL_inputStickerSetID inputStickerSetID = new TLRPC.TL_inputStickerSetID();
+        inputStickerSetID.id = id;
+        req.stickerset = inputStickerSetID;
+        if (hash != null) {
+            req.hash = hash;
+        }
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            AndroidUtilities.runOnUIThread(() -> {
+//                if (error != null && "".equals(error.text)) {
+//                    onDone.run(true, null);
+//                } else
+                if (response != null) {
+                    onDone.run(true, (TLRPC.TL_messages_stickerSet) response);
+                } else {
+                    onDone.run(false, null);
+                }
+            });
+        });
+    }
+
+    private void fetchStickerSetInternal(TLRPC.InputStickerSet inputStickerSet, Utilities.Callback2<Boolean, TLRPC.TL_messages_stickerSet> onDone) {
+        if (onDone == null) {
+            return;
         }
         TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
         req.stickerset = inputStickerSet;
         getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response != null) {
-                TLRPC.TL_messages_stickerSet set = (TLRPC.TL_messages_stickerSet) response;
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (set == null || set.set == null) {
-                        return;
-                    }
-                    stickerSetsById.put(set.set.id, set);
-                    stickerSetsByName.put(set.set.short_name.toLowerCase(), set);
-                    if (inputStickerSet instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses) {
-                        stickerSetDefaultStatuses = set;
-                    }
-                    getNotificationCenter().postNotificationName(NotificationCenter.groupStickersDidLoad, set.set.id, set);
-                    if (onResponse != null) {
-                        onResponse.run(set);
-                    }
-                });
-            } else {
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (onResponse != null) {
-                        onResponse.run(null);
-                    }
-                });
-            }
+            AndroidUtilities.runOnUIThread(() -> {
+//                if (error != null && "".equals(error.text)) {
+//                    onDone.run(true, null);
+//                } else
+                if (response != null) {
+                    onDone.run(true, (TLRPC.TL_messages_stickerSet) response);
+                } else {
+                    onDone.run(false, null);
+                }
+            });
         });
-        return null;
     }
 
     private void loadGroupStickerSet(TLRPC.StickerSet stickerSet, boolean cache) {

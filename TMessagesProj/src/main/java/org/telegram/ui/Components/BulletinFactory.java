@@ -351,7 +351,7 @@ public final class BulletinFactory {
             if (loadingSpan != null && bulletin.getLayout() instanceof Bulletin.LoadingLottieLayout) {
                 loadingSpan.setView(((Bulletin.LoadingLottieLayout) bulletin.getLayout()).textLoadingView);
             }
-            MediaDataController.getInstance(UserConfig.selectedAccount).getStickerSet(inputStickerSet, false, set -> {
+            MediaDataController.getInstance(UserConfig.selectedAccount).getStickerSet(inputStickerSet, null, false, set -> {
                 CharSequence message;
                 if (set != null && set.set != null) {
                     if (inTopic) {

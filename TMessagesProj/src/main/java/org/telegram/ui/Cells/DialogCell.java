@@ -855,7 +855,7 @@ public class DialogCell extends BaseCell {
         }
         if (isDialogCell) {
             boolean needUpdate = updateHelper.update();
-            if (!needUpdate && currentDialogFolderId == 0) {
+            if (!needUpdate && currentDialogFolderId == 0 && encryptedChat == null) {
                 return;
             }
         }

@@ -48,7 +48,7 @@ public class BitmapsCache {
     static volatile boolean cleanupScheduled;
     byte[] bufferTmp;
 
-    private final static int N = Utilities.clamp(Runtime.getRuntime().availableProcessors() - 2, 8, 1);
+    private final static int N = Utilities.clamp(Runtime.getRuntime().availableProcessors() - 2, 6, 1);
     private static ThreadPoolExecutor bitmapCompressExecutor;
     private final Object mutex = new Object();
     private int frameIndex;
