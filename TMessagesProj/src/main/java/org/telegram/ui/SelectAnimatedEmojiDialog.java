@@ -2754,31 +2754,43 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             final int maxlen = layoutManager.getSpanCount() * EXPAND_MAX_LINES;
             for (int i = 0; i < featuredEmojiPacks.size(); ++i) {
                 TLRPC.StickerSetCovered set1 = featuredEmojiPacks.get(i);
-                if (set1 instanceof TLRPC.TL_stickerSetFullCovered) {
-                    TLRPC.TL_stickerSetFullCovered set = (TLRPC.TL_stickerSetFullCovered) set1;
-                    boolean foundDuplicate = false;
-                    for (int j = 0; j < packs.size(); ++j) {
-                        if (packs.get(j).set.id == set.set.id) {
-                            foundDuplicate = true;
-                            break;
-                        }
+                TLRPC.StickerSet set = set1.set;
+                boolean isPremiumPack = false;
+                boolean foundDuplicate = false;
+                for (int j = 0; j < packs.size(); ++j) {
+                    if (packs.get(j).set.id == set.id) {
+                        foundDuplicate = true;
+                        break;
                     }
+                }
+                if (foundDuplicate) {
+                    continue;
+                }
 
-                    if (foundDuplicate) {
-                        continue;
+                ArrayList<TLRPC.Document> documents = null;
+                if (set1 instanceof TLRPC.TL_stickerSetNoCovered) {
+                    TLRPC.TL_messages_stickerSet fullSet = mediaDataController.getStickerSet(MediaDataController.getInputStickerSet(set1.set), set1.set.hash, true);
+                    if (fullSet != null) {
+                        documents = fullSet.documents;
+                        isPremiumPack = MessageObject.isPremiumEmojiPack(fullSet);
                     }
+                } else if (set1 instanceof TLRPC.TL_stickerSetFullCovered) {
+                    documents = ((TLRPC.TL_stickerSetFullCovered) set1).documents;
+                    isPremiumPack = MessageObject.isPremiumEmojiPack(set1);
+                }
 
+                if (documents != null) {
                     positionToSection.put(totalCount, packs.size());
                     sectionToPosition.put(packs.size(), totalCount);
                     totalCount++;
-                    rowHashCodes.add(Objects.hash(9211, set.set.id));
+                    rowHashCodes.add(Objects.hash(9211, set.id));
 
                     EmojiView.EmojiPack pack = new EmojiView.EmojiPack();
-                    pack.installed = installedEmojiSets.contains(set.set.id);
+                    pack.installed = installedEmojiSets.contains(set.id);
                     pack.featured = true;
-                    pack.free = !MessageObject.isPremiumEmojiPack(set);
-                    pack.set = set.set;
-                    pack.documents = set.documents;
+                    pack.free = !isPremiumPack;
+                    pack.set = set;
+                    pack.documents = documents;
                     pack.index = packs.size();
                     pack.expanded = expandedEmojiSets.contains(pack.set.id);
 
@@ -2787,7 +2799,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         for (int k = 0; k < maxlen - 1; ++k) {
                             rowHashCodes.add(Objects.hash(3212, pack.documents.get(k).id));
                         }
-                        rowHashCodes.add(Objects.hash(-5531, set.set.id, (pack.documents.size() - maxlen + 1)));
+                        rowHashCodes.add(Objects.hash(-5531, set.id, (pack.documents.size() - maxlen + 1)));
                         positionToExpand.put(totalCount - 1, packs.size());
                     } else {
                         totalCount += pack.documents.size();
@@ -2799,7 +2811,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     if (!pack.installed) {
                         positionToButton.put(totalCount, packs.size());
                         totalCount++;
-                        rowHashCodes.add(Objects.hash(3321, set.set.id));
+                        rowHashCodes.add(Objects.hash(3321, set.id));
                     }
 
                     packs.add(pack);
@@ -3522,6 +3534,8 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         }
     }
 
+    private Runnable updateRowsDelayed = () -> updateRows(true, true);
+
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.stickersDidLoad) {
@@ -3533,10 +3547,8 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         } else if (id == NotificationCenter.recentEmojiStatusesUpdate) {
             updateRows(false, true);
         } else if (id == NotificationCenter.groupStickersDidLoad) {
-            if (defaultSetLoading) {
-                updateRows(true, true);
-                defaultSetLoading = false;
-            }
+            AndroidUtilities.cancelRunOnUIThread(updateRowsDelayed);
+            AndroidUtilities.runOnUIThread(updateRowsDelayed, 100);
         }
     }
 

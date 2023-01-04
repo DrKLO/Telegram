@@ -15,7 +15,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -94,7 +93,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    private final static int LAST_DB_VERSION = 110;
+    private final static int LAST_DB_VERSION = 111;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -374,6 +373,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE stickers_featured(id INTEGER PRIMARY KEY, data BLOB, unread BLOB, date INTEGER, hash INTEGER, premium INTEGER, emoji INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE stickers_dice(emoji TEXT PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE stickersets(id INTEGER PRIMATE KEY, data BLOB, hash INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE webpage_pending_v2(id INTEGER, mid INTEGER, uid INTEGER, PRIMARY KEY (id, mid, uid));").stepThis().dispose();
                 database.executeFast("CREATE TABLE sent_files_v2(uid TEXT, type INTEGER, data BLOB, parent TEXT, PRIMARY KEY (uid, type))").stepThis().dispose();
@@ -1083,6 +1083,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM attach_menu_bots").stepThis().dispose();
                 database.executeFast("DELETE FROM animated_emoji").stepThis().dispose();
                 database.executeFast("DELETE FROM stickers_v2").stepThis().dispose();
+                database.executeFast("DELETE FROM stickersets").stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM messages_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM topics").stepThis().dispose();
@@ -9722,14 +9723,14 @@ public class MessagesStorage extends BaseController {
             cursor.dispose();
             cursor = null;
 
-            database.executeFast(String.format(Locale.US, "UPDATE messages_topics SET read_state = read_state | 1 WHERE uid = %d AND topic_id = %d AND mid <= %d AND read_state IN(0,2) AND out = 0", -chatId, mid, readMaxId)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "UPDATE messages_topics SET read_state = read_state | 1 WHERE uid = %d AND topic_id = %d AND mid <= %d AND read_state IN(0, 2) AND out = 0", -chatId, mid, readMaxId)).stepThis().dispose();
             //mark mentions as read
-            database.executeFast(String.format(Locale.US, "UPDATE messages_topics SET read_state = read_state | 2 WHERE uid = %d AND topic_id = %d AND mid <= %d AND read_state IN(0,1) AND out = 0", -chatId, mid, readMaxId)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "UPDATE messages_topics SET read_state = read_state | 2 WHERE uid = %d AND topic_id = %d AND mid <= %d AND read_state IN(0, 1) AND out = 0", -chatId, mid, readMaxId)).stepThis().dispose();
 
             int unreadMentionsCount = -1;
             if (unreadCount < 0) {
                 unreadCount = 0;
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state IN(0,2) AND out = 0", -chatId, mid, readMaxId));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state IN(0, 2) AND out = 0", -chatId, mid, readMaxId));
                 if (cursor.next()) {
                     unreadCount = cursor.intValue(0);
                 }
@@ -9738,12 +9739,23 @@ public class MessagesStorage extends BaseController {
                 if (unreadCount == 0) {
                     unreadMentionsCount = 0;
                 } else {
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state < 2 AND out = 0", -chatId, mid, readMaxId));
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT count(mid) FROM messages_topics WHERE uid = %d AND topic_id = %d AND mid > %d AND read_state IN(0, 1) AND out = 0", -chatId, mid, readMaxId));
                     if (cursor.next()) {
                         unreadMentionsCount = cursor.intValue(0);
                     }
                     cursor.dispose();
                     cursor = null;
+
+                    int currentUnreadMentions = 0;
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT unread_mentions FROM topics WHERE did = %d AND topic_id = %d", -chatId, mid));
+                    if (cursor.next()) {
+                        currentUnreadMentions = cursor.intValue(0);
+                    }
+                    cursor.dispose();
+                    cursor = null;
+                    if (unreadMentionsCount > currentUnreadMentions) {
+                        unreadMentionsCount = currentUnreadMentions;
+                    }
                 }
             } else if (unreadCount == 0) {
                 unreadMentionsCount = 0;

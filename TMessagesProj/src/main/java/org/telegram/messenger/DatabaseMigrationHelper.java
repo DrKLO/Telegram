@@ -1212,6 +1212,12 @@ public class DatabaseMigrationHelper {
             version = 110;
         }
 
+        if (version == 110) {
+            database.executeFast("CREATE TABLE stickersets(id INTEGER PRIMATE KEY, data BLOB, hash INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 111").stepThis().dispose();
+            version = 111;
+        }
+
         return version;
     }
 }

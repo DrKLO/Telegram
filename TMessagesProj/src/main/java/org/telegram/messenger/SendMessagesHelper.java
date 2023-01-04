@@ -7130,13 +7130,25 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
     @UiThread
     public static void prepareSendingText(AccountInstance accountInstance, String text, long dialogId, boolean notify, int scheduleDate) {
+        prepareSendingText(accountInstance, text, dialogId, 0, notify, scheduleDate);
+    }
+
+    @UiThread
+    public static void prepareSendingText(AccountInstance accountInstance, String text, long dialogId, int topicId, boolean notify, int scheduleDate) {
         accountInstance.getMessagesStorage().getStorageQueue().postRunnable(() -> Utilities.stageQueue.postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
             String textFinal = getTrimmedString(text);
             if (textFinal.length() != 0) {
                 int count = (int) Math.ceil(textFinal.length() / 4096.0f);
+                MessageObject replyToMsg = null;
+                if (topicId != 0) {
+                    TLRPC.TL_forumTopic topic = accountInstance.getMessagesController().getTopicsController().findTopic(-dialogId, topicId);
+                    if (topic != null && topic.topicStartMessage != null) {
+                        replyToMsg = new MessageObject(accountInstance.getCurrentAccount(), topic.topicStartMessage, false, false);
+                    }
+                }
                 for (int a = 0; a < count; a++) {
                     String mess = textFinal.substring(a * 4096, Math.min((a + 1) * 4096, textFinal.length()));
-                    accountInstance.getSendMessagesHelper().sendMessage(mess, dialogId, null, null, null, true, null, null, null, notify, scheduleDate, null, false);
+                    accountInstance.getSendMessagesHelper().sendMessage(mess, dialogId, replyToMsg, replyToMsg, null, true, null, null, null, notify, scheduleDate, null, false);
                 }
             }
         })));

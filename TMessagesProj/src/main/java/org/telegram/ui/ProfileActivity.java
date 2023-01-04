@@ -611,6 +611,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float customAvatarProgress;
     private float customPhotoOffset;
     private boolean hasFallbackPhoto;
+    private boolean hasCustomPhoto;
     private ImageReceiver fallbackImage;
 
     public int getTopicId() {
@@ -6519,14 +6520,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 boolean onlineTextCrosafade = false;
 
-                ChatAvatarContainer avatarContainer = ((ChatActivityInterface) previousTransitionFragment).getAvatarContainer();
-                if (avatarContainer.getSubtitleTextView().getLeftDrawable() != null || avatarContainer.statusMadeShorter[0]) {
-                    transitionOnlineText = avatarContainer.getSubtitleTextView();
-                    avatarContainer2.invalidate();
-                    onlineTextCrosafade = true;
-                    onlineTextView[0].setAlpha(0f);
-                    onlineTextView[1].setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 1.0f));
+                if (previousTransitionFragment != null) {
+                    ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
+                    if (avatarContainer != null && avatarContainer.getSubtitleTextView().getLeftDrawable() != null || avatarContainer.statusMadeShorter[0]) {
+                        transitionOnlineText = avatarContainer.getSubtitleTextView();
+                        avatarContainer2.invalidate();
+                        onlineTextCrosafade = true;
+                        onlineTextView[0].setAlpha(0f);
+                        onlineTextView[1].setAlpha(0f);
+                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 1.0f));
+                    }
                 }
 
                 if (!onlineTextCrosafade) {
@@ -7223,6 +7226,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         boolean shortStatus;
 
         hasFallbackPhoto = false;
+        hasCustomPhoto = false;
         if (userId != 0) {
             TLRPC.User user = getMessagesController().getUser(userId);
             if (user == null) {
@@ -7288,6 +7292,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             }
+            hasCustomPhoto = user.photo != null && user.photo.personal;
             try {
                 newString = Emoji.replaceEmoji(newString, nameTextView[1].getPaint().getFontMetricsInt(), AndroidUtilities.dp(24), false);
             } catch (Exception ignore) {
@@ -10461,9 +10466,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
         } else {
-            if (onlineTextView[2] != null) {
-                onlineTextView[2].setAlpha(photoDescriptionProgress);
+            if (hasCustomPhoto) {
+                if (onlineTextView[2] != null) {
+                    onlineTextView[2].setAlpha(photoDescriptionProgress);
+                }
+            } else {
+                if (onlineTextView[2] != null) {
+                    onlineTextView[2].setAlpha(0);
+                }
             }
+
         }
 
     }

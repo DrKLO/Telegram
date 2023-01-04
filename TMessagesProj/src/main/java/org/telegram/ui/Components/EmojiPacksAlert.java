@@ -1571,7 +1571,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
             final boolean[] failed = new boolean[1];
             for (int i = 0; i < data.length; ++i) {
-                TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSets.get(i), false, (set) -> {
+                TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(inputStickerSets.get(i), null, false, (set) -> {
                     if (set == null && !failed[0]) {
                         failed[0] = true;
                         AndroidUtilities.runOnUIThread(() -> {
