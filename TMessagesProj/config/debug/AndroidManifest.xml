@@ -1,64 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:installLocation="auto">
+ xmlns:tools="http://schemas.android.com/tools"
+ android:installLocation="auto">
+<uses-feature android:name="android.hardware.location.gps" android:required="false" />
+<uses-feature android:name="android.hardware.location.network" android:required="false" />
+<uses-feature android:name="android.hardware.location" android:required="false" />
+<uses-feature android:name="android.hardware.LOCATION" android:required="false" />
 
-    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
-    <uses-feature android:name="android.hardware.location.network" android:required="false" />
-    <uses-feature android:name="android.hardware.location" android:required="false" />
-    <uses-feature android:name="android.hardware.LOCATION" android:required="false" />
+<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+<uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE"/>
+<uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.VIBRATE" />
+<uses-permission android:name="android.permission.FLASHLIGHT" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+<uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+<uses-permission android:name="android.permission.READ_CALENDAR" />
+<uses-permission android:name="android.permission.WRITE_CALENDAR" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<permission android:name="${applicationId}.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
 
-    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-    <uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE"/>
-    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+<application
+    android:allowBackup="false"
+    android:icon="@mipmap/ic_launcher"
+    android:roundIcon="@mipmap/ic_launcher_round"
+    android:label="@string/AppNameBeta"
+    android:theme="@style/Theme.TMessages.Start"
+    android:hardwareAccelerated="@bool/useHardwareAcceleration"
+    android:largeHeap="true"
+    android:supportsRtl="false"
+    android:requestLegacyExternalStorage="true"
+    tools:replace="android:supportsRtl">
+    <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
 
-    <permission android:name="${applicationId}.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
+    <service
+        android:name="org.telegram.messenger.GcmPushListenerService" android:exported="true">
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+    </service>
 
-    <application
-        android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="@string/AppNameBeta"
-        android:theme="@style/Theme.TMessages.Start"
-        android:hardwareAccelerated="@bool/useHardwareAcceleration"
-        android:largeHeap="true"
-        android:supportsRtl="false"
-        android:requestLegacyExternalStorage="true"
-        tools:replace="android:supportsRtl">
+    <uses-library android:name="com.google.android.maps" android:required="false"/>
 
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
+    <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+    <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
 
-        <service
-            android:name="org.telegram.messenger.GcmPushListenerService" android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+    <receiver
+        tools:replace="android:enabled"
+        android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+        android:enabled="false"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="com.google.android.gms.measurement.UPLOAD" />
+        </intent-filter>
+    </receiver>
 
-        <uses-library android:name="com.google.android.maps" android:required="false"/>
+    <service
+        tools:replace="android:enabled"
+        android:name="com.google.android.gms.measurement.AppMeasurementService"
+        android:enabled="false"
+        android:exported="false" />
 
-        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+    <activity android:name="org.telegram.ui.LaunchActivity"
+        android:configChanges="orientation|keyboardHidden|screenSize"
+        android:screenOrientation="portrait"
+        android:theme="@style/Theme.TMessages.Launch"
+        android:windowSoftInputMode="stateHidden|adjustResize">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
-        <receiver
-            tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
-            android:enabled="false"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.android.gms.measurement.UPLOAD" />
-            </intent-filter>
-        </receiver>
+    <activity android:name="org.telegram.ui.PassportActivity"
+        android:configChanges="orientation|keyboardHidden|screenSize"
+        android:screenOrientation="portrait"
+        android:theme="@style/Theme.TMessages.Transparent"
+        android:windowSoftInputMode="stateHidden|adjustResize" />
 
-        <service
-            tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementService"
-            android:enabled="false"
-            android:exported="false" />
-
-    </application>
+</application>
 
 </manifest>
