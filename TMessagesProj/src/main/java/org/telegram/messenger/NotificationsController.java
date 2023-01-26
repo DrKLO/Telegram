@@ -907,7 +907,12 @@ public class NotificationsController extends BaseController {
                         hasScheduled = messageObject.messageOwner.from_scheduled;
                     }
                     delayedPushMessages.add(messageObject);
-                    pushMessages.add(0, messageObject);
+                    if (!isPersonalMessage(messageObject)) {
+                        pushMessages.add( messageObject);
+                    }
+                    else {
+                        pushMessages.add(0, messageObject);
+                    }
                     if (mid != 0) {
                         if (sparseArray == null) {
                             sparseArray = new SparseArray<>();
