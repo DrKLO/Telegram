@@ -14,6 +14,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
@@ -125,6 +126,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     private boolean canDrawInParent;
+    private View invalidateWithParent;
+
+    public void setInvalidateWithParent(View viewToInvalidate) {
+        invalidateWithParent = viewToInvalidate;
+    }
 
     public interface ChatActionCellDelegate {
         default void didClickImage(ChatActionCell cell) {
@@ -397,37 +403,37 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         hasReplyMessage = messageObject.replyMessageObject != null;
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
         previousWidth = 0;
+        imageReceiver.setAutoRepeatCount(0);
         if (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
             imageReceiver.setRoundRadius((int) (stickerSize / 2f));
             imageReceiver.setAllowStartLottieAnimation(true);
             imageReceiver.setDelegate(null);
             TLRPC.TL_messageActionSuggestProfilePhoto action = (TLRPC.TL_messageActionSuggestProfilePhoto) messageObject.messageOwner.action;
 
+            TLRPC.VideoSize videoSize = FileLoader.getClosestVideoSizeWithSize(action.photo.video_sizes, 1000);
             ImageLocation videoLocation;
             if (action.photo.video_sizes != null && !action.photo.video_sizes.isEmpty()) {
-                videoLocation = ImageLocation.getForPhoto(action.photo.video_sizes.get(0), action.photo);
+                videoLocation = ImageLocation.getForPhoto(videoSize, action.photo);
             } else {
                 videoLocation = null;
             }
             TLRPC.Photo photo = messageObject.messageOwner.action.photo;
-            TLRPC.VideoSize videoSize = null;
             TLRPC.PhotoSize strippedPhotoSize = null;
-            for (int a = 0, N = messageObject.photoThumbs.size(); a < N; a++) {
-                TLRPC.PhotoSize photoSize = messageObject.photoThumbs.get(a);
-                if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
-                    strippedPhotoSize = photoSize;
-                    break;
+            if (messageObject.strippedThumb == null) {
+                for (int a = 0, N = messageObject.photoThumbs.size(); a < N; a++) {
+                    TLRPC.PhotoSize photoSize = messageObject.photoThumbs.get(a);
+                    if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
+                        strippedPhotoSize = photoSize;
+                        break;
+                    }
                 }
             }
             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 1000);
             if (photoSize != null) {
-                if (!photo.video_sizes.isEmpty()) {
-                    videoSize = photo.video_sizes.get(0);
-                }
                 if (videoSize != null) {
-                    imageReceiver.setImage(videoLocation, ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForPhoto(photoSize, photo), "150_150", ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", null, 0, null, messageObject, 0);
+                    imageReceiver.setImage(videoLocation, ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForPhoto(photoSize, photo), "150_150", ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", messageObject.strippedThumb, 0, null, messageObject, 0);
                 } else {
-                    imageReceiver.setImage(ImageLocation.getForPhoto(photoSize, photo), "150_150", ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", null, 0, null, messageObject, 0);
+                    imageReceiver.setImage(ImageLocation.getForPhoto(photoSize, photo), "150_150", ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", messageObject.strippedThumb, 0, null, messageObject, 0);
                 }
             }
 
@@ -527,17 +533,20 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             imageReceiver.setAllowStartLottieAnimation(true);
             imageReceiver.setDelegate(null);
             imageReceiver.setRoundRadius(AndroidUtilities.roundMessageSize / 2);
+            imageReceiver.setAutoRepeatCount(1);
             long id = messageObject.getDialogId();
             avatarDrawable.setInfo(id, null, null);
             if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 imageReceiver.setImage(null, null, avatarDrawable, null, messageObject, 0);
             } else {
                 TLRPC.PhotoSize strippedPhotoSize = null;
-                for (int a = 0, N = messageObject.photoThumbs.size(); a < N; a++) {
-                    TLRPC.PhotoSize photoSize = messageObject.photoThumbs.get(a);
-                    if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
-                        strippedPhotoSize = photoSize;
-                        break;
+                if (messageObject.strippedThumb == null) {
+                    for (int a = 0, N = messageObject.photoThumbs.size(); a < N; a++) {
+                        TLRPC.PhotoSize photoSize = messageObject.photoThumbs.get(a);
+                        if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
+                            strippedPhotoSize = photoSize;
+                            break;
+                        }
                     }
                 }
                 TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 640);
@@ -545,7 +554,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     TLRPC.Photo photo = messageObject.messageOwner.action.photo;
                     TLRPC.VideoSize videoSize = null;
                     if (!photo.video_sizes.isEmpty() && SharedConfig.autoplayGifs) {
-                        videoSize = photo.video_sizes.get(0);
+                        videoSize = FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 1000);
                         if (!messageObject.mediaExists && !DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, videoSize.size)) {
                             currentVideoLocation = ImageLocation.getForPhoto(videoSize, photo);
                             String fileName = FileLoader.getAttachFileName(videoSize);
@@ -554,9 +563,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                         }
                     }
                     if (videoSize != null) {
-                        imageReceiver.setImage(ImageLocation.getForPhoto(videoSize, photo), ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", avatarDrawable, 0, null, messageObject, 1);
+                        imageReceiver.setImage(ImageLocation.getForPhoto(videoSize, photo), ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", messageObject.strippedThumb, 0, null, messageObject, 1);
                     } else {
-                        imageReceiver.setImage(ImageLocation.getForObject(photoSize, messageObject.photoThumbsObject), "150_150", ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", avatarDrawable, 0, null, messageObject, 1);
+                        imageReceiver.setImage(ImageLocation.getForObject(photoSize, messageObject.photoThumbsObject), "150_150", ImageLocation.getForObject(strippedPhotoSize, messageObject.photoThumbsObject), "50_50_b", messageObject.strippedThumb, 0, null, messageObject, 1);
                     }
                 } else {
                     imageReceiver.setImageBitmap(avatarDrawable);
@@ -844,6 +853,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else {
             paint = (TextPaint) getThemedPaint(Theme.key_paint_chatActionText);
         }
+        paint.linkColor = paint.getColor();
         textLayout = new StaticLayout(text, paint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
         spoilersPool.addAll(spoilers);
@@ -1510,5 +1520,29 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private boolean isButtonLayout(MessageObject messageObject) {
         return messageObject != null && (messageObject.type == MessageObject.TYPE_GIFT_PREMIUM || messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO);
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        if (invalidateWithParent != null) {
+            invalidateWithParent.invalidate();
+        }
+    }
+
+    @Override
+    public void invalidate(Rect dirty) {
+        super.invalidate(dirty);
+        if (invalidateWithParent != null) {
+            invalidateWithParent.invalidate();
+        }
+    }
+
+    @Override
+    public void invalidate(int l, int t, int r, int b) {
+        super.invalidate(l, t, r, b);
+        if (invalidateWithParent != null) {
+            invalidateWithParent.invalidate();
+        }
     }
 }

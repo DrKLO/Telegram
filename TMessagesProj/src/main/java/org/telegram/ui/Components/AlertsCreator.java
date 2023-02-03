@@ -171,6 +171,7 @@ public class AlertsCreator {
                     }
                 })
                 .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+                .setOnDismissListener(dialog -> SharedConfig.BackgroundActivityPrefs.increaseDismissedCount())
                 .create();
     }
 
@@ -348,16 +349,69 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_messages_forwardMessages ||
                 request instanceof TLRPC.TL_messages_sendMultiMedia ||
                 request instanceof TLRPC.TL_messages_sendScheduledMessages) {
-            switch (error.text) {
-                case "PEER_FLOOD":
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 0);
-                    break;
-                case "USER_BANNED_IN_CHANNEL":
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 5);
-                    break;
-                case "SCHEDULE_TOO_MUCH":
-                    showSimpleToast(fragment, LocaleController.getString("MessageScheduledLimitReached", R.string.MessageScheduledLimitReached));
-                    break;
+            long dialogId = 0;
+            if (request instanceof TLRPC.TL_messages_sendMessage) {
+                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMessage) request).peer);
+            } else if (request instanceof TLRPC.TL_messages_sendMedia) {
+                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMedia) request).peer);
+            } else if (request instanceof TLRPC.TL_messages_sendInlineBotResult) {
+                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendInlineBotResult) request).peer);
+            } else if (request instanceof TLRPC.TL_messages_forwardMessages) {
+                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_forwardMessages) request).to_peer);
+            } else if (request instanceof TLRPC.TL_messages_sendMultiMedia) {
+                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMultiMedia) request).peer);
+            } else if (request instanceof TLRPC.TL_messages_sendScheduledMessages) {
+                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendScheduledMessages) request).peer);
+            }
+            if (BuildVars.DEBUG_VERSION && error.text != null && error.text.startsWith("CHAT_SEND_") && error.text.endsWith("FORBIDDEN")) {
+                String errorText = error.text;
+                TLRPC.Chat chat = dialogId < 0 ? MessagesController.getInstance(currentAccount).getChat(-dialogId) : null;
+                switch (error.text) {
+                    case "CHAT_SEND_PLAIN_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_PLAIN);
+                        break;
+                    case "CHAT_SEND_PHOTOS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_PHOTO);
+                        break;
+                    case "CHAT_SEND_VIDEOS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_VIDEO);
+                        break;
+                    case "CHAT_SEND_ROUNDVIDEOS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_ROUND);
+                        break;
+                    case "CHAT_SEND_DOCS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_DOCUMENTS);
+                        break;
+                    case "CHAT_SEND_VOICES_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_VOICE);
+                        break;
+                    case "CHAT_SEND_AUDIOS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_MUSIC);
+                        break;
+                    case "CHAT_SEND_STICKERS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_STICKERS);
+                        break;
+                    case "CHAT_SEND_GIFS_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_GIFS);
+                        break;
+                    case "CHAT_SEND_POLL_FORBIDDEN":
+                        errorText = ChatObject.getRestrictedErrorText(chat, ChatObject.ACTION_SEND_POLLS);
+                        break;
+
+                }
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, errorText);
+            } else {
+                switch (error.text) {
+                    case "PEER_FLOOD":
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 0);
+                        break;
+                    case "USER_BANNED_IN_CHANNEL":
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 5);
+                        break;
+                    case "SCHEDULE_TOO_MUCH":
+                        showSimpleToast(fragment, LocaleController.getString("MessageScheduledLimitReached", R.string.MessageScheduledLimitReached));
+                        break;
+                }
             }
         } else if (request instanceof TLRPC.TL_messages_importChatInvite) {
             if (error.text.startsWith("FLOOD_WAIT")) {
@@ -746,7 +800,6 @@ public class AlertsCreator {
             cells[num].setChecked(!cells[num].isChecked(), true);
         });
 
-        builder.setCustomViewOffset(12);
         builder.setView(linearLayout);
 
         builder.setPositiveButton(LocaleController.getString("BlockAndDeleteReplies", R.string.BlockAndDeleteReplies), (dialogInterface, i) -> {
@@ -823,7 +876,6 @@ public class AlertsCreator {
                     cells[num].setChecked(!cells[num].isChecked(), true);
                 });
             }
-            builder.setCustomViewOffset(12);
             builder.setView(linearLayout);
         } else {
             cells = null;
@@ -1381,6 +1433,7 @@ public class AlertsCreator {
                 }
             }
         };
+        builder.setCustomViewOffset(6);
         builder.setView(frameLayout);
 
         AvatarDrawable avatarDrawable = new AvatarDrawable();
@@ -4119,6 +4172,30 @@ public class AlertsCreator {
             builder.setMessage(LocaleController.getString("ErrorSendRestrictedPrivacyVoiceMessages", R.string.ErrorSendRestrictedPrivacyVoiceMessages));
         } else if (result == 8) {
             builder.setMessage(LocaleController.getString("ErrorSendRestrictedPrivacyVideoMessages", R.string.ErrorSendRestrictedPrivacyVideoMessages));
+        } else if (result == 9) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPrivacyVideo", R.string.ErrorSendRestrictedVideoAll));
+        } else if (result == 10) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPrivacyPhoto", R.string.ErrorSendRestrictedPhotoAll));
+        } else if (result == 11) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedVideo", R.string.ErrorSendRestrictedVideo));
+        } else if (result == 12) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPhoto", R.string.ErrorSendRestrictedPhoto));
+        } else if (result == 13) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedVoiceAll", R.string.ErrorSendRestrictedVoiceAll));
+        }  else if (result == 14) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedVoice", R.string.ErrorSendRestrictedVoice));
+        } else if (result == 15) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedRoundAll", R.string.ErrorSendRestrictedRoundAll));
+        }  else if (result == 16) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedRound", R.string.ErrorSendRestrictedRound));
+        }  else if (result == 17) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedDocumentsAll", R.string.ErrorSendRestrictedDocumentsAll));
+        }  else if (result == 18) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedDocuments", R.string.ErrorSendRestrictedDocuments));
+        }  else if (result == 19) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedMusicAll", R.string.ErrorSendRestrictedMusicAll));
+        }  else if (result == 20) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedMusic", R.string.ErrorSendRestrictedMusic));
         }
 
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);

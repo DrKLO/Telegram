@@ -54,8 +54,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
-    private PremiumGradient.GradientTools gradientTools;
-    private PremiumGradient.GradientTools outlineGradient;
+    private PremiumGradient.PremiumGradientTools gradientTools;
+    private PremiumGradient.PremiumGradientTools outlineGradient;
     private PremiumButtonView premiumButtonView;
     private PremiumGiftTierCell dummyCell;
 
@@ -78,7 +78,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
         super(fragment, false, true);
         this.user = user;
 
-        gradientTools = new PremiumGradient.GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, null, null);
+        gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, null, null);
         gradientTools.exactly = true;
         gradientTools.x1 = 0;
         gradientTools.y1 = 0f;
@@ -87,7 +87,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
         gradientTools.cx = 0;
         gradientTools.cy = 0;
 
-        outlineGradient = new PremiumGradient.GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
+        outlineGradient = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
         outlineGradient.paint.setStyle(Paint.Style.STROKE);
         outlineGradient.paint.setStrokeWidth(AndroidUtilities.dp(1.5f));
 
@@ -216,8 +216,11 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private void updateButtonText(boolean animated) {
+        if (LocaleController.isRTL) {
+            animated = false;
+        }
         if (!BuildVars.useInvoiceBilling() && (!BillingController.getInstance().isReady() || giftTiers.get(selectedTierIndex).googlePlayProductDetails == null)) {
-            premiumButtonView.setButton(LocaleController.getString(R.string.Loading), v -> {}, true);
+            premiumButtonView.setButton(LocaleController.getString(R.string.Loading), v -> {}, !LocaleController.isRTL);
             premiumButtonView.setFlickerDisabled(true);
             return;
         }

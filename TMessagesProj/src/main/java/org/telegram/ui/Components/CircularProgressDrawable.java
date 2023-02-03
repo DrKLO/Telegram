@@ -41,7 +41,7 @@ public class CircularProgressDrawable extends Drawable {
     }
 
     public static void getSegments(float t, float[] segments) {
-        segments[0] = 1520 * t / 5400f - 20;
+        segments[0] = Math.max(0, 1520 * t / 5400f - 20);
         segments[1] = 1520 * t / 5400f;
         for (int i = 0; i < 4; ++i) {
             segments[1] += interpolator.getInterpolation((t - i * 1350) / 667f) * 250;

@@ -2042,6 +2042,9 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     private void toggleSelection(View view) {
         if (view instanceof TopicDialogCell) {
             TopicDialogCell cell = (TopicDialogCell) view;
+            if (cell.forumTopic == null) {
+                return;
+            }
             int id = cell.forumTopic.id;
             if (!selectedTopics.remove(id)) {
                 selectedTopics.add(id);

@@ -103,6 +103,7 @@ public class VideoEditedInfo {
         public int textAlign;
         public int viewWidth;
         public int viewHeight;
+        public float roundRadius;
 
         public float scale;
         public float textViewWidth;
@@ -122,6 +123,7 @@ public class VideoEditedInfo {
         public View view;
         public Canvas canvas;
         public AnimatedFileDrawable animatedFileDrawable;
+        public Canvas roundRadiusCanvas;
 
         public MediaEntity() {
 

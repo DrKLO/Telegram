@@ -47,10 +47,10 @@ public class PhotoUtilities {
         INavigationLayout layout = baseFragment.getParentLayout();
         int currentAccount = baseFragment.getCurrentAccount();
 
-        ImageUpdater imageUpdater = new ImageUpdater(true);
+        ImageUpdater imageUpdater = new ImageUpdater(true, ImageUpdater.FOR_TYPE_USER, true);
         imageUpdater.parentFragment = baseFragment;
         imageUpdater.processEntry(entry);
-        imageUpdater.setDelegate((photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo) -> AndroidUtilities.runOnUIThread(() -> {
+        imageUpdater.setDelegate((photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo, emojiMarkup) -> AndroidUtilities.runOnUIThread(() -> {
             TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
             if (photo != null) {
                 req.file = photo;
@@ -61,6 +61,10 @@ public class PhotoUtilities {
                 req.flags |= 2;
                 req.video_start_ts = videoStartTimestamp;
                 req.flags |= 4;
+            }
+            if (emojiMarkup != null) {
+                req.video_emoji_markup = emojiMarkup;
+                req.flags |= 16;
             }
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (response instanceof TLRPC.TL_photos_photo) {

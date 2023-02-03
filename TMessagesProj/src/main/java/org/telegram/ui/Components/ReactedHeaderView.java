@@ -71,6 +71,7 @@ public class ReactedHeaderView extends FrameLayout {
 
         avatarsImageView = new AvatarsImageView(context, false);
         avatarsImageView.setStyle(AvatarsDrawable.STYLE_MESSAGE_SEEN);
+        avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(22));
         addView(avatarsImageView, LayoutHelper.createFrameRelatively(24 + 12 + 12 + 8, LayoutHelper.MATCH_PARENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         iconView = new ImageView(context);
@@ -214,7 +215,7 @@ public class ReactedHeaderView extends FrameLayout {
                     if (message.messageOwner.reactions != null && message.messageOwner.reactions.results.size() == 1 && !list.reactions.isEmpty()) {
                         for (TLRPC.TL_availableReaction r : MediaDataController.getInstance(currentAccount).getReactionsList()) {
                             if (r.reaction.equals(list.reactions.get(0).reaction)) {
-                                reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", null, r);
+                                reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastreactframe", "webp", null, r);
                                 reactView.setVisibility(VISIBLE);
                                 reactView.setAlpha(0);
                                 reactView.animate().alpha(1f).start();

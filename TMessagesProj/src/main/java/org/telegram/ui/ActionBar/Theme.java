@@ -9,6 +9,7 @@
 package org.telegram.ui.ActionBar;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -143,6 +144,11 @@ public class Theme {
 
     public static final int MSG_OUT_COLOR_BLACK = 0xff212121;
     public static final int MSG_OUT_COLOR_WHITE = 0xffffffff;
+    public static final int default_shadow_color = ColorUtils.setAlphaComponent(Color.BLACK, 27);
+
+    public static void applyDefaultShadow(Paint paint) {
+        paint.setShadowLayer(dpf2(1), 0, dpf2(0.33f), default_shadow_color);
+    }
 
     public static class BackgroundDrawableSettings {
 
@@ -4007,6 +4013,17 @@ public class Theme {
     public final static String key_statisticChartLine_cyan = "statisticChartLine_cyan";
     public final static String key_statisticChartLineEmpty = "statisticChartLineEmpty";
 
+    public final static String key_color_lightblue = "color_lightblue";
+    public final static String key_color_blue = "color_blue";
+    public final static String key_color_green = "color_green";
+    public final static String key_color_lightgreen = "color_lightgreen";
+    public final static String key_color_red = "color_red";
+    public final static String key_color_orange = "color_orange";
+    public final static String key_color_yellow = "color_yellow";
+    public final static String key_color_purple = "color_purple";
+    public final static String key_color_cyan = "color_cyan";
+    public final static String[] keys_colors = { key_color_lightblue, key_color_blue, key_color_green, key_color_lightgreen, key_color_red, key_color_orange, key_color_yellow, key_color_purple, key_color_cyan };
+
     public static final String key_chat_outReactionButtonBackground = "chat_outReactionButtonBackground";
     public static final String key_chat_inReactionButtonBackground = "chat_inReactionButtonBackground";
     public static final String key_chat_outReactionButtonText = "chat_outReactionButtonText";
@@ -4848,6 +4865,16 @@ public class Theme {
         defaultColors.put(key_statisticChartLineEmpty, 0xFFEEEEEE);
         defaultColors.put(key_actionBarTipBackground, 0xFF446F94);
 
+        defaultColors.put(key_color_blue, 0xff327FE5);
+        defaultColors.put(key_color_green, 0xff61C752);
+        defaultColors.put(key_color_red, 0xffE05356);
+        defaultColors.put(key_color_yellow, 0xffEBA52D);
+        defaultColors.put(key_color_lightblue, 0xff58A8ED);
+        defaultColors.put(key_color_lightgreen, 0xff8FCF39);
+        defaultColors.put(key_color_orange, 0xffF28C39);
+        defaultColors.put(key_color_purple, 0xff9F79E8);
+        defaultColors.put(key_color_cyan, 0xff40D0CA);
+
         defaultColors.put(key_voipgroup_checkMenu, 0xff6BB6F9);
         defaultColors.put(key_voipgroup_muteButton, 0xff77E55C);
         defaultColors.put(key_voipgroup_muteButton2, 0xff7DDCAA);
@@ -5101,9 +5128,19 @@ public class Theme {
         fallbackKeys.put(key_avatar_background2Blue, key_avatar_backgroundBlue);
         fallbackKeys.put(key_avatar_background2Pink, key_avatar_backgroundPink);
 
+        fallbackKeys.put(key_statisticChartLine_orange, key_color_orange);
+        fallbackKeys.put(key_statisticChartLine_blue, key_color_blue);
+        fallbackKeys.put(key_statisticChartLine_red, key_color_red);
+        fallbackKeys.put(key_statisticChartLine_lightblue, key_color_lightblue);
+        fallbackKeys.put(key_statisticChartLine_golden, key_color_yellow);
+        fallbackKeys.put(key_statisticChartLine_purple, key_color_purple);
+        fallbackKeys.put(key_statisticChartLine_indigo, key_color_purple);
+        fallbackKeys.put(key_statisticChartLine_cyan, key_color_cyan);
+
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background2));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
+        themeAccentExclusionKeys.addAll(Arrays.asList(keys_colors));
         themeAccentExclusionKeys.add(key_chat_attachFileBackground);
         themeAccentExclusionKeys.add(key_chat_attachGalleryBackground);
         themeAccentExclusionKeys.add(key_chat_attachFileText);

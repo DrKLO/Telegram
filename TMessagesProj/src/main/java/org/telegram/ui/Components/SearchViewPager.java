@@ -145,6 +145,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 }
             }
         };
+        if (initialDialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
+            ArrayList<TLRPC.Dialog> dialogs = fragment.getDialogsArray(currentAccount, initialDialogsType, folderId, true);
+            ArrayList<Long> dialogIds = new ArrayList<>();
+            for (int i = 0; i < dialogs.size(); ++i) {
+                dialogIds.add(dialogs.get(i).id);
+            }
+            dialogsSearchAdapter.setFilterDialogIds(dialogIds);
+        }
         fragmentView = (SizeNotifierFrameLayout) fragment.getFragmentView();
 
         searchListView = new BlurredRecyclerView(context) {
@@ -510,7 +518,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         } else if (id == forwardItemId) {
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            args.putInt("dialogsType", 3);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
             DialogsActivity fragment = new DialogsActivity(args);
             fragment.setDelegate((fragment1, dids, message, param) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
@@ -545,13 +553,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                             args1.putLong("chat_id", -did);
                         }
                         if (!AccountInstance.getInstance(currentAccount).getMessagesController().checkCanOpenChat(args1, fragment1)) {
-                            return;
+                            return true;
                         }
                     }
                     ChatActivity chatActivity = new ChatActivity(args1);
                     fragment1.presentFragment(chatActivity, true);
                     chatActivity.showFieldPanelForForward(true, fmessages);
                 }
+                return true;
             });
             parent.presentFragment(fragment);
         }

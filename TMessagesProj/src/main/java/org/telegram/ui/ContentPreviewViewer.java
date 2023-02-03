@@ -60,9 +60,14 @@ import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EmojiPacksAlert;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SuggestEmojiView;
 
 import java.util.ArrayList;
 
@@ -85,14 +90,14 @@ public class ContentPreviewViewer {
             return true;
         }
 
-        void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate);
-
         void openSet(TLRPC.InputStickerSet set, boolean clearInputField);
 
-        boolean needSend();
+        boolean needSend(int contentType);
+        default void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {}
+        default void sendGif(Object gif, Object parent, boolean notify, int scheduleDate) {}
+        default void sendEmoji(TLRPC.Document emoji) {}
 
         boolean canSchedule();
-
         boolean isInScheduleMode();
 
         long getDialogId();
@@ -100,7 +105,6 @@ public class ContentPreviewViewer {
         default boolean needRemove() {
             return false;
         }
-
         default void remove(SendMessagesHelper.ImportingSticker sticker) {
 
         }
@@ -113,22 +117,34 @@ public class ContentPreviewViewer {
             return true;
         }
 
-        default void sendGif(Object gif, Object parent, boolean notify, int scheduleDate) {
-
-        }
-
-        default void gifAddedOrDeleted() {
-
-        }
+        default void gifAddedOrDeleted() {}
 
         default boolean needMenu() {
             return true;
         }
+
+        default Boolean canSetAsStatus(TLRPC.Document document) {
+            return null;
+        }
+        default void setAsEmojiStatus(TLRPC.Document document, Integer until) {}
+
+        default boolean needCopy() {
+            return false;
+        }
+        default void copyEmoji(TLRPC.Document document) {}
+
+        default void resetTouch() {}
+
+        default boolean needRemoveFromRecent(TLRPC.Document document) {
+            return false;
+        }
+        default void removeFromRecent(TLRPC.Document document) {}
     }
 
-    private final static int CONTENT_TYPE_NONE = -1;
-    private final static int CONTENT_TYPE_STICKER = 0;
-    private final static int CONTENT_TYPE_GIF = 1;
+    public final static int CONTENT_TYPE_NONE = -1;
+    public final static int CONTENT_TYPE_STICKER = 0;
+    public final static int CONTENT_TYPE_GIF = 1;
+    public final static int CONTENT_TYPE_EMOJI = 2;
 
     private static TextPaint textPaint;
 
@@ -196,12 +212,12 @@ public class ContentPreviewViewer {
                 menuVisible = true;
                 containerView.invalidate();
                 if (delegate != null) {
-                    if (delegate.needSend() && !delegate.isInScheduleMode()) {
+                    if (delegate.needSend(currentContentType) && !delegate.isInScheduleMode()) {
                         items.add(LocaleController.getString("SendStickerPreview", R.string.SendStickerPreview));
                         icons.add(R.drawable.msg_send);
                         actions.add(0);
                     }
-                    if (delegate.needSend() && !delegate.isInScheduleMode()) {
+                    if (delegate.needSend(currentContentType) && !delegate.isInScheduleMode()) {
                         items.add(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound));
                         icons.add(R.drawable.input_notify_off);
                         actions.add(6);
@@ -273,7 +289,7 @@ public class ContentPreviewViewer {
                         }
                     }
                 };
-                ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(containerView.getContext(), R.drawable.popup_fixed_alert2, resourcesProvider);
+                ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(containerView.getContext(), R.drawable.popup_fixed_alert3, resourcesProvider);
 
                 for (int i = 0; i < items.size(); i++) {
                     View item = ActionBarMenuItem.addItem(previewMenu, icons.get(i), items.get(i), false, resourcesProvider);
@@ -329,13 +345,144 @@ public class ContentPreviewViewer {
                 popupWindow.showAtLocation(containerView, 0, (int) ((containerView.getMeasuredWidth() - previewMenu.getMeasuredWidth()) / 2f), y);
 
                 containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-            } else if (delegate != null) {
+            } else if (currentContentType == CONTENT_TYPE_EMOJI && delegate != null) {
                 menuVisible = true;
+                containerView.invalidate();
                 ArrayList<CharSequence> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
 
-                if (delegate.needSend() && !delegate.isInScheduleMode()) {
+                if (delegate.needSend(currentContentType)) {
+                    items.add(LocaleController.getString("SendEmojiPreview", R.string.SendEmojiPreview));
+                    icons.add(R.drawable.msg_send);
+                    actions.add(0);
+                }
+                Boolean canSetAsStatus = delegate.canSetAsStatus(currentDocument);
+                if (canSetAsStatus != null) {
+                    if (canSetAsStatus) {
+                        items.add(LocaleController.getString("SetAsEmojiStatus", R.string.SetAsEmojiStatus));
+                        icons.add(R.drawable.msg_smile_status);
+                        actions.add(1);
+                    } else {
+                        items.add(LocaleController.getString("RemoveStatus", R.string.RemoveStatus));
+                        icons.add(R.drawable.msg_smile_status);
+                        actions.add(2);
+                    }
+                }
+                if (delegate.needCopy()) {
+                    items.add(LocaleController.getString("CopyEmojiPreview", R.string.CopyEmojiPreview));
+                    icons.add(R.drawable.msg_copy);
+                    actions.add(3);
+                }
+                if (delegate.needRemoveFromRecent(currentDocument)) {
+                    items.add(LocaleController.getString("RemoveFromRecent", R.string.RemoveFromRecent));
+                    icons.add(R.drawable.msg_delete);
+                    actions.add(4);
+                }
+                if (items.isEmpty()) {
+                    return;
+                }
+
+                int[] ic = new int[icons.size()];
+                for (int a = 0; a < icons.size(); a++) {
+                    ic[a] = icons.get(a);
+                }
+
+                ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(containerView.getContext(), R.drawable.popup_fixed_alert2, resourcesProvider);
+
+                View.OnClickListener onItemClickListener = v -> {
+                    if (parentActivity == null) {
+                        return;
+                    }
+                    int which = (int) v.getTag();
+                    int action = actions.get(which);
+                    if (action == 0) {
+                        delegate.sendEmoji(currentDocument);
+                    } else if (action == 1) {
+                        delegate.setAsEmojiStatus(currentDocument, null);
+                    } else if (action == 2) {
+                        delegate.setAsEmojiStatus(null, null);
+                    } else if (action == 3) {
+                        delegate.copyEmoji(currentDocument);
+                    } else if (action == 4) {
+                        delegate.removeFromRecent(currentDocument);
+                    }
+                    if (popupWindow != null) {
+                        popupWindow.dismiss();
+                    }
+                };
+
+                for (int i = 0; i < items.size(); i++) {
+                    ActionBarMenuSubItem item = ActionBarMenuItem.addItem(i == 0, i == items.size() - 1, previewMenu, icons.get(i), items.get(i), false, resourcesProvider);
+                    if (actions.get(i) == 4) {
+                        item.setIconColor(getThemedColor(Theme.key_dialogRedIcon));
+                        item.setTextColor(getThemedColor(Theme.key_dialogTextRed2));
+                    }
+                    item.setTag(i);
+                    item.setOnClickListener(onItemClickListener);
+                }
+                popupWindow = new ActionBarPopupWindow(previewMenu, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+                    @Override
+                    public void dismiss() {
+                        super.dismiss();
+                        popupWindow = null;
+                        menuVisible = false;
+                        if (closeOnDismiss) {
+                            close();
+                        }
+                    }
+                };
+                popupWindow.setPauseNotifications(true);
+                popupWindow.setDismissAnimationDuration(150);
+                popupWindow.setScaleOut(true);
+                popupWindow.setOutsideTouchable(true);
+                popupWindow.setClippingEnabled(true);
+                popupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+                popupWindow.setFocusable(true);
+                previewMenu.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+                popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+                popupWindow.getContentView().setFocusableInTouchMode(true);
+
+                int insets = 0;
+                int top;
+                if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
+                    insets = lastInsets.getStableInsetBottom() + lastInsets.getStableInsetTop();
+                    top = lastInsets.getStableInsetTop();
+                } else {
+                    top = AndroidUtilities.statusBarHeight;
+                }
+                int size = Math.min(containerView.getWidth(), containerView.getHeight() - insets) - AndroidUtilities.dp(40f);
+
+                int y = (int) (moveY + Math.max(size / 2 + top + (stickerEmojiLayout != null ? AndroidUtilities.dp(40) : 0), (containerView.getHeight() - insets - keyboardHeight) / 2) + size / 2);
+                y += AndroidUtilities.dp(24) - moveY;
+                popupWindow.showAtLocation(containerView, 0, (int) ((containerView.getMeasuredWidth() - previewMenu.getMeasuredWidth()) / 2f), y);
+                ActionBarPopupWindow.startAnimation(previewMenu);
+
+                containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+
+                if (moveY != 0) {
+                    if (finalMoveY == 0) {
+                        finalMoveY = 0;
+                        startMoveY = moveY;
+                    }
+                    ValueAnimator valueAnimator = ValueAnimator.ofFloat(0f, 1f);
+                    valueAnimator.addUpdateListener(animation -> {
+                        currentMoveYProgress = (float) animation.getAnimatedValue();
+                        moveY = startMoveY + (finalMoveY - startMoveY) * currentMoveYProgress;
+                        ContentPreviewViewer.this.containerView.invalidate();
+                    });
+                    valueAnimator.setDuration(350);
+                    valueAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    valueAnimator.start();
+                }
+            } else if (delegate != null) {
+                menuVisible = true;
+                containerView.invalidate();
+                ArrayList<CharSequence> items = new ArrayList<>();
+                final ArrayList<Integer> actions = new ArrayList<>();
+                ArrayList<Integer> icons = new ArrayList<>();
+
+                if (delegate.needSend(currentContentType) && !delegate.isInScheduleMode()) {
                     items.add(LocaleController.getString("SendGifPreview", R.string.SendGifPreview));
                     icons.add(R.drawable.msg_send);
                     actions.add(0);
@@ -359,6 +506,9 @@ public class ContentPreviewViewer {
                     }
                 } else {
                     canDelete = false;
+                }
+                if (items.isEmpty()) {
+                    return;
                 }
 
                 int[] ic = new int[icons.size()];
@@ -626,9 +776,18 @@ public class ContentPreviewViewer {
                                     contentType = CONTENT_TYPE_GIF;
                                     centerImage.setRoundRadius(AndroidUtilities.dp(6));
                                 }
+                            } else if (view instanceof EmojiPacksAlert.EmojiImageView) {
+                                contentType = CONTENT_TYPE_EMOJI;
+                                centerImage.setRoundRadius(0);
+                            } else if (view instanceof EmojiView.ImageViewEmoji && ((EmojiView.ImageViewEmoji) view).getSpan() != null) {
+                                contentType = CONTENT_TYPE_EMOJI;
+                                centerImage.setRoundRadius(0);
                             }
                             if (contentType == CONTENT_TYPE_NONE || view == currentPreviewCell) {
                                 break;
+                            }
+                            if (delegate != null) {
+                                delegate.resetTouch();
                             }
                             if (currentPreviewCell instanceof StickerEmojiCell) {
                                 ((StickerEmojiCell) currentPreviewCell).setScaled(false);
@@ -660,6 +819,38 @@ public class ContentPreviewViewer {
                                 if (contentType != CONTENT_TYPE_GIF) {
                                     contextLinkCell.setScaled(true);
                                 }
+                            } else if (currentPreviewCell instanceof EmojiPacksAlert.EmojiImageView) {
+                                EmojiPacksAlert.EmojiImageView imageView = (EmojiPacksAlert.EmojiImageView) currentPreviewCell;
+                                TLRPC.Document document = imageView.getDocument();
+                                if (document != null) {
+                                    open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null), null, null, contentType, false, null, resourcesProvider);
+                                }
+                            } else if (currentPreviewCell instanceof EmojiView.ImageViewEmoji) {
+                                EmojiView.ImageViewEmoji imageView = (EmojiView.ImageViewEmoji) currentPreviewCell;
+                                AnimatedEmojiSpan span = imageView.getSpan();
+                                TLRPC.Document document = null;
+                                if (span != null) {
+                                    document = span.document;
+                                    if (document == null) {
+                                        document = AnimatedEmojiDrawable.findDocument(currentAccount, span.getDocumentId());
+                                    }
+                                }
+                                if (document != null) {
+                                    open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null), null, null, contentType, false, null, resourcesProvider);
+                                } else {
+                                    return false;
+                                }
+                            } else if (currentPreviewCell instanceof SuggestEmojiView.EmojiImageView) {
+                                SuggestEmojiView.EmojiImageView emojiImageView = (SuggestEmojiView.EmojiImageView) currentPreviewCell;
+                                Drawable drawable = emojiImageView.drawable;
+                                TLRPC.Document document = null;
+                                if (drawable instanceof AnimatedEmojiDrawable) {
+                                    document = ((AnimatedEmojiDrawable) drawable).getDocument();
+                                }
+                                if (document == null) {
+                                    return false;
+                                }
+                                open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null), null, null, contentType, false, null, resourcesProvider);
                             }
                             runSmoothHaptic();
 
@@ -744,6 +935,19 @@ public class ContentPreviewViewer {
                             centerImage.setRoundRadius(AndroidUtilities.dp(6));
                         }
                     }
+                } else if (view instanceof EmojiPacksAlert.EmojiImageView) {
+                    contentType = CONTENT_TYPE_EMOJI;
+                    centerImage.setRoundRadius(0);
+                } else if (view instanceof EmojiView.ImageViewEmoji && ((EmojiView.ImageViewEmoji) view).getSpan() != null) {
+                    contentType = CONTENT_TYPE_EMOJI;
+                    centerImage.setRoundRadius(0);
+                } else if (view instanceof SuggestEmojiView.EmojiImageView) {
+                    SuggestEmojiView.EmojiImageView emojiImageView = (SuggestEmojiView.EmojiImageView) view;
+                    Drawable drawable = emojiImageView.drawable;
+                    if (drawable instanceof AnimatedEmojiDrawable) {
+                        contentType = CONTENT_TYPE_EMOJI;
+                        centerImage.setRoundRadius(0);
+                    }
                 }
                 if (contentType == CONTENT_TYPE_NONE) {
                     return false;
@@ -756,6 +960,7 @@ public class ContentPreviewViewer {
                     if (openPreviewRunnable == null) {
                         return;
                     }
+                    boolean opened = false;
                     listView.setOnItemClickListener((RecyclerListView.OnItemClickListener) null);
                     listView.requestDisallowInterceptTouchEvent(true);
                     openPreviewRunnable = null;
@@ -765,20 +970,60 @@ public class ContentPreviewViewer {
                     if (currentPreviewCell instanceof StickerEmojiCell) {
                         StickerEmojiCell stickerEmojiCell = (StickerEmojiCell) currentPreviewCell;
                         open(stickerEmojiCell.getSticker(), stickerEmojiCell.getStickerPath(), stickerEmojiCell.getEmoji(), delegate != null ? delegate.getQuery(false) : null, null, contentTypeFinal, stickerEmojiCell.isRecent(), stickerEmojiCell.getParentObject(), resourcesProvider);
+                        opened = true;
                         stickerEmojiCell.setScaled(true);
                     } else if (currentPreviewCell instanceof StickerCell) {
                         StickerCell stickerCell = (StickerCell) currentPreviewCell;
                         open(stickerCell.getSticker(), null, null, delegate != null ? delegate.getQuery(false) : null, null, contentTypeFinal, false, stickerCell.getParentObject(), resourcesProvider);
+                        opened = true;
                         stickerCell.setScaled(true);
                         clearsInputField = stickerCell.isClearsInputField();
                     } else if (currentPreviewCell instanceof ContextLinkCell) {
                         ContextLinkCell contextLinkCell = (ContextLinkCell) currentPreviewCell;
                         open(contextLinkCell.getDocument(), null, null, delegate != null ? delegate.getQuery(true) : null, contextLinkCell.getBotInlineResult(), contentTypeFinal, false, contextLinkCell.getBotInlineResult() != null ? contextLinkCell.getInlineBot() : contextLinkCell.getParentObject(), resourcesProvider);
+                        opened = true;
                         if (contentTypeFinal != CONTENT_TYPE_GIF) {
                             contextLinkCell.setScaled(true);
                         }
+                    } else if (currentPreviewCell instanceof EmojiPacksAlert.EmojiImageView) {
+                        EmojiPacksAlert.EmojiImageView imageView = (EmojiPacksAlert.EmojiImageView) currentPreviewCell;
+                        TLRPC.Document document = imageView.getDocument();
+                        if (document != null) {
+                            open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null), null, null, contentTypeFinal, false, null, resourcesProvider);
+                            opened = true;
+                        }
+                    } else if (currentPreviewCell instanceof EmojiView.ImageViewEmoji) {
+                        EmojiView.ImageViewEmoji imageView = (EmojiView.ImageViewEmoji) currentPreviewCell;
+                        AnimatedEmojiSpan span = imageView.getSpan();
+                        TLRPC.Document document = null;
+                        if (span != null) {
+                            document = span.document;
+                            if (document == null) {
+                                document = AnimatedEmojiDrawable.findDocument(currentAccount, span.getDocumentId());
+                            }
+                        }
+                        if (document != null) {
+                            open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null), null, null, contentTypeFinal, false, null, resourcesProvider);
+                            opened = true;
+                        }
+                    } else if (currentPreviewCell instanceof SuggestEmojiView.EmojiImageView) {
+                        SuggestEmojiView.EmojiImageView emojiImageView = (SuggestEmojiView.EmojiImageView) currentPreviewCell;
+                        Drawable drawable = emojiImageView.drawable;
+                        TLRPC.Document document = null;
+                        if (drawable instanceof AnimatedEmojiDrawable) {
+                            document = ((AnimatedEmojiDrawable) drawable).getDocument();
+                        }
+                        if (document != null) {
+                            open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null), null, null, contentTypeFinal, false, null, resourcesProvider);
+                            opened = true;
+                        }
                     }
-                    currentPreviewCell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    if (opened) {
+                        currentPreviewCell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        if (delegate != null) {
+                            delegate.resetTouch();
+                        }
+                    }
                 };
                 AndroidUtilities.runOnUIThread(openPreviewRunnable, 200);
                 return true;
@@ -876,7 +1121,8 @@ public class ContentPreviewViewer {
         stickerEmojiLayout = null;
         backgroundDrawable.setColor(Theme.getActiveTheme().isDark() ? 0x71000000 : 0x64E6E6E6);
         drawEffect = false;
-        if (contentType == CONTENT_TYPE_STICKER) {
+        centerImage.setColorFilter(null);
+        if (contentType == CONTENT_TYPE_STICKER || contentType == CONTENT_TYPE_EMOJI) {
             if (document == null && sticker == null) {
                 return;
             }
@@ -896,7 +1142,11 @@ public class ContentPreviewViewer {
                         break;
                     }
                 }
-                if (newSet != null && (delegate == null || delegate.needMenu())) {
+                if (contentType == CONTENT_TYPE_EMOJI && emojiPath != null) {
+                    CharSequence emoji = Emoji.replaceEmoji(emojiPath, textPaint.getFontMetricsInt(), AndroidUtilities.dp(24), false);
+                    stickerEmojiLayout = new StaticLayout(emoji, textPaint, AndroidUtilities.dp(100), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                }
+                if ((newSet != null || contentType == CONTENT_TYPE_EMOJI) && (delegate == null || delegate.needMenu())) {
                     AndroidUtilities.cancelRunOnUIThread(showSheetRunnable);
                     AndroidUtilities.runOnUIThread(showSheetRunnable, 1300);
                 }
@@ -910,6 +1160,9 @@ public class ContentPreviewViewer {
                         drawEffect = true;
                         effectImage.setImage(ImageLocation.getForDocument(MessageObject.getPremiumStickerAnimation(document), document), null, null, null, "tgs", currentStickerSet, 1);
                     }
+                }
+                if (MessageObject.isTextColorEmoji(document)) {
+                    centerImage.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
                 }
                 for (int a = 0; a < document.attributes.size(); a++) {
                     TLRPC.DocumentAttribute attribute = document.attributes.get(a);

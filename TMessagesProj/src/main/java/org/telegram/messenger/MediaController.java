@@ -352,6 +352,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         public boolean isChatPreviewSpoilerRevealed;
         public boolean isAttachSpoilerRevealed;
+        public TLRPC.VideoSize emojiMarkup;
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo, int width, int height, long size) {
             this.bucketId = bucketId;

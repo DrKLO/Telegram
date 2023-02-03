@@ -535,7 +535,11 @@ public class FileUploadOperation {
             } else if (currentType == ConnectionsManager.FileTypePhoto) {
                 StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_PHOTOS, requestSize);
             } else if (currentType == ConnectionsManager.FileTypeFile) {
-                StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_FILES, requestSize);
+                if (uploadingFilePath != null && (uploadingFilePath.toLowerCase().endsWith("mp3") || uploadingFilePath.toLowerCase().endsWith("m4a"))) {
+                    StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_MUSIC, requestSize);
+                } else {
+                    StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_FILES, requestSize);
+                }
             }
             if (currentRequestIv != null) {
                 freeRequestIvs.add(currentRequestIv);
@@ -590,7 +594,11 @@ public class FileUploadOperation {
                     } else if (currentType == ConnectionsManager.FileTypePhoto) {
                         StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
                     } else if (currentType == ConnectionsManager.FileTypeFile) {
-                        StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                        if (uploadingFilePath != null && (uploadingFilePath.toLowerCase().endsWith("mp3") || uploadingFilePath.toLowerCase().endsWith("m4a"))) {
+                            StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MUSIC, 1);
+                        } else {
+                            StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                        }
                     }
                 } else if (currentUploadRequetsCount < maxRequestsCount) {
                     if (estimatedSize == 0 && !uploadFirstPartLater && !nextPartFirst) {

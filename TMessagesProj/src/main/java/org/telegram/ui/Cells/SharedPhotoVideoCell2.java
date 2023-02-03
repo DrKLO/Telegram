@@ -255,6 +255,9 @@ public class SharedPhotoVideoCell2 extends View {
     public void setVideoText(String videoText, boolean drawVideoIcon) {
         this.videoText = videoText;
         showVideoLayout = videoText != null;
+        if (showVideoLayout && videoInfoLayot != null && !videoInfoLayot.getText().toString().equals(videoText)) {
+            videoInfoLayot = null;
+        }
         this.drawVideoIcon = drawVideoIcon;
     }
 

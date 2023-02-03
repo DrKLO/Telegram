@@ -891,10 +891,12 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
 
         if (object != nullptr) {
             if (datacenter->isHandshaking(connection->isMediaConnection)) {
+                if (LOGS_ENABLED) DEBUG_E("process handshake");
                 datacenter->processHandshakeResponse(connection->isMediaConnection, object, messageId);
             } else {
-                processServerResponse(object, messageId, 0, 0, connection, 0, 0);
-                connection->addProcessedMessageId(messageId);
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) received incorrect unencrypted message type", connection);
+                connection->reconnect();
+                return;
             }
             lastProtocolUsefullData = true;
             connection->setHasUsefullData();

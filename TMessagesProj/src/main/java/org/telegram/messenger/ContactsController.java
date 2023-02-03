@@ -762,7 +762,7 @@ public class ContactsController extends BaseController {
                     String lookup_key = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
                     String name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
                     String phone = null;
-                    if (contactsMap.get(lookup_key) != null || TextUtils.isEmpty(name)) {
+                    if ((contactsMap != null && contactsMap.get(lookup_key) != null) || TextUtils.isEmpty(name)) {
                         continue;
                     }
                     pCur = cr.query(

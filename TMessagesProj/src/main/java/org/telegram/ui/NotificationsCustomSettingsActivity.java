@@ -397,11 +397,11 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 args.putBoolean("onlySelect", true);
                 args.putBoolean("checkCanWrite", false);
                 if (currentType == NotificationsController.TYPE_GROUP) {
-                    args.putInt("dialogsType", 6);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_GROUPS_ONLY);
                 } else if (currentType == NotificationsController.TYPE_CHANNEL) {
-                    args.putInt("dialogsType", 5);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_CHANNELS_ONLY);
                 } else {
-                    args.putInt("dialogsType", 4);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
                 }
                 DialogsActivity activity = new DialogsActivity(args);
                 activity.setDelegate((fragment, dids, message, param) -> {
@@ -414,6 +414,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         updateRows(true);
                     });
                     presentFragment(profileNotificationsActivity, true);
+                    return true;
                 });
                 presentFragment(activity);
             } else if (position == deleteAllRow) {

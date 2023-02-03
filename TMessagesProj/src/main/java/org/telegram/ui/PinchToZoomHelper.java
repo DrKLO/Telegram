@@ -750,7 +750,9 @@ public class PinchToZoomHelper {
             invalidateViews();
         } else if ((ev.getActionMasked() == MotionEvent.ACTION_UP || (ev.getActionMasked() == MotionEvent.ACTION_POINTER_UP && checkPointerIds(ev)) || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) && isInPinchToZoomTouchMode) {
             isInPinchToZoomTouchMode = false;
-            child.getParent().requestDisallowInterceptTouchEvent(false);
+            if (child != null && child.getParent() != null) {
+                child.getParent().requestDisallowInterceptTouchEvent(false);
+            }
             finishZoom();
         }
         return isInOverlayModeFor(child);

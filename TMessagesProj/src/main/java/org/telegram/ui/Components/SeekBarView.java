@@ -66,7 +66,7 @@ public class SeekBarView extends FrameLayout {
     private float transitionProgress = 1f;
     private int transitionThumbX;
     private int separatorsCount;
-    private int lineWidthDp = 2;
+    private int lineWidthDp = 3;
 
     private boolean twoSided;
     private final Theme.ResourcesProvider resourcesProvider;

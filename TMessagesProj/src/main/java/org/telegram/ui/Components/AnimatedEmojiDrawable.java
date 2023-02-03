@@ -61,6 +61,9 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_FORUM_TOPIC = 10;
     public static final int CACHE_TYPE_FORUM_TOPIC_LARGE = 11;
     public static final int CACHE_TYPE_RENDERING_VIDEO = 12;
+    public static final int CACHE_TYPE_ALERT_PREVIEW_STATIC = 13;
+    public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW = 14;
+    public static final int CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 = 15;
 
     public int rawDrawIndex;
 
@@ -163,7 +166,9 @@ public class AnimatedEmojiDrawable extends Drawable {
                 if (emojiDocumentsCache != null) {
                     TLRPC.Document cacheDocument = emojiDocumentsCache.get(id);
                     if (cacheDocument != null) {
-                        onDone.run(cacheDocument);
+                        if (onDone != null) {
+                            onDone.run(cacheDocument);
+                        }
                         return;
                     }
                 }
@@ -171,19 +176,18 @@ public class AnimatedEmojiDrawable extends Drawable {
             if (!checkThread()) {
                 return;
             }
-            if (onDone != null) {
-                if (loadingDocuments == null) {
-                    loadingDocuments = new HashMap<>();
-                }
-                ArrayList<ReceivedDocument> callbacks = loadingDocuments.get(id);
-                if (callbacks != null) {
-                    callbacks.add(onDone);
-                    return;
-                }
-                callbacks = new ArrayList<>(1);
-                callbacks.add(onDone);
-                loadingDocuments.put(id, callbacks);
+            if (loadingDocuments == null) {
+                loadingDocuments = new HashMap<>();
             }
+            ArrayList<ReceivedDocument> callbacks = loadingDocuments.get(id);
+            if (callbacks != null) {
+                callbacks.add(onDone);
+                return;
+            }
+            callbacks = new ArrayList<>(1);
+            callbacks.add(onDone);
+            loadingDocuments.put(id, callbacks);
+
             if (toFetchDocuments == null) {
                 toFetchDocuments = new HashSet<>();
             }
@@ -312,7 +316,10 @@ public class AnimatedEmojiDrawable extends Drawable {
                         ArrayList<ReceivedDocument> loadingCallbacks = loadingDocuments.remove(document.id);
                         if (loadingCallbacks != null) {
                             for (int j = 0; j < loadingCallbacks.size(); ++j) {
-                                loadingCallbacks.get(j).run(document);
+                                ReceivedDocument callback = loadingCallbacks.get(j);
+                                if (callback != null) {
+                                    callback.run(document);
+                                }
                             }
                             loadingCallbacks.clear();
                         }
@@ -413,6 +420,8 @@ public class AnimatedEmojiDrawable extends Drawable {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[2].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[2].descent())) * 1.15f / AndroidUtilities.density);
         } else if (this.cacheType == STANDARD_LOTTIE_FRAME) {
             sizedp = (int) ((Math.abs(Theme.chat_msgTextPaintEmoji[0].ascent()) + Math.abs(Theme.chat_msgTextPaintEmoji[0].descent())) * 1.15f / AndroidUtilities.density);
+        } else if (cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2) {
+            sizedp = 100;
         } else {
             sizedp = 34;
         }
@@ -459,15 +468,17 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         imageReceiver.setVideoThumbIsSame(true);
         boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP);
-
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC) {
+            onlyStaticPreview = true;
+        }
         String filter = sizedp + "_" + sizedp;
         if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
             filter += "_d_nostream";
         }
-        if (cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH) && cacheType != CACHE_TYPE_RENDERING_VIDEO) {
+        if (cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2 && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != STANDARD_LOTTIE_FRAME && (cacheType != CACHE_TYPE_MESSAGES_LARGE || SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_HIGH) && cacheType != CACHE_TYPE_RENDERING_VIDEO) {
             filter += "_pcache";
         }
-        if (cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_MESSAGES_LARGE) {
+        if (cacheType != CACHE_TYPE_MESSAGES && cacheType != CACHE_TYPE_MESSAGES_LARGE && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW2) {
             filter += "_compress";
         }
         if (cacheType == STANDARD_LOTTIE_FRAME) {
@@ -481,8 +492,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         if ("video/webm".equals(document.mime_type)) {
             mediaLocation = ImageLocation.getForDocument(document);
             mediaFilter = filter + "_" + ImageLoader.AUTOPLAY_FILTER;
-            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-            thumbDrawable = svgThumb;
+            thumbDrawable = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
         } else if ("application/x-tgsticker".equals(document.mime_type)) {
             String probableCacheKey = (cacheType != 0 ? cacheType + "_" : "") + documentId + "@" + filter;
             if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW || (cacheType == CACHE_TYPE_KEYBOARD || !ImageLoader.getInstance().hasLottieMemCache(probableCacheKey))) {
@@ -524,13 +534,9 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
 
-        if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
-            imageReceiver.setAutoRepeatCount(2);
-        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE) {
-            imageReceiver.setAutoRepeatCount(1);
-        }
+        updateAutoRepeat(imageReceiver);
 
-        if (cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
+        if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC || cacheType == CACHE_TYPE_ALERT_PREVIEW || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE) {
             imageReceiver.setLayerNum(7);
         }
         if (cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) {
@@ -554,6 +560,14 @@ public class AnimatedEmojiDrawable extends Drawable {
         imageReceiver.setRoundRadius(roundRadius);
         updateAttachState();
         invalidate();
+    }
+
+    private void updateAutoRepeat(ImageReceiver imageReceiver) {
+        if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
+            imageReceiver.setAutoRepeatCount(2);
+        } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW) {
+            imageReceiver.setAutoRepeatCount(1);
+        }
     }
 
     void invalidate() {
@@ -905,11 +919,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                 AnimatedEmojiDrawable drawable = (AnimatedEmojiDrawable) getDrawable();
                 ImageReceiver imageReceiver = drawable.getImageReceiver();
                 if (imageReceiver != null) {
-                    if (drawable.cacheType == CACHE_TYPE_EMOJI_STATUS || drawable.cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || drawable.cacheType == CACHE_TYPE_FORUM_TOPIC) {
-                        imageReceiver.setAutoRepeatCount(2);
-                    } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE) {
-                        imageReceiver.setAutoRepeatCount(1);
-                    }
+                    drawable.updateAutoRepeat(imageReceiver);
                     imageReceiver.startAnimation();
                 }
             }

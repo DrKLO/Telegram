@@ -391,14 +391,6 @@ public class ActionBarMenuItem extends FrameLayout {
                 popupWindow.dismiss();
             }
         });
-
-        if (popupLayout.getSwipeBack() != null) {
-            popupLayout.getSwipeBack().setOnClickListener(view -> {
-                if (popupWindow != null) {
-                    popupWindow.dismiss();
-                }
-            });
-        }
     }
 
     public void removeAllSubItems() {

@@ -502,9 +502,11 @@ public class AboutLinkCell extends FrameLayout {
 
             @Override
             public void end(boolean replacing) {
-                if (thisLoading != null) {
-                    links.removeLoading(thisLoading, true);
-                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (thisLoading != null) {
+                        links.removeLoading(thisLoading, true);
+                    }
+                }, replacing ? 0 : 350);
             }
         } : null;
         if (pressedLink instanceof URLSpanNoUnderline) {

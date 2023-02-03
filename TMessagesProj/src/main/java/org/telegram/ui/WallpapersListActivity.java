@@ -564,7 +564,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 } else if (id == forward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
-                    args.putInt("dialogsType", 3);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     DialogsActivity fragment = new DialogsActivity(args);
                     fragment.setDelegate((fragment1, dids, message, param) -> {
                         StringBuilder fmessage = new StringBuilder();
@@ -614,7 +614,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                                     args1.putLong("chat_id", -did);
                                 }
                                 if (!MessagesController.getInstance(currentAccount).checkCanOpenChat(args1, fragment1)) {
-                                    return;
+                                    return true;
                                 }
                             }
                             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
@@ -623,6 +623,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             presentFragment(chatActivity, true);
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
+                        return true;
                     });
                     presentFragment(fragment);
                 }

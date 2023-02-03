@@ -80,7 +80,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
     int buttonRow;
 
     FireworksOverlay fireworksOverlay;
-    PremiumGradient.GradientTools gradientTools;
+    PremiumGradient.PremiumGradientTools gradientTools;
     StarParticlesView starParticlesView;
     GLIconTextureView iconTextureView;
     ViewGroup iconContainer;
@@ -124,7 +124,7 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
             buttonContainer.setVisibility(View.GONE);
         }
 
-        gradientTools = new PremiumGradient.GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
+        gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
         gradientTools.exactly = true;
         gradientTools.x1 = 0;
         gradientTools.y1 = 1f;

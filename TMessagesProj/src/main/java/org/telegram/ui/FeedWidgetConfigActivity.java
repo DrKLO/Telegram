@@ -27,7 +27,7 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
         if (creatingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            args.putInt("dialogsType", 5);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_CHANNELS_ONLY);
             args.putBoolean("allowSwitchAccount", true);
             args.putBoolean("checkCanWrite", false);
             DialogsActivity fragment = new DialogsActivity(args);
@@ -47,6 +47,7 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
                 resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, creatingAppWidgetId);
                 setResult(RESULT_OK, resultValue);
                 finish();
+                return true;
             });
 
             if (AndroidUtilities.isTablet()) {

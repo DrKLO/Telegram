@@ -1800,7 +1800,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         resultArray = new ArrayList<>();
                         ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
                         ArrayList<TLRPC.User> encUsers = new ArrayList<>();
-                        accountInstance.getMessagesStorage().localSearch(0, query, resultArray, resultArrayNames, encUsers, -1);
+                        accountInstance.getMessagesStorage().localSearch(0, query, resultArray, resultArrayNames, encUsers, null, -1);
                     }
 
                     final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();

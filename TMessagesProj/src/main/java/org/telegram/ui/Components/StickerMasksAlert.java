@@ -142,7 +142,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         }
 
         @Override
-        public boolean needSend() {
+        public boolean needSend(int contentType) {
             return false;
         }
 

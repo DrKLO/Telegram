@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -59,6 +60,7 @@ import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SharedMediaLayout;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -121,6 +123,9 @@ public class CalendarActivity extends BaseFragment {
     private boolean canClearHistory;
 
     private int calendarType;
+
+    private Path path = new Path();
+    private SpoilerEffect mediaSpoilerEffect = new SpoilerEffect();
 
     public CalendarActivity(Bundle args, int photosVideosTypeFilter, int selectedDate) {
         super(args);
@@ -923,6 +928,7 @@ public class CalendarActivity extends BaseFragment {
                     PeriodDay periodDay = messagesByDays.get(key);
                     MessageObject messageObject = periodDay.messageObject;
                     if (messageObject != null) {
+                        boolean hasMediaSpoilers = messageObject.hasMediaSpoilers();
                         if (messageObject.isVideo()) {
                             TLRPC.Document document = messageObject.getDocument();
                             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
@@ -932,9 +938,9 @@ public class CalendarActivity extends BaseFragment {
                             }
                             if (thumb != null) {
                                 if (messageObject.strippedThumb != null) {
-                                    receiver.setImage(ImageLocation.getForDocument(qualityThumb, document), "44_44", messageObject.strippedThumb, null, messageObject, 0);
+                                    receiver.setImage(ImageLocation.getForDocument(qualityThumb, document), hasMediaSpoilers ? "5_5_b" : "44_44", messageObject.strippedThumb, null, messageObject, 0);
                                 } else {
-                                    receiver.setImage(ImageLocation.getForDocument(qualityThumb, document), "44_44", ImageLocation.getForDocument(thumb, document), "b", (String) null, messageObject, 0);
+                                    receiver.setImage(ImageLocation.getForDocument(qualityThumb, document), hasMediaSpoilers ? "5_5_b" : "44_44", ImageLocation.getForDocument(thumb, document), "b", (String) null, messageObject, 0);
                                 }
                             }
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageObject.messageOwner.media.photo != null && !messageObject.photoThumbs.isEmpty()) {
@@ -945,9 +951,9 @@ public class CalendarActivity extends BaseFragment {
                                     currentPhotoObjectThumb = null;
                                 }
                                 if (messageObject.strippedThumb != null) {
-                                    receiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), "44_44", null, null, messageObject.strippedThumb, currentPhotoObject != null ? currentPhotoObject.size : 0, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
+                                    receiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), hasMediaSpoilers ? "5_5_b" : "44_44", null, null, messageObject.strippedThumb, currentPhotoObject != null ? currentPhotoObject.size : 0, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
                                 } else {
-                                    receiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), "44_44", ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), "b", currentPhotoObject != null ? currentPhotoObject.size : 0, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
+                                    receiver.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), hasMediaSpoilers ? "5_5_b" : "44_44", ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), "b", currentPhotoObject != null ? currentPhotoObject.size : 0, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
                                 }
                             } else {
                                 if (messageObject.strippedThumb != null) {
@@ -1059,6 +1065,24 @@ public class CalendarActivity extends BaseFragment {
                         imagesByDays.get(i).setAlpha(day.enterAlpha);
                         imagesByDays.get(i).setImageCoords(cx - (AndroidUtilities.dp(44) - pad) / 2f, cy - (AndroidUtilities.dp(44) - pad) / 2f, AndroidUtilities.dp(44) - pad, AndroidUtilities.dp(44) - pad);
                         imagesByDays.get(i).draw(canvas);
+
+                        if (messagesByDays.get(i) != null && messagesByDays.get(i).messageObject != null && messagesByDays.get(i).messageObject.hasMediaSpoilers()) {
+                            float rad = (AndroidUtilities.dp(44) - pad) / 2f;
+                            path.rewind();
+                            path.addCircle(cx, cy, rad, Path.Direction.CW);
+
+                            canvas.save();
+                            canvas.clipPath(path);
+
+                            int sColor = Color.WHITE;
+                            mediaSpoilerEffect.setColor(ColorUtils.setAlphaComponent(sColor, (int) (Color.alpha(sColor) * 0.325f * day.enterAlpha)));
+                            mediaSpoilerEffect.setBounds((int) (cx - rad), (int) (cy - rad), (int) (cx + rad), (int) (cy + rad));
+                            mediaSpoilerEffect.draw(canvas);
+
+                            invalidate();
+
+                            canvas.restore();
+                        }
 
                         blackoutPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (day.enterAlpha * 80)));
                         canvas.drawCircle(cx, cy, (AndroidUtilities.dp(44) - pad) / 2f, blackoutPaint);

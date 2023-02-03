@@ -148,7 +148,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private TLRPC.Photo avatarForRestPhoto;
 
     @Override
-    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo) {
+    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup) {
         AndroidUtilities.runOnUIThread(() -> {
             avatarForRest = smallSize;
             avatarForRestPhoto = null;
@@ -164,6 +164,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     req.flags |= 2;
                     req.video_start_ts = videoStartTimestamp;
                     req.flags |= 4;
+                }
+                if (emojiMarkup != null) {
+                    req.video_emoji_markup = emojiMarkup;
+                    req.flags |= 16;
                 }
                 req.fallback = true;
                 req.flags |= 8;
@@ -389,7 +393,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             ContactsController.getInstance(currentAccount).loadPrivacySettings();
         }
         if (rulesType == PRIVACY_RULES_TYPE_PHOTO) {
-            imageUpdater = new ImageUpdater(false);
+            imageUpdater = new ImageUpdater(false, ImageUpdater.FOR_TYPE_USER, true);
             imageUpdater.parentFragment = this;
             imageUpdater.setDelegate(this);
             TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().clientUserId);

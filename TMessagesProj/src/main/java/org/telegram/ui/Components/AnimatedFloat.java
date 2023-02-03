@@ -77,6 +77,14 @@ public class AnimatedFloat {
         this.firstSet = true;
     }
 
+    public AnimatedFloat(Runnable invalidate, long transitionDelay, long transitionDuration, TimeInterpolator transitionInterpolator) {
+        this.invalidate = invalidate;
+        this.transitionDelay = transitionDelay;
+        this.transitionDuration = transitionDuration;
+        this.transitionInterpolator = transitionInterpolator;
+        this.firstSet = true;
+    }
+
     public AnimatedFloat(float initialValue, View parentToInvalidate) {
         this.parent = parentToInvalidate;
         this.value = targetValue = initialValue;

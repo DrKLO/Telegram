@@ -166,7 +166,7 @@ public class ForwardingPreviewView extends FrameLayout {
                     cell.drawCheckBox(canvas);
                     canvas.save();
                     canvas.translate(cell.getX(), cell.getY());
-                    cell.drawMessageText(canvas, cell.getMessageObject().textLayoutBlocks, true, 1f, false);
+                    cell.drawMessageText(canvas, cell.getMessageObject().textLayoutBlocks, cell.getMessageObject().textXOffset, true, 1f, false);
 
                     if (cell.getCurrentMessagesGroup() != null || cell.getTransitionParams().animateBackgroundBoundsInner) {
                         cell.drawNamesLayout(canvas, 1f);

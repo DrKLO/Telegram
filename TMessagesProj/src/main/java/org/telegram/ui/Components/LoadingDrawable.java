@@ -256,7 +256,6 @@ public class LoadingDrawable extends Drawable {
                 rectF.inset(-strokePaint.getStrokeWidth(), -strokePaint.getStrokeWidth());
                 canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
             }
-
         }
         if (appearByGradient) {
             int appearGradientWidthNow = Math.max(AndroidUtilities.dp(200), bounds.width() / 3);
@@ -327,7 +326,9 @@ public class LoadingDrawable extends Drawable {
             canvas.restore();
         }
 
-        invalidateSelf();
+        if (!isDisappeared()) {
+            invalidateSelf();
+        }
     }
 
     public void updateBounds() {

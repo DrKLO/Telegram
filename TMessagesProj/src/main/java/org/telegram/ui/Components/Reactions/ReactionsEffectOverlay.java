@@ -593,7 +593,7 @@ public class ReactionsEffectOverlay {
 
             if (animationType != SHORT_ANIMATION) {
                 if (availableReaction != null) {
-                    emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastframe", null, "webp", availableReaction, 1);
+                    emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastreactframe", null, "webp", availableReaction, 1);
                 }
                 container.addView(emojiStaticImageView);
                 emojiStaticImageView.getLayoutParams().width = emojiSize;

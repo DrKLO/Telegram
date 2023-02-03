@@ -206,7 +206,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
 
         @Override
-        public boolean needSend() {
+        public boolean needSend(int contentType) {
             return delegate != null;
         }
 

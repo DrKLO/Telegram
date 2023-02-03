@@ -354,7 +354,7 @@ public class CheckBoxBase {
 
             if (backgroundType == 9) {
                 paint.setColor(getThemedColor(background2ColorKey));
-            } else if (backgroundType == 11 || backgroundType == 6 || backgroundType == 7 || backgroundType == 10 || !drawUnchecked && backgroundColorKey != null) {
+            } else if (backgroundType == 11 || backgroundType == 6 || backgroundType == 7 || backgroundType == 10 || !drawUnchecked && backgroundColorKey != null || backgroundType == 14) {
                 paint.setColor(getThemedColor(backgroundColorKey));
             } else {
                 paint.setColor(getThemedColor(enabled ? Theme.key_checkbox : Theme.key_checkboxDisabled));

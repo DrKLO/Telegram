@@ -41,9 +41,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
 public class SharedConfig {
+    /**
+     * V2: Ping and check time serialized
+     */
+    private final static int PROXY_SCHEMA_V2 = 2;
+    private final static int PROXY_CURRENT_SCHEMA_VERSION = PROXY_SCHEMA_V2;
+
     public final static int PASSCODE_TYPE_PIN = 0,
             PASSCODE_TYPE_PASSWORD = 1;
 
@@ -125,7 +132,7 @@ public class SharedConfig {
     private static final Object sync = new Object();
     private static final Object localIdSync = new Object();
 
-    public static int saveToGalleryFlags;
+//    public static int saveToGalleryFlags;
     public static int mapPreviewType = 2;
     public static boolean chatBubbles = Build.VERSION.SDK_INT >= 30;
     public static boolean autoplayGifs = true;
@@ -142,7 +149,7 @@ public class SharedConfig {
     public static boolean streamMkv = false;
     public static boolean saveStreamMedia = true;
     public static boolean smoothKeyboard = true;
-    public static boolean pauseMusicOnRecord = true;
+    public static boolean pauseMusicOnRecord = false;
     public static boolean chatBlur = true;
     public static boolean noiseSupression;
     public static boolean noStatusBar = true;
@@ -161,6 +168,8 @@ public class SharedConfig {
     public static boolean fontSizeIsDefault;
     public static int bubbleRadius = 17;
     public static int ivFontSize = 16;
+    public static boolean proxyRotationEnabled;
+    public static int proxyRotationTimeout;
     public static int messageSeenHintCount;
     public static int emojiInteractionsHintCount;
     public static int dayNightThemeSwitchHintCount;
@@ -184,6 +193,8 @@ public class SharedConfig {
     public static int fastScrollHintCount = 3;
     public static boolean dontAskManageStorage;
 
+    public static boolean translateChats = true;
+
     public static boolean isFloatingDebugActive;
     public static LiteMode liteMode;
 
@@ -205,23 +216,23 @@ public class SharedConfig {
         public boolean available;
         public long availableCheckTime;
 
-        public ProxyInfo(String a, int p, String u, String pw, String s) {
-            address = a;
-            port = p;
-            username = u;
-            password = pw;
-            secret = s;
-            if (address == null) {
-                address = "";
+        public ProxyInfo(String address, int port, String username, String password, String secret) {
+            this.address = address;
+            this.port = port;
+            this.username = username;
+            this.password = password;
+            this.secret = secret;
+            if (this.address == null) {
+                this.address = "";
             }
-            if (password == null) {
-                password = "";
+            if (this.password == null) {
+                this.password = "";
             }
-            if (username == null) {
-                username = "";
+            if (this.username == null) {
+                this.username = "";
             }
-            if (secret == null) {
-                secret = "";
+            if (this.secret == null) {
+                this.secret = "";
             }
         }
 
@@ -279,6 +290,8 @@ public class SharedConfig {
                 editor.putBoolean("forwardingOptionsHintShown", forwardingOptionsHintShown);
                 editor.putInt("lockRecordAudioVideoHint", lockRecordAudioVideoHint);
                 editor.putString("storageCacheDir", !TextUtils.isEmpty(storageCacheDir) ? storageCacheDir : "");
+                editor.putBoolean("proxyRotationEnabled", proxyRotationEnabled);
+                editor.putInt("proxyRotationTimeout", proxyRotationTimeout);
 
                 if (pendingAppUpdate != null) {
                     try {
@@ -302,6 +315,7 @@ public class SharedConfig {
                 editor.putBoolean("hasEmailLogin", hasEmailLogin);
                 editor.putBoolean("useLNavigation", useLNavigation);
                 editor.putBoolean("floatingDebugActive", isFloatingDebugActive);
+                editor.putBoolean("record_via_sco", recordViaSco);
                 editor.apply();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -345,6 +359,8 @@ public class SharedConfig {
             passportConfigJson = preferences.getString("passportConfigJson", "");
             passportConfigHash = preferences.getInt("passportConfigHash", 0);
             storageCacheDir = preferences.getString("storageCacheDir", null);
+            proxyRotationEnabled = preferences.getBoolean("proxyRotationEnabled", false);
+            proxyRotationTimeout = preferences.getInt("proxyRotationTimeout", ProxyRotationController.DEFAULT_TIMEOUT_INDEX);
             String authKeyString = preferences.getString("pushAuthKey", null);
             if (!TextUtils.isEmpty(authKeyString)) {
                 pushAuthKey = Base64.decode(authKeyString, Base64.DEFAULT);
@@ -399,13 +415,7 @@ public class SharedConfig {
             }
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            boolean saveToGalleryLegacy = preferences.getBoolean("save_gallery", false);
-            if (saveToGalleryLegacy && BuildVars.NO_SCOPED_STORAGE) {
-                saveToGalleryFlags = SAVE_TO_GALLERY_FLAG_PEER + SAVE_TO_GALLERY_FLAG_CHANNELS + SAVE_TO_GALLERY_FLAG_GROUP;
-                preferences.edit().remove("save_gallery").putInt("save_gallery_flags", saveToGalleryFlags).apply();
-            } else {
-                saveToGalleryFlags = preferences.getInt("save_gallery_flags", 0);
-            }
+            SaveToGallerySettingsHelper.load(preferences);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
@@ -1036,17 +1046,17 @@ public class SharedConfig {
     }
 
     public static void toggleSaveToGalleryFlag(int flag) {
-        if ((saveToGalleryFlags & flag) != 0) {
-            saveToGalleryFlags &= ~flag;
-        } else {
-            saveToGalleryFlags |= flag;
-        }
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        preferences.edit().putInt("save_gallery_flags", saveToGalleryFlags).apply();
-        ImageLoader.getInstance().checkMediaPaths();
-        ImageLoader.getInstance().getCacheOutQueue().postRunnable(() -> {
-            checkSaveToGalleryFiles();
-        });
+//        if ((saveToGalleryFlags & flag) != 0) {
+//            saveToGalleryFlags &= ~flag;
+//        } else {
+//            saveToGalleryFlags |= flag;
+//        }
+//        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+//        preferences.edit().putInt("save_gallery_flags", saveToGalleryFlags).apply();
+//        ImageLoader.getInstance().checkMediaPaths();
+//        ImageLoader.getInstance().getCacheOutQueue().postRunnable(() -> {
+//            checkSaveToGalleryFiles();
+//        });
     }
 
     public static void toggleAutoplayGifs() {
@@ -1256,17 +1266,46 @@ public class SharedConfig {
             byte[] bytes = Base64.decode(list, Base64.DEFAULT);
             SerializedData data = new SerializedData(bytes);
             int count = data.readInt32(false);
-            for (int a = 0; a < count; a++) {
-                ProxyInfo info = new ProxyInfo(
-                        data.readString(false),
-                        data.readInt32(false),
-                        data.readString(false),
-                        data.readString(false),
-                        data.readString(false));
-                proxyList.add(info);
-                if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
-                    if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
-                        currentProxy = info;
+            if (count == -1) { // V2 or newer
+                int version = data.readByte(false);
+
+                if (version == PROXY_SCHEMA_V2) {
+                    count = data.readInt32(false);
+
+                    for (int i = 0; i < count; i++) {
+                        ProxyInfo info = new ProxyInfo(
+                                data.readString(false),
+                                data.readInt32(false),
+                                data.readString(false),
+                                data.readString(false),
+                                data.readString(false));
+
+                        info.ping = data.readInt64(false);
+                        info.availableCheckTime = data.readInt64(false);
+
+                        proxyList.add(info);
+                        if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
+                            if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
+                                currentProxy = info;
+                            }
+                        }
+                    }
+                } else {
+                    FileLog.e("Unknown proxy schema version: " + version);
+                }
+            } else {
+                for (int a = 0; a < count; a++) {
+                    ProxyInfo info = new ProxyInfo(
+                            data.readString(false),
+                            data.readInt32(false),
+                            data.readString(false),
+                            data.readString(false),
+                            data.readString(false));
+                    proxyList.add(info);
+                    if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
+                        if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
+                            currentProxy = info;
+                        }
                     }
                 }
             }
@@ -1279,16 +1318,33 @@ public class SharedConfig {
     }
 
     public static void saveProxyList() {
+        List<ProxyInfo> infoToSerialize = new ArrayList<>(proxyList);
+        Collections.sort(infoToSerialize, (o1, o2) -> {
+            long bias1 = SharedConfig.currentProxy == o1 ? -200000 : 0;
+            if (!o1.available) {
+                bias1 += 100000;
+            }
+            long bias2 = SharedConfig.currentProxy == o2 ? -200000 : 0;
+            if (!o2.available) {
+                bias2 += 100000;
+            }
+            return Long.compare(o1.ping + bias1, o2.ping + bias2);
+        });
         SerializedData serializedData = new SerializedData();
-        int count = proxyList.size();
+        serializedData.writeInt32(-1);
+        serializedData.writeByte(PROXY_CURRENT_SCHEMA_VERSION);
+        int count = infoToSerialize.size();
         serializedData.writeInt32(count);
         for (int a = 0; a < count; a++) {
-            ProxyInfo info = proxyList.get(a);
+            ProxyInfo info = infoToSerialize.get(a);
             serializedData.writeString(info.address != null ? info.address : "");
             serializedData.writeInt32(info.port);
             serializedData.writeString(info.username != null ? info.username : "");
             serializedData.writeString(info.password != null ? info.password : "");
             serializedData.writeString(info.secret != null ? info.secret : "");
+
+            serializedData.writeInt64(info.ping);
+            serializedData.writeInt64(info.availableCheckTime);
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         preferences.edit().putString("proxy_list", Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP)).commit();
@@ -1307,6 +1363,10 @@ public class SharedConfig {
         proxyList.add(proxyInfo);
         saveProxyList();
         return proxyInfo;
+    }
+
+    public static boolean isProxyEnabled() {
+        return MessagesController.getGlobalMainSettings().getBoolean("proxy_enabled", false) && currentProxy != null;
     }
 
     public static void deleteProxy(ProxyInfo proxyInfo) {
@@ -1340,7 +1400,7 @@ public class SharedConfig {
                 File videoPath = new File(telegramPath, "Telegram Video");
                 videoPath.mkdir();
 
-                if (saveToGalleryFlags != 0 || !BuildVars.NO_SCOPED_STORAGE) {
+                if (!BuildVars.NO_SCOPED_STORAGE) {
                     if (imagePath.isDirectory()) {
                         new File(imagePath, ".nomedia").delete();
                     }
@@ -1483,6 +1543,14 @@ public class SharedConfig {
 
         public static void setLastCheckedBackgroundActivity(long l) {
             prefs.edit().putLong("last_checked", l).apply();
+        }
+
+        public static int getDismissedCount() {
+            return prefs.getInt("dismissed_count", 0);
+        }
+
+        public static void increaseDismissedCount() {
+            prefs.edit().putInt("dismissed_count", getDismissedCount() + 1).apply();
         }
     }
 

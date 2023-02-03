@@ -3,6 +3,9 @@ package org.telegram.ui.Components;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -120,6 +123,10 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
             }
         } else {
             imageView.setImage(null, null, "webp", null, setObject);
+        }
+
+        if (MessageObject.isTextColorEmoji(sticker)) {
+            imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         }
 
         switch (type) {

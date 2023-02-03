@@ -14,6 +14,10 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.Typeface;
 import android.opengl.GLES11Ext;
@@ -52,6 +56,7 @@ import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.Rect;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -143,6 +148,8 @@ public class TextureRenderer {
     private boolean isPhoto;
 
     private boolean firstFrame = true;
+    Path path;
+    Paint xRefPaint;
 
     public TextureRenderer(MediaController.SavedFilterState savedFilterState, String image, String paint, ArrayList<VideoEditedInfo.MediaEntity> entities, MediaController.CropState cropState, int w, int h, int originalWidth, int originalHeight, int rotation, float fps, boolean photo) {
         isPhoto = photo;
@@ -404,6 +411,7 @@ public class TextureRenderer {
                 VideoEditedInfo.MediaEntity entity = mediaEntities.get(a);
                 if (entity.ptr != 0) {
                     RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, stickerBitmap, 512, 512, stickerBitmap.getRowBytes(), true);
+                    applyRoundRadius(entity, stickerBitmap);
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
                     GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
                     entity.currentFrame += entity.framesPerDraw;
@@ -420,15 +428,21 @@ public class TextureRenderer {
                         currentFrame--;
                     }
                     Bitmap frameBitmap = entity.animatedFileDrawable.getBackgroundBitmap();
-                    if (stickerCanvas == null && stickerBitmap != null) {
-                        stickerCanvas = new Canvas(stickerBitmap);
-                    }
-                    if (stickerBitmap != null && frameBitmap != null) {
-                        stickerBitmap.eraseColor(Color.TRANSPARENT);
-                        stickerCanvas.drawBitmap(frameBitmap, 0, 0, null);
-                        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
-                        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
-                        drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
+                    if (frameBitmap != null) {
+                        if (stickerCanvas == null && stickerBitmap != null) {
+                            stickerCanvas = new Canvas(stickerBitmap);
+                            if (stickerBitmap.getHeight() != frameBitmap.getHeight() || stickerBitmap.getWidth() != frameBitmap.getWidth()) {
+                                stickerCanvas.scale(stickerBitmap.getWidth() / (float) frameBitmap.getWidth(), stickerBitmap.getHeight() / (float) frameBitmap.getHeight());
+                            }
+                        }
+                        if (stickerBitmap != null) {
+                            stickerBitmap.eraseColor(Color.TRANSPARENT);
+                            stickerCanvas.drawBitmap(frameBitmap, 0, 0, null);
+                            applyRoundRadius(entity, stickerBitmap);
+                            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
+                            GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
+                            drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
+                        }
                     }
                 } else if (entity.view != null && entity.canvas != null && entity.bitmap != null) {
                     entity.bitmap.eraseColor(Color.TRANSPARENT);
@@ -438,6 +452,7 @@ public class TextureRenderer {
                     EditTextEffects editTextEffects = (EditTextEffects) entity.view;
                     editTextEffects.incrementFrames(currentFrame - lastFrame);
                     entity.view.draw(entity.canvas);
+                    applyRoundRadius(entity, entity.bitmap);
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
                     GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
                     drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
@@ -451,6 +466,29 @@ public class TextureRenderer {
             }
         }
         GLES20.glFinish();
+    }
+
+    private void applyRoundRadius(VideoEditedInfo.MediaEntity entity, Bitmap stickerBitmap) {
+        if (stickerBitmap == null || entity == null || entity.roundRadius == 0) {
+            return;
+        }
+        if (entity.roundRadiusCanvas == null) {
+            entity.roundRadiusCanvas = new Canvas(stickerBitmap);
+        }
+        if (path == null) {
+            path = new Path();
+        }
+        if (xRefPaint == null) {
+            xRefPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            xRefPaint.setColor(0xff000000);
+            xRefPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+        }
+        float rad = Math.min(stickerBitmap.getWidth(), stickerBitmap.getHeight()) * entity.roundRadius;
+        path.rewind();
+        RectF rect = new RectF(0, 0, stickerBitmap.getWidth(), stickerBitmap.getHeight());
+        path.addRoundRect(rect, rad, rad, Path.Direction.CCW);
+        path.toggleInverseFillType();
+        entity.roundRadiusCanvas.drawPath(path, xRefPaint);
     }
 
     private void drawTexture(boolean bind, int texture) {

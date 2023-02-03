@@ -41,6 +41,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.util.Consumer;
 import androidx.core.view.ViewCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
@@ -209,6 +210,9 @@ public class Bulletin {
             layout.onAttach(this);
 
             containerLayout.addOnLayoutChangeListener(containerLayoutListener = (v, left, top1, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                if (currentDelegate != null && !currentDelegate.allowLayoutChanges()) {
+                    return;
+                }
                 if (!top) {
                     int newOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
                     if (lastBottomOffset != newOffset) {
@@ -579,6 +583,10 @@ public class Bulletin {
         }
 
         default void onHide(Bulletin bulletin) {
+        }
+
+        default boolean allowLayoutChanges() {
+            return true;
         }
     }
     //endregion
@@ -1264,6 +1272,7 @@ public class Bulletin {
         }
 
         public void setAnimation(TLRPC.Document document, int w, int h, String... layers) {
+            imageView.setAutoRepeat(true);
             imageView.setAnimation(document, w, h);
             for (String layer : layers) {
                 imageView.setLayerColor(layer + ".**", textColor);
@@ -1746,6 +1755,7 @@ public class Bulletin {
             } catch (Exception ignore) {}
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.KITKAT_WATCH)
         private void applyInsets(WindowInsets insets) {
             if (container != null) {
                 container.setPadding(

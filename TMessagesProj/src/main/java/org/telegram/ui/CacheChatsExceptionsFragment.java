@@ -81,11 +81,11 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                 args.putBoolean("onlySelect", true);
                 args.putBoolean("checkCanWrite", false);
                 if (currentType == CacheControlActivity.KEEP_MEDIA_TYPE_GROUP) {
-                    args.putInt("dialogsType", 6);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_GROUPS_ONLY);
                 } else if (currentType == CacheControlActivity.KEEP_MEDIA_TYPE_CHANNEL) {
-                    args.putInt("dialogsType", 5);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_CHANNELS_ONLY);
                 } else {
-                    args.putInt("dialogsType", 4);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
                 }
                 args.putBoolean("allowGlobalSearch", false);
                 DialogsActivity activity = new DialogsActivity(args);
@@ -123,6 +123,7 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                         int finalP = p;
                         showPopupFor(newException);
                     }
+                    return true;
                 });
                 presentFragment(activity);
             } else if (items.get(position).viewType == VIEW_TYPE_CHAT) {

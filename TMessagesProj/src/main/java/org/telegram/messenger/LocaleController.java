@@ -442,7 +442,7 @@ public class LocaleController {
     public LocaleInfo getBuiltinLanguageByPlural(String plural) {
         Collection<LocaleInfo> values = languagesDict.values();
         for (LocaleInfo l : values)
-            if (l.pathToFile != null && l.pathToFile.equals("remote") && l.pluralLangCode != null && l.pluralLangCode.equals(plural))
+            if (l.pathToFile != null && l.pathToFile.equals("remote") && !"en_raw".equals(l.shortName) && l.pluralLangCode != null && l.pluralLangCode.equals(plural))
                 return l;
         return null;
     }

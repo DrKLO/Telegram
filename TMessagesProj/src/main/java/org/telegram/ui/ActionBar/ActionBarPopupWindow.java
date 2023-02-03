@@ -668,6 +668,10 @@ public class ActionBarPopupWindow extends PopupWindow {
     }
 
     private void init() {
+        View contentView = getContentView();
+        if (contentView instanceof ActionBarPopupWindowLayout && ((ActionBarPopupWindowLayout) contentView).getSwipeBack() != null) {
+            ((ActionBarPopupWindowLayout) contentView).getSwipeBack().setOnClickListener(e -> dismiss());
+        }
         if (superListenerField != null) {
             try {
                 mSuperScrollListener = (ViewTreeObserver.OnScrollChangedListener) superListenerField.get(this);

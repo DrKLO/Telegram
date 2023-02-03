@@ -59,6 +59,7 @@ public class CustomEmojiReactionsWindow {
     public RectF drawingRect = new RectF();
     float enterTransitionProgress;
     boolean enterTransitionFinished;
+    boolean isShowing;
 
     SelectAnimatedEmojiDialog selectAnimatedEmojiDialog;
     ReactionsContainerLayout reactionsContainerLayout;
@@ -150,6 +151,11 @@ public class CustomEmojiReactionsWindow {
                 reactionsContainerLayout.onReactionClicked(emojiView, ReactionsLayoutInBubble.VisibleReaction.fromCustomEmoji(documentId), false);
                 AndroidUtilities.hideKeyboard(windowView);
             }
+
+            @Override
+            protected void invalidateParent() {
+                containerView.invalidate();
+            }
         };
         selectAnimatedEmojiDialog.setOnLongPressedListener(new SelectAnimatedEmojiDialog.onLongPressedListener() {
             @Override
@@ -181,14 +187,12 @@ public class CustomEmojiReactionsWindow {
 
         this.reactionsContainerLayout = reactionsContainerLayout;
         reactionsContainerLayout.prepareAnimation(true);
-        containerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-            @Override
-            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                containerView.removeOnLayoutChangeListener(this);
-                reactionsContainerLayout.prepareAnimation(false);
-                createTransition(true);
-            }
-        });
+        AndroidUtilities.runOnUIThread(() -> {
+            isShowing = true;
+            containerView.invalidate();
+            reactionsContainerLayout.prepareAnimation(false);
+            createTransition(true);
+        }, 50);
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 7);
     }
 
@@ -412,6 +416,9 @@ public class CustomEmojiReactionsWindow {
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            if (!isShowing)  {
+                return;
+            }
             dimPaint.setAlpha((int) (0.2f * enterTransitionProgress * 255));
             canvas.drawPaint(dimPaint);
             AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
@@ -619,7 +626,6 @@ public class CustomEmojiReactionsWindow {
             }
 
             selectAnimatedEmojiDialog.drawBigReaction(canvas, this);
-            invalidate();
         }
     }
 
