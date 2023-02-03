@@ -8491,4 +8491,5 @@
     <string name="DisableGlobalSearch">Disable Global Search</string>
     <string name="DisableQuickReaction">Disable quick reaction</string>
     <string name="DisableLockedAnimatedEmoji">Hide locked animated emoji in panel</string>
+    <string name="DisableParametersFromBotLinks">Disable parameters from bot links</string>
 </resources>
