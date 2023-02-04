@@ -357,6 +357,7 @@ public class CacheChart extends View {
 
     public CacheChart(Context context, int count, String[] colorKeys, int type, int[] particles) {
         super(context);
+        setLayerType(LAYER_TYPE_HARDWARE, null);
 
         this.sectionsCount = count;
         this.colorKeys = colorKeys;

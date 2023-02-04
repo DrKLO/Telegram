@@ -36,6 +36,7 @@ public class BitmapsCache {
     public final static int FRAME_RESULT_NO_FRAME = -1;
     public static final int COMPRESS_QUALITY_DEFAULT = 60;
     private final Cacheable source;
+    private static boolean mkdir;
     String fileName;
     int w;
     int h;
@@ -87,6 +88,10 @@ public class BitmapsCache {
         }
 
         File fileTmo = new File(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), "acache");
+        if (!mkdir) {
+            fileTmo.mkdir();
+            mkdir = true;
+        }
         file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + ".pcache2");
         useSharedBuffers = w < AndroidUtilities.dp(60) && h < AndroidUtilities.dp(60);
 

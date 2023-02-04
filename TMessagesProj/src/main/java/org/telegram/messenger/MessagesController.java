@@ -18,6 +18,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Paint;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,7 +27,6 @@ import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
@@ -7264,11 +7264,14 @@ public class MessagesController extends BaseController implements NotificationCe
                         type = 0;
                     }
                 }
-                if (text != null && ApplicationLoader.applicationContext != null) {
-                    if (Theme.dialogs_messageNamePaint == null) {
-                        Theme.createDialogsResources(ApplicationLoader.applicationContext);
+                if (text != null) {
+                    Paint paint = Theme.dialogs_messageNamePaint;
+                    if (paint == null) {
+                        paint = new Paint();
+                        paint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        paint.setTextSize(AndroidUtilities.dp(14));
                     }
-                    text = Emoji.replaceEmoji(text, Theme.dialogs_messageNamePaint.getFontMetricsInt(), false);
+                    text = Emoji.replaceEmoji(text, paint.getFontMetricsInt(), false);
                     newPrintingStrings.put(threadId, text);
                     newPrintingStringsTypes.put(threadId, type);
                 }

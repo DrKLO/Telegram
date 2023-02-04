@@ -236,19 +236,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         if (destroyWhenDone) {
             checkRunningTasks();
             if (loadFrameTask == null && cacheGenerateTask == null && nativePtr != 0) {
-                long nativePtrFinal = nativePtr;
-                long secondNativePtrFinal = secondNativePtr;
-                nativePtr = 0;
-                secondNativePtr = 0;
-                DispatchQueuePoolBackground.execute(() -> {
-                    if (nativePtrFinal != 0) {
-                        destroy(nativePtrFinal);
-                    }
-                    if (secondNativePtrFinal != 0) {
-                        destroy(secondNativePtrFinal);
-                    }
-                });
-
+                recycleNativePtr();
             }
         }
         if ((nativePtr == 0 || fallbackCache) && secondNativePtr == 0 && bitmapsCache == null) {
@@ -260,6 +248,22 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             stop();
         }
         scheduleNextGetFrame();
+    }
+
+    private void recycleNativePtr() {
+        long nativePtrFinal = nativePtr;
+        long secondNativePtrFinal = secondNativePtr;
+
+        nativePtr = 0;
+        secondNativePtr = 0;
+        DispatchQueuePoolBackground.execute(() -> {
+            if (nativePtrFinal != 0) {
+                destroy(nativePtrFinal);
+            }
+            if (secondNativePtrFinal != 0) {
+                destroy(secondNativePtrFinal);
+            }
+        });
     }
 
     protected void recycleResources() {
@@ -531,7 +535,13 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         try {
             LottieMetadata lottieMetadata;
             if (file != null) {
-                lottieMetadata = gson.fromJson(new FileReader(file.getAbsolutePath()), LottieMetadata.class);
+                FileReader reader = new FileReader(file.getAbsolutePath());
+                lottieMetadata = gson.fromJson(reader, LottieMetadata.class);
+                try {
+                    reader.close();
+                } catch (Exception e) {
+
+                }
             } else {
                 lottieMetadata = gson.fromJson(json, LottieMetadata.class);
             }
@@ -814,14 +824,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         if (loadingInBackground || secondLoadingInBackground) {
             destroyAfterLoading = true;
         } else if (loadFrameTask == null && cacheGenerateTask == null && !generatingCache) {
-            if (nativePtr != 0) {
-                destroy(nativePtr);
-                nativePtr = 0;
-            }
-            if (secondNativePtr != 0) {
-                destroy(secondNativePtr);
-                secondNativePtr = 0;
-            }
+            recycleNativePtr();
             if (bitmapsCache != null) {
                 bitmapsCache.recycle();
                 bitmapsCache = null;

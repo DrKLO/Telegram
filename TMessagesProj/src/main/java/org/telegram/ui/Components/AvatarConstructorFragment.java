@@ -92,8 +92,15 @@ public class AvatarConstructorFragment extends BaseFragment {
     Paint actionBarPaint = new Paint();
     private int gradientBackgroundItemWidth;
 
-    public String[] keys_avatar_background = {Theme.key_avatar_backgroundBlue, Theme.key_avatar_backgroundCyan, Theme.key_avatar_backgroundGreen, Theme.key_avatar_backgroundOrange, Theme.key_avatar_backgroundRed, Theme.key_avatar_backgroundPink, Theme.key_avatar_backgroundViolet};
-    public String[] keys_avatar_background2 = {Theme.key_avatar_background2Blue, Theme.key_avatar_background2Cyan, Theme.key_avatar_background2Green, Theme.key_avatar_background2Orange, Theme.key_avatar_background2Red, Theme.key_avatar_background2Pink, Theme.key_avatar_background2Violet};
+    public static final int[][] defaultColors = new int[][]{
+            new int[]{0xFF4D8DFF, 0xFF2BBFFF, 0xFF20E2CD, 0xFF0EE1F1},
+            new int[]{0xFF5EB6FB, 0xFF1FCEEB, 0xFF45F7B7, 0xFF1FF1D9},
+            new int[]{0xFF09D260, 0xFF5EDC40, 0xFFC1E526, 0xFF80DF2B},
+            new int[]{0xFFF5694E, 0xFFF5772C, 0xFFFFD412, 0xFFFFA743},
+            new int[]{0xFFF64884, 0xFFEF5B41, 0xFFF6A730, 0xFFFF7742},
+            new int[]{0xFFF94BA0, 0xFFFB5C80, 0xFFFFB23A, 0xFFFE7E62},
+            new int[]{0xFF837CFF, 0xFFB063FF, 0xFFFF72A9, 0xFFE269FF}
+    };
     public boolean finishOnDone = true;
     private ActionBarMenuItem setPhotoItem;
     private BottomSheet bottomSheet;
@@ -426,6 +433,7 @@ public class AvatarConstructorFragment extends BaseFragment {
                 wasChanged = true;
             }
         };
+        selectAnimatedEmojiDialog.forUser = !forGroup;
 
         selectAnimatedEmojiDialog.setAnimationsEnabled(fragmentBeginToShow);
         selectAnimatedEmojiDialog.setClipChildren(false);
@@ -829,11 +837,13 @@ public class AvatarConstructorFragment extends BaseFragment {
             LinearLayoutManager layoutManager = new LinearLayoutManager(context);
             layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
             setLayoutManager(layoutManager);
-            for (int i = 0; i < keys_avatar_background.length; i++) {
+            for (int i = 0; i < defaultColors.length; i++) {
                 BackgroundGradient backgroundGradient = new BackgroundGradient();
                 backgroundGradient.stableId = stableIdPointer++;
-                backgroundGradient.color1 = Theme.getColor(keys_avatar_background[i]);
-                backgroundGradient.color2 = Theme.getColor(keys_avatar_background2[i]);
+                backgroundGradient.color1 = defaultColors[i][0];
+                backgroundGradient.color2 = defaultColors[i][1];
+                backgroundGradient.color3 = defaultColors[i][2];
+                backgroundGradient.color4 = defaultColors[i][3];
                 gradients.add(backgroundGradient);
             }
             setOnItemClickListener((view, position) -> {

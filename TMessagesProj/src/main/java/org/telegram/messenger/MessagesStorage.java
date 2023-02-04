@@ -14043,7 +14043,17 @@ public class MessagesStorage extends BaseController {
                 }
                 ArrayList<TLRPC.UserFull> fullUsers = null;
                 if (!dialogUsers.isEmpty()) {
-                    fullUsers = loadUserInfos(dialogUsers);
+                    HashSet<Long> fullUsersToLoad = new HashSet<>();
+                    for (Long did : dialogUsers) {
+                        for (int i = 0; i < dialogs.users.size(); i++) {
+                            if (dialogs.users.get(i).id == did && dialogs.users.get(i).premium) {
+                                fullUsersToLoad.add(did);
+                            }
+                        }
+                    }
+                    if (!fullUsersToLoad.isEmpty()) {
+                        fullUsers = loadUserInfos(fullUsersToLoad);
+                    }
                 }
                 getMessagesController().processLoadedDialogs(dialogs, encryptedChats, fullUsers, folderId, offset, count, 1, false, false, true);
             } catch (Exception e) {

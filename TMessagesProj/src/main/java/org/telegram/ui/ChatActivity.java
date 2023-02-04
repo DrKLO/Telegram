@@ -6909,7 +6909,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         topViewSeparator2 = new View(context);
         topViewSeparator2.setVisibility(View.GONE);
         topViewSeparator2.setBackgroundColor(getThemedColor(Theme.key_divider));
-        topChatPanelView.addView(topViewSeparator2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.LEFT | Gravity.TOP, 10, 50, 10, 1));
+        topChatPanelView.addView(topViewSeparator2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.LEFT | Gravity.TOP, 10, 48, 10, 1));
         topViewSeparator3 = new View(context);
         topViewSeparator3.setVisibility(View.GONE);
         topViewSeparator3.setBackgroundColor(getThemedColor(Theme.key_divider));
@@ -14838,7 +14838,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             fillEditingMediaWithCaption(photos.get(0).caption, photos.get(0).entities);
             SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialog_id, replyingMessageObject, getThreadMessage(), null, forceDocument, true, null, notify, scheduleDate, photos.get(0).updateStickersOrder);
             afterMessageSend();
-            chatActivityEnterView.setFieldText("");
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.setFieldText("");
+            }
         }
         if (scheduleDate != 0) {
             if (scheduledMessagesCount == -1) {
@@ -21935,7 +21937,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             emojiStatusSpamHint.setText(text);
             emojiStatusSpamHint.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(50), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(99999, View.MeasureSpec.AT_MOST));
-            topChatPanelHeight += AndroidUtilities.dp(6);
+            topChatPanelHeight += AndroidUtilities.dp(4);
             emojiStatusSpamHint.setTranslationY(topChatPanelHeight);
             topChatPanelHeight += AndroidUtilities.dp(10) + emojiStatusSpamHint.getMeasuredHeight();
         } else {
@@ -21944,10 +21946,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             topViewSeparator2.setVisibility(View.GONE);
         }
         if (showTranslate) {
-            if (restartTopicButton.getVisibility() == View.VISIBLE) {
-//                topChatPanelHeight += AndroidUtilities.dp(48);
-                topViewSeparator3.setVisibility(View.VISIBLE);
-            } else if (addToContactsButton.getVisibility() == View.VISIBLE || user != null && !TextUtils.isEmpty(chatWithAdmin)) {
+            if (restartTopicButton.getVisibility() == View.VISIBLE ||
+                reportSpamButton.getVisibility() == View.VISIBLE ||
+                addToContactsButton.getVisibility() == View.VISIBLE ||
+                user != null && !TextUtils.isEmpty(chatWithAdmin)
+            ) {
                 topViewSeparator3.setVisibility(View.VISIBLE);
             } else {
                 topChatPanelHeight -= AndroidUtilities.dp(48);
@@ -24336,6 +24339,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             ReactionsContainerLayout finalReactionsLayout1 = reactionsLayout;
+            reactionsLayout.setParentLayout(scrimPopupContainerLayout);
             scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
                 @Override
                 public void dismiss() {
@@ -24373,7 +24377,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             scrimPopupWindow.setDismissAnimationDuration(220);
             scrimPopupWindow.setOutsideTouchable(true);
             scrimPopupWindow.setClippingEnabled(true);
-            scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+            if (reactionsLayout == null) {
+                scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+            } else {
+                scrimPopupWindow.setAnimationStyle(0);
+            }
             scrimPopupWindow.setFocusable(true);
             scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
             scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);

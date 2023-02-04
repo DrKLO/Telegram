@@ -975,16 +975,30 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
     }
 
     public static String languageName(String locale) {
-        if (locale == null || locale.equals("und") || locale.equals("auto")) {
+        return languageName(locale, null);
+    }
+
+    public static String languageName(String locale, boolean[] accusative) {
+        if (locale == null || locale.equals(TranslateController.UNKNOWN_LANGUAGE) || locale.equals("auto")) {
             return null;
         }
-        LocaleController.LocaleInfo currentLanguageInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+
+        String simplifiedLocale = locale.split("_")[0];
+        if ("nb".equals(simplifiedLocale)) {
+            simplifiedLocale = "no";
+        }
+
+        // getting localized language name in accusative case
+        if (accusative != null) {
+            String localed = LocaleController.getString("TranslateLanguage" + simplifiedLocale.toUpperCase());
+            if (accusative[0] = (localed != null && !localed.startsWith("LOC_ERR"))) {
+                return localed;
+            }
+        }
+
+        // getting language name from system
         try {
             Locale[] allLocales = Locale.getAvailableLocales();
-            String simplifiedLocale = locale.split("_")[0];
-            if ("nb".equals(simplifiedLocale)) {
-                simplifiedLocale = "no";
-            }
             Locale found = null;
             for (int i = 0; i < allLocales.length; ++i) {
                 if (TextUtils.equals(simplifiedLocale, allLocales[i].getLanguage())) {
@@ -995,21 +1009,18 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             if (found != null) {
                 return found.getDisplayLanguage(Locale.getDefault());
             }
-        } catch (Exception e) {}
+        } catch (Exception ignore) {}
+
+        // getting language name from lang packs
         if ("no".equals(locale)) {
             locale = "nb";
         }
-        LocaleController.LocaleInfo thisLanguageInfo = LocaleController.getInstance().getBuiltinLanguageByPlural(locale);
+        final LocaleController.LocaleInfo currentLanguageInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        final LocaleController.LocaleInfo thisLanguageInfo = LocaleController.getInstance().getBuiltinLanguageByPlural(locale);
         if (thisLanguageInfo == null) {
             return null;
         }
         boolean isCurrentLanguageEnglish = currentLanguageInfo != null && "en".equals(currentLanguageInfo.pluralLangCode);
-//        try {
-//            String lang = LocaleController.getString("PassportLanguage_" + thisLanguageInfo.pluralLangCode.toUpperCase());
-//            if (lang != null && !lang.startsWith("LOC_ERR")) {
-//                return lang;
-//            }
-//        } catch (Exception ignore) {}
         if (isCurrentLanguageEnglish) {
             return thisLanguageInfo.nameEnglish;
         } else {

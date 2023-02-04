@@ -374,7 +374,9 @@ public class QrActivity extends BaseFragment {
         fragmentView = rootLayout;
         Utilities.themeQueue.postRunnable(() -> {
             homeTheme.loadPreviewColors(currentAccount);
-
+            if (fragmentView == null) {
+                return;
+            }
             fragmentView.postDelayed(() -> {
                 onItemSelected(currentTheme, 0, true);
             }, 17);

@@ -26,8 +26,8 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
     BackupImageView currentImage;
     BackupImageView nextImage;
 
-    Drawable currentBackgroundDrawable;
-    Drawable nextBackgroundDrawable;
+    GradientTools currentBackgroundDrawable;
+    GradientTools nextBackgroundDrawable;
     TextView textView;
 
     TLRPC.TL_emojiList emojiList;
@@ -54,17 +54,20 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
             if (emojiIndex > emojiList.document_id.size() - 1) {
                 emojiIndex = 0;
             }
-            if (backgroundIndex > Theme.keys_avatar_background.length - 1) {
+            if (backgroundIndex > AvatarConstructorFragment.defaultColors.length - 1) {
                 backgroundIndex = 0;
             }
             animatedEmojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE, currentAccount, emojiList.document_id.get(emojiIndex));
             nextImage.setAnimatedEmojiDrawable(animatedEmojiDrawable);
 
 
-            int color1 = Theme.getColor(Theme.keys_avatar_background[backgroundIndex]);
-            int color2 = Theme.getColor(Theme.keys_avatar_background2[backgroundIndex]);
+            int color1 = AvatarConstructorFragment.defaultColors[backgroundIndex][0];
+            int color2 = AvatarConstructorFragment.defaultColors[backgroundIndex][1];
+            int color3 = AvatarConstructorFragment.defaultColors[backgroundIndex][2];
+            int color4 = AvatarConstructorFragment.defaultColors[backgroundIndex][3];
 
-            nextBackgroundDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{color1, color2});
+            nextBackgroundDrawable = new GradientTools();
+            nextBackgroundDrawable.setColors(color1, color2, color3, color4);
 
             progressToNext = 0f;
             invalidate();
@@ -116,10 +119,14 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
             animatedEmojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE, currentAccount, emojiList.document_id.get(0));
             currentImage.setAnimatedEmojiDrawable(animatedEmojiDrawable);
         }
-        int color1 = Theme.getColor(Theme.keys_avatar_background[backgroundIndex]);
-        int color2 = Theme.getColor(Theme.keys_avatar_background2[backgroundIndex]);
 
-        currentBackgroundDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{color1, color2});
+        int color1 = AvatarConstructorFragment.defaultColors[backgroundIndex][0];
+        int color2 = AvatarConstructorFragment.defaultColors[backgroundIndex][1];
+        int color3 = AvatarConstructorFragment.defaultColors[backgroundIndex][2];
+        int color4 = AvatarConstructorFragment.defaultColors[backgroundIndex][3];
+
+        currentBackgroundDrawable = new GradientTools();
+        currentBackgroundDrawable.setColors(color1, color2, color3, color4);
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
@@ -155,8 +162,8 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
             nextBackgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
         }
         if (progressToNext == 1f) {
-            currentBackgroundDrawable.setAlpha(255);
-            currentBackgroundDrawable.draw(canvas);
+            currentBackgroundDrawable.paint.setAlpha(255);
+            canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), currentBackgroundDrawable.paint);
             currentImage.setAlpha(1f);
             currentImage.setScaleX(1f);
             currentImage.setScaleY(1f);
@@ -164,10 +171,10 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
         } else {
             float progressInternal = CubicBezierInterpolator.DEFAULT.getInterpolation(progressToNext);
 
-            currentBackgroundDrawable.setAlpha(255);
-            currentBackgroundDrawable.draw(canvas);
-            nextBackgroundDrawable.setAlpha((int) (255 * progressInternal));
-            nextBackgroundDrawable.draw(canvas);
+            currentBackgroundDrawable.paint.setAlpha(255);
+            canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), currentBackgroundDrawable.paint);
+            nextBackgroundDrawable.paint.setAlpha((int) (255 * progressInternal));
+            canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), nextBackgroundDrawable.paint);
 
             progressToNext += 16 / 250f;
 
@@ -206,8 +213,12 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
 
     public AvatarConstructorFragment.BackgroundGradient getBackgroundGradient() {
         AvatarConstructorFragment.BackgroundGradient backgroundGradient = new AvatarConstructorFragment.BackgroundGradient();
-        backgroundGradient.color1 = Theme.getColor(Theme.keys_avatar_background[backgroundIndex]);
-        backgroundGradient.color2 = Theme.getColor(Theme.keys_avatar_background2[backgroundIndex]);
+
+        backgroundGradient.color1 = AvatarConstructorFragment.defaultColors[backgroundIndex][0];
+        backgroundGradient.color2 = AvatarConstructorFragment.defaultColors[backgroundIndex][1];
+        backgroundGradient.color3 = AvatarConstructorFragment.defaultColors[backgroundIndex][2];
+        backgroundGradient.color4 = AvatarConstructorFragment.defaultColors[backgroundIndex][3];
+
         return backgroundGradient;
     }
 

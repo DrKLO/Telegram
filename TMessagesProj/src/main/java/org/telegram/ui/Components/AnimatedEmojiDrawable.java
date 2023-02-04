@@ -522,7 +522,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         } else if (cacheType == STANDARD_LOTTIE_FRAME) {
             imageReceiver.setImage(null, null, mediaLocation, mediaFilter, null, null, thumbDrawable, document.size, null, document, 1);
         } else {
-            if (SharedConfig.getLiteMode().enabled()) {
+            if (SharedConfig.getLiteMode().enabled() && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW) {
                 if ("video/webm".equals(document.mime_type)) {
                     imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
                 } else {

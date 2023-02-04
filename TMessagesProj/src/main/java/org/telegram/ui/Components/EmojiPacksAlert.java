@@ -361,7 +361,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                                 drawable = unusedLineDrawables.remove(unusedLineDrawables.size() - 1);
                             } else {
                                 drawable = new DrawingInBackgroundLine();
-                                drawable.currentLayerNum = 7;
+                                drawable.setLayerNum(7);
                             }
                             drawable.position = position;
                             drawable.onAttachToWindow();

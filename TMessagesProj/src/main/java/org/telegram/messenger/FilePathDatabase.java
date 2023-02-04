@@ -399,7 +399,7 @@ public class FilePathDatabase {
         });
     }
 
-    public LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> lookupFiles(ArrayList<CacheByChatsController.KeepMediaFile> keepMediaFiles) {
+    public LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> lookupFiles(ArrayList<? extends CacheByChatsController.KeepMediaFile> keepMediaFiles) {
         CountDownLatch syncLatch = new CountDownLatch(1);
         LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> filesByDialogId = new LongSparseArray<>();
         dispatchQueue.postRunnable(() -> {

@@ -164,8 +164,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     private ImageViewEmoji forumIconImage;
     private boolean animationsEnabled;
     private boolean showStickers;
-    private boolean forUser;
+    public boolean forUser;
     private ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = new ArrayList<>();
+    private boolean enterAnimationInProgress;
 
     public void putAnimatedEmojiToCache(AnimatedEmojiDrawable animatedEmojiDrawable) {
         emojiGridView.animatedEmojiDrawables.put(animatedEmojiDrawable.getDocumentId(), animatedEmojiDrawable);
@@ -326,10 +327,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     private final static int currentAccount = UserConfig.selectedAccount;
     private int type;
 
-    private FrameLayout contentView;
+    public FrameLayout contentView;
     private View backgroundView;
     private EmojiTabsStrip[] cachedEmojiTabs = new EmojiTabsStrip[2];
-    private EmojiTabsStrip emojiTabs;
+    public EmojiTabsStrip emojiTabs;
     private View emojiTabsShadow;
     private SearchBox searchBox;
     public FrameLayout gridViewContainer;
@@ -365,7 +366,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     private ArrayList<TLRPC.TL_messages_stickerSet> frozenEmojiPacks = new ArrayList<>();
     private ArrayList<EmojiView.EmojiPack> packs = new ArrayList<>();
     private boolean includeEmpty = false;
-    private boolean includeHint = false;
+    public boolean includeHint = false;
     private Integer hintExpireDate;
     private boolean drawBackground = true;
     private List<ReactionsLayoutInBubble.VisibleReaction> recentReactionsToSet;
@@ -403,7 +404,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         this.type = type;
         this.includeEmpty = includeEmpty;
         this.baseFragment = baseFragment;
-        this.includeHint = MessagesController.getGlobalMainSettings().getInt("emoji"+(type==TYPE_EMOJI_STATUS?"status":"reaction")+"usehint", 0) < 3;
+        this.includeHint = MessagesController.getGlobalMainSettings().getInt("emoji" + (type == TYPE_EMOJI_STATUS ? "status" : "reaction") + "usehint", 0) < 3;
 
         selectorPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
         selectorAccentPaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), 30));
@@ -474,7 +475,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 path.rewind();
                 path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(12), AndroidUtilities.dp(12), Path.Direction.CW);
                 canvas.drawPath(path, paint);
-//                if (showAnimator != null && showAnimator.isRunning()) {
+//                if (enterAnimationInProgress() {
                 canvas.clipPath(path);
 //                }
                 super.dispatchDraw(canvas);
@@ -1288,6 +1289,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         gridSwitchAnimator.start();
         ((View) emojiGridView.getParent()).animate()
             .translationY(gridSearch && liftUp ? -AndroidUtilities.dp(36) : 0)
+            .setUpdateListener(anm -> invalidateParent())
             .setInterpolator(CubicBezierInterpolator.DEFAULT)
             .setDuration(160)
             .start();
@@ -1699,7 +1701,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             } else {
                 view = new ImageViewEmoji(getContext());
             }
-            if (showAnimator != null && showAnimator.isRunning()) {
+            if (enterAnimationInProgress()) {
                 view.setScaleX(0);
                 view.setScaleY(0);
             }
@@ -1982,7 +1984,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             } else {
                 view = new ImageViewEmoji(getContext());
             }
-            if (showAnimator != null && showAnimator.isRunning()) {
+            if (enterAnimationInProgress()) {
                 view.setScaleX(0);
                 view.setScaleY(0);
             }
@@ -2300,6 +2302,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         }
     }
 
+    private boolean enterAnimationInProgress() {
+        return enterAnimationInProgress || (showAnimator != null && showAnimator.isRunning());
+    }
+
     private void clearRecent() {
         if (type == TYPE_REACTIONS && onRecentClearedListener != null) {
             onRecentClearedListener.onRecentCleared();
@@ -2565,6 +2571,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         public int skewIndex;
         public boolean isStaticIcon;
         private float selectedProgress;
+
         final AnimatedEmojiSpan.InvalidateHolder invalidateHolder = new AnimatedEmojiSpan.InvalidateHolder() {
             @Override
             public void invalidate() {
@@ -2851,7 +2858,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     totalCount++;
                 }
             } else {
-                TLRPC.TL_emojiList emojiList = forUser ? MediaDataController.getInstance(currentAccount).profileAvatarConstructorDefault : MediaDataController.getInstance(currentAccount).groupAvatarConstructorDefault;
+                TLRPC.TL_emojiList emojiList = forUser ? MediaDataController.getInstance(currentAccount). profileAvatarConstructorDefault : MediaDataController.getInstance(currentAccount).groupAvatarConstructorDefault;
                 if (emojiList != null && emojiList.document_id != null && !emojiList.document_id.isEmpty()) {
                     for (int i = 0; i < emojiList.document_id.size(); ++i) {
                         recent.add(new AnimatedEmojiSpan(emojiList.document_id.get(i), null));
@@ -3262,8 +3269,8 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         SparseArray<ArrayList<ImageViewEmoji>> viewsGroupedByLines = new SparseArray<>();
         ArrayList<ArrayList<ImageViewEmoji>> unusedArrays = new ArrayList<>();
         ArrayList<DrawingInBackgroundLine> unusedLineDrawables = new ArrayList<>();
-        ArrayList<EmojiListView.DrawingInBackgroundLine> lineDrawables = new ArrayList<>();
-        ArrayList<EmojiListView.DrawingInBackgroundLine> lineDrawablesTmp = new ArrayList<>();
+        ArrayList<DrawingInBackgroundLine> lineDrawables = new ArrayList<>();
+        ArrayList<DrawingInBackgroundLine> lineDrawablesTmp = new ArrayList<>();
 
         private LongSparseArray<AnimatedEmojiDrawable> animatedEmojiDrawables = new LongSparseArray<>();
 
@@ -3424,6 +3431,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         drawable = unusedLineDrawables.remove(unusedLineDrawables.size() - 1);
                     } else {
                         drawable = new DrawingInBackgroundLine();
+                        drawable.setLayerNum(7);
                     }
                     drawable.position = position;
                     drawable.onAttachToWindow();
@@ -3499,7 +3507,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         skewAlpha = .25f + .75f * skewAlpha;
                     }
                 }
-                boolean drawInUi = skewAlpha < 1 || isAnimating() || imageViewEmojis.size() <= 4 || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || (showAnimator != null && showAnimator.isRunning()) || SharedConfig.getLiteMode().enabled() || type == TYPE_AVATAR_CONSTRUCTOR;
+                boolean drawInUi = skewAlpha < 1 || isAnimating() || imageViewEmojis.size() <= 4 || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || enterAnimationInProgress() || SharedConfig.getLiteMode().enabled() || type == TYPE_AVATAR_CONSTRUCTOR;
                 if (!drawInUi) {
                     boolean animatedExpandIn = animateExpandStartTime > 0 && (SystemClock.elapsedRealtime() - animateExpandStartTime) < animateExpandDuration();
                     for (int i = 0; i < imageViewEmojis.size(); i++) {
@@ -3824,6 +3832,16 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             if (this == emojiGridView) {
                 bigReactionImageReceiver.onDetachedFromWindow();
             }
+            release(unusedLineDrawables);
+            release(lineDrawables);
+            release(lineDrawablesTmp);
+        }
+
+        private void release(ArrayList<DrawingInBackgroundLine> lineDrawables) {
+            for (int i = 0; i < lineDrawables.size(); i++) {
+                lineDrawables.get(i).onDetachFromWindow();
+            }
+            lineDrawables.clear();
         }
 
     }
@@ -4985,5 +5003,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
     public void setAnimationsEnabled(boolean aniationsEnabled) {
         this.animationsEnabled = aniationsEnabled;
+    }
+
+    public void setEnterAnimationInProgress(boolean enterAnimationInProgress) {
+        this.enterAnimationInProgress = enterAnimationInProgress;
     }
 }

@@ -6222,6 +6222,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (fragmentView != null) {
             fragmentView.invalidate();
         }
+        if (dialogsHintCell != null) {
+            dialogsHintCell.setAlpha(1f - progress);
+        }
         if (full) {
 //
 //            if (show) {

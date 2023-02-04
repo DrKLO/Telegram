@@ -28,7 +28,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
 
     private boolean bitmapUpdating;
 
-    public int currentLayerNum = 1;
+    private int currentLayerNum = 1;
     private int currentOpenedLayerFlags;
     protected boolean paused;
 
@@ -299,6 +299,13 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             }
             return queue;
         }
+    }
 
+    public void setLayerNum(int value) {
+        currentLayerNum = value;
+        if (attachedToWindow) {
+            currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
+            currentOpenedLayerFlags &= ~currentLayerNum;
+        }
     }
 }

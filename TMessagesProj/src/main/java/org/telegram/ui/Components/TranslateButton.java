@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -10,6 +11,7 @@ import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.view.Gravity;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -44,6 +46,8 @@ public class TranslateButton extends FrameLayout {
     public final SpannableString translateIcon;
 
     private ImageView menuView;
+
+    private boolean[] accusative = new boolean[1];
 
     public TranslateButton(Context context, ChatActivity chatActivity, Theme.ResourcesProvider resourcesProvider) {
         this(context, chatActivity.getCurrentAccount(), chatActivity.getDialogId(), chatActivity, resourcesProvider);
@@ -98,7 +102,38 @@ public class TranslateButton extends FrameLayout {
 
         LinearLayout swipeBack = new LinearLayout(getContext());
         swipeBack.setOrientation(LinearLayout.VERTICAL);
-        ScrollView swipeBackScrollView = new ScrollView(getContext());
+        ScrollView swipeBackScrollView = new ScrollView(getContext()) {
+            Drawable topShadowDrawable;
+            AnimatedFloat alphaFloat = new AnimatedFloat(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private boolean wasCanScrollVertically;
+
+            @Override
+            public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
+                super.onNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
+                boolean canScrollVertically = canScrollVertically(-1);
+                if (wasCanScrollVertically != canScrollVertically) {
+                    invalidate();
+                    wasCanScrollVertically = canScrollVertically;
+                }
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+
+                float alpha = .5f * alphaFloat.set(canScrollVertically(-1) ? 1 : 0);
+                if (alpha > 0) {
+                    if (topShadowDrawable == null) {
+                        topShadowDrawable = getContext().getResources().getDrawable(R.drawable.header_shadow);
+                    }
+                    topShadowDrawable.setBounds(
+                            0, getScrollY(), getWidth(), getScrollY() + topShadowDrawable.getIntrinsicHeight()
+                    );
+                    topShadowDrawable.setAlpha((int) (0xFF * alpha));
+                    topShadowDrawable.draw(canvas);
+                }
+            }
+        };
         LinearLayout swipeBackScroll = new LinearLayout(getContext());
         swipeBackScrollView.addView(swipeBackScroll);
         swipeBackScroll.setOrientation(LinearLayout.VERTICAL);
@@ -117,15 +152,16 @@ public class TranslateButton extends FrameLayout {
         backButton.setOnClickListener(e -> popupLayout.getSwipeBack().closeForeground());
         swipeBack.addView(backButton);
 
-        swipeBack.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
         swipeBack.addView(swipeBackScrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 420));
 
         String detectedLanguage = translateController.getDialogDetectedLanguage(dialogId);
         String detectedLanguageName = TranslateAlert2.languageName(detectedLanguage);
+        String detectedLanguageNameAccusative = TranslateAlert2.languageName(detectedLanguage, accusative);
         String currentTranslateTo = translateController.getDialogTranslateTo(dialogId);
 
         ArrayList<TranslateController.Language> suggestedLanguages = TranslateController.getSuggestedLanguages(currentTranslateTo);
         ArrayList<TranslateController.Language> allLanguages = TranslateController.getLanguages();
+        swipeBackScroll.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
         if (currentTranslateTo != null) {
             String displayName = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(currentTranslateTo));
             if (displayName != null) {
@@ -185,15 +221,13 @@ public class TranslateButton extends FrameLayout {
 
         popupLayout.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
-        if (detectedLanguageName != null && detectedLanguage != null) {
+        if (detectedLanguageNameAccusative != null) {
             ActionBarMenuSubItem dontTranslateButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
             String text;
-            String lang = LocaleController.getString("TranslateLanguage" + detectedLanguage.toUpperCase());
-            if (lang == null || lang.startsWith("LOC_ERR")) {
-                lang = detectedLanguageName;
-                text = LocaleController.formatString("DoNotTranslateLanguageOther", R.string.DoNotTranslateLanguageOther, lang);
+            if (accusative[0]) {
+                text = LocaleController.formatString("DoNotTranslateLanguage", R.string.DoNotTranslateLanguage, detectedLanguageNameAccusative);
             } else {
-                text = LocaleController.formatString("DoNotTranslateLanguage", R.string.DoNotTranslateLanguage, lang);
+                text = LocaleController.formatString("DoNotTranslateLanguageOther", R.string.DoNotTranslateLanguageOther, detectedLanguageNameAccusative);
             }
             dontTranslateButton.setTextAndIcon(text, R.drawable.msg_block2);
             dontTranslateButton.setOnClickListener(e -> {
@@ -249,12 +283,11 @@ public class TranslateButton extends FrameLayout {
                 lng = "en";
             }
             String text;
-            String lang = LocaleController.getString("TranslateLanguage" + lng.toUpperCase());
-            if (lang == null || lang.startsWith("LOC_ERR")) {
-                lang = TranslateAlert2.languageName(lng);
-                text = LocaleController.formatString("TranslateToButtonOther", R.string.TranslateToButtonOther, lang);
-            } else {
+            String lang = TranslateAlert2.languageName(lng, accusative);
+            if (accusative[0]) {
                 text = LocaleController.formatString("TranslateToButton", R.string.TranslateToButton, lang);
+            } else {
+                text = LocaleController.formatString("TranslateToButtonOther", R.string.TranslateToButtonOther, lang);
             }
             textView.setText(TextUtils.concat(translateIcon, " ", text));
         }
