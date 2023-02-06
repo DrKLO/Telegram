@@ -59,6 +59,8 @@ def compareApkFromBundle(bundle, apk):
 
     return True
 
+bzg = bzg;
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print("Usage: apkfrombundle <pathToBundle> <pathToApk>")
