@@ -4211,9 +4211,6 @@ public class NotificationsController extends BaseController {
                 photoPath = null;
                 canReply = false;
             }
-            if (passcode) {
-                canReply = false;
-            }
 
             if (photoPath != null) {
                 avatalFile = getFileLoader().getPathToAttach(photoPath, true);

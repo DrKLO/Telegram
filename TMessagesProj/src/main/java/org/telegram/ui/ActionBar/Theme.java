@@ -8888,22 +8888,22 @@ public class Theme {
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
-                dialogs_archiveAvatarDrawable.recycle();
+                dialogs_archiveAvatarDrawable.recycle(false);
             }
             if (dialogs_archiveDrawable != null) {
-                dialogs_archiveDrawable.recycle();
+                dialogs_archiveDrawable.recycle(false);
             }
             if (dialogs_unarchiveDrawable != null) {
-                dialogs_unarchiveDrawable.recycle();
+                dialogs_unarchiveDrawable.recycle(false);
             }
             if (dialogs_pinArchiveDrawable != null) {
-                dialogs_pinArchiveDrawable.recycle();
+                dialogs_pinArchiveDrawable.recycle(false);
             }
             if (dialogs_unpinArchiveDrawable != null) {
-                dialogs_unpinArchiveDrawable.recycle();
+                dialogs_unpinArchiveDrawable.recycle(false);
             }
             if (dialogs_hidePsaDrawable != null) {
-                dialogs_hidePsaDrawable.recycle();
+                dialogs_hidePsaDrawable.recycle(false);
             }
             dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, "chats_archiveavatar", AndroidUtilities.dp(36), AndroidUtilities.dp(36), false, null);
             dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, "chats_archive", AndroidUtilities.dp(36), AndroidUtilities.dp(36));

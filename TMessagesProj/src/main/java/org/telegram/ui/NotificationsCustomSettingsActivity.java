@@ -404,7 +404,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
                 }
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param) -> {
+                activity.setDelegate((fragment, dids, message, param, topicsFragment) -> {
                     Bundle args2 = new Bundle();
                     args2.putLong("dialog_id", dids.get(0).dialogId);
                     args2.putBoolean("exception", true);

@@ -292,7 +292,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
     }
 
     private boolean isMessageTypeAllowed(MessageObject obj) {
-        return MessageObject.isPhoto(obj.messageOwner) || obj.getDocument() != null && MessageObject.isVideoDocument(obj.getDocument());
+        return MessageObject.isPhoto(obj.messageOwner) || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
     }
 
     public void setSelectedMessages(List<MessageObject> messages) {
@@ -341,7 +341,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
             if (reactionsContainerLayout.isEnabled()) {
                 messageSet = true;
                 reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
-                reactionsContainerLayout.startEnterAnimation();
+                reactionsContainerLayout.startEnterAnimation(false);
             } else {
                 messageSet = false;
                 reactionsContainerLayout.setTransitionProgress(1f);

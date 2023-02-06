@@ -1265,7 +1265,7 @@ public class QrActivity extends BaseFragment {
             super.onDetachedFromWindow();
             if (loadingMatrix != null) {
                 loadingMatrix.stop();
-                loadingMatrix.recycle();
+                loadingMatrix.recycle(false);
                 loadingMatrix = null;
             }
         }

@@ -1395,7 +1395,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             DialogsActivity fragment = new DialogsActivity(args);
             final ArrayList<MessageObject> fmessages = new ArrayList<>();
             fmessages.add(messageObject);
-            fragment.setDelegate((fragment1, dids, message, param) -> {
+            fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
                 if (dids.size() > 1 || dids.get(0) .dialogId== UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a).dialogId;

@@ -1808,7 +1808,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     }
                     imageView.setDrawable(drawable);
 
-                    if (!UserConfig.getInstance(currentAccount).isPremium()) {
+                    if (!UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_TOPIC_ICON) {
                         if (imageView.premiumLockIconView == null) {
                             imageView.premiumLockIconView = new PremiumLockIconView(getContext(), PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED);
                             imageView.addView(imageView.premiumLockIconView, LayoutHelper.createFrame(12, 12, Gravity.RIGHT | Gravity.BOTTOM));
@@ -2122,7 +2122,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     }
                     imageView.setDrawable(drawable);
 
-                    if (!UserConfig.getInstance(currentAccount).isPremium()) {
+                    if (!UserConfig.getInstance(currentAccount).isPremium() && type != TYPE_AVATAR_CONSTRUCTOR && type != TYPE_TOPIC_ICON) {
                         if (imageView.premiumLockIconView == null) {
                             imageView.premiumLockIconView = new PremiumLockIconView(getContext(), PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED);
                             imageView.addView(imageView.premiumLockIconView, LayoutHelper.createFrame(12, 12, Gravity.RIGHT | Gravity.BOTTOM));

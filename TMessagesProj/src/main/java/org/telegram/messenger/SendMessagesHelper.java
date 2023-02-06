@@ -5751,6 +5751,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             } else {
                                 isSentError = true;
                                 existFlags = 0;
+                                if (BuildVars.LOGS_ENABLED) {
+                                    StringBuilder builder = new StringBuilder();
+                                    for (int i = 0; i < updatesArr.size(); i++) {
+                                        builder.append(updatesArr.get(i).getClass().getSimpleName()).append(", ");
+                                    }
+                                    FileLog.d("can't find message int updates " + builder);
+                                }
                             }
                             Utilities.stageQueue.postRunnable(() -> getMessagesController().processUpdates(updates, false));
                         } else {

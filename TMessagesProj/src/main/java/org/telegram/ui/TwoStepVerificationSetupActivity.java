@@ -234,7 +234,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         }
         if (animationDrawables != null) {
             for (int a = 0; a < animationDrawables.length; a++) {
-                animationDrawables[a].recycle();
+                animationDrawables[a].recycle(false);
             }
             animationDrawables = null;
         }

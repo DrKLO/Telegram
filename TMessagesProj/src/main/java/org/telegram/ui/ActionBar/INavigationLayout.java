@@ -23,7 +23,7 @@ public interface INavigationLayout {
     boolean presentFragment(NavigationParams params);
     boolean checkTransitionAnimation();
     boolean addFragmentToStack(BaseFragment fragment, int position);
-    void removeFragmentFromStack(BaseFragment fragment);
+    void removeFragmentFromStack(BaseFragment fragment, boolean immediate);
     List<BaseFragment> getFragmentStack();
     void setDelegate(INavigationLayoutDelegate INavigationLayoutDelegate);
     void closeLastFragment(boolean animated, boolean forceNoAnimation);
@@ -78,6 +78,9 @@ public interface INavigationLayout {
         return SharedConfig.useLNavigation ? new LNavigation(context) : new ActionBarLayout(context);
     }
 
+    default void removeFragmentFromStack(BaseFragment fragment) {
+        removeFragmentFromStack(fragment, false);
+    }
     default boolean isActionBarInCrossfade() {
         return false;
     }

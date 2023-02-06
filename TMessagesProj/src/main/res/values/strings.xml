@@ -6239,6 +6239,7 @@
     <string name="TranslateToButtonOther">Translate to %s</string>
     <string name="ShowOriginalButton">Show Original</string>
     <string name="AddedToDoNotTranslate">**%s** is added to the Do Not Translate list.</string>
+    <string name="AddedToDoNotTranslateOther">**%s** is added to the Do Not Translate list.</string>
     <string name="TranslationBarHiddenForChannel">Translation bar is now hidden for this channel.</string>
     <string name="TranslationBarHiddenForGroup">Translation bar is now hidden for this group.</string>
     <string name="TranslationBarHiddenForChat">Translation bar is now hidden for this chat.</string>

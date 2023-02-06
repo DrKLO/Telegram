@@ -16420,7 +16420,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (AndroidUtilities.isTablet() && parentLayout != null && parentLayout.getFragmentStack().size() > 1) {
                     finishFragment();
                 } else {
-                    removeSelfFromStack();
+                    removeSelfFromStack(true);
                 }
             }
         } else if (id == NotificationCenter.commentsRead) {
@@ -24243,7 +24243,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             @Override
                             public void onSwipeBackProgress(PopupSwipeBackLayout layout, float toProgress, float progress) {
                                 if (toProgress == 0 && !isEnter) {
-                                    finalReactionsLayout.startEnterAnimation();
+                                    finalReactionsLayout.startEnterAnimation(false);
                                     isEnter = true;
                                 } else if (toProgress == 1 && isEnter) {
                                     finalReactionsLayout.setAlpha(1f - progress);
@@ -24377,7 +24377,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             scrimPopupWindow.setDismissAnimationDuration(220);
             scrimPopupWindow.setOutsideTouchable(true);
             scrimPopupWindow.setClippingEnabled(true);
-            if (reactionsLayout == null) {
+            if (!isReactionsAvailable || reactionsLayout == null) {
                 scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
             } else {
                 scrimPopupWindow.setAnimationStyle(0);
@@ -24430,7 +24430,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, finalPopupX, finalPopupY);
                 if (isReactionsAvailable && finalReactionsLayout != null) {
-                    finalReactionsLayout.startEnterAnimation();
+                    finalReactionsLayout.startEnterAnimation(true);
                 }
                 AndroidUtilities.runOnUIThread(() -> {
                     if (scrimPopupWindowItems != null && scrimPopupWindowItems.length > 0 && scrimPopupWindowItems[0] != null) {
@@ -25530,7 +25530,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     @Override
-    public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param) {
+    public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param, TopicsFragment topicsFragment) {
         if (forwardingMessage == null && selectedMessagesIds[0].size() == 0 && selectedMessagesIds[1].size() == 0) {
             return false;
         }

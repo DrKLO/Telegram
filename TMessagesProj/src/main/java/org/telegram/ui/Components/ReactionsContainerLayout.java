@@ -162,6 +162,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     private boolean allReactionsIsDefault;
     private Paint selectedPaint;
     ChatScrimPopupContainerLayout parentLayout;
+    private boolean animatePopup;
 
     public ReactionsContainerLayout(BaseFragment fragment, @NonNull Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -925,7 +926,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     public void setTransitionProgress(float transitionProgress) {
         this.transitionProgress = transitionProgress;
         if (parentLayout != null && parentLayout.getPopupWindowLayout() != null) {
-            parentLayout.getPopupWindowLayout().setReactionsTransitionProgress(transitionProgress);
+            parentLayout.getPopupWindowLayout().setReactionsTransitionProgress(animatePopup ? transitionProgress : 1);
         }
         invalidate();
     }
@@ -1046,7 +1047,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
     }
 
-    public void startEnterAnimation() {
+    public void startEnterAnimation(boolean animatePopup) {
+        this.animatePopup = animatePopup;
         setTransitionProgress(0);
         setAlpha(1f);
         ObjectAnimator animator = ObjectAnimator.ofFloat(this, ReactionsContainerLayout.TRANSITION_PROGRESS_VALUE, 0f, 1f).setDuration(350);
@@ -1559,7 +1561,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             if (chatFull.id == waitingLoadingChatId && getVisibility() != View.VISIBLE && !(chatFull.available_reactions instanceof TLRPC.TL_chatReactionsNone)) {
                 setMessage(messageObject, null);
                 setVisibility(View.VISIBLE);
-                startEnterAnimation();
+                startEnterAnimation(false);
             }
         }
     }

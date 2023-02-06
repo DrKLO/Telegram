@@ -994,13 +994,13 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             }
         }
 
-        boolean mePremium = UserConfig.getInstance(currentAccount).isPremium();
+//        boolean mePremium = UserConfig.getInstance(currentAccount).isPremium();
         ArrayList<TLRPC.TL_messages_stickerSet> canInstallPacks = new ArrayList<>(notInstalledPacks);
-        for (int i = 0; i < canInstallPacks.size(); ++i) {
-            if (MessageObject.isPremiumEmojiPack(canInstallPacks.get(i)) && !mePremium) {
-                canInstallPacks.remove(i--);
-            }
-        }
+//        for (int i = 0; i < canInstallPacks.size(); ++i) {
+//            if (MessageObject.isPremiumEmojiPack(canInstallPacks.get(i)) && !mePremium) {
+//                canInstallPacks.remove(i--);
+//            }
+//        }
 
         boolean loadedNow = customEmojiPacks.inputStickerSets != null && allPacks.size() == customEmojiPacks.inputStickerSets.size();
         if (!loaded && loadedNow) {
@@ -1030,11 +1030,11 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             addButtonView.setVisibility(View.GONE);
             removeButtonView.setVisibility(View.GONE);
             updateShowButton(false);
-        } else if (canInstallPacks.size() <= 0 && notInstalledPacks.size() >= 0 && !mePremium || !loaded) {
-            premiumButtonView.setVisibility(View.VISIBLE);
-            addButtonView.setVisibility(View.GONE);
-            removeButtonView.setVisibility(View.GONE);
-            updateShowButton(true);
+//        } else if (canInstallPacks.size() <= 0 && notInstalledPacks.size() >= 0 && !mePremium || !loaded) {
+//            premiumButtonView.setVisibility(View.VISIBLE);
+//            addButtonView.setVisibility(View.GONE);
+//            removeButtonView.setVisibility(View.GONE);
+//            updateShowButton(true);
         } else {
             premiumButtonView.setVisibility(View.INVISIBLE);
             if (canInstallPacks.size() > 0) {

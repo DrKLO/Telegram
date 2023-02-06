@@ -1869,8 +1869,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     }
 
     @Override
-    public void removeFragmentFromStack(BaseFragment fragment) {
-        if ((fragmentsStack.size() > 0 && fragmentsStack.get(fragmentsStack.size() - 1) == fragment) || (fragmentsStack.size() > 1 && fragmentsStack.get(fragmentsStack.size() - 2) == fragment)) {
+    public void removeFragmentFromStack(BaseFragment fragment, boolean immediate) {
+        if (((fragmentsStack.size() > 0 && fragmentsStack.get(fragmentsStack.size() - 1) == fragment) || (fragmentsStack.size() > 1 && fragmentsStack.get(fragmentsStack.size() - 2) == fragment))) {
             onOpenAnimationEnd();
             onCloseAnimationEnd();
         }
@@ -1880,7 +1880,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             if (delegate != null && fragmentsStack.size() == 1 && AndroidUtilities.isTablet()) {
                 delegate.needCloseLastFragment(this);
             }
-            removeFragmentFromStackInternal(fragment, true);
+            removeFragmentFromStackInternal(fragment, fragment.allowFinishFragmentInsteadOfRemoveFromStack() && !immediate);
         }
     }
 

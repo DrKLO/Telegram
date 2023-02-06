@@ -363,7 +363,7 @@ public class AlertsCreator {
             } else if (request instanceof TLRPC.TL_messages_sendScheduledMessages) {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendScheduledMessages) request).peer);
             }
-            if (BuildVars.DEBUG_VERSION && error.text != null && error.text.startsWith("CHAT_SEND_") && error.text.endsWith("FORBIDDEN")) {
+            if (error.text != null && error.text.startsWith("CHAT_SEND_") && error.text.endsWith("FORBIDDEN")) {
                 String errorText = error.text;
                 TLRPC.Chat chat = dialogId < 0 ? MessagesController.getInstance(currentAccount).getChat(-dialogId) : null;
                 switch (error.text) {
@@ -628,7 +628,7 @@ public class AlertsCreator {
                             localeInfo.pathToFile = "unofficial";
                         }
                     }
-                    LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, UserConfig.selectedAccount, null);
+                    LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, true, UserConfig.selectedAccount, null);
                     activity.rebuildAllFragments(true);
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
