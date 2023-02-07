@@ -48,21 +48,32 @@ public class CanvasButton {
         }
     };
     private boolean longPressEnabled;
+    CornerPathEffect pathEffect;
+    boolean rounded;
+    float roundRadius = AndroidUtilities.dp(12);
+    Paint maskPaint;
 
     public CanvasButton(View parent) {
         this.parent = parent;
-        paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(12)));
-
+        paint.setPathEffect(pathEffect = new CornerPathEffect(roundRadius));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             maskPaint.setFilterBitmap(true);
             maskPaint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(12)));
             maskPaint.setColor(0xffffffff);
+
+            final Paint maskPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            maskPaint2.setFilterBitmap(true);
+            maskPaint2.setColor(0xffffffff);
             Drawable maskDrawable = new Drawable() {
 
                 @Override
                 public void draw(Canvas canvas) {
-                    drawInternal(canvas, maskPaint);
+                    if (usingRectCount > 1) {
+                        drawInternal(canvas, maskPaint);
+                    } else {
+                        drawInternal(canvas, maskPaint2);
+                    }
                 }
 
                 @Override
@@ -128,9 +139,21 @@ public class CanvasButton {
                 }
                 pathCreated = true;
             }
+            paint.setPathEffect(pathEffect);
             canvas.drawPath(drawingPath, paint);
         } else if (usingRectCount == 1) {
-            canvas.drawRoundRect(drawingRects.get(0), AndroidUtilities.dp(10), AndroidUtilities.dp(10), paint);
+            if (selectorDrawable != null) {
+                selectorDrawable.setBounds((int) drawingRects.get(0).left, (int) drawingRects.get(0).top, (int) drawingRects.get(0).right, (int) drawingRects.get(0).bottom);
+            }
+            if (rounded) {
+                paint.setPathEffect(null);
+                float rad = Math.min(drawingRects.get(0).width(), drawingRects.get(0).height()) / 2f;
+                canvas.drawRoundRect(drawingRects.get(0), rad, rad, paint);
+            } else {
+                paint.setPathEffect(pathEffect);
+                canvas.drawRoundRect(drawingRects.get(0), 0, 0, paint);
+            }
+
         }
     }
 
@@ -182,9 +205,13 @@ public class CanvasButton {
     }
 
     public void setColor(int color) {
+        setColor(color, color);
+    }
+
+    public void setColor(int color, int selectorColor) {
         paint.setColor(color);
         if (selectorDrawable != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Theme.setSelectorDrawableColor(selectorDrawable, color, true);
+            Theme.setSelectorDrawableColor(selectorDrawable, selectorColor, true);
         }
     }
 
@@ -214,5 +241,28 @@ public class CanvasButton {
     public void setLongPress(Runnable runnable) {
         longPressEnabled = true;
         longPressRunnable = runnable;
+    }
+
+    public void setRounded(boolean rounded) {
+        this.rounded = rounded;
+    }
+
+    public void setRoundRadius(int radius) {
+        roundRadius = radius;
+        pathEffect = new CornerPathEffect(radius);
+        maskPaint.setPathEffect(new CornerPathEffect(radius));
+    }
+
+    public void cancelRipple() {
+        if (Build.VERSION.SDK_INT >= 21 && selectorDrawable != null) {
+            selectorDrawable.setState(StateSet.NOTHING);
+            selectorDrawable.jumpToCurrentState();
+        }
+
+    }
+
+    public void setRect(int x, int y, int x1, int y1) {
+        AndroidUtilities.rectTmp.set(x, y, x1, y1);
+        setRect(AndroidUtilities.rectTmp);
     }
 }

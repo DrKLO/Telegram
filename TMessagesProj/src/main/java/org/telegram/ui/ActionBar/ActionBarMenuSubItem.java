@@ -4,12 +4,9 @@ import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
@@ -18,15 +15,15 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieImageView;
 
 public class ActionBarMenuSubItem extends FrameLayout {
 
     private TextView textView;
     private TextView subtextView;
-    private ImageView imageView;
+    private RLottieImageView imageView;
     private CheckBox2 checkView;
     private ImageView rightIcon;
 
@@ -46,14 +43,18 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public ActionBarMenuSubItem(Context context, boolean needCheck, boolean top, boolean bottom) {
-        this(context, needCheck, top, bottom, null);
+        this(context, needCheck ? 1 : 0, top, bottom, null);
     }
 
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom, Theme.ResourcesProvider resourcesProvider) {
-        this(context, false, top, bottom, resourcesProvider);
+        this(context, 0, top, bottom, resourcesProvider);
     }
 
     public ActionBarMenuSubItem(Context context, boolean needCheck, boolean top, boolean bottom, Theme.ResourcesProvider resourcesProvider) {
+        this(context, needCheck ? 1 : 0, top, bottom, resourcesProvider);
+    }
+
+    public ActionBarMenuSubItem(Context context, int needCheck, boolean top, boolean bottom, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
@@ -67,7 +68,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         updateBackground();
         setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
 
-        imageView = new ImageView(context);
+        imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
         addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
@@ -81,12 +82,17 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
-        if (needCheck) {
+        if (needCheck > 0) {
             checkView = new CheckBox2(context, 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
             checkView.setColor(null, null, Theme.key_radioBackgroundChecked);
             checkView.setDrawBackgroundAsArc(-1);
-            addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+            if (needCheck == 1) {
+                addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+            } else {
+                addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
+                textView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(34) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(34), 0);
+            }
         }
     }
 
@@ -184,7 +190,17 @@ public class ActionBarMenuSubItem extends FrameLayout {
         imageView.setImageResource(resId);
     }
 
-    public void setText(String text) {
+    public void setAnimatedIcon(int resId) {
+        imageView.setAnimation(resId, 24, 24);
+    }
+
+    public void onItemShown() {
+        if (imageView.getAnimatedDrawable() != null) {
+            imageView.getAnimatedDrawable().start();
+        }
+    }
+
+    public void setText(CharSequence text) {
         textView.setText(text);
     }
 
@@ -199,7 +215,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
             subtextView.setSingleLine(true);
             subtextView.setGravity(Gravity.LEFT);
             subtextView.setEllipsize(TextUtils.TruncateAt.END);
-            subtextView.setTextColor(0xff7C8286);
+            subtextView.setTextColor(getThemedColor(Theme.key_groupcreate_sectionText));
             subtextView.setVisibility(GONE);
             subtextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             subtextView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(43), 0, LocaleController.isRTL ? AndroidUtilities.dp(43) : 0, 0);

@@ -374,7 +374,9 @@ public class QrActivity extends BaseFragment {
         fragmentView = rootLayout;
         Utilities.themeQueue.postRunnable(() -> {
             homeTheme.loadPreviewColors(currentAccount);
-
+            if (fragmentView == null) {
+                return;
+            }
             fragmentView.postDelayed(() -> {
                 onItemSelected(currentTheme, 0, true);
             }, 17);
@@ -1018,11 +1020,11 @@ public class QrActivity extends BaseFragment {
             Utilities.themeQueue.postRunnable(() -> prepareContent(w, h));
             invalidate();
 
-            checkTimerToken();
+            checkTimerToken.run();
         }
 
-        private void checkTimerToken() {
-            AndroidUtilities.cancelRunOnUIThread(this::checkTimerToken);
+        private Runnable checkTimerToken = () -> {
+            AndroidUtilities.cancelRunOnUIThread(this.checkTimerToken);
             if (!this.hasTimer) {
                 return;
             }
@@ -1072,9 +1074,9 @@ public class QrActivity extends BaseFragment {
                 );
             }
             if (isAttachedToWindow()) {
-                AndroidUtilities.runOnUIThread(this::checkTimerToken, 1000);
+                AndroidUtilities.runOnUIThread(this.checkTimerToken, 1000);
             }
-        }
+        };
 
         void setColors(int c1, int c2, int c3, int c4) {
             gradientDrawable.setColors(c1, c2, c3, c4);
@@ -1255,7 +1257,7 @@ public class QrActivity extends BaseFragment {
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            checkTimerToken();
+            checkTimerToken.run();
         }
 
         @Override
@@ -1263,7 +1265,7 @@ public class QrActivity extends BaseFragment {
             super.onDetachedFromWindow();
             if (loadingMatrix != null) {
                 loadingMatrix.stop();
-                loadingMatrix.recycle();
+                loadingMatrix.recycle(false);
                 loadingMatrix = null;
             }
         }

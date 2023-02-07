@@ -1052,7 +1052,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         delegate.didSelectLocation(venue, LOCATION_TYPE_GROUP, true, 0);
                         finishFragment();
                     } else {
-                        final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), 3)};
+                        final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER)};
                         TLRPC.TL_channels_editLocation req = new TLRPC.TL_channels_editLocation();
                         req.address = venue.address;
                         req.channel = getMessagesController().getInputChannel(-dialogId);
@@ -2435,7 +2435,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
-            removeSelfFromStack();
+            removeSelfFromStack(true);
         } else if (id == NotificationCenter.locationPermissionGranted) {
             locationDenied = false;
             if (adapter != null) {

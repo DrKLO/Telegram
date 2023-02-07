@@ -370,7 +370,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
             startPressed = true;
 
-            AlertDialog loaderDialog = new AlertDialog(v.getContext(), 3);
+            AlertDialog loaderDialog = new AlertDialog(v.getContext(), AlertDialog.ALERT_TYPE_SPINNER);
             loaderDialog.setCanCancel(false);
             loaderDialog.showDelayed(1000);
 

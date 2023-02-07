@@ -27,7 +27,9 @@ public class StatsController extends BaseController {
     public static final int TYPE_PHOTOS = 4;
     public static final int TYPE_FILES = 5;
     public static final int TYPE_TOTAL = 6;
-    private static final int TYPES_COUNT = 7;
+    public static final int TYPE_MUSIC = 7;
+    private static final int OLD_TYPES_COUNT = 7;
+    private static final int TYPES_COUNT = 8;
 
     private byte[] buffer = new byte[8];
 
@@ -87,7 +89,7 @@ public class StatsController extends BaseController {
             try {
                 statsFile.seek(0);
                 for (int a = 0; a < 3; a++) {
-                    for (int b = 0; b < TYPES_COUNT; b++) {
+                    for (int b = 0; b < OLD_TYPES_COUNT; b++) {
                         statsFile.write(longToBytes(sentBytes[a][b]), 0, 8);
                         statsFile.write(longToBytes(receivedBytes[a][b]), 0, 8);
                         statsFile.write(intToBytes(sentItems[a][b]), 0, 4);
@@ -95,6 +97,14 @@ public class StatsController extends BaseController {
                     }
                     statsFile.write(intToBytes(callsTotalTime[a]), 0, 4);
                     statsFile.write(longToBytes(resetStatsDate[a]), 0, 8);
+                }
+                for (int b = OLD_TYPES_COUNT; b < TYPES_COUNT; ++b) {
+                    for (int a = 0; a < 3; ++a) {
+                        statsFile.write(longToBytes(sentBytes[a][b]), 0, 8);
+                        statsFile.write(longToBytes(receivedBytes[a][b]), 0, 8);
+                        statsFile.write(intToBytes(sentItems[a][b]), 0, 4);
+                        statsFile.write(intToBytes(receivedItems[a][b]), 0, 4);
+                    }
                 }
                 statsFile.getFD().sync();
             } catch (Exception ignore) {
@@ -132,7 +142,7 @@ public class StatsController extends BaseController {
             if (statsFile.length() > 0) {
                 boolean save = false;
                 for (int a = 0; a < 3; a++) {
-                    for (int b = 0; b < TYPES_COUNT; b++) {
+                    for (int b = 0; b < OLD_TYPES_COUNT; b++) {
                         statsFile.readFully(buffer, 0, 8);
                         sentBytes[a][b] = bytesToLong(buffer);
                         statsFile.readFully(buffer, 0, 8);
@@ -149,6 +159,18 @@ public class StatsController extends BaseController {
                     if (resetStatsDate[a] == 0) {
                         save = true;
                         resetStatsDate[a] = System.currentTimeMillis();
+                    }
+                }
+                for (int b = OLD_TYPES_COUNT; b < TYPES_COUNT; ++b) {
+                    for (int a = 0; a < 3; ++a) {
+                        statsFile.readFully(buffer, 0, 8);
+                        sentBytes[a][b] = bytesToLong(buffer);
+                        statsFile.readFully(buffer, 0, 8);
+                        receivedBytes[a][b] = bytesToLong(buffer);
+                        statsFile.readFully(buffer, 0, 4);
+                        sentItems[a][b] = bytesToInt(buffer);
+                        statsFile.readFully(buffer, 0, 4);
+                        receivedItems[a][b] = bytesToInt(buffer);
                     }
                 }
                 if (save) {
@@ -222,14 +244,14 @@ public class StatsController extends BaseController {
 
     public long getSentBytesCount(int networkType, int dataType) {
         if (dataType == TYPE_MESSAGES) {
-            return sentBytes[networkType][TYPE_TOTAL] - sentBytes[networkType][TYPE_FILES] - sentBytes[networkType][TYPE_AUDIOS] - sentBytes[networkType][TYPE_VIDEOS] - sentBytes[networkType][TYPE_PHOTOS];
+            return sentBytes[networkType][TYPE_TOTAL] - sentBytes[networkType][TYPE_FILES] - sentBytes[networkType][TYPE_AUDIOS] - sentBytes[networkType][TYPE_VIDEOS] - sentBytes[networkType][TYPE_PHOTOS] - sentBytes[networkType][TYPE_MUSIC];
         }
         return sentBytes[networkType][dataType];
     }
 
     public long getReceivedBytesCount(int networkType, int dataType) {
         if (dataType == TYPE_MESSAGES) {
-            return receivedBytes[networkType][TYPE_TOTAL] - receivedBytes[networkType][TYPE_FILES] - receivedBytes[networkType][TYPE_AUDIOS] - receivedBytes[networkType][TYPE_VIDEOS] - receivedBytes[networkType][TYPE_PHOTOS];
+            return receivedBytes[networkType][TYPE_TOTAL] - receivedBytes[networkType][TYPE_FILES] - receivedBytes[networkType][TYPE_AUDIOS] - receivedBytes[networkType][TYPE_VIDEOS] - receivedBytes[networkType][TYPE_PHOTOS] - receivedBytes[networkType][TYPE_MUSIC];
         }
         return receivedBytes[networkType][dataType];
     }

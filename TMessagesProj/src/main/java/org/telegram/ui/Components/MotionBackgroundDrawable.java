@@ -29,6 +29,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 
 import java.lang.ref.WeakReference;
@@ -52,6 +53,7 @@ public class MotionBackgroundDrawable extends Drawable {
     private long lastUpdateTime;
     private WeakReference<View> parentView;
 
+    private boolean ignoreInterpolator;
     private final CubicBezierInterpolator interpolator = new CubicBezierInterpolator(0.33, 0.0, 0.0, 1.0);
 
     private int translationY;
@@ -251,7 +253,7 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public void switchToNextPosition(boolean fast) {
-        if (posAnimationProgress < 1.0f) {
+        if (posAnimationProgress < 1.0f || SharedConfig.getLiteMode().enabled()) {
             return;
         }
         rotatingPreview = false;
@@ -267,7 +269,7 @@ public class MotionBackgroundDrawable extends Drawable {
         generateNextGradient();
     }
 
-    private void generateNextGradient() {
+    public void generateNextGradient() {
         if (useLegacyBitmap && intensity < 0) {
             try {
                 if (legacyBitmap != null) {
@@ -293,9 +295,9 @@ public class MotionBackgroundDrawable extends Drawable {
             Utilities.generateGradient(currentBitmap, true, phase, 1f, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
             invalidateLegacy = true;
         }
-        for (int i = 0; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
+        for (int i = -1; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
             float p = (i + 1) / (float) ANIMATION_CACHE_BITMAPS_COUNT;
-            Utilities.generateGradient(gradientToBitmap[i], true, phase, p, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+            Utilities.generateGradient(i < 0 ? gradientFromBitmap : gradientToBitmap[i], true, phase, p, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
         }
     }
 
@@ -891,10 +893,13 @@ public class MotionBackgroundDrawable extends Drawable {
                     if (posAnimationProgress > 1.0f) {
                         posAnimationProgress = 1.0f;
                     }
-                    if (animationProgressProvider == null) {
+                    if (animationProgressProvider == null && !ignoreInterpolator) {
                         progress = interpolator.getInterpolation(posAnimationProgress);
                     } else {
                         progress = posAnimationProgress;
+                    }
+                    if (ignoreInterpolator && (progress == 0 || progress == 1)) {
+                        ignoreInterpolator = false;
                     }
                     if (stageBefore == 0 && progress > 0.25f ||
                             stageBefore == 1 && progress > 0.5f ||
@@ -940,10 +945,13 @@ public class MotionBackgroundDrawable extends Drawable {
                     if (posAnimationProgress > 1.0f) {
                         posAnimationProgress = 1.0f;
                     }
-                    if (animationProgressProvider == null) {
+                    if (animationProgressProvider == null && !ignoreInterpolator) {
                         progress = interpolator.getInterpolation(posAnimationProgress);
                     } else {
                         progress = posAnimationProgress;
+                    }
+                    if (ignoreInterpolator && (progress == 0 || progress == 1)) {
+                        ignoreInterpolator = false;
                     }
                     if (rotationBack) {
                         progress = 1.0f - progress;
@@ -1021,6 +1029,12 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public void setIndeterminateAnimation(boolean isIndeterminateAnimation) {
+        if (!isIndeterminateAnimation && this.isIndeterminateAnimation) {
+            float progressPerPhase = 1f / 8f;
+            int phase = (int) (posAnimationProgress / progressPerPhase);
+            posAnimationProgress = 1f - (posAnimationProgress - phase * progressPerPhase) / progressPerPhase;
+            ignoreInterpolator = true;
+        }
         this.isIndeterminateAnimation = isIndeterminateAnimation;
     }
 

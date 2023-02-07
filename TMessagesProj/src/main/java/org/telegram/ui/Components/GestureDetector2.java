@@ -285,7 +285,7 @@ public class GestureDetector2 {
 
                 if (mIsLongpressEnabled) {
                     mHandler.removeMessages(LONG_PRESS);
-                    mHandler.sendMessageAtTime(mHandler.obtainMessage(LONG_PRESS, 0, 0), mCurrentDownEvent.getDownTime() + ViewConfiguration.getLongPressTimeout());
+                    mHandler.sendMessageDelayed(mHandler.obtainMessage(LONG_PRESS, 0, 0), ViewConfiguration.getLongPressTimeout());
                 }
                 mHandler.sendEmptyMessageAtTime(SHOW_PRESS, mCurrentDownEvent.getDownTime() + TAP_TIMEOUT);
                 handled |= mListener.onDown(ev);
@@ -316,7 +316,7 @@ public class GestureDetector2 {
                         if (distance > slopSquare) {
                             mHandler.removeMessages(LONG_PRESS);
                             final long longPressTimeout = ViewConfiguration.getLongPressTimeout();
-                            mHandler.sendMessageAtTime(mHandler.obtainMessage(LONG_PRESS, 0, 0), ev.getDownTime() + (long) (longPressTimeout * multiplier));
+                            mHandler.sendMessageDelayed(mHandler.obtainMessage(LONG_PRESS, 0, 0), (long) (longPressTimeout * multiplier));
                         }
                         slopSquare *= multiplier * multiplier;
                     }

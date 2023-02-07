@@ -168,7 +168,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public int getMovementFlags(@NonNull RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-            if (viewHolder.getItemViewType() != 0) {
+            if (viewHolder.getItemViewType() != ListAdapter.TYPE_STICKER_SET) {
                 return makeMovementFlags(0, 0);
             }
             return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
@@ -1170,7 +1170,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                             TLRPC.TL_availableReaction availableReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
                             if (availableReaction != null) {
                                 SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(availableReaction.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
-                                settingsCell.getValueBackupImageView().getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "100_100_lastframe", svgThumb, "webp", availableReaction, 1);
+                                settingsCell.getValueBackupImageView().getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "100_100_lastreactframe", svgThumb, "webp", availableReaction, 1);
                             }
                         }
                     }
@@ -1201,7 +1201,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         break;
                     case TYPE_SWITCH:
                         if (payloads.contains(UPDATE_LOOP_STICKERS) && position == loopRow) {
-                            ((TextCheckCell) holder.itemView).setChecked(SharedConfig.loopStickers);
+                            ((TextCheckCell) holder.itemView).setChecked(SharedConfig.loopStickers());
                         }
                         break;
                     case TYPE_FEATURED_STICKER_SET:

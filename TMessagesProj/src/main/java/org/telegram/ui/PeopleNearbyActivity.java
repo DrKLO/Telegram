@@ -387,7 +387,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 presentFragment(chatActivity);
             } else if (position == chatsCreateRow) {
                 if (checkingCanCreate || currentGroupCreateAddress == null) {
-                    loadingDialog = new AlertDialog(getParentActivity(), 3);
+                    loadingDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                     loadingDialog.setOnCancelListener(dialog -> loadingDialog = null);
                     loadingDialog.show();
                     return;

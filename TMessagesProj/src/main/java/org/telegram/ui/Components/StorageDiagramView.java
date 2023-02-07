@@ -32,6 +32,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.CacheControlActivity;
+import org.telegram.ui.Storage.CacheModel;
 
 public class StorageDiagramView extends View implements NotificationCenter.NotificationCenterDelegate {
 
@@ -57,11 +58,16 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
     int enabledCount;
 
     ValueAnimator valueAnimator;
+    CacheModel cacheModel;
 
     public StorageDiagramView(Context context) {
         super(context);
         text1.setCallback(this);
         text2.setCallback(this);
+    }
+
+    public void setCacheModel(CacheModel cacheModel) {
+        this.cacheModel = cacheModel;
     }
 
     public StorageDiagramView(Context context, long dialogId) {
@@ -140,8 +146,9 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
         updateDescription();
     }
 
-    public void setData(ClearViewData[] data) {
+    public void setData(CacheModel cacheModel, ClearViewData[] data) {
         this.data = data;
+        this.cacheModel = cacheModel;
         invalidate();
         drawingPercentage = new float[data.length];
         animateToPercentage = new float[data.length];
@@ -264,10 +271,10 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
             text1.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             text2.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             if (dialogId != null) {
-                int textWidth = text1.getCurrentWidth() + AndroidUtilities.dp(4) + text2.getCurrentWidth();
-                int leftpad = (getWidth() - textWidth) / 2;
-                text1.setBounds(0, AndroidUtilities.dp(115), leftpad + text1.getCurrentWidth(), AndroidUtilities.dp(115 + 30));
-                text2.setBounds(leftpad + textWidth - text2.getCurrentWidth(), AndroidUtilities.dp(115 + 3), getWidth(), AndroidUtilities.dp(115 + 3 + 30));
+                float textWidth = text1.getCurrentWidth() + AndroidUtilities.dp(4) + text2.getCurrentWidth();
+                float leftpad = (getWidth() - textWidth) / 2;
+                text1.setBounds(0, AndroidUtilities.dp(115), (int) (leftpad + text1.getCurrentWidth()), AndroidUtilities.dp(115 + 30));
+                text2.setBounds((int) (leftpad + textWidth - text2.getCurrentWidth()), AndroidUtilities.dp(115 + 3), getWidth(), AndroidUtilities.dp(115 + 3 + 30));
             }
             text1.draw(canvas);
             text2.draw(canvas);
@@ -302,28 +309,26 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
             paint.setStrokeJoin(Paint.Join.ROUND);
         }
 
-
         public void setClear(boolean clear) {
             if (this.clear != clear) {
                 this.clear = clear;
-                parentView.updateDescription();
                 firstDraw = true;
-                parentView.update(true);
             }
         }
     }
 
-    private void update(boolean animate) {
+    public void update(boolean animate) {
         long total = 0;
         ClearViewData[] data = this.data;
         if (data == null) {
             return;
         }
         for (int i = 0; i < data.length; i++) {
-            if (data[i] == null || !data[i].clear) {
+            long cacheModelSize = cacheModel.getSelectedFilesSize(i);
+            if (data[i] == null || (!data[i].clear && cacheModelSize <= 0)) {
                 continue;
             }
-            total += data[i].size;
+            total += cacheModelSize > 0 ? cacheModelSize : data[i].size;
         }
 
         float k = 0;
@@ -331,21 +336,24 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
         enabledCount = 0;
 
         for (int i = 0; i < data.length; i++) {
+            long cacheModelSize = cacheModel.getSelectedFilesSize(i);
             if (data[i] != null) {
-                if (data[i].clear) {
+                if (data[i].clear || cacheModelSize > 0) {
                     enabledCount++;
                 }
             }
-            if (data[i] == null || !data[i].clear) {
+
+            if (data[i] == null || (!data[i].clear && cacheModelSize <= 0)) {
                 animateToPercentage[i] = 0;
                 continue;
             }
-            float percent = data[i].size / (float) total;
+            long size = cacheModelSize > 0 ? cacheModelSize : data[i].size;;
+            float percent = size / (float) total;
             if (percent < 0.02777f) {
                 percent = 0.02777f;
             }
             k += percent;
-            if (percent > max && data[i].clear) {
+            if (percent > max && (data[i].clear || cacheModelSize > 0)) {
                 max = percent;
             }
             animateToPercentage[i] = percent;
@@ -453,22 +461,29 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
         }
     }
 
-    private void updateDescription() {
-        if (data == null) {
-            return;
-        }
-        long total = 0;
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] == null || !data[i].clear) {
-                continue;
-            }
-            total += data[i].size;
-        }
+    public long updateDescription() {
+        long total = calculateSize();
         String[] str = AndroidUtilities.formatFileSize(total).split(" ");
         if (str.length > 1) {
             text1.setText(total == 0 ? " " : str[0], true, false);
             text2.setText(total == 0 ? " " : str[1], true, false);
         }
+        return total;
+    }
+
+    public long calculateSize() {
+        if (data == null) {
+            return 0;
+        }
+        long total = 0;
+        for (int i = 0; i < data.length; i++) {
+            long cacheModelSize = cacheModel.getSelectedFilesSize(i);
+            if (data[i] == null || (!data[i].clear && cacheModelSize <= 0)) {
+                continue;
+            }
+            total += cacheModelSize > 0 ? cacheModelSize : data[i].size;
+        }
+        return total;
     }
 
     @Override

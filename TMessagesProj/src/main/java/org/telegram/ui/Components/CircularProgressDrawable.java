@@ -4,7 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -33,19 +32,20 @@ public class CircularProgressDrawable extends Drawable {
     }
 
     private long start = -1;
-    private final FastOutSlowInInterpolator interpolator = new FastOutSlowInInterpolator();
-    private float segmentFrom, segmentTo;
+    private static final FastOutSlowInInterpolator interpolator = new FastOutSlowInInterpolator();
+    private float[] segment = new float[2];
     private void updateSegment() {
         final long now = SystemClock.elapsedRealtime();
         final long t = (now - start) % 5400;
-        segmentFrom = 1520 * t / 5400f - 20;
-        segmentTo = 1520 * t / 5400f;
-        float fraction;
+        getSegments(t, segment);
+    }
+
+    public static void getSegments(float t, float[] segments) {
+        segments[0] = Math.max(0, 1520 * t / 5400f - 20);
+        segments[1] = 1520 * t / 5400f;
         for (int i = 0; i < 4; ++i) {
-            fraction = (t - i * 1350) / 667f;
-            segmentTo += interpolator.getInterpolation(fraction) * 250;
-            fraction = (t - (667 + i * 1350)) / 667f;
-            segmentFrom += interpolator.getInterpolation(fraction) * 250;
+            segments[1] += interpolator.getInterpolation((t - i * 1350) / 667f) * 250;
+            segments[0] += interpolator.getInterpolation((t - (667 + i * 1350)) / 667f) * 250;
         }
     }
 
@@ -53,7 +53,9 @@ public class CircularProgressDrawable extends Drawable {
         paint.setStyle(Paint.Style.STROKE);
     }
 
+    private float angleOffset;
     private final RectF bounds = new RectF();
+
     @Override
     public void draw(@NonNull Canvas canvas) {
         if (start < 0) {
@@ -62,12 +64,20 @@ public class CircularProgressDrawable extends Drawable {
         updateSegment();
         canvas.drawArc(
             bounds,
-            segmentFrom,
-            segmentTo - segmentFrom,
+            angleOffset + segment[0],
+            segment[1] - segment[0],
             false,
             paint
         );
         invalidateSelf();
+    }
+
+    public void reset() {
+        start = -1;
+    }
+
+    public void setAngleOffset(float angleOffset) {
+        this.angleOffset = angleOffset;
     }
 
     @Override

@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
@@ -49,11 +50,14 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
@@ -236,6 +240,7 @@ public class CountrySelectActivity extends BaseFragment {
 
     public static class Country {
         public String name;
+        public String defaultName;
         public String code;
         public String shortname;
 
@@ -301,10 +306,17 @@ public class CountrySelectActivity extends BaseFragment {
                     FileLog.e(e);
                 }
             }
-            Collections.sort(sortedCountries, String::compareTo);
+            Comparator<String> comparator;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Collator collator = Collator.getInstance(LocaleController.getInstance().getCurrentLocale() != null ? LocaleController.getInstance().getCurrentLocale() : Locale.getDefault());
+                comparator = collator::compare;
+            } else {
+                comparator = String::compareTo;
+            }
+            Collections.sort(sortedCountries, comparator);
 
             for (ArrayList<Country> arr : countries.values()) {
-                Collections.sort(arr, (country, country2) -> country.name.compareTo(country2.name));
+                Collections.sort(arr, (country, country2) -> comparator.compare(country.name, country2.name));
             }
         }
 
@@ -411,7 +423,11 @@ public class CountrySelectActivity extends BaseFragment {
             for (List<Country> list : countries.values()) {
                 for (Country country : list) {
                     countryList.add(country);
-                    countrySearchMap.put(country, Arrays.asList(country.name.split(" ")));
+                    List<String> keys = new ArrayList<>(Arrays.asList(country.name.split(" ")));
+                    if (country.defaultName != null) {
+                        keys.addAll(Arrays.asList(country.defaultName.split(" ")));
+                    }
+                    countrySearchMap.put(country, keys);
                 }
             }
         }

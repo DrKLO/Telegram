@@ -64,6 +64,15 @@ public class Emoji {
     public static float emojiDrawingYOffset;
     public static boolean emojiDrawingUseAlpha = true;
 
+    private static String[] DEFAULT_RECENT = new String[]{
+        "\uD83D\uDE02", "\uD83D\uDE18", "\u2764", "\uD83D\uDE0D", "\uD83D\uDE0A", "\uD83D\uDE01",
+        "\uD83D\uDC4D", "\u263A", "\uD83D\uDE14", "\uD83D\uDE04", "\uD83D\uDE2D", "\uD83D\uDC8B",
+        "\uD83D\uDE12", "\uD83D\uDE33", "\uD83D\uDE1C", "\uD83D\uDE48", "\uD83D\uDE09", "\uD83D\uDE03",
+        "\uD83D\uDE22", "\uD83D\uDE1D", "\uD83D\uDE31", "\uD83D\uDE21", "\uD83D\uDE0F", "\uD83D\uDE1E",
+        "\uD83D\uDE05", "\uD83D\uDE1A", "\uD83D\uDE4A", "\uD83D\uDE0C", "\uD83D\uDE00", "\uD83D\uDE0B",
+        "\uD83D\uDE06", "\uD83D\uDC4C", "\uD83D\uDE10", "\uD83D\uDE15"
+    };
+
     private final static int MAX_RECENT_EMOJI_COUNT = 48;
 
     static {
@@ -485,15 +494,19 @@ public class Emoji {
         return emojis;
     }
 
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew) {
+        return replaceEmoji(cs, fontMetrics, AndroidUtilities.dp(16), createNew, null);
+    }
+
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew) {
         return replaceEmoji(cs, fontMetrics, size, createNew, null);
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly) {
-        return replaceEmoji(cs, fontMetrics, size, createNew, emojiOnly, false);
+        return replaceEmoji(cs, fontMetrics, createNew, emojiOnly, DynamicDrawableSpan.ALIGN_BOTTOM);
     }
 
-    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly, boolean limit) {
+    public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, boolean createNew, int[] emojiOnly, int alignment) {
         if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
             return cs;
         }
@@ -530,7 +543,7 @@ public class Emoji {
                 }
                 drawable = Emoji.getEmojiDrawable(emojiRange.code);
                 if (drawable != null) {
-                    span = new EmojiSpan(drawable, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
+                    span = new EmojiSpan(drawable, alignment, fontMetrics);
                     span.emoji = emojiRange.code == null ? null : emojiRange.code.toString();
                     s.setSpan(span, emojiRange.start, emojiRange.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
@@ -549,7 +562,7 @@ public class Emoji {
         public int size = AndroidUtilities.dp(20);
         public String emoji;
 
-        public EmojiSpan(Drawable d, int verticalAlignment, int s, Paint.FontMetricsInt original) {
+        public EmojiSpan(Drawable d, int verticalAlignment, Paint.FontMetricsInt original) {
             super(d, verticalAlignment);
             fontMetrics = original;
             if (original != null) {
@@ -563,6 +576,16 @@ public class Emoji {
         public void replaceFontMetrics(Paint.FontMetricsInt newMetrics, int newSize) {
             fontMetrics = newMetrics;
             size = newSize;
+        }
+
+        public void replaceFontMetrics(Paint.FontMetricsInt newMetrics) {
+            fontMetrics = newMetrics;
+            if (fontMetrics != null) {
+                size = Math.abs(fontMetrics.descent) + Math.abs(fontMetrics.ascent);
+                if (size == 0) {
+                    size = AndroidUtilities.dp(20);
+                }
+            }
         }
 
         @Override
@@ -647,6 +670,14 @@ public class Emoji {
             recentEmoji.set(recentEmoji.size() - 1, code);
         }
         emojiUseHistory.put(code, ++count);
+    }
+
+    public static void removeRecentEmoji(String code) {
+        emojiUseHistory.remove(code);
+        recentEmoji.remove(code);
+        if (emojiUseHistory.isEmpty() || recentEmoji.isEmpty()) {
+            addRecentEmoji(DEFAULT_RECENT[0]);
+        }
     }
 
     public static void sortEmoji() {
@@ -742,15 +773,8 @@ public class Emoji {
             }
             if (emojiUseHistory.isEmpty()) {
                 if (!preferences.getBoolean("filled_default", false)) {
-                    String[] newRecent = new String[]{
-                            "\uD83D\uDE02", "\uD83D\uDE18", "\u2764", "\uD83D\uDE0D", "\uD83D\uDE0A", "\uD83D\uDE01",
-                            "\uD83D\uDC4D", "\u263A", "\uD83D\uDE14", "\uD83D\uDE04", "\uD83D\uDE2D", "\uD83D\uDC8B",
-                            "\uD83D\uDE12", "\uD83D\uDE33", "\uD83D\uDE1C", "\uD83D\uDE48", "\uD83D\uDE09", "\uD83D\uDE03",
-                            "\uD83D\uDE22", "\uD83D\uDE1D", "\uD83D\uDE31", "\uD83D\uDE21", "\uD83D\uDE0F", "\uD83D\uDE1E",
-                            "\uD83D\uDE05", "\uD83D\uDE1A", "\uD83D\uDE4A", "\uD83D\uDE0C", "\uD83D\uDE00", "\uD83D\uDE0B",
-                            "\uD83D\uDE06", "\uD83D\uDC4C", "\uD83D\uDE10", "\uD83D\uDE15"};
-                    for (int i = 0; i < newRecent.length; i++) {
-                        emojiUseHistory.put(newRecent[i], newRecent.length - i);
+                    for (int i = 0; i < DEFAULT_RECENT.length; i++) {
+                        emojiUseHistory.put(DEFAULT_RECENT[i], DEFAULT_RECENT.length - i);
                     }
                     preferences.edit().putBoolean("filled_default", true).commit();
                     saveRecentEmoji();

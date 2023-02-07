@@ -11,18 +11,20 @@
 package org.webrtc;
 
 import static org.webrtc.MediaCodecUtils.EXYNOS_PREFIX;
+import static org.webrtc.MediaCodecUtils.EXYNOS_PREFIX_C2;
+import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
 import static org.webrtc.MediaCodecUtils.INTEL_PREFIX;
 import static org.webrtc.MediaCodecUtils.QCOM_PREFIX;
-import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
 
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.os.Build;
+import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 
-import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -222,7 +224,8 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
         || (name.startsWith(EXYNOS_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         // Intel Vp8 encoder is supported in LOLLIPOP or later, with the intel encoder enabled.
         || (name.startsWith(INTEL_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
-               && enableIntelVp8Encoder);
+               && enableIntelVp8Encoder)
+        || ((name.startsWith(EXYNOS_PREFIX_C2)  && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M));
   }
 
   private boolean isHardwareSupportedInCurrentSdkVp9(MediaCodecInfo info) {

@@ -359,13 +359,14 @@ public class LinkActionView extends LinearLayout {
     }
 
     private void showQrCode() {
-        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), link, isChannel ? LocaleController.getString("QRCodeLinkHelpChannel", R.string.QRCodeLinkHelpChannel) : LocaleController.getString("QRCodeLinkHelpGroup", R.string.QRCodeLinkHelpGroup)) {
+        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), LocaleController.getString("InviteByQRCode", R.string.InviteByQRCode), link, isChannel ? LocaleController.getString("QRCodeLinkHelpChannel", R.string.QRCodeLinkHelpChannel) : LocaleController.getString("QRCodeLinkHelpGroup", R.string.QRCodeLinkHelpGroup), false) {
             @Override
             public void dismiss() {
                 super.dismiss();
                 qrCodeBottomSheet = null;
             }
         };
+        qrCodeBottomSheet.setCenterAnimation(R.raw.qr_code_logo);
         qrCodeBottomSheet.show();
         if (actionBarPopupWindow != null) {
             actionBarPopupWindow.dismiss();

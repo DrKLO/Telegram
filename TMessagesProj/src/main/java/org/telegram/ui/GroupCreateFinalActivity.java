@@ -105,6 +105,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private TLRPC.FileLocation avatarBig;
     private TLRPC.InputFile inputPhoto;
     private TLRPC.InputFile inputVideo;
+    private TLRPC.VideoSize inputEmojiMarkup;
     private String inputVideoPath;
     private double videoTimestamp;
     private ArrayList<Long> selectedContacts;
@@ -113,6 +114,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private ImageUpdater imageUpdater;
     private String nameToSet;
     private int chatType;
+    private boolean canToggleTopics;
 
     private RLottieDrawable cameraDrawable;
     
@@ -142,6 +144,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         currentGroupCreateLocation = args.getParcelable("location");
         forImport = args.getBoolean("forImport", false);
         nameToSet = args.getString("title", null);
+        canToggleTopics = args.getBoolean("canToggleTopics", true);
     }
 
     @Override
@@ -149,7 +152,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidCreated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidFailCreate);
-        imageUpdater = new ImageUpdater(true);
+        imageUpdater = new ImageUpdater(true, ImageUpdater.FOR_TYPE_GROUP, true);
         imageUpdater.parentFragment = this;
         imageUpdater.setDelegate(this);
         long[] contacts = getArguments().getLongArray("result");
@@ -442,7 +445,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 super.invalidate(l, t, r, b);
             }
         };
-        avatarImage.setRoundRadius(AndroidUtilities.dp(32));
+        avatarImage.setRoundRadius(AndroidUtilities.dp(chatType == ChatObject.CHAT_TYPE_FORUM ? 16 : 32));
         avatarDrawable.setInfo(5, null, null);
         avatarImage.setImageDrawable(avatarDrawable);
         avatarImage.setContentDescription(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
@@ -454,7 +457,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         avatarOverlay = new View(context) {
             @Override
             protected void onDraw(Canvas canvas) {
-                if (avatarImage != null && avatarProgressView.getVisibility() == VISIBLE) {
+                if (avatarImage != null && avatarProgressView.getVisibility() == VISIBLE && avatarImage.getImageReceiver().hasNotThumb()) {
                     paint.setAlpha((int) (0x55 * avatarImage.getImageReceiver().getCurrentAlpha() * avatarProgressView.getAlpha()));
                     canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, getMeasuredWidth() / 2.0f, paint);
                 }
@@ -468,6 +471,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 inputPhoto = null;
                 inputVideo = null;
                 inputVideoPath = null;
+                inputEmojiMarkup = null;
                 videoTimestamp = 0;
                 showAvatarProgress(false, true);
                 avatarImage.setImage(null, null, avatarDrawable, null);
@@ -480,7 +484,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 } else {
                     cameraDrawable.setCurrentFrame(0, false);
                 }
-            });
+            }, 0);
             cameraDrawable.setCurrentFrame(0);
             cameraDrawable.setCustomEndFrame(43);
             avatarEditor.playAnimation();
@@ -523,7 +527,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         showAvatarProgress(false, false);
 
         editText = new EditTextEmoji(context, sizeNotifierFrameLayout, this, EditTextEmoji.STYLE_FRAGMENT, false);
-        editText.setHint(chatType == ChatObject.CHAT_TYPE_CHAT || chatType == ChatObject.CHAT_TYPE_MEGAGROUP ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
+        editText.setHint(chatType == ChatObject.CHAT_TYPE_CHAT || chatType == ChatObject.CHAT_TYPE_MEGAGROUP || chatType == ChatObject.CHAT_TYPE_FORUM ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
         if (nameToSet != null) {
             editText.setText(nameToSet);
             nameToSet = null;
@@ -563,7 +567,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 });
                 presentFragment(fragment);
             }
-            if (view instanceof TextCell) {
+            if (view instanceof TextCell && chatType != ChatObject.CHAT_TYPE_FORUM) {
                 if (popupWindow != null && popupWindow.isShowing()) {
                     return;
                 }
@@ -682,11 +686,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
+    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup) {
         AndroidUtilities.runOnUIThread(() -> {
-            if (photo != null || video != null) {
+            if (photo != null || video != null || emojiMarkup != null) {
                 inputPhoto = photo;
                 inputVideo = video;
+                inputEmojiMarkup = emojiMarkup;
                 inputVideoPath = videoPath;
                 videoTimestamp = videoStartTimestamp;
                 if (createAfterUpload) {
@@ -850,8 +855,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 args2.putBoolean("just_created_chat", true);
                 presentFragment(new ChatActivity(args2), true);
             }
-            if (inputPhoto != null || inputVideo != null) {
-                getMessagesController().changeChatAvatar(chatId, null, inputPhoto, inputVideo, videoTimestamp, inputVideoPath, avatar, avatarBig, null);
+            if (inputPhoto != null || inputVideo != null || inputEmojiMarkup != null) {
+                getMessagesController().changeChatAvatar(chatId, null, inputPhoto, inputVideo, inputEmojiMarkup, videoTimestamp, inputVideoPath, avatar, avatarBig, null);
             }
         }
     }
@@ -919,6 +924,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         private final static int VIEW_TYPE_TEXT_SETTINGS = 3;
         private final static int VIEW_TYPE_AUTO_DELETE = 4;
         private final static int VIEW_TYPE_TEXT_INFO_CELL = 5;
+        private final static int VIEW_TYPE_TOPICS = 6;
 
         ArrayList<InnerItem> items = new ArrayList<>();
 
@@ -930,8 +936,13 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         public void notifyDataSetChanged() {
             items.clear();
             items.add(new InnerItem(VIEW_TYPE_SHADOW_SECTION_CELL));
-            items.add(new InnerItem(VIEW_TYPE_AUTO_DELETE));
-            items.add(new InnerItem(VIEW_TYPE_TEXT_INFO_CELL, LocaleController.getString("GroupCreateAutodeleteDescription", R.string.GroupCreateAutodeleteDescription)));
+            if (chatType == ChatObject.CHAT_TYPE_FORUM) {
+                items.add(new InnerItem(VIEW_TYPE_TOPICS));
+                items.add(new InnerItem(VIEW_TYPE_TEXT_INFO_CELL, LocaleController.getString("ForumToggleDescription", R.string.ForumToggleDescription)));
+            } else {
+                items.add(new InnerItem(VIEW_TYPE_AUTO_DELETE));
+                items.add(new InnerItem(VIEW_TYPE_TEXT_INFO_CELL, LocaleController.getString("GroupCreateAutodeleteDescription", R.string.GroupCreateAutodeleteDescription)));
+            }
             if (currentGroupCreateAddress != null) {
                 items.add(new InnerItem(VIEW_TYPE_HEADER_CELL));
                 items.add(new InnerItem(VIEW_TYPE_TEXT_SETTINGS));
@@ -953,7 +964,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return holder.getItemViewType() == VIEW_TYPE_TEXT_SETTINGS || holder.getItemViewType() == VIEW_TYPE_AUTO_DELETE;
+            return holder.getItemViewType() == VIEW_TYPE_TEXT_SETTINGS || holder.getItemViewType() == VIEW_TYPE_AUTO_DELETE || holder.getItemViewType() == VIEW_TYPE_TOPICS && canToggleTopics;
         }
 
         @Override
@@ -985,6 +996,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
                     view.setBackgroundDrawable(combinedDrawable);
+                    break;
+                case VIEW_TYPE_TOPICS:
+                    view = new TextCell(context, 23, false, true, getResourceProvider());
                     break;
                 case 3:
                 default:
@@ -1027,6 +1041,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                         value = LocaleController.formatTTLString(ttlPeriod);
                     }
                     textCell.setTextAndValueAndIcon(LocaleController.getString("AutoDeleteMessages", R.string.AutoDeleteMessages), value, fragmentBeginToShow, R.drawable.msg_autodelete, false);
+                    break;
+                }
+                case VIEW_TYPE_TOPICS: {
+                    TextCell textCell = (TextCell) holder.itemView;
+                    textCell.setTextAndCheckAndIcon(LocaleController.getString("ChannelTopics", R.string.ChannelTopics), true, R.drawable.msg_topics, false);
+                    textCell.getCheckBox().setAlpha(.75f);
                     break;
                 }
                 case VIEW_TYPE_TEXT_INFO_CELL:

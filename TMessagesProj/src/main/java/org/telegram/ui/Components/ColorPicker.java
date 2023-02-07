@@ -95,6 +95,7 @@ public class ColorPicker extends FrameLayout {
     private boolean colorPressed;
 
     private int selectedColor;
+    private int prevSelectedColor;
 
     private float pressedMoveProgress = 1.0f;
     private long lastUpdateTime;
@@ -252,6 +253,7 @@ public class ColorPicker extends FrameLayout {
                     boolean checked = radioButton[b] == radioButton1;
                     radioButton[b].setChecked(checked, true);
                     if (checked) {
+                        prevSelectedColor = selectedColor;
                         selectedColor = b;
                     }
                 }
@@ -529,7 +531,11 @@ public class ColorPicker extends FrameLayout {
                 }
                 radioButton[3] = button;
             }
-            radioButton[0].callOnClick();
+            if (prevSelectedColor >= 0 && prevSelectedColor < selectedColor) {
+                radioButton[prevSelectedColor].callOnClick();
+            } else {
+                radioButton[colorsCount - 1].callOnClick();
+            }
             for (int a = 0; a < radioButton.length; a++) {
                 if (a < colorsCount) {
                     delegate.setColor(radioButton[a].getColor(), a, a == radioButton.length - 1);
@@ -907,6 +913,7 @@ public class ColorPicker extends FrameLayout {
 
     public void setType(int resetType, boolean hasChanges, int maxColorsCount, int newColorsCount, boolean myMessages, int angle, boolean animated) {
         if (resetType != currentResetType) {
+            prevSelectedColor = 0;
             selectedColor = 0;
             for (int i = 0; i < 4; i++) {
                 radioButton[i].setChecked(i == selectedColor, true);

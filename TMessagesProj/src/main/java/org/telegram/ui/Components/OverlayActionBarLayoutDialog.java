@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +21,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 
@@ -27,6 +29,7 @@ public class OverlayActionBarLayoutDialog extends Dialog implements INavigationL
     private Theme.ResourcesProvider resourcesProvider;
     private INavigationLayout actionBarLayout;
     private FrameLayout frameLayout;
+    private PasscodeView passcodeView;
 
     public OverlayActionBarLayoutDialog(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
@@ -46,7 +49,36 @@ public class OverlayActionBarLayoutDialog extends Dialog implements INavigationL
             actionBarLayout.setRemoveActionBarExtraHeight(true);
             VerticalPositionAutoAnimator.attach(actionBarLayout.getView());
         }
+        passcodeView = new PasscodeView(context);
+        frameLayout.addView(passcodeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         setContentView(frameLayout);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Context context = getContext();
+        if (context instanceof ContextWrapper && !(context instanceof LaunchActivity)) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        if (context instanceof LaunchActivity) {
+            ((LaunchActivity) context).addOverlayPasscodeView(passcodeView);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        Context context = getContext();
+        if (context instanceof ContextWrapper && !(context instanceof LaunchActivity)) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        if (context instanceof LaunchActivity) {
+            ((LaunchActivity) context).removeOverlayPasscodeView(passcodeView);
+        }
     }
 
     @Override
@@ -105,6 +137,13 @@ public class OverlayActionBarLayoutDialog extends Dialog implements INavigationL
 
     @Override
     public void onBackPressed() {
+        if (passcodeView.getVisibility() == View.VISIBLE) {
+            if (getOwnerActivity() != null) {
+                getOwnerActivity().finish();
+            }
+            return;
+        }
+        
         actionBarLayout.onBackPressed();
         if (actionBarLayout.getFragmentStack().size() <= 1) {
             dismiss();

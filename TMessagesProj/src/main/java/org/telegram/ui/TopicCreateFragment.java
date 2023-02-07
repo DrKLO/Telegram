@@ -135,7 +135,7 @@ public class TopicCreateFragment extends BaseFragment {
                         return;
                     }
 
-                    final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
+                    final AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                     progressDialog.showDelayed(500);
                     created = true;
 

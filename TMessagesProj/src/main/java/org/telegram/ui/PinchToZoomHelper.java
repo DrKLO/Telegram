@@ -7,6 +7,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -23,6 +24,8 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 
+import androidx.core.graphics.ColorUtils;
+
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -32,12 +35,14 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
 public class PinchToZoomHelper {
 
@@ -49,6 +54,11 @@ public class PinchToZoomHelper {
     private ImageReceiver childImage;
 
     private ImageReceiver fullImage = new ImageReceiver();
+    private ImageReceiver blurImage = new ImageReceiver();
+    private boolean hasMediaSpoiler;
+    private SpoilerEffect mediaSpoilerEffect = new SpoilerEffect();
+    private Path path = new Path();
+    private float[] spoilerRadii = new float[8];
 
     private boolean inOverlayMode;
 
@@ -114,12 +124,27 @@ public class PinchToZoomHelper {
             fullImage.setCrossfadeAlpha((byte) 2);
             fullImage.setCrossfadeWithOldImage(false);
             fullImage.onAttachedToWindow();
+
+            blurImage = new ImageReceiver();
+            blurImage.setCrossfadeAlpha((byte) 2);
+            blurImage.setCrossfadeWithOldImage(false);
+            blurImage.onAttachedToWindow();
         }
 
         inOverlayMode = true;
         parentView.addView(overlayView);
         finishProgress = 1f;
         progressToFullView = 0f;
+
+        hasMediaSpoiler = messageObject != null && messageObject.hasMediaSpoilers() && !messageObject.isMediaSpoilersRevealed;
+        if (blurImage.getBitmap() != null) {
+            blurImage.getBitmap().recycle();
+            blurImage.setImageBitmap((Bitmap) null);
+        }
+
+        if (image.getBitmap() != null && !image.getBitmap().isRecycled() && hasMediaSpoiler) {
+            blurImage.setImageBitmap(Utilities.stackBlurBitmapMax(image.getBitmap()));
+        }
 
         setFullImage(messageObject);
 
@@ -300,6 +325,11 @@ public class PinchToZoomHelper {
             fullImage.onDetachedFromWindow();
             fullImage.clearImage();
             fullImage = null;
+        }
+        if (blurImage != null) {
+            blurImage.onDetachedFromWindow();
+            blurImage.clearImage();
+            blurImage = null;
         }
 
         messageObject = null;
@@ -550,6 +580,33 @@ public class PinchToZoomHelper {
                 videoPlayerContainer.setTranslationY(y + parentOffsetY + pinchTranslationY* s * finishProgress);
             }
 
+            if (hasMediaSpoiler) {
+                blurImage.setAlpha(childImage.getAlpha());
+                blurImage.setRoundRadius(childImage.getRoundRadius());
+                blurImage.setImageCoords(childImage.getImageX(), childImage.getImageY(), childImage.getImageWidth(), childImage.getImageHeight());
+                blurImage.draw(canvas);
+
+                int[] rad = childImage.getRoundRadius();
+                spoilerRadii[0] = spoilerRadii[1] = rad[0];
+                spoilerRadii[2] = spoilerRadii[3] = rad[1];
+                spoilerRadii[4] = spoilerRadii[5] = rad[2];
+                spoilerRadii[6] = spoilerRadii[7] = rad[3];
+
+                AndroidUtilities.rectTmp.set(childImage.getImageX(), childImage.getImageY(), childImage.getImageX2(), childImage.getImageY2());
+                path.rewind();
+                path.addRoundRect(AndroidUtilities.rectTmp, spoilerRadii, Path.Direction.CW);
+
+                canvas.save();
+                canvas.clipPath(path);
+                int sColor = Color.WHITE;
+                mediaSpoilerEffect.setColor(ColorUtils.setAlphaComponent(sColor, (int) (Color.alpha(sColor) * 0.325f * childImage.getAlpha())));
+                mediaSpoilerEffect.setBounds((int) childImage.getImageX(), (int) childImage.getImageY(), (int) childImage.getImageX2(), (int) childImage.getImageY2());
+                mediaSpoilerEffect.draw(canvas);
+                canvas.restore();
+
+                invalidate();
+            }
+
             canvas.restore();
         }
     }
@@ -693,7 +750,9 @@ public class PinchToZoomHelper {
             invalidateViews();
         } else if ((ev.getActionMasked() == MotionEvent.ACTION_UP || (ev.getActionMasked() == MotionEvent.ACTION_POINTER_UP && checkPointerIds(ev)) || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) && isInPinchToZoomTouchMode) {
             isInPinchToZoomTouchMode = false;
-            child.getParent().requestDisallowInterceptTouchEvent(false);
+            if (child != null && child.getParent() != null) {
+                child.getParent().requestDisallowInterceptTouchEvent(false);
+            }
             finishZoom();
         }
         return isInOverlayModeFor(child);

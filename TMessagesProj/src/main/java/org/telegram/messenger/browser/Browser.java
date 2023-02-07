@@ -26,6 +26,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
@@ -213,7 +214,33 @@ public class Browser {
         );
     }
 
+    public static class Progress {
+        public void init() {}
+        public void end() {
+            end(false);
+        }
+        public void end(boolean replaced) {}
+
+        private Runnable onCancelListener;
+        public void cancel() {
+            cancel(false);
+        }
+        public void cancel(boolean replaced) {
+            if (onCancelListener != null) {
+                onCancelListener.run();
+            }
+            end(replaced);
+        }
+        public void onCancel(Runnable onCancelListener) {
+            this.onCancelListener = onCancelListener;
+        }
+    }
+
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {
+        openUrl(context, uri, allowCustom, tryTelegraph, null);
+    }
+
+    public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph, Progress inCaseLoading) {
         if (context == null || uri == null) {
             return;
         }
@@ -222,20 +249,24 @@ public class Browser {
         boolean internalUri = isInternalUri(uri, forceBrowser);
         if (tryTelegraph) {
             try {
-                String host = uri.getHost().toLowerCase();
+                String host = AndroidUtilities.getHostAuthority(uri);
                 if (isTelegraphUrl(host, true) || uri.toString().toLowerCase().contains("telegram.org/faq") || uri.toString().toLowerCase().contains("telegram.org/privacy")) {
-                    final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(context, 3)};
+                    final AlertDialog[] progressDialog = new AlertDialog[] {
+                        new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER)
+                    };
 
                     Uri finalUri = uri;
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
                     req.message = uri.toString();
                     final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        try {
-                            progressDialog[0].dismiss();
-                        } catch (Throwable ignore) {
-
+                        if (inCaseLoading != null) {
+                            inCaseLoading.end();
+                        } else {
+                            try {
+                                progressDialog[0].dismiss();
+                            } catch (Throwable ignore) {}
+                            progressDialog[0] = null;
                         }
-                        progressDialog[0] = null;
 
                         boolean ok = false;
                         if (response instanceof TLRPC.TL_messageMediaWebPage) {
@@ -249,17 +280,19 @@ public class Browser {
                             openUrl(context, finalUri, allowCustom, false);
                         }
                     }));
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (progressDialog[0] == null) {
-                            return;
-                        }
-                        try {
-                            progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true));
-                            progressDialog[0].show();
-                        } catch (Exception ignore) {
-
-                        }
-                    }, 1000);
+                    if (inCaseLoading != null) {
+                        inCaseLoading.init();
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (progressDialog[0] == null) {
+                                return;
+                            }
+                            try {
+                                progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true));
+                                progressDialog[0].show();
+                            } catch (Exception ignore) {}
+                        }, 1000);
+                    }
                     return;
                 }
             } catch (Exception ignore) {
@@ -275,7 +308,7 @@ public class Browser {
                     FileLog.e(e);
                 }
             }
-            String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
+            String host = AndroidUtilities.getHostAuthority(uri.toString().toLowerCase());
             if (AccountInstance.getInstance(currentAccount).getMessagesController().autologinDomains.contains(host)) {
                 String token = "autologin_token=" + URLEncoder.encode(AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().autologinToken, "UTF-8");
                 String url = uri.toString();
@@ -343,6 +376,13 @@ public class Browser {
                 }
 
                 if (forceBrowser[0] || allActivities == null || allActivities.isEmpty()) {
+                    if (MessagesController.getInstance(currentAccount).authDomains.contains(host)) {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        ApplicationLoader.applicationContext.startActivity(intent);
+                        return;
+                    }
+
                     Intent share = new Intent(ApplicationLoader.applicationContext, ShareBroadcastReceiver.class);
                     share.setAction(Intent.ACTION_SEND);
 
@@ -372,7 +412,7 @@ public class Browser {
             intent.putExtra(android.provider.Browser.EXTRA_CREATE_NEW_TAB, true);
             intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, context.getPackageName());
             if (internalUri && context instanceof LaunchActivity) {
-                ((LaunchActivity) context).onNewIntent(intent);
+                ((LaunchActivity) context).onNewIntent(intent, inCaseLoading);
             } else {
                 context.startActivity(intent);
             }
@@ -409,8 +449,15 @@ public class Browser {
     }
 
     public static boolean isInternalUri(Uri uri, boolean all, boolean[] forceBrowser) {
-        String host = uri.getHost();
+        String host = AndroidUtilities.getHostAuthority(uri);
         host = host != null ? host.toLowerCase() : "";
+
+        if (MessagesController.getInstance(UserConfig.selectedAccount).authDomains.contains(host)) {
+            if (forceBrowser != null) {
+                forceBrowser[0] = true;
+            }
+            return false;
+        }
 
         Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
         if (prefixMatcher.find()) {

@@ -11,6 +11,7 @@ import android.os.SystemClock;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.util.Pair;
@@ -224,6 +225,9 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         private ArrayList<Pair<LinkSpanDrawable, Object>> mLinks = new ArrayList<>();
         private int mLinksCount = 0;
 
+        private ArrayList<Pair<LoadingDrawable, Object>> mLoading = new ArrayList<>();
+        private int mLoadingCount = 0;
+
         public void addLink(LinkSpanDrawable link) {
             addLink(link, null);
         }
@@ -231,6 +235,38 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         public void addLink(LinkSpanDrawable link, Object obj) {
             mLinks.add(new Pair<>(link, obj));
             mLinksCount++;
+            invalidate(obj);
+        }
+
+        public static LoadingDrawable makeLoading(Layout layout, CharacterStyle span) {
+            return makeLoading(layout, span, 0);
+        }
+
+        public static LoadingDrawable makeLoading(Layout layout, CharacterStyle span, float yOffset) {
+            if (layout == null || span == null || !(layout.getText() instanceof Spanned)) {
+                return null;
+            }
+            Spanned spanned = (Spanned) layout.getText();
+            LinkPath path = new LinkPath(true);
+            int start = spanned.getSpanStart(span);
+            int end = spanned.getSpanEnd(span);
+            path.setCurrentLayout(layout, start, yOffset);
+            layout.getSelectionPath(start, end, path);
+            LoadingDrawable loadingDrawable = new LoadingDrawable();
+            loadingDrawable.usePath(path);
+            loadingDrawable.setAppearByGradient(true);
+            loadingDrawable.setRadiiDp(CORNER_RADIUS_DP);
+            loadingDrawable.updateBounds();
+            return loadingDrawable;
+        }
+
+        public void addLoading(LoadingDrawable loadingDrawable) {
+            addLoading(loadingDrawable, null);
+        }
+
+        public void addLoading(LoadingDrawable loadingDrawable, Object obj) {
+            mLoading.add(new Pair<>(loadingDrawable, obj));
+            mLoadingCount++;
             invalidate(obj);
         }
 
@@ -295,6 +331,46 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             }
         }
 
+        public void removeLoading(LoadingDrawable loadingDrawable, boolean animated) {
+            if (loadingDrawable == null) {
+                return;
+            }
+            for (int i = 0; i < mLoadingCount; ++i) {
+                if (mLoading.get(i).first == loadingDrawable) {
+                    removeLoadingAt(i, animated);
+                    break;
+                }
+            }
+        }
+
+        private void removeLoadingAt(int index, boolean animated) {
+            if (index < 0 || index >= mLoadingCount) {
+                return;
+            }
+            Pair<LoadingDrawable, Object> pair = mLoading.get(index);
+            if (pair == null) {
+                return;
+            }
+            LoadingDrawable loadingDrawable = pair.first;
+            if (animated) {
+                if (!loadingDrawable.isDisappeared()) {
+                    if (!loadingDrawable.isDisappearing())
+                        loadingDrawable.disappear();
+                    AndroidUtilities.runOnUIThread(() -> {
+                        removeLoading(loadingDrawable, false);
+                    }, loadingDrawable.timeToDisappear());
+                } else {
+                    removeLoading(loadingDrawable, false);
+                }
+            } else {
+                mLoading.remove(pair);
+                loadingDrawable.reset();
+                loadingDrawable.resetDisappear();
+                mLoadingCount = mLoading.size();
+                invalidate(pair.second);
+            }
+        }
+
         public void clear() {
             clear(true);
         }
@@ -315,6 +391,22 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             }
         }
 
+        public void clearLoading(boolean animated) {
+            if (animated) {
+                for (int i = 0; i < mLoadingCount; ++i) {
+                    removeLoadingAt(i, true);
+                }
+            } else if (mLoadingCount > 0) {
+                for (int i = 0; i < mLoadingCount; ++i) {
+                    mLoading.get(i).first.reset();
+                    invalidate(mLoading.get(i).second, false);
+                }
+                mLoading.clear();
+                mLoadingCount = 0;
+                invalidate();
+            }
+        }
+
         public void removeLinks(Object obj) {
             removeLinks(obj, true);
         }
@@ -329,6 +421,10 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
 
         public boolean draw(Canvas canvas) {
             boolean invalidate = false;
+            for (int i = 0; i < mLoadingCount; ++i) {
+                mLoading.get(i).first.draw(canvas);
+                invalidate = true;
+            }
             for (int i = 0; i < mLinksCount; ++i) {
                 invalidate = mLinks.get(i).first.draw(canvas) || invalidate;
             }
@@ -337,6 +433,12 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
 
         public boolean draw(Canvas canvas, Object obj) {
             boolean invalidate = false;
+            for (int i = 0; i < mLoadingCount; ++i) {
+                if (mLoading.get(i).second == obj) {
+                    mLoading.get(i).first.draw(canvas);
+                    invalidate = true;
+                }
+            }
             for (int i = 0; i < mLinksCount; ++i) {
                 if (mLinks.get(i).second == obj) {
                     invalidate = mLinks.get(i).first.draw(canvas) || invalidate;
@@ -480,14 +582,14 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                         } else if (pressedLink.getSpan() != null) {
                             pressedLink.getSpan().onClick(this);
                         }
+                        pressedLink = null;
+                        return true;
                     }
                     pressedLink = null;
-                    return true;
                 }
                 if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     links.clear();
                     pressedLink = null;
-                    return true;
                 }
             }
             return pressedLink != null || super.onTouchEvent(event);

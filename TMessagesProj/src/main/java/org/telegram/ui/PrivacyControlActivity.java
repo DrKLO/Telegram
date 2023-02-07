@@ -21,6 +21,7 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ClickableSpan;
+import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,6 +30,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,13 +38,17 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -55,21 +61,27 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.RadioCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.HintView;
+import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 
-public class PrivacyControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class PrivacyControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private ListAdapter listAdapter;
     private View doneButton;
@@ -104,6 +116,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private int phoneEverybodyRow;
     private int phoneContactsRow;
     private int phoneDetailRow;
+    private int photoForRestRow;
+    private int currentPhotoForRestRow;
+    private int photoForRestDescriptionRow;
     private int p2pSectionRow;
     private int p2pRow;
     private int p2pDetailRow;
@@ -124,6 +139,104 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     public final static int TYPE_EVERYBODY = 0;
     public final static int TYPE_NOBODY = 1;
     public final static int TYPE_CONTACTS = 2;
+    ImageUpdater imageUpdater;
+    private RLottieDrawable cameraDrawable;
+    private TextCell setAvatarCell;
+    private BackupImageView oldAvatarView;
+    private TextCell oldPhotoCell;
+    private TLRPC.PhotoSize avatarForRest;
+    private TLRPC.Photo avatarForRestPhoto;
+
+    @Override
+    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup) {
+        AndroidUtilities.runOnUIThread(() -> {
+            avatarForRest = smallSize;
+            avatarForRestPhoto = null;
+            updateAvatarForRestInfo();
+            if (photo != null || video != null) {
+                TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
+                if (photo != null) {
+                    req.file = photo;
+                    req.flags |= 1;
+                }
+                if (video != null) {
+                    req.video = video;
+                    req.flags |= 2;
+                    req.video_start_ts = videoStartTimestamp;
+                    req.flags |= 4;
+                }
+                if (emojiMarkup != null) {
+                    req.video_emoji_markup = emojiMarkup;
+                    req.flags |= 16;
+                }
+                req.fallback = true;
+                req.flags |= 8;
+
+
+                getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (response != null) {
+                        TLRPC.TL_photos_photo photo2 = (TLRPC.TL_photos_photo) response;
+                        TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().clientUserId);
+                        userFull.flags |= 4194304;
+                        userFull.fallback_photo = photo2.photo;
+                        getMessagesStorage().updateUserInfo(userFull, true);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.reloadDialogPhotos);
+
+                        TLRPC.PhotoSize smallSize2 = FileLoader.getClosestPhotoSizeWithSize(photo2.photo.sizes, 100);
+                            TLRPC.PhotoSize bigSize2 = FileLoader.getClosestPhotoSizeWithSize(photo2.photo.sizes, 1000);
+                            if (smallSize2 != null && avatarForRest != null) {
+                                File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(smallSize2, true);
+                                File src = FileLoader.getInstance(currentAccount).getPathToAttach(avatarForRest, true);
+                                src.renameTo(destFile);
+                                String oldKey = avatarForRest.location.volume_id + "_" + avatarForRest.location.local_id + "@50_50";
+                                String newKey = smallSize2.location.volume_id + "_" + smallSize2.location.local_id + "@50_50";
+                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForLocal(smallSize2.location), false);
+                            }
+
+                            if (bigSize2 != null && avatarForRest != null) {
+                                File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(bigSize2, true);
+                                File src = FileLoader.getInstance(currentAccount).getPathToAttach(avatarForRest.location, true);
+                                src.renameTo(destFile);
+                            }
+                    }
+                }));
+
+                TLRPC.User user = new TLRPC.TL_user();
+                user.photo = new TLRPC.TL_userProfilePhoto();
+                user.photo.photo_small = smallSize.location;
+                user.photo.photo_big = bigSize.location;
+                user.first_name = getUserConfig().getCurrentUser().first_name;
+                user.last_name = getUserConfig().getCurrentUser().last_name;
+                user.access_hash = getUserConfig().getCurrentUser().access_hash;
+                BulletinFactory.of(this).createUsersBulletin(Collections.singletonList(user), LocaleController.getString("PhotoForRestTooltip", R.string.PhotoForRestTooltip)).show();
+            }
+            updateRows(false);
+        });
+    }
+
+    private void updateAvatarForRestInfo() {
+        if (setAvatarCell != null) {
+            if (avatarForRest == null) {
+                setAvatarCell.getTextView().setText(LocaleController.formatString("SetPhotoForRest", R.string.SetPhotoForRest));
+                setAvatarCell.setNeedDivider(false);
+            } else {
+                setAvatarCell.getTextView().setText(LocaleController.formatString("UpdatePhotoForRest", R.string.UpdatePhotoForRest));
+                setAvatarCell.setNeedDivider(true);
+            }
+        }
+        if (oldAvatarView != null && avatarForRest != null) {
+            if (avatarForRestPhoto != null) {
+                oldAvatarView.setImage(ImageLocation.getForPhoto(avatarForRest, avatarForRestPhoto), "50_50", (Drawable) null, UserConfig.getInstance(currentAccount).getCurrentUser());
+            } else {
+                oldAvatarView.setImage(ImageLocation.getForLocal(avatarForRest.location), "50_50", (Drawable) null, UserConfig.getInstance(currentAccount).getCurrentUser());
+            }
+        }
+    }
+
+    @Override
+    public void didStartUpload(boolean isVideo) {
+
+    }
 
     private class MessageCell extends FrameLayout {
 
@@ -279,7 +392,23 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         if (load) {
             ContactsController.getInstance(currentAccount).loadPrivacySettings();
         }
+        if (rulesType == PRIVACY_RULES_TYPE_PHOTO) {
+            imageUpdater = new ImageUpdater(false, ImageUpdater.FOR_TYPE_USER, true);
+            imageUpdater.parentFragment = this;
+            imageUpdater.setDelegate(this);
+            TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().clientUserId);
+            if (UserObject.hasFallbackPhoto(userFull)) {
+                TLRPC.PhotoSize smallSize = FileLoader.getClosestPhotoSizeWithSize(userFull.fallback_photo.sizes, 1000);
+                if (smallSize != null) {
+                    avatarForRest = smallSize;
+                    avatarForRestPhoto = userFull.fallback_photo;
+                }
+            }
+
+        }
     }
+
+
 
     @Override
     public boolean onFragmentCreate() {
@@ -359,7 +488,56 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
-            if (position == nobodyRow || position == everybodyRow || position == myContactsRow) {
+            if (position == currentPhotoForRestRow) {
+                AlertDialog alertDialog = AlertsCreator.createSimpleAlert(getContext(),
+                        LocaleController.getString("RemovePublicPhoto", R.string.RemovePublicPhoto),
+                        LocaleController.getString("RemovePhotoForRestDescription", R.string.RemovePhotoForRestDescription),
+                        LocaleController.getString("Remove", R.string.Remove),
+                        () -> {
+                            avatarForRest = null;
+                            avatarForRestPhoto = null;
+                            TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().clientUserId);
+                            if (userFull == null || userFull.fallback_photo == null) {
+                                return;
+                            }
+                            TLRPC.Photo photo = userFull.fallback_photo;
+                            userFull.flags &= ~4194304;
+                            userFull.fallback_photo = null;
+                            getMessagesStorage().updateUserInfo(userFull, true);
+                            updateAvatarForRestInfo();
+                            updateRows(true);
+
+                            TLRPC.TL_inputPhoto inputPhoto = new TLRPC.TL_inputPhoto();
+                            inputPhoto.id = photo.id;
+                            inputPhoto.access_hash = photo.access_hash;
+                            inputPhoto.file_reference = photo.file_reference;
+                            if (inputPhoto.file_reference == null) {
+                                inputPhoto.file_reference = new byte[0];
+                            }
+
+                            MessagesController.getInstance(currentAccount).deleteUserPhoto(inputPhoto);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.reloadDialogPhotos);
+                        }, null).create();
+                alertDialog.show();
+                alertDialog.redPositive();
+
+            } else if (position == photoForRestRow) {
+                if (imageUpdater != null) {
+                    imageUpdater.openMenu(false, () -> {
+
+                    }, dialogInterface -> {
+                        if (!imageUpdater.isUploadingImage()) {
+                            cameraDrawable.setCustomEndFrame(86);
+                            setAvatarCell.imageView.playAnimation();
+                        } else {
+                            cameraDrawable.setCurrentFrame(0, false);
+                        }
+                    }, 0);
+                    cameraDrawable.setCurrentFrame(0);
+                    cameraDrawable.setCustomEndFrame(43);
+                    setAvatarCell.imageView.playAnimation();
+                }
+            } else if (position == nobodyRow || position == everybodyRow || position == myContactsRow) {
                 int newType;
                 if (position == nobodyRow) {
                     newType = TYPE_NOBODY;
@@ -416,7 +594,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     });
                     presentFragment(fragment);
                 } else {
-                    PrivacyUsersActivity fragment = new PrivacyUsersActivity(PrivacyUsersActivity.TYPE_PRIVACY, createFromArray, rulesType != PRIVACY_RULES_TYPE_LASTSEEN, position == alwaysShareRow);
+                    PrivacyUsersActivity fragment = new PrivacyUsersActivity(PrivacyUsersActivity.TYPE_PRIVACY, createFromArray, rulesType != PRIVACY_RULES_TYPE_LASTSEEN && rulesType != PRIVACY_RULES_TYPE_PHOTO, position == alwaysShareRow);
                     fragment.setDelegate((ids, added) -> {
                         if (position == neverShareRow) {
                             currentMinus = ids;
@@ -550,7 +728,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
         AlertDialog progressDialog = null;
         if (getParentActivity() != null) {
-            progressDialog = new AlertDialog(getParentActivity(), 3);
+            progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setCanCancel(false);
             progressDialog.show();
         }
@@ -694,12 +872,15 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     private void updateRows(boolean animated) {
-        int prevAlwaysShareRow = alwaysShareRow;
-        int prevNeverShareRow = neverShareRow;
-        int prevPhoneDetailRow = phoneDetailRow;
-        int prevDetailRow = detailRow;
-        boolean newSubtype = currentType == TYPE_NOBODY && currentSubType == 1;
-
+        DiffCallback diffCallback = null;
+        if (animated) {
+            diffCallback = new DiffCallback();
+            diffCallback.fillPositions(diffCallback.oldPositionToItem);
+            diffCallback.oldRowCount = rowCount;
+        }
+        photoForRestRow = -1;
+        currentPhotoForRestRow = -1;
+        photoForRestDescriptionRow = -1;
         rowCount = 0;
         if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
             messageRow = rowCount++;
@@ -709,7 +890,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         sectionRow = rowCount++;
         everybodyRow = rowCount++;
         myContactsRow = rowCount++;
-        if (rulesType != PRIVACY_RULES_TYPE_LASTSEEN && rulesType != PRIVACY_RULES_TYPE_CALLS && rulesType != PRIVACY_RULES_TYPE_P2P &&
+        if (rulesType != PRIVACY_RULES_TYPE_PHOTO && rulesType != PRIVACY_RULES_TYPE_LASTSEEN && rulesType != PRIVACY_RULES_TYPE_CALLS && rulesType != PRIVACY_RULES_TYPE_P2P &&
                 rulesType != PRIVACY_RULES_TYPE_FORWARDS && rulesType != PRIVACY_RULES_TYPE_PHONE && rulesType != PRIVACY_RULES_TYPE_VOICE_MESSAGES) {
             nobodyRow = -1;
         } else {
@@ -749,6 +930,14 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             p2pDetailRow = -1;
         }
 
+        if (rulesType == PRIVACY_RULES_TYPE_PHOTO && (currentMinus.size() > 0 || currentType == TYPE_CONTACTS || currentType == TYPE_NOBODY)) {
+            photoForRestRow = rowCount++;
+            if (avatarForRest != null) {
+                currentPhotoForRestRow = rowCount++;
+            }
+            photoForRestDescriptionRow = rowCount++;
+        }
+
         setMessageText();
 
         if (listAdapter != null) {
@@ -785,38 +974,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         radioCell.setChecked(currentSubType == checkedType, true);
                     }
                 }
-                if (prevSubtypeContacts != newSubtype) {
-                    listAdapter.notifyItemChanged(prevDetailRow);
-                }
-                if (alwaysShareRow == -1 && prevAlwaysShareRow != -1 && neverShareRow != -1 && prevNeverShareRow == -1 || alwaysShareRow != -1 && prevAlwaysShareRow == -1 && neverShareRow == -1 && prevNeverShareRow != -1) {
-                    listAdapter.notifyItemChanged(alwaysShareRow == -1 ? prevAlwaysShareRow : prevNeverShareRow);
-                    if (phoneDetailRow == -1 && prevPhoneDetailRow != -1) {
-                        listAdapter.notifyItemRangeRemoved(prevPhoneDetailRow, 4);
-                    } else if (phoneDetailRow != -1 && prevPhoneDetailRow == -1) {
-                        listAdapter.notifyItemRangeInserted(phoneDetailRow, 4);
-                    }
-                } else {
-                    if (alwaysShareRow == -1 && prevAlwaysShareRow != -1) {
-                        listAdapter.notifyItemRemoved(prevAlwaysShareRow);
-                    } else if (alwaysShareRow != -1 && prevAlwaysShareRow == -1) {
-                        listAdapter.notifyItemInserted(alwaysShareRow);
-                    }
-                    if (neverShareRow == -1 && prevNeverShareRow != -1) {
-                        listAdapter.notifyItemRemoved(prevNeverShareRow);
-                        if (phoneDetailRow == -1 && prevPhoneDetailRow != -1) {
-                            listAdapter.notifyItemRangeRemoved(prevPhoneDetailRow, 4);
-                        } else if (phoneDetailRow != -1 && prevPhoneDetailRow == -1) {
-                            listAdapter.notifyItemRangeInserted(phoneDetailRow, 4);
-                        }
-                    } else if (neverShareRow != -1 && prevNeverShareRow == -1) {
-                        if (phoneDetailRow == -1 && prevPhoneDetailRow != -1) {
-                            listAdapter.notifyItemRangeRemoved(prevPhoneDetailRow, 4);
-                        } else if (phoneDetailRow != -1 && prevPhoneDetailRow == -1) {
-                            listAdapter.notifyItemRangeInserted(phoneDetailRow, 4);
-                        }
-                        listAdapter.notifyItemInserted(neverShareRow);
-                    }
-                }
+
+                diffCallback.fillPositions(diffCallback.newPositionToItem);
+                DiffUtil.calculateDiff(diffCallback).dispatchUpdatesTo(listAdapter);
+                AndroidUtilities.updateVisibleRows(listView);
             } else {
                 listAdapter.notifyDataSetChanged();
             }
@@ -843,8 +1004,18 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     @Override
     public void onResume() {
         super.onResume();
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
+        updateRows(false);
+
+        if (imageUpdater != null) {
+            imageUpdater.onResume();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (imageUpdater != null) {
+            imageUpdater.onPause();
         }
     }
 
@@ -910,7 +1081,8 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
             return position == nobodyRow || position == everybodyRow || position == myContactsRow || position == neverShareRow || position == alwaysShareRow ||
-                    position == p2pRow && !ContactsController.getInstance(currentAccount).getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_P2P);
+                    position == p2pRow && !ContactsController.getInstance(currentAccount).getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_P2P) ||
+                    position == currentPhotoForRestRow || position == photoForRestDescriptionRow || position == photoForRestRow;
         }
 
         @Override
@@ -948,6 +1120,56 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     combinedDrawable.setFullsize(true);
                     view.setBackgroundDrawable(combinedDrawable);
                     break;
+                case 6:
+                    setAvatarCell = new TextCell(getContext());
+                    if (avatarForRest == null) {
+                        setAvatarCell.setTextAndIcon(LocaleController.formatString("SetPhotoForRest", R.string.SetPhotoForRest), R.drawable.msg_addphoto, false);
+                    } else {
+                        setAvatarCell.setTextAndIcon(LocaleController.formatString("UpdatePhotoForRest", R.string.UpdatePhotoForRest), R.drawable.msg_addphoto, true);
+                    }
+                    setAvatarCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                    setAvatarCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
+                    cameraDrawable = new RLottieDrawable(R.raw.camera_outline, "" + R.raw.camera_outline, AndroidUtilities.dp(50), AndroidUtilities.dp(50), false, null);
+                    setAvatarCell.imageView.setTranslationY(-AndroidUtilities.dp(9));
+                    setAvatarCell.imageView.setTranslationX(-AndroidUtilities.dp(8));
+                    setAvatarCell.imageView.setAnimation(cameraDrawable);
+                    setAvatarCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view = setAvatarCell;
+                    break;
+                case 7:
+                    oldAvatarView = new BackupImageView(getContext());
+                    oldPhotoCell = new TextCell(getContext()) {
+                        @Override
+                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                            oldAvatarView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY));
+                            oldAvatarView.setRoundRadius(AndroidUtilities.dp(30));
+                        }
+
+                        @Override
+                        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                            super.onLayout(changed, left, top, right, bottom);
+                            int l = AndroidUtilities.dp(21);
+                            int t =  (getMeasuredHeight() - oldAvatarView.getMeasuredHeight()) / 2;
+                            oldAvatarView.layout(l, t, l + oldAvatarView.getMeasuredWidth(), t + oldAvatarView.getMeasuredHeight());
+                        }
+                    };
+
+                    if (avatarForRest != null) {
+                        if (avatarForRestPhoto != null) {
+                            oldAvatarView.setImage(ImageLocation.getForPhoto(avatarForRest, avatarForRestPhoto), "50_50", (Drawable) null, UserConfig.getInstance(currentAccount).getCurrentUser());
+                        } else {
+                            oldAvatarView.setImage(ImageLocation.getForLocal(avatarForRest.location), "50_50", (Drawable) null, UserConfig.getInstance(currentAccount).getCurrentUser());
+                        }
+                    }
+                    oldPhotoCell.addView(oldAvatarView, LayoutHelper.createFrame(30, 30, Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+                    oldPhotoCell.setText(LocaleController.getString("RemovePublicPhoto", R.string.RemovePublicPhoto), false);
+                    oldPhotoCell.getImageView().setVisibility(View.VISIBLE);
+                    oldPhotoCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                    oldPhotoCell.setColors(Theme.key_windowBackgroundWhiteRedText, Theme.key_windowBackgroundWhiteRedText);
+                    oldPhotoCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view = oldPhotoCell;
+                    break;
             }
             return new RecyclerListView.Holder(view);
         }
@@ -980,7 +1202,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         } else {
                             value = LocaleController.getString("EmpryUsersPlaceholder", R.string.EmpryUsersPlaceholder);
                         }
-                        if (rulesType != PRIVACY_RULES_TYPE_LASTSEEN) {
+                        if (rulesType != PRIVACY_RULES_TYPE_LASTSEEN && rulesType != PRIVACY_RULES_TYPE_PHOTO) {
                             textCell.setTextAndValue(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow), value, neverShareRow != -1);
                         } else {
                             textCell.setTextAndValue(LocaleController.getString("AlwaysShareWith", R.string.AlwaysShareWith), value, neverShareRow != -1);
@@ -993,7 +1215,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         } else {
                             value = LocaleController.getString("EmpryUsersPlaceholder", R.string.EmpryUsersPlaceholder);
                         }
-                        if (rulesType != PRIVACY_RULES_TYPE_LASTSEEN) {
+                        if (rulesType != PRIVACY_RULES_TYPE_LASTSEEN && rulesType != PRIVACY_RULES_TYPE_PHOTO) {
                             textCell.setTextAndValue(LocaleController.getString("NeverAllow", R.string.NeverAllow), value, false);
                         } else {
                             textCell.setTextAndValue(LocaleController.getString("NeverShareWith", R.string.NeverShareWith), value, false);
@@ -1059,7 +1281,13 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         } else if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
                             privacyCell.setText(LocaleController.getString("PrivacyForwardsInfo2", R.string.PrivacyForwardsInfo2));
                         } else if (rulesType == PRIVACY_RULES_TYPE_PHOTO) {
-                            privacyCell.setText(LocaleController.getString("PrivacyProfilePhotoInfo2", R.string.PrivacyProfilePhotoInfo2));
+                            if (currentType == TYPE_CONTACTS) {
+                                privacyCell.setText(AndroidUtilities.replaceTags(LocaleController.getString("PrivacyProfilePhotoInfo5", R.string.PrivacyProfilePhotoInfo5)));
+                            } else if (currentType == TYPE_EVERYBODY) {
+                                privacyCell.setText(AndroidUtilities.replaceTags(LocaleController.getString("PrivacyProfilePhotoInfo3", R.string.PrivacyProfilePhotoInfo3)));
+                            } else {
+                                privacyCell.setText(LocaleController.getString("PrivacyProfilePhotoInfo4", R.string.PrivacyProfilePhotoInfo4));
+                            }
                         } else if (rulesType == PRIVACY_RULES_TYPE_P2P) {
                             privacyCell.setText(LocaleController.getString("CustomP2PInfo", R.string.CustomP2PInfo));
                         } else if (rulesType == PRIVACY_RULES_TYPE_CALLS) {
@@ -1078,6 +1306,8 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         }
                     } else if (position == p2pDetailRow) {
                         backgroundResId = R.drawable.greydivider_bottom;
+                    } else if (position == photoForRestDescriptionRow) {
+                        privacyCell.setText(LocaleController.getString("PhotoForRestDescription", R.string.PhotoForRestDescription));
                     }
                     if (backgroundResId != 0) {
                         Drawable drawable = Theme.getThemedDrawable(mContext, backgroundResId, Theme.key_windowBackgroundGrayShadow);
@@ -1151,7 +1381,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         public int getItemViewType(int position) {
             if (position == alwaysShareRow || position == neverShareRow || position == p2pRow) {
                 return 0;
-            } else if (position == shareDetailRow || position == detailRow || position == p2pDetailRow) {
+            } else if (position == shareDetailRow || position == detailRow || position == p2pDetailRow || position == photoForRestDescriptionRow) {
                 return 1;
             } else if (position == sectionRow || position == shareSectionRow || position == p2pSectionRow || position == phoneSectionRow) {
                 return 2;
@@ -1161,8 +1391,73 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 return 4;
             } else if (position == phoneDetailRow) {
                 return 5;
+            } else if (position == photoForRestRow) {
+                return 6;
+            } else if (position == currentPhotoForRestRow) {
+                return 7;
             }
             return 0;
+        }
+    }
+
+    private class DiffCallback extends DiffUtil.Callback {
+
+        int oldRowCount;
+
+        SparseIntArray oldPositionToItem = new SparseIntArray();
+        SparseIntArray newPositionToItem = new SparseIntArray();
+
+        @Override
+        public int getOldListSize() {
+            return oldRowCount;
+        }
+
+        @Override
+        public int getNewListSize() {
+            return rowCount;
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            int oldIndex = oldPositionToItem.get(oldItemPosition, -1);
+            int newIndex = newPositionToItem.get(newItemPosition, -1);
+            return oldIndex == newIndex && oldIndex >= 0;
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return areItemsTheSame(oldItemPosition, newItemPosition);
+        }
+
+        public void fillPositions(SparseIntArray sparseIntArray) {
+            sparseIntArray.clear();
+            int pointer = 0;
+            put(++pointer, messageRow, sparseIntArray);
+            put(++pointer, sectionRow, sparseIntArray);
+            put(++pointer, everybodyRow, sparseIntArray);
+            put(++pointer, myContactsRow, sparseIntArray);
+            put(++pointer, nobodyRow, sparseIntArray);
+            put(++pointer, detailRow, sparseIntArray);
+            put(++pointer, shareSectionRow, sparseIntArray);
+            put(++pointer, alwaysShareRow, sparseIntArray);
+            put(++pointer, neverShareRow, sparseIntArray);
+            put(++pointer, shareDetailRow, sparseIntArray);
+            put(++pointer, phoneSectionRow, sparseIntArray);
+            put(++pointer, phoneEverybodyRow, sparseIntArray);
+            put(++pointer, phoneContactsRow, sparseIntArray);
+            put(++pointer, phoneDetailRow, sparseIntArray);
+            put(++pointer, photoForRestRow, sparseIntArray);
+            put(++pointer, currentPhotoForRestRow, sparseIntArray);
+            put(++pointer, photoForRestDescriptionRow, sparseIntArray);
+            put(++pointer, p2pSectionRow, sparseIntArray);
+            put(++pointer, p2pRow, sparseIntArray);
+            put(++pointer, p2pDetailRow, sparseIntArray);
+        }
+
+        private void put(int id, int position, SparseIntArray sparseIntArray) {
+            if (position >= 0) {
+                sparseIntArray.put(position, id);
+            }
         }
     }
 

@@ -1,11 +1,13 @@
 package org.telegram.messenger;
 
 import android.os.Looper;
+import android.util.LongSparseArray;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
+import org.telegram.ui.Storage.CacheModel;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,10 +24,14 @@ public class FilePathDatabase {
     private File cacheFile;
     private File shmCacheFile;
 
-    private final static int LAST_DB_VERSION = 3;
+    private final static int LAST_DB_VERSION = 4;
 
     private final static String DATABASE_NAME = "file_to_path";
     private final static String DATABASE_BACKUP_NAME = "file_to_path_backup";
+
+    public final static int MESSAGE_TYPE_VIDEO_MESSAGE = 0;
+
+    private final FileMeta metaTmp = new FileMeta();
 
     public FilePathDatabase(int currentAccount) {
         this.currentAccount = currentAccount;
@@ -58,7 +64,7 @@ public class FilePathDatabase {
                 database.executeFast("CREATE TABLE paths(document_id INTEGER, dc_id INTEGER, type INTEGER, path TEXT, PRIMARY KEY(document_id, dc_id, type));").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS path_in_paths ON paths(path);").stepThis().dispose();
 
-                database.executeFast("CREATE TABLE paths_by_dialog_id(path TEXT PRIMARY KEY, dialog_id INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE paths_by_dialog_id(path TEXT PRIMARY KEY, dialog_id INTEGER, message_id INTEGER, message_type INTEGER);").stepThis().dispose();
 
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
@@ -103,6 +109,11 @@ public class FilePathDatabase {
             database.executeFast("CREATE TABLE paths_by_dialog_id(path TEXT PRIMARY KEY, dialog_id INTEGER);").stepThis().dispose();
             database.executeFast("PRAGMA user_version = " + 3).stepThis().dispose();
             version = 3;
+        }
+        if (version == 3) {
+            database.executeFast("ALTER TABLE paths_by_dialog_id ADD COLUMN message_id INTEGER default 0").stepThis().dispose();
+            database.executeFast("ALTER TABLE paths_by_dialog_id ADD COLUMN message_type INTEGER default 0").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = " + 4).stepThis().dispose();
         }
     }
 
@@ -310,17 +321,19 @@ public class FilePathDatabase {
         return res[0];
     }
 
-    public void saveFileDialogId(File file, long dialogId) {
-        if (file == null) {
+    public void saveFileDialogId(File file,FileMeta fileMeta) {
+        if (file == null || fileMeta == null) {
             return;
         }
         dispatchQueue.postRunnable(() -> {
             SQLitePreparedStatement state = null;
             try {
-                state = database.executeFast("REPLACE INTO paths_by_dialog_id VALUES(?, ?)");
+                state = database.executeFast("REPLACE INTO paths_by_dialog_id VALUES(?, ?, ?, ?)");
                 state.requery();
-                state.bindString(1, file.getPath());
-                state.bindLong(2, dialogId);
+                state.bindString(1, shield(file.getPath()));
+                state.bindLong(2, fileMeta.dialogId);
+                state.bindInteger(3, fileMeta.messageId);
+                state.bindInteger(4, fileMeta.messageType);
                 state.step();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -332,16 +345,23 @@ public class FilePathDatabase {
         });
     }
 
-    public long getFileDialogId(File file) {
+    public FileMeta getFileDialogId(File file, FileMeta metaTmp) {
         if (file == null) {
-            return 0;
+            return null;
+        }
+        if (metaTmp == null) {
+            metaTmp = this.metaTmp;
         }
         long dialogId = 0;
+        int messageId = 0;
+        int messageType = 0;
         SQLiteCursor cursor = null;
         try {
-            cursor = database.queryFinalized("SELECT dialog_id FROM paths_by_dialog_id WHERE path = '" + file.getPath() + "'");
+            cursor = database.queryFinalized("SELECT dialog_id, message_id, message_type FROM paths_by_dialog_id WHERE path = '" + shield(file.getPath()) + "'");
             if (cursor.next()) {
                 dialogId = cursor.longValue(0);
+                messageId = cursor.intValue(1);
+                messageType = cursor.intValue(2);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -350,19 +370,26 @@ public class FilePathDatabase {
                 cursor.dispose();
             }
         }
-        return dialogId;
+        metaTmp.dialogId = dialogId;
+        metaTmp.messageId = messageId;
+        metaTmp.messageType = messageType;
+        return metaTmp;
+    }
+
+    private String shield(String path) {
+        return path.replace("'","").replace("\"","");
     }
 
     public DispatchQueue getQueue() {
         return dispatchQueue;
     }
 
-    public void removeFiles(List<File> filesToRemove) {
+    public void removeFiles(List<CacheModel.FileInfo> filesToRemove) {
         dispatchQueue.postRunnable(() -> {
             try {
                 database.beginTransaction();
                 for (int i = 0; i < filesToRemove.size(); i++) {
-                    database.executeFast("DELETE FROM paths_by_dialog_id WHERE path = '" + filesToRemove.get(i).getPath() + "'").stepThis().dispose();
+                    database.executeFast("DELETE FROM paths_by_dialog_id WHERE path = '" + shield(filesToRemove.get(i).file.getPath()) + "'").stepThis().dispose();
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -370,6 +397,36 @@ public class FilePathDatabase {
                 database.commitTransaction();
             }
         });
+    }
+
+    public LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> lookupFiles(ArrayList<? extends CacheByChatsController.KeepMediaFile> keepMediaFiles) {
+        CountDownLatch syncLatch = new CountDownLatch(1);
+        LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> filesByDialogId = new LongSparseArray<>();
+        dispatchQueue.postRunnable(() -> {
+            try {
+                FileMeta fileMetaTmp = new FileMeta();
+                for (int i = 0; i < keepMediaFiles.size(); i++) {
+                    FileMeta fileMeta = getFileDialogId(keepMediaFiles.get(i).file, fileMetaTmp);
+                    if (fileMeta != null && fileMeta.dialogId != 0) {
+                        ArrayList<CacheByChatsController.KeepMediaFile> list = filesByDialogId.get(fileMeta.dialogId);
+                        if (list == null) {
+                            list = new ArrayList<>();
+                            filesByDialogId.put(fileMeta.dialogId, list);
+                        }
+                        list.add(keepMediaFiles.get(i));
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            syncLatch.countDown();
+        });
+        try {
+            syncLatch.await();
+        } catch (InterruptedException e) {
+            FileLog.e(e);
+        }
+        return filesByDialogId;
     }
 
     public static class PathData {
@@ -382,5 +439,12 @@ public class FilePathDatabase {
             this.dc = dcId;
             this.type = type;
         }
+    }
+
+    public static class FileMeta {
+        public long dialogId;
+        public int messageId;
+        public int messageType;
+        public long messageSize;
     }
 }

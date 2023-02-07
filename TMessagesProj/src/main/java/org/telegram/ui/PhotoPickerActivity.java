@@ -110,6 +110,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         default void onOpenInPressed() {
 
         }
+
+        default boolean canFinishFragment() {
+            return true;
+        }
     }
 
     public interface PhotoPickerActivitySearchDelegate {
@@ -1287,7 +1291,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
-            removeSelfFromStack();
+            removeSelfFromStack(true);
         }
     }
 
@@ -1757,7 +1761,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         applyCaption();
         sendPressed = true;
         delegate.actionButtonPressed(false, notify, scheduleDate);
-        if (selectPhotoType != PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER) {
+        if (selectPhotoType != PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER && (delegate == null || delegate.canFinishFragment())) {
             finishFragment();
         }
     }
@@ -1983,5 +1987,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, null, null, Theme.key_chat_attachPhotoBackground));
 
         return themeDescriptions;
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        return AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f;
     }
 }

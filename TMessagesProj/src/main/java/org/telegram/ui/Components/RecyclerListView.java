@@ -1473,6 +1473,37 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
+    protected void drawSectionBackgroundExclusive(Canvas canvas, int fromAdapterPositionExclusive, int toAdapterPositionExclusive, int color) {
+        int top = Integer.MAX_VALUE;
+        int bottom = Integer.MIN_VALUE;
+
+        for (int i = 0; i < getChildCount(); ++i) {
+            View child = getChildAt(i);
+            if (child == null) {
+                continue;
+            }
+            int position = getChildAdapterPosition(child);
+            if (position > fromAdapterPositionExclusive && position < toAdapterPositionExclusive) {
+                top = Math.min((int) child.getY(), top);
+                bottom = Math.max((int) child.getY() + child.getHeight(), bottom);
+            } else if (position == fromAdapterPositionExclusive) {
+                top = Math.min((int) child.getY() + child.getHeight(), top);
+                bottom = Math.max((int) child.getY() + child.getHeight(), bottom);
+            } else if (position == toAdapterPositionExclusive) {
+                top = Math.min((int) child.getY(), top);
+                bottom = Math.max((int) child.getY(), bottom);
+            }
+        }
+
+        if (top < bottom) {
+            if (backgroundPaint == null) {
+                backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            }
+            backgroundPaint.setColor(color);
+            canvas.drawRect(0, top, getWidth(), bottom, backgroundPaint);
+        }
+    }
+
     protected void drawItemBackground(Canvas canvas, int adapterPosition, int color) {
         drawItemBackground(canvas, adapterPosition, -1, color);
     }
@@ -1532,7 +1563,7 @@ public class RecyclerListView extends RecyclerView {
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
         super.onMeasure(widthSpec, heightSpec);
-        if (fastScroll != null) {
+        if (fastScroll != null && fastScroll.getLayoutParams() != null) {
             int height = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
             fastScroll.getLayoutParams().height = height;
             fastScroll.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(132), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -1556,7 +1587,7 @@ public class RecyclerListView extends RecyclerView {
         }
         checkSection(false);
         if (pendingHighlightPosition != null) {
-            highlightRowInternal(pendingHighlightPosition, false);
+            highlightRowInternal(pendingHighlightPosition, 700, false);
         }
     }
 
@@ -1584,12 +1615,12 @@ public class RecyclerListView extends RecyclerView {
             selectorDrawable = Theme.createRadSelectorDrawable(color, selectorRadius, 0);
         } else if (topBottomSelectorRadius > 0) {
             selectorDrawable = Theme.createRadSelectorDrawable(color, topBottomSelectorRadius, topBottomSelectorRadius);
-        } else if (selectorRadius > 0) {
+        } else if (selectorRadius > 0 && selectorType != Theme.RIPPLE_MASK_CIRCLE_20DP) {
             selectorDrawable = Theme.createSimpleSelectorRoundRectDrawable(selectorRadius, 0, color, 0xff000000);
         } else if (selectorType == 2) {
             selectorDrawable = Theme.getSelectorDrawable(color, false);
         } else {
-            selectorDrawable = Theme.createSelectorDrawable(color, selectorType);
+            selectorDrawable = Theme.createSelectorDrawable(color, selectorType, selectorRadius);
         }
         selectorDrawable.setCallback(this);
     }
@@ -1922,17 +1953,53 @@ public class RecyclerListView extends RecyclerView {
     }
 
     public void highlightRow(RecyclerListView.IntReturnCallback callback) {
-        highlightRowInternal(callback, true);
+        highlightRowInternal(callback, 700, true);
     }
 
-    private void highlightRowInternal(RecyclerListView.IntReturnCallback callback, boolean canHighlightLater) {
+    public void highlightRow(RecyclerListView.IntReturnCallback callback, int removeAfter) {
+        highlightRowInternal(callback, removeAfter, true);
+    }
+
+    private int highlightPosition;
+    public void removeHighlightRow() {
+        if (removeHighlighSelectionRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(removeHighlighSelectionRunnable);
+            removeHighlighSelectionRunnable.run();
+            removeHighlighSelectionRunnable = null;
+            selectorView = null;
+        } else {
+            removeHighlighSelectionRunnable = null;
+            pendingHighlightPosition = null;
+            if (selectorView != null && highlightPosition != NO_POSITION) {
+                positionSelector(highlightPosition, selectorView);
+                selectorDrawable.setState(new int[]{});
+                invalidateDrawable(selectorDrawable);
+                selectorView = null;
+                highlightPosition = NO_POSITION;
+            } else {
+                if (selectorDrawable != null) {
+                    Drawable d = selectorDrawable.getCurrent();
+                    if (d instanceof TransitionDrawable) {
+                        ((TransitionDrawable) d).resetTransition();
+                    }
+                }
+                if (selectorDrawable != null && selectorDrawable.isStateful()) {
+                    if (selectorDrawable.setState(StateSet.NOTHING)) {
+                        invalidateDrawable(selectorDrawable);
+                    }
+                }
+            }
+        }
+    }
+
+    private void highlightRowInternal(RecyclerListView.IntReturnCallback callback, int removeAfter, boolean canHighlightLater) {
         if (removeHighlighSelectionRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(removeHighlighSelectionRunnable);
             removeHighlighSelectionRunnable = null;
         }
         RecyclerView.ViewHolder holder = findViewHolderForAdapterPosition(callback.run());
         if (holder != null) {
-            positionSelector(holder.getLayoutPosition(), holder.itemView);
+            positionSelector(highlightPosition = holder.getLayoutPosition(), holder.itemView);
             if (selectorDrawable != null) {
                 final Drawable d = selectorDrawable.getCurrent();
                 if (d instanceof TransitionDrawable) {
@@ -1951,19 +2018,21 @@ public class RecyclerListView extends RecyclerView {
                     invalidateDrawable(selectorDrawable);
                 }
             }
-            AndroidUtilities.runOnUIThread(removeHighlighSelectionRunnable = () -> {
-                removeHighlighSelectionRunnable = null;
-                pendingHighlightPosition = null;
-                if (selectorDrawable != null) {
-                    Drawable d = selectorDrawable.getCurrent();
-                    if (d instanceof TransitionDrawable) {
-                        ((TransitionDrawable) d).resetTransition();
+            if (removeAfter > 0) {
+                AndroidUtilities.runOnUIThread(removeHighlighSelectionRunnable = () -> {
+                    removeHighlighSelectionRunnable = null;
+                    pendingHighlightPosition = null;
+                    if (selectorDrawable != null) {
+                        Drawable d = selectorDrawable.getCurrent();
+                        if (d instanceof TransitionDrawable) {
+                            ((TransitionDrawable) d).resetTransition();
+                        }
                     }
-                }
-                if (selectorDrawable != null && selectorDrawable.isStateful()) {
-                    selectorDrawable.setState(StateSet.NOTHING);
-                }
-            }, 700);
+                    if (selectorDrawable != null && selectorDrawable.isStateful()) {
+                        selectorDrawable.setState(StateSet.NOTHING);
+                    }
+                }, removeAfter);
+            }
         } else if (canHighlightLater) {
             pendingHighlightPosition = callback;
         }

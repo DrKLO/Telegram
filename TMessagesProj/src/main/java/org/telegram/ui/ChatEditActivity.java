@@ -199,8 +199,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     public ChatEditActivity(Bundle args) {
         super(args);
         avatarDrawable = new AvatarDrawable();
-        imageUpdater = new ImageUpdater(true);
         chatId = args.getLong("chat_id", 0);
+        TLRPC.Chat chat = getMessagesController().getChat(chatId);
+        imageUpdater = new ImageUpdater(true, chat != null && ChatObject.isChannelAndNotMegaGroup(chat) ? ImageUpdater.FOR_TYPE_CHANNEL : ImageUpdater.FOR_TYPE_GROUP, true);
     }
 
     @Override
@@ -605,7 +606,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             setAvatarCell.setOnClickListener(v -> {
                 imageUpdater.openMenu(avatar != null, () -> {
                     avatar = null;
-                    MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, 0, null, null, null, null);
+                    MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, null, 0, null, null, null, null);
                     showAvatarProgress(false, true);
                     avatarImage.setImage(null, null, avatarDrawable, currentChat);
                     cameraDrawable.setCurrentFrame(0);
@@ -618,7 +619,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                         cameraDrawable.setCurrentFrame(0, false);
                     }
 
-                });
+                }, 0);
                 cameraDrawable.setCurrentFrame(0);
                 cameraDrawable.setCustomEndFrame(43);
                 setAvatarCell.imageView.playAnimation();
@@ -1110,11 +1111,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     }
 
     @Override
-    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
+    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup) {
         AndroidUtilities.runOnUIThread(() -> {
             avatar = smallSize.location;
-            if (photo != null || video != null) {
-                getMessagesController().changeChatAvatar(chatId, null, photo, video, videoStartTimestamp, videoPath, smallSize.location, bigSize.location, null);
+            if (photo != null || video != null || emojiMarkup != null) {
+                getMessagesController().changeChatAvatar(chatId, null, photo, video, emojiMarkup, videoStartTimestamp, videoPath, smallSize.location, bigSize.location, null);
                 if (createAfterUpload) {
                     try {
                         if (progressDialog != null && progressDialog.isShowing()) {
@@ -1226,7 +1227,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
         if (imageUpdater.isUploadingImage()) {
             createAfterUpload = true;
-            progressDialog = new AlertDialog(getParentActivity(), 3);
+            progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setOnCancelListener(dialog -> {
                 createAfterUpload = false;
                 progressDialog = null;
@@ -1473,22 +1474,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     } else {
                         int count = 0;
                         if (currentChat.default_banned_rights != null) {
-                            if (!currentChat.default_banned_rights.send_stickers) {
+                            if (!currentChat.default_banned_rights.send_plain) {
                                 count++;
                             }
-                            if (!currentChat.default_banned_rights.send_media) {
-                                count++;
-                            }
-                            if (!currentChat.default_banned_rights.embed_links) {
-                                count++;
-                            }
-                            if (!currentChat.default_banned_rights.send_messages) {
-                                count++;
-                            }
+                            count += ChatUsersActivity.getSendMediaSelectedCount(currentChat.default_banned_rights);
                             if (!currentChat.default_banned_rights.pin_messages) {
-                                count++;
-                            }
-                            if (!currentChat.default_banned_rights.send_polls) {
                                 count++;
                             }
                             if (!currentChat.default_banned_rights.invite_users) {
@@ -1501,9 +1491,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                                 count++;
                             }
                         } else {
-                            count = forum ? 9 : 8;
+                            count = forum ? 14 : 13;
                         }
-                        blockCell.setTextAndValueAndIcon(LocaleController.getString("ChannelPermissions", R.string.ChannelPermissions), String.format("%d/%d", count, forum ? 9 : 8), animated, R.drawable.msg_permissions, true);
+                        blockCell.setTextAndValueAndIcon(LocaleController.getString("ChannelPermissions", R.string.ChannelPermissions), String.format("%d/%d", count, forum ? 14 : 13), animated, R.drawable.msg_permissions, true);
                     }
                     if (memberRequestsCell != null) {
                         memberRequestsCell.setTextAndValueAndIcon(LocaleController.getString("MemberRequests", R.string.MemberRequests), String.format("%d", info.requests_pending), R.drawable.msg_requests, logCell != null && logCell.getVisibility() == View.VISIBLE);

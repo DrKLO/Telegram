@@ -9,6 +9,7 @@
 package org.telegram.ui.ActionBar;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -143,6 +144,11 @@ public class Theme {
 
     public static final int MSG_OUT_COLOR_BLACK = 0xff212121;
     public static final int MSG_OUT_COLOR_WHITE = 0xffffffff;
+    public static final int default_shadow_color = ColorUtils.setAlphaComponent(Color.BLACK, 27);
+
+    public static void applyDefaultShadow(Paint paint) {
+        paint.setShadowLayer(dpf2(1), 0, dpf2(0.33f), default_shadow_color);
+    }
 
     public static class BackgroundDrawableSettings {
 
@@ -1849,6 +1855,44 @@ public class Theme {
         );
     }
 
+    public static int adaptHue(int color, int hueFromColor) {
+        float hue, sat;
+        float[] tempHSV = getTempHsv(5);
+        Color.colorToHSV(hueFromColor, tempHSV);
+        hue = tempHSV[0];
+        sat = tempHSV[1];
+        Color.colorToHSV(color, tempHSV);
+        tempHSV[0] = hue;
+        tempHSV[1] = AndroidUtilities.lerp(tempHSV[1], sat, .25f);
+        return Color.HSVToColor(Color.alpha(color), tempHSV);
+    }
+
+    public static int adaptHSV(int color, float sat, float val) {
+        float[] tempHSV = getTempHsv(5);
+        Color.colorToHSV(color, tempHSV);
+        tempHSV[1] = MathUtils.clamp(tempHSV[1] + sat, 0, 1);
+        tempHSV[2] = MathUtils.clamp(tempHSV[2] + val, 0, 1);
+        return Color.HSVToColor(Color.alpha(color), tempHSV);
+    }
+
+    public static int percentSV(int color1, int color2, float satT, float valT) {
+        float[] tempHSV = getTempHsv(5);
+        Color.colorToHSV(color2, tempHSV);
+        float sat2 = tempHSV[1];
+        float val2 = tempHSV[2];
+        Color.colorToHSV(color1, tempHSV);
+        tempHSV[1] = MathUtils.clamp(AndroidUtilities.lerp(tempHSV[1], sat2, satT), 0, 1);
+        tempHSV[2] = MathUtils.clamp(AndroidUtilities.lerp(tempHSV[2], val2, valT), 0, 1);
+        return Color.HSVToColor(
+            AndroidUtilities.lerp(Color.alpha(color1), Color.alpha(color2), .85f),
+            tempHSV
+        );
+    }
+
+    public static int multAlpha(int color, float multiply) {
+        return ColorUtils.setAlphaComponent(color, MathUtils.clamp((int) (Color.alpha(color) * multiply), 0, 0xFF));
+    }
+
     public static int reverseBlendOver(float ax, int y, int z) {
         float ay = Color.alpha(y) / 255f,
               az = Color.alpha(z) / 255f;
@@ -3489,6 +3533,7 @@ public class Theme {
     public static final String key_chat_serviceIcon = "chat_serviceIcon";
     public static final String key_chat_serviceBackground = "chat_serviceBackground";
     public static final String key_chat_serviceBackgroundSelected = "chat_serviceBackgroundSelected";
+    public static final String key_chat_serviceBackgroundSelector = "chat_serviceBackgroundSelector";
     public static final String key_chat_muteIcon = "chat_muteIcon";
     public static final String key_chat_lockIcon = "chat_lockIcon";
     public static final String key_chat_outSentCheck = "chat_outSentCheck";
@@ -3964,7 +4009,20 @@ public class Theme {
     public final static String key_statisticChartLine_lightgreen = "statisticChartLine_lightgreen";
     public final static String key_statisticChartLine_orange = "statisticChartLine_orange";
     public final static String key_statisticChartLine_indigo = "statisticChartLine_indigo";
+    public final static String key_statisticChartLine_purple = "statisticChartLine_purple";
+    public final static String key_statisticChartLine_cyan = "statisticChartLine_cyan";
     public final static String key_statisticChartLineEmpty = "statisticChartLineEmpty";
+
+    public final static String key_color_lightblue = "color_lightblue";
+    public final static String key_color_blue = "color_blue";
+    public final static String key_color_green = "color_green";
+    public final static String key_color_lightgreen = "color_lightgreen";
+    public final static String key_color_red = "color_red";
+    public final static String key_color_orange = "color_orange";
+    public final static String key_color_yellow = "color_yellow";
+    public final static String key_color_purple = "color_purple";
+    public final static String key_color_cyan = "color_cyan";
+    public final static String[] keys_colors = { key_color_lightblue, key_color_blue, key_color_green, key_color_lightgreen, key_color_red, key_color_orange, key_color_yellow, key_color_purple, key_color_cyan };
 
     public static final String key_chat_outReactionButtonBackground = "chat_outReactionButtonBackground";
     public static final String key_chat_inReactionButtonBackground = "chat_inReactionButtonBackground";
@@ -4106,7 +4164,7 @@ public class Theme {
         defaultColors.put(key_dialogCheckboxSquareDisabled, 0xffb0b0b0);
         defaultColors.put(key_dialogRadioBackground, 0xffb3b3b3);
         defaultColors.put(key_dialogRadioBackgroundChecked, 0xff37a9f0);
-        defaultColors.put(key_dialogProgressCircle, 0xff289deb);
+        defaultColors.put(key_dialogProgressCircle, 0xff0A0D0F);
         defaultColors.put(key_dialogLineProgress, 0xff527da3);
         defaultColors.put(key_dialogLineProgressBackground, 0xffdbdbdb);
         defaultColors.put(key_dialogButton, 0xff4991cc);
@@ -4626,6 +4684,7 @@ public class Theme {
         defaultColors.put(key_chat_mediaLoaderPhotoIconSelected, 0xffd9d9d9);
         defaultColors.put(key_chat_secretTimerBackground, 0xcc3e648e);
         defaultColors.put(key_chat_secretTimerText, 0xffffffff);
+        defaultColors.put(key_chat_serviceBackgroundSelector, 0x20ffffff);
 
         defaultColors.put(key_profile_creatorIcon, 0xff3a95d5);
         defaultColors.put(key_profile_actionIcon, 0xff81868a);
@@ -4796,13 +4855,25 @@ public class Theme {
         defaultColors.put(key_statisticChartLine_blue, 0xff327FE5);
         defaultColors.put(key_statisticChartLine_green, 0xff61C752);
         defaultColors.put(key_statisticChartLine_red, 0xffE05356);
-        defaultColors.put(key_statisticChartLine_golden, 0xffDEBA08);
+        defaultColors.put(key_statisticChartLine_golden, 0xffEBA52D);
         defaultColors.put(key_statisticChartLine_lightblue, 0xff58A8ED);
         defaultColors.put(key_statisticChartLine_lightgreen, 0xff8FCF39);
-        defaultColors.put(key_statisticChartLine_orange, 0xffE3B727);
+        defaultColors.put(key_statisticChartLine_orange, 0xffF28C39);
         defaultColors.put(key_statisticChartLine_indigo, 0xff7F79F3);
+        defaultColors.put(key_statisticChartLine_purple, 0xff9F79E8);
+        defaultColors.put(key_statisticChartLine_cyan, 0xff40D0CA);
         defaultColors.put(key_statisticChartLineEmpty, 0xFFEEEEEE);
         defaultColors.put(key_actionBarTipBackground, 0xFF446F94);
+
+        defaultColors.put(key_color_blue, 0xff327FE5);
+        defaultColors.put(key_color_green, 0xff61C752);
+        defaultColors.put(key_color_red, 0xffE05356);
+        defaultColors.put(key_color_yellow, 0xffEBA52D);
+        defaultColors.put(key_color_lightblue, 0xff58A8ED);
+        defaultColors.put(key_color_lightgreen, 0xff8FCF39);
+        defaultColors.put(key_color_orange, 0xffF28C39);
+        defaultColors.put(key_color_purple, 0xff9F79E8);
+        defaultColors.put(key_color_cyan, 0xff40D0CA);
 
         defaultColors.put(key_voipgroup_checkMenu, 0xff6BB6F9);
         defaultColors.put(key_voipgroup_muteButton, 0xff77E55C);
@@ -5057,9 +5128,19 @@ public class Theme {
         fallbackKeys.put(key_avatar_background2Blue, key_avatar_backgroundBlue);
         fallbackKeys.put(key_avatar_background2Pink, key_avatar_backgroundPink);
 
+        fallbackKeys.put(key_statisticChartLine_orange, key_color_orange);
+        fallbackKeys.put(key_statisticChartLine_blue, key_color_blue);
+        fallbackKeys.put(key_statisticChartLine_red, key_color_red);
+        fallbackKeys.put(key_statisticChartLine_lightblue, key_color_lightblue);
+        fallbackKeys.put(key_statisticChartLine_golden, key_color_yellow);
+        fallbackKeys.put(key_statisticChartLine_purple, key_color_purple);
+        fallbackKeys.put(key_statisticChartLine_indigo, key_color_purple);
+        fallbackKeys.put(key_statisticChartLine_cyan, key_color_cyan);
+
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background2));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
+        themeAccentExclusionKeys.addAll(Arrays.asList(keys_colors));
         themeAccentExclusionKeys.add(key_chat_attachFileBackground);
         themeAccentExclusionKeys.add(key_chat_attachGalleryBackground);
         themeAccentExclusionKeys.add(key_chat_attachFileText);
@@ -5855,7 +5936,7 @@ public class Theme {
                 if (monthOfYear == 11 && dayOfMonth >= (BuildVars.DEBUG_PRIVATE_VERSION ? 29 : 31) && dayOfMonth <= 31 || monthOfYear == 0 && dayOfMonth == 1) {
                     dialogs_holidayDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.newyear);
                     dialogs_holidayDrawableOffsetX = -AndroidUtilities.dp(3);
-                    dialogs_holidayDrawableOffsetY = -AndroidUtilities.dp(1);
+                    dialogs_holidayDrawableOffsetY = -AndroidUtilities.dp(-7);
                 }
             }
         }
@@ -6680,7 +6761,7 @@ public class Theme {
         }
     }
 
-    public static void setMaskDrawableRad(Drawable rippleDrawable, int topLeftRad, int topRightRad, int bottomRightRad, int bottomLeftRad) {
+    public static void setMaskDrawableRad(Drawable rippleDrawable, float topLeftRad, float topRightRad, float bottomRightRad, float bottomLeftRad) {
         if (Build.VERSION.SDK_INT < 21) {
             return;
         }
@@ -8807,22 +8888,22 @@ public class Theme {
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
-                dialogs_archiveAvatarDrawable.recycle();
+                dialogs_archiveAvatarDrawable.recycle(false);
             }
             if (dialogs_archiveDrawable != null) {
-                dialogs_archiveDrawable.recycle();
+                dialogs_archiveDrawable.recycle(false);
             }
             if (dialogs_unarchiveDrawable != null) {
-                dialogs_unarchiveDrawable.recycle();
+                dialogs_unarchiveDrawable.recycle(false);
             }
             if (dialogs_pinArchiveDrawable != null) {
-                dialogs_pinArchiveDrawable.recycle();
+                dialogs_pinArchiveDrawable.recycle(false);
             }
             if (dialogs_unpinArchiveDrawable != null) {
-                dialogs_unpinArchiveDrawable.recycle();
+                dialogs_unpinArchiveDrawable.recycle(false);
             }
             if (dialogs_hidePsaDrawable != null) {
-                dialogs_hidePsaDrawable.recycle();
+                dialogs_hidePsaDrawable.recycle(false);
             }
             dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, "chats_archiveavatar", AndroidUtilities.dp(36), AndroidUtilities.dp(36), false, null);
             dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, "chats_archive", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
@@ -9821,7 +9902,7 @@ public class Theme {
         }
 
         Drawable drawable = wallpaperOverride != null ? wallpaperOverride : currentWallpaper;
-        boolean drawServiceGradient = drawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW;
+        boolean drawServiceGradient = drawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && !SharedConfig.getLiteMode().enabled();
         if (drawServiceGradient) {
             Bitmap newBitmap = ((MotionBackgroundDrawable) drawable).getBitmap();
             if (serviceBitmap != newBitmap) {

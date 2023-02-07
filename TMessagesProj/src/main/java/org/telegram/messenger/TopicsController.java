@@ -204,10 +204,8 @@ public class TopicsController extends BaseController {
             }
         }
 
-
-
         if (topicsToReload != null && loadType != LOAD_TYPE_LOAD_UNKNOWN) {
-            reloadTopics(chatId, topicsToReload);
+            reloadTopics(chatId, topicsToReload, null);
         } else if (((loadType == LOAD_TYPE_PRELOAD && !fromCache) || loadType == LOAD_TYPE_LOAD_NEXT) && topics.size() >= totalCount && totalCount >= 0) {
             endIsReached.put(chatId, 1);
             getUserConfig().getPreferences().edit().putBoolean("topics_end_reached_" + chatId, true).apply();
@@ -244,7 +242,6 @@ public class TopicsController extends BaseController {
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         if (topics != null) {
             if (openedTopicsBuChatId.get(chatId, 0) > 0) {
-//                Comparator.comparingInt(o -> o.topMessage == null ? Integer.MAX_VALUE : -(o.pinned ? Integer.MAX_VALUE - o.pinnedOrder : o.topMessage.date))
                 Collections.sort(topics, (a, b) -> {
                     if (a.hidden != b.hidden) {
                         return a.hidden ? -1 : 1;
@@ -351,7 +348,7 @@ public class TopicsController extends BaseController {
                             sortTopics(chatId);
                         }
                         if (topicsToReload != null) {
-                            reloadTopics(chatId, topicsToReload);
+                            reloadTopics(chatId, topicsToReload, null);
                         }
                     });
                 }
@@ -359,7 +356,7 @@ public class TopicsController extends BaseController {
         });
     }
 
-    private void reloadTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> topicsToReload) {
+    public void reloadTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> topicsToReload, Runnable callback) {
         TLRPC.TL_channels_getForumTopicsByID req = new TLRPC.TL_channels_getForumTopicsByID();
         for (int i = 0; i < topicsToReload.size(); i++) {
             req.topics.add(topicsToReload.get(i).id);
@@ -379,6 +376,9 @@ public class TopicsController extends BaseController {
                     processTopics(chatId, topics.topics, messagesMap, false, LOAD_TYPE_LOAD_UNKNOWN, -1);
                     getMessagesStorage().putMessages(topics.messages, false, true, false, 0, false, 0);
                     getMessagesStorage().saveTopics(-chatId, topicsByChatId.get(chatId), true, true);
+                    if (callback != null) {
+                        callback.run();
+                    }
                 });
             }
         }));
@@ -820,7 +820,7 @@ public class TopicsController extends BaseController {
                 for (int i = 0; i < topicsToReload.size(); i++) {
                     long dialogId = topicsToReload.keyAt(i);
                     ArrayList<TLRPC.TL_forumTopic> topics = topicsToReload.valueAt(i);
-                    reloadTopics(-dialogId, topics);
+                    reloadTopics(-dialogId, topics, null);
                 }
             }
 
@@ -872,14 +872,9 @@ public class TopicsController extends BaseController {
             endIsReached.delete(chatId);
             clearLoadingOffset(chatId);
 
-
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
             if (chat != null && chat.forum) {
-                if (fromCache) {
-                    preloadTopics(chatId);
-                } else {
-                    loadTopics(chatId, false, LOAD_TYPE_PRELOAD);
-                }
+                loadTopics(chatId, fromCache, LOAD_TYPE_PRELOAD);
             }
             sortTopics(chatId);
         });
@@ -977,6 +972,27 @@ public class TopicsController extends BaseController {
             topic.topMessage = newMsg;
             sortTopics(-newMsg.dialog_id, true);
         }
+    }
+
+    public void loadTopic(long chatId, int topicId, Runnable runnable) {
+        getMessagesStorage().loadTopics(-chatId, topics -> {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("loaded from cache " + chatId + " topics_count=" + (topics == null ? 0 : topics.size()));
+                }
+
+                processTopics(chatId, topics, null, true, LOAD_TYPE_PRELOAD, -1);
+                sortTopics(chatId);
+                if (findTopic(chatId, topicId) != null) {
+                    runnable.run();
+                } else {
+                    ArrayList<TLRPC.TL_forumTopic> topicToReload = new ArrayList<>();
+                    TLRPC.TL_forumTopic topic = new TLRPC.TL_forumTopic();
+                    topic.id = topicId;
+                    reloadTopics(chatId, topicToReload, runnable);
+                }
+            });
+        });
     }
 
     private class TopicsLoadOffset {

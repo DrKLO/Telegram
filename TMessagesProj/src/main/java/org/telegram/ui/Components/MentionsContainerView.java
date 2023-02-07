@@ -21,9 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.MentionsAdapter;
@@ -433,9 +431,9 @@ public class MentionsContainerView extends BlurredFrameLayout {
         }
         float newTranslationY = (reversed ? -Math.max(0, listViewPadding - itemHeight) : -listViewPadding + Math.max(0, listViewPadding - itemHeight));
         if (forceZeroHeight && !reversed) {
-            newTranslationY += listView.computeVerticalScrollOffset(); // getMeasuredHeight() - containerTop;
+            newTranslationY += listView.computeVerticalScrollOffset();
         }
-        setVisibility(View.VISIBLE);
+        Integer updateVisibility = null;
         if (listViewTranslationAnimator != null) {
             listViewTranslationAnimator.cancel();
         }
@@ -447,15 +445,13 @@ public class MentionsContainerView extends BlurredFrameLayout {
             final float toHideT = forceZeroHeight ? 1 : 0;
             if (fromTranslation == toTranslation) {
                 listViewTranslationAnimator = null;
-                setVisibility(forceZeroHeight ? View.GONE : View.VISIBLE);
+                updateVisibility = forceZeroHeight ? View.GONE : View.VISIBLE;
                 if (switchLayoutManagerOnEnd && forceZeroHeight) {
                     switchLayoutManagerOnEnd = false;
                     listView.setLayoutManager(getNeededLayoutManager());
                     updateVisibility(shown = true);
                 }
             } else {
-                int account = UserConfig.selectedAccount;
-//                animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
                 listViewTranslationAnimator =
                     new SpringAnimation(new FloatValueHolder(fromTranslation))
                         .setSpring(
@@ -463,9 +459,6 @@ public class MentionsContainerView extends BlurredFrameLayout {
                                 .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)
                                 .setStiffness(550.0f)
                         );
-//                listViewTranslationAnimator = new SpringAnimation(listView, DynamicAnimation.TRANSLATION_Y, newTranslationY);
-//                listViewTranslationAnimator.getSpring().setStiffness(1500);
-//                listViewTranslationAnimator.getSpring().setDampingRatio(1);
                 listViewTranslationAnimator.addUpdateListener((anm, val, vel) -> {
                     listView.setTranslationY(val);
                     hideT = AndroidUtilities.lerp(fromHideT, toHideT, (val - fromTranslation) / (toTranslation - fromTranslation));
@@ -492,9 +485,12 @@ public class MentionsContainerView extends BlurredFrameLayout {
             hideT = forceZeroHeight ? 1 : 0;
             listView.setTranslationY(newTranslationY);
             if (forceZeroHeight) {
-                setVisibility(View.GONE);
+                updateVisibility = View.GONE;
 //                adapter.clear(true);
             }
+        }
+        if (updateVisibility != null && getVisibility() != updateVisibility) {
+            setVisibility(updateVisibility);
         }
     }
 

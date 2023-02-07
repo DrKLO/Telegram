@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -42,6 +43,7 @@ public class TextSettingsCell extends FrameLayout {
     private TextView textView;
     private AnimatedTextView valueTextView;
     private ImageView imageView;
+    private boolean imageViewIsColorful;
     private BackupImageView valueBackupImageView;
     private ImageView valueImageView;
     private boolean needDivider;
@@ -94,14 +96,14 @@ public class TextSettingsCell extends FrameLayout {
 
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
 
         valueImageView = new ImageView(context);
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
         valueImageView.setVisibility(INVISIBLE);
-        valueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        valueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
     }
 
@@ -120,7 +122,11 @@ public class TextSettingsCell extends FrameLayout {
         }
 
         if (imageView.getVisibility() == VISIBLE) {
-            imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.AT_MOST));
+            if (imageViewIsColorful) {
+                imageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(28), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(28), MeasureSpec.EXACTLY));
+            } else {
+                imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.AT_MOST));
+            }
         }
 
         if (valueBackupImageView != null) {
@@ -213,6 +219,7 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setIcon(int resId) {
         MarginLayoutParams params = (MarginLayoutParams) textView.getLayoutParams();
+        imageViewIsColorful = false;
         if (resId == 0) {
             imageView.setVisibility(GONE);
             if (LocaleController.isRTL) {
@@ -222,6 +229,31 @@ public class TextSettingsCell extends FrameLayout {
             }
         } else {
             imageView.setImageResource(resId);
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            imageView.setBackground(null);
+            imageView.setVisibility(VISIBLE);
+            if (LocaleController.isRTL) {
+                params.rightMargin = AndroidUtilities.dp(71);
+            } else {
+                params.leftMargin = AndroidUtilities.dp(71);
+            }
+        }
+    }
+
+    public void setColorfulIcon(int resId, int color) {
+        MarginLayoutParams params = (MarginLayoutParams) textView.getLayoutParams();
+        imageViewIsColorful = true;
+        if (resId == 0) {
+            imageView.setVisibility(GONE);
+            if (LocaleController.isRTL) {
+                params.rightMargin = AndroidUtilities.dp(this.padding);
+            } else {
+                params.leftMargin = AndroidUtilities.dp(this.padding);
+            }
+        } else {
+            imageView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), color));
+            imageView.setImageResource(resId);
+            imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
             imageView.setVisibility(VISIBLE);
             if (LocaleController.isRTL) {
                 params.rightMargin = AndroidUtilities.dp(71);
@@ -315,7 +347,8 @@ public class TextSettingsCell extends FrameLayout {
         super.dispatchDraw(canvas);
 
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int offset = AndroidUtilities.dp(imageView.getVisibility() == View.VISIBLE ? 71 : 20);
+            canvas.drawLine(LocaleController.isRTL ? 0 : offset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? offset : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

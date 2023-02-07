@@ -75,6 +75,10 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
     private int bitmapRotation;
 
+    public void setSubtitle(String subtitle) {
+        areaView.setSubtitle(subtitle);
+    }
+
     public class CropState {
         public float width;
         public float height;
@@ -256,11 +260,11 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public float getStateFullOrientation() {
-        return state.baseRotation + state.orientation;
+        return state == null ? 0 : state.baseRotation + state.orientation;
     }
 
     public boolean getStateMirror() {
-        return state.mirrored;
+        return state != null && state.mirrored;
     }
 
     public CropView(Context context) {
@@ -735,6 +739,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void maximize(boolean animated) {
+        if (state == null) {
+            return;
+        }
         final float toScale = state.minimumScale;
         areaView.resetAnimator();
         float aspectRatio;

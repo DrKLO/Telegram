@@ -481,9 +481,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         if (!precise) {
             seekToMs(nativePtr, ms, precise);
         }
-        if (backgroundBitmap == null) {
-            backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
-        }
+        Bitmap backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         int result;
         if (precise) {
             result = getFrameAtTime(nativePtr, ms, backgroundBitmap, metaData, backgroundBitmap.getRowBytes());
@@ -616,13 +614,12 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             ArrayList<Bitmap> bitmapToRecycle = new ArrayList<>();
             bitmapToRecycle.add(renderingBitmap);
             bitmapToRecycle.add(nextRenderingBitmap);
+            bitmapToRecycle.add(backgroundBitmap);
 
-            if (renderingBitmap != null) {
-                renderingBitmap = null;
-            }
-            if (nextRenderingBitmap != null) {
-                nextRenderingBitmap = null;
-            }
+            renderingBitmap = null;
+            nextRenderingBitmap = null;
+            backgroundBitmap = null;
+
             if (decodeQueue != null) {
                 decodeQueue.recycle();
                 decodeQueue = null;
@@ -1075,6 +1072,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     @Override
     public Bitmap getFirstFrame(Bitmap bitmap) {
+        if (bitmap == null) {
+            bitmap = Bitmap.createBitmap(renderingWidth, renderingHeight, Bitmap.Config.ARGB_8888);
+        }
         Canvas canvas = new Canvas(bitmap);
         if (generatingCacheBitmap == null) {
             generatingCacheBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
@@ -1094,6 +1094,21 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         canvas.restore();
 
         return bitmap;
+    }
+
+    public void drawFrame(Canvas canvas, int incFrame) {
+        if (nativePtr == 0) {
+            return;
+        }
+        for (int i = 0; i < incFrame; ++i) {
+            getNextFrame();
+        }
+        Bitmap bitmap = getBackgroundBitmap();
+        if (bitmap == null) {
+            bitmap = getNextFrame();
+        }
+        AndroidUtilities.rectTmp2.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        canvas.drawBitmap(getBackgroundBitmap(), AndroidUtilities.rectTmp2, getBounds(), getPaint());
     }
 
     public boolean canLoadFrames() {

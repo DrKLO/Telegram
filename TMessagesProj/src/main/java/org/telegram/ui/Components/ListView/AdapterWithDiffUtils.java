@@ -18,7 +18,6 @@ public abstract class AdapterWithDiffUtils extends RecyclerListView.SelectionAda
         DiffUtil.calculateDiff(callback).dispatchUpdatesTo(this);
     }
 
-
     public static class Item {
         public final int viewType;
         public boolean selectable;
@@ -37,7 +36,6 @@ public abstract class AdapterWithDiffUtils extends RecyclerListView.SelectionAda
             }
             return false;
         }
-
     }
 
     private class DiffUtilsCallback extends DiffUtil.Callback {

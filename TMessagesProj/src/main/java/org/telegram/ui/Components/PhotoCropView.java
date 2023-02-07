@@ -37,6 +37,10 @@ import org.telegram.ui.Components.Crop.CropView;
 
 public class PhotoCropView extends FrameLayout {
 
+    public void setSubtitle(String subtitle) {
+        cropView.setSubtitle(subtitle);
+    }
+
     public interface PhotoCropViewDelegate {
         void onChange(boolean reset);
         void onUpdate();

@@ -13,7 +13,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
-import android.util.Log;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -208,6 +207,9 @@ public class MediaActionDrawable extends Drawable {
     }
 
     public void setProgress(float value, boolean animated) {
+        if (downloadProgress == value) {
+            return;
+        }
         if (!animated) {
             animatedDownloadProgress = value;
             downloadProgressAnimationStart = value;

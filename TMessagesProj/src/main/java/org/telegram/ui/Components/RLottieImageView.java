@@ -31,6 +31,9 @@ public class RLottieImageView extends ImageView {
     private boolean attachedToWindow;
     private boolean playing;
     private boolean startOnAttach;
+    private Integer layerNum;
+    private boolean onlyLastFrame;
+    public boolean cached;
 
     public RLottieImageView(Context context) {
         super(context);
@@ -38,6 +41,13 @@ public class RLottieImageView extends ImageView {
 
     public void clearLayerColors() {
         layerColors.clear();
+    }
+
+    public void setLayerNum(Integer layerNum) {
+        this.layerNum = layerNum;
+        if (this.imageReceiver != null) {
+            this.imageReceiver.setLayerNum(layerNum);
+        }
     }
 
     public void setLayerColor(String layer, int color) {
@@ -95,6 +105,10 @@ public class RLottieImageView extends ImageView {
     }
 
 
+    public void setOnlyLastFrame(boolean onlyLastFrame) {
+        this.onlyLastFrame = onlyLastFrame;
+    }
+
     public void setAnimation(TLRPC.Document document, int w, int h) {
         if (imageReceiver != null) {
             imageReceiver.onDetachedFromWindow();
@@ -103,36 +117,50 @@ public class RLottieImageView extends ImageView {
         if (document == null) {
             return;
         }
-        imageReceiver = new ImageReceiver();
-        if ("video/webm".equals(document.mime_type)) {
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + "_pcache_" + ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForDocument(thumb, document), null, null, document.size, null, document, 1);
-        } else {
-            Drawable thumbDrawable = null;
-            String probableCacheKey = document.id + "@" + w + "_" + h;
-            if (!ImageLoader.getInstance().hasLottieMemCache(probableCacheKey)) {
-                SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-                if (svgThumb != null) {
-                    svgThumb.overrideWidthAndHeight(512, 512);
+        imageReceiver = new ImageReceiver() {
+            @Override
+            protected boolean setImageBitmapByKey(Drawable drawable, String key, int type, boolean memCache, int guid) {
+                if (drawable != null) {
+                    onLoaded();
                 }
-                thumbDrawable = svgThumb;
+                return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
+            }
+        };
+        if (onlyLastFrame) {
+            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + "_lastframe", null, null, null, null, null, 0, null, document, 1);
+        } else if ("video/webm".equals(document.mime_type)) {
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + (cached ? "_pcache" : "") + "_" + ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForDocument(thumb, document), null, null, document.size, null, document, 1);
+        } else {
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document.thumbs, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
+            if (svgThumb != null) {
+                svgThumb.overrideWidthAndHeight(512, 512);
             }
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h, ImageLocation.getForDocument(thumb, document), null, null, null, thumbDrawable, 0, null, document, 1);
+            imageReceiver.setImage(ImageLocation.getForDocument(document), w + "_" + h + (cached ? "_pcache" : ""), ImageLocation.getForDocument(thumb, document), null, null, null, svgThumb, 0, null, document, 1);
         }
         imageReceiver.setAspectFit(true);
         imageReceiver.setParentView(this);
-        imageReceiver.setAutoRepeat(1);
-        imageReceiver.setAllowStartLottieAnimation(true);
-        imageReceiver.setAllowStartAnimation(true);
+        if (autoRepeat) {
+            imageReceiver.setAutoRepeat(1);
+            imageReceiver.setAllowStartLottieAnimation(true);
+            imageReceiver.setAllowStartAnimation(true);
+        } else {
+            imageReceiver.setAutoRepeat(0);
+        }
+        imageReceiver.setLayerNum(layerNum != null ? layerNum : 7);
         imageReceiver.clip = false;
 
         setImageDrawable(new Drawable() {
 
             @Override
             public void draw(@NonNull Canvas canvas) {
-                AndroidUtilities.rectTmp2.set(getBounds());
-                AndroidUtilities.rectTmp2.inset(AndroidUtilities.dp(11), AndroidUtilities.dp(11));
+                AndroidUtilities.rectTmp2.set(
+                    getBounds().centerX() - AndroidUtilities.dp(w) / 2,
+                    getBounds().centerY() - AndroidUtilities.dp(h) / 2,
+                    getBounds().centerX() + AndroidUtilities.dp(w) / 2,
+                    getBounds().centerY() + AndroidUtilities.dp(h) / 2
+                );
                 imageReceiver.setImageCoords(AndroidUtilities.rectTmp2);
                 imageReceiver.draw(canvas);
             }
@@ -158,6 +186,10 @@ public class RLottieImageView extends ImageView {
         }
     }
 
+    protected void onLoaded() {
+
+    }
+
     public void clearAnimationDrawable() {
         if (drawable != null) {
             drawable.stop();
@@ -176,6 +208,9 @@ public class RLottieImageView extends ImageView {
         attachedToWindow = true;
         if (imageReceiver != null) {
             imageReceiver.onAttachedToWindow();
+            if (playing) {
+                imageReceiver.startAnimation();
+            }
         }
         if (drawable != null) {
             drawable.setCallback(this);
@@ -194,7 +229,6 @@ public class RLottieImageView extends ImageView {
         }
         if (imageReceiver != null) {
             imageReceiver.onDetachedFromWindow();
-            imageReceiver = null;
         }
     }
 
@@ -207,10 +241,13 @@ public class RLottieImageView extends ImageView {
     }
 
     public void setProgress(float progress) {
-        if (drawable == null) {
-            return;
+        if (drawable != null) {
+            drawable.setProgress(progress);
         }
-        drawable.setProgress(progress);
+    }
+
+    public ImageReceiver getImageReceiver() {
+        return imageReceiver;
     }
 
     @Override
@@ -220,12 +257,14 @@ public class RLottieImageView extends ImageView {
     }
 
     public void playAnimation() {
-        if (drawable == null) {
+        if (drawable == null && imageReceiver == null) {
             return;
         }
         playing = true;
         if (attachedToWindow) {
-            drawable.start();
+            if (drawable != null) {
+                drawable.start();
+            }
             if (imageReceiver != null) {
                 imageReceiver.startAnimation();
             }
@@ -235,12 +274,14 @@ public class RLottieImageView extends ImageView {
     }
 
     public void stopAnimation() {
-        if (drawable == null) {
+        if (drawable == null && imageReceiver == null) {
             return;
         }
         playing = false;
         if (attachedToWindow) {
-            drawable.stop();
+            if (drawable != null) {
+                drawable.stop();
+            }
             if (imageReceiver != null) {
                 imageReceiver.stopAnimation();
             }

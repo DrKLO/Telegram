@@ -537,7 +537,7 @@ public class LinkEditActivity extends BaseFragment {
                 progressDialog.dismiss();
             }
             loading = true;
-            progressDialog = new AlertDialog(getParentActivity(), 3);
+            progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.showDelayed(500);
             TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
             req.peer = getMessagesController().getInputPeer(-chatId);
@@ -646,7 +646,7 @@ public class LinkEditActivity extends BaseFragment {
 
             if (edited) {
                 loading = true;
-                progressDialog = new AlertDialog(getParentActivity(), 3);
+                progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                 progressDialog.showDelayed(500);
                 getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     loading = false;

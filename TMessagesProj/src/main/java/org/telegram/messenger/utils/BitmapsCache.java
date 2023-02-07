@@ -36,19 +36,19 @@ public class BitmapsCache {
     public final static int FRAME_RESULT_NO_FRAME = -1;
     public static final int COMPRESS_QUALITY_DEFAULT = 60;
     private final Cacheable source;
+    private static boolean mkdir;
     String fileName;
     int w;
     int h;
 
     ArrayList<FrameOffset> frameOffsets = new ArrayList<>();
 
-
     final boolean useSharedBuffers;
     static ConcurrentHashMap<Thread, byte[]> sharedBuffers = new ConcurrentHashMap();
     static volatile boolean cleanupScheduled;
     byte[] bufferTmp;
 
-    private final static int N = Utilities.clamp(Runtime.getRuntime().availableProcessors() - 2, 8, 1);
+    private final static int N = Utilities.clamp(Runtime.getRuntime().availableProcessors() - 2, 6, 1);
     private static ThreadPoolExecutor bitmapCompressExecutor;
     private final Object mutex = new Object();
     private int frameIndex;
@@ -88,6 +88,10 @@ public class BitmapsCache {
         }
 
         File fileTmo = new File(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), "acache");
+        if (!mkdir) {
+            fileTmo.mkdir();
+            mkdir = true;
+        }
         file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + ".pcache2");
         useSharedBuffers = w < AndroidUtilities.dp(60) && h < AndroidUtilities.dp(60);
 
@@ -111,6 +115,9 @@ public class BitmapsCache {
                             fileExist = false;
                             file.delete();
                         } else {
+                            if (cachedFile != randomAccessFile) {
+                                closeCachedFile();
+                            }
                             cachedFile = randomAccessFile;
                         }
                     }
@@ -179,6 +186,9 @@ public class BitmapsCache {
                         if (count > 0) {
                             fillFrames(randomAccessFile, count);
                             randomAccessFile.seek(0);
+                            if (cachedFile != randomAccessFile) {
+                                closeCachedFile();
+                            }
                             cachedFile = randomAccessFile;
                             fileExist = true;
                             return;
@@ -345,6 +355,7 @@ public class BitmapsCache {
 
             this.frameOffsets.clear();
             this.frameOffsets.addAll(frameOffsets);
+            closeCachedFile();
             cachedFile = new RandomAccessFile(file, "r");
             cacheCreated = true;
             fileExist = true;
@@ -460,6 +471,9 @@ public class BitmapsCache {
             bufferTmp = getBuffer(selectedFrame);
             randomAccessFile.readFully(bufferTmp, 0, selectedFrame.frameSize);
             if (!recycled) {
+                if (cachedFile != randomAccessFile) {
+                    closeCachedFile();
+                }
                 cachedFile = randomAccessFile;
             } else {
                 cachedFile = null;
@@ -471,6 +485,7 @@ public class BitmapsCache {
             }
             options.inBitmap = bitmap;
             BitmapFactory.decodeByteArray(bufferTmp, 0, selectedFrame.frameSize, options);
+            options.inBitmap = null;
             return FRAME_RESULT_OK;
         } catch (FileNotFoundException e) {
 
@@ -492,6 +507,16 @@ public class BitmapsCache {
 
         // source.getFirstFrame(bitmap);
         return FRAME_RESULT_NO_FRAME;
+    }
+
+    private void closeCachedFile() {
+        if (cachedFile != null) {
+            try {
+                cachedFile.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private byte[] getBuffer(FrameOffset selectedFrame) {
@@ -536,6 +561,10 @@ public class BitmapsCache {
 
     public int getFrameCount() {
         return frameOffsets.size();
+    }
+
+    public boolean isCreated() {
+        return cacheCreated && fileExist;
     }
 
     private class FrameOffset {
@@ -641,6 +670,7 @@ public class BitmapsCache {
     public static class CacheOptions {
         public int compressQuality = 100;
         public boolean fallback = false;
+        public boolean firstFrame;
     }
 
     private static class CacheGeneratorSharedTools {

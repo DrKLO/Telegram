@@ -37,7 +37,6 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.InputType;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -446,10 +445,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 } else if (object instanceof String) {
                     String str = (String) object;
                     if (!str.equals("section")) {
-                        NewContactActivity activity = new NewContactActivity();
+                        NewContactBottomSheet activity = new NewContactBottomSheet(ContactsActivity.this, getContext());
                         activity.setInitialPhoneNumber(str, true);
-                        presentFragment(activity);
+                        activity.show();
                     }
+                } else if (object instanceof ContactsController.Contact) {
+                    ContactsController.Contact contact = (ContactsController.Contact) object;
+                    AlertsCreator.createContactInviteDialog(ContactsActivity.this, contact.first_name, contact.last_name, contact.phones.get(0));
                 }
             } else {
                 int section = listViewAdapter.getSectionForPosition(position);
@@ -617,7 +619,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (!createSecretChat && !returnAsResult) {
             floatingButtonContainer = new FrameLayout(context);
             frameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60) + 20, (Build.VERSION.SDK_INT >= 21 ? 56 : 60) + 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 4 : 0, 0, LocaleController.isRTL ? 0 : 4, 0));
-            floatingButtonContainer.setOnClickListener(v -> presentFragment(new NewContactActivity()));
+            floatingButtonContainer.setOnClickListener(v -> {
+                AndroidUtilities.requestAdjustNothing(getParentActivity(), getClassGuid());
+                new NewContactBottomSheet(ContactsActivity.this, getContext()) {
+                    @Override
+                    public void dismissInternal() {
+                        super.dismissInternal();
+                        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+                    }
+                }.show();
+            });
 
             floatingButton = new RLottieImageView(context);
             floatingButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -677,9 +688,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     TLRPC.Chat chat = getMessagesController().getChat(channelId);
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     if (ChatObject.canAddAdmins(chat)) {
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setTitle(LocaleController.getString("AddBotAdminAlert", R.string.AddBotAdminAlert));
                         builder.setMessage(LocaleController.getString("AddBotAsAdmin", R.string.AddBotAsAdmin));
-                        builder.setPositiveButton(LocaleController.getString("MakeAdmin", R.string.MakeAdmin), (dialogInterface, i) -> {
+                        builder.setPositiveButton(LocaleController.getString("AddAsAdmin", R.string.AddAsAdmin), (dialogInterface, i) -> {
                             if (delegate != null) {
                                 delegate.didSelectContact(user, param, this);
                                 delegate = null;
@@ -927,7 +938,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
         } else if (id == NotificationCenter.closeChats) {
             if (!creatingChat) {
-                removeSelfFromStack();
+                removeSelfFromStack(true);
             }
         }
     }
@@ -1012,6 +1023,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         RLottieImageView previousFab = dialogsActivity.getFloatingButton();
         View previousFabContainer = previousFab.getParent() != null ? (View) previousFab.getParent() : null;
         if (floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
+            floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
+            floatingButton.getAnimatedDrawable().setCurrentFrame(floatingButton.getAnimatedDrawable().getFramesCount() - 1);
             return null;
         }
         previousFabContainer.setVisibility(View.GONE);

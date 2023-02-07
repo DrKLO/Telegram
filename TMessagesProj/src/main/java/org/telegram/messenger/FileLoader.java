@@ -40,26 +40,50 @@ public class FileLoader extends BaseController {
 
     private static Pattern sentPattern;
 
-    public static long getDialogIdFromParent(int currentAccount, Object parentObject) {
+    public static FilePathDatabase.FileMeta getFileMetadataFromParent(int currentAccount, Object parentObject) {
         if (parentObject instanceof String) {
             String str = (String) parentObject;
             if (str.startsWith("sent_")) {
                 if (sentPattern == null) {
-                    sentPattern = Pattern.compile("sent_.*_.*_([0-9]+)");
+                    sentPattern = Pattern.compile("sent_.*_([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
                 }
                 try {
                     Matcher matcher = sentPattern.matcher(str);
                     if (matcher.matches()) {
-                        return Long.parseLong(matcher.group(1));
+                        FilePathDatabase.FileMeta fileMeta = new FilePathDatabase.FileMeta();
+                        fileMeta.messageId = Integer.parseInt(matcher.group(1));
+                        fileMeta.dialogId = Long.parseLong(matcher.group(2));
+                        fileMeta.messageType = Integer.parseInt(matcher.group(3));
+                        fileMeta.messageSize = Long.parseLong(matcher.group(4));
+                        return fileMeta;
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
         } else if (parentObject instanceof MessageObject) {
-            return ((MessageObject) parentObject).getDialogId();
+            MessageObject messageObject = (MessageObject) parentObject;
+            FilePathDatabase.FileMeta fileMeta = new FilePathDatabase.FileMeta();
+            fileMeta.messageId = messageObject.getId();
+            fileMeta.dialogId = messageObject.getDialogId();
+            fileMeta.messageType = messageObject.type;
+            fileMeta.messageSize = messageObject.getSize();
+            return fileMeta;
         }
-        return 0;
+        return null;
+    }
+
+    public static TLRPC.VideoSize getVectorMarkupVideoSize(TLRPC.Photo photo) {
+        if (photo == null || photo.video_sizes == null) {
+            return null;
+        }
+        for (int i = 0; i < photo.video_sizes.size(); i++) {
+            TLRPC.VideoSize videoSize = photo.video_sizes.get(i);
+            if (videoSize instanceof TLRPC.TL_videoSizeEmojiMarkup || videoSize instanceof TLRPC.TL_videoSizeStickerMarkup) {
+                return videoSize;
+            }
+        }
+        return null;
     }
 
     private int getPriorityValue(int priorityType) {
@@ -723,7 +747,6 @@ public class FileLoader extends BaseController {
                     storeDir = getDirectory(type);
                     boolean saveCustomPath = false;
 
-
                     if ((type == MEDIA_DIR_IMAGE || type == MEDIA_DIR_VIDEO) && canSaveToPublicStorage(parentObject)) {
                         File newDir;
                         if (type == MEDIA_DIR_IMAGE) {
@@ -767,9 +790,9 @@ public class FileLoader extends BaseController {
                 if (!operation.isPreloadVideoOperation() && operation.isPreloadFinished()) {
                     return;
                 }
-                long dialogId = getDialogIdFromParent(currentAccount, parentObject);
-                if (dialogId != 0) {
-                    getFileLoader().getFileDatabase().saveFileDialogId(finalFile, dialogId);
+                FilePathDatabase.FileMeta fileMeta = getFileMetadataFromParent(currentAccount, parentObject);
+                if (fileMeta != null) {
+                    getFileLoader().getFileDatabase().saveFileDialogId(finalFile, fileMeta);
                 }
                 if (parentObject instanceof MessageObject) {
                     MessageObject messageObject = (MessageObject) parentObject;
@@ -847,15 +870,26 @@ public class FileLoader extends BaseController {
     }
 
     private boolean canSaveToPublicStorage(Object parentObject) {
-        if (SharedConfig.saveToGalleryFlags == 0 || BuildVars.NO_SCOPED_STORAGE) {
+        if (BuildVars.NO_SCOPED_STORAGE) {
             return false;
         }
-        if (parentObject instanceof MessageObject) {
-            MessageObject messageObject = (MessageObject) parentObject;
+        FilePathDatabase.FileMeta metadata = getFileMetadataFromParent(currentAccount, parentObject);
+        MessageObject messageObject = null;
+        if (metadata != null) {
             int flag;
-            long dialogId = messageObject.getDialogId();
-            if (messageObject.isRoundVideo() || messageObject.isVoice() || messageObject.isAnyKindOfSticker() || getMessagesController().isChatNoForwards(getMessagesController().getChat(-dialogId)) || messageObject.messageOwner.noforwards || DialogObject.isEncryptedDialog(dialogId)) {
+            long dialogId = metadata.dialogId;
+            if (getMessagesController().isChatNoForwards(getMessagesController().getChat(-dialogId)) || DialogObject.isEncryptedDialog(dialogId)) {
                 return false;
+            }
+            if (parentObject instanceof MessageObject) {
+                messageObject = (MessageObject) parentObject;
+                if (messageObject.isRoundVideo() || messageObject.isVoice() || messageObject.isAnyKindOfSticker() || messageObject.messageOwner.noforwards) {
+                    return false;
+                }
+            } else {
+                if (metadata.messageType == MessageObject.TYPE_ROUND_VIDEO || metadata.messageType == MessageObject.TYPE_STICKER || metadata.messageType == MessageObject.TYPE_VOICE) {
+                    return false;
+                }
             }
             if (dialogId >= 0) {
                 flag = SharedConfig.SAVE_TO_GALLERY_FLAG_PEER;
@@ -867,7 +901,7 @@ public class FileLoader extends BaseController {
                 }
             }
 
-            if ((SharedConfig.saveToGalleryFlags & flag) != 0) {
+            if (SaveToGallerySettingsHelper.needSave(flag, metadata, messageObject, currentAccount)) {
                 return true;
             }
         }
@@ -1173,13 +1207,64 @@ public class FileLoader extends BaseController {
             }
             if (byMinSide) {
                 int currentSide = Math.min(obj.h, obj.w);
-                if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || side > lastSide && lastSide < currentSide) {
+                if (
+                    closestObject == null ||
+                    side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE ||
+                    obj instanceof TLRPC.TL_photoCachedSize || side > lastSide && lastSide < currentSide
+                ) {
                     closestObject = obj;
                     lastSide = currentSide;
                 }
             } else {
                 int currentSide = Math.max(obj.w, obj.h);
-                if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+                if (
+                    closestObject == null ||
+                    side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE ||
+                    obj instanceof TLRPC.TL_photoCachedSize ||
+                    currentSide <= side && lastSide < currentSide
+                ) {
+                    closestObject = obj;
+                    lastSide = currentSide;
+                }
+            }
+        }
+        return closestObject;
+    }
+
+    public static TLRPC.VideoSize getClosestVideoSizeWithSize(ArrayList<TLRPC.VideoSize> sizes, int side) {
+        return getClosestVideoSizeWithSize(sizes, side, false);
+    }
+
+    public static TLRPC.VideoSize getClosestVideoSizeWithSize(ArrayList<TLRPC.VideoSize> sizes, int side, boolean byMinSide) {
+        return getClosestVideoSizeWithSize(sizes, side, byMinSide, false);
+    }
+
+    public static TLRPC.VideoSize getClosestVideoSizeWithSize(ArrayList<TLRPC.VideoSize> sizes, int side, boolean byMinSide, boolean ignoreStripped) {
+        if (sizes == null || sizes.isEmpty()) {
+            return null;
+        }
+        int lastSide = 0;
+        TLRPC.VideoSize closestObject = null;
+        for (int a = 0; a < sizes.size(); a++) {
+            TLRPC.VideoSize obj = sizes.get(a);
+            if (obj == null || obj instanceof TLRPC.TL_videoSizeEmojiMarkup || obj instanceof TLRPC.TL_videoSizeStickerMarkup) {
+                continue;
+            }
+            if (byMinSide) {
+                int currentSide = Math.min(obj.h, obj.w);
+                if (closestObject == null ||
+                                side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE ||
+                                side > lastSide && lastSide < currentSide) {
+                    closestObject = obj;
+                    lastSide = currentSide;
+                }
+            } else {
+                int currentSide = Math.max(obj.w, obj.h);
+                if (
+                        closestObject == null ||
+                                side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE ||
+                                currentSide <= side && lastSide < currentSide
+                ) {
                     closestObject = obj;
                     lastSide = currentSide;
                 }

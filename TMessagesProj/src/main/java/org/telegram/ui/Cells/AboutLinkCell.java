@@ -19,6 +19,7 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
@@ -27,7 +28,6 @@ import android.text.StaticLayout;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
-import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -39,7 +39,6 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -58,6 +57,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -77,9 +77,13 @@ public class AboutLinkCell extends FrameLayout {
     private Drawable showMoreBackgroundDrawable;
 
     private LinkSpanDrawable pressedLink;
+    private float pressedLinkYOffset;
+    private Layout pressedLinkLayout;
     private LinkSpanDrawable.LinkCollector links;
     private Point urlPathOffset = new Point();
     private LinkPath urlPath = new LinkPath(true);
+    private Browser.Progress currentProgress;
+    private LoadingDrawable currentLoading;
 
     private BaseFragment parentFragment;
     private Theme.ResourcesProvider resourcesProvider;
@@ -204,12 +208,13 @@ public class AboutLinkCell extends FrameLayout {
                     LinkSpanDrawable link = hitLink(x, y);
                     if (link != null) {
                         result = true;
+                        pressedLinkLayout = textLayout;
                         links.addLink(pressedLink = link);
                         AndroidUtilities.runOnUIThread(longPressedRunnable, ViewConfiguration.getLongPressTimeout());
                     }
                 } else if (pressedLink != null) {
                     try {
-                        onLinkClick((ClickableSpan) pressedLink.getSpan());
+                        onLinkClick((ClickableSpan) pressedLink.getSpan(), textLayout, pressedLinkYOffset);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -318,7 +323,7 @@ public class AboutLinkCell extends FrameLayout {
         canvas.restore();
     }
 
-    protected void didPressUrl(String url) {
+    protected void didPressUrl(String url, Browser.Progress progress) {
 
     }
     protected void didResizeStart() {
@@ -387,12 +392,15 @@ public class AboutLinkCell extends FrameLayout {
                     performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 } catch (Exception ignore) {}
 
+                final Layout layout = pressedLinkLayout;
+                final float yOffset = pressedLinkYOffset;
+
                 ClickableSpan pressedLinkFinal = (ClickableSpan) pressedLink.getSpan();
                 BottomSheet.Builder builder = new BottomSheet.Builder(parentFragment.getParentActivity());
                 builder.setTitle(url);
                 builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
                     if (which == 0) {
-                        onLinkClick(pressedLinkFinal);
+                        onLinkClick(pressedLinkFinal, layout, yOffset);
                     } else if (which == 1) {
                         AndroidUtilities.addToClipboard(url);
                         if (AndroidUtilities.shouldShowClipboardToast()) {
@@ -457,7 +465,7 @@ public class AboutLinkCell extends FrameLayout {
                     int start = buffer.getSpanStart(link[0]);
                     int end = buffer.getSpanEnd(link[0]);
                     LinkPath path = linkDrawable.obtainNewPath();
-                    path.setCurrentLayout(textLayout, start, textY);
+                    path.setCurrentLayout(textLayout, start, pressedLinkYOffset = textY);
                     textLayout.getSelectionPath(start, end, path);
                     return linkDrawable;
                 }
@@ -468,19 +476,51 @@ public class AboutLinkCell extends FrameLayout {
         return null;
     }
 
-    private void onLinkClick(ClickableSpan pressedLink) {
+    private void onLinkClick(ClickableSpan pressedLink, Layout layout, float yOffset) {
+        if (currentProgress != null) {
+            currentProgress.cancel();
+            currentProgress = null;
+        }
+        currentProgress = layout != null && pressedLink != null ? new Browser.Progress() {
+            LoadingDrawable thisLoading;
+
+            @Override
+            public void init() {
+                if (currentLoading != null) {
+                    links.removeLoading(currentLoading, true);
+                }
+                currentLoading = thisLoading = LinkSpanDrawable.LinkCollector.makeLoading(layout, pressedLink, yOffset);
+                thisLoading.setColors(
+                    Theme.multAlpha(Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider), .8f),
+                    Theme.multAlpha(Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider), 1.3f),
+                    Theme.multAlpha(Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider), 1f),
+                    Theme.multAlpha(Theme.getColor(Theme.key_chat_linkSelectBackground, resourcesProvider), 4f)
+                );
+                thisLoading.strokePaint.setStrokeWidth(AndroidUtilities.dpf2(1.25f));
+                links.addLoading(thisLoading);
+            }
+
+            @Override
+            public void end(boolean replacing) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (thisLoading != null) {
+                        links.removeLoading(thisLoading, true);
+                    }
+                }, replacing ? 0 : 350);
+            }
+        } : null;
         if (pressedLink instanceof URLSpanNoUnderline) {
             String url = ((URLSpanNoUnderline) pressedLink).getURL();
             if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
-                didPressUrl(url);
+                didPressUrl(url, currentProgress);
             }
         } else {
             if (pressedLink instanceof URLSpan) {
                 String url = ((URLSpan) pressedLink).getURL();
                 if (AndroidUtilities.shouldShowUrlInAlert(url)) {
-                    AlertsCreator.showOpenUrlAlert(parentFragment, url, true, true);
+                    AlertsCreator.showOpenUrlAlert(parentFragment, url, true, true, true, currentProgress, null);
                 } else {
-                    Browser.openUrl(getContext(), url);
+                    Browser.openUrl(getContext(), Uri.parse(url), true, true, currentProgress);
                 }
             } else {
                 pressedLink.onClick(this);

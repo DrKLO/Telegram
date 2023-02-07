@@ -706,16 +706,18 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             if (!params.isFromDelay) {
                 if (params.preview) {
                     View bgView = getForegroundView();
-                    float scaleFactor = 8;
-                    int w = (int) (bgView.getMeasuredWidth() / scaleFactor);
-                    int h = (int) (bgView.getMeasuredHeight() / scaleFactor);
-                    Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmap);
-                    canvas.scale(1.0f / scaleFactor, 1.0f / scaleFactor);
-                    canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    bgView.draw(canvas);
-                    Utilities.stackBlurBitmap(bitmap, Math.max(8, Math.max(w, h) / 150));
-                    blurredBackFragmentForPreview = bitmap;
+                    if (bgView != null) {
+                        float scaleFactor = 8;
+                        int w = (int) (bgView.getMeasuredWidth() / scaleFactor);
+                        int h = (int) (bgView.getMeasuredHeight() / scaleFactor);
+                        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bitmap);
+                        canvas.scale(1.0f / scaleFactor, 1.0f / scaleFactor);
+                        canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                        bgView.draw(canvas);
+                        Utilities.stackBlurBitmap(bitmap, Math.max(8, Math.max(w, h) / 150));
+                        blurredBackFragmentForPreview = bitmap;
+                    }
 
                     if (getParent() != null) {
                         getParent().requestDisallowInterceptTouchEvent(true);
@@ -1076,7 +1078,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
     }
 
     @Override
-    public void removeFragmentFromStack(BaseFragment fragment) {
+    public void removeFragmentFromStack(BaseFragment fragment, boolean immediate) {
         int i = fragmentStack.indexOf(fragment);
         if (i == -1) {
             return;

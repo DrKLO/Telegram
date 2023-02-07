@@ -391,14 +391,6 @@ public class ActionBarMenuItem extends FrameLayout {
                 popupWindow.dismiss();
             }
         });
-
-        if (popupLayout.getSwipeBack() != null) {
-            popupLayout.getSwipeBack().setOnClickListener(view -> {
-                if (popupWindow != null) {
-                    popupWindow.dismiss();
-                }
-            });
-        }
     }
 
     public void removeAllSubItems() {
@@ -413,6 +405,10 @@ public class ActionBarMenuItem extends FrameLayout {
             return;
         }
         popupLayout.setShownFromBottom(value);
+    }
+
+    public void setFitSubItems(boolean fit) {
+        popupLayout.setFitItems(fit);
     }
 
     public void addSubItem(View view, int width, int height) {

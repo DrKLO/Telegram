@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
@@ -415,6 +416,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     float lastMessageX;
     float lastMessageY;
 
+    private Path replyRoundRect;
+    private float[] roundRectRadii;
+
     public void onDraw(Canvas canvas) {
         if (drawBitmaps && !initBitmaps && crossfadeTextBitmap != null && messageView.getTransitionParams().wasDraw) {
             initBitmaps = true;
@@ -423,7 +427,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             if (messageView.animatedEmojiStack != null) {
                 messageView.animatedEmojiStack.clearPositions();
             }
-            messageView.drawMessageText(bitmapCanvas, messageView.getMessageObject().textLayoutBlocks, true, 1f, true);
+            messageView.drawMessageText(bitmapCanvas, messageView.getMessageObject().textLayoutBlocks, messageView.getMessageObject().textXOffset, true, 1f, true);
             messageView.drawAnimatedEmojis(bitmapCanvas, 1f);
         }
         float listViewBottom = listView.getY() - container.getY() + listView.getMeasuredHeight();
@@ -565,8 +569,20 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             float replyX = fromReplayX * (1f - progressX) + toReplayX * progressX;
             float replyY = (fromReplayY + AndroidUtilities.dp(12) * progress) * (1f - progress) + toReplayY * progress;
 
+            if (replyRoundRect == null) {
+                replyRoundRect = new Path();
+            } else {
+                replyRoundRect.rewind();
+            }
+            if (roundRectRadii == null) {
+                roundRectRadii = new float[8];
+                roundRectRadii[0] = roundRectRadii[1] = roundRectRadii[6] = roundRectRadii[7] = AndroidUtilities.dp(2); // left
+                roundRectRadii[2] = roundRectRadii[3] = roundRectRadii[4] = roundRectRadii[5] = AndroidUtilities.dp(1); // right
+            }
+            AndroidUtilities.rectTmp.set(replyX, replyY, replyX + AndroidUtilities.dp(3), replyY + AndroidUtilities.lerp(AndroidUtilities.dp(35), messageView.replyHeight, progressX));
+            replyRoundRect.addRoundRect(AndroidUtilities.rectTmp, roundRectRadii, Path.Direction.CW);
             Theme.chat_replyLinePaint.setColor(ColorUtils.setAlphaComponent(replyLineColor, (int) (Color.alpha(replyLineColor) * progressX)));
-            canvas.drawRect(replyX, replyY, replyX + AndroidUtilities.dp(2), replyY + AndroidUtilities.lerp(AndroidUtilities.dp(35), messageView.replyHeight, progressX), Theme.chat_replyLinePaint);
+            canvas.drawPath(replyRoundRect, Theme.chat_replyLinePaint);
 
             canvas.save();
             canvas.translate(offset * progressX, 0);

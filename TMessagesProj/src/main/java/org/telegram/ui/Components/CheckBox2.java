@@ -3,16 +3,23 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.CheckBox;
 
+import androidx.core.content.ContextCompat;
+
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CheckBox2 extends View {
 
     private CheckBoxBase checkBoxBase;
+    Drawable iconDrawable;
+    int currentIcon;
 
     public CheckBox2(Context context, int sz) {
         this(context, sz, null);
@@ -93,7 +100,19 @@ public class CheckBox2 extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        checkBoxBase.draw(canvas);
+        if (iconDrawable != null) {
+            int cx = getMeasuredWidth() >> 1;
+            int cy = getMeasuredHeight() >> 1;
+            iconDrawable.setBounds(cx - iconDrawable.getIntrinsicWidth() / 2, cy - iconDrawable.getIntrinsicHeight() / 2, cx + iconDrawable.getIntrinsicWidth() / 2, cy + iconDrawable.getIntrinsicHeight() / 2);
+            iconDrawable.draw(canvas);
+            Paint paint = new Paint();
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(AndroidUtilities.dp(1.2f));
+            paint.setColor(Theme.getColor(Theme.key_switch2Track));
+            canvas.drawCircle(cx, cy, cx - AndroidUtilities.dp(1.5f), paint);
+        } else {
+            checkBoxBase.draw(canvas);
+        }
     }
 
     @Override
@@ -102,5 +121,21 @@ public class CheckBox2 extends View {
         info.setClassName(CheckBox.class.getName());
         info.setChecked(isChecked());
         info.setCheckable(true);
+    }
+
+    public void setIcon(int icon) {
+        if (icon != currentIcon) {
+            currentIcon = icon;
+            if (icon == 0) {
+                iconDrawable = null;
+            } else {
+                iconDrawable = ContextCompat.getDrawable(getContext(), icon).mutate();
+                iconDrawable.setColorFilter(Theme.getColor(Theme.key_switch2Track), PorterDuff.Mode.MULTIPLY);
+            }
+        }
+    }
+
+    public boolean hasIcon() {
+        return iconDrawable != null;
     }
 }

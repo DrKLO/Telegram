@@ -13,11 +13,13 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -519,13 +521,15 @@ public class ReactionsEffectOverlay {
         if (availableReaction != null || visibleReaction.documentId != 0) {
             if (availableReaction != null) {
                 if (animationType != ONLY_MOVE_ANIMATION) {
-                    TLRPC.Document document = animationType == SHORT_ANIMATION ? availableReaction.around_animation : availableReaction.effect_animation;
-                    String filer = animationType == SHORT_ANIMATION ? getFilterForAroundAnimation() : sizeForFilter + "_" + sizeForFilter;
-                    effectImageView.getImageReceiver().setUniqKeyPrefix((uniqPrefix++) + "_" + cell.getMessageObject().getId() + "_");
-                    effectImageView.setImage(ImageLocation.getForDocument(document), filer, null, null, 0, null);
+                    if ((animationType == SHORT_ANIMATION && !SharedConfig.getLiteMode().enabled()) || animationType == LONG_ANIMATION)  {
+                        TLRPC.Document document = animationType == SHORT_ANIMATION ? availableReaction.around_animation : availableReaction.effect_animation;
+                        String filer = animationType == SHORT_ANIMATION ? getFilterForAroundAnimation() : sizeForFilter + "_" + sizeForFilter;
+                        effectImageView.getImageReceiver().setUniqKeyPrefix((uniqPrefix++) + "_" + cell.getMessageObject().getId() + "_");
+                        effectImageView.setImage(ImageLocation.getForDocument(document), filer, null, null, 0, null);
 
-                    effectImageView.getImageReceiver().setAutoRepeat(0);
-                    effectImageView.getImageReceiver().setAllowStartAnimation(false);
+                        effectImageView.getImageReceiver().setAutoRepeat(0);
+                        effectImageView.getImageReceiver().setAllowStartAnimation(false);
+                    }
 
                     if (effectImageView.getImageReceiver().getLottieAnimation() != null) {
                         effectImageView.getImageReceiver().getLottieAnimation().setCurrentFrame(0, false);
@@ -589,7 +593,7 @@ public class ReactionsEffectOverlay {
 
             if (animationType != SHORT_ANIMATION) {
                 if (availableReaction != null) {
-                    emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastframe", null, "webp", availableReaction, 1);
+                    emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastreactframe", null, "webp", availableReaction, 1);
                 }
                 container.addView(emojiStaticImageView);
                 emojiStaticImageView.getLayoutParams().width = emojiSize;
@@ -740,6 +744,7 @@ public class ReactionsEffectOverlay {
 
         public AnimationView(Context context) {
             super(context);
+            getImageReceiver().setFileLoadingPriority(FileLoader.PRIORITY_HIGH);
         }
 
         boolean wasPlaying;

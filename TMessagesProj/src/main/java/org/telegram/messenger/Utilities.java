@@ -73,12 +73,39 @@ public class Utilities {
     public native static String readlink(String path);
     public native static String readlinkFd(int fd);
     public native static long getDirSize(String path, int docType, boolean subdirs);
+    public native static long getLastUsageFileTime(String path);
     public native static void clearDir(String path, int docType, long time, boolean subdirs);
     private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
     public static native void drawDitheredGradient(Bitmap bitmap, int[] colors, int startX, int startY, int endX, int endY);
     public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
     public static native void generateGradient(Bitmap bitmap, boolean unpin, int phase, float progress, int width, int height, int stride, int[] colors);
+
+    public static Bitmap stackBlurBitmapMax(Bitmap bitmap) {
+        int w = AndroidUtilities.dp(20);
+        int h = (int) (AndroidUtilities.dp(20) * (float) bitmap.getHeight() / bitmap.getWidth());
+        Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(scaledBitmap);
+        canvas.save();
+        canvas.scale((float) scaledBitmap.getWidth() / bitmap.getWidth(), (float) scaledBitmap.getHeight() / bitmap.getHeight());
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        canvas.restore();
+        Utilities.stackBlurBitmap(scaledBitmap, Math.max(10, Math.max(w, h) / 150));
+        return scaledBitmap;
+    }
+
+    public static Bitmap stackBlurBitmapWithScaleFactor(Bitmap bitmap, float scaleFactor) {
+        int w = (int) Math.max(AndroidUtilities.dp(20), bitmap.getWidth() / scaleFactor);
+        int h = (int) Math.max(AndroidUtilities.dp(20) * (float) bitmap.getHeight() / bitmap.getWidth(), bitmap.getHeight() / scaleFactor);
+        Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(scaledBitmap);
+        canvas.save();
+        canvas.scale((float) scaledBitmap.getWidth() / bitmap.getWidth(), (float) scaledBitmap.getHeight() / bitmap.getHeight());
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        canvas.restore();
+        Utilities.stackBlurBitmap(scaledBitmap, Math.max(10, Math.max(w, h) / 150));
+        return scaledBitmap;
+    }
 
     public static Bitmap blurWallpaper(Bitmap src) {
         if (src == null) {
@@ -466,8 +493,33 @@ public class Utilities {
         return sb.toString();
     }
 
+    public static String getExtension(String fileName) {
+        int idx = fileName.lastIndexOf('.');
+        String ext = null;
+        if (idx != -1) {
+            ext = fileName.substring(idx + 1);
+        }
+        if (ext == null) {
+            return null;
+        }
+        ext = ext.toUpperCase();
+        return ext;
+    }
+
     public static interface Callback<T> {
         public void run(T arg);
+    }
+
+    public static interface CallbackReturn<Arg, ReturnType> {
+        public ReturnType run(Arg arg);
+    }
+
+    public static interface Callback2<T, T2> {
+        public void run(T arg, T2 arg2);
+    }
+
+    public static interface Callback3<T, T2, T3> {
+        public void run(T arg, T2 arg2, T3 arg3);
     }
 
     public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
@@ -476,5 +528,35 @@ public class Utilities {
             return defaultValue;
         }
         return v;
+    }
+
+    public static void doCallbacks(Utilities.Callback<Runnable> ...actions) {
+        doCallbacks(0, actions);
+    }
+    private static void doCallbacks(int i, Utilities.Callback<Runnable> ...actions) {
+        if (actions != null && actions.length > i) {
+            actions[i].run(() -> doCallbacks(i + 1, actions));
+        }
+    }
+
+    public static void raceCallbacks(Runnable onFinish, Utilities.Callback<Runnable> ...actions) {
+        if (actions == null || actions.length == 0) {
+            if (onFinish != null) {
+                onFinish.run();
+            }
+            return;
+        }
+        final int[] finished = new int[] { 0 };
+        Runnable checkFinish = () -> {
+            finished[0]++;
+            if (finished[0] == actions.length) {
+                if (onFinish != null) {
+                    onFinish.run();
+                }
+            }
+        };
+        for (int i = 0; i < actions.length; ++i) {
+            actions[i].run(checkFinish);
+        }
     }
 }

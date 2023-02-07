@@ -16,8 +16,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -69,6 +67,8 @@ public class RadialProgress2 {
 
     private float overrideAlpha = 1.0f;
     private final Theme.ResourcesProvider resourcesProvider;
+    private int maxIconSize;
+    private float overlayImageAlpha = 1f;
 
     public RadialProgress2(View parentView) {
         this(parentView, null);
@@ -434,7 +434,7 @@ public class RadialProgress2 {
             }
         }
         if (overlayImageView.hasBitmapImage()) {
-            overlayImageView.setAlpha(wholeAlpha * overrideAlpha);
+            overlayImageView.setAlpha(wholeAlpha * overrideAlpha * overlayImageAlpha);
 
             if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
                 overlayImageView.draw(miniDrawCanvas);
@@ -444,7 +444,11 @@ public class RadialProgress2 {
                 canvas.drawCircle(centerX, centerY, circleRadius, overlayPaint);
             }
         }
-        mediaActionDrawable.setBounds(centerX - circleRadius, centerY - circleRadius, centerX + circleRadius, centerY + circleRadius);
+        int iconSize = circleRadius;
+        if (maxIconSize > 0 && iconSize > maxIconSize) {
+            iconSize = maxIconSize;
+        }
+        mediaActionDrawable.setBounds(centerX - iconSize, centerY - iconSize, centerX + iconSize, centerY + iconSize);
         mediaActionDrawable.setHasOverlayImage(overlayImageView.hasBitmapImage());
         if ((drawMiniIcon || circleCrossfadeColorKey != null)) {
             if (miniDrawCanvas != null) {
@@ -523,5 +527,13 @@ public class RadialProgress2 {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    public void setMaxIconSize(int maxSize) {
+        this.maxIconSize = maxSize;
+    }
+
+    public void setOverlayImageAlpha(float overlayImageAlpha) {
+        this.overlayImageAlpha = overlayImageAlpha;
     }
 }

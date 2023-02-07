@@ -13,6 +13,7 @@ import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Storage.CacheModel;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -189,7 +190,7 @@ public class FileLoadOperation {
     private File tempPath;
     private boolean isForceRequest;
     private int priority;
-    private long fileDialogId;
+    private FilePathDatabase.FileMeta fileMetadata;
 
     private boolean ungzip;
 
@@ -222,7 +223,7 @@ public class FileLoadOperation {
     public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, long size) {
         updateParams();
         parentObject = parent;
-        fileDialogId = FileLoader.getDialogIdFromParent(currentAccount, parentObject);
+        fileMetadata = FileLoader.getFileMetadataFromParent(currentAccount, parentObject);
         isStream = imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION;
         if (imageLocation.isEncrypted()) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
@@ -329,7 +330,7 @@ public class FileLoadOperation {
         updateParams();
         try {
             parentObject = parent;
-            fileDialogId = FileLoader.getDialogIdFromParent(currentAccount, parentObject);
+            fileMetadata = FileLoader.getFileMetadataFromParent(currentAccount, parentObject);
             if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
                 location = new TLRPC.TL_inputEncryptedFileLocation();
                 location.id = documentLocation.id;
@@ -971,9 +972,9 @@ public class FileLoadOperation {
                 }
             }
 
-            if (fileDialogId != 0) {
-                FileLoader.getInstance(currentAccount).getFileDatabase().saveFileDialogId(cacheFileParts, fileDialogId);
-                FileLoader.getInstance(currentAccount).getFileDatabase().saveFileDialogId(cacheFileTemp, fileDialogId);
+            if (fileMetadata != null) {
+                FileLoader.getInstance(currentAccount).getFileDatabase().saveFileDialogId(cacheFileParts, fileMetadata);
+                FileLoader.getInstance(currentAccount).getFileDatabase().saveFileDialogId(cacheFileTemp, fileMetadata);
             }
 
             if (cacheFileTemp.exists()) {
@@ -1293,12 +1294,12 @@ public class FileLoadOperation {
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("finished preloading file to " + cacheFileTemp + " loaded " + totalPreloadedBytes + " of " + totalBytesCount);
             }
-            if (fileDialogId != 0) {
+            if (fileMetadata != null) {
                 if (cacheFileTemp != null) {
-                    FileLoader.getInstance(currentAccount).getFileDatabase().removeFiles(Collections.singletonList(cacheFileTemp));
+                    FileLoader.getInstance(currentAccount).getFileDatabase().removeFiles(Collections.singletonList(new CacheModel.FileInfo(cacheFileTemp)));
                 }
                 if (cacheFileParts != null) {
-                    FileLoader.getInstance(currentAccount).getFileDatabase().removeFiles(Collections.singletonList(cacheFileParts));
+                    FileLoader.getInstance(currentAccount).getFileDatabase().removeFiles(Collections.singletonList(new CacheModel.FileInfo(cacheFileParts)));
                 }
             }
             delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
@@ -1411,7 +1412,11 @@ public class FileLoadOperation {
                         } else if (currentType == ConnectionsManager.FileTypePhoto) {
                             StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
                         } else if (currentType == ConnectionsManager.FileTypeFile) {
-                            StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                            if (ext != null && (ext.toLowerCase().endsWith("mp3") || ext.toLowerCase().endsWith("m4a"))) {
+                                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MUSIC, 1);
+                            } else {
+                                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                            }
                         }
                     }
                     delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
@@ -2147,7 +2152,11 @@ public class FileLoadOperation {
                         } else if (currentType == ConnectionsManager.FileTypePhoto) {
                             StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_PHOTOS, response.getObjectSize() + 4);
                         } else if (currentType == ConnectionsManager.FileTypeFile) {
-                            StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_FILES, response.getObjectSize() + 4);
+                            if (ext != null && (ext.toLowerCase().endsWith("mp3") || ext.toLowerCase().endsWith("m4a"))) {
+                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_MUSIC, response.getObjectSize() + 4);
+                            } else {
+                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_FILES, response.getObjectSize() + 4);
+                            }
                         }
                     }
                     processRequestResult(requestInfo, error);

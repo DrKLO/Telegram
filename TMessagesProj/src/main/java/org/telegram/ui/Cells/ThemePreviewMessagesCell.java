@@ -191,6 +191,9 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                 private GestureDetector gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
                     @Override
                     public boolean onDoubleTap(MotionEvent e) {
+                        if (MediaDataController.getInstance(currentAccount).getDoubleTapReaction() == null) {
+                            return false;
+                        }
                         boolean added = getMessageObject().selectReaction(ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(MediaDataController.getInstance(currentAccount).getDoubleTapReaction()), false, false);
                         setMessageObject(getMessageObject(), null, false, false);
                         requestLayout();

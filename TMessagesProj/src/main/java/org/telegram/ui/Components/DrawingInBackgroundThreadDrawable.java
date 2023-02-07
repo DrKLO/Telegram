@@ -28,7 +28,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
 
     private boolean bitmapUpdating;
 
-    public int currentLayerNum = 1;
+    private int currentLayerNum = 1;
     private int currentOpenedLayerFlags;
     protected boolean paused;
 
@@ -80,10 +80,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             bitmapUpdating = false;
             onFrameReady();
             if (!attachedToWindow) {
-                if (backgroundBitmap != null) {
-                    backgroundBitmap.recycle();
-                    backgroundBitmap = null;
-                }
+                recycleBitmaps();
                 return;
             }
             if (frameGuid != lastFrameId) {
@@ -144,7 +141,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             }
             bitmapCanvas.save();
             bitmapCanvas.translate(0, padding);
-            drawInUiThread(bitmapCanvas, 1f);
+            drawInUiThread(bitmapCanvas, alpha);
             bitmapCanvas.restore();
         }
 
@@ -157,7 +154,7 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
 
         if (bitmap != null ) {
             Bitmap drawingBitmap = bitmap;
-            paint.setAlpha((int) (255 * alpha));
+            paint.setAlpha((int) (0xFF * alpha));
             canvas.save();
             canvas.translate(0, -padding);
             this.drawBitmap(canvas, drawingBitmap, paint);
@@ -186,7 +183,11 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
     }
 
     public void onAttachToWindow() {
+        if (attachedToWindow) {
+            return;
+        }
         attachedToWindow = true;
+        error = false;
         currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
         currentOpenedLayerFlags &= ~currentLayerNum;
         if (currentOpenedLayerFlags == 0) {
@@ -195,20 +196,36 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
                 onResume();
             }
         }
+
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopAllHeavyOperations);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.startAllHeavyOperations);
     }
 
     public void onDetachFromWindow() {
+        if (!attachedToWindow) {
+            return;
+        }
+        if (!bitmapUpdating) {
+            recycleBitmaps();
+        }
+        attachedToWindow = false;
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopAllHeavyOperations);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.startAllHeavyOperations);
+    }
+
+    private void recycleBitmaps() {
         ArrayList<Bitmap> bitmaps = new ArrayList<>();
         if (bitmap != null) {
             bitmaps.add(bitmap);
         }
+        if (backgroundBitmap != null) {
+            bitmaps.add(backgroundBitmap);
+        }
         bitmap = null;
+        backgroundBitmap = null;
+        backgroundCanvas = null;
+        bitmapCanvas = null;
         AndroidUtilities.recycleBitmaps(bitmaps);
-        attachedToWindow = false;
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopAllHeavyOperations);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.startAllHeavyOperations);
     }
 
     @Override
@@ -282,6 +299,13 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             }
             return queue;
         }
+    }
 
+    public void setLayerNum(int value) {
+        currentLayerNum = value;
+        if (attachedToWindow) {
+            currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
+            currentOpenedLayerFlags &= ~currentLayerNum;
+        }
     }
 }

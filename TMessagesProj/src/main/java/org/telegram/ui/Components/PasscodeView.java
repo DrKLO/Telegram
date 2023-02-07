@@ -65,6 +65,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.support.fingerprint.FingerprintManagerCompat;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,11 +83,19 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             if ((boolean) args[0] && SharedConfig.appLocked) {
                 checkFingerprint();
             }
+        } else if (id == NotificationCenter.passcodeDismissed) {
+            if (args[0] != this) {
+                setVisibility(GONE);
+
+                if (fingerprintDialog != null) {
+                    fingerprintDialog.dismiss();
+                }
+            }
         }
     }
 
     public interface PasscodeViewDelegate {
-        void didAcceptedPassword();
+        void didAcceptedPassword(PasscodeView view);
     }
 
     private static class AnimatingTextView extends FrameLayout {
@@ -608,7 +617,9 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                                 backgroundSpringQueue.remove(callback);
                             }
                             for (int i : removeIndex) {
-                                backgroundSpringNextQueue.remove(i);
+                                if (i < backgroundSpringNextQueue.size()) {
+                                    backgroundSpringNextQueue.remove(i);
+                                }
                             }
                         }
                     }
@@ -967,7 +978,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
         setOnTouchListener(null);
         if (delegate != null) {
-            delegate.didAcceptedPassword();
+            delegate.didAcceptedPassword(this);
         }
 
         AndroidUtilities.runOnUIThread(() -> {
@@ -1105,6 +1116,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         super.onAttachedToWindow();
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didGenerateFingerprintKeyPair);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.passcodeDismissed);
     }
 
     @Override
@@ -1112,6 +1124,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         super.onDetachedFromWindow();
 
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didGenerateFingerprintKeyPair);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.passcodeDismissed);
     }
 
     private void checkFingerprint() {
@@ -1119,7 +1132,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             return;
         }
         Activity parentActivity = (Activity) getContext();
-        if (parentActivity != null && fingerprintView.getVisibility() == VISIBLE && !ApplicationLoader.mainInterfacePaused) {
+        if (parentActivity != null && fingerprintView.getVisibility() == VISIBLE && !ApplicationLoader.mainInterfacePaused && (!(parentActivity instanceof LaunchActivity) || ((LaunchActivity) parentActivity).allowShowFingerprintDialog(this))) {
             try {
                 if (fingerprintDialog != null && fingerprintDialog.isShowing()) {
                     return;

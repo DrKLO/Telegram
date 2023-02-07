@@ -496,7 +496,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     builder.setTitle(LocaleController.formatPluralString("DeleteBackground", selectedWallPapers.size()));
                     builder.setMessage(LocaleController.formatString("DeleteChatBackgroundsAlert", R.string.DeleteChatBackgroundsAlert));
                     builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
-                        progressDialog = new AlertDialog(getParentActivity(), 3);
+                        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                         progressDialog.setCanCancel(false);
                         progressDialog.show();
 
@@ -564,9 +564,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 } else if (id == forward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
-                    args.putInt("dialogsType", 3);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     DialogsActivity fragment = new DialogsActivity(args);
-                    fragment.setDelegate((fragment1, dids, message, param) -> {
+                    fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
                         StringBuilder fmessage = new StringBuilder();
                         for (int b = 0; b < selectedWallPapers.size(); b++) {
                             Object object = selectedWallPapers.valueAt(b);
@@ -614,7 +614,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                                     args1.putLong("chat_id", -did);
                                 }
                                 if (!MessagesController.getInstance(currentAccount).checkCanOpenChat(args1, fragment1)) {
-                                    return;
+                                    return true;
                                 }
                             }
                             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
@@ -623,6 +623,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             presentFragment(chatActivity, true);
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null, false);
                         }
+                        return true;
                     });
                     presentFragment(fragment);
                 }
@@ -753,7 +754,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         actionBar.hideActionMode();
                         updateRowsSelection();
                     }
-                    progressDialog = new AlertDialog(getParentActivity(), 3);
+                    progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                     progressDialog.setCanCancel(false);
                     progressDialog.show();
                     TLRPC.TL_account_resetWallPapers req = new TLRPC.TL_account_resetWallPapers();

@@ -41,6 +41,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.SparseArray;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
@@ -164,7 +166,7 @@ public class SvgHelper {
             }
 
             float scale = getScale((int) w, (int) h);
-            if (placeholderGradient[threadIndex] != null && gradientWidth > 0) {
+            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && !SharedConfig.getLiteMode().enabled()) {
                 if (drawInBackground) {
                     long dt = time - lastUpdateTime;
                     if (dt > 64) {
@@ -324,6 +326,22 @@ public class SvgHelper {
                 currentColorKey = colorKey;
                 currentColor[index] = color;
                 gradientWidth = AndroidUtilities.displaySize.x * 2;
+                if (SharedConfig.getLiteMode().enabled()) {
+                    int color2 = ColorUtils.setAlphaComponent(currentColor[index], 70);
+                    if (drawInBackground) {
+                        if (backgroundPaint == null) {
+                            backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        }
+                        backgroundPaint.setShader(null);
+                        backgroundPaint.setColor(color2);
+                    } else {
+                        for (Paint paint : paints.values()) {
+                            paint.setShader(null);
+                            paint.setColor(color2);
+                        }
+                    }
+                    return;
+                }
                 float w = AndroidUtilities.dp(180) / gradientWidth;
                 color = Color.argb((int) (Color.alpha(color) / 2 * colorAlpha), Color.red(color), Color.green(color), Color.blue(color));
                 float centerX = (1.0f - w) / 2;
@@ -452,7 +470,7 @@ public class SvgHelper {
         }
     }
 
-    public static SvgDrawable getDrawable(int resId, int color) {
+    public static SvgDrawable getDrawable(int resId, Integer color) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
