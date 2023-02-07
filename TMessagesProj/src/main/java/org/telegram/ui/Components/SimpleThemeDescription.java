@@ -18,4 +18,8 @@ public class SimpleThemeDescription {
         }
         return l;
     }
+
+    public static void add(ArrayList<ThemeDescription> descriptions, Runnable upd, String... keys) {
+        descriptions.addAll(SimpleThemeDescription.createThemeDescriptions(upd::run, keys));
+    }
 }

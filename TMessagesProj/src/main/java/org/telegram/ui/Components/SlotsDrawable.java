@@ -196,7 +196,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 AndroidUtilities.runOnUIThread(() -> {
                     loadingInBackground = false;
                     if (!secondLoadingInBackground && destroyAfterLoading) {
-                        recycle();
+                        recycle(true);
                     }
                 });
                 return;
@@ -240,7 +240,7 @@ public class SlotsDrawable extends RLottieDrawable {
             AndroidUtilities.runOnUIThread(() -> {
                 loadingInBackground = false;
                 if (!secondLoadingInBackground && destroyAfterLoading) {
-                    recycle();
+                    recycle(true);
                     return;
                 }
                 nativePtr = nativePtrs[0];
@@ -268,7 +268,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 AndroidUtilities.runOnUIThread(() -> {
                     secondLoadingInBackground = false;
                     if (!loadingInBackground && destroyAfterLoading) {
-                        recycle();
+                        recycle(true);
                     }
                 });
                 return;
@@ -359,7 +359,7 @@ public class SlotsDrawable extends RLottieDrawable {
                 }
                 secondLoadingInBackground = false;
                 if (!loadingInBackground && destroyAfterLoading) {
-                    recycle();
+                    recycle(true);
                     return;
                 }
                 secondNativePtr = secondNativePtrs[0];
@@ -373,7 +373,7 @@ public class SlotsDrawable extends RLottieDrawable {
     }
 
     @Override
-    public void recycle() {
+    public void recycle(boolean uiThread) {
         isRunning = false;
         isRecycled = true;
         checkRunningTasks();

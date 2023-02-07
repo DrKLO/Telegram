@@ -111,4 +111,26 @@ public class UserObject {
     public static boolean hasFallbackPhoto(TLRPC.UserFull userInfo) {
         return userInfo != null && userInfo.fallback_photo != null && !(userInfo.fallback_photo instanceof TLRPC.TL_photoEmpty);
     }
+
+    public static Long getEmojiStatusDocumentId(TLRPC.User user) {
+        if (user == null) {
+            return null;
+        }
+        return getEmojiStatusDocumentId(user.emoji_status);
+    }
+
+    public static Long getEmojiStatusDocumentId(TLRPC.EmojiStatus emojiStatus) {
+        if (emojiStatus == null) {
+            return null;
+        }
+        if (emojiStatus instanceof TLRPC.TL_emojiStatus)
+            return ((TLRPC.TL_emojiStatus) emojiStatus).document_id;
+        if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil) {
+            TLRPC.TL_emojiStatusUntil untilStatus = (TLRPC.TL_emojiStatusUntil) emojiStatus;
+            if (untilStatus.until > (int) (System.currentTimeMillis() / 1000)) {
+                return untilStatus.document_id;
+            }
+        }
+        return null;
+    }
 }

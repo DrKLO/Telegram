@@ -427,7 +427,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             if (messageView.animatedEmojiStack != null) {
                 messageView.animatedEmojiStack.clearPositions();
             }
-            messageView.drawMessageText(bitmapCanvas, messageView.getMessageObject().textLayoutBlocks, true, 1f, true);
+            messageView.drawMessageText(bitmapCanvas, messageView.getMessageObject().textLayoutBlocks, messageView.getMessageObject().textXOffset, true, 1f, true);
             messageView.drawAnimatedEmojis(bitmapCanvas, 1f);
         }
         float listViewBottom = listView.getY() - container.getY() + listView.getMeasuredHeight();

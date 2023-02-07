@@ -789,12 +789,12 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         cancelButton = new PaintCancelView(context);
         cancelButton.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-        cancelButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+        cancelButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         bottomLayout.addView(cancelButton, LayoutHelper.createFrame(32, 32, Gravity.BOTTOM | Gravity.LEFT, 12, 0, 0, 4));
 
         doneButton = new PaintDoneView(context);
         doneButton.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-        doneButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+        doneButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         doneButton.setOnClickListener(v -> {
             if (isColorListShown) {
                 new ColorPickerBottomSheet(context, this.resourcesProvider).setColor(colorSwatch.color).setPipetteDelegate(new ColorPickerBottomSheet.PipetteDelegate() {
@@ -1170,6 +1170,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         drawTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         drawTab.setGravity(Gravity.CENTER_HORIZONTAL);
         drawTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        drawTab.setSingleLine();
         drawTab.setOnClickListener(v -> {
             if (editingText) {
                 selectEntity(null);
@@ -1189,6 +1190,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         stickerTab.setGravity(Gravity.CENTER_HORIZONTAL);
         stickerTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         stickerTab.setAlpha(0.6f);
+        stickerTab.setSingleLine();
         tabsLayout.addView(stickerTab, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
         textTab = new TextView(context);
@@ -1200,6 +1202,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         textTab.setGravity(Gravity.CENTER_HORIZONTAL);
         textTab.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         textTab.setAlpha(0.6f);
+        textTab.setSingleLine();
         textTab.setOnClickListener(v -> {
             switchTab(2);
             if (!(currentEntityView instanceof TextPaintView)) {

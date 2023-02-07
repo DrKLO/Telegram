@@ -37,6 +37,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
@@ -68,6 +69,10 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             ID_REMOVE_PHOTO = 3,
             ID_RECORD_VIDEO = 4;
 
+    public final static int FOR_TYPE_USER = 0;
+    public final static int FOR_TYPE_CHANNEL = 1;
+    public final static int FOR_TYPE_GROUP = 2;
+
     public BaseFragment parentFragment;
     private ImageUpdaterDelegate delegate;
     private ChatAttachAlert chatAttachAlert;
@@ -87,19 +92,23 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     private boolean clearAfterUpdate;
     private boolean useAttachMenu = true;
     private boolean openWithFrontfaceCamera;
+    private boolean supportEmojiMarkup;
 
     private boolean searchAvailable = true;
     private boolean uploadAfterSelect = true;
     private TLRPC.User user;
+    private boolean isUser;
 
     private TLRPC.InputFile uploadedPhoto;
     private TLRPC.InputFile uploadedVideo;
+    private TLRPC.VideoSize vectorMarkup;
     private double videoTimestamp;
 
     private boolean canSelectVideo;
     private boolean forceDarkTheme;
     private boolean showingFromDialog;
     private boolean canceled;
+    private boolean forUser;
 
     private final static int attach_photo = 0;
 
@@ -108,6 +117,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     public final static int TYPE_SUGGEST_PHOTO_FOR_USER = 2;
 
     private int type;
+    public final int setForType;
 
     public void processEntry(MediaController.PhotoEntry photoEntry) {
         String path = null;
@@ -128,6 +138,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             avatarObject = new MessageObject(UserConfig.selectedAccount, message, false, false);
             avatarObject.messageOwner.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), SharedConfig.getLastLocalId() + "_avatar.mp4").getAbsolutePath();
             avatarObject.videoEditedInfo = photoEntry.editedInfo;
+            avatarObject.emojiMarkup = photoEntry.emojiMarkup;
             bitmap = ImageLoader.loadBitmap(photoEntry.thumbPath, null, 800, 800, true);
         } else {
             bitmap = ImageLoader.loadBitmap(path, null, 800, 800, true);
@@ -153,7 +164,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     }
 
     public interface ImageUpdaterDelegate {
-        void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo);
+        void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup);
 
         default String getInitialSearchString() {
             return null;
@@ -198,9 +209,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         openWithFrontfaceCamera = value;
     }
 
-    public ImageUpdater(boolean allowVideo) {
+    public ImageUpdater(boolean allowVideo, int setForType, boolean supportEmojiMarkup) {
         imageReceiver = new ImageReceiver(null);
         canSelectVideo = allowVideo;
+        this.supportEmojiMarkup = supportEmojiMarkup;
+        this.setForType = setForType;
     }
 
     public void setCanSelectVideo(boolean canSelectVideo) {
@@ -417,6 +430,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         if (type != 0) {
             chatAttachAlert.avatarFor(new AvatarFor(user, type));
         }
+        chatAttachAlert.forUser = forUser;
         parentFragment.showDialog(chatAttachAlert);
     }
 
@@ -457,6 +471,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                                 info.entities = photoEntry.entities;
                                 info.masks = photoEntry.stickers;
                                 info.ttl = photoEntry.ttl;
+                                info.emojiMarkup = photoEntry.emojiMarkup;
                             } else if (object instanceof MediaController.SearchImage) {
                                 MediaController.SearchImage searchImage = (MediaController.SearchImage) object;
                                 if (searchImage.imagePath != null) {
@@ -526,6 +541,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     openSearch();
                 }
             });
+            chatAttachAlert.setImageUpdater(this);
         }
         if (type == TYPE_SET_PHOTO_FOR_USER) {
             chatAttachAlert.getSelectedTextView().setText(LocaleController.formatString("SetPhotoFor", R.string.SetPhotoFor, user.first_name));
@@ -549,6 +565,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 avatarObject = new MessageObject(UserConfig.selectedAccount, message, false, false);
                 avatarObject.messageOwner.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), SharedConfig.getLastLocalId() + "_avatar.mp4").getAbsolutePath();
                 avatarObject.videoEditedInfo = info.videoEditedInfo;
+                avatarObject.emojiMarkup = info.emojiMarkup;
                 bitmap = ImageLoader.loadBitmap(info.thumbPath, null, 800, 800, true);
             } else if (info.path != null) {
                 bitmap = ImageLoader.loadBitmap(info.path, null, 800, 800, true);
@@ -795,6 +812,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         uploadedPhoto = null;
         convertingVideo = null;
         videoPath = null;
+        vectorMarkup = avatarObject == null ? null : avatarObject.emojiMarkup;
         bigPhoto = ImageLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false, 320, 320);
         smallPhoto = ImageLoader.scaleAndSaveImage(bitmap, 150, 150, 80, false, 150, 150);
         if (smallPhoto != null) {
@@ -812,6 +830,18 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             uploadingImage = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + bigPhoto.location.volume_id + "_" + bigPhoto.location.local_id + ".jpg";
             if (uploadAfterSelect) {
                 if (avatarObject != null && avatarObject.videoEditedInfo != null) {
+                    if (supportEmojiMarkup && !MessagesController.getInstance(currentAccount).uploadMarkupVideo) {
+                        if (delegate != null) {
+                            delegate.didStartUpload(true);
+                        }
+                        if (delegate != null) {
+                            //skip upload step
+                            delegate.didUploadPhoto(null, null, 0, null, bigPhoto, smallPhoto, isVideo, null);
+                            delegate.didUploadPhoto(null, null, videoTimestamp, videoPath, bigPhoto, smallPhoto, isVideo, vectorMarkup);
+                            cleanup();
+                        }
+                        return;
+                    }
                     convertingVideo = avatarObject;
                     long startTime = avatarObject.videoEditedInfo.startTime < 0 ? 0 : avatarObject.videoEditedInfo.startTime;
                     videoTimestamp = (avatarObject.videoEditedInfo.avatarStartTime - startTime) / 1000000.0;
@@ -839,7 +869,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 }
             }
             if (delegate != null) {
-                delegate.didUploadPhoto(null, null, 0, null, bigPhoto, smallPhoto, isVideo);
+                delegate.didUploadPhoto(null, null, 0, null, bigPhoto, smallPhoto, isVideo, null);
             }
         }
     }
@@ -887,7 +917,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileUploadFailed);
                 if (id == NotificationCenter.fileUploaded) {
                     if (delegate != null) {
-                        delegate.didUploadPhoto(uploadedPhoto, uploadedVideo, videoTimestamp, videoPath, bigPhoto, smallPhoto, isVideo);
+                        delegate.didUploadPhoto(uploadedPhoto, uploadedVideo, videoTimestamp, videoPath, bigPhoto, smallPhoto, isVideo, vectorMarkup);
                     }
                 }
                 cleanup();

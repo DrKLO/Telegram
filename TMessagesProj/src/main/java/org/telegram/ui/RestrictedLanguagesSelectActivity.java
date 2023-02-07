@@ -8,56 +8,60 @@
 
 package org.telegram.ui;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TranslateController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.LanguageCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.LanguageCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckbox2Cell;
-import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.TextRadioCell;
-import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.TranslateAlert2;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class RestrictedLanguagesSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -72,52 +76,22 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
     private Timer searchTimer;
     private ArrayList<LocaleController.LocaleInfo> searchResult;
     private ArrayList<LocaleController.LocaleInfo> sortedLanguages;
-//    private ArrayList<LocaleController.LocaleInfo> unofficialLanguages;
 
     private SharedPreferences preferences;
-    private SharedPreferences.OnSharedPreferenceChangeListener listener;
-    private HashSet<String> selectedLanguages = null;
+    private HashSet<String> firstSelectedLanguages;
+    private HashSet<String> selectedLanguages;
 
     public static HashSet<String> getRestrictedLanguages() {
-//        String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
-//        String[] onlyCurrentLang = new String[] { currentLangCode };
-        return new HashSet<>(MessagesController.getGlobalMainSettings().getStringSet("translate_button_restricted_languages", new HashSet<String>(/*Arrays.asList(onlyCurrentLang)*/)));
+        String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+        String[] onlyCurrentLang = new String[] { currentLangCode };
+        return new HashSet<>(MessagesController.getGlobalMainSettings().getStringSet("translate_button_restricted_languages", new HashSet<String>(Arrays.asList(onlyCurrentLang))));
     }
 
     @Override
     public boolean onFragmentCreate() {
         preferences = MessagesController.getGlobalMainSettings();
+        firstSelectedLanguages = getRestrictedLanguages();
         selectedLanguages = getRestrictedLanguages();
-        preferences.registerOnSharedPreferenceChangeListener(listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-            public int langPos(String lng) {
-                if (lng == null)
-                    return -1;
-                ArrayList<LocaleController.LocaleInfo> arr = (searching ? searchResult : sortedLanguages);
-                if (arr == null)
-                    return -1;
-                for (int i = 0; i < arr.size(); ++i)
-                    if (lng.equals(arr.get(i).pluralLangCode))
-                        return i;
-                return -1;
-            }
-
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-                preferences = sharedPreferences;
-                HashSet<String> newSelectedLanguages = getRestrictedLanguages();
-                if (listView != null && listView.getAdapter() != null) {
-                    RecyclerView.Adapter adapter = listView.getAdapter();
-                    int offset = !searching ? 1 : 0;
-                    for (String lng : selectedLanguages)
-                        if (!newSelectedLanguages.contains(lng))
-                            adapter.notifyItemChanged(langPos(lng) + offset);
-                    for (String lng : newSelectedLanguages)
-                        if (!selectedLanguages.contains(lng))
-                            adapter.notifyItemChanged(langPos(lng) + offset);
-                }
-                selectedLanguages = newSelectedLanguages;
-            }
-        });
 
         fillLanguages();
         LocaleController.getInstance().loadRemoteLanguages(currentAccount);
@@ -125,11 +99,53 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         return super.onFragmentCreate();
     }
 
+    private void rebind(int position) {
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            View child = listView.getChildAt(i);
+            RecyclerView.ViewHolder holder = listView.getChildViewHolder(child);
+            if (holder == null) {
+                continue;
+            }
+            int childPosition = holder.getAdapterPosition();
+            if (childPosition == RecyclerView.NO_POSITION) {
+                continue;
+            }
+            if (childPosition == position) {
+                listAdapter.onBindViewHolder(holder, position);
+                return;
+            }
+        }
+    }
+
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        preferences.unregisterOnSharedPreferenceChangeListener(listener);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+    }
+
+    public static boolean toggleLanguage(String language, boolean doNotTranslate) {
+        if (language == null) {
+            return false;
+        }
+        LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        HashSet<String> selectedLanguages = getRestrictedLanguages();
+        if (language != null && language.equals(currentLocaleInfo.pluralLangCode) && doNotTranslate) {
+//            AndroidUtilities.shakeViewSpring(view);
+//            BotWebViewVibrationEffect.APP_ERROR.vibrate();
+            return false;
+        }
+        if (!doNotTranslate) {
+            selectedLanguages.remove(language);
+        } else {
+            selectedLanguages.add(language);
+        }
+        if (selectedLanguages.size() == 1 && selectedLanguages.contains(currentLocaleInfo.pluralLangCode)) {
+            MessagesController.getGlobalMainSettings().edit().remove("translate_button_restricted_languages").commit();
+        } else {
+            MessagesController.getGlobalMainSettings().edit().putStringSet("translate_button_restricted_languages", selectedLanguages).commit();
+        }
+        TranslateController.invalidateSuggestedLanguageCodes();
+        return true;
     }
 
     @Override
@@ -214,6 +230,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 return;
             }
             boolean search = listView.getAdapter() == searchListViewAdapter;
+            final int realPosition = position;
             if (!search)
                 position--;
             LocaleController.LocaleInfo localeInfo;
@@ -225,20 +242,24 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
             if (localeInfo != null) {
                 LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
                 String langCode = localeInfo.pluralLangCode;
-                if (langCode != null && langCode.equals(currentLocaleInfo.pluralLangCode)) {
-                    AndroidUtilities.shakeView(((TextCheckbox2Cell) view).checkbox);
+                boolean value = selectedLanguages.contains(langCode);
+                if (langCode != null && langCode.equals(currentLocaleInfo.pluralLangCode) && value) {
+                    AndroidUtilities.shakeViewSpring(view);
+                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
                     return;
                 }
-                boolean value = selectedLanguages.contains(langCode);
-                HashSet<String> newSelectedLanguages = new HashSet<String>(selectedLanguages);
                 if (value)
-                    newSelectedLanguages.removeIf(s -> s != null && s.equals(langCode));
+                    selectedLanguages.removeIf(s -> s != null && s.equals(langCode));
                 else
-                    newSelectedLanguages.add(langCode);
-                if (newSelectedLanguages.size() == 1 && newSelectedLanguages.contains(currentLocaleInfo.pluralLangCode))
-                    preferences.edit().remove("translate_button_restricted_languages").apply();
-                else
-                    preferences.edit().putStringSet("translate_button_restricted_languages", newSelectedLanguages).apply();
+                    selectedLanguages.add(langCode);
+                if (selectedLanguages.size() == 1 && selectedLanguages.contains(currentLocaleInfo.pluralLangCode)) {
+                    preferences.edit().remove("translate_button_restricted_languages").remove("translate_button_restricted_languages_changed").apply();
+                } else {
+                    preferences.edit().putStringSet("translate_button_restricted_languages", selectedLanguages).putBoolean("translate_button_restricted_languages_changed", true).apply();
+                }
+                rebind(realPosition);
+
+                MessagesController.getInstance(currentAccount).getTranslateController().checkRestrictedLanguagesUpdate();
             }
         });
 
@@ -331,11 +352,17 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         ArrayList<LocaleController.LocaleInfo> arrayList = LocaleController.getInstance().languages;
         for (int a = 0, size = arrayList.size(); a < size; a++) {
             LocaleController.LocaleInfo info = arrayList.get(a);
-            if (info != null && info.serverIndex != Integer.MAX_VALUE/* && (info.pluralLangCode == null || !info.pluralLangCode.equals(currentLocale.pluralLangCode))*/) {
+            if (info != null && info.serverIndex != Integer.MAX_VALUE && !"en_raw".equals(info.shortName) && (info == currentLocale || !firstSelectedLanguages.contains(info.pluralLangCode))) {
                 sortedLanguages.add(info);
             }
         }
         Collections.sort(sortedLanguages, comparator);
+        for (int a = 0, size = arrayList.size(); a < size; a++) {
+            LocaleController.LocaleInfo info = arrayList.get(a);
+            if (info != null && info.serverIndex != Integer.MAX_VALUE && !"en_raw".equals(info.shortName) && !(info == currentLocale || !firstSelectedLanguages.contains(info.pluralLangCode))) {
+                sortedLanguages.add(1, info);
+            }
+        }
     }
 
     @Override
@@ -467,22 +494,20 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 case 0: {
                     if (!search)
                         position--;
-//                    LanguageCell textSettingsCell = (LanguageCell) holder.itemView;
                     TextCheckbox2Cell textSettingsCell = (TextCheckbox2Cell) holder.itemView;
-                    LocaleController.LocaleInfo localeInfo;
-                    boolean last;
+                    LocaleController.LocaleInfo localeInfo = null;
+                    boolean last = false;
                     if (search) {
-                        localeInfo = searchResult.get(position);
+                        if (position >= 0 && position < searchResult.size()) {
+                            localeInfo = searchResult.get(position);
+                        }
                         last = position == searchResult.size() - 1;
-                    } /*else if (!unofficialLanguages.isEmpty() && position >= 0 && position < unofficialLanguages.size()) {
-                        localeInfo = unofficialLanguages.get(position);
-                        last = position == unofficialLanguages.size() - 1;
-                    } */else {
-//                        if (!unofficialLanguages.isEmpty()) {
-//                            position -= unofficialLanguages.size() + 1;
-//                        }
+                    } else if (position >= 0 && position < sortedLanguages.size()) {
                         localeInfo = sortedLanguages.get(position);
                         last = position == sortedLanguages.size() - 1;
+                    }
+                    if (localeInfo == null) {
+                        return;
                     }
                     String langCode = localeInfo.pluralLangCode;
                     boolean value = selectedLanguages.contains(langCode);
@@ -491,9 +516,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                     } else {
                         textSettingsCell.setTextAndValue(localeInfo.name, localeInfo.nameEnglish, false, !last);
                     }
-
-                    boolean isCurrent = langCode != null && langCode.equals(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode);
-                    textSettingsCell.setChecked(value || isCurrent);
+                    textSettingsCell.setChecked(value);
                     break;
                 }
                 case 1: {
@@ -557,5 +580,208 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{LanguageCell.class}, new String[]{"checkImage"}, null, null, null, Theme.key_featuredStickers_addedIcon));
 
         return themeDescriptions;
+    }
+
+    public static void cleanup() {
+        MessagesController.getGlobalMainSettings().edit()
+            .remove("translate_button_restricted_languages_changed")
+            .remove("translate_button_restricted_languages_version")
+            .remove("translate_button_restricted_languages")
+            .apply();
+        checkRestrictedLanguages(false);
+    }
+
+    public static final int LAST_DO_NOT_TRANSLATE_VERSION = 2;
+    public static void checkRestrictedLanguages(boolean accountsChanged) {
+        boolean manualChanged = MessagesController.getGlobalMainSettings().getBoolean("translate_button_restricted_languages_changed", false);
+        int version = MessagesController.getGlobalMainSettings().getInt("translate_button_restricted_languages_version", 0);
+
+        if (version != LAST_DO_NOT_TRANSLATE_VERSION || accountsChanged && !manualChanged) {
+            getExtendedDoNotTranslate(languages -> {
+                final String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+
+                languages.addAll(getRestrictedLanguages());
+                SharedPreferences.Editor edit = MessagesController.getGlobalMainSettings().edit();
+                if (languages.size() == 1 && TextUtils.equals(languages.iterator().next(), currentLangCode)) {
+                    edit.remove("translate_button_restricted_languages");
+                } else {
+                    edit.putStringSet("translate_button_restricted_languages", languages);
+                }
+                edit.putInt("translate_button_restricted_languages_version", LAST_DO_NOT_TRANSLATE_VERSION).apply();
+
+                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+                    final int account = i;
+                    try {
+                        MessagesController.getInstance(account).getTranslateController().checkRestrictedLanguagesUpdate();
+                    } catch (Exception ignore) {}
+                }
+            });
+        }
+    }
+
+    public static void getExtendedDoNotTranslate(Utilities.Callback<HashSet<String>> onDone) {
+        if (onDone == null) {
+            return;
+        }
+
+        final HashSet<String> result = new HashSet<>();
+
+        final HashMap<String, String> countries = new HashMap<>();
+//        final HashMap<String, String[]> languages = new HashMap<>();
+        final HashMap<String, String> uniquePhoneCodes = new HashMap<>();
+
+//        final Utilities.Callback<String> pushCountry = countryCode -> {
+//            if (countryCode == null) {
+//                return;
+//            }
+//            String[] countryLanguages = languages.get(countryCode.toUpperCase());
+//            if (countryLanguages == null) {
+//                return;
+//            }
+//            for (int j = 1; j < Math.min(2, countryLanguages.length); ++j) {
+//                String language = countryLanguages[j];
+//                if (language.contains("-")) {
+//                    language = language.split("-")[0];
+//                }
+//                if (TranslateAlert2.languageName(language) != null) {
+//                    result.add(language);
+//                }
+//            }
+//        };
+
+        Utilities.doCallbacks(
+            next -> {
+                try {
+                    String language = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+                    if (TranslateAlert2.languageName(language) != null) {
+                        result.add(language);
+                    }
+                } catch (Exception e0) {
+                    FileLog.e(e0);
+                }
+                next.run();
+            },
+            next -> {
+                try {
+                    String language = Resources.getSystem().getConfiguration().locale.getLanguage();
+                    if (TranslateAlert2.languageName(language) != null) {
+                        result.add(language);
+                    }
+                } catch (Exception e1) {
+                    FileLog.e(e1);
+                }
+                next.run();
+            },
+            next -> {
+                try {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt")));
+                    ArrayList<String> multipleCodes = new ArrayList<>();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        String[] args = line.split(";");
+                        if (args.length >= 3) {
+                            countries.put(args[2], args[1]);
+                            if (uniquePhoneCodes.containsKey(args[0]) && !"7".equals(args[0])) {
+                                multipleCodes.add(args[0]);
+                                uniquePhoneCodes.remove(args[0]);
+                            } else if (!multipleCodes.contains(args[0])) {
+                                uniquePhoneCodes.put(args[0], args[1]);
+                            }
+                        }
+                    }
+                    reader.close();
+
+//                    reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("languages.txt")));
+//                    while ((line = reader.readLine()) != null) {
+//                        String[] args = line.split(",");
+//                        if (args.length >= 2) {
+//                            languages.put(args[0], args);
+//                        }
+//                    }
+//                    reader.close();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                next.run();
+            },
+//            next -> {
+//                ArrayList<Utilities.Callback<Runnable>> getAuthorizationsCallbacks = new ArrayList<>();
+//                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+//                    final int account = i;
+//                    if (UserConfig.getInstance(account).getClientUserId() != 0 && !ConnectionsManager.getInstance(account).isTestBackend()) {
+//                        getAuthorizationsCallbacks.add(nextInternal -> {
+//                            try {
+//                                ConnectionsManager.getInstance(account).sendRequest(new TLRPC.TL_account_getAuthorizations(), (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+//                                    if (error == null) {
+//                                        TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
+//                                        if (!res.authorizations.isEmpty()) {
+//                                            TLRPC.TL_authorization auth = res.authorizations.get(0);
+//                                            String[] separated = auth.country.split(", ");
+//                                            if (separated.length > 0) {
+//                                                pushCountry.run(countries.get(separated[separated.length - 1]));
+//                                            }
+//                                        }
+//                                    }
+//                                    nextInternal.run();
+//                                }));
+//                            } catch (Exception e2) {
+//                                FileLog.e(e2);
+//                                nextInternal.run();
+//                            }
+//                        });
+//                    }
+//                }
+//                getAuthorizationsCallbacks.add(n -> next.run());
+//                Utilities.doCallbacks(getAuthorizationsCallbacks.toArray(new Utilities.Callback[0]));
+//            },
+//            next -> {
+//                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+//                    final int account = i;
+//                    try {
+//                        TLRPC.User user = UserConfig.getInstance(account).getCurrentUser();
+//                        if (user != null && user.phone != null) {
+//                            for (int j = 4; j > 0; j--) {
+//                                String code = user.phone.substring(0, j);
+//                                String countryCode = uniquePhoneCodes.get(code);
+//                                if (countryCode != null) {
+//                                    pushCountry.run(countryCode);
+//                                    break;
+//                                }
+//                            }
+//                        }
+//                    } catch (Exception e3) {
+//                        FileLog.e(e3);
+//                    }
+//                }
+//                next.run();
+//            },
+            next -> {
+                try {
+                    InputMethodManager imm = (InputMethodManager) ApplicationLoader.applicationContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    List<InputMethodInfo> ims = imm.getEnabledInputMethodList();
+
+                    for (InputMethodInfo method : ims) {
+                        List<InputMethodSubtype> submethods = imm.getEnabledInputMethodSubtypeList(method, true);
+                        for (InputMethodSubtype submethod : submethods) {
+                            if ("keyboard".equals(submethod.getMode())) {
+                                String currentLocale = submethod.getLocale();
+                                if (currentLocale != null && currentLocale.contains("_")) {
+                                    currentLocale = currentLocale.split("_")[0];
+                                }
+
+                                if (TranslateAlert2.languageName(currentLocale) != null) {
+                                    result.add(currentLocale);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e4) {
+                    FileLog.e(e4);
+                }
+
+                next.run();
+            },
+            next -> onDone.run(result)
+        );
     }
 }

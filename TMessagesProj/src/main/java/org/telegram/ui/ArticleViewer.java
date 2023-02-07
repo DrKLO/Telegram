@@ -167,7 +167,7 @@ import org.telegram.ui.Components.TextPaintMarkSpan;
 import org.telegram.ui.Components.TextPaintSpan;
 import org.telegram.ui.Components.TextPaintUrlSpan;
 import org.telegram.ui.Components.TextPaintWebpageUrlSpan;
-import org.telegram.ui.Components.TranslateAlert;
+import org.telegram.ui.Components.TranslateAlert2;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.WebPlayerView;
 
@@ -1211,7 +1211,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
-        builder.setTitle(urlFinal);
+        String formattedUrl = urlFinal;
+        try {
+            formattedUrl = URLDecoder.decode(urlFinal.replaceAll("\\+", "%2b"), "UTF-8");
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        builder.setTitle(formattedUrl);
+        builder.setTitleMultipleLines(true);
         builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
             if (parentActivity == null) {
                 return;
@@ -2648,22 +2655,24 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                                             pressedEnd = end;
                                         }
                                     }
-                                    if (pressedLink != null) {
-                                        links.removeLink(pressedLink);
-                                    }
-                                    pressedLink = new LinkSpanDrawable<TextPaintUrlSpan>(selectedLink, null, x, y);
-                                    pressedLink.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
-                                    links.addLink(pressedLink, pressedLinkOwnerLayout);
-                                    try {
-                                        LinkPath path = pressedLink.obtainNewPath();
-                                        path.setCurrentLayout(layout, pressedStart, 0);
-                                        TextPaint textPaint = selectedLink.getTextPaint();
-                                        int shift = textPaint != null ? textPaint.baselineShift : 0;
-                                        path.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
-                                        layout.getSelectionPath(pressedStart, pressedEnd, path);
-                                        parentView.invalidate();
-                                    } catch (Exception e) {
-                                        FileLog.e(e);
+                                    if (pressedLink == null || pressedLink.getSpan() != selectedLink) {
+                                        if (pressedLink != null) {
+                                            links.removeLink(pressedLink);
+                                        }
+                                        pressedLink = new LinkSpanDrawable(selectedLink, null, x, y);
+                                        pressedLink.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+                                        links.addLink(pressedLink, pressedLinkOwnerLayout);
+                                        try {
+                                            LinkPath path = pressedLink.obtainNewPath();
+                                            path.setCurrentLayout(layout, pressedStart, 0);
+                                            TextPaint textPaint = selectedLink.getTextPaint();
+                                            int shift = textPaint != null ? textPaint.baselineShift : 0;
+                                            path.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
+                                            layout.getSelectionPath(pressedStart, pressedEnd, path);
+                                            parentView.invalidate();
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
                                     }
                                 }
                             }
@@ -3671,10 +3680,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         boolean isLightNavigation = navigationBrightness >= 0.721f;
         if (isLightNavigation && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             uiFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-            navigationBarPaint.setColor(navigationColor);
-        } else if (!isLightNavigation) {
-            navigationBarPaint.setColor(navigationColor);
         }
+        navigationBarPaint.setColor(navigationColor);
         windowLayoutParams.systemUiVisibility = uiFlags;
 
         if (Build.VERSION.SDK_INT >= 21) {
@@ -3688,9 +3695,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         textSelectionHelper = new TextSelectionHelper.ArticleTextSelectionHelper();
         textSelectionHelper.setParentView(listView[0]);
-        if (MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
+        if (MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled()) {
             textSelectionHelper.setOnTranslate((text, fromLang, toLang, onAlertDismiss) -> {
-                TranslateAlert.showAlert(parentActivity, parentFragment, currentAccount, fromLang, toLang, text, false, null, onAlertDismiss);
+                TranslateAlert2.showAlert(parentActivity, parentFragment, currentAccount, fromLang, toLang, text, null, false, null, onAlertDismiss);
             });
         }
         textSelectionHelper.layoutManager = layoutManager[0];

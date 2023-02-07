@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -126,6 +127,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private boolean needCloseConfirmation;
 
     private VerticalPositionAutoAnimator mainButtonAutoAnimator, radialProgressAutoAnimator;
+
+    private PasscodeView passcodeView;
 
     private Runnable pollRunnable = () -> {
         if (!dismissed) {
@@ -357,19 +360,21 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
 
-                if (!overrideBackgroundColor) {
-                    backgroundPaint.setColor(getColor(Theme.key_windowBackgroundWhite));
+                if (passcodeView.getVisibility() != View.VISIBLE) {
+                    if (!overrideBackgroundColor) {
+                        backgroundPaint.setColor(getColor(Theme.key_windowBackgroundWhite));
+                    }
+                    AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
+                    canvas.drawRect(AndroidUtilities.rectTmp, dimPaint);
+
+                    actionBarPaint.setColor(ColorUtils.blendARGB(actionBarColor, getColor(Theme.key_windowBackgroundWhite), actionBarTransitionProgress));
+                    float radius = AndroidUtilities.dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
+                    AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), AndroidUtilities.lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24) + radius);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, actionBarPaint);
+
+                    AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24), swipeContainer.getRight(), getHeight());
+                    canvas.drawRect(AndroidUtilities.rectTmp, backgroundPaint);
                 }
-                AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
-                canvas.drawRect(AndroidUtilities.rectTmp, dimPaint);
-
-                actionBarPaint.setColor(ColorUtils.blendARGB(actionBarColor, getColor(Theme.key_windowBackgroundWhite), actionBarTransitionProgress));
-                float radius = AndroidUtilities.dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
-                AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), AndroidUtilities.lerp(swipeContainer.getTranslationY(), 0, actionBarTransitionProgress), swipeContainer.getRight(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24) + radius);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, actionBarPaint);
-
-                AndroidUtilities.rectTmp.set(swipeContainer.getLeft(), swipeContainer.getTranslationY() + AndroidUtilities.dp(24), swipeContainer.getRight(), getHeight());
-                canvas.drawRect(AndroidUtilities.rectTmp, backgroundPaint);
             }
 
             @Override
@@ -536,7 +541,36 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         swipeContainer.setTopActionBarOffsetY(ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - AndroidUtilities.dp(24));
         swipeContainer.setIsKeyboardVisible(obj -> frameLayout.getKeyboardHeight() >= AndroidUtilities.dp(20));
 
+        passcodeView = new PasscodeView(context);
+        frameLayout.addView(passcodeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         setContentView(frameLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Context context = getContext();
+        if (context instanceof ContextWrapper && !(context instanceof LaunchActivity)) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        if (context instanceof LaunchActivity) {
+            ((LaunchActivity) context).addOverlayPasscodeView(passcodeView);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        Context context = getContext();
+        if (context instanceof ContextWrapper && !(context instanceof LaunchActivity)) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        if (context instanceof LaunchActivity) {
+            ((LaunchActivity) context).removeOverlayPasscodeView(passcodeView);
+        }
     }
 
     public void setParentActivity(Activity parentActivity) {
@@ -828,6 +862,12 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
 
     @Override
     public void onBackPressed() {
+        if (passcodeView.getVisibility() == View.VISIBLE) {
+            if (getOwnerActivity() != null) {
+                getOwnerActivity().finish();
+            }
+            return;
+        }
         if (webViewContainer.onBackPressed()) {
             return;
         }

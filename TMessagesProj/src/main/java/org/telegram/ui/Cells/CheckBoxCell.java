@@ -257,11 +257,14 @@ public class CheckBoxCell extends FrameLayout {
     }
 
     public void setText(CharSequence text, String value, boolean checked, boolean divider) {
+        setText(text, value, checked, divider, false);
+    }
+    public void setText(CharSequence text, String value, boolean checked, boolean divider, boolean animated) {
         textView.setText(text);
         if (checkBoxRound != null) {
-            checkBoxRound.setChecked(checked, false);
+            checkBoxRound.setChecked(checked, animated);
         } else {
-            checkBoxSquare.setChecked(checked, false);
+            checkBoxSquare.setChecked(checked, animated);
         }
         valueTextView.setText(value);
         needDivider = divider;
@@ -359,6 +362,10 @@ public class CheckBoxCell extends FrameLayout {
         }
     }
 
+    public CheckBox2 getCheckBoxRound() {
+        return checkBoxRound;
+    }
+
     public void setSquareCheckBoxColor(String uncheckedColor, String checkedColor, String checkColor) {
         if (checkBoxSquare != null) {
             checkBoxSquare.setColors(uncheckedColor, checkedColor, checkColor);
@@ -384,5 +391,13 @@ public class CheckBoxCell extends FrameLayout {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    public void setIcon(int icon) {
+        checkBoxRound.setIcon(icon);
+    }
+
+    public boolean hasIcon() {
+        return checkBoxRound.hasIcon();
     }
 }

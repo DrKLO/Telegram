@@ -54,7 +54,7 @@ public class LimitPreviewView extends LinearLayout {
     TextView defaultCount;
     private float position;
     private View parentVideForGradient;
-    PremiumGradient.GradientTools staticGradient;
+    PremiumGradient.PremiumGradientTools staticGradient;
     int gradientYOffset;
     boolean wasHaptic;
     boolean animationCanPlay = true;
@@ -283,7 +283,7 @@ public class LimitPreviewView extends LinearLayout {
         parentVideForGradient = containerView;
     }
 
-    public void setStaticGradinet(PremiumGradient.GradientTools gradientTools) {
+    public void setStaticGradinet(PremiumGradient.PremiumGradientTools gradientTools) {
         staticGradient = gradientTools;
     }
 

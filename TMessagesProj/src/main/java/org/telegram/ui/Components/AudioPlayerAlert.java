@@ -1391,11 +1391,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
-            args.putInt("dialogsType", 3);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
             DialogsActivity fragment = new DialogsActivity(args);
             final ArrayList<MessageObject> fmessages = new ArrayList<>();
             fmessages.add(messageObject);
-            fragment.setDelegate((fragment1, dids, message, param) -> {
+            fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
                 if (dids.size() > 1 || dids.get(0) .dialogId== UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a).dialogId;
@@ -1424,6 +1424,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         fragment1.finishFragment();
                     }
                 }
+                return true;
             });
             parentActivity.presentFragment(fragment);
             dismiss();

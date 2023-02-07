@@ -705,10 +705,12 @@ public:
 class TL_auth_authorization : public auth_Authorization {
     
 public:
-    static const uint32_t constructor = 0x33fb7bb8;
+    static const uint32_t constructor = 0x2ea2c0d4;
 
     int32_t flags;
     int32_t tmp_sessions;
+    int32_t otherwise_relogin_days;
+    std::unique_ptr<ByteArray> future_auth_token;
     std::unique_ptr<User> user;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);

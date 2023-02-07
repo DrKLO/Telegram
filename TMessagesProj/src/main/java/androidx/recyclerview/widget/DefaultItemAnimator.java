@@ -338,11 +338,23 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     }
 
+    protected void onChangeAnimationUpdate(RecyclerView.ViewHolder holder) {
+
+    }
+
     protected void beforeAnimateMoveImpl(final RecyclerView.ViewHolder holder) {
 
     }
 
     protected void afterAnimateMoveImpl(final RecyclerView.ViewHolder holder) {
+
+    }
+
+    protected void beforeAnimateChangeImpl(final RecyclerView.ViewHolder oldHolder, final RecyclerView.ViewHolder newHolder) {
+
+    }
+
+    protected void afterAnimateChangeImpl(final RecyclerView.ViewHolder oldHolder, final RecyclerView.ViewHolder newHolder) {
 
     }
 
@@ -445,6 +457,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         final View view = holder == null ? null : holder.itemView;
         final RecyclerView.ViewHolder newHolder = changeInfo.newHolder;
         final View newView = newHolder != null ? newHolder.itemView : null;
+        beforeAnimateChangeImpl(changeInfo.oldHolder, changeInfo.newHolder);
         if (view != null) {
             final ViewPropertyAnimator oldViewAnim = view.animate().setDuration(getChangeRemoveDuration()).setStartDelay(getChangeDelay());
             mChangeAnimations.add(changeInfo.oldHolder);
@@ -456,6 +469,9 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 oldViewAnim
                     .scaleX(1f - animateByScale(view))
                     .scaleY(1f - animateByScale(view));
+            }
+            if (Build.VERSION.SDK_INT >= 19) {
+                oldViewAnim.setUpdateListener(animation1 -> onChangeAnimationUpdate(changeInfo.oldHolder));
             }
             oldViewAnim
                 .setInterpolator(getChangeInterpolator())
@@ -493,6 +509,9 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             if (animateByScale(newView) > 0) {
                 newViewAnimation.scaleX(1f).scaleY(1f);
             }
+            if (Build.VERSION.SDK_INT >= 19) {
+                newViewAnimation.setUpdateListener(animation1 -> onChangeAnimationUpdate(changeInfo.newHolder));
+            }
             newViewAnimation
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
@@ -512,6 +531,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         dispatchChangeFinished(changeInfo.newHolder, false);
                         mChangeAnimations.remove(changeInfo.newHolder);
                         dispatchFinishedWhenDone();
+
+                        afterAnimateChangeImpl(changeInfo.oldHolder, changeInfo.newHolder);
                     }
                 }).start();
         }

@@ -110,7 +110,7 @@ public class DispatchQueuePoolBackground {
     @UiThread
     public static void execute(Runnable runnable, boolean now) {
         if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
-            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+            if (BuildVars.DEBUG_VERSION) {
                 FileLog.e(new RuntimeException("wrong thread"));
             }
             return;

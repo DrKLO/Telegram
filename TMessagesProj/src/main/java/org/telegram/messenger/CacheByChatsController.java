@@ -125,12 +125,12 @@ public class CacheByChatsController {
         SharedConfig.getPreferences().edit().putInt("keep_media_type_" + type, keepMedia).apply();
     }
 
-    public void lookupFiles(ArrayList<KeepMediaFile> keepMediaFiles) {
+    public void lookupFiles(ArrayList<? extends KeepMediaFile> keepMediaFiles) {
         LongSparseArray<ArrayList<KeepMediaFile>> filesByDialogId = FileLoader.getInstance(currentAccount).getFileDatabase().lookupFiles(keepMediaFiles);
         LongSparseArray<KeepMediaException> exceptionsByType = getKeepMediaExceptionsByDialogs();
         for (int i = 0; i < filesByDialogId.size(); i++) {
             long dialogId = filesByDialogId.keyAt(i);
-            ArrayList<KeepMediaFile> files = filesByDialogId.valueAt(i);
+            ArrayList<? extends KeepMediaFile> files = filesByDialogId.valueAt(i);
             int type;
             if (dialogId >= 0) {
                 type = KEEP_MEDIA_TYPE_USER;

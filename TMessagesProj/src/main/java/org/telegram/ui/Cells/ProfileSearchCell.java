@@ -289,44 +289,42 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             }
             nameLockTop = AndroidUtilities.dp(22.0f);
             updateStatus(false, null, false);
-        } else {
-            if (chat != null) {
-                dialog_id = -chat.id;
-                drawCheck = chat.verified;
-                if (!LocaleController.isRTL) {
-                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                } else {
-                    nameLeft = AndroidUtilities.dp(11);
-                }
-                updateStatus(drawCheck, null, false);
-            } else if (user != null) {
-                dialog_id = user.id;
-                if (!LocaleController.isRTL) {
-                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                } else {
-                    nameLeft = AndroidUtilities.dp(11);
-                }
-                nameLockTop = AndroidUtilities.dp(21);
-                drawCheck = user.verified;
-                drawPremium = !user.self && MessagesController.getInstance(currentAccount).isPremiumUser(user);
-                updateStatus(drawCheck, user, false);
-            } else if (contact != null) {
-                if (!LocaleController.isRTL) {
-                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                } else {
-                    nameLeft = AndroidUtilities.dp(11);
-                }
-                if (actionButton == null) {
-                    actionButton = new CanvasButton(this);
-                    actionButton.setDelegate(() -> {
-                        if (getParent() instanceof RecyclerListView) {
-                            RecyclerListView parent = (RecyclerListView) getParent();
-                            parent.getOnItemClickListener().onItemClick(this, parent.getChildAdapterPosition(this));
-                        } else {
-                            callOnClick();
-                        }
-                    });
-                }
+        } else if (chat != null) {
+            dialog_id = -chat.id;
+            drawCheck = chat.verified;
+            if (!LocaleController.isRTL) {
+                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+            } else {
+                nameLeft = AndroidUtilities.dp(11);
+            }
+            updateStatus(drawCheck, null, false);
+        } else if (user != null) {
+            dialog_id = user.id;
+            if (!LocaleController.isRTL) {
+                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+            } else {
+                nameLeft = AndroidUtilities.dp(11);
+            }
+            nameLockTop = AndroidUtilities.dp(21);
+            drawCheck = user.verified;
+            drawPremium = !savedMessages && MessagesController.getInstance(currentAccount).isPremiumUser(user);
+            updateStatus(drawCheck, user, false);
+        } else if (contact != null) {
+            if (!LocaleController.isRTL) {
+                nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+            } else {
+                nameLeft = AndroidUtilities.dp(11);
+            }
+            if (actionButton == null) {
+                actionButton = new CanvasButton(this);
+                actionButton.setDelegate(() -> {
+                    if (getParent() instanceof RecyclerListView) {
+                        RecyclerListView parent = (RecyclerListView) getParent();
+                        parent.getOnItemClickListener().onItemClick(this, parent.getChildAdapterPosition(this));
+                    } else {
+                        callOnClick();
+                    }
+                });
             }
         }
 
@@ -548,13 +546,13 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         if (verified) {
             statusDrawable.set(new CombinedDrawable(Theme.dialogs_verifiedDrawable, Theme.dialogs_verifiedCheckDrawable, 0, 0), animated);
             statusDrawable.setColor(null);
-        } else if (user != null && !user.self && user.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) user.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
+        } else if (user != null && !savedMessages && user.emoji_status instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) user.emoji_status).until > (int) (System.currentTimeMillis() / 1000)) {
             statusDrawable.set(((TLRPC.TL_emojiStatusUntil) user.emoji_status).document_id, animated);
             statusDrawable.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-        } else if (user != null && !user.self && user.emoji_status instanceof TLRPC.TL_emojiStatus) {
+        } else if (user != null && !savedMessages && user.emoji_status instanceof TLRPC.TL_emojiStatus) {
             statusDrawable.set(((TLRPC.TL_emojiStatus) user.emoji_status).document_id, animated);
             statusDrawable.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
-        } else if (user != null && !user.self && MessagesController.getInstance(currentAccount).isPremiumUser(user)) {
+        } else if (user != null && !savedMessages && MessagesController.getInstance(currentAccount).isPremiumUser(user)) {
             statusDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);
             statusDrawable.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
         } else {

@@ -110,6 +110,7 @@ public class FileUploadOperation {
             return;
         }
         state = 1;
+        SharedConfig.lockFile(uploadingFilePath);
         Utilities.stageQueue.postRunnable(() -> {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
             slowNetwork = ApplicationLoader.isConnectionSlow();
@@ -170,6 +171,7 @@ public class FileUploadOperation {
                 ConnectionsManager.getInstance(currentAccount).cancelRequest(requestTokens.valueAt(a), true);
             }
         });
+        SharedConfig.unlockFile(uploadingFilePath);
         delegate.didFailedUploadingFile(this);
         cleanup();
     }
@@ -193,6 +195,7 @@ public class FileUploadOperation {
         } catch (Exception e) {
             FileLog.e(e);
         }
+        SharedConfig.unlockFile(uploadingFilePath);
     }
 
     protected void checkNewDataAvailable(final long newAvailableSize, final long finalSize) {
@@ -535,7 +538,11 @@ public class FileUploadOperation {
             } else if (currentType == ConnectionsManager.FileTypePhoto) {
                 StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_PHOTOS, requestSize);
             } else if (currentType == ConnectionsManager.FileTypeFile) {
-                StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_FILES, requestSize);
+                if (uploadingFilePath != null && (uploadingFilePath.toLowerCase().endsWith("mp3") || uploadingFilePath.toLowerCase().endsWith("m4a"))) {
+                    StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_MUSIC, requestSize);
+                } else {
+                    StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_FILES, requestSize);
+                }
             }
             if (currentRequestIv != null) {
                 freeRequestIvs.add(currentRequestIv);
@@ -590,7 +597,11 @@ public class FileUploadOperation {
                     } else if (currentType == ConnectionsManager.FileTypePhoto) {
                         StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
                     } else if (currentType == ConnectionsManager.FileTypeFile) {
-                        StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                        if (uploadingFilePath != null && (uploadingFilePath.toLowerCase().endsWith("mp3") || uploadingFilePath.toLowerCase().endsWith("m4a"))) {
+                            StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MUSIC, 1);
+                        } else {
+                            StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                        }
                     }
                 } else if (currentUploadRequetsCount < maxRequestsCount) {
                     if (estimatedSize == 0 && !uploadFirstPartLater && !nextPartFirst) {

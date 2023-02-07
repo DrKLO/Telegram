@@ -935,7 +935,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             } else {
                 avatarDrawable.setScaleSize(1f);
                 if (avatarImageView != null) {
-                    avatarImageView.imageReceiver.setForUserOrChat(user, avatarDrawable,  null, true);
+                    avatarImageView.imageReceiver.setForUserOrChat(user, avatarDrawable,  null, true, VectorAvatarThumbDrawable.TYPE_STATIC);
                 }
             }
         } else if (chat != null) {

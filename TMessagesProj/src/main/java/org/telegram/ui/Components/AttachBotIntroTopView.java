@@ -82,8 +82,8 @@ public class AttachBotIntroTopView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight() + AndroidUtilities.dp(6));
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), backgroundPaint);
+        AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight() + AndroidUtilities.dp(10));
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(10), AndroidUtilities.dp(10), backgroundPaint);
 
         imageReceiver.setImageCoords(getWidth() / 2f - AndroidUtilities.dp(ICONS_SIDE_PADDING + ICONS_SIZE_DP), getHeight() / 2f - AndroidUtilities.dp(ICONS_SIZE_DP) / 2f, AndroidUtilities.dp(ICONS_SIZE_DP), AndroidUtilities.dp(ICONS_SIZE_DP));
         imageReceiver.draw(canvas);

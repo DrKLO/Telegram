@@ -3,6 +3,7 @@ package org.telegram.messenger;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 
 import androidx.annotation.IntDef;
@@ -286,8 +287,9 @@ public class PushListenerController {
                         chat_id = 0;
                     }
                     if (custom.has("topic_id")) {
-                        topicId =custom.getInt("topic_id");
+                        topicId = custom.getInt("topic_id");
                     }
+                    FileLog.d( "recived push notification chatId " + chat_id + " custom topicId " + topicId);
                     if (custom.has("encryption_id")) {
                         dialogId = DialogObject.makeEncryptedDialogId(custom.getInt("encryption_id"));
                     }

@@ -168,4 +168,8 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
             bottomView.setAlpha(aplha);
         }
     }
+
+    public ActionBarPopupWindow.ActionBarPopupWindowLayout getPopupWindowLayout() {
+        return popupWindowLayout;
+    }
 }

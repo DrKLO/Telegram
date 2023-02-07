@@ -23,7 +23,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class PremiumGradient {
 
-    private final GradientTools mainGradient = new GradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
+    private final PremiumGradientTools mainGradient = new PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, Theme.key_premiumGradient3, Theme.key_premiumGradient4);
 //    private final GradientTools grayGradient = new GradientTools(Theme.key_windowBackgroundWhiteGrayText7, Theme.key_windowBackgroundWhiteGrayText7, Theme.key_windowBackgroundWhiteGrayText7);
     private final Paint mainGradientPaint = mainGradient.paint;
     Paint lockedPremiumPaint;
@@ -62,7 +62,7 @@ public class PremiumGradient {
         return createGradientDrawable(drawable, mainGradient);
     }
 
-    public InternalDrawable createGradientDrawable(Drawable drawable, PremiumGradient.GradientTools gradient) {
+    public InternalDrawable createGradientDrawable(Drawable drawable, PremiumGradientTools gradient) {
         if (drawable == null) {
             return null;
         }
@@ -135,7 +135,9 @@ public class PremiumGradient {
             return mainGradientPaint;
         }
     }
-    public static class GradientTools {
+
+    //help with update colors and position
+    public static class PremiumGradientTools {
 
         public float cx = 0.5f;
         public float cy = 0.5f;
@@ -149,22 +151,21 @@ public class PremiumGradient {
 
         public float x1 = 0f, y1 = 1f, x2 = 1.5f, y2 = 0f;
 
-        public GradientTools(String colorKey1, String colorKey2, String colorKey3) {
+        public PremiumGradientTools(String colorKey1, String colorKey2, String colorKey3) {
             this(colorKey1, colorKey2, colorKey3, null, null);
         }
 
-        public GradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4) {
+        public PremiumGradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4) {
             this(colorKey1, colorKey2, colorKey3, colorKey4, null);
         }
 
-        public GradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4, String colorKey5) {
+        public PremiumGradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4, String colorKey5) {
             this.colorKey1 = colorKey1;
             this.colorKey2 = colorKey2;
             this.colorKey3 = colorKey3;
             this.colorKey4 = colorKey4;
             this.colorKey5 = colorKey5;
         }
-
 
         public void gradientMatrix(int x, int y, int x1, int y1, float xOffset, float yOffset) {
             chekColors();

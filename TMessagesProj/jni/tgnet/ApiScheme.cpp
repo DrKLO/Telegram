@@ -1057,7 +1057,7 @@ auth_Authorization *auth_Authorization::TLdeserialize(NativeByteBuffer *stream, 
         case 0x44747e9a:
             result = new TL_auth_authorizationSignUpRequired();
             break;
-        case 0x33fb7bb8:
+        case 0x2ea2c0d4:
             result = new TL_auth_authorization();
             break;
         default:
@@ -1086,8 +1086,14 @@ void TL_auth_authorizationSignUpRequired::serializeToStream(NativeByteBuffer *st
 
 void TL_auth_authorization::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
+    if ((flags & 2) != 0) {
+        otherwise_relogin_days = stream->readInt32(&error);
+    }
     if ((flags & 1) != 0) {
         tmp_sessions = stream->readInt32(&error);
+    }
+    if ((flags & 4) != 0) {
+        future_auth_token = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
     }
     user = std::unique_ptr<User>(User::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
 }

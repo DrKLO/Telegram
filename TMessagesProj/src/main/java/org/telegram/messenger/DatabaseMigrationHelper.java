@@ -1218,6 +1218,12 @@ public class DatabaseMigrationHelper {
             version = 111;
         }
 
+        if (version == 111) {
+            database.executeFast("CREATE TABLE emoji_groups(type INTEGER PRIMARY KEY, data BLOB)").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 112").stepThis().dispose();
+            version = 112;
+        }
+
         return version;
     }
 }

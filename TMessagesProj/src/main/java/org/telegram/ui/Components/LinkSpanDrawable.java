@@ -582,14 +582,14 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                         } else if (pressedLink.getSpan() != null) {
                             pressedLink.getSpan().onClick(this);
                         }
+                        pressedLink = null;
+                        return true;
                     }
                     pressedLink = null;
-                    return true;
                 }
                 if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     links.clear();
                     pressedLink = null;
-                    return true;
                 }
             }
             return pressedLink != null || super.onTouchEvent(event);

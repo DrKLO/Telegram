@@ -44,6 +44,8 @@ import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 
+import com.android.billingclient.api.ProductDetails;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
@@ -71,6 +73,7 @@ import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PremiumPreviewFragment;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -177,6 +180,8 @@ public class MediaDataController extends BaseController {
         loadStickersByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME, false, true);
         loadEmojiThemes();
         loadRecentAndTopReactions(false);
+        loadAvatarConstructor(false);
+        loadAvatarConstructor(true);
         ringtoneDataStore = new RingtoneDataStore(currentAccount);
     }
 
@@ -384,6 +389,70 @@ public class MediaDataController extends BaseController {
 
     public TLRPC.TL_help_premiumPromo getPremiumPromo() {
         return premiumPromo;
+    }
+
+    public Integer getPremiumHintAnnualDiscount(boolean checkTransaction) {
+        if (checkTransaction && (!BillingController.getInstance().isReady() || BillingController.getInstance().getLastPremiumTransaction() == null) || premiumPromo == null) {
+            return null;
+        }
+
+        boolean found = false;
+        int discount = 0;
+        double currentPrice = 0;
+        for (TLRPC.TL_premiumSubscriptionOption option : premiumPromo.period_options) {
+            if (checkTransaction ? option.current && Objects.equals(option.transaction.replaceAll(PremiumPreviewFragment.TRANSACTION_PATTERN, "$1"), BillingController.getInstance().getLastPremiumTransaction()) : option.months == 1) {
+                found = true;
+
+                if (!BuildVars.useInvoiceBilling() && BillingController.PREMIUM_PRODUCT_DETAILS != null) {
+                    ProductDetails.SubscriptionOfferDetails offerDetails = null;
+                    for (ProductDetails.SubscriptionOfferDetails details : BillingController.PREMIUM_PRODUCT_DETAILS.getSubscriptionOfferDetails()) {
+                        String period = details.getPricingPhases().getPricingPhaseList().get(0).getBillingPeriod();
+                        if (option.months == 12 ? period.equals("P1Y") : period.equals(String.format(Locale.ROOT, "P%dM", option.months))) {
+                            offerDetails = details;
+                            break;
+                        }
+                    }
+
+                    if (offerDetails == null) {
+                        currentPrice = (double) option.amount / option.months;
+                    } else {
+                        currentPrice = (double) offerDetails.getPricingPhases().getPricingPhaseList().get(0).getPriceAmountMicros() / option.months;
+                    }
+                } else {
+                    currentPrice = (double) option.amount / option.months;
+                }
+            }
+        }
+        for (TLRPC.TL_premiumSubscriptionOption option : premiumPromo.period_options) {
+            if (found && option.months == 12) {
+                double amount;
+                if (!BuildVars.useInvoiceBilling() && BillingController.PREMIUM_PRODUCT_DETAILS != null) {
+                    ProductDetails.SubscriptionOfferDetails offerDetails = null;
+                    for (ProductDetails.SubscriptionOfferDetails details : BillingController.PREMIUM_PRODUCT_DETAILS.getSubscriptionOfferDetails()) {
+                        String period = details.getPricingPhases().getPricingPhaseList().get(0).getBillingPeriod();
+                        if (option.months == 12 ? period.equals("P1Y") : period.equals(String.format(Locale.ROOT, "P%dM", option.months))) {
+                            offerDetails = details;
+                            break;
+                        }
+                    }
+
+                    if (offerDetails == null) {
+                        amount = (double) option.amount / option.months;
+                    } else {
+                        amount = (double) offerDetails.getPricingPhases().getPricingPhaseList().get(0).getPriceAmountMicros() / option.months;
+                    }
+                } else {
+                    amount = (double) option.amount / option.months;
+                }
+
+                discount = (int) ((1.0 - amount / currentPrice) * 100);
+            }
+        }
+        if (!found || discount <= 0) {
+            return null;
+        }
+
+        return discount;
     }
 
     public TLRPC.TL_attachMenuBots getAttachMenuBots() {
@@ -1109,7 +1178,7 @@ public class MediaDataController extends BaseController {
             }
             return cacheSet;
         }
-        if (inputStickerSet instanceof TLRPC.TL_inputStickerSetID && hash != null) {
+        if (inputStickerSet instanceof TLRPC.TL_inputStickerSetID) {
             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                 TLRPC.TL_messages_stickerSet cachedSet = getCachedStickerSetInternal(inputStickerSet.id, hash);
                 AndroidUtilities.runOnUIThread(() -> {
@@ -1191,7 +1260,7 @@ public class MediaDataController extends BaseController {
                 if (data != null) {
                     set = TLRPC.TL_messages_stickerSet.TLdeserialize(data, data.readInt32(false), false);
                     int cachedHash = cursor.intValue(1);
-                    if (hash != null && hash != cachedHash) {
+                    if (hash != null && hash != 0 && hash != cachedHash) {
                         return null;
                     }
                 }
@@ -3715,12 +3784,14 @@ public class MediaDataController extends BaseController {
             boolean isAnimated = false;
             boolean isVideo = false;
             boolean isVoice = false;
+            boolean isRound = false;
             boolean isMusic = false;
             boolean isSticker = false;
 
             for (int a = 0; a < document.attributes.size(); a++) {
                 TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                 if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
+                    isRound = attribute.round_message;
                     isVoice = attribute.round_message;
                     isVideo = !attribute.round_message;
                 } else if (attribute instanceof TLRPC.TL_documentAttributeAnimated) {
@@ -3732,7 +3803,7 @@ public class MediaDataController extends BaseController {
                     isSticker = true;
                 }
             }
-            if (isVoice) {
+            if (isVoice || isRound) {
                 return MEDIA_AUDIO;
             } else if (isVideo && !isAnimated && !isSticker) {
                 return MEDIA_PHOTOVIDEO;
@@ -3801,12 +3872,29 @@ public class MediaDataController extends BaseController {
                 }
                 getFileLoader().checkMediaExistance(objects);
 
-                AndroidUtilities.runOnUIThread(() -> {
-                    int totalCount = res.count;
-                    getMessagesController().putUsers(res.users, fromCache != 0);
-                    getMessagesController().putChats(res.chats, fromCache != 0);
-                    getNotificationCenter().postNotificationName(NotificationCenter.mediaDidLoad, dialogId, totalCount, objects, classGuid, type, topReached, min_id != 0, requestIndex);
-                });
+                Runnable notify = () -> {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        int totalCount = res.count;
+                        getMessagesController().putUsers(res.users, fromCache != 0);
+                        getMessagesController().putChats(res.chats, fromCache != 0);
+                        getNotificationCenter().postNotificationName(NotificationCenter.mediaDidLoad, dialogId, totalCount, objects, classGuid, type, topReached, min_id != 0, requestIndex);
+                    });
+                };
+
+                if (getMessagesController().getTranslateController().isFeatureAvailable()) {
+                    getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                        for (int i = 0; i < objects.size(); ++i) {
+                           MessageObject messageObject = objects.get(i);
+                           TLRPC.Message message = getMessagesStorage().getMessageWithCustomParamsOnlyInternal(messageObject.getId(), messageObject.getDialogId());
+                           messageObject.messageOwner.translatedToLanguage = message.translatedToLanguage;
+                           messageObject.messageOwner.translatedText = message.translatedText;
+                           messageObject.updateTranslation();
+                        }
+                        notify.run();
+                    });
+                } else {
+                    notify.run();
+                }
             });
         }
     }
@@ -7071,14 +7159,14 @@ public class MediaDataController extends BaseController {
     }
 
     public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, boolean allowAnimated) {
-        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, null, allowAnimated, false, null);
+        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, null, allowAnimated, false, false, null);
     }
 
     public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, final CountDownLatch sync, boolean allowAnimated) {
-        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, sync, allowAnimated, false, null);
+        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, sync, allowAnimated, false, false, null);
     }
 
-    public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, final CountDownLatch sync, boolean allowAnimated, boolean allowTopicIcons, Integer maxAnimatedPerEmoji) {
+    public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, final CountDownLatch sync, boolean allowAnimated, boolean allowTopicIcons, boolean includeSingleEmoji, Integer maxAnimatedPerEmoji) {
         if (callback == null) {
             return;
         }
@@ -7114,6 +7202,29 @@ public class MediaDataController extends BaseController {
                         callback.run(result, null);
                     });
                     return;
+                }
+
+                if (includeSingleEmoji) {
+                    final int[] emojiOnly = new int[1];
+                    ArrayList<Emoji.EmojiSpanRange> ranges = Emoji.parseEmojis(keyword, emojiOnly);
+                    if (emojiOnly[0] > 0) {
+                        for (int i = 0; i < ranges.size(); ++i) {
+                            String code = ranges.get(i).code.toString();
+                            boolean foundDuplicate = false;
+                            for (int j = 0; j < result.size(); ++j) {
+                                if (TextUtils.equals(result.get(j).emoji, code)) {
+                                    foundDuplicate = true;
+                                    break;
+                                }
+                            }
+                            if (!foundDuplicate) {
+                                KeywordResult keywordResult = new KeywordResult();
+                                keywordResult.emoji = code;
+                                keywordResult.keyword = "";
+                                result.add(keywordResult);
+                            }
+                        }
+                    }
                 }
 
                 String key = keyword.toLowerCase();
@@ -7733,5 +7844,61 @@ public class MediaDataController extends BaseController {
 
         }
         return objects;
+    }
+
+    public TLRPC.TL_emojiList profileAvatarConstructorDefault;
+    public TLRPC.TL_emojiList groupAvatarConstructorDefault;
+
+    private void loadAvatarConstructor(boolean profile) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("avatar_constructor" + currentAccount, Context.MODE_PRIVATE);
+        String value;
+        long lastCheckTime;
+        if (profile) {
+            value = preferences.getString("profile", null);
+            lastCheckTime = preferences.getLong("profile_last_check", 0);
+        } else {
+            value = preferences.getString("group", null);
+            lastCheckTime = preferences.getLong("group_last_check", 0);
+        }
+
+
+        TLRPC.TL_emojiList emojiList = null;
+        if (value != null) {
+            SerializedData serializedData = new SerializedData(Utilities.hexToBytes(value));
+            try {
+                emojiList = (TLRPC.TL_emojiList) TLRPC.TL_emojiList.TLdeserialize(serializedData, serializedData.readInt32(true), true);
+                if (profile) {
+                    profileAvatarConstructorDefault = emojiList;
+                } else {
+                    groupAvatarConstructorDefault = emojiList;
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
+
+        if (emojiList == null || (System.currentTimeMillis() - lastCheckTime) > 24 * 60 * 60 * 1000 || BuildVars.DEBUG_PRIVATE_VERSION) {
+            TLRPC.TL_account_getDefaultProfilePhotoEmojis req = new TLRPC.TL_account_getDefaultProfilePhotoEmojis();
+            if (emojiList != null) {
+                req.hash = emojiList.hash;
+            }
+            getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response instanceof TLRPC.TL_emojiList) {
+                    SerializedData data = new SerializedData(response.getObjectSize());
+                    response.serializeToStream(data);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    if (profile) {
+                        profileAvatarConstructorDefault = (TLRPC.TL_emojiList) response;
+                        editor.putString("profile",  Utilities.bytesToHex(data.toByteArray()));
+                        editor.putLong("profile_last_check", System.currentTimeMillis());
+                    } else {
+                        groupAvatarConstructorDefault = (TLRPC.TL_emojiList) response;
+                        editor.putString("group",  Utilities.bytesToHex(data.toByteArray()));
+                        editor.putLong("group_last_check", System.currentTimeMillis());
+                    }
+                    editor.apply();
+                }
+            }));
+        }
     }
 }

@@ -113,13 +113,13 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     public ContactAddActivity(Bundle args) {
         super(args);
-        imageUpdater = new ImageUpdater(true);
+        imageUpdater = new ImageUpdater(true, ImageUpdater.FOR_TYPE_USER, true);
     }
 
     public ContactAddActivity(Bundle args, Theme.ResourcesProvider resourcesProvider) {
         super(args);
         this.resourcesProvider = resourcesProvider;
-        imageUpdater = new ImageUpdater(true);
+        imageUpdater = new ImageUpdater(true, ImageUpdater.FOR_TYPE_USER, true);
     }
 
     @Override
@@ -450,7 +450,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         LocaleController.formatString("ResetToOriginalPhotoMessage", R.string.ResetToOriginalPhotoMessage, user.first_name),
                         LocaleController.getString("Reset", R.string.Reset), () -> {
                             avatar = null;
-                            sendPhotoChangedRequest(null, null,null, null, 0, TYPE_SET);
+                            sendPhotoChangedRequest(null, null,null, null, null, 0, TYPE_SET);
 
                             TLRPC.User user1 = getMessagesController().getUser(user_id);
                             user1.photo.personal = false;
@@ -670,7 +670,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo) {
+    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup) {
         AndroidUtilities.runOnUIThread(() -> {
             if (imageUpdater.isCanceled()) {
                 return;
@@ -701,7 +701,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                     getNotificationCenter().postNotificationName(NotificationCenter.reloadDialogPhotos);
                     getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_AVATAR);
                 }
-                sendPhotoChangedRequest(avatar, bigSize.location, photo, video, videoStartTimestamp, photoSelectedTypeFinal);
+                sendPhotoChangedRequest(avatar, bigSize.location, photo, video, emojiMarkup, videoStartTimestamp, photoSelectedTypeFinal);
                 showAvatarProgress(false, true);
             } else {
                 avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, getMessagesController().getUser(user_id));
@@ -761,7 +761,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         getMessagesController().photoSuggestion.put(message.local_id, imageUpdater);
     }
 
-    private void sendPhotoChangedRequest(TLRPC.FileLocation avatar, TLRPC.FileLocation bigAvatar, TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, int photoSelectedTypeFinal) {
+    private void sendPhotoChangedRequest(TLRPC.FileLocation avatar, TLRPC.FileLocation bigAvatar, TLRPC.InputFile photo, TLRPC.InputFile video, TLRPC.VideoSize emojiMarkup, double videoStartTimestamp, int photoSelectedTypeFinal) {
         TLRPC.TL_photos_uploadContactProfilePhoto req = new TLRPC.TL_photos_uploadContactProfilePhoto();
         req.user_id = getMessagesController().getInputUser(user_id);
 
@@ -774,6 +774,10 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             req.flags |= 2;
             req.video_start_ts = videoStartTimestamp;
             req.flags |= 4;
+        }
+        if (emojiMarkup != null) {
+            req.flags |= 32;
+            req.video_emoji_markup = emojiMarkup;
         }
         if (photoSelectedTypeFinal == TYPE_SUGGEST) {
             req.suggest = true;

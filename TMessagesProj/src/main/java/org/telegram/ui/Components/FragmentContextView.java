@@ -1960,7 +1960,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 } else {
                     timeLayout = null;
                     joinButton.setVisibility(VISIBLE);
-                    if (call.call.rtmp_stream) {
+                    if (!TextUtils.isEmpty(call.call.title)) {
+                        titleTextView.setText(call.call.title, false);
+                    } else if (call.call.rtmp_stream) {
                         titleTextView.setText(LocaleController.getString(R.string.VoipChannelVoiceChat), false);
                     } else if (ChatObject.isChannelOrGiga(chat)) {
                         titleTextView.setText(LocaleController.getString("VoipChannelVoiceChat", R.string.VoipChannelVoiceChat), false);

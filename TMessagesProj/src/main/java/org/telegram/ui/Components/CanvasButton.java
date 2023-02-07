@@ -260,4 +260,9 @@ public class CanvasButton {
         }
 
     }
+
+    public void setRect(int x, int y, int x1, int y1) {
+        AndroidUtilities.rectTmp.set(x, y, x1, y1);
+        setRect(AndroidUtilities.rectTmp);
+    }
 }

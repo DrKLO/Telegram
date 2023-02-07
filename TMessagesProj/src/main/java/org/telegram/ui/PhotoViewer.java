@@ -197,7 +197,6 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.Crop.CropTransform;
 import org.telegram.ui.Components.Crop.CropView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.FadingTextViewLayout;
 import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.FloatSeekBarAccessibilityDelegate;
@@ -3327,17 +3326,27 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 imagesArrLocationsVideo.clear();
                 imagesArrMessages.clear();
                 avatarsArr.clear();
+
                 for (int a = 0; a < photos.size(); a++) {
                     TLRPC.Photo photo = photos.get(a);
                     if (photo == null || photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
                     TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 640);
-                    TLRPC.VideoSize videoSize = photo.video_sizes.isEmpty() ? null : photo.video_sizes.get(0);
+                    TLRPC.VideoSize videoSize = photo.video_sizes.isEmpty() ? null :  FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 1000);
                     if (sizeFull != null) {
                         if (setToImage == -1 && currentFileLocation != null) {
                             for (int b = 0; b < photo.sizes.size(); b++) {
                                 TLRPC.PhotoSize size = photo.sizes.get(b);
+                                if (size.location != null && size.location.local_id == currentFileLocation.location.local_id && size.location.volume_id == currentFileLocation.location.volume_id) {
+                                    setToImage = imagesArrLocations.size();
+                                    break;
+                                }
+                            }
+                        }
+                        if (setToImage == -1 && currentFileLocation != null) {
+                            for (int b = 0; b < photo.video_sizes.size(); b++) {
+                                TLRPC.VideoSize size = photo.video_sizes.get(b);
                                 if (size.location != null && size.location.local_id == currentFileLocation.location.local_id && size.location.volume_id == currentFileLocation.location.volume_id) {
                                     setToImage = imagesArrLocations.size();
                                     break;
@@ -4353,12 +4362,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     } else {
                         Bundle args = new Bundle();
                         args.putBoolean("onlySelect", true);
-                        args.putInt("dialogsType", 3);
+                        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                         DialogsActivity fragment = new DialogsActivity(args);
                         final ArrayList<MessageObject> fmessages = new ArrayList<>();
                         fmessages.add(currentMessageObject);
                         final ChatActivity parentChatActivityFinal = parentChatActivity;
-                        fragment.setDelegate((fragment1, dids, message, param) -> {
+                        fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
                             if (dids.size() > 1 || dids.get(0).dialogId == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                                 for (int a = 0; a < dids.size(); a++) {
                                     long did = dids.get(a).dialogId;
@@ -4394,6 +4403,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                     fragment1.finishFragment();
                                 }
                             }
+                            return true;
                         });
                         ((LaunchActivity) parentActivity).presentFragment(fragment, false, true);
                         closePhoto(false, false);
@@ -4526,7 +4536,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 if (avatarsDialogId > 0) {
                                     MessagesController.getInstance(currentAccount).deleteUserPhoto(null);
                                 } else {
-                                    MessagesController.getInstance(currentAccount).changeChatAvatar(-avatarsDialogId, null, null, null, 0, null, null, null, null);
+                                    MessagesController.getInstance(currentAccount).changeChatAvatar(-avatarsDialogId, null, null, null, null, 0, null, null, null, null);
                                 }
                                 closePhoto(false, false);
                             } else {
@@ -4740,7 +4750,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         inputChatPhoto.id.id = photo.id;
                         inputChatPhoto.id.access_hash = photo.access_hash;
                         inputChatPhoto.id.file_reference = photo.file_reference;
-                        MessagesController.getInstance(currentAccount).changeChatAvatar(-avatarsDialogId, inputChatPhoto, null, null, 0, null, null, null, null);
+                        MessagesController.getInstance(currentAccount).changeChatAvatar(-avatarsDialogId, inputChatPhoto, null, null, null, 0, null, null, null, null);
                         chat.photo.dc_id = photo.dc_id;
                         chat.photo.photo_small = smallSize.location;
                         chat.photo.photo_big = bigSize.location;
@@ -5602,7 +5612,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (a == 3) {
                     cell.setTextAndIcon(LocaleController.getString("SendAsNewPhoto", R.string.SendAsNewPhoto), R.drawable.msg_send);
                 } else if (a == 4) {
-                    cell.setTextAndIcon(LocaleController.getString("SendWithoutCompression", R.string.SendWithoutCompression), R.drawable.msg_sendfile);
+                    if (placeProvider != null && placeProvider.getSelectedCount() > 1) {
+                        cell.setTextAndIcon(LocaleController.getString(R.string.SendAsFiles), R.drawable.msg_sendfile);
+                    } else {
+                        cell.setTextAndIcon(LocaleController.getString(R.string.SendAsFile), R.drawable.msg_sendfile);
+                    }
                 }
                 cell.setMinimumWidth(AndroidUtilities.dp(196));
                 cell.setColors(0xffffffff, 0xffffffff);
@@ -6727,6 +6741,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     ((MediaController.MediaEditState) entry).editedInfo = videoEditedInfo;
                 }
             }
+            if (parentChatActivity != null && parentChatActivity.getCurrentChat() != null) {
+                boolean isVideo = (isCurrentVideo || videoEditedInfo != null);
+                if (isVideo && !ChatObject.canSendVideo(parentChatActivity.getCurrentChat())) {
+                    BulletinFactory.of(containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(R.string.GlobalAttachVideoRestricted)).show();
+                    return;
+                }
+                if (!isVideo && !ChatObject.canSendPhoto(parentChatActivity.getCurrentChat())) {
+                    BulletinFactory.of(containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(R.string.GlobalAttachPhotoRestricted)).show();
+                    return;
+                }
+            }
             doneButtonPressed = true;
             if (videoEditedInfo != null) {
                 long sizeToCheck = (long) (videoEditedInfo.estimatedSize * 0.9f);
@@ -7141,14 +7166,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     videoTextureView.setTranslationX(fromX * (1f - xValue) + (toX2) * xValue);
                     videoTextureView.setTranslationY(fromY * (1f - yValue) + (toY2) * yValue);
                     videoTextureView.invalidateOutline();
-                }
 
-                if (firstFrameView != null) {
-                    firstFrameView.setTranslationX(videoTextureView.getTranslationX());
-                    firstFrameView.setTranslationY(videoTextureView.getTranslationY());
-                    firstFrameView.setScaleX(videoTextureView.getScaleX());
-                    firstFrameView.setScaleY(videoTextureView.getScaleY());
-                    firstFrameView.invalidateOutline();
+                    if (firstFrameView != null) {
+                        firstFrameView.setTranslationX(videoTextureView.getTranslationX());
+                        firstFrameView.setTranslationY(videoTextureView.getTranslationY());
+                        firstFrameView.setScaleX(videoTextureView.getScaleX());
+                        firstFrameView.setScaleY(videoTextureView.getScaleY());
+                        firstFrameView.invalidateOutline();
+                    }
                 }
             });
 
@@ -7914,12 +7939,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             videoPlayerTotalTime[1] = (int) (total % 60);
         }
         String current, total;
-        if (videoPlayerCurrentTime[0] > 60) {
+        if (videoPlayerCurrentTime[0] >= 60) {
             current = String.format(Locale.ROOT, "%02d:%02d:%02d", videoPlayerCurrentTime[0] / 60, videoPlayerCurrentTime[0] % 60, videoPlayerCurrentTime[1]);
         } else {
             current = String.format(Locale.ROOT, "%02d:%02d", videoPlayerCurrentTime[0], videoPlayerCurrentTime[1]);
         }
-        if (videoPlayerTotalTime[0] > 60) {
+        if (videoPlayerTotalTime[0] >= 60) {
             total = String.format(Locale.ROOT, "%02d:%02d:%02d", videoPlayerTotalTime[0] / 60, videoPlayerTotalTime[0] % 60, videoPlayerTotalTime[1]);
         } else {
             total = String.format(Locale.ROOT, "%02d:%02d", videoPlayerTotalTime[0], videoPlayerTotalTime[1]);
@@ -11449,7 +11474,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private boolean canSendMediaToParentChatActivity() {
-        return parentChatActivity != null && (parentChatActivity.currentUser != null || parentChatActivity.currentChat != null && !ChatObject.isNotInChat(parentChatActivity.currentChat) && ChatObject.canSendMedia(parentChatActivity.currentChat));
+        return parentChatActivity != null && (parentChatActivity.currentUser != null || parentChatActivity.currentChat != null && !ChatObject.isNotInChat(parentChatActivity.currentChat) && (ChatObject.canSendPhoto(parentChatActivity.currentChat) || ChatObject.canSendVideo(parentChatActivity.currentChat)));
     }
 
     private void setDoubleTapEnabled(boolean value) {
@@ -11496,6 +11521,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return;
             }
             newMessageObject = imagesArr.get(switchingToIndex);
+            newMessageObject.updateTranslation();
             isVideo = newMessageObject.isVideo();
             boolean isInvoice = newMessageObject.isInvoice();
             boolean noforwards = MessagesController.getInstance(currentAccount).isChatNoForwards(newMessageObject.getChatId()) || (newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia();
@@ -12134,6 +12160,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             MessageObject newMessageObject = imagesArr.get(currentIndex);
             sameImage = init && currentMessageObject != null && currentMessageObject.getId() == newMessageObject.getId();
+            if (sameImage) {
+                newMessageObject.putInDownloadsStore = currentMessageObject.putInDownloadsStore;
+            }
             currentMessageObject = newMessageObject;
             isVideo = newMessageObject.isVideo();
             if (sharedMediaType == MediaDataController.MEDIA_FILE) {
@@ -14672,6 +14701,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (doneButtonPressed) {
             releasePlayer(true);
         }
+        if (currentMessageObject != null && !currentMessageObject.putInDownloadsStore) {
+            FileLoader.getInstance(currentAccount).cancelLoadFile(currentMessageObject.getDocument());
+        }
         isVisible = false;
         cropInitied = false;
         disableShowCheck = true;
@@ -15397,18 +15429,25 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 progress = progress + (1f - progress) * clippingImageProgress;
             }
             float scale = 1f + (1f - Utilities.clamp(progress, 1, 0)) * ZOOM_SCALE;
+            if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH || SharedConfig.getLiteMode().enabled()) {
+                scale = 1f;
+            }
             View view = parentFragment.getFragmentView();
-            view.setPivotX(view.getWidth() / 2f);
-            view.setPivotY(view.getHeight() / 2f);
-            view.setScaleX(scale);
-            view.setScaleY(scale);
-
-            if (parentAlert != null) {
-                view = parentAlert.getContainer();
+            if (view.getScaleX() != scale || view.getScaleY() != scale) {
                 view.setPivotX(view.getWidth() / 2f);
                 view.setPivotY(view.getHeight() / 2f);
                 view.setScaleX(scale);
                 view.setScaleY(scale);
+            }
+
+            if (parentAlert != null) {
+                view = parentAlert.getContainer();
+                if (view.getScaleX() != scale || view.getScaleY() != scale) {
+                    view.setPivotX(view.getWidth() / 2f);
+                    view.setPivotY(view.getHeight() / 2f);
+                    view.setScaleX(scale);
+                    view.setScaleY(scale);
+                }
             }
 
             if (animationInProgress == 1 || animationInProgress == 2 || animationInProgress == 3 || pipAnimationInProgress) {

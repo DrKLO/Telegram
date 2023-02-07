@@ -354,7 +354,9 @@ public class MediaCodecVideoConvertor {
                                 }
                                 avatarStartTime = 0;
                                 //this encoder work with bitrate better, prevent case when result video max 2MB
-                                encoderName = "OMX.google.h264.encoder";
+                                if (originalBitrate >= 15_000_000) {
+                                    encoderName = "OMX.google.h264.encoder";
+                                }
                             } else if (bitrate <= 0) {
                                 bitrate = 921600;
                             }
@@ -822,7 +824,7 @@ public class MediaCodecVideoConvertor {
 
         long timeLeft = System.currentTimeMillis() - time;
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("compression completed time=" + timeLeft + " needCompress=" + needCompress + " w=" + resultWidth + " h=" + resultHeight + " bitrate=" + bitrate);
+            FileLog.d("compression completed time=" + timeLeft + " needCompress=" + needCompress + " w=" + resultWidth + " h=" + resultHeight + " bitrate=" + bitrate + " file size=" + cacheFile.length());
         }
 
         return error;

@@ -90,15 +90,15 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
                 args.putBoolean("onlySelect", true);
                 args.putBoolean("checkCanWrite", false);
                 if (currentType == CacheControlActivity.KEEP_MEDIA_TYPE_GROUP) {
-                    args.putInt("dialogsType", 6);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_GROUPS_ONLY);
                 } else if (currentType == CacheControlActivity.KEEP_MEDIA_TYPE_CHANNEL) {
-                    args.putInt("dialogsType", 5);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_CHANNELS_ONLY);
                 } else {
-                    args.putInt("dialogsType", 4);
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
                 }
                 args.putBoolean("allowGlobalSearch", false);
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param) -> {
+                activity.setDelegate((fragment, dids, message, param, topicsFragment) -> {
                     CacheByChatsController.KeepMediaException newException = null;
                     for (int i = 0; i < dids.size(); i++) {
                         exceptions.add(newException = new CacheByChatsController.KeepMediaException(dids.get(i).dialogId, CacheByChatsController.KEEP_MEDIA_ONE_DAY));
@@ -120,6 +120,7 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
                     cacheChatsExceptionsFragment.setExceptions(exceptions);
                     parentFragment.presentFragment(cacheChatsExceptionsFragment);
                     AndroidUtilities.runOnUIThread(() -> cacheChatsExceptionsFragment.showPopupFor(finalNewException), 150);
+                    return true;
                 });
                 baseFragment.presentFragment(activity);
             } else {
