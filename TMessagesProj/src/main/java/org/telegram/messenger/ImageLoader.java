@@ -1042,7 +1042,7 @@ public class ImageLoader {
                 if ((isAnimatedAvatar(cacheImage.filter) || AUTOPLAY_FILTER.equals(cacheImage.filter)) && !(cacheImage.imageLocation.document instanceof TLRPC.TL_documentEncrypted) && !precache) {
                     TLRPC.Document document = cacheImage.imageLocation.document instanceof TLRPC.Document ? cacheImage.imageLocation.document : null;
                     long size = document != null ? cacheImage.size : cacheImage.imageLocation.currentSize;
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, fistFrame, notCreateStream ? 0 : size, notCreateStream ? null : document, document == null && !notCreateStream ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false, cacheOptions);
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, fistFrame, notCreateStream ? 0 : size, cacheImage.priority, notCreateStream ? null : document, document == null && !notCreateStream ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false, cacheOptions);
                     fileDrawable.setIsWebmSticker(MessageObject.isWebM(document) || MessageObject.isVideoSticker(document) || isAnimatedAvatar(cacheImage.filter));
                 } else {
 
@@ -1058,7 +1058,7 @@ public class ImageLoader {
                         }
                     }
                     boolean createDecoder = fistFrame || (cacheImage.filter != null && ("d".equals(cacheImage.filter) || cacheImage.filter.contains("_d")));
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, createDecoder, 0, notCreateStream ? null : cacheImage.imageLocation.document, null, null, seekTo, cacheImage.currentAccount, false, w, h, cacheOptions);
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, createDecoder, 0, cacheImage.priority, notCreateStream ? null : cacheImage.imageLocation.document, null, null, seekTo, cacheImage.currentAccount, false, w, h, cacheOptions);
                     fileDrawable.setIsWebmSticker(MessageObject.isWebM(cacheImage.imageLocation.document) || MessageObject.isVideoSticker(cacheImage.imageLocation.document) || isAnimatedAvatar(cacheImage.filter));
                 }
                 if (fistFrame) {
@@ -1409,7 +1409,7 @@ public class ImageLoader {
                         if (mediaId != null && mediaThumbPath == null) {
                             if (mediaIsVideo) {
                                 if (mediaId == 0) {
-                                    AnimatedFileDrawable fileDrawable = new AnimatedFileDrawable(cacheFileFinal, true, 0, null, null, null, 0, 0, true, null);
+                                    AnimatedFileDrawable fileDrawable = new AnimatedFileDrawable(cacheFileFinal, true, 0, 0, null, null, null, 0, 0, true, null);
                                     image = fileDrawable.getFrameAtTime(0, true);
                                     fileDrawable.recycle();
                                 } else {

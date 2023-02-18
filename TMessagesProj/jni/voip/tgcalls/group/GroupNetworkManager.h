@@ -14,6 +14,7 @@
 #include "pc/sctp_transport.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "pc/sctp_data_channel.h"
+#include "modules/rtp_rtcp/source/rtp_packet_received.h"
 
 #include <functional>
 #include <memory>
@@ -58,8 +59,9 @@ public:
     static webrtc::CryptoOptions getDefaulCryptoOptions();
 
     GroupNetworkManager(
+        const webrtc::WebRtcKeyValueConfig& fieldTrials,
         std::function<void(const State &)> stateUpdated,
-        std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived,
+        std::function<void(uint32_t, int)> unknownSsrcPacketReceived,
         std::function<void(bool)> dataChannelStateUpdated,
         std::function<void(std::string const &)> dataChannelMessageReceived,
         std::function<void(uint32_t, uint8_t, bool)> audioActivityUpdated,
@@ -92,7 +94,7 @@ private:
     void transportPacketReceived(rtc::PacketTransportInternal *transport, const char *bytes, size_t size, const int64_t &timestamp, int unused);
     void DtlsReadyToSend(bool DtlsReadyToSend);
     void UpdateAggregateStates_n();
-    void RtpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us, bool isUnresolved);
+    void RtpPacketReceived_n(webrtc::RtpPacketReceived const &packet, bool isUnresolved);
     void OnRtcpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us);
 
     void sctpReadyToSendData();
@@ -100,7 +102,7 @@ private:
 
     std::shared_ptr<Threads> _threads;
     std::function<void(const GroupNetworkManager::State &)> _stateUpdated;
-    std::function<void(rtc::CopyOnWriteBuffer const &, bool)> _transportMessageReceived;
+    std::function<void(uint32_t, int)> _unknownSsrcPacketReceived;
     std::function<void(bool)> _dataChannelStateUpdated;
     std::function<void(std::string const &)> _dataChannelMessageReceived;
     std::function<void(uint32_t, uint8_t, bool)> _audioActivityUpdated;

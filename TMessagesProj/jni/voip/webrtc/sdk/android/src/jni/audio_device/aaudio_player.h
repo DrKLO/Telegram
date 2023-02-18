@@ -17,10 +17,9 @@
 
 #include "absl/types/optional.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_device/audio_device_buffer.h"
 #include "modules/audio_device/include/audio_device_defines.h"
-#include "rtc_base/message_handler.h"
-#include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 #include "sdk/android/src/jni/audio_device/aaudio_wrapper.h"
 #include "sdk/android/src/jni/audio_device/audio_device_module.h"
@@ -52,9 +51,7 @@ namespace jni {
 // where the internal AAudio buffer can be increased when needed. It will
 // reduce the risk of underruns (~glitches) at the expense of an increased
 // latency.
-class AAudioPlayer final : public AudioOutput,
-                           public AAudioObserverInterface,
-                           public rtc::MessageHandler {
+class AAudioPlayer final : public AudioOutput, public AAudioObserverInterface {
  public:
   explicit AAudioPlayer(const AudioParameters& audio_parameters);
   ~AAudioPlayer() override;
@@ -90,11 +87,10 @@ class AAudioPlayer final : public AudioOutput,
   // Called on a real-time thread owned by AAudio.
   void OnErrorCallback(aaudio_result_t error) override;
 
-  // rtc::MessageHandler used for restart messages from the error-callback
-  // thread to the main (creating) thread.
-  void OnMessage(rtc::Message* msg) override;
-
  private:
+  // TODO(henrika): Implement.
+  int GetPlayoutUnderrunCount() override { return 0; }
+
   // Closes the existing stream and starts a new stream.
   void HandleStreamDisconnected();
 
@@ -108,7 +104,7 @@ class AAudioPlayer final : public AudioOutput,
   SequenceChecker thread_checker_aaudio_;
 
   // The thread on which this object is created on.
-  rtc::Thread* main_thread_;
+  TaskQueueBase* main_thread_;
 
   // Wraps all AAudio resources. Contains an output stream using the default
   // output audio device. Can be accessed on both the main thread and the

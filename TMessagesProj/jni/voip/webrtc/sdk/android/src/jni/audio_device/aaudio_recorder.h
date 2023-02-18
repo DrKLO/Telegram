@@ -16,10 +16,9 @@
 #include <memory>
 
 #include "api/sequence_checker.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_device/audio_device_buffer.h"
 #include "modules/audio_device/include/audio_device_defines.h"
-#include "rtc_base/message_handler.h"
-#include "rtc_base/thread.h"
 #include "sdk/android/src/jni/audio_device/aaudio_wrapper.h"
 #include "sdk/android/src/jni/audio_device/audio_device_module.h"
 
@@ -44,9 +43,7 @@ namespace jni {
 //
 // TODO(henrika): add comments about device changes and adaptive buffer
 // management.
-class AAudioRecorder : public AudioInput,
-                       public AAudioObserverInterface,
-                       public rtc::MessageHandler {
+class AAudioRecorder : public AudioInput, public AAudioObserverInterface {
  public:
   explicit AAudioRecorder(const AudioParameters& audio_parameters);
   ~AAudioRecorder() override;
@@ -82,9 +79,6 @@ class AAudioRecorder : public AudioInput,
   // Called on a real-time thread owned by AAudio.
   void OnErrorCallback(aaudio_result_t error) override;
 
-  // rtc::MessageHandler used for restart messages.
-  void OnMessage(rtc::Message* msg) override;
-
  private:
   // Closes the existing stream and starts a new stream.
   void HandleStreamDisconnected();
@@ -99,7 +93,7 @@ class AAudioRecorder : public AudioInput,
   SequenceChecker thread_checker_aaudio_;
 
   // The thread on which this object is created on.
-  rtc::Thread* main_thread_;
+  TaskQueueBase* main_thread_;
 
   // Wraps all AAudio resources. Contains an input stream using the default
   // input audio device.

@@ -12,7 +12,6 @@
 #define MODULES_AUDIO_CODING_NETEQ_MERGE_H_
 
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -35,6 +34,9 @@ class Merge {
         Expand* expand,
         SyncBuffer* sync_buffer);
   virtual ~Merge();
+
+  Merge(const Merge&) = delete;
+  Merge& operator=(const Merge&) = delete;
 
   // The main method to produce the audio data. The decoded data is supplied in
   // `input`, having `input_length` samples in total for all channels
@@ -93,8 +95,6 @@ class Merge {
   int16_t input_downsampled_[kInputDownsampLength];
   AudioMultiVector expanded_;
   std::vector<int16_t> temp_data_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Merge);
 };
 
 }  // namespace webrtc

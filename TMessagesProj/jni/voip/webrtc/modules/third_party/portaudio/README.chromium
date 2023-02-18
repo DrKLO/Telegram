@@ -1,8 +1,8 @@
 Name: Portaudio library for mac
 Short Name: portaudio
-URL: https://app.assembla.com/spaces/portaudio/git/source/master/src/common
-Version: 0
-Date: 2018-02-01
+URL: https://github.com/PortAudio/portaudio/tree/master/src/common
+Version: 9d8563100d841300f1689b186d131347ad43a0f6
+Date: 2022-04-12
 License: Custom license
 License File: LICENSE
 Security Critical: yes
@@ -10,3 +10,5 @@ Security Critical: yes
 Description:
 Part of portaudio library to operate with memory barriers and ring buffer.
 
+Local changes:
+  - Minor formatting to make 'git cl format' happy.

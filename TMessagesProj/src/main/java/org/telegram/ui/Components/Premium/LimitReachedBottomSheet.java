@@ -693,9 +693,11 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                         limitParams = getLimitParams(type, currentAccount);
                     }
                     int currentValue = Math.max(inactiveChats.size(), limitParams.defaultLimit);
-                    limitPreviewView.setIconValue(currentValue);
-                    limitPreviewView.setBagePosition(currentValue / (float) limitParams.premiumLimit);
-                    limitPreviewView.startDelayedAnimation();
+                    if (limitPreviewView != null) {
+                        limitPreviewView.setIconValue(currentValue);
+                        limitPreviewView.setBagePosition(currentValue / (float) limitParams.premiumLimit);
+                        limitPreviewView.startDelayedAnimation();
+                    }
                 });
             }
         }));

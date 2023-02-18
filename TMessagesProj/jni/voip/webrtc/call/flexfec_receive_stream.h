@@ -25,16 +25,9 @@
 namespace webrtc {
 
 class FlexfecReceiveStream : public RtpPacketSinkInterface,
-                             public ReceiveStream {
+                             public ReceiveStreamInterface {
  public:
   ~FlexfecReceiveStream() override = default;
-
-  struct Stats {
-    std::string ToString(int64_t time_ms) const;
-
-    // TODO(brandtr): Add appropriate stats here.
-    int flexfec_bitrate_bps;
-  };
 
   struct Config {
     explicit Config(Transport* rtcp_send_transport);
@@ -50,7 +43,7 @@ class FlexfecReceiveStream : public RtpPacketSinkInterface,
     // Payload type for FlexFEC.
     int payload_type = -1;
 
-    RtpConfig rtp;
+    ReceiveStreamRtpConfig rtp;
 
     // Vector containing a single element, corresponding to the SSRC of the
     // media stream being protected by this FlexFEC stream. The vector MUST have
@@ -67,7 +60,15 @@ class FlexfecReceiveStream : public RtpPacketSinkInterface,
     Transport* rtcp_send_transport = nullptr;
   };
 
-  virtual Stats GetStats() const = 0;
+  // TODO(tommi): FlexfecReceiveStream inherits from ReceiveStreamInterface,
+  // not VideoReceiveStreamInterface where there's also a SetRtcpMode method.
+  // Perhaps this should be in ReceiveStreamInterface and apply to audio streams
+  // as well (although there's no logic that would use it at present).
+  virtual void SetRtcpMode(RtcpMode mode) = 0;
+
+  // Called to change the payload type after initialization.
+  virtual void SetPayloadType(int payload_type) = 0;
+  virtual int payload_type() const = 0;
 };
 
 }  // namespace webrtc

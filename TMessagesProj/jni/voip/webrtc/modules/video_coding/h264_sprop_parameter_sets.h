@@ -15,13 +15,15 @@
 #include <string>
 #include <vector>
 
-#include "rtc_base/constructor_magic.h"
-
 namespace webrtc {
 
 class H264SpropParameterSets {
  public:
   H264SpropParameterSets() {}
+
+  H264SpropParameterSets(const H264SpropParameterSets&) = delete;
+  H264SpropParameterSets& operator=(const H264SpropParameterSets&) = delete;
+
   bool DecodeSprop(const std::string& sprop);
   const std::vector<uint8_t>& sps_nalu() { return sps_; }
   const std::vector<uint8_t>& pps_nalu() { return pps_; }
@@ -29,7 +31,6 @@ class H264SpropParameterSets {
  private:
   std::vector<uint8_t> sps_;
   std::vector<uint8_t> pps_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(H264SpropParameterSets);
 };
 
 }  // namespace webrtc

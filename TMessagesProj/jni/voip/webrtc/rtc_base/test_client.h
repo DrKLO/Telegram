@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "rtc_base/async_udp_socket.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/fake_clock.h"
 #include "rtc_base/synchronization/mutex.h"
 
@@ -52,6 +51,9 @@ class TestClient : public sigslot::has_slots<> {
   TestClient(std::unique_ptr<AsyncPacketSocket> socket,
              ThreadProcessingFakeClock* fake_clock);
   ~TestClient() override;
+
+  TestClient(const TestClient&) = delete;
+  TestClient& operator=(const TestClient&) = delete;
 
   SocketAddress address() const { return socket_->GetLocalAddress(); }
   SocketAddress remote_address() const { return socket_->GetRemoteAddress(); }
@@ -110,7 +112,6 @@ class TestClient : public sigslot::has_slots<> {
   std::vector<std::unique_ptr<Packet>> packets_;
   int ready_to_send_count_ = 0;
   int64_t prev_packet_timestamp_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(TestClient);
 };
 
 }  // namespace rtc

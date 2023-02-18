@@ -15,10 +15,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 static constexpr const int kRedMaxPacketSize =
@@ -40,9 +40,9 @@ AudioEncoderCopyRed::Config::Config() = default;
 AudioEncoderCopyRed::Config::Config(Config&&) = default;
 AudioEncoderCopyRed::Config::~Config() = default;
 
-size_t GetMaxRedundancyFromFieldTrial() {
+size_t GetMaxRedundancyFromFieldTrial(const FieldTrialsView& field_trials) {
   const std::string red_trial =
-      webrtc::field_trial::FindFullName("WebRTC-Audio-Red-For-Opus");
+      field_trials.Lookup("WebRTC-Audio-Red-For-Opus");
   size_t redundancy = 0;
   if (sscanf(red_trial.c_str(), "Enabled-%zu", &redundancy) != 1 ||
       redundancy > 9) {
@@ -51,14 +51,16 @@ size_t GetMaxRedundancyFromFieldTrial() {
   return redundancy;
 }
 
-AudioEncoderCopyRed::AudioEncoderCopyRed(Config&& config)
+AudioEncoderCopyRed::AudioEncoderCopyRed(Config&& config,
+                                         const FieldTrialsView& field_trials)
     : speech_encoder_(std::move(config.speech_encoder)),
       primary_encoded_(0, kAudioMaxRtpPacketLen),
       max_packet_length_(kAudioMaxRtpPacketLen),
       red_payload_type_(config.payload_type) {
   RTC_CHECK(speech_encoder_) << "Speech encoder not provided.";
 
-  auto number_of_redundant_encodings = GetMaxRedundancyFromFieldTrial();
+  auto number_of_redundant_encodings =
+      GetMaxRedundancyFromFieldTrial(field_trials);
   for (size_t i = 0; i < number_of_redundant_encodings; i++) {
     std::pair<EncodedInfo, rtc::Buffer> redundant;
     redundant.second.EnsureCapacity(kAudioMaxRtpPacketLen);

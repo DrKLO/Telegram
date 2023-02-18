@@ -22,6 +22,7 @@
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/task_queue/task_queue_factory.h"
 #include "api/transport/rtp/dependency_descriptor.h"
 #include "api/video/video_codec_type.h"
 #include "api/video/video_frame_type.h"
@@ -79,9 +80,9 @@ class RTPSenderVideo {
     bool require_frame_encryption = false;
     bool enable_retransmit_all_layers = false;
     absl::optional<int> red_payload_type;
-    const WebRtcKeyValueConfig* field_trials = nullptr;
+    const FieldTrialsView* field_trials = nullptr;
     rtc::scoped_refptr<FrameTransformerInterface> frame_transformer;
-    TaskQueueBase* send_transport_queue = nullptr;
+    TaskQueueFactory* task_queue_factory = nullptr;
   };
 
   explicit RTPSenderVideo(const Config& config);

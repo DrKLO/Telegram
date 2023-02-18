@@ -28,7 +28,7 @@ void TestStunServer::OnBindingRequest(StunMessage* msg,
   if (fake_stun_addr_.IsNil()) {
     StunServer::OnBindingRequest(msg, remote_addr);
   } else {
-    StunMessage response;
+    StunMessage response(STUN_BINDING_RESPONSE, msg->transaction_id());
     GetStunBindResponse(msg, fake_stun_addr_, &response);
     SendResponse(response, remote_addr);
   }

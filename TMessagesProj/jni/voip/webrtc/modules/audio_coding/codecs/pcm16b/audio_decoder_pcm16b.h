@@ -18,13 +18,16 @@
 
 #include "api/audio_codecs/audio_decoder.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
 class AudioDecoderPcm16B final : public AudioDecoder {
  public:
   AudioDecoderPcm16B(int sample_rate_hz, size_t num_channels);
+
+  AudioDecoderPcm16B(const AudioDecoderPcm16B&) = delete;
+  AudioDecoderPcm16B& operator=(const AudioDecoderPcm16B&) = delete;
+
   void Reset() override;
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
@@ -42,7 +45,6 @@ class AudioDecoderPcm16B final : public AudioDecoder {
  private:
   const int sample_rate_hz_;
   const size_t num_channels_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderPcm16B);
 };
 
 }  // namespace webrtc

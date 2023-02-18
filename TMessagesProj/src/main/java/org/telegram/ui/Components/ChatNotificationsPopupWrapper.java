@@ -119,14 +119,12 @@ public class ChatNotificationsPopupWrapper {
             callback.showCustomize();
         });
 
-
         muteUnmuteButton = ActionBarMenuItem.addItem(windowLayout, 0, "", false, resourcesProvider);
         muteUnmuteButton.setOnClickListener(view -> {
             dismiss();
             AndroidUtilities.runOnUIThread(() -> {
                 callback.toggleMute();
             });
-
         });
 
         gap = new FrameLayout(context);

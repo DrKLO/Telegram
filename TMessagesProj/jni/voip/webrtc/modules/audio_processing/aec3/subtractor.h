@@ -23,6 +23,7 @@
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec3_fft.h"
 #include "modules/audio_processing/aec3/aec_state.h"
+#include "modules/audio_processing/aec3/block.h"
 #include "modules/audio_processing/aec3/coarse_filter_update_gain.h"
 #include "modules/audio_processing/aec3/echo_path_variability.h"
 #include "modules/audio_processing/aec3/refined_filter_update_gain.h"
@@ -48,7 +49,7 @@ class Subtractor {
 
   // Performs the echo subtraction.
   void Process(const RenderBuffer& render_buffer,
-               const std::vector<std::vector<float>>& capture,
+               const Block& capture,
                const RenderSignalAnalyzer& render_signal_analyzer,
                const AecState& aec_state,
                rtc::ArrayView<SubtractorOutput> outputs);

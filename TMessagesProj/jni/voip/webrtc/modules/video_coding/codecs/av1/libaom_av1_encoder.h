@@ -10,19 +10,21 @@
 #ifndef MODULES_VIDEO_CODING_CODECS_AV1_LIBAOM_AV1_ENCODER_H_
 #define MODULES_VIDEO_CODING_CODECS_AV1_LIBAOM_AV1_ENCODER_H_
 
+#include <map>
 #include <memory>
 
-#include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
 #include "api/video_codecs/video_encoder.h"
 
 namespace webrtc {
-
-ABSL_CONST_INIT extern const bool kIsLibaomAv1EncoderSupported;
+struct LibaomAv1EncoderAuxConfig {
+  // A map of max pixel count --> cpu speed.
+  std::map<int, int> max_pixel_count_to_cpu_speed;
+};
 
 std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder();
-bool LibaomAv1EncoderSupportsScalabilityMode(
-    absl::string_view scalability_mode);
+std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder(
+    const LibaomAv1EncoderAuxConfig& aux_config);
 
 }  // namespace webrtc
 

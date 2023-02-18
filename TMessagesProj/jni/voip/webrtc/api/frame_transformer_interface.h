@@ -73,6 +73,8 @@ class TransformableAudioFrameInterface : public TransformableFrameInterface {
   // information in the header as needed, for example to compile the list of
   // csrcs.
   virtual const RTPHeader& GetHeader() const = 0;
+
+  virtual rtc::ArrayView<const uint32_t> GetContributingSources() const = 0;
 };
 
 // Objects implement this interface to be notified with the transformed frame.

@@ -333,10 +333,39 @@ class MediaStreamInterface : public rtc::RefCountInterface,
   virtual rtc::scoped_refptr<VideoTrackInterface> FindVideoTrack(
       const std::string& track_id) = 0;
 
-  virtual bool AddTrack(AudioTrackInterface* track) = 0;
-  virtual bool AddTrack(VideoTrackInterface* track) = 0;
-  virtual bool RemoveTrack(AudioTrackInterface* track) = 0;
-  virtual bool RemoveTrack(VideoTrackInterface* track) = 0;
+  // Takes ownership of added tracks.
+  // Note: Default implementations are for avoiding link time errors in
+  // implementations that mock this API.
+  // TODO(bugs.webrtc.org/13980): Remove default implementations.
+  virtual bool AddTrack(rtc::scoped_refptr<AudioTrackInterface> track) {
+    RTC_CHECK_NOTREACHED();
+  }
+  virtual bool AddTrack(rtc::scoped_refptr<VideoTrackInterface> track) {
+    RTC_CHECK_NOTREACHED();
+  }
+  virtual bool RemoveTrack(rtc::scoped_refptr<AudioTrackInterface> track) {
+    RTC_CHECK_NOTREACHED();
+  }
+  virtual bool RemoveTrack(rtc::scoped_refptr<VideoTrackInterface> track) {
+    RTC_CHECK_NOTREACHED();
+  }
+  // Deprecated: Should use scoped_refptr versions rather than pointers.
+  [[deprecated("Pass a scoped_refptr")]] virtual bool AddTrack(
+      AudioTrackInterface* track) {
+    return AddTrack(rtc::scoped_refptr<AudioTrackInterface>(track));
+  }
+  [[deprecated("Pass a scoped_refptr")]] virtual bool AddTrack(
+      VideoTrackInterface* track) {
+    return AddTrack(rtc::scoped_refptr<VideoTrackInterface>(track));
+  }
+  [[deprecated("Pass a scoped_refptr")]] virtual bool RemoveTrack(
+      AudioTrackInterface* track) {
+    return RemoveTrack(rtc::scoped_refptr<AudioTrackInterface>(track));
+  }
+  [[deprecated("Pass a scoped_refptr")]] virtual bool RemoveTrack(
+      VideoTrackInterface* track) {
+    return RemoveTrack(rtc::scoped_refptr<VideoTrackInterface>(track));
+  }
 
  protected:
   ~MediaStreamInterface() override = default;

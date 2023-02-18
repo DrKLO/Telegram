@@ -19,10 +19,10 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/system/no_unique_address.h"
@@ -113,10 +113,13 @@ class OperationWithFunctor final : public Operation {
 // The OperationsChain is kept-alive through reference counting if there are
 // operations pending. This, together with the contract, guarantees that all
 // operations that are chained get executed.
-class OperationsChain final : public RefCountedObject<RefCountInterface> {
+class OperationsChain final : public RefCountedNonVirtual<OperationsChain> {
  public:
   static scoped_refptr<OperationsChain> Create();
   ~OperationsChain();
+
+  OperationsChain(const OperationsChain&) = delete;
+  OperationsChain& operator=(const OperationsChain&) = delete;
 
   void SetOnChainEmptyCallback(std::function<void()> on_chain_empty_callback);
   bool IsEmpty() const;
@@ -163,10 +166,13 @@ class OperationsChain final : public RefCountedObject<RefCountInterface> {
   // std::function<void()>, which is a copyable type. To allow the callback to
   // be copyable, it is backed up by this reference counted handle. See
   // CreateOperationsChainCallback().
-  class CallbackHandle final : public RefCountedObject<RefCountInterface> {
+  class CallbackHandle final : public RefCountedNonVirtual<CallbackHandle> {
    public:
     explicit CallbackHandle(scoped_refptr<OperationsChain> operations_chain);
     ~CallbackHandle();
+
+    CallbackHandle(const CallbackHandle&) = delete;
+    CallbackHandle& operator=(const CallbackHandle&) = delete;
 
     void OnOperationComplete();
 
@@ -175,8 +181,6 @@ class OperationsChain final : public RefCountedObject<RefCountInterface> {
 #if RTC_DCHECK_IS_ON
     bool has_run_ = false;
 #endif  // RTC_DCHECK_IS_ON
-
-    RTC_DISALLOW_COPY_AND_ASSIGN(CallbackHandle);
   };
 
   OperationsChain();
@@ -192,8 +196,6 @@ class OperationsChain final : public RefCountedObject<RefCountInterface> {
       chained_operations_ RTC_GUARDED_BY(sequence_checker_);
   absl::optional<std::function<void()>> on_chain_empty_callback_
       RTC_GUARDED_BY(sequence_checker_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OperationsChain);
 };
 
 }  // namespace rtc

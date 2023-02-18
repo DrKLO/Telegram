@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/container/internal/common_policy_traits.h"
 #include "absl/meta/type_traits.h"
 
 namespace absl {
@@ -29,7 +30,7 @@ namespace container_internal {
 
 // Defines how slots are initialized/destroyed/moved.
 template <class Policy, class = void>
-struct hash_policy_traits {
+struct hash_policy_traits : common_policy_traits<Policy> {
   // The type of the keys stored in the hashtable.
   using key_type = typename Policy::key_type;
 
@@ -87,43 +88,6 @@ struct hash_policy_traits {
   // Defaults to false if not provided by the policy.
   using constant_iterators = ConstantIteratorsImpl<>;
 
-  // PRECONDITION: `slot` is UNINITIALIZED
-  // POSTCONDITION: `slot` is INITIALIZED
-  template <class Alloc, class... Args>
-  static void construct(Alloc* alloc, slot_type* slot, Args&&... args) {
-    Policy::construct(alloc, slot, std::forward<Args>(args)...);
-  }
-
-  // PRECONDITION: `slot` is INITIALIZED
-  // POSTCONDITION: `slot` is UNINITIALIZED
-  template <class Alloc>
-  static void destroy(Alloc* alloc, slot_type* slot) {
-    Policy::destroy(alloc, slot);
-  }
-
-  // Transfers the `old_slot` to `new_slot`. Any memory allocated by the
-  // allocator inside `old_slot` to `new_slot` can be transferred.
-  //
-  // OPTIONAL: defaults to:
-  //
-  //     clone(new_slot, std::move(*old_slot));
-  //     destroy(old_slot);
-  //
-  // PRECONDITION: `new_slot` is UNINITIALIZED and `old_slot` is INITIALIZED
-  // POSTCONDITION: `new_slot` is INITIALIZED and `old_slot` is
-  //                UNINITIALIZED
-  template <class Alloc>
-  static void transfer(Alloc* alloc, slot_type* new_slot, slot_type* old_slot) {
-    transfer_impl(alloc, new_slot, old_slot, 0);
-  }
-
-  // PRECONDITION: `slot` is INITIALIZED
-  // POSTCONDITION: `slot` is INITIALIZED
-  template <class P = Policy>
-  static auto element(slot_type* slot) -> decltype(P::element(slot)) {
-    return P::element(slot);
-  }
-
   // Returns the amount of memory owned by `slot`, exclusive of `sizeof(*slot)`.
   //
   // If `slot` is nullptr, returns the constant amount of memory owned by any
@@ -174,8 +138,8 @@ struct hash_policy_traits {
   // Used for node handle manipulation.
   template <class P = Policy>
   static auto mutable_key(slot_type* slot)
-      -> decltype(P::apply(ReturnKey(), element(slot))) {
-    return P::apply(ReturnKey(), element(slot));
+      -> decltype(P::apply(ReturnKey(), hash_policy_traits::element(slot))) {
+    return P::apply(ReturnKey(), hash_policy_traits::element(slot));
   }
 
   // Returns the "value" (as opposed to the "key") portion of the element. Used
@@ -183,21 +147,6 @@ struct hash_policy_traits {
   template <class T, class P = Policy>
   static auto value(T* elem) -> decltype(P::value(elem)) {
     return P::value(elem);
-  }
-
- private:
-  // Use auto -> decltype as an enabler.
-  template <class Alloc, class P = Policy>
-  static auto transfer_impl(Alloc* alloc, slot_type* new_slot,
-                            slot_type* old_slot, int)
-      -> decltype((void)P::transfer(alloc, new_slot, old_slot)) {
-    P::transfer(alloc, new_slot, old_slot);
-  }
-  template <class Alloc>
-  static void transfer_impl(Alloc* alloc, slot_type* new_slot,
-                            slot_type* old_slot, char) {
-    construct(alloc, new_slot, std::move(element(old_slot)));
-    destroy(alloc, old_slot);
   }
 };
 

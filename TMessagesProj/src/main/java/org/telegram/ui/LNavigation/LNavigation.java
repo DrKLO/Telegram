@@ -2306,7 +2306,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
 
             removeAllViews();
 
-            if (fragment == null) {
+            if (fragment == null || getContext() == null) {
                 invalidateBackgroundColor();
                 return;
             }

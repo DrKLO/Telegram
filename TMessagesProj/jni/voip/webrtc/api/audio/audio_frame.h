@@ -18,7 +18,6 @@
 
 #include "api/audio/channel_layout.h"
 #include "api/rtp_packet_infos.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -59,6 +58,9 @@ class AudioFrame {
   };
 
   AudioFrame();
+
+  AudioFrame(const AudioFrame&) = delete;
+  AudioFrame& operator=(const AudioFrame&) = delete;
 
   // Resets all members to their default state.
   void Reset();
@@ -166,8 +168,6 @@ class AudioFrame {
   // capture timestamp of a received frame is found in `packet_infos_`.
   // This timestamp MUST be based on the same clock as rtc::TimeMillis().
   absl::optional<int64_t> absolute_capture_timestamp_ms_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioFrame);
 };
 
 }  // namespace webrtc

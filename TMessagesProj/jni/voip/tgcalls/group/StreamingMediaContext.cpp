@@ -258,7 +258,7 @@ public:
 
     void beginRenderTimer(int timeoutMs) {
         const auto weak = std::weak_ptr<StreamingMediaContextPrivate>(shared_from_this());
-        _threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+        _threads->getMediaThread()->PostDelayedTask([weak]() {
             auto strong = weak.lock();
             if (!strong) {
                 return;
@@ -267,7 +267,7 @@ public:
             strong->render();
 
             strong->beginRenderTimer((int)(1.0 * 1000.0 / 120.0));
-        }, timeoutMs);
+        }, webrtc::TimeDelta::Millis(timeoutMs));
     }
 
     void render() {
@@ -596,7 +596,7 @@ public:
                 if (!_pendingRequestTimeTask && _pendingRequestTimeDelayTaskId == 0) {
                     const auto weak = std::weak_ptr<StreamingMediaContextPrivate>(shared_from_this());
                     _pendingRequestTimeTask = _requestCurrentTime([weak, threads = _threads](int64_t timestamp) {
-                        threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, timestamp]() {
+                        threads->getMediaThread()->PostTask([weak, timestamp]() {
                             auto strong = weak.lock();
                             if (!strong) {
                                 return;
@@ -614,7 +614,7 @@ public:
                                 strong->_pendingRequestTimeDelayTaskId = taskId;
                                 strong->_nextPendingRequestTimeDelayTaskId++;
 
-                                strong->_threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak, taskId]() {
+                                strong->_threads->getMediaThread()->PostDelayedTask([weak, taskId]() {
                                     auto strong = weak.lock();
                                     if (!strong) {
                                         return;
@@ -626,7 +626,7 @@ public:
                                     strong->_pendingRequestTimeDelayTaskId = 0;
 
                                     strong->requestSegmentsIfNeeded();
-                                }, 1000);
+                                }, webrtc::TimeDelta::Millis(1000));
                             } else {
                                 strong->_nextSegmentTimestamp = adjustedTimestamp;
                                 strong->requestSegmentsIfNeeded();
@@ -794,7 +794,7 @@ public:
                     const auto weakPart = std::weak_ptr<PendingMediaSegmentPart>(part);
 
                     std::function<void(BroadcastPart &&)> handleResult = [weak, weakSegment, weakPart, threads = _threads, segmentTimestamp](BroadcastPart &&part) {
-                        threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, weakSegment, weakPart, part = std::move(part), segmentTimestamp]() mutable {
+                        threads->getMediaThread()->PostTask([weak, weakSegment, weakPart, part = std::move(part), segmentTimestamp]() mutable {
                             auto strong = weak.lock();
                             if (!strong) {
                                 return;
@@ -909,13 +909,13 @@ public:
 
         if (minDelayedRequestTimeout < INT32_MAX) {
             const auto weak = std::weak_ptr<StreamingMediaContextPrivate>(shared_from_this());
-            _threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+            _threads->getMediaThread()->PostDelayedTask([weak]() {
                 auto strong = weak.lock();
                 if (!strong) {
                     return;
                 }
                 strong->checkPendingSegments();
-            }, std::max((int32_t)minDelayedRequestTimeout, 10));
+            }, webrtc::TimeDelta::Millis(std::max((int32_t)minDelayedRequestTimeout, 10)));
         }
 
         if (shouldRequestMoreSegments) {
@@ -928,7 +928,7 @@ public:
         const auto weakPart = std::weak_ptr<PendingMediaSegmentPart>(part);
 
         std::function<void(BroadcastPart &&)> handleResult = [weak, weakPart, threads = _threads, completion](BroadcastPart &&part) {
-            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, weakPart, part = std::move(part), completion]() mutable {
+            threads->getMediaThread()->PostTask([weak, weakPart, part = std::move(part), completion]() mutable {
                 auto strong = weak.lock();
                 if (!strong) {
                     return;

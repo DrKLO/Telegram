@@ -20,6 +20,7 @@
 
 #include "absl/types/optional.h"
 #include "api/crypto_params.h"
+#include "api/field_trials_view.h"
 #include "api/rtc_error.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "pc/rtp_transport.h"
@@ -36,11 +37,10 @@ namespace webrtc {
 // parameters for the SrtpSession underneath.
 class SrtpTransport : public RtpTransport {
  public:
-  explicit SrtpTransport(bool rtcp_mux_enabled);
+  SrtpTransport(bool rtcp_mux_enabled, const FieldTrialsView& field_trials);
 
   virtual ~SrtpTransport() = default;
 
-  // SrtpTransportInterface specific implementation.
   virtual RTCError SetSrtpSendKey(const cricket::CryptoParams& params);
   virtual RTCError SetSrtpReceiveKey(const cricket::CryptoParams& params);
 
@@ -167,6 +167,8 @@ class SrtpTransport : public RtpTransport {
   int rtp_abs_sendtime_extn_id_ = -1;
 
   int decryption_failure_count_ = 0;
+
+  const FieldTrialsView& field_trials_;
 };
 
 }  // namespace webrtc

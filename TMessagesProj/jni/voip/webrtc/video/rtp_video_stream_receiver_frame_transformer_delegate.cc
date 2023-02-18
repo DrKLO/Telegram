@@ -15,7 +15,6 @@
 
 #include "absl/memory/memory.h"
 #include "modules/rtp_rtcp/source/rtp_descriptor_authentication.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread.h"
 
 namespace webrtc {
@@ -102,12 +101,12 @@ void RtpVideoStreamReceiverFrameTransformerDelegate::TransformFrame(
 
 void RtpVideoStreamReceiverFrameTransformerDelegate::OnTransformedFrame(
     std::unique_ptr<TransformableFrameInterface> frame) {
-  rtc::scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate> delegate =
-      this;
-  network_thread_->PostTask(ToQueuedTask(
+  rtc::scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate> delegate(
+      this);
+  network_thread_->PostTask(
       [delegate = std::move(delegate), frame = std::move(frame)]() mutable {
         delegate->ManageFrame(std::move(frame));
-      }));
+      });
 }
 
 void RtpVideoStreamReceiverFrameTransformerDelegate::ManageFrame(

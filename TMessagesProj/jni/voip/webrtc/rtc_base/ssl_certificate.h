@@ -17,12 +17,13 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {
@@ -37,6 +38,8 @@ struct RTC_EXPORT SSLCertificateStats {
   std::string fingerprint_algorithm;
   std::string base64_certificate;
   std::unique_ptr<SSLCertificateStats> issuer;
+
+  std::unique_ptr<SSLCertificateStats> Copy() const;
 };
 
 // Abstract interface overridden by SSL library specific
@@ -55,7 +58,7 @@ class RTC_EXPORT SSLCertificate {
   // stored in *pem_length if it is non-null, and only if
   // parsing was successful.
   static std::unique_ptr<SSLCertificate> FromPEMString(
-      const std::string& pem_string);
+      absl::string_view pem_string);
   virtual ~SSLCertificate() = default;
 
   // Returns a new SSLCertificate object instance wrapping the same
@@ -73,7 +76,7 @@ class RTC_EXPORT SSLCertificate {
   virtual bool GetSignatureDigestAlgorithm(std::string* algorithm) const = 0;
 
   // Compute the digest of the certificate given algorithm
-  virtual bool ComputeDigest(const std::string& algorithm,
+  virtual bool ComputeDigest(absl::string_view algorithm,
                              unsigned char* digest,
                              size_t size,
                              size_t* length) const = 0;
@@ -101,6 +104,9 @@ class RTC_EXPORT SSLCertChain final {
 
   ~SSLCertChain();
 
+  SSLCertChain(const SSLCertChain&) = delete;
+  SSLCertChain& operator=(const SSLCertChain&) = delete;
+
   // Vector access methods.
   size_t GetSize() const { return certs_.size(); }
 
@@ -118,8 +124,6 @@ class RTC_EXPORT SSLCertChain final {
 
  private:
   std::vector<std::unique_ptr<SSLCertificate>> certs_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SSLCertChain);
 };
 
 // SSLCertificateVerifier provides a simple interface to allow third parties to

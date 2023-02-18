@@ -11,6 +11,7 @@
 #include "api/transport/stun.h"
 
 #include <string.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
@@ -20,8 +21,10 @@
 #include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/crc32.h"
+#include "rtc_base/helpers.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/message_digest.h"
+#include "system_wrappers/include/metrics.h"
 
 using rtc::ByteBufferReader;
 using rtc::ByteBufferWriter;
@@ -34,11 +37,11 @@ const int k127Utf8CharactersLengthInBytes = 508;
 const int kMessageIntegrityAttributeLength = 20;
 const int kTheoreticalMaximumAttributeLength = 65535;
 
-uint32_t ReduceTransactionId(const std::string& transaction_id) {
+uint32_t ReduceTransactionId(absl::string_view transaction_id) {
   RTC_DCHECK(transaction_id.length() == cricket::kStunTransactionIdLength ||
-             transaction_id.length() ==
-                 cricket::kStunLegacyTransactionIdLength);
-  ByteBufferReader reader(transaction_id.c_str(), transaction_id.length());
+             transaction_id.length() == cricket::kStunLegacyTransactionIdLength)
+      << transaction_id.length();
+  ByteBufferReader reader(transaction_id.data(), transaction_id.size());
   uint32_t result = 0;
   uint32_t next;
   while (reader.ReadUInt32(&next)) {
@@ -102,10 +105,15 @@ const int SERVER_NOT_REACHABLE_ERROR = 701;
 // StunMessage
 
 StunMessage::StunMessage()
-    : type_(0),
-      length_(0),
-      transaction_id_(EMPTY_TRANSACTION_ID),
-      stun_magic_cookie_(kStunMagicCookie) {
+    : StunMessage(STUN_INVALID_MESSAGE_TYPE, EMPTY_TRANSACTION_ID) {}
+
+StunMessage::StunMessage(uint16_t type)
+    : StunMessage(type, GenerateTransactionId()) {}
+
+StunMessage::StunMessage(uint16_t type, absl::string_view transaction_id)
+    : type_(type),
+      transaction_id_(transaction_id),
+      reduced_transaction_id_(ReduceTransactionId(transaction_id_)) {
   RTC_DCHECK(IsValidTransactionId(transaction_id_));
 }
 
@@ -116,15 +124,6 @@ bool StunMessage::IsLegacy() const {
     return true;
   RTC_DCHECK(transaction_id_.size() == kStunTransactionIdLength);
   return false;
-}
-
-bool StunMessage::SetTransactionID(const std::string& str) {
-  if (!IsValidTransactionId(str)) {
-    return false;
-  }
-  transaction_id_ = str;
-  reduced_transaction_id_ = ReduceTransactionId(transaction_id_);
-  return true;
 }
 
 static bool DesignatedExpertRange(int attr_type) {
@@ -240,6 +239,8 @@ const StunUInt16ListAttribute* StunMessage::GetUnknownAttributes() const {
 
 StunMessage::IntegrityStatus StunMessage::ValidateMessageIntegrity(
     const std::string& password) {
+  RTC_DCHECK(integrity_ == IntegrityStatus::kNotSet)
+      << "Usage error: Verification should only be done once";
   password_ = password;
   if (GetByteString(STUN_ATTR_MESSAGE_INTEGRITY)) {
     if (ValidateMessageIntegrityOfType(
@@ -260,9 +261,101 @@ StunMessage::IntegrityStatus StunMessage::ValidateMessageIntegrity(
   } else {
     integrity_ = IntegrityStatus::kNoIntegrity;
   }
+  // Log the result of integrity checking. See crbug.com/1177125 for background.
+  // Convert args to integer for the benefit of the macros.
+  int bucket_count = static_cast<int>(IntegrityStatus::kMaxValue) + 1;
+  int integrity = static_cast<int>(integrity_);
+  if (IsStunRequestType(type_)) {
+    RTC_HISTOGRAM_ENUMERATION("WebRTC.Stun.Integrity.Request", integrity,
+                              bucket_count);
+  } else if (IsStunSuccessResponseType(type_)) {
+    RTC_HISTOGRAM_ENUMERATION("WebRTC.Stun.Integrity.Response", integrity,
+                              bucket_count);
+  } else if (IsStunIndicationType(type_)) {
+    RTC_HISTOGRAM_ENUMERATION("WebRTC.Stun.Integrity.Indication", integrity,
+                              bucket_count);
+  } else {
+    RTC_DCHECK(IsStunErrorResponseType(type_));
+    auto* error_attribute = GetErrorCode();
+    if (!error_attribute) {
+      RTC_HISTOGRAM_ENUMERATION(
+          "WebRTC.Stun.Integrity.ErrorResponse.NoErrorAttribute", integrity,
+          bucket_count);
+    } else {
+      switch (error_attribute->code()) {
+        case STUN_ERROR_TRY_ALTERNATE:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.TryAlternate", integrity,
+              bucket_count);
+          break;
+        case STUN_ERROR_BAD_REQUEST:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.BadRequest", integrity,
+              bucket_count);
+          break;
+        case STUN_ERROR_UNAUTHORIZED:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.Unauthorized", integrity,
+              bucket_count);
+          break;
+        case STUN_ERROR_UNKNOWN_ATTRIBUTE:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.UnknownAttribute", integrity,
+              bucket_count);
+          break;
+        case STUN_ERROR_STALE_NONCE:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.StaleNonce", integrity,
+              bucket_count);
+          break;
+        case STUN_ERROR_SERVER_ERROR:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.ServerError", integrity,
+              bucket_count);
+          break;
+        case STUN_ERROR_GLOBAL_FAILURE:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.GlobalFailure", integrity,
+              bucket_count);
+          break;
+        default:
+          RTC_HISTOGRAM_ENUMERATION(
+              "WebRTC.Stun.Integrity.ErrorResponse.ErrorOther", integrity,
+              bucket_count);
+          break;
+      }
+    }
+  }
   return integrity_;
 }
 
+StunMessage::IntegrityStatus StunMessage::RevalidateMessageIntegrity(
+    const std::string& password) {
+  RTC_LOG(LS_INFO) << "Message revalidation, old status was "
+                   << static_cast<int>(integrity_);
+  integrity_ = IntegrityStatus::kNotSet;
+  return ValidateMessageIntegrity(password);
+}
+
+bool StunMessage::ValidateMessageIntegrityForTesting(
+    const char* data,
+    size_t size,
+    const std::string& password) {
+  return ValidateMessageIntegrityOfType(STUN_ATTR_MESSAGE_INTEGRITY,
+                                        kStunMessageIntegritySize, data, size,
+                                        password);
+}
+
+bool StunMessage::ValidateMessageIntegrity32ForTesting(
+    const char* data,
+    size_t size,
+    const std::string& password) {
+  return ValidateMessageIntegrityOfType(STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32,
+                                        kStunMessageIntegrity32Size, data, size,
+                                        password);
+}
+
+// Deprecated
 bool StunMessage::ValidateMessageIntegrity(const char* data,
                                            size_t size,
                                            const std::string& password) {
@@ -271,6 +364,7 @@ bool StunMessage::ValidateMessageIntegrity(const char* data,
                                         password);
 }
 
+// Deprecated
 bool StunMessage::ValidateMessageIntegrity32(const char* data,
                                              size_t size,
                                              const std::string& password) {
@@ -364,22 +458,19 @@ bool StunMessage::ValidateMessageIntegrityOfType(int mi_attr_type,
                 mi_attr_size) == 0;
 }
 
-bool StunMessage::AddMessageIntegrity(const std::string& password) {
+bool StunMessage::AddMessageIntegrity(absl::string_view password) {
   return AddMessageIntegrityOfType(STUN_ATTR_MESSAGE_INTEGRITY,
-                                   kStunMessageIntegritySize, password.c_str(),
-                                   password.size());
+                                   kStunMessageIntegritySize, password);
 }
 
 bool StunMessage::AddMessageIntegrity32(absl::string_view password) {
   return AddMessageIntegrityOfType(STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32,
-                                   kStunMessageIntegrity32Size, password.data(),
-                                   password.length());
+                                   kStunMessageIntegrity32Size, password);
 }
 
 bool StunMessage::AddMessageIntegrityOfType(int attr_type,
                                             size_t attr_size,
-                                            const char* key,
-                                            size_t keylen) {
+                                            absl::string_view key) {
   // Add the attribute with a dummy value. Since this is a known attribute, it
   // can't fail.
   RTC_DCHECK(attr_size <= kStunMessageIntegritySize);
@@ -396,8 +487,9 @@ bool StunMessage::AddMessageIntegrityOfType(int attr_type,
   int msg_len_for_hmac = static_cast<int>(
       buf.Length() - kStunAttributeHeaderSize - msg_integrity_attr->length());
   char hmac[kStunMessageIntegritySize];
-  size_t ret = rtc::ComputeHmac(rtc::DIGEST_SHA_1, key, keylen, buf.Data(),
-                                msg_len_for_hmac, hmac, sizeof(hmac));
+  size_t ret =
+      rtc::ComputeHmac(rtc::DIGEST_SHA_1, key.data(), key.size(), buf.Data(),
+                       msg_len_for_hmac, hmac, sizeof(hmac));
   RTC_DCHECK(ret == sizeof(hmac));
   if (ret != sizeof(hmac)) {
     RTC_LOG(LS_ERROR) << "HMAC computation failed. Message-Integrity "
@@ -407,7 +499,7 @@ bool StunMessage::AddMessageIntegrityOfType(int attr_type,
 
   // Insert correct HMAC into the attribute.
   msg_integrity_attr->CopyBytes(hmac, attr_size);
-  password_.assign(key, keylen);
+  password_ = std::string(key);
   integrity_ = IntegrityStatus::kIntegrityOk;
   return true;
 }
@@ -440,6 +532,11 @@ bool StunMessage::ValidateFingerprint(const char* data, size_t size) {
       rtc::GetBE32(fingerprint_attr_data + kStunAttributeHeaderSize);
   return ((fingerprint ^ STUN_FINGERPRINT_XOR_VALUE) ==
           rtc::ComputeCrc32(data, size - fingerprint_attr_size));
+}
+
+// static
+std::string StunMessage::GenerateTransactionId() {
+  return rtc::CreateRandomString(kStunTransactionIdLength);
 }
 
 bool StunMessage::IsStunMethod(rtc::ArrayView<int> methods,
@@ -589,6 +686,12 @@ void StunMessage::SetStunMagicCookie(uint32_t val) {
   stun_magic_cookie_ = val;
 }
 
+void StunMessage::SetTransactionIdForTesting(absl::string_view transaction_id) {
+  RTC_DCHECK(IsValidTransactionId(transaction_id));
+  transaction_id_ = std::string(transaction_id);
+  reduced_transaction_id_ = ReduceTransactionId(transaction_id_);
+}
+
 StunAttributeValueType StunMessage::GetAttributeValueType(int type) const {
   switch (type) {
     case STUN_ATTR_MAPPED_ADDRESS:
@@ -647,7 +750,7 @@ const StunAttribute* StunMessage::GetAttribute(int type) const {
   return NULL;
 }
 
-bool StunMessage::IsValidTransactionId(const std::string& transaction_id) {
+bool StunMessage::IsValidTransactionId(absl::string_view transaction_id) {
   return transaction_id.size() == kStunTransactionIdLength ||
          transaction_id.size() == kStunLegacyTransactionIdLength;
 }
@@ -997,9 +1100,9 @@ StunByteStringAttribute::StunByteStringAttribute(uint16_t type)
     : StunAttribute(type, 0), bytes_(NULL) {}
 
 StunByteStringAttribute::StunByteStringAttribute(uint16_t type,
-                                                 const std::string& str)
+                                                 absl::string_view str)
     : StunAttribute(type, 0), bytes_(NULL) {
-  CopyBytes(str.c_str(), str.size());
+  CopyBytes(str);
 }
 
 StunByteStringAttribute::StunByteStringAttribute(uint16_t type,
@@ -1020,8 +1123,10 @@ StunAttributeValueType StunByteStringAttribute::value_type() const {
   return STUN_VALUE_BYTE_STRING;
 }
 
-void StunByteStringAttribute::CopyBytes(const char* bytes) {
-  CopyBytes(bytes, strlen(bytes));
+void StunByteStringAttribute::CopyBytes(absl::string_view bytes) {
+  char* new_bytes = new char[bytes.size()];
+  memcpy(new_bytes, bytes.data(), bytes.size());
+  SetBytes(new_bytes, bytes.size());
 }
 
 void StunByteStringAttribute::CopyBytes(const void* bytes, size_t length) {

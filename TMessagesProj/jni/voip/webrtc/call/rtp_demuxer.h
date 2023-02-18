@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/containers/flat_set.h"
 
@@ -26,7 +27,10 @@ class RtpPacketSinkInterface;
 
 // This struct describes the criteria that will be used to match packets to a
 // specific sink.
-struct RtpDemuxerCriteria {
+class RtpDemuxerCriteria {
+ public:
+  explicit RtpDemuxerCriteria(absl::string_view mid,
+                              absl::string_view rsid = absl::string_view());
   RtpDemuxerCriteria();
   ~RtpDemuxerCriteria();
 
@@ -34,23 +38,37 @@ struct RtpDemuxerCriteria {
   bool operator!=(const RtpDemuxerCriteria& other) const;
 
   // If not the empty string, will match packets with this MID.
-  std::string mid;
+  const std::string& mid() const { return mid_; }
+
+  // Return string representation of demux criteria to facilitate logging
+  std::string ToString() const;
 
   // If not the empty string, will match packets with this as their RTP stream
   // ID or repaired RTP stream ID.
   // Note that if both MID and RSID are specified, this will only match packets
   // that have both specified (either through RTP header extensions, SSRC
   // latching or RTCP).
-  std::string rsid;
+  const std::string& rsid() const { return rsid_; }
 
-  // Will match packets with any of these SSRCs.
-  flat_set<uint32_t> ssrcs;
+  // The criteria will match packets with any of these SSRCs.
+  const flat_set<uint32_t>& ssrcs() const { return ssrcs_; }
 
-  // Will match packets with any of these payload types.
-  flat_set<uint8_t> payload_types;
+  // Writable accessor for directly modifying the list of ssrcs.
+  flat_set<uint32_t>& ssrcs() { return ssrcs_; }
 
-  // Return string representation of demux criteria to facilitate logging
-  std::string ToString() const;
+  // The criteria will match packets with any of these payload types.
+  const flat_set<uint8_t>& payload_types() const { return payload_types_; }
+
+  // Writable accessor for directly modifying the list of payload types.
+  flat_set<uint8_t>& payload_types() { return payload_types_; }
+
+ private:
+  // Intentionally private member variables to encourage specifying them via the
+  // constructor and consider them to be const as much as possible.
+  const std::string mid_;
+  const std::string rsid_;
+  flat_set<uint32_t> ssrcs_;
+  flat_set<uint8_t> payload_types_;
 };
 
 // This class represents the RTP demuxing, for a single RTP session (i.e., one
@@ -127,7 +145,7 @@ class RtpDemuxer {
 
   // Registers a sink's association to an RSID. Only one sink may be associated
   // with a given RSID. Null pointer is not allowed.
-  void AddSink(const std::string& rsid, RtpPacketSinkInterface* sink);
+  void AddSink(absl::string_view rsid, RtpPacketSinkInterface* sink);
 
   // Removes a sink. Return value reports if anything was actually removed.
   // Null pointer is not allowed.
@@ -149,12 +167,12 @@ class RtpDemuxer {
   RtpPacketSinkInterface* ResolveSink(const RtpPacketReceived& packet);
 
   // Used by the ResolveSink algorithm.
-  RtpPacketSinkInterface* ResolveSinkByMid(const std::string& mid,
+  RtpPacketSinkInterface* ResolveSinkByMid(absl::string_view mid,
                                            uint32_t ssrc);
-  RtpPacketSinkInterface* ResolveSinkByMidRsid(const std::string& mid,
-                                               const std::string& rsid,
+  RtpPacketSinkInterface* ResolveSinkByMidRsid(absl::string_view mid,
+                                               absl::string_view rsid,
                                                uint32_t ssrc);
-  RtpPacketSinkInterface* ResolveSinkByRsid(const std::string& rsid,
+  RtpPacketSinkInterface* ResolveSinkByRsid(absl::string_view rsid,
                                             uint32_t ssrc);
   RtpPacketSinkInterface* ResolveSinkByPayloadType(uint8_t payload_type,
                                                    uint32_t ssrc);

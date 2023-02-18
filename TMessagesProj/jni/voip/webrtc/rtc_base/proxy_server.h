@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/memory/fifo_buffer.h"
 #include "rtc_base/server_socket_adapters.h"
 #include "rtc_base/socket.h"
@@ -36,6 +35,10 @@ class ProxyBinding : public sigslot::has_slots<> {
  public:
   ProxyBinding(AsyncProxyServerSocket* in_socket, Socket* out_socket);
   ~ProxyBinding() override;
+
+  ProxyBinding(const ProxyBinding&) = delete;
+  ProxyBinding& operator=(const ProxyBinding&) = delete;
+
   sigslot::signal1<ProxyBinding*> SignalDestroyed;
 
  private:
@@ -59,7 +62,6 @@ class ProxyBinding : public sigslot::has_slots<> {
   bool connected_;
   FifoBuffer out_buffer_;
   FifoBuffer in_buffer_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(ProxyBinding);
 };
 
 class ProxyServer : public sigslot::has_slots<> {
@@ -69,6 +71,9 @@ class ProxyServer : public sigslot::has_slots<> {
               SocketFactory* ext_factory,
               const SocketAddress& ext_ip);
   ~ProxyServer() override;
+
+  ProxyServer(const ProxyServer&) = delete;
+  ProxyServer& operator=(const ProxyServer&) = delete;
 
   // Returns the address to which the proxy server is bound
   SocketAddress GetServerAddress();
@@ -82,7 +87,6 @@ class ProxyServer : public sigslot::has_slots<> {
   SocketAddress ext_ip_;
   std::unique_ptr<Socket> server_socket_;
   std::vector<std::unique_ptr<ProxyBinding>> bindings_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(ProxyServer);
 };
 
 // SocksProxyServer is a simple extension of ProxyServer to implement SOCKS.
@@ -94,9 +98,11 @@ class SocksProxyServer : public ProxyServer {
                    const SocketAddress& ext_ip)
       : ProxyServer(int_factory, int_addr, ext_factory, ext_ip) {}
 
+  SocksProxyServer(const SocksProxyServer&) = delete;
+  SocksProxyServer& operator=(const SocksProxyServer&) = delete;
+
  protected:
   AsyncProxyServerSocket* WrapSocket(Socket* socket) override;
-  RTC_DISALLOW_COPY_AND_ASSIGN(SocksProxyServer);
 };
 
 }  // namespace rtc

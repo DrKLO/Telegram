@@ -25,6 +25,7 @@ namespace rtclog {
 class Event;  // Auto-generated from protobuf.
 }  // namespace rtclog
 
+class RtcEventAlrState;
 class RtcEventAudioNetworkAdaptation;
 class RtcEventAudioPlayout;
 class RtcEventAudioReceiveStreamConfig;
@@ -38,13 +39,13 @@ class RtcEventLoggingStopped;
 class RtcEventProbeClusterCreated;
 class RtcEventProbeResultFailure;
 class RtcEventProbeResultSuccess;
+class RtcEventRemoteEstimate;
 class RtcEventRtcpPacketIncoming;
 class RtcEventRtcpPacketOutgoing;
 class RtcEventRtpPacketIncoming;
 class RtcEventRtpPacketOutgoing;
 class RtcEventVideoReceiveStreamConfig;
 class RtcEventVideoSendStreamConfig;
-class RtcEventAlrState;
 class RtpPacket;
 
 class RtcEventLogEncoderLegacy final : public RtcEventLogEncoder {
@@ -81,6 +82,7 @@ class RtcEventLogEncoderLegacy final : public RtcEventLogEncoder {
       const RtcEventProbeClusterCreated& event);
   std::string EncodeProbeResultFailure(const RtcEventProbeResultFailure& event);
   std::string EncodeProbeResultSuccess(const RtcEventProbeResultSuccess&);
+  std::string EncodeRemoteEstimate(const RtcEventRemoteEstimate& event);
   std::string EncodeRtcpPacketIncoming(const RtcEventRtcpPacketIncoming& event);
   std::string EncodeRtcpPacketOutgoing(const RtcEventRtcpPacketOutgoing& event);
   std::string EncodeRtpPacketIncoming(const RtcEventRtpPacketIncoming& event);

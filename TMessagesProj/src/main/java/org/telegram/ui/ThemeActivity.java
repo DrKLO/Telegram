@@ -1265,6 +1265,13 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 editTheme();
             }
         });
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (position == lightModeRow && BuildVars.DEBUG_VERSION) {
+                presentFragment(new LiteModeSettingsActivity());
+                return true;
+            }
+            return false;
+        });
 
         return fragmentView;
     }
@@ -2254,7 +2261,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     } else if (position == chatBlurRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("BlurInChat", R.string.BlurInChat), SharedConfig.chatBlurEnabled(), true);
                     } else if (position == lightModeRow) {
-                        textCheckCell.setTextAndCheck(LocaleController.getString("LightMode", R.string.LightMode), SharedConfig.getLiteMode().enabled(), true);
+                        textCheckCell.setTextAndCheck(LocaleController.getString("LightMode", R.string.LightMode), SharedConfig.getLiteMode().enabled, true);
                     }
                     break;
                 }

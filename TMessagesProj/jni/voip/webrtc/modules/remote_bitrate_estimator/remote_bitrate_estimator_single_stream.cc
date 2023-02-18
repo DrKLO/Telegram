@@ -44,7 +44,7 @@ struct RemoteBitrateEstimatorSingleStream::Detector {
   explicit Detector(int64_t last_packet_time_ms,
                     const OverUseDetectorOptions& options,
                     bool enable_burst_grouping,
-                    const WebRtcKeyValueConfig* key_value_config)
+                    const FieldTrialsView* key_value_config)
       : last_packet_time_ms(last_packet_time_ms),
         inter_arrival(90 * kTimestampGroupLengthMs,
                       kTimestampToMs,
@@ -155,22 +155,17 @@ void RemoteBitrateEstimatorSingleStream::IncomingPacket(
   }
 }
 
-void RemoteBitrateEstimatorSingleStream::Process() {
-  {
-    MutexLock lock(&mutex_);
-    UpdateEstimate(clock_->TimeInMilliseconds());
+TimeDelta RemoteBitrateEstimatorSingleStream::Process() {
+  MutexLock lock(&mutex_);
+  int64_t now_ms = clock_->TimeInMilliseconds();
+  int64_t next_process_time_ms = last_process_time_ + process_interval_ms_;
+  if (last_process_time_ == -1 || now_ms >= next_process_time_ms) {
+    UpdateEstimate(now_ms);
+    last_process_time_ = now_ms;
+    return TimeDelta::Millis(process_interval_ms_);
   }
-  last_process_time_ = clock_->TimeInMilliseconds();
-}
 
-int64_t RemoteBitrateEstimatorSingleStream::TimeUntilNextProcess() {
-  if (last_process_time_ < 0) {
-    return 0;
-  }
-  MutexLock lock_(&mutex_);
-  RTC_DCHECK_GT(process_interval_ms_, 0);
-  return last_process_time_ + process_interval_ms_ -
-         clock_->TimeInMilliseconds();
+  return TimeDelta::Millis(next_process_time_ms - now_ms);
 }
 
 void RemoteBitrateEstimatorSingleStream::UpdateEstimate(int64_t now_ms) {
@@ -229,20 +224,12 @@ void RemoteBitrateEstimatorSingleStream::RemoveStream(unsigned int ssrc) {
   }
 }
 
-bool RemoteBitrateEstimatorSingleStream::LatestEstimate(
-    std::vector<uint32_t>* ssrcs,
-    uint32_t* bitrate_bps) const {
+DataRate RemoteBitrateEstimatorSingleStream::LatestEstimate() const {
   MutexLock lock(&mutex_);
-  RTC_DCHECK(bitrate_bps);
-  if (!remote_rate_->ValidEstimate()) {
-    return false;
+  if (!remote_rate_->ValidEstimate() || overuse_detectors_.empty()) {
+    return DataRate::Zero();
   }
-  GetSsrcs(ssrcs);
-  if (ssrcs->empty())
-    *bitrate_bps = 0;
-  else
-    *bitrate_bps = remote_rate_->LatestEstimate().bps<uint32_t>();
-  return true;
+  return remote_rate_->LatestEstimate();
 }
 
 void RemoteBitrateEstimatorSingleStream::GetSsrcs(
@@ -260,11 +247,6 @@ AimdRateControl* RemoteBitrateEstimatorSingleStream::GetRemoteRate() {
   if (!remote_rate_)
     remote_rate_.reset(new AimdRateControl(&field_trials_));
   return remote_rate_.get();
-}
-
-void RemoteBitrateEstimatorSingleStream::SetMinBitrate(int min_bitrate_bps) {
-  MutexLock lock(&mutex_);
-  remote_rate_->SetMinBitrate(DataRate::BitsPerSec(min_bitrate_bps));
 }
 
 }  // namespace webrtc

@@ -19,10 +19,7 @@
 
 namespace webrtc {
 
-namespace congestion_controller {
-int GetMinBitrateBps();
-DataRate GetMinBitrate();
-}  // namespace congestion_controller
+constexpr DataRate kCongestionControllerMinBitrate = DataRate::BitsPerSec(5000);
 
 static const int64_t kBitrateWindowMs = 1000;
 

@@ -642,6 +642,10 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             NotificationCenter.getInstance(lastAccount = account).addObserver(this, NotificationCenter.updateInterfaces);
         }
 
+        if (lastUser == user) {
+            return;
+        }
+
         lastUser = user;
         if (user == null) {
             return;

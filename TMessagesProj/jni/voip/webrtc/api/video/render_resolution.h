@@ -13,6 +13,7 @@
 
 namespace webrtc {
 
+// TODO(bugs.webrtc.org/12114) : remove in favor of Resolution.
 class RenderResolution {
  public:
   constexpr RenderResolution() = default;

@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "pc/channel_manager.h"
+#include "media/base/media_engine.h"
 #include "pc/media_session.h"
 #include "pc/session_description.h"
 #include "p2p/base/transport_description_factory.h"
@@ -49,10 +49,10 @@ public:
     };
     
 public:
-    ContentNegotiationContext(bool isOutgoing, rtc::UniqueRandomIdGenerator *uniqueRandomIdGenerator);
+    ContentNegotiationContext(const webrtc::WebRtcKeyValueConfig& fieldTrials, bool isOutgoing, rtc::UniqueRandomIdGenerator *uniqueRandomIdGenerator);
     ~ContentNegotiationContext();
     
-    void copyCodecsFromChannelManager(cricket::ChannelManager *channelManager, bool randomize);
+    void copyCodecsFromChannelManager(cricket::MediaEngineInterface *mediaEngine, bool randomize);
     
     std::string addOutgoingChannel(signaling::MediaContent::Type mediaType);
     void removeOutgoingChannel(std::string const &id);

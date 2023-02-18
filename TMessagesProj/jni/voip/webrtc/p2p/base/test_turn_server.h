@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/sequence_checker.h"
 #include "api/transport/stun.h"
 #include "p2p/base/basic_packet_socket_factory.h"
@@ -58,7 +59,7 @@ class TestTurnServer : public TurnAuthInterface {
                  const rtc::SocketAddress& udp_ext_addr,
                  ProtocolType int_protocol = PROTO_UDP,
                  bool ignore_bad_cert = true,
-                 const std::string& common_name = "test turn server")
+                 absl::string_view common_name = "test turn server")
       : server_(thread), socket_factory_(socket_factory) {
     AddInternalSocket(int_addr, int_protocol, ignore_bad_cert, common_name);
     server_.SetExternalSocketFactory(
@@ -93,7 +94,7 @@ class TestTurnServer : public TurnAuthInterface {
   void AddInternalSocket(const rtc::SocketAddress& int_addr,
                          ProtocolType proto,
                          bool ignore_bad_cert = true,
-                         const std::string& common_name = "test turn server") {
+                         absl::string_view common_name = "test turn server") {
     RTC_DCHECK(thread_checker_.IsCurrent());
     if (proto == cricket::PROTO_UDP) {
       server_.AddInternalSocket(
@@ -142,11 +143,12 @@ class TestTurnServer : public TurnAuthInterface {
  private:
   // For this test server, succeed if the password is the same as the username.
   // Obviously, do not use this in a production environment.
-  virtual bool GetKey(const std::string& username,
-                      const std::string& realm,
+  virtual bool GetKey(absl::string_view username,
+                      absl::string_view realm,
                       std::string* key) {
     RTC_DCHECK(thread_checker_.IsCurrent());
-    return ComputeStunCredentialHash(username, realm, username, key);
+    return ComputeStunCredentialHash(std::string(username), std::string(realm),
+                                     std::string(username), key);
   }
 
   TurnServer server_;

@@ -111,6 +111,8 @@ class NackTracker {
     bool never_nack_multiple_times = false;
     // Only nack if the RTT is valid.
     bool require_valid_rtt = false;
+    // Default RTT to use unless `require_valid_rtt` is set.
+    int default_rtt_ms = 100;
     // Do not nack if the loss rate is above this value.
     double max_loss_rate = 1.0;
   };

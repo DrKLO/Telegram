@@ -10,6 +10,7 @@
 
 #include "rtc_base/openssl_session_cache.h"
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/openssl.h"
 
@@ -30,16 +31,16 @@ OpenSSLSessionCache::~OpenSSLSessionCache() {
 }
 
 SSL_SESSION* OpenSSLSessionCache::LookupSession(
-    const std::string& hostname) const {
+    absl::string_view hostname) const {
   auto it = sessions_.find(hostname);
   return (it != sessions_.end()) ? it->second : nullptr;
 }
 
-void OpenSSLSessionCache::AddSession(const std::string& hostname,
+void OpenSSLSessionCache::AddSession(absl::string_view hostname,
                                      SSL_SESSION* new_session) {
   SSL_SESSION* old_session = LookupSession(hostname);
   SSL_SESSION_free(old_session);
-  sessions_[hostname] = new_session;
+  sessions_.insert_or_assign(std::string(hostname), new_session);
 }
 
 SSL_CTX* OpenSSLSessionCache::GetSSLContext() const {

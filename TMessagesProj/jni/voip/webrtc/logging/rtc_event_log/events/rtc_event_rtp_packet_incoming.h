@@ -13,11 +13,17 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "api/rtc_event_log/rtc_event.h"
+#include "logging/rtc_event_log/events/logged_rtp_rtcp.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
 
 namespace webrtc {
@@ -58,6 +64,19 @@ class RtcEventRtpPacketIncoming final : public RtcEvent {
   size_t payload_length() const { return packet_.payload_size(); }
   size_t header_length() const { return packet_.headers_size(); }
   size_t padding_length() const { return packet_.padding_size(); }
+
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    // TODO(terelius): Implement
+    return "";
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::map<uint32_t, std::vector<LoggedRtpPacketIncoming>>& output) {
+    // TODO(terelius): Implement
+    return RtcEventLogParseStatus::Error("Not Implemented", __FILE__, __LINE__);
+  }
 
  private:
   RtcEventRtpPacketIncoming(const RtcEventRtpPacketIncoming& other);

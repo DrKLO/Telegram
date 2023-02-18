@@ -83,6 +83,8 @@ void BasicIceController::OnConnectionDestroyed(const Connection* connection) {
   pinged_connections_.erase(connection);
   unpinged_connections_.erase(connection);
   connections_.erase(absl::c_find(connections_, connection));
+  if (selected_connection_ == connection)
+    selected_connection_ = nullptr;
 }
 
 bool BasicIceController::HasPingableConnection() const {
@@ -413,7 +415,7 @@ BasicIceController::GetBestWritableConnectionPerNetwork() const {
 
 IceControllerInterface::SwitchResult
 BasicIceController::HandleInitialSelectDampening(
-    IceControllerEvent reason,
+    IceSwitchReason reason,
     const Connection* new_connection) {
   if (!field_trials_->initial_select_dampening.has_value() &&
       !field_trials_->initial_select_dampening_ping_received.has_value()) {
@@ -462,13 +464,13 @@ BasicIceController::HandleInitialSelectDampening(
   }
 
   RTC_LOG(LS_INFO) << "delay initial selection up to " << min_delay << "ms";
-  reason.type = IceControllerEvent::ICE_CONTROLLER_RECHECK;
-  reason.recheck_delay_ms = min_delay;
-  return {absl::nullopt, reason};
+  return {.connection = absl::nullopt,
+          .recheck_event = IceRecheckEvent(
+              IceSwitchReason::ICE_CONTROLLER_RECHECK, min_delay)};
 }
 
 IceControllerInterface::SwitchResult BasicIceController::ShouldSwitchConnection(
-    IceControllerEvent reason,
+    IceSwitchReason reason,
     const Connection* new_connection) {
   if (!ReadyToSend(new_connection) || selected_connection_ == new_connection) {
     return {absl::nullopt, absl::nullopt};
@@ -494,16 +496,15 @@ IceControllerInterface::SwitchResult BasicIceController::ShouldSwitchConnection(
                                receiving_unchanged_threshold,
                                &missed_receiving_unchanged_threshold);
 
-  absl::optional<IceControllerEvent> recheck_event;
+  absl::optional<IceRecheckEvent> recheck_event;
   if (missed_receiving_unchanged_threshold &&
       config_.receiving_switching_delay_or_default()) {
     // If we do not switch to the connection because it missed the receiving
     // threshold, the new connection is in a better receiving state than the
     // currently selected connection. So we need to re-check whether it needs
     // to be switched at a later time.
-    recheck_event = reason;
-    recheck_event->recheck_delay_ms =
-        config_.receiving_switching_delay_or_default();
+    recheck_event.emplace(reason,
+                          config_.receiving_switching_delay_or_default());
   }
 
   if (cmp < 0) {
@@ -522,7 +523,7 @@ IceControllerInterface::SwitchResult BasicIceController::ShouldSwitchConnection(
 }
 
 IceControllerInterface::SwitchResult
-BasicIceController::SortAndSwitchConnection(IceControllerEvent reason) {
+BasicIceController::SortAndSwitchConnection(IceSwitchReason reason) {
   // Find the best alternative connection by sorting.  It is important to note
   // that amongst equal preference, writable connections, this will choose the
   // one whose estimated latency is lowest.  So it is the only one that we
@@ -795,7 +796,7 @@ std::vector<const Connection*> BasicIceController::PruneConnections() {
   auto best_connection_by_network = GetBestConnectionByNetwork();
   for (const Connection* conn : connections_) {
     const Connection* best_conn = selected_connection_;
-    if (!rtc::IPIsAny(conn->network()->ip())) {
+    if (!rtc::IPIsAny(conn->network()->GetBestIP())) {
       // If the connection is bound to a specific network interface (not an
       // "any address" network), compare it against the best connection for
       // that network interface rather than the best connection overall. This

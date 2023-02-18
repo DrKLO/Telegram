@@ -269,15 +269,17 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     
     public AlertDialog(Context context, int progressStyle, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
-        blurredNativeBackground = supportsNativeBlur() && progressViewStyle == ALERT_TYPE_MESSAGE;
-        blurredBackground = blurredNativeBackground || !supportsNativeBlur() && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH;
         this.resourcesProvider = resourcesProvider;
+
+        blurredNativeBackground = supportsNativeBlur() && progressViewStyle == ALERT_TYPE_MESSAGE;
+        backgroundColor = getThemedColor(Theme.key_dialogBackground);
+        final boolean isDark = AndroidUtilities.computePerceivedBrightness(backgroundColor) < 0.721f;
+        blurredBackground = blurredNativeBackground || !supportsNativeBlur() && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && isDark;
 
         backgroundPaddings = new Rect();
         if (progressStyle != ALERT_TYPE_SPINNER || blurredBackground) {
             shadowDrawable = context.getResources().getDrawable(R.drawable.popup_fixed_alert3).mutate();
-            backgroundColor = getThemedColor(Theme.key_dialogBackground);
-            blurOpacity = progressStyle == ALERT_TYPE_SPINNER ? 0.55f : (AndroidUtilities.computePerceivedBrightness(backgroundColor) < 0.721f ? 0.80f : 0.97f);
+            blurOpacity = progressStyle == ALERT_TYPE_SPINNER ? 0.55f : (isDark ? 0.80f : 0.97f);
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
             shadowDrawable.getPadding(backgroundPaddings);
         }

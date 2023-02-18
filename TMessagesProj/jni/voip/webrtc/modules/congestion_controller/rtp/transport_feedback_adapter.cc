@@ -22,7 +22,6 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 
@@ -206,7 +205,7 @@ TransportFeedbackAdapter::ProcessTransportFeedbackInner(
       current_offset_ += delta;
     }
   }
-  last_timestamp_ = feedback.GetBaseTime();
+  last_timestamp_ = feedback.BaseTime();
 
   std::vector<PacketResult> packet_result_vector;
   packet_result_vector.reserve(feedback.GetPacketStatusCount());

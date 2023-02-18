@@ -183,10 +183,14 @@ public class MentionsContainerView extends BlurredFrameLayout {
 
             @Override
             public void needChangePanelVisibility(boolean show) {
-                if (getNeededLayoutManager() != getCurrentLayoutManager() && canOpen() && adapter.getItemCountInternal() > 0) {
-                    switchLayoutManagerOnEnd = true;
-                    updateVisibility(false);
-                    return;
+                if (getNeededLayoutManager() != getCurrentLayoutManager() && canOpen()) {
+                    if (adapter.getLastItemCount() > 0) {
+                        switchLayoutManagerOnEnd = true;
+                        updateVisibility(false);
+                        return;
+                    } else {
+                        listView.setLayoutManager(getNeededLayoutManager());
+                    }
                 }
                 if (show && !canOpen()) {
                     show = false;
@@ -414,12 +418,15 @@ public class MentionsContainerView extends BlurredFrameLayout {
     private boolean listViewHiding = false;
     private float hideT = 0;
     private boolean switchLayoutManagerOnEnd = false;
+    private int scrollRangeUpdateTries;
 
     private void updateListViewTranslation(boolean forceZeroHeight, boolean animated) {
         if (listView == null || paddedAdapter == null) {
+            scrollRangeUpdateTries = 0;
             return;
         }
         if (listViewHiding && listViewTranslationAnimator != null && listViewTranslationAnimator.isRunning() && forceZeroHeight) {
+            scrollRangeUpdateTries = 0;
             return;
         }
         boolean reversed = isReversed();
@@ -427,8 +434,15 @@ public class MentionsContainerView extends BlurredFrameLayout {
         if (forceZeroHeight) {
             itemHeight = - containerPadding - AndroidUtilities.dp(6);
         } else {
-            itemHeight = listView.computeVerticalScrollRange() - paddedAdapter.getPadding() + containerPadding;
+            int scrollRange = listView.computeVerticalScrollRange();
+            itemHeight = scrollRange - paddedAdapter.getPadding() + containerPadding;
+            if (scrollRange <= 0 && adapter.getItemCountInternal() > 0 && scrollRangeUpdateTries < 3) {
+                scrollRangeUpdateTries++;
+                updateVisibility(true);
+                return;
+            }
         }
+        scrollRangeUpdateTries = 0;
         float newTranslationY = (reversed ? -Math.max(0, listViewPadding - itemHeight) : -listViewPadding + Math.max(0, listViewPadding - itemHeight));
         if (forceZeroHeight && !reversed) {
             newTranslationY += listView.computeVerticalScrollOffset();

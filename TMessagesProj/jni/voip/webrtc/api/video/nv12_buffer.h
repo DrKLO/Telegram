@@ -52,8 +52,8 @@ class RTC_EXPORT NV12Buffer : public NV12BufferInterface {
   // quirks in memory checkers
   // (https://bugs.chromium.org/p/libyuv/issues/detail?id=377) and
   // ffmpeg (http://crbug.com/390941).
-  // TODO(nisse): Deprecated. Should be deleted if/when those issues
-  // are resolved in a better way. Or in the mean time, use SetBlack.
+  // TODO(https://crbug.com/390941): Deprecated. Should be deleted if/when those
+  // issues are resolved in a better way. Or in the mean time, use SetBlack.
   void InitializeData();
 
   // Scale the cropped area of `src` to the size of `this` buffer, and

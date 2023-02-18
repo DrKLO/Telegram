@@ -13,13 +13,13 @@
 #include <memory>
 #include <utility>
 
+#include "api/make_ref_counted.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/default_task_queue_factory.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "modules/audio_device/audio_device_buffer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
 #include "sdk/android/generated_audio_device_module_base_jni/WebRtcAudioManager_jni.h"
 #include "system_wrappers/include/metrics.h"
 

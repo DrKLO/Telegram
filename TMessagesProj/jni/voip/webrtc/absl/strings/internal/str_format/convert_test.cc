@@ -24,6 +24,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/base/attributes.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/strings/internal/str_format/bind.h"
 #include "absl/strings/match.h"
@@ -124,6 +125,7 @@ void StrAppendV(std::string *dst, const char *format, va_list ap) {
   delete[] buf;
 }
 
+void StrAppend(std::string *, const char *, ...) ABSL_PRINTF_ATTRIBUTE(2, 3);
 void StrAppend(std::string *out, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
@@ -131,6 +133,7 @@ void StrAppend(std::string *out, const char *format, ...) {
   va_end(ap);
 }
 
+std::string StrPrint(const char *, ...) ABSL_PRINTF_ATTRIBUTE(1, 2);
 std::string StrPrint(const char *format, ...) {
   va_list ap;
   va_start(ap, format);
@@ -455,21 +458,32 @@ TYPED_TEST_P(TypedFormatConvertTest, AllIntsWithFlags) {
 }
 
 TYPED_TEST_P(TypedFormatConvertTest, Char) {
+  // Pass a bunch of values of type TypeParam to both FormatPack and libc's
+  // vsnprintf("%c", ...) (wrapped in StrPrint) to make sure we get the same
+  // value.
   typedef TypeParam T;
   using remove_volatile_t = typename std::remove_volatile<T>::type;
-  static const T kMin = std::numeric_limits<remove_volatile_t>::min();
-  static const T kMax = std::numeric_limits<remove_volatile_t>::max();
-  T kVals[] = {
-    remove_volatile_t(1), remove_volatile_t(2), remove_volatile_t(10),
-    remove_volatile_t(-1), remove_volatile_t(-2), remove_volatile_t(-10),
-    remove_volatile_t(0),
-    kMin + remove_volatile_t(1), kMin,
-    kMax - remove_volatile_t(1), kMax
+  std::vector<remove_volatile_t> vals = {
+      remove_volatile_t(1),  remove_volatile_t(2),  remove_volatile_t(10),   //
+      remove_volatile_t(-1), remove_volatile_t(-2), remove_volatile_t(-10),  //
+      remove_volatile_t(0),
   };
-  for (const T &c : kVals) {
+
+  // We'd like to test values near std::numeric_limits::min() and
+  // std::numeric_limits::max(), too, but vsnprintf("%c", ...) can't handle
+  // anything larger than an int. Add in the most extreme values we can without
+  // exceeding that range.
+  static const T kMin =
+      static_cast<remove_volatile_t>(std::numeric_limits<int>::min());
+  static const T kMax =
+      static_cast<remove_volatile_t>(std::numeric_limits<int>::max());
+  vals.insert(vals.end(), {kMin + 1, kMin, kMax - 1, kMax});
+
+  for (const T c : vals) {
     const FormatArgImpl args[] = {FormatArgImpl(c)};
     UntypedFormatSpecImpl format("%c");
-    EXPECT_EQ(StrPrint("%c", c), FormatPack(format, absl::MakeSpan(args)));
+    EXPECT_EQ(StrPrint("%c", static_cast<int>(c)),
+              FormatPack(format, absl::MakeSpan(args)));
   }
 }
 

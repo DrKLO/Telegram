@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_device/android/audio_manager.h"
 #include "modules/audio_device/fine_audio_buffer.h"
 #include "rtc_base/checks.h"
@@ -21,12 +22,8 @@
 
 namespace webrtc {
 
-enum AudioDeviceMessageType : uint32_t {
-  kMessageInputStreamDisconnected,
-};
-
 AAudioRecorder::AAudioRecorder(AudioManager* audio_manager)
-    : main_thread_(rtc::Thread::Current()),
+    : main_thread_(TaskQueueBase::Current()),
       aaudio_(audio_manager, AAUDIO_DIRECTION_INPUT, this) {
   RTC_LOG(LS_INFO) << "ctor";
   thread_checker_aaudio_.Detach();
@@ -142,7 +139,7 @@ void AAudioRecorder::OnErrorCallback(aaudio_result_t error) {
     // from the callback, use another thread instead". A message is therefore
     // sent to the main thread to do the restart operation.
     RTC_DCHECK(main_thread_);
-    main_thread_->Post(RTC_FROM_HERE, this, kMessageInputStreamDisconnected);
+    main_thread_->PostTask([this] { HandleStreamDisconnected(); });
   }
 }
 
@@ -188,18 +185,6 @@ aaudio_data_callback_result_t AAudioRecorder::OnDataCallback(
       static_cast<int>(latency_millis_ + 0.5));
 
   return AAUDIO_CALLBACK_RESULT_CONTINUE;
-}
-
-void AAudioRecorder::OnMessage(rtc::Message* msg) {
-  RTC_DCHECK_RUN_ON(&thread_checker_);
-  switch (msg->message_id) {
-    case kMessageInputStreamDisconnected:
-      HandleStreamDisconnected();
-      break;
-    default:
-      RTC_LOG(LS_ERROR) << "Invalid message id: " << msg->message_id;
-      break;
-  }
 }
 
 void AAudioRecorder::HandleStreamDisconnected() {

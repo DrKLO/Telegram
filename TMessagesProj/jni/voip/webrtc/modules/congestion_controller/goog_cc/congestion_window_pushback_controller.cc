@@ -23,7 +23,7 @@
 namespace webrtc {
 
 CongestionWindowPushbackController::CongestionWindowPushbackController(
-    const WebRtcKeyValueConfig* key_value_config)
+    const FieldTrialsView* key_value_config)
     : add_pacing_(
           absl::StartsWith(key_value_config->Lookup(
                                "WebRTC-AddPacingToCongestionWindowPushback"),

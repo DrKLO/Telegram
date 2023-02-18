@@ -34,7 +34,6 @@
 #include "media/base/media_channel.h"
 #include "media/base/video_broadcaster.h"
 #include "pc/video_track_source.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/thread.h"
 
 namespace webrtc {
@@ -42,16 +41,18 @@ namespace webrtc {
 // Internal class used by PeerConnection.
 class RtpReceiverInternal : public RtpReceiverInterface {
  public:
-  // Stops receiving. The track may be reactivated.
+  // Call on the signaling thread, to let the receiver know that the the
+  // embedded source object should enter a stopped/ended state and the track's
+  // state set to `kEnded`, a final state that cannot be reversed.
   virtual void Stop() = 0;
-  // Stops the receiver permanently.
-  // Causes the associated track to enter kEnded state. Cannot be reversed.
-  virtual void StopAndEndTrack() = 0;
 
   // Sets the underlying MediaEngine channel associated with this RtpSender.
   // A VoiceMediaChannel should be used for audio RtpSenders and
   // a VideoMediaChannel should be used for video RtpSenders.
-  // Must call SetMediaChannel(nullptr) before the media channel is destroyed.
+  // NOTE:
+  // * SetMediaChannel(nullptr) must be called before the media channel is
+  //   destroyed.
+  // * This method must be invoked on the worker thread.
   virtual void SetMediaChannel(cricket::MediaChannel* media_channel) = 0;
 
   // Configures the RtpReceiver with the underlying media channel, with the

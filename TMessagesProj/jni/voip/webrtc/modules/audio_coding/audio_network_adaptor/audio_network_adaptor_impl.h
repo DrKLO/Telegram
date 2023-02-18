@@ -21,7 +21,6 @@
 #include "modules/audio_coding/audio_network_adaptor/debug_dump_writer.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -43,6 +42,9 @@ class AudioNetworkAdaptorImpl final : public AudioNetworkAdaptor {
       std::unique_ptr<DebugDumpWriter> debug_dump_writer = nullptr);
 
   ~AudioNetworkAdaptorImpl() override;
+
+  AudioNetworkAdaptorImpl(const AudioNetworkAdaptorImpl&) = delete;
+  AudioNetworkAdaptorImpl& operator=(const AudioNetworkAdaptorImpl&) = delete;
 
   void SetUplinkBandwidth(int uplink_bandwidth_bps) override;
 
@@ -80,8 +82,6 @@ class AudioNetworkAdaptorImpl final : public AudioNetworkAdaptor {
   absl::optional<AudioEncoderRuntimeConfig> prev_config_;
 
   ANAStats stats_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioNetworkAdaptorImpl);
 };
 
 }  // namespace webrtc

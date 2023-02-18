@@ -1365,7 +1365,7 @@ public class Bulletin {
             } else {
                 linearLayout = new LinearLayout(getContext());
                 linearLayout.setOrientation(LinearLayout.VERTICAL);
-                addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 18 + 56 + 2, 0, 8, 0));
+                addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 18 + 56 + 2, 0, 8, 0));
 
                 textView = new LinkSpanDrawable.LinksTextView(context) {
                     @Override

@@ -18,7 +18,7 @@
 namespace webrtc {
 
 QualityRampupExperiment::QualityRampupExperiment(
-    const WebRtcKeyValueConfig* const key_value_config)
+    const FieldTrialsView* const key_value_config)
     : min_pixels_("min_pixels"),
       min_duration_ms_("min_duration_ms"),
       max_bitrate_factor_("max_bitrate_factor") {

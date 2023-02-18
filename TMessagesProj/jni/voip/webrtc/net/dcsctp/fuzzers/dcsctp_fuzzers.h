@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "net/dcsctp/public/dcsctp_socket.h"
 
 namespace dcsctp {
@@ -58,7 +59,9 @@ class FuzzerCallbacks : public DcSctpSocketCallbacks {
   void SendPacket(rtc::ArrayView<const uint8_t> data) override {
     sent_packets_.emplace_back(std::vector<uint8_t>(data.begin(), data.end()));
   }
-  std::unique_ptr<Timeout> CreateTimeout() override {
+  std::unique_ptr<Timeout> CreateTimeout(
+      webrtc::TaskQueueBase::DelayPrecision precision) override {
+    // The fuzzer timeouts don't implement |precision|.
     return std::make_unique<FuzzerTimeout>(active_timeouts_);
   }
   TimeMs TimeMillis() override { return TimeMs(42); }

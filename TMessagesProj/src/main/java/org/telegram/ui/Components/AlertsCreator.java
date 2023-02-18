@@ -1170,7 +1170,7 @@ public class AlertsCreator {
                     String host = IDN.toASCII(uri.getHost(), IDN.ALLOW_UNASSIGNED);
                     urlFinal = uri.getScheme() + "://" + host + uri.getPath();
                 } catch (Exception e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                     urlFinal = url;
                 }
             } else {

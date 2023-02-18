@@ -29,7 +29,6 @@
 #include "modules/audio_coding/neteq/packet.h"
 #include "modules/audio_coding/neteq/random_vector.h"
 #include "modules/audio_coding/neteq/statistics_calculator.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -124,6 +123,9 @@ class NetEqImpl : public webrtc::NetEq {
 
   ~NetEqImpl() override;
 
+  NetEqImpl(const NetEqImpl&) = delete;
+  NetEqImpl& operator=(const NetEqImpl&) = delete;
+
   // Inserts a new packet into NetEq. Returns 0 on success, -1 on failure.
   int InsertPacket(const RTPHeader& rtp_header,
                    rtc::ArrayView<const uint8_t> payload) override;
@@ -191,8 +193,6 @@ class NetEqImpl : public webrtc::NetEq {
   void DisableNack() override;
 
   std::vector<uint16_t> GetNackList(int64_t round_trip_time_ms) const override;
-
-  std::vector<uint32_t> LastDecodedTimestamps() const override;
 
   int SyncBufferSizeMs() const override;
 
@@ -393,15 +393,11 @@ class NetEqImpl : public webrtc::NetEq {
       AudioFrame::kVadPassive;
   std::unique_ptr<TickTimer::Stopwatch> generated_noise_stopwatch_
       RTC_GUARDED_BY(mutex_);
-  std::vector<uint32_t> last_decoded_timestamps_ RTC_GUARDED_BY(mutex_);
   std::vector<RtpPacketInfo> last_decoded_packet_infos_ RTC_GUARDED_BY(mutex_);
   ExpandUmaLogger expand_uma_logger_ RTC_GUARDED_BY(mutex_);
   ExpandUmaLogger speech_expand_uma_logger_ RTC_GUARDED_BY(mutex_);
   bool no_time_stretching_ RTC_GUARDED_BY(mutex_);  // Only used for test.
   rtc::BufferT<int16_t> concealment_audio_ RTC_GUARDED_BY(mutex_);
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(NetEqImpl);
 };
 
 }  // namespace webrtc

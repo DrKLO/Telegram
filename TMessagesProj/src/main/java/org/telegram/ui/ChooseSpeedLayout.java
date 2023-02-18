@@ -33,7 +33,7 @@ public class ChooseSpeedLayout {
         item.setSelectorColor(0x0fffffff);
         speedItems[0] = item;
 
-        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_0_5, LocaleController.getString("SpeedSlow", R.string.SpeedSlow), false, null);
+        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_slow, LocaleController.getString("SpeedSlow", R.string.SpeedSlow), false, null);
         item.setColors(0xfffafafa, 0xfffafafa);
         item.setOnClickListener((view) -> {
             callback.onSpeedSelected(0.5f);
@@ -41,7 +41,7 @@ public class ChooseSpeedLayout {
         item.setSelectorColor(0x0fffffff);
         speedItems[1] = item;
 
-        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_1, LocaleController.getString("SpeedNormal", R.string.SpeedNormal), false, null);
+        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_normal, LocaleController.getString("SpeedNormal", R.string.SpeedNormal), false, null);
         item.setColors(0xfffafafa, 0xfffafafa);
         item.setOnClickListener((view) -> {
             callback.onSpeedSelected(1f);
@@ -49,7 +49,7 @@ public class ChooseSpeedLayout {
         item.setSelectorColor(0x0fffffff);
         speedItems[2] = item;
 
-        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_1_5, LocaleController.getString("SpeedFast", R.string.SpeedFast), false, null);
+        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_fast, LocaleController.getString("SpeedFast", R.string.SpeedFast), false, null);
         item.setColors(0xfffafafa, 0xfffafafa);
         item.setOnClickListener((view) -> {
             callback.onSpeedSelected(1.5f);
@@ -57,7 +57,7 @@ public class ChooseSpeedLayout {
         item.setSelectorColor(0x0fffffff);
         speedItems[3] = item;
 
-        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_2, LocaleController.getString("SpeedVeryFast", R.string.SpeedVeryFast), false, null);
+        item = ActionBarMenuItem.addItem(speedSwipeBackLayout, R.drawable.msg_speed_superfast, LocaleController.getString("SpeedVeryFast", R.string.SpeedVeryFast), false, null);
         item.setColors(0xfffafafa, 0xfffafafa);
         item.setOnClickListener((view) -> {
             callback.onSpeedSelected(2f);

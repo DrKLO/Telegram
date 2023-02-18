@@ -17,8 +17,7 @@ extern "C" {
 #endif
 
 // This module is for GCC x86 and x64.
-#if !defined(LIBYUV_DISABLE_X86) && \
-    (defined(__x86_64__) || (defined(__i386__) && !defined(_MSC_VER)))
+#if !defined(LIBYUV_DISABLE_X86) && (defined(__x86_64__) || defined(__i386__))
 
 // Transpose 8x8. 32 or 64 bit, but not NaCL for 64 bit.
 #if defined(HAS_TRANSPOSEWX8_SSSE3)

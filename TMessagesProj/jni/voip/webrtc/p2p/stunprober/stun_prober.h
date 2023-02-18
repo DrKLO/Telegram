@@ -16,13 +16,12 @@
 #include <vector>
 
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "rtc_base/byte_buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/network.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/thread.h"
 
 namespace rtc {
@@ -98,8 +97,11 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
 
   StunProber(rtc::PacketSocketFactory* socket_factory,
              rtc::Thread* thread,
-             const rtc::NetworkManager::NetworkList& networks);
+             std::vector<const rtc::Network*> networks);
   ~StunProber() override;
+
+  StunProber(const StunProber&) = delete;
+  StunProber& operator=(const StunProber&) = delete;
 
   // Begin performing the probe test against the `servers`. If
   // `shared_socket_mode` is false, each request will be done with a new socket.
@@ -119,7 +121,7 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
              int stun_ta_interval_ms,
              int requests_per_ip,
              int timeout_ms,
-             const AsyncCallback finish_callback);
+             AsyncCallback finish_callback);
 
   // TODO(guoweis): The combination of Prepare() and Run() are equivalent to the
   // Start() above. Remove Start() once everything is migrated.
@@ -238,11 +240,9 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
   // AsyncCallback.
   ObserverAdapter observer_adapter_;
 
-  rtc::NetworkManager::NetworkList networks_;
+  const std::vector<const rtc::Network*> networks_;
 
   webrtc::ScopedTaskSafety task_safety_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(StunProber);
 };
 
 }  // namespace stunprober

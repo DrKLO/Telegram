@@ -162,6 +162,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -2092,6 +2093,42 @@ public class AndroidUtilities {
             ApplicationLoader.applicationHandler.post(runnable);
         } else {
             ApplicationLoader.applicationHandler.postDelayed(runnable, delay);
+        }
+    }
+
+    public static void slowRunOnUIThread(Runnable runnable) {
+        slowRunOnUIThread(runnable, 12);
+    }
+    public static void slowRunOnUIThread(Runnable runnable, int triesCount) {
+        if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
+            runOnUIThread(runnable);
+        } else {
+            runOnUIThread(new TryPost(runnable, triesCount));
+        }
+    }
+
+    private static class TryPost implements Runnable {
+
+        private final Runnable runnable;
+        private int triesCount;
+
+        private long lastTime = System.currentTimeMillis();
+        private final long threshold = (long) (1000L / AndroidUtilities.screenRefreshRate * 1.25f);
+
+        public TryPost(Runnable runnable, int triesCount) {
+            this.runnable = runnable;
+            this.triesCount = triesCount;
+        }
+
+        public void run() {
+            final long now = System.currentTimeMillis();
+            if (triesCount <= 0 || now - lastTime <= threshold) {
+                runnable.run();
+            } else {
+                triesCount--;
+                lastTime = now;
+                AndroidUtilities.runOnUIThread(this);
+            }
         }
     }
 
@@ -4255,20 +4292,28 @@ public class AndroidUtilities {
                     flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
                 }
+                int statusBarColor;
                 if (!SharedConfig.noStatusBar && !forceTransparentStatusbar) {
-                    window.setStatusBarColor(LIGHT_STATUS_BAR_OVERLAY);
+                    statusBarColor = LIGHT_STATUS_BAR_OVERLAY;
                 } else {
-                    window.setStatusBarColor(Color.TRANSPARENT);
+                    statusBarColor = Color.TRANSPARENT;
+                }
+                if (window.getStatusBarColor() != statusBarColor) {
+                    window.setStatusBarColor(statusBarColor);
                 }
             } else {
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0) {
                     flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
                 }
+                int statusBarColor;
                 if (!SharedConfig.noStatusBar && !forceTransparentStatusbar) {
-                    window.setStatusBarColor(DARK_STATUS_BAR_OVERLAY);
+                    statusBarColor = DARK_STATUS_BAR_OVERLAY;
                 } else {
-                    window.setStatusBarColor(Color.TRANSPARENT);
+                    statusBarColor = Color.TRANSPARENT;
+                }
+                if (window.getStatusBarColor() != statusBarColor) {
+                    window.setStatusBarColor(statusBarColor);
                 }
             }
         }
@@ -4924,4 +4969,35 @@ public class AndroidUtilities {
         return Math.max(x1, x2) >= Math.min(y1, y2) && Math.max(y1, y2) >= Math.min(x1, x2);
     }
 
+    private static Runnable emptyRunnable = () -> {};
+
+    public static String getSysInfoString(String path) {
+        RandomAccessFile reader = null;
+        try {
+            reader = new RandomAccessFile(path, "r");
+            String line = reader.readLine();
+            if (line != null) {
+                return line;
+            }
+        } catch (Exception ignore) {
+
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (Exception ignore) {}
+            }
+        }
+        return null;
+    }
+
+    public static Long getSysInfoLong(String path) {
+        String line = getSysInfoString(path);
+        if (line != null) {
+            try {
+                return Utilities.parseLong(line);
+            } catch (Exception e) {}
+        }
+        return null;
+    }
 }

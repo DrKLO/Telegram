@@ -48,6 +48,12 @@ class PeerConnectionObserverJni : public PeerConnectionObserver {
   // Implementation of PeerConnectionObserver interface, which propagates
   // the callbacks to the Java observer.
   void OnIceCandidate(const IceCandidateInterface* candidate) override;
+  void OnIceCandidateError(const std::string& address,
+                           int port,
+                           const std::string& url,
+                           int error_code,
+                           const std::string& error_text) override;
+
   void OnIceCandidatesRemoved(
       const std::vector<cricket::Candidate>& candidates) override;
   void OnSignalingChange(

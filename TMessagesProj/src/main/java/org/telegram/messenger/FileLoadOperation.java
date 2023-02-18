@@ -674,7 +674,7 @@ public class FileLoadOperation {
         return start(stream, streamOffset, streamPriority);
     }
 
-    public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean steamPriority) {
+    public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean streamPriority) {
         startTime = System.currentTimeMillis();
         updateParams();
         if (currentDownloadChunkSize == 0) {
@@ -693,7 +693,7 @@ public class FileLoadOperation {
                 if (streamListeners == null) {
                     streamListeners = new ArrayList<>();
                 }
-                if (steamPriority) {
+                if (streamPriority) {
                     long offset = (streamOffset / (long) currentDownloadChunkSize) * (long) currentDownloadChunkSize;
                     if (priorityRequestInfo != null && priorityRequestInfo.offset != offset) {
                         requestInfos.remove(priorityRequestInfo);
@@ -1011,7 +1011,7 @@ public class FileLoadOperation {
                 if (isPreloadVideoOperation) {
                     FileLog.d("start preloading file to temp = " + cacheFileTemp);
                 } else {
-                    FileLog.d("start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal);
+                    FileLog.d("start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal + " priority" + priority);
                 }
             }
 

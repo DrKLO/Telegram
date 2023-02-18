@@ -12,8 +12,8 @@
 
 #include <vector>
 
-#include "api/video/video_stream_encoder_interface.h"
 #include "test/gmock.h"
+#include "video/video_stream_encoder_interface.h"
 
 namespace webrtc {
 

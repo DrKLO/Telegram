@@ -15,17 +15,16 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "api/array_view.h"
 #include "api/candidate.h"
 #include "p2p/base/p2p_constants.h"
 #include "p2p/base/p2p_transport_channel.h"
-#include "pc/sctp_data_channel_transport.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/trace_event.h"
 
@@ -99,10 +98,6 @@ JsepTransport::JsepTransport(
                                ? rtc::make_ref_counted<webrtc::DtlsTransport>(
                                      std::move(rtcp_dtls_transport))
                                : nullptr),
-      sctp_data_channel_transport_(
-          sctp_transport ? std::make_unique<webrtc::SctpDataChannelTransport>(
-                               sctp_transport.get())
-                         : nullptr),
       sctp_transport_(sctp_transport
                           ? rtc::make_ref_counted<webrtc::SctpTransport>(
                                 std::move(sctp_transport))
@@ -201,23 +196,21 @@ webrtc::RTCError JsepTransport::SetLocalJsepTransportDescription(
   if (!local_fp) {
     local_certificate_ = nullptr;
   } else {
-    error = VerifyCertificateFingerprint(local_certificate_, local_fp);
+    error = VerifyCertificateFingerprint(local_certificate_.get(), local_fp);
     if (!error.ok()) {
       local_description_.reset();
       return error;
     }
   }
-    RTC_DCHECK(rtp_dtls_transport_->internal());
-    rtp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
-        ice_parameters);
+  RTC_DCHECK(rtp_dtls_transport_->internal());
+  rtp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
+      ice_parameters);
 
-    {
-      if (rtcp_dtls_transport_) {
-        RTC_DCHECK(rtcp_dtls_transport_->internal());
-        rtcp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
-            ice_parameters);
-      }
-    }
+  if (rtcp_dtls_transport_) {
+    RTC_DCHECK(rtcp_dtls_transport_->internal());
+    rtcp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
+        ice_parameters);
+  }
   // If PRANSWER/ANSWER is set, we should decide transport protocol type.
   if (type == SdpType::kPrAnswer || type == SdpType::kAnswer) {
     error = NegotiateAndSetDtlsParameters(type);
@@ -422,21 +415,9 @@ webrtc::RTCError JsepTransport::SetNegotiatedDtlsParameters(
     absl::optional<rtc::SSLRole> dtls_role,
     rtc::SSLFingerprint* remote_fingerprint) {
   RTC_DCHECK(dtls_transport);
-  // Set SSL role. Role must be set before fingerprint is applied, which
-  // initiates DTLS setup.
-  if (dtls_role && !dtls_transport->SetDtlsRole(*dtls_role)) {
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER,
-                            "Failed to set SSL role for the transport.");
-  }
-  // Apply remote fingerprint.
-  if (!remote_fingerprint ||
-      !dtls_transport->SetRemoteFingerprint(
-          remote_fingerprint->algorithm, remote_fingerprint->digest.cdata(),
-          remote_fingerprint->digest.size())) {
-    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER,
-                            "Failed to apply remote fingerprint.");
-  }
-  return webrtc::RTCError::OK();
+  return dtls_transport->SetRemoteParameters(
+      remote_fingerprint->algorithm, remote_fingerprint->digest.cdata(),
+      remote_fingerprint->digest.size(), dtls_role);
 }
 
 bool JsepTransport::SetRtcpMux(bool enable,
@@ -715,6 +696,10 @@ bool JsepTransport::GetTransportStats(DtlsTransportInternal* dtls_transport,
   dtls_transport->GetSrtpCryptoSuite(&substats.srtp_crypto_suite);
   dtls_transport->GetSslCipherSuite(&substats.ssl_cipher_suite);
   substats.dtls_state = dtls_transport->dtls_state();
+  rtc::SSLRole dtls_role;
+  if (dtls_transport->GetDtlsRole(&dtls_role)) {
+    substats.dtls_role = dtls_role;
+  }
   if (!dtls_transport->ice_transport()->GetStats(
           &substats.ice_transport_stats)) {
     return false;

@@ -123,10 +123,10 @@ class OnDestruction {
 };
 
 // These tests require that the compiler correctly supports C++11 constant
-// initialization... but MSVC has a known regression since v19.10:
+// initialization... but MSVC has a known regression since v19.10 till v19.25:
 // https://developercommunity.visualstudio.com/content/problem/336946/class-with-constexpr-constructor-not-using-static.html
-// TODO(epastor): Limit the affected range once MSVC fixes this bug.
-#if defined(__clang__) || !(defined(_MSC_VER) && _MSC_VER > 1900)
+#if defined(__clang__) || \
+    !(defined(_MSC_VER) && _MSC_VER > 1900 && _MSC_VER < 1925)
 // kConstInit
 // Test early usage.  (Declaration comes first; definitions must appear after
 // the test runner.)

@@ -23,7 +23,6 @@
 #include "api/test/simulated_network.h"
 #include "call/call.h"
 #include "call/simulated_packet_receiver.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -108,6 +107,9 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
                   Transport* transport);
 
   ~FakeNetworkPipe() override;
+
+  FakeNetworkPipe(const FakeNetworkPipe&) = delete;
+  FakeNetworkPipe& operator=(const FakeNetworkPipe&) = delete;
 
   void SetClockOffset(int64_t offset_ms);
 
@@ -228,8 +230,6 @@ class FakeNetworkPipe : public SimulatedPacketReceiverInterface {
   int64_t last_log_time_us_;
 
   std::map<Transport*, size_t> active_transports_ RTC_GUARDED_BY(config_lock_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(FakeNetworkPipe);
 };
 
 }  // namespace webrtc

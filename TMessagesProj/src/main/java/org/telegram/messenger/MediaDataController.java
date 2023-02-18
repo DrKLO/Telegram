@@ -1637,7 +1637,7 @@ public class MediaDataController extends BaseController {
                         loadRecents(type, gif, false, false);
                     });
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    getMessagesStorage().checkSQLException(e);
                 }
             });
         } else {

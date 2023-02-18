@@ -18,12 +18,12 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/transport/field_trial_based_config.h"
 #include "api/transport/network_control.h"
 #include "api/transport/network_types.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "api/units/data_rate.h"
 #include "api/units/data_size.h"
 #include "api/units/timestamp.h"
@@ -84,7 +84,7 @@ class GoogCcNetworkController : public NetworkControllerInterface {
   PacerConfig GetPacingRates(Timestamp at_time) const;
   const FieldTrialBasedConfig trial_based_config_;
 
-  const WebRtcKeyValueConfig* const key_value_config_;
+  const FieldTrialsView* const key_value_config_;
   RtcEventLog* const event_log_;
   const bool packet_feedback_only_;
   FieldTrialFlag safe_reset_on_route_change_;
@@ -94,6 +94,8 @@ class GoogCcNetworkController : public NetworkControllerInterface {
   const bool limit_probes_lower_than_throughput_estimate_;
   const RateControlSettings rate_control_settings_;
   const bool loss_based_stable_rate_;
+  const bool pace_at_max_of_bwe_and_lower_link_capacity_;
+  const bool pace_at_loss_based_bwe_when_loss_;
 
   const std::unique_ptr<ProbeController> probe_controller_;
   const std::unique_ptr<CongestionWindowPushbackController>

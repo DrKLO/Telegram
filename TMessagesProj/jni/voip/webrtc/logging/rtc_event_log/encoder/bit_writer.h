@@ -20,7 +20,6 @@
 #include "absl/strings/string_view.h"
 #include "rtc_base/bit_buffer.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -35,6 +34,9 @@ class BitWriter final {
         valid_(true) {
     RTC_DCHECK_GT(byte_count, 0);
   }
+
+  BitWriter(const BitWriter&) = delete;
+  BitWriter& operator=(const BitWriter&) = delete;
 
   void WriteBits(uint64_t val, size_t bit_count);
 
@@ -52,8 +54,6 @@ class BitWriter final {
   // to go anywhere near the limit, though, so this is good enough.
   size_t written_bits_;
   bool valid_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BitWriter);
 };
 
 }  // namespace webrtc

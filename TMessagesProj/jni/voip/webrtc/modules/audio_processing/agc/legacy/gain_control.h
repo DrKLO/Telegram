@@ -11,6 +11,9 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC_LEGACY_GAIN_CONTROL_H_
 #define MODULES_AUDIO_PROCESSING_AGC_LEGACY_GAIN_CONTROL_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 namespace webrtc {
 
 enum {

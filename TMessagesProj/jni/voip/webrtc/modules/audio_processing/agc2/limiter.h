@@ -11,13 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_LIMITER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_LIMITER_H_
 
-#include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_processing/agc2/fixed_digital_level_estimator.h"
 #include "modules/audio_processing/agc2/interpolated_gain_curve.h"
 #include "modules/audio_processing/include/audio_frame_view.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 class ApmDataDumper;
@@ -26,7 +25,7 @@ class Limiter {
  public:
   Limiter(int sample_rate_hz,
           ApmDataDumper* apm_data_dumper,
-          const std::string& histogram_name_prefix);
+          absl::string_view histogram_name_prefix);
   Limiter(const Limiter& limiter) = delete;
   Limiter& operator=(const Limiter& limiter) = delete;
   ~Limiter();

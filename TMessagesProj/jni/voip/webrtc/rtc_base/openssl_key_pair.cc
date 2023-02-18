@@ -13,6 +13,8 @@
 #include <memory>
 #include <utility>
 
+#include "absl/strings/string_view.h"
+
 #if defined(WEBRTC_WIN)
 // Must be included first before openssl headers.
 #include "rtc_base/win32.h"  // NOLINT
@@ -103,7 +105,7 @@ std::unique_ptr<OpenSSLKeyPair> OpenSSLKeyPair::Generate(
 }
 
 std::unique_ptr<OpenSSLKeyPair> OpenSSLKeyPair::FromPrivateKeyPEMString(
-    const std::string& pem_string) {
+    absl::string_view pem_string) {
   BIO* bio =
       BIO_new_mem_buf(const_cast<char*>(pem_string.data()), pem_string.size());
   if (!bio) {

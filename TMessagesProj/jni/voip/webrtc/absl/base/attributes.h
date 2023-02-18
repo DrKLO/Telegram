@@ -213,6 +213,9 @@
 // https://gcc.gnu.org/gcc-4.8/changes.html
 #if ABSL_HAVE_ATTRIBUTE(no_sanitize_address)
 #define ABSL_ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+#elif defined(_MSC_VER) && _MSC_VER >= 1928
+// https://docs.microsoft.com/en-us/cpp/cpp/no-sanitize-address
+#define ABSL_ATTRIBUTE_NO_SANITIZE_ADDRESS __declspec(no_sanitize_address)
 #else
 #define ABSL_ATTRIBUTE_NO_SANITIZE_ADDRESS
 #endif
@@ -679,9 +682,18 @@
 // not compile (on supported platforms) unless the variable has a constant
 // initializer. This is useful for variables with static and thread storage
 // duration, because it guarantees that they will not suffer from the so-called
-// "static init order fiasco".  Prefer to put this attribute on the most visible
-// declaration of the variable, if there's more than one, because code that
-// accesses the variable can then use the attribute for optimization.
+// "static init order fiasco".
+//
+// This attribute must be placed on the initializing declaration of the
+// variable. Some compilers will give a -Wmissing-constinit warning when this
+// attribute is placed on some other declaration but missing from the
+// initializing declaration.
+//
+// In some cases (notably with thread_local variables), `ABSL_CONST_INIT` can
+// also be used in a non-initializing declaration to tell the compiler that a
+// variable is already initialized, reducing overhead that would otherwise be
+// incurred by a hidden guard variable. Thus annotating all declarations with
+// this attribute is recommended to potentially enhance optimization.
 //
 // Example:
 //
@@ -690,14 +702,19 @@
 //     ABSL_CONST_INIT static MyType my_var;
 //   };
 //
-//   MyType MyClass::my_var = MakeMyType(...);
+//   ABSL_CONST_INIT MyType MyClass::my_var = MakeMyType(...);
+//
+// For code or headers that are assured to only build with C++20 and up, prefer
+// just using the standard `constinit` keyword directly over this macro.
 //
 // Note that this attribute is redundant if the variable is declared constexpr.
-#if ABSL_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
+#if defined(__cpp_constinit) && __cpp_constinit >= 201907L
+#define ABSL_CONST_INIT constinit
+#elif ABSL_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
 #define ABSL_CONST_INIT [[clang::require_constant_initialization]]
 #else
 #define ABSL_CONST_INIT
-#endif  // ABSL_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
+#endif
 
 // ABSL_ATTRIBUTE_PURE_FUNCTION
 //
@@ -740,6 +757,43 @@
 #define ABSL_ATTRIBUTE_LIFETIME_BOUND __attribute__((lifetimebound))
 #else
 #define ABSL_ATTRIBUTE_LIFETIME_BOUND
+#endif
+
+// ABSL_ATTRIBUTE_TRIVIAL_ABI
+// Indicates that a type is "trivially relocatable" -- meaning it can be
+// relocated without invoking the constructor/destructor, using a form of move
+// elision.
+//
+// From a memory safety point of view, putting aside destructor ordering, it's
+// safe to apply ABSL_ATTRIBUTE_TRIVIAL_ABI if an object's location
+// can change over the course of its lifetime: if a constructor can be run one
+// place, and then the object magically teleports to another place where some
+// methods are run, and then the object teleports to yet another place where it
+// is destroyed. This is notably not true for self-referential types, where the
+// move-constructor must keep the self-reference up to date. If the type changed
+// location without invoking the move constructor, it would have a dangling
+// self-reference.
+//
+// The use of this teleporting machinery means that the number of paired
+// move/destroy operations can change, and so it is a bad idea to apply this to
+// a type meant to count the number of moves.
+//
+// Warning: applying this can, rarely, break callers. Objects passed by value
+// will be destroyed at the end of the call, instead of the end of the
+// full-expression containing the call. In addition, it changes the ABI
+// of functions accepting this type by value (e.g. to pass in registers).
+//
+// See also the upstream documentation:
+// https://clang.llvm.org/docs/AttributeReference.html#trivial-abi
+//
+#if ABSL_HAVE_CPP_ATTRIBUTE(clang::trivial_abi)
+#define ABSL_ATTRIBUTE_TRIVIAL_ABI [[clang::trivial_abi]]
+#define ABSL_HAVE_ATTRIBUTE_TRIVIAL_ABI 1
+#elif ABSL_HAVE_ATTRIBUTE(trivial_abi)
+#define ABSL_ATTRIBUTE_TRIVIAL_ABI __attribute__((trivial_abi))
+#define ABSL_HAVE_ATTRIBUTE_TRIVIAL_ABI 1
+#else
+#define ABSL_ATTRIBUTE_TRIVIAL_ABI
 #endif
 
 #endif  // ABSL_BASE_ATTRIBUTES_H_

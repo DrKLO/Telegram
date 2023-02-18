@@ -43,10 +43,11 @@ EchoPathDelayEstimator::EchoPathDelayEstimator(
               : config.render_levels.poor_excitation_render_limit,
           config.delay.delay_estimate_smoothing,
           config.delay.delay_estimate_smoothing_delay_found,
-          config.delay.delay_candidate_detection_threshold),
+          config.delay.delay_candidate_detection_threshold,
+          config.delay.detect_pre_echo),
       matched_filter_lag_aggregator_(data_dumper_,
                                      matched_filter_.GetMaxFilterLag(),
-                                     config.delay.delay_selection_thresholds) {
+                                     config.delay) {
   RTC_DCHECK(data_dumper);
   RTC_DCHECK(down_sampling_factor_ > 0);
 }
@@ -59,9 +60,7 @@ void EchoPathDelayEstimator::Reset(bool reset_delay_confidence) {
 
 absl::optional<DelayEstimate> EchoPathDelayEstimator::EstimateDelay(
     const DownsampledRenderBuffer& render_buffer,
-    const std::vector<std::vector<float>>& capture) {
-  RTC_DCHECK_EQ(kBlockSize, capture[0].size());
-
+    const Block& capture) {
   std::array<float, kBlockSize> downsampled_capture_data;
   rtc::ArrayView<float> downsampled_capture(downsampled_capture_data.data(),
                                             sub_block_size_);
@@ -77,13 +76,14 @@ absl::optional<DelayEstimate> EchoPathDelayEstimator::EstimateDelay(
 
   absl::optional<DelayEstimate> aggregated_matched_filter_lag =
       matched_filter_lag_aggregator_.Aggregate(
-          matched_filter_.GetLagEstimates());
+          matched_filter_.GetBestLagEstimate());
 
   // Run clockdrift detection.
   if (aggregated_matched_filter_lag &&
       (*aggregated_matched_filter_lag).quality ==
           DelayEstimate::Quality::kRefined)
-    clockdrift_detector_.Update((*aggregated_matched_filter_lag).delay);
+    clockdrift_detector_.Update(
+        matched_filter_lag_aggregator_.GetDelayAtHighestPeak());
 
   // TODO(peah): Move this logging outside of this class once EchoCanceller3
   // development is done.

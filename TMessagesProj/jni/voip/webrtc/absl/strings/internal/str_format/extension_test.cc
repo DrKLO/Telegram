@@ -19,6 +19,7 @@
 #include <random>
 #include <string>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -93,6 +94,16 @@ TEST(FormatExtensionTest, VerifyEnumEquality) {
             absl::str_format_internal::FormatConversionCharSetInternal::id);
   ABSL_INTERNAL_CONVERSION_CHARS_EXPAND_(X_VAL, );
 #undef X_VAL
+}
+
+TEST(FormatExtensionTest, SetConversionChar) {
+  absl::str_format_internal::FormatConversionSpecImpl spec;
+  EXPECT_EQ(spec.conversion_char(),
+            absl::str_format_internal::FormatConversionCharInternal::kNone);
+  spec.set_conversion_char(
+      absl::str_format_internal::FormatConversionCharInternal::d);
+  EXPECT_EQ(spec.conversion_char(),
+            absl::str_format_internal::FormatConversionCharInternal::d);
 }
 
 }  // namespace

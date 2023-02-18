@@ -118,7 +118,7 @@ public class SaveToGallerySettingsHelper {
         if (type == SAVE_TO_GALLERY_FLAG_PEER) {
             user.save("user", preferences);
         } else if (type == SAVE_TO_GALLERY_FLAG_GROUP) {
-            groups.save("group", preferences);
+            groups.save("groups", preferences);
         } else if (type == SAVE_TO_GALLERY_FLAG_CHANNELS) {
             channels.save("channels", preferences);
         }
@@ -220,6 +220,12 @@ public class SaveToGallerySettingsHelper {
                 builder.append(LocaleController.formatPluralString("Exception", exceptions.size(), exceptions.size()));
             }
             return builder;
+        }
+
+        @Override
+        public void toggle() {
+            super.toggle();
+            saveSettings(type);
         }
     }
 

@@ -1,0 +1,43 @@
+x86_format.c
+------------
+intel: jmpf -> jmp, callf -> call
+att: jmpf -> ljmp, callf -> lcall
+
+opcode table
+------------
+finish typing instructions
+fix flag clear/set/toggle types
+
+ix64 stuff
+----------
+document output file formats in web page
+features doc: register aliases, implicit operands, stack mods,
+ring0 flags, eflags, cpu model/isa
+
+ia32_handle_* implementation
+
+fix operand 0F C2
+CMPPS
+
+* sysenter, sysexit as CALL types -- preceded by MSR writes
+* SYSENTER/SYSEXIT stack : overwrites SS, ESP
+* stos, cmps, scas, movs, ins, outs, lods -> OP_PTR
+* OP_SIZE in implicit operands
+* use OP_SIZE to choose reg sizes!
+
+DONE?? :
+implicit operands: provide action ?
+e.g. add/inc for stach, write, etc 
+replace table numbers in opcodes.dat with
+#defines for table names
+
+replace 0  with INSN_INVALID   [or maybe FF for imnvalid and 00 for Not Applicable */
+no wait that is only for prefix tables -- n/p
+
+if ( prefx) only use if insn != invalid
+
+these should cover all the wacky disasm exceptions 
+
+for the rep one we can chet, match only a 0x90
+
+todo: privilege | ring

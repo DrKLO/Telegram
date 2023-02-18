@@ -14,8 +14,8 @@
 #include <stdint.h>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/transport/network_types.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "api/units/data_rate.h"
 #include "api/units/timestamp.h"
 #include "modules/congestion_controller/goog_cc/link_capacity_estimator.h"
@@ -30,8 +30,8 @@ namespace webrtc {
 // multiplicatively.
 class AimdRateControl {
  public:
-  explicit AimdRateControl(const WebRtcKeyValueConfig* key_value_config);
-  AimdRateControl(const WebRtcKeyValueConfig* key_value_config, bool send_side);
+  explicit AimdRateControl(const FieldTrialsView* key_value_config);
+  AimdRateControl(const FieldTrialsView* key_value_config, bool send_side);
   ~AimdRateControl();
 
   // Returns true if the target bitrate has been initialized. This happens
@@ -107,9 +107,16 @@ class AimdRateControl {
   // Use estimated link capacity lower bound if it is higher than the
   // acknowledged rate when backing off due to overuse.
   const bool estimate_bounded_backoff_;
-  // Use estimated link capacity upper bound as upper limit for increasing
-  // bitrate over the acknowledged rate.
-  const bool estimate_bounded_increase_;
+  // If false, uses estimated link capacity upper bound *
+  // `estimate_bounded_increase_ratio_` as upper limit for the estimate.
+  FieldTrialFlag disable_estimate_bounded_increase_{"Disabled"};
+  FieldTrialParameter<double> estimate_bounded_increase_ratio_{"ratio", 1.0};
+  FieldTrialParameter<bool> ignore_throughput_limit_if_network_estimate_{
+      "ignore_acked", false};
+  FieldTrialParameter<bool> increase_to_network_estimate_{"immediate_incr",
+                                                          false};
+  FieldTrialParameter<bool> ignore_network_estimate_decrease_{"ignore_decr",
+                                                              false};
   absl::optional<DataRate> last_decrease_;
   FieldTrialOptional<TimeDelta> initial_backoff_interval_;
   FieldTrialFlag link_capacity_fix_;

@@ -15,12 +15,13 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 
 namespace rtc {
 
-FileRotatingLogSink::FileRotatingLogSink(const std::string& log_dir_path,
-                                         const std::string& log_prefix,
+FileRotatingLogSink::FileRotatingLogSink(absl::string_view log_dir_path,
+                                         absl::string_view log_prefix,
                                          size_t max_log_size,
                                          size_t num_log_files)
     : FileRotatingLogSink(new FileRotatingStream(log_dir_path,
@@ -36,14 +37,24 @@ FileRotatingLogSink::FileRotatingLogSink(FileRotatingStream* stream)
 FileRotatingLogSink::~FileRotatingLogSink() {}
 
 void FileRotatingLogSink::OnLogMessage(const std::string& message) {
+  OnLogMessage(absl::string_view(message));
+}
+
+void FileRotatingLogSink::OnLogMessage(absl::string_view message) {
   if (!stream_->IsOpen()) {
     std::fprintf(stderr, "Init() must be called before adding this sink.\n");
     return;
   }
-  stream_->Write(message.c_str(), message.size());
+  stream_->Write(message.data(), message.size());
 }
 
 void FileRotatingLogSink::OnLogMessage(const std::string& message,
+                                       LoggingSeverity sev,
+                                       const char* tag) {
+  OnLogMessage(absl::string_view(message), sev, tag);
+}
+
+void FileRotatingLogSink::OnLogMessage(absl::string_view message,
                                        LoggingSeverity sev,
                                        const char* tag) {
   if (!stream_->IsOpen()) {
@@ -52,7 +63,7 @@ void FileRotatingLogSink::OnLogMessage(const std::string& message,
   }
   stream_->Write(tag, strlen(tag));
   stream_->Write(": ", 2);
-  stream_->Write(message.c_str(), message.size());
+  stream_->Write(message.data(), message.size());
 }
 
 bool FileRotatingLogSink::Init() {
@@ -64,7 +75,7 @@ bool FileRotatingLogSink::DisableBuffering() {
 }
 
 CallSessionFileRotatingLogSink::CallSessionFileRotatingLogSink(
-    const std::string& log_dir_path,
+    absl::string_view log_dir_path,
     size_t max_total_log_size)
     : FileRotatingLogSink(
           new CallSessionFileRotatingStream(log_dir_path, max_total_log_size)) {

@@ -7441,6 +7441,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             TLRPC.User currentUser = accountInstance.getMessagesController().getUser(peerId);
             imageLocation = ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_BIG);
             thumbLocation = ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_SMALL);
+            final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(peerId);
+            if (userFull == null) {
+                MessagesController.getInstance(currentAccount).loadUserInfo(currentUser, false, 0);
+            }
         } else {
             TLRPC.Chat currentChat = accountInstance.getMessagesController().getChat(-peerId);
             imageLocation = ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_BIG);

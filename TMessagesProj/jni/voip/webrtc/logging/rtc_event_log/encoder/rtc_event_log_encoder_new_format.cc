@@ -49,7 +49,6 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/app.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/bye.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/common_header.h"
-#include "modules/rtp_rtcp/source/rtcp_packet/extended_jitter_report.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/extended_reports.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/psfb.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/receiver_report.h"
@@ -308,15 +307,13 @@ size_t RemoveNonAllowlistedRtcpBlocks(const rtc::Buffer& packet,
     size_t block_size = next_block - block_begin;
     switch (header.type()) {
       case rtcp::Bye::kPacketType:
-      case rtcp::ExtendedJitterReport::kPacketType:
       case rtcp::ExtendedReports::kPacketType:
       case rtcp::Psfb::kPacketType:
       case rtcp::ReceiverReport::kPacketType:
       case rtcp::Rtpfb::kPacketType:
       case rtcp::SenderReport::kPacketType:
-        // We log sender reports, receiver reports, bye messages
-        // inter-arrival jitter, third-party loss reports, payload-specific
-        // feedback and extended reports.
+        // We log sender reports, receiver reports, bye messages, third-party
+        // loss reports, payload-specific feedback and extended reports.
         // TODO(terelius): As an optimization, don't copy anything if all blocks
         // in the packet are allowlisted types.
         memcpy(buffer + buffer_length, block_begin, block_size);
@@ -882,6 +879,12 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
           frames_decoded[rtc_event->ssrc()].emplace_back(rtc_event);
           break;
         }
+        case RtcEvent::Type::BeginV3Log:
+        case RtcEvent::Type::EndV3Log:
+          // These special events are written as part of starting
+          // and stopping the log, and only as part of version 3 of the format.
+          RTC_DCHECK_NOTREACHED();
+          break;
       }
     }
 

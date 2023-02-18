@@ -11,17 +11,18 @@
 #include "pc/rtp_transport.h"
 
 #include <errno.h>
-#include <string>
+
+#include <cstdint>
 #include <utility>
 
 #include "absl/strings/string_view.h"
 #include "api/array_view.h"
+#include "api/units/timestamp.h"
 #include "media/base/rtp_utils.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/trace_event.h"
 
 namespace webrtc {
@@ -73,8 +74,6 @@ void RtpTransport::SetRtpPacketTransport(
                                                    &RtpTransport::OnSentPacket);
     // Set the network route for the new transport.
     SignalNetworkRouteChanged(new_packet_transport->network_route());
-  } else {
-    RTC_LOG(LS_WARNING) << "set empty packet";
   }
 
   rtp_packet_transport_ = new_packet_transport;
@@ -187,19 +186,20 @@ void RtpTransport::DemuxPacket(rtc::CopyOnWriteBuffer packet,
       &header_extension_map_, packet_time_us == -1
                                   ? Timestamp::MinusInfinity()
                                   : Timestamp::Micros(packet_time_us));
-  if (!parsed_packet.Parse(packet)) {
+  if (!parsed_packet.Parse(std::move(packet))) {
     RTC_LOG(LS_ERROR)
         << "Failed to parse the incoming RTP packet before demuxing. Drop it.";
     return;
   }
-
+    
+  bool isUnresolved = true;
   if (!rtp_demuxer_.OnRtpPacket(parsed_packet)) {
-    SignalRtpPacketReceived.emit(&packet, packet_time_us, true);
+    isUnresolved = true;
     RTC_LOG(LS_WARNING) << "Failed to demux RTP packet: "
                         << RtpDemuxer::DescribePacket(parsed_packet);
-  } else {
-    SignalRtpPacketReceived.emit(&packet, packet_time_us, false);
   }
+    
+  ProcessRtpPacket(parsed_packet, isUnresolved);
 }
 
 bool RtpTransport::IsTransportWritable() {

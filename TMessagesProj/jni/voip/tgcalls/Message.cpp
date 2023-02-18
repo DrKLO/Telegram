@@ -384,22 +384,22 @@ absl::optional<rtc::CopyOnWriteBuffer> DeserializeRawMessage(
     if (!reader.Length()) {
         return absl::nullopt;
     }
-    
+
     uint32_t length = 0;
     if (!reader.ReadUInt32(&length)) {
         return absl::nullopt;
     }
-    
-    if (length < 0 || length > 1024 * 1024) {
+
+    if (/*length < 0 || */length > 1024 * 1024) {
         return absl::nullopt;
     }
-    
+
     rtc::CopyOnWriteBuffer result;
     result.SetSize(length);
     if (!reader.ReadBytes((char *)result.MutableData(), result.size())) {
         return absl::nullopt;
     }
-    
+
     return result;
 }
 

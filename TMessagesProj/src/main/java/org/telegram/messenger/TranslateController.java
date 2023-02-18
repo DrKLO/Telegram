@@ -281,6 +281,9 @@ public class TranslateController extends BaseController {
     public static class Language {
         public String code;
         public String displayName;
+        public String ownDisplayName;
+
+        public String q;
     }
 
     public static ArrayList<Language> getLanguages() {
@@ -288,10 +291,15 @@ public class TranslateController extends BaseController {
         for (int i = 0; i < allLanguages.size(); ++i) {
             Language language = new Language();
             language.code = allLanguages.get(i);
+            if ("no".equals(language.code)) {
+                language.code = "nb";
+            }
             language.displayName = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(language.code));
+            language.ownDisplayName = TranslateAlert2.capitalFirst(TranslateAlert2.systemLanguageName(language.code, true));
             if (language.displayName == null) {
                 continue;
             }
+            language.q = (language.displayName + " " + (language.ownDisplayName == null ? "" : language.ownDisplayName)).toLowerCase();
             result.add(language);
         }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
@@ -363,10 +371,15 @@ public class TranslateController extends BaseController {
             }
             Language language = new Language();
             language.code = code;
+            if ("no".equals(language.code)) {
+                language.code = "nb";
+            }
             language.displayName = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(language.code));
+            language.ownDisplayName = TranslateAlert2.capitalFirst(TranslateAlert2.systemLanguageName(language.code, true));
             if (language.displayName == null) {
                 continue;
             }
+            language.q = (language.displayName + " " + language.ownDisplayName).toLowerCase();
             result.add(language);
         }
         return result;
@@ -606,20 +619,22 @@ public class TranslateController extends BaseController {
 
         pendingLanguageChecks.add(hash);
 
-        LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
-            String detectedLanguage = lng;
-            if (detectedLanguage == null) {
-                detectedLanguage = UNKNOWN_LANGUAGE;
-            }
-            messageObject.messageOwner.originalLanguage = detectedLanguage;
-            getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
-            pendingLanguageChecks.remove((Integer) hash);
-            checkDialogTranslatable(messageObject);
-        }), err -> AndroidUtilities.runOnUIThread(() -> {
-            messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
-            getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
-            pendingLanguageChecks.remove((Integer) hash);
-        }));
+        Utilities.getStageQueue().postRunnable(() -> {
+            LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
+                String detectedLanguage = lng;
+                if (detectedLanguage == null) {
+                    detectedLanguage = UNKNOWN_LANGUAGE;
+                }
+                messageObject.messageOwner.originalLanguage = detectedLanguage;
+                getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
+                pendingLanguageChecks.remove((Integer) hash);
+                checkDialogTranslatable(messageObject);
+            }), err -> AndroidUtilities.runOnUIThread(() -> {
+                messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
+                getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
+                pendingLanguageChecks.remove((Integer) hash);
+            }));
+        });
     }
 
     private void checkDialogTranslatable(MessageObject messageObject) {
@@ -801,7 +816,7 @@ public class TranslateController extends BaseController {
 
     public boolean isTranslating(MessageObject messageObject) {
         synchronized (this) {
-            return messageObject != null && isTranslatingDialog(messageObject.getDialogId()) && loadingTranslations.contains(messageObject.getId());
+            return messageObject != null && loadingTranslations.contains(messageObject.getId()) && isTranslatingDialog(messageObject.getDialogId());
         }
     }
 

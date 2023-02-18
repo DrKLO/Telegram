@@ -69,6 +69,10 @@ int64_t SystemTimeNanos() {
 #elif defined(WINUWP)
   ticks = WinUwpSystemTimeNanos();
 #elif defined(WEBRTC_WIN)
+  // TODO(webrtc:14601): Fix the volatile increment instead of suppressing the
+  // warning.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-volatile"
   static volatile LONG last_timegettime = 0;
   static volatile int64_t num_wrap_timegettime = 0;
   volatile LONG* last_timegettime_ptr = &last_timegettime;
@@ -87,6 +91,7 @@ int64_t SystemTimeNanos() {
   // TODO(deadbeef): Calculate with nanosecond precision. Otherwise, we're
   // just wasting a multiply and divide when doing Time() on Windows.
   ticks = ticks * kNumNanosecsPerMillisec;
+#pragma clang diagnostic pop
 #else
 #error Unsupported platform.
 #endif

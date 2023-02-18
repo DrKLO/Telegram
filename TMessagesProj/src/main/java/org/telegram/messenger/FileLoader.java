@@ -86,6 +86,15 @@ public class FileLoader extends BaseController {
         return null;
     }
 
+    public static TLRPC.VideoSize getEmojiMarkup(ArrayList<TLRPC.VideoSize> video_sizes) {
+        for (int i = 0; i < video_sizes.size(); i++) {
+            if (video_sizes.get(i) instanceof TLRPC.TL_videoSizeEmojiMarkup || video_sizes.get(i) instanceof TLRPC.TL_videoSizeStickerMarkup) {
+                return video_sizes.get(i);
+            }
+        }
+        return null;
+    }
+
     private int getPriorityValue(int priorityType) {
         if (priorityType == PRIORITY_STREAM) {
             return Integer.MAX_VALUE;
@@ -649,11 +658,9 @@ public class FileLoader extends BaseController {
         }
 
         FileLoadOperation operation = loadOperationPaths.get(fileName);
+
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation);
-        }
-        if (stream != null) {
-            priority = PRIORITY_STREAM;
+            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation + " priority=" + priority);
         }
         priority = getPriorityValue(priority);
 
@@ -945,11 +952,11 @@ public class FileLoader extends BaseController {
         fileLoaderQueue.postRunnable(runnable);
     }
 
-    protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final long offset, final boolean priority) {
+    protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final long offset, final boolean priority, int loadingPriority) {
         final CountDownLatch semaphore = new CountDownLatch(1);
         final FileLoadOperation[] result = new FileLoadOperation[1];
         fileLoaderQueue.postRunnable(() -> {
-            result[0] = loadFileInternal(document, null, null, document == null && location != null ? location.location : null, location, parentObject, document == null && location != null ? "mp4" : null, document == null && location != null ? location.currentSize : 0, 1, stream, offset, priority, document == null ? 1 : 0);
+            result[0] = loadFileInternal(document, null, null, document == null && location != null ? location.location : null, location, parentObject, document == null && location != null ? "mp4" : null, document == null && location != null ? location.currentSize : 0, loadingPriority, stream, offset, priority, document == null ? 1 : 0);
             semaphore.countDown();
         });
         try {

@@ -14,8 +14,6 @@
 #include <stddef.h>  // For size_t.
 #include <stdint.h>  // For integer types.
 
-#include "rtc_base/constructor_magic.h"
-
 namespace rtc {
 
 // A BitBuffer API for write operations. Supports symmetric write APIs to the
@@ -26,6 +24,9 @@ class BitBufferWriter {
  public:
   // Constructs a bit buffer for the writable buffer of `bytes`.
   BitBufferWriter(uint8_t* bytes, size_t byte_count);
+
+  BitBufferWriter(const BitBufferWriter&) = delete;
+  BitBufferWriter& operator=(const BitBufferWriter&) = delete;
 
   // Gets the current offset, in bytes/bits, from the start of the buffer. The
   // bit offset is the offset into the current byte, in the range [0,7].
@@ -148,8 +149,6 @@ class BitBufferWriter {
   size_t byte_offset_;
   // The current offset, in bits, into the current byte.
   size_t bit_offset_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BitBufferWriter);
 };
 
 }  // namespace rtc

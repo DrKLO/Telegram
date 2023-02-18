@@ -26,14 +26,13 @@
 #include "api/video/video_adaptation_reason.h"
 #include "api/video/video_source_interface.h"
 #include "call/adaptation/video_source_restrictions.h"
+#include "modules/video_coding/svc/scalability_mode_util.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/time_utils.h"
 #include "rtc_base/trace_event.h"
-#include "system_wrappers/include/field_trial.h"
 #include "video/adaptation/quality_scaler_resource.h"
 
 namespace webrtc {
@@ -266,11 +265,14 @@ VideoStreamEncoderResourceManager::VideoStreamEncoderResourceManager(
     Clock* clock,
     bool experiment_cpu_load_estimator,
     std::unique_ptr<OveruseFrameDetector> overuse_detector,
-    DegradationPreferenceProvider* degradation_preference_provider)
-    : degradation_preference_provider_(degradation_preference_provider),
+    DegradationPreferenceProvider* degradation_preference_provider,
+    const FieldTrialsView& field_trials)
+    : field_trials_(field_trials),
+      degradation_preference_provider_(degradation_preference_provider),
       bitrate_constraint_(std::make_unique<BitrateConstraint>()),
-      balanced_constraint_(std::make_unique<BalancedConstraint>(
-          degradation_preference_provider_)),
+      balanced_constraint_(
+          std::make_unique<BalancedConstraint>(degradation_preference_provider_,
+                                               field_trials)),
       encode_usage_resource_(
           EncodeUsageResource::Create(std::move(overuse_detector))),
       quality_scaler_resource_(QualityScalerResource::Create()),
@@ -283,11 +285,14 @@ VideoStreamEncoderResourceManager::VideoStreamEncoderResourceManager(
       encoder_stats_observer_(encoder_stats_observer),
       degradation_preference_(DegradationPreference::DISABLED),
       video_source_restrictions_(),
+      balanced_settings_(field_trials),
       clock_(clock),
       experiment_cpu_load_estimator_(experiment_cpu_load_estimator),
       initial_frame_dropper_(
           std::make_unique<InitialFrameDropper>(quality_scaler_resource_)),
       quality_scaling_experiment_enabled_(QualityScalingExperiment::Enabled()),
+      pixel_limit_resource_experiment_enabled_(
+          field_trials.IsEnabled(kPixelLimitResourceFieldTrialName)),
       encoder_target_bitrate_bps_(absl::nullopt),
       quality_rampup_experiment_(
           QualityRampUpExperimentHelper::CreateIfEnabled(this, clock_)),
@@ -303,14 +308,13 @@ VideoStreamEncoderResourceManager::~VideoStreamEncoderResourceManager() =
     default;
 
 void VideoStreamEncoderResourceManager::Initialize(
-    rtc::TaskQueue* encoder_queue) {
+    TaskQueueBase* encoder_queue) {
   RTC_DCHECK(!encoder_queue_);
   RTC_DCHECK(encoder_queue);
   encoder_queue_ = encoder_queue;
-  encode_usage_resource_->RegisterEncoderTaskQueue(encoder_queue_->Get());
-  quality_scaler_resource_->RegisterEncoderTaskQueue(encoder_queue_->Get());
-  bandwidth_quality_scaler_resource_->RegisterEncoderTaskQueue(
-      encoder_queue_->Get());
+  encode_usage_resource_->RegisterEncoderTaskQueue(encoder_queue_);
+  quality_scaler_resource_->RegisterEncoderTaskQueue(encoder_queue_);
+  bandwidth_quality_scaler_resource_->RegisterEncoderTaskQueue(encoder_queue_);
 }
 
 void VideoStreamEncoderResourceManager::SetAdaptationProcessor(
@@ -350,13 +354,13 @@ void VideoStreamEncoderResourceManager::MaybeInitializePixelLimitResource() {
   RTC_DCHECK_RUN_ON(encoder_queue_);
   RTC_DCHECK(adaptation_processor_);
   RTC_DCHECK(!pixel_limit_resource_);
-  if (!field_trial::IsEnabled(kPixelLimitResourceFieldTrialName)) {
+  if (!pixel_limit_resource_experiment_enabled_) {
     // The field trial is not running.
     return;
   }
   int max_pixels = 0;
   std::string pixel_limit_field_trial =
-      field_trial::FindFullName(kPixelLimitResourceFieldTrialName);
+      field_trials_.Lookup(kPixelLimitResourceFieldTrialName);
   if (sscanf(pixel_limit_field_trial.c_str(), "Enabled-%d", &max_pixels) != 1) {
     RTC_LOG(LS_ERROR) << "Couldn't parse " << kPixelLimitResourceFieldTrialName
                       << " trial config: " << pixel_limit_field_trial;
@@ -369,7 +373,7 @@ void VideoStreamEncoderResourceManager::MaybeInitializePixelLimitResource() {
   // resource is active for the lifetme of the stream (until
   // StopManagedResources() is called).
   pixel_limit_resource_ =
-      PixelLimitResource::Create(encoder_queue_->Get(), input_state_provider_);
+      PixelLimitResource::Create(encoder_queue_, input_state_provider_);
   pixel_limit_resource_->SetMaxPixels(max_pixels);
   AddResource(pixel_limit_resource_, VideoAdaptationReason::kCpu);
 }
@@ -668,7 +672,7 @@ CpuOveruseOptions VideoStreamEncoderResourceManager::GetCpuOveruseOptions()
   // This is already ensured by the only caller of this method:
   // StartResourceAdaptation().
   RTC_DCHECK(encoder_settings_.has_value());
-  CpuOveruseOptions options;
+  CpuOveruseOptions options(field_trials_);
   // Hardware accelerated encoders are assumed to be pipelined; give them
   // additional overuse time.
   if (encoder_settings_->encoder_info().is_hardware_accelerated) {
@@ -810,15 +814,29 @@ void VideoStreamEncoderResourceManager::OnQualityRampUp() {
   quality_rampup_experiment_.reset();
 }
 
-bool VideoStreamEncoderResourceManager::IsSimulcast(
+bool VideoStreamEncoderResourceManager::IsSimulcastOrMultipleSpatialLayers(
     const VideoEncoderConfig& encoder_config) {
   const std::vector<VideoStream>& simulcast_layers =
       encoder_config.simulcast_layers;
-  if (simulcast_layers.size() <= 1) {
+  if (simulcast_layers.empty()) {
     return false;
   }
 
-  if (simulcast_layers[0].active) {
+  absl::optional<int> num_spatial_layers;
+  if (simulcast_layers[0].scalability_mode.has_value() &&
+      encoder_config.number_of_streams == 1) {
+    num_spatial_layers = ScalabilityModeToNumSpatialLayers(
+        *simulcast_layers[0].scalability_mode);
+  }
+
+  if (simulcast_layers.size() == 1) {
+    // Check if multiple spatial layers are used.
+    return num_spatial_layers && *num_spatial_layers > 1;
+  }
+
+  bool svc_with_one_spatial_layer =
+      num_spatial_layers && *num_spatial_layers == 1;
+  if (simulcast_layers[0].active && !svc_with_one_spatial_layer) {
     // We can't distinguish between simulcast and singlecast when only the
     // lowest spatial layer is active. Treat this case as simulcast.
     return true;

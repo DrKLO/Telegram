@@ -152,13 +152,13 @@ private:
 
 	std::unique_ptr<cricket::MediaEngineInterface> _mediaEngine;
 	std::unique_ptr<webrtc::Call> _call;
-	webrtc::FieldTrialBasedConfig _fieldTrials;
 	webrtc::LocalAudioSinkAdapter _audioSource;
 	rtc::scoped_refptr<webrtc::AudioDeviceModule> _audioDeviceModule;
 	std::unique_ptr<cricket::VoiceMediaChannel> _audioChannel;
 	std::unique_ptr<cricket::VideoMediaChannel> _videoChannel;
 	std::unique_ptr<webrtc::VideoBitrateAllocatorFactory> _videoBitrateAllocatorFactory;
 	std::shared_ptr<VideoCaptureInterface> _videoCapture;
+	std::shared_ptr<bool> _videoCaptureGuard;
     bool _isScreenCapture = false;
     std::shared_ptr<VideoSinkInterfaceProxyImpl> _incomingVideoSinkProxy;
 

@@ -290,11 +290,13 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     rate = sampleRate;
 
     if (!path) {
+        LOGE("path is null");
         return 0;
     }
     
     _fileOs = fopen(path, "wb");
     if (!_fileOs) {
+        LOGE("error cannot open file: %s", path);
         return 0;
     }
     

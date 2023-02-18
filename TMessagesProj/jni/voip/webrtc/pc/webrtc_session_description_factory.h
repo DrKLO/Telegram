@@ -18,79 +18,48 @@
 #include <queue>
 #include <string>
 
+#include "absl/functional/any_invocable.h"
 #include "api/jsep.h"
 #include "api/peer_connection_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/task_queue/task_queue_base.h"
 #include "p2p/base/transport_description.h"
 #include "p2p/base/transport_description_factory.h"
-#include "pc/channel_manager.h"
 #include "pc/media_session.h"
 #include "pc/sdp_state_provider.h"
-#include "rtc_base/constructor_magic.h"
-#include "rtc_base/message_handler.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/rtc_certificate_generator.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
-#include "rtc_base/thread.h"
-#include "rtc_base/thread_message.h"
 #include "rtc_base/unique_id_generator.h"
+#include "rtc_base/weak_ptr.h"
 
 namespace webrtc {
-
-// DTLS certificate request callback class.
-class WebRtcCertificateGeneratorCallback
-    : public rtc::RTCCertificateGeneratorCallback {
- public:
-  // `rtc::RTCCertificateGeneratorCallback` overrides.
-  void OnSuccess(
-      const rtc::scoped_refptr<rtc::RTCCertificate>& certificate) override;
-  void OnFailure() override;
-
-  sigslot::signal0<> SignalRequestFailed;
-  sigslot::signal1<const rtc::scoped_refptr<rtc::RTCCertificate>&>
-      SignalCertificateReady;
-};
-
-struct CreateSessionDescriptionRequest {
-  enum Type {
-    kOffer,
-    kAnswer,
-  };
-
-  CreateSessionDescriptionRequest(Type type,
-                                  CreateSessionDescriptionObserver* observer,
-                                  const cricket::MediaSessionOptions& options)
-      : type(type), observer(observer), options(options) {}
-
-  Type type;
-  rtc::scoped_refptr<CreateSessionDescriptionObserver> observer;
-  cricket::MediaSessionOptions options;
-};
-
 // This class is used to create offer/answer session description. Certificates
 // for WebRtcSession/DTLS are either supplied at construction or generated
 // asynchronously. It queues the create offer/answer request until the
 // certificate generation has completed, i.e. when OnCertificateRequestFailed or
 // OnCertificateReady is called.
-class WebRtcSessionDescriptionFactory : public rtc::MessageHandler,
-                                        public sigslot::has_slots<> {
+class WebRtcSessionDescriptionFactory {
  public:
   // Can specify either a `cert_generator` or `certificate` to enable DTLS. If
   // a certificate generator is given, starts generating the certificate
   // asynchronously. If a certificate is given, will use that for identifying
   // over DTLS. If neither is specified, DTLS is disabled.
   WebRtcSessionDescriptionFactory(
-      rtc::Thread* signaling_thread,
-      cricket::ChannelManager* channel_manager,
+      ConnectionContext* context,
       const SdpStateProvider* sdp_info,
       const std::string& session_id,
       bool dtls_enabled,
       std::unique_ptr<rtc::RTCCertificateGeneratorInterface> cert_generator,
-      const rtc::scoped_refptr<rtc::RTCCertificate>& certificate,
-      rtc::UniqueRandomIdGenerator* ssrc_generator,
+      rtc::scoped_refptr<rtc::RTCCertificate> certificate,
       std::function<void(const rtc::scoped_refptr<rtc::RTCCertificate>&)>
-          on_certificate_ready);
-  virtual ~WebRtcSessionDescriptionFactory();
+          on_certificate_ready,
+      const FieldTrialsView& field_trials);
+  ~WebRtcSessionDescriptionFactory();
+
+  WebRtcSessionDescriptionFactory(const WebRtcSessionDescriptionFactory&) =
+      delete;
+  WebRtcSessionDescriptionFactory& operator=(
+      const WebRtcSessionDescriptionFactory&) = delete;
 
   static void CopyCandidatesFromSessionDescription(
       const SessionDescriptionInterface* source_desc,
@@ -128,8 +97,21 @@ class WebRtcSessionDescriptionFactory : public rtc::MessageHandler,
     CERTIFICATE_FAILED,
   };
 
-  // MessageHandler implementation.
-  virtual void OnMessage(rtc::Message* msg);
+  struct CreateSessionDescriptionRequest {
+    enum Type {
+      kOffer,
+      kAnswer,
+    };
+
+    CreateSessionDescriptionRequest(Type type,
+                                    CreateSessionDescriptionObserver* observer,
+                                    const cricket::MediaSessionOptions& options)
+        : type(type), observer(observer), options(options) {}
+
+    Type type;
+    rtc::scoped_refptr<CreateSessionDescriptionObserver> observer;
+    cricket::MediaSessionOptions options;
+  };
 
   void InternalCreateOffer(CreateSessionDescriptionRequest request);
   void InternalCreateAnswer(CreateSessionDescriptionRequest request);
@@ -141,14 +123,16 @@ class WebRtcSessionDescriptionFactory : public rtc::MessageHandler,
   void PostCreateSessionDescriptionSucceeded(
       CreateSessionDescriptionObserver* observer,
       std::unique_ptr<SessionDescriptionInterface> description);
+  // Posts `callback` to `signaling_thread_`, and ensures it will be called no
+  // later than in the destructor.
+  void Post(absl::AnyInvocable<void() &&> callback);
 
   void OnCertificateRequestFailed();
-  void SetCertificate(
-      const rtc::scoped_refptr<rtc::RTCCertificate>& certificate);
+  void SetCertificate(rtc::scoped_refptr<rtc::RTCCertificate> certificate);
 
   std::queue<CreateSessionDescriptionRequest>
       create_session_description_requests_;
-  rtc::Thread* const signaling_thread_;
+  TaskQueueBase* const signaling_thread_;
   cricket::TransportDescriptionFactory transport_desc_factory_;
   cricket::MediaSessionDescriptionFactory session_desc_factory_;
   uint64_t session_version_;
@@ -156,11 +140,11 @@ class WebRtcSessionDescriptionFactory : public rtc::MessageHandler,
   const SdpStateProvider* sdp_info_;
   const std::string session_id_;
   CertificateRequestState certificate_request_state_;
+  std::queue<absl::AnyInvocable<void() &&>> callbacks_;
 
   std::function<void(const rtc::scoped_refptr<rtc::RTCCertificate>&)>
       on_certificate_ready_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(WebRtcSessionDescriptionFactory);
+  rtc::WeakPtrFactory<WebRtcSessionDescriptionFactory> weak_factory_{this};
 };
 }  // namespace webrtc
 

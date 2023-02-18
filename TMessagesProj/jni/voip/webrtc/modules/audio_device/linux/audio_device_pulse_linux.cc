@@ -1059,7 +1059,7 @@ int32_t AudioDeviceLinuxPulse::StartRecording() {
 
   // The audio thread will signal when recording has started.
   _timeEventRec.Set();
-  if (!_recStartEvent.Wait(10000)) {
+  if (!_recStartEvent.Wait(TimeDelta::Seconds(10))) {
     {
       MutexLock lock(&mutex_);
       _startRec = false;
@@ -1174,7 +1174,7 @@ int32_t AudioDeviceLinuxPulse::StartPlayout() {
 
   // The audio thread will signal when playout has started.
   _timeEventPlay.Set();
-  if (!_playStartEvent.Wait(10000)) {
+  if (!_playStartEvent.Wait(TimeDelta::Seconds(10))) {
     {
       MutexLock lock(&mutex_);
       _startPlay = false;
@@ -1977,7 +1977,7 @@ int32_t AudioDeviceLinuxPulse::ProcessRecordedData(int8_t* bufferData,
 }
 
 bool AudioDeviceLinuxPulse::PlayThreadProcess() {
-  if (!_timeEventPlay.Wait(1000)) {
+  if (!_timeEventPlay.Wait(TimeDelta::Seconds(1))) {
     return true;
   }
 
@@ -2149,7 +2149,7 @@ bool AudioDeviceLinuxPulse::PlayThreadProcess() {
 }
 
 bool AudioDeviceLinuxPulse::RecThreadProcess() {
-  if (!_timeEventRec.Wait(1000)) {
+  if (!_timeEventRec.Wait(TimeDelta::Seconds(1))) {
     return true;
   }
 

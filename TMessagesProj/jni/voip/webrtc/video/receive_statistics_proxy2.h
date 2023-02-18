@@ -18,8 +18,10 @@
 
 #include "absl/types/optional.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/timestamp.h"
+#include "api/video_codecs/video_decoder.h"
 #include "call/video_receive_stream.h"
 #include "modules/include/module_common_types.h"
 #include "modules/video_coding/include/video_coding_defines.h"
@@ -29,7 +31,6 @@
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/rate_tracker.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/thread_annotations.h"
 #include "video/quality_threshold.h"
 #include "video/stats_counter.h"
@@ -53,11 +54,11 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
                          TaskQueueBase* worker_thread);
   ~ReceiveStatisticsProxy() override;
 
-  VideoReceiveStream::Stats GetStats() const;
+  VideoReceiveStreamInterface::Stats GetStats() const;
 
   void OnDecodedFrame(const VideoFrame& frame,
                       absl::optional<uint8_t> qp,
-                      int32_t decode_time_ms,
+                      TimeDelta decode_time,
                       VideoContentType content_type);
 
   // Called asyncronously on the worker thread as a result of a call to the
@@ -65,7 +66,9 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
   // the actual decoding happens.
   void OnDecodedFrame(const VideoFrameMetaData& frame_meta,
                       absl::optional<uint8_t> qp,
-                      int32_t decode_time_ms,
+                      TimeDelta decode_time,
+                      TimeDelta processing_delay,
+                      TimeDelta assembly_time,
                       VideoContentType content_type);
 
   void OnSyncOffsetUpdated(int64_t video_playout_ntp_ms,
@@ -73,7 +76,7 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
                            double estimated_freq_khz);
   void OnRenderedFrame(const VideoFrameMetaData& frame_meta);
   void OnIncomingPayloadType(int payload_type);
-  void OnDecoderImplementationName(const char* implementation_name);
+  void OnDecoderInfo(const VideoDecoder::DecoderInfo& decoder_info);
 
   void OnPreDecode(VideoCodecType codec_type, int qp);
 
@@ -107,7 +110,7 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
   void OnRttUpdate(int64_t avg_rtt_ms);
 
   // Notification methods that are used to check our internal state and validate
-  // threading assumptions. These are called by VideoReceiveStream.
+  // threading assumptions. These are called by VideoReceiveStreamInterface.
   void DecoderThreadStarting();
   void DecoderThreadStopped();
 
@@ -144,16 +147,11 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
   // Removes info about old frames and then updates the framerate.
   void UpdateFramerate(int64_t now_ms) const;
 
-  void UpdateDecodeTimeHistograms(int width,
-                                  int height,
-                                  int decode_time_ms) const;
-
   absl::optional<int64_t> GetCurrentEstimatedPlayoutNtpTimestampMs(
       int64_t now_ms) const;
 
   Clock* const clock_;
   const int64_t start_ms_;
-  const bool enable_decode_time_histograms_;
 
   int64_t last_sample_time_ RTC_GUARDED_BY(main_thread_);
 
@@ -164,7 +162,8 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
   int num_bad_states_ RTC_GUARDED_BY(main_thread_);
   int num_certain_states_ RTC_GUARDED_BY(main_thread_);
   // Note: The `stats_.rtp_stats` member is not used or populated by this class.
-  mutable VideoReceiveStream::Stats stats_ RTC_GUARDED_BY(main_thread_);
+  mutable VideoReceiveStreamInterface::Stats stats_
+      RTC_GUARDED_BY(main_thread_);
   // Same as stats_.ssrc, but const (no lock required).
   const uint32_t remote_ssrc_;
   RateStatistics decode_fps_estimator_ RTC_GUARDED_BY(main_thread_);

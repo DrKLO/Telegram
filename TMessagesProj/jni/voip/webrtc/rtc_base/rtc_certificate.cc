@@ -21,7 +21,9 @@ namespace rtc {
 
 scoped_refptr<RTCCertificate> RTCCertificate::Create(
     std::unique_ptr<SSLIdentity> identity) {
-  return new RTCCertificate(identity.release());
+  // Explicit new to access proteced constructor.
+  return rtc::scoped_refptr<RTCCertificate>(
+      new RTCCertificate(identity.release()));
 }
 
 RTCCertificate::RTCCertificate(SSLIdentity* identity) : identity_(identity) {
@@ -61,7 +63,7 @@ scoped_refptr<RTCCertificate> RTCCertificate::FromPEM(
       SSLIdentity::CreateFromPEMStrings(pem.private_key(), pem.certificate()));
   if (!identity)
     return nullptr;
-  return new RTCCertificate(identity.release());
+  return RTCCertificate::Create(std::move(identity));
 }
 
 bool RTCCertificate::operator==(const RTCCertificate& certificate) const {

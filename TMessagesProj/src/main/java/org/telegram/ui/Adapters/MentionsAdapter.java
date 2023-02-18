@@ -762,6 +762,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 searchResultSuggestions = null;
                 searchResultCommandsHelp = null;
                 searchResultCommandsUsers = null;
+                delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null);
                 if (added) {
                     boolean hasTop = searchResultBotContextSwitch != null;
                     notifyItemChanged(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0) - 1);
@@ -769,7 +770,6 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 } else {
                     notifyDataSetChanged();
                 }
-                delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null);
             }
         });
 
@@ -796,7 +796,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     }
 
     public void searchUsernameOrHashtag(CharSequence charSequence, int position, ArrayList<MessageObject> messageObjects, boolean usernameOnly, boolean forSearch) {
-        final String text = charSequence == null ? null : charSequence.toString();
+        final String text = charSequence == null ? "" : charSequence.toString();
         if (cancelDelayRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(cancelDelayRunnable);
             cancelDelayRunnable = null;
@@ -826,7 +826,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         StringBuilder result = new StringBuilder();
         int foundType = -1;
 
-        boolean searchEmoji = !usernameOnly && text != null && text.length() > 0 && text.length() <= 14;
+        boolean searchEmoji = !usernameOnly && text.length() > 0 && text.length() <= 14;
         String originalEmoji = "";
         if (searchEmoji) {
             CharSequence emoji = originalEmoji = text;

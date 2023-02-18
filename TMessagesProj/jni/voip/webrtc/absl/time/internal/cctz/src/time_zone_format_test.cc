@@ -18,11 +18,15 @@
 #include <sstream>
 #include <string>
 
+#include "absl/base/config.h"
+#include "absl/time/internal/cctz/include/cctz/time_zone.h"
+#if defined(__linux__)
+#include <features.h>
+#endif
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/base/config.h"
 #include "absl/time/internal/cctz/include/cctz/civil_time.h"
-#include "absl/time/internal/cctz/include/cctz/time_zone.h"
 
 namespace chrono = std::chrono;
 
@@ -183,8 +187,10 @@ TEST(Format, PosixConversions) {
   TestFormatSpecifier(tp, tz, "%F", "1970-01-01");
   TestFormatSpecifier(tp, tz, "%g", "70");
   TestFormatSpecifier(tp, tz, "%G", "1970");
+#if defined(__GLIBC__)
   TestFormatSpecifier(tp, tz, "%k", " 0");
   TestFormatSpecifier(tp, tz, "%l", "12");
+#endif
   TestFormatSpecifier(tp, tz, "%n", "\n");
   TestFormatSpecifier(tp, tz, "%R", "00:00");
   TestFormatSpecifier(tp, tz, "%t", "\t");
@@ -216,7 +222,9 @@ TEST(Format, LocaleSpecific) {
 #if defined(__linux__)
   // SU/C99/TZ extensions
   TestFormatSpecifier(tp, tz, "%h", "Jan");  // Same as %b
+#if defined(__GLIBC__)
   TestFormatSpecifier(tp, tz, "%P", "am");
+#endif
   TestFormatSpecifier(tp, tz, "%r", "12:00:00 AM");
 
   // Modified conversion specifiers %E_
@@ -1045,9 +1053,11 @@ TEST(Parse, LocaleSpecific) {
   EXPECT_TRUE(parse("%h", "Feb", tz, &tp));
   EXPECT_EQ(2, convert(tp, tz).month());  // Equivalent to %b
 
+#if defined(__GLIBC__)
   tp = reset;
   EXPECT_TRUE(parse("%l %p", "5 PM", tz, &tp));
   EXPECT_EQ(17, convert(tp, tz).hour());
+#endif
 
   tp = reset;
   EXPECT_TRUE(parse("%r", "03:44:55 PM", tz, &tp));
@@ -1055,6 +1065,7 @@ TEST(Parse, LocaleSpecific) {
   EXPECT_EQ(44, convert(tp, tz).minute());
   EXPECT_EQ(55, convert(tp, tz).second());
 
+#if defined(__GLIBC__)
   tp = reset;
   EXPECT_TRUE(parse("%Ec", "Tue Nov 19 05:06:07 2013", tz, &tp));
   EXPECT_EQ(convert(civil_second(2013, 11, 19, 5, 6, 7), tz), tp);
@@ -1125,6 +1136,7 @@ TEST(Parse, LocaleSpecific) {
   tp = reset;
   EXPECT_TRUE(parse("%Oy", "04", tz, &tp));
   EXPECT_EQ(2004, convert(tp, tz).year());
+#endif
 #endif
 }
 

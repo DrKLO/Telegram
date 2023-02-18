@@ -6,8 +6,12 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
 
 public class DatabaseMigrationHelper {
     public static int migrate(MessagesStorage messagesStorage, int version) throws Exception {
@@ -1225,5 +1229,143 @@ public class DatabaseMigrationHelper {
         }
 
         return version;
+    }
+
+
+    public static boolean recoverDatabase(File oldDatabaseFile, File oldDatabaseWall, File oldDatabaseShm, int currentAccount) {
+        File filesDir = ApplicationLoader.getFilesDirFixed();
+        filesDir = new File(filesDir, "recover_database_" + currentAccount + "/");
+        filesDir.mkdirs();
+
+        File cacheFile = new File(filesDir, "cache4.db");
+        File walCacheFile = new File(filesDir, "cache4.db-wal");
+        File shmCacheFile = new File(filesDir, "cache4.db-shm");
+        try {
+            cacheFile.delete();
+            walCacheFile.delete();
+            shmCacheFile.delete();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        SQLiteDatabase newDatabase = null;
+        long time = 0;
+        ArrayList<Long> encryptedDialogs = new ArrayList<>();
+        ArrayList<Long> dialogs = new ArrayList<>();
+        boolean recovered = true;
+        FileLog.d("start recover database");
+
+        try {
+           time = System.currentTimeMillis();
+
+            newDatabase = new SQLiteDatabase(cacheFile.getPath());
+            newDatabase.executeFast("PRAGMA secure_delete = ON").stepThis().dispose();
+            newDatabase.executeFast("PRAGMA temp_store = MEMORY").stepThis().dispose();
+            newDatabase.executeFast("PRAGMA journal_mode = WAL").stepThis().dispose();
+            newDatabase.executeFast("PRAGMA journal_size_limit = 10485760").stepThis().dispose();
+
+            MessagesStorage.createTables(newDatabase);
+            newDatabase.executeFast("ATTACH DATABASE \"" + oldDatabaseFile.getAbsolutePath() + "\" AS old;").stepThis().dispose();
+
+            int version = newDatabase.executeInt("PRAGMA old.user_version");
+            if (version != MessagesStorage.LAST_DB_VERSION) {
+                FileLog.e("can't restore database from version " + version);
+                return false;
+            }
+            HashSet<String> excludeTables = new HashSet<>();
+            excludeTables.add("messages_v2");
+            excludeTables.add("messages_holes");
+            excludeTables.add("scheduled_messages_v2");
+            excludeTables.add("media_holes_v2");
+            excludeTables.add("media_v4");
+            excludeTables.add("messages_holes_topics");
+            excludeTables.add("messages_topics");
+            excludeTables.add("media_topics");
+            excludeTables.add("media_holes_topics");
+            excludeTables.add("topics");
+            excludeTables.add("media_counts_v2");
+            excludeTables.add("media_counts_topics");
+
+            //restore whole tables
+            for (int i = 0; i < MessagesStorage.DATABASE_TABLES.length; i++) {
+                String tableName = MessagesStorage.DATABASE_TABLES[i];
+                if (excludeTables.contains(tableName)) {
+                    continue;
+                }
+                newDatabase.executeFast(String.format(Locale.US, "INSERT OR IGNORE INTO %s SELECT * FROM old.%s;", tableName, tableName)).stepThis().dispose();
+            }
+
+            SQLiteCursor cursor = newDatabase.queryFinalized("SELECT did FROM old.dialogs");
+
+            while (cursor.next()) {
+                long did = cursor.longValue(0);
+                if (DialogObject.isEncryptedDialog(did)) {
+                    encryptedDialogs.add(did);
+                } else {
+                    dialogs.add(did);
+                }
+            }
+            cursor.dispose();
+
+            //restore only secret chats
+            for (int i = 0; i < encryptedDialogs.size(); i++) {
+                long dialogId = encryptedDialogs.get(i);
+                newDatabase.executeFast(String.format(Locale.US, "INSERT OR IGNORE INTO messages_v2 SELECT * FROM old.messages_v2 WHERE uid = %d;", dialogId)).stepThis().dispose();
+                newDatabase.executeFast(String.format(Locale.US, "INSERT OR IGNORE INTO messages_holes SELECT * FROM old.messages_holes WHERE uid = %d;", dialogId)).stepThis().dispose();
+                newDatabase.executeFast(String.format(Locale.US, "INSERT OR IGNORE INTO media_holes_v2 SELECT * FROM old.media_holes_v2 WHERE uid = %d;", dialogId)).stepThis().dispose();
+                newDatabase.executeFast(String.format(Locale.US, "INSERT OR IGNORE INTO media_v4 SELECT * FROM old.media_v4 WHERE uid = %d;", dialogId)).stepThis().dispose();
+            }
+
+            SQLitePreparedStatement state5 = newDatabase.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
+            SQLitePreparedStatement state6 = newDatabase.executeFast("REPLACE INTO media_holes_v2 VALUES(?, ?, ?, ?)");
+
+            for (int a = 0; a < dialogs.size(); a++) {
+                Long did = dialogs.get(a);
+
+                cursor = newDatabase.queryFinalized("SELECT last_mid_i, last_mid FROM old.dialogs WHERE did = " + did);
+
+                if (cursor.next()) {
+                    long last_mid_i = cursor.longValue(0);
+                    long last_mid = cursor.longValue(1);
+                    newDatabase.executeFast("INSERT OR IGNORE INTO messages_v2 SELECT * FROM old.messages_v2 WHERE uid = " + did + " AND mid IN (" + last_mid_i + "," + last_mid + ")").stepThis().dispose();
+
+                    MessagesStorage.createFirstHoles(did, state5, state6, (int) last_mid, 0);
+
+                }
+                cursor.dispose();
+                cursor = null;
+            }
+
+            state5.dispose();
+            state6.dispose();
+
+            newDatabase.executeFast("DETACH DATABASE old;").stepThis().dispose();
+            newDatabase.close();
+        } catch (Exception e) {
+            FileLog.e(e);
+            recovered = false;
+        }
+        if (!recovered) {
+            return false;
+        }
+        try {
+            oldDatabaseFile.delete();
+            oldDatabaseWall.delete();
+            oldDatabaseShm.delete();
+
+            AndroidUtilities.copyFile(cacheFile, oldDatabaseFile);
+            AndroidUtilities.copyFile(walCacheFile, oldDatabaseWall);
+            AndroidUtilities.copyFile(shmCacheFile, oldDatabaseShm);
+
+            cacheFile.delete();
+            walCacheFile.delete();
+            shmCacheFile.delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        FileLog.d("database recovered time " + (System.currentTimeMillis() - time));
+        return true;
     }
 }

@@ -442,7 +442,7 @@ public class LocaleController {
     public LocaleInfo getBuiltinLanguageByPlural(String plural) {
         Collection<LocaleInfo> values = languagesDict.values();
         for (LocaleInfo l : values)
-            if (l.pathToFile != null && l.pathToFile.equals("remote") && !"en_raw".equals(l.shortName) && l.pluralLangCode != null && l.pluralLangCode.equals(plural))
+            if (l.pathToFile != null && l.pathToFile.equals("remote") && (l.shortName == null || !l.shortName.endsWith("_raw")) && l.pluralLangCode != null && l.pluralLangCode.equals(plural))
                 return l;
         return null;
     }
@@ -923,6 +923,7 @@ public class LocaleController {
             }
             currentLocale = newLocale;
             currentLocaleInfo = localeInfo;
+            FileLog.d("applyLanguage: currentLocaleInfo is set");
 
             if (!TextUtils.isEmpty(currentLocaleInfo.pluralLangCode)) {
                 currentPluralRules = allRules.get(currentLocaleInfo.pluralLangCode);
@@ -2063,6 +2064,9 @@ public class LocaleController {
 
     public void saveRemoteLocaleStrings(LocaleInfo localeInfo, final TLRPC.TL_langPackDifference difference, int currentAccount, Runnable onDone) {
         if (difference == null || difference.strings.isEmpty() || localeInfo == null || localeInfo.isLocal()) {
+            FileLog.d("saveRemoteLocaleStrings: empty difference=" + (difference == null || difference.strings.isEmpty()) + "; locale is local or null=" + (localeInfo == null || localeInfo.isLocal()));
+            recreateFormatters();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
             if (onDone != null) {
                 onDone.run();
             }
@@ -2078,6 +2082,7 @@ public class LocaleController {
             type = -1;
         }
         if (type == -1) {
+            FileLog.d("saveRemoteLocaleStrings: unknown language " + langCode + " (locale short=" + localeInfo.shortName + ", base=" + localeInfo.baseLangCode + ")");
             return;
         }
         File finalFile;
@@ -2271,6 +2276,7 @@ public class LocaleController {
         if (localeInfo == null || !localeInfo.isRemote() && !localeInfo.isUnofficial()) {
             return 0;
         }
+        FileLog.d("applyRemoteLanguage " + langCode + " force=" + force + " forceFullDifference=" + forceFullDifference + " currentAccount=" + currentAccount);
         int[] requested = new int[1], received = new int[1];
         requested[0] = received[0] = 0;
         Runnable onPartlyDone = () -> {
@@ -2282,6 +2288,7 @@ public class LocaleController {
         if (localeInfo.hasBaseLang() && (langCode == null || langCode.equals(localeInfo.baseLangCode))) {
             if (localeInfo.baseVersion != 0 && !forceFullDifference) {
                 if (localeInfo.hasBaseLang()) {
+                    FileLog.d("applyRemoteLanguage getDifference of base");
                     TLRPC.TL_langpack_getDifference req = new TLRPC.TL_langpack_getDifference();
                     req.from_version = localeInfo.baseVersion;
                     req.lang_code = localeInfo.getBaseLangCode();
@@ -2294,6 +2301,7 @@ public class LocaleController {
                     }, ConnectionsManager.RequestFlagWithoutLogin);
                 }
             } else {
+                FileLog.d("applyRemoteLanguage getLangPack of base");
                 TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
                 req.lang_code = localeInfo.getBaseLangCode();
                 requested[0]++;
@@ -2308,6 +2316,7 @@ public class LocaleController {
         }
         if (langCode == null || langCode.equals(localeInfo.shortName)) {
             if (localeInfo.version != 0 && !forceFullDifference) {
+                FileLog.d("applyRemoteLanguage getDifference");
                 TLRPC.TL_langpack_getDifference req = new TLRPC.TL_langpack_getDifference();
                 req.from_version = localeInfo.version;
                 req.lang_code = localeInfo.getLangCode();
@@ -2324,6 +2333,7 @@ public class LocaleController {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                     ConnectionsManager.setLangCode(localeInfo.getLangCode());
                 }
+                FileLog.d("applyRemoteLanguage getLangPack");
                 TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
                 req.lang_code = localeInfo.getLangCode();
                 requested[0]++;

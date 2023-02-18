@@ -33,7 +33,7 @@
 #endif
 #include <unistd.h>
 
-#if defined(__GLIBC__) && \
+#if !defined(__UCLIBC__) && defined(__GLIBC__) && \
     (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 16))
 #define ABSL_HAVE_GETAUXVAL
 #endif
@@ -50,6 +50,10 @@
 #define AT_SYSINFO_EHDR 33  // for crosstoolv10
 #endif
 
+#if defined(__NetBSD__)
+using Elf32_auxv_t = Aux32Info;
+using Elf64_auxv_t = Aux64Info;
+#endif
 #if defined(__FreeBSD__)
 #if defined(__ELF_WORD_SIZE) && __ELF_WORD_SIZE == 64
 using Elf64_auxv_t = Elf64_Auxinfo;
@@ -65,7 +69,9 @@ ABSL_CONST_INIT
 std::atomic<const void *> VDSOSupport::vdso_base_(
     debugging_internal::ElfMemImage::kInvalidBase);
 
-std::atomic<VDSOSupport::GetCpuFn> VDSOSupport::getcpu_fn_(&InitAndGetCPU);
+ABSL_CONST_INIT std::atomic<VDSOSupport::GetCpuFn> VDSOSupport::getcpu_fn_(
+    &InitAndGetCPU);
+
 VDSOSupport::VDSOSupport()
     // If vdso_base_ is still set to kInvalidBase, we got here
     // before VDSOSupport::Init has been called. Call it now.
@@ -106,8 +112,13 @@ const void *VDSOSupport::Init() {
     ElfW(auxv_t) aux;
     while (read(fd, &aux, sizeof(aux)) == sizeof(aux)) {
       if (aux.a_type == AT_SYSINFO_EHDR) {
+#if defined(__NetBSD__)
+        vdso_base_.store(reinterpret_cast<void *>(aux.a_v),
+                         std::memory_order_relaxed);
+#else
         vdso_base_.store(reinterpret_cast<void *>(aux.a_un.a_val),
                          std::memory_order_relaxed);
+#endif
         break;
       }
     }
@@ -182,8 +193,9 @@ long VDSOSupport::InitAndGetCPU(unsigned *cpu,  // NOLINT(runtime/int)
 ABSL_ATTRIBUTE_NO_SANITIZE_MEMORY
 int GetCPU() {
   unsigned cpu;
-  int ret_code = (*VDSOSupport::getcpu_fn_)(&cpu, nullptr, nullptr);
-  return ret_code == 0 ? cpu : ret_code;
+  long ret_code =  // NOLINT(runtime/int)
+      (*VDSOSupport::getcpu_fn_)(&cpu, nullptr, nullptr);
+  return ret_code == 0 ? static_cast<int>(cpu) : static_cast<int>(ret_code);
 }
 
 }  // namespace debugging_internal

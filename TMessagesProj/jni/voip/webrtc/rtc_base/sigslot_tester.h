@@ -38,7 +38,6 @@
 //   EXPECT_EQ("hello", capture);
 //   /* See unit-tests for more examples */
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace rtc {
@@ -50,13 +49,14 @@ class SigslotTester0 : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester0::OnSignalCallback);
   }
 
+  SigslotTester0(const SigslotTester0&) = delete;
+  SigslotTester0& operator=(const SigslotTester0&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
   void OnSignalCallback() { callback_count_++; }
   int callback_count_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester0);
 };
 
 // Versions below are for testing signals that pass arguments. For all the
@@ -74,6 +74,9 @@ class SigslotTester1 : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester1::OnSignalCallback);
   }
 
+  SigslotTester1(const SigslotTester1&) = delete;
+  SigslotTester1& operator=(const SigslotTester1&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
@@ -84,8 +87,6 @@ class SigslotTester1 : public sigslot::has_slots<> {
 
   int callback_count_;
   C1* capture1_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester1);
 };
 
 template <class A1, class A2, class C1, class C2>
@@ -95,6 +96,9 @@ class SigslotTester2 : public sigslot::has_slots<> {
       : callback_count_(0), capture1_(capture1), capture2_(capture2) {
     signal->connect(this, &SigslotTester2::OnSignalCallback);
   }
+
+  SigslotTester2(const SigslotTester2&) = delete;
+  SigslotTester2& operator=(const SigslotTester2&) = delete;
 
   int callback_count() const { return callback_count_; }
 
@@ -108,8 +112,6 @@ class SigslotTester2 : public sigslot::has_slots<> {
   int callback_count_;
   C1* capture1_;
   C2* capture2_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester2);
 };
 
 template <class A1, class A2, class A3, class C1, class C2, class C3>
@@ -126,6 +128,9 @@ class SigslotTester3 : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester3::OnSignalCallback);
   }
 
+  SigslotTester3(const SigslotTester3&) = delete;
+  SigslotTester3& operator=(const SigslotTester3&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
@@ -140,8 +145,6 @@ class SigslotTester3 : public sigslot::has_slots<> {
   C1* capture1_;
   C2* capture2_;
   C3* capture3_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester3);
 };
 
 template <class A1,
@@ -167,6 +170,9 @@ class SigslotTester4 : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester4::OnSignalCallback);
   }
 
+  SigslotTester4(const SigslotTester4&) = delete;
+  SigslotTester4& operator=(const SigslotTester4&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
@@ -183,8 +189,6 @@ class SigslotTester4 : public sigslot::has_slots<> {
   C2* capture2_;
   C3* capture3_;
   C4* capture4_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester4);
 };
 
 template <class A1,
@@ -214,6 +218,9 @@ class SigslotTester5 : public sigslot::has_slots<> {
     signal->connect(this, &SigslotTester5::OnSignalCallback);
   }
 
+  SigslotTester5(const SigslotTester5&) = delete;
+  SigslotTester5& operator=(const SigslotTester5&) = delete;
+
   int callback_count() const { return callback_count_; }
 
  private:
@@ -232,8 +239,6 @@ class SigslotTester5 : public sigslot::has_slots<> {
   C3* capture3_;
   C4* capture4_;
   C5* capture5_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester5);
 };
 }  // namespace rtc
 

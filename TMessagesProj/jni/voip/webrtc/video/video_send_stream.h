@@ -16,19 +16,20 @@
 #include <vector>
 
 #include "api/fec_controller.h"
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
-#include "api/video/video_stream_encoder_interface.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "call/bitrate_allocator.h"
 #include "call/video_receive_stream.h"
 #include "call/video_send_stream.h"
+#include "modules/utility/maybe_worker_thread.h"
 #include "rtc_base/event.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_queue.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "video/encoder_rtcp_feedback.h"
 #include "video/send_delay_stats.h"
 #include "video/send_statistics_proxy.h"
 #include "video/video_send_stream_impl.h"
+#include "video/video_stream_encoder_interface.h"
 
 namespace webrtc {
 namespace test {
@@ -68,15 +69,15 @@ class VideoSendStream : public webrtc::VideoSendStream {
       VideoEncoderConfig encoder_config,
       const std::map<uint32_t, RtpState>& suspended_ssrcs,
       const std::map<uint32_t, RtpPayloadState>& suspended_payload_states,
-      std::unique_ptr<FecController> fec_controller);
+      std::unique_ptr<FecController> fec_controller,
+      const FieldTrialsView& field_trials);
 
   ~VideoSendStream() override;
 
   void DeliverRtcp(const uint8_t* packet, size_t length);
 
   // webrtc::VideoSendStream implementation.
-  void UpdateActiveSimulcastLayers(
-      const std::vector<bool> active_layers) override;
+  void UpdateActiveSimulcastLayers(std::vector<bool> active_layers) override;
   void Start() override;
   void Stop() override;
   bool started() override;
@@ -92,6 +93,7 @@ class VideoSendStream : public webrtc::VideoSendStream {
 
   void StopPermanentlyAndGetRtpStates(RtpStateMap* rtp_state_map,
                                       RtpPayloadStateMap* payload_state_map);
+  void GenerateKeyFrame() override;
 
  private:
   friend class test::VideoSendStreamPeer;
@@ -99,7 +101,7 @@ class VideoSendStream : public webrtc::VideoSendStream {
   absl::optional<float> GetPacingFactorOverride() const;
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker thread_checker_;
-  rtc::TaskQueue* const rtp_transport_queue_;
+  MaybeWorkerThread* const rtp_transport_queue_;
   RtpTransportControllerSendInterface* const transport_;
   rtc::Event thread_sync_event_;
   rtc::scoped_refptr<PendingTaskSafetyFlag> transport_queue_safety_ =

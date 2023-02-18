@@ -16,7 +16,6 @@
 
 #include "api/array_view.h"
 #include "modules/rtp_rtcp/source/rtp_format.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -48,6 +47,9 @@ class RtpPacketizerGeneric : public RtpPacketizer {
 
   ~RtpPacketizerGeneric() override;
 
+  RtpPacketizerGeneric(const RtpPacketizerGeneric&) = delete;
+  RtpPacketizerGeneric& operator=(const RtpPacketizerGeneric&) = delete;
+
   size_t NumPackets() const override;
 
   // Get the next payload.
@@ -64,8 +66,6 @@ class RtpPacketizerGeneric : public RtpPacketizer {
   rtc::ArrayView<const uint8_t> remaining_payload_;
   std::vector<int> payload_sizes_;
   std::vector<int>::const_iterator current_packet_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RtpPacketizerGeneric);
 };
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_RTP_FORMAT_VIDEO_GENERIC_H_

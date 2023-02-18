@@ -14,7 +14,6 @@
 
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/format_macros.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/platform_thread.h"
 #include "sdk/android/generated_java_audio_device_module_native_jni/WebRtcAudioTrack_jni.h"

@@ -12,6 +12,7 @@
 
 #include <algorithm>
 
+#include "api/units/time_delta.h"
 #include "modules/congestion_controller/goog_cc/acknowledged_bitrate_estimator.h"
 #include "modules/congestion_controller/goog_cc/robust_throughput_estimator.h"
 #include "rtc_base/logging.h"
@@ -21,25 +22,39 @@ namespace webrtc {
 constexpr char RobustThroughputEstimatorSettings::kKey[];
 
 RobustThroughputEstimatorSettings::RobustThroughputEstimatorSettings(
-    const WebRtcKeyValueConfig* key_value_config) {
+    const FieldTrialsView* key_value_config) {
   Parser()->Parse(
       key_value_config->Lookup(RobustThroughputEstimatorSettings::kKey));
-  if (min_packets < 10 || kMaxPackets < min_packets) {
-    RTC_LOG(LS_WARNING) << "Window size must be between 10 and " << kMaxPackets
-                        << " packets";
-    min_packets = 20;
+  if (window_packets < 10 || 1000 < window_packets) {
+    RTC_LOG(LS_WARNING) << "Window size must be between 10 and 1000 packets";
+    window_packets = 20;
   }
-  if (initial_packets < 10 || kMaxPackets < initial_packets) {
-    RTC_LOG(LS_WARNING) << "Initial size must be between 10 and " << kMaxPackets
-                        << " packets";
-    initial_packets = 20;
+  if (max_window_packets < 10 || 1000 < max_window_packets) {
+    RTC_LOG(LS_WARNING)
+        << "Max window size must be between 10 and 1000 packets";
+    max_window_packets = 500;
   }
-  initial_packets = std::min(initial_packets, min_packets);
-  if (window_duration < TimeDelta::Millis(100) ||
-      TimeDelta::Millis(2000) < window_duration) {
-    RTC_LOG(LS_WARNING) << "Window duration must be between 100 and 2000 ms";
-    window_duration = TimeDelta::Millis(500);
+  max_window_packets = std::max(max_window_packets, window_packets);
+
+  if (required_packets < 10 || 1000 < required_packets) {
+    RTC_LOG(LS_WARNING) << "Required number of initial packets must be between "
+                           "10 and 1000 packets";
+    required_packets = 10;
   }
+  required_packets = std::min(required_packets, window_packets);
+
+  if (min_window_duration < TimeDelta::Millis(100) ||
+      TimeDelta::Millis(3000) < min_window_duration) {
+    RTC_LOG(LS_WARNING) << "Window duration must be between 100 and 3000 ms";
+    min_window_duration = TimeDelta::Millis(750);
+  }
+  if (max_window_duration < TimeDelta::Seconds(1) ||
+      TimeDelta::Seconds(15) < max_window_duration) {
+    RTC_LOG(LS_WARNING) << "Max window duration must be between 1 and 15 s";
+    max_window_duration = TimeDelta::Seconds(5);
+  }
+  min_window_duration = std::min(min_window_duration, max_window_duration);
+
   if (unacked_weight < 0.0 || 1.0 < unacked_weight) {
     RTC_LOG(LS_WARNING)
         << "Weight for prior unacked size must be between 0 and 1.";
@@ -49,14 +64,14 @@ RobustThroughputEstimatorSettings::RobustThroughputEstimatorSettings(
 
 std::unique_ptr<StructParametersParser>
 RobustThroughputEstimatorSettings::Parser() {
-  return StructParametersParser::Create("enabled", &enabled,                  //
-                                        "reduce_bias", &reduce_bias,          //
-                                        "assume_shared_link",                 //
-                                        &assume_shared_link,                  //
-                                        "min_packets", &min_packets,          //
-                                        "window_duration", &window_duration,  //
-                                        "initial_packets", &initial_packets,  //
-                                        "unacked_weight", &unacked_weight);
+  return StructParametersParser::Create(
+      "enabled", &enabled,                          //
+      "window_packets", &window_packets,            //
+      "max_window_packets", &max_window_packets,    //
+      "window_duration", &min_window_duration,      //
+      "max_window_duration", &max_window_duration,  //
+      "required_packets", &required_packets,        //
+      "unacked_weight", &unacked_weight);
 }
 
 AcknowledgedBitrateEstimatorInterface::
@@ -64,7 +79,7 @@ AcknowledgedBitrateEstimatorInterface::
 
 std::unique_ptr<AcknowledgedBitrateEstimatorInterface>
 AcknowledgedBitrateEstimatorInterface::Create(
-    const WebRtcKeyValueConfig* key_value_config) {
+    const FieldTrialsView* key_value_config) {
   RobustThroughputEstimatorSettings simplified_estimator_settings(
       key_value_config);
   if (simplified_estimator_settings.enabled) {

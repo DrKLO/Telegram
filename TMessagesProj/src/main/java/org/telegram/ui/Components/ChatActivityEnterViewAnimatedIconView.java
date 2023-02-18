@@ -10,7 +10,6 @@ import org.telegram.messenger.R;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
     private State currentState;

@@ -10,6 +10,7 @@
 
 #include "modules/audio_device/linux/latebindingsymboltable_linux.h"
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/logging.h"
 
 #ifdef WEBRTC_LINUX
@@ -32,9 +33,9 @@ inline static const char* GetDllError() {
 #endif
 }
 
-DllHandle InternalLoadDll(const char dll_name[]) {
+DllHandle InternalLoadDll(absl::string_view dll_name) {
 #ifdef WEBRTC_LINUX
-  DllHandle handle = dlopen(dll_name, RTLD_NOW);
+  DllHandle handle = dlopen(std::string(dll_name).c_str(), RTLD_NOW);
 #else
 #error Not implemented
 #endif
@@ -64,10 +65,10 @@ void InternalUnloadDll(DllHandle handle) {
 }
 
 static bool LoadSymbol(DllHandle handle,
-                       const char* symbol_name,
+                       absl::string_view symbol_name,
                        void** symbol) {
 #ifdef WEBRTC_LINUX
-  *symbol = dlsym(handle, symbol_name);
+  *symbol = dlsym(handle, std::string(symbol_name).c_str());
   char* err = dlerror();
   if (err) {
     RTC_LOG(LS_ERROR) << "Error loading symbol " << symbol_name << " : " << err;

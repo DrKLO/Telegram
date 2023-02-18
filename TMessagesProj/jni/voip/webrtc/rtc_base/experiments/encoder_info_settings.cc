@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/experiments/field_trial_list.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
@@ -155,7 +156,7 @@ EncoderInfoSettings::GetSinglecastBitrateLimitForResolutionWhenQpIsUntrusted(
   }
 }
 
-EncoderInfoSettings::EncoderInfoSettings(std::string name)
+EncoderInfoSettings::EncoderInfoSettings(absl::string_view name)
     : requested_resolution_alignment_("requested_resolution_alignment"),
       apply_alignment_to_all_simulcast_layers_(
           "apply_alignment_to_all_simulcast_layers") {
@@ -174,14 +175,15 @@ EncoderInfoSettings::EncoderInfoSettings(std::string name)
            [](BitrateLimit* b) { return &b->max_bitrate_bps; })},
       {});
 
-  if (field_trial::FindFullName(name).empty()) {
+  std::string name_str(name);
+  if (field_trial::FindFullName(name_str).empty()) {
     // Encoder name not found, use common string applying to all encoders.
-    name = "WebRTC-GetEncoderInfoOverride";
+    name_str = "WebRTC-GetEncoderInfoOverride";
   }
 
   ParseFieldTrial({&bitrate_limits, &requested_resolution_alignment_,
                    &apply_alignment_to_all_simulcast_layers_},
-                  field_trial::FindFullName(name));
+                  field_trial::FindFullName(name_str));
 
   resolution_bitrate_limits_ = ToResolutionBitrateLimits(bitrate_limits.Get());
 }

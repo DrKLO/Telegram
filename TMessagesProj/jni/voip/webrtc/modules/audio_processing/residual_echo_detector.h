@@ -11,6 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_RESIDUAL_ECHO_DETECTOR_H_
 #define MODULES_AUDIO_PROCESSING_RESIDUAL_ECHO_DETECTOR_H_
 
+#include <atomic>
 #include <vector>
 
 #include "api/array_view.h"
@@ -49,7 +50,7 @@ class ResidualEchoDetector : public EchoDetector {
   EchoDetector::Metrics GetMetrics() const override;
 
  private:
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   // Keep track if the `Process` function has been previously called.
   bool first_process_call_ = true;

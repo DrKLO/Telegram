@@ -13,25 +13,17 @@
 #include <memory>
 #include <utility>
 
+#include "api/units/time_delta.h"
 #include "api/video/video_adaptation_reason.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/quality_scaler_settings.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/exp_filter.h"
-#include "rtc_base/task_queue.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/weak_ptr.h"
-
-// TODO(kthelgason): Some versions of Android have issues with log2.
-// See https://code.google.com/p/android/issues/detail?id=212634 for details
-#if defined(WEBRTC_ANDROID)
-#define log2(x) (log(x) / log(2))
-#endif
 
 namespace webrtc {
 
 namespace {
-// TODO(nisse): Delete, delegate to encoders.
 // Threshold constant used until first downscale (to permit fast rampup).
 static const int kMeasureMs = 2000;
 static const float kSamplePeriodScaleFactor = 2.5;
@@ -98,7 +90,7 @@ class QualityScaler::CheckQpTask {
     RTC_DCHECK_EQ(state_, State::kNotStarted);
     state_ = State::kCheckingQp;
     TaskQueueBase::Current()->PostDelayedTask(
-        ToQueuedTask([this_weak_ptr = weak_ptr_factory_.GetWeakPtr(), this] {
+        [this_weak_ptr = weak_ptr_factory_.GetWeakPtr(), this] {
           if (!this_weak_ptr) {
             // The task has been cancelled through destruction.
             return;
@@ -135,8 +127,8 @@ class QualityScaler::CheckQpTask {
           // Starting the next task deletes the pending task. After this line,
           // `this` has been deleted.
           quality_scaler_->StartNextCheckQpTask();
-        }),
-        GetCheckingQpDelayMs());
+        },
+        TimeDelta::Millis(GetCheckingQpDelayMs()));
   }
 
   bool HasCompletedTask() const { return state_ == State::kCompleted; }

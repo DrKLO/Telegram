@@ -36,6 +36,8 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
+// TODO(mbonadei): Remove after the backward compatibility period.
+#include "absl/base/internal/thread_annotations.h"  // IWYU pragma: export
 
 // ABSL_GUARDED_BY()
 //
@@ -152,8 +154,8 @@
 
 // ABSL_LOCKS_EXCLUDED()
 //
-// Documents the locks acquired in the body of the function. These locks
-// cannot be held when calling this function (as Abseil's `Mutex` locks are
+// Documents the locks that cannot be held by callers of this function, as they
+// might be acquired by this function (Abseil's `Mutex` locks are
 // non-reentrant).
 #if ABSL_HAVE_ATTRIBUTE(locks_excluded)
 #define ABSL_LOCKS_EXCLUDED(...) __attribute__((locks_excluded(__VA_ARGS__)))

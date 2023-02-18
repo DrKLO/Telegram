@@ -54,7 +54,7 @@ _fileData(std::move(fileData)) {
 }
 
 AVIOContextImpl::~AVIOContextImpl() {
-    av_free(_context);
+    avio_context_free(&_context);
 }
 
 AVIOContext *AVIOContextImpl::getContext() const {

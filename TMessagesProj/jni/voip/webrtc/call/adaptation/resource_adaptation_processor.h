@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/adaptation/resource.h"
 #include "api/rtp_parameters.h"
@@ -24,12 +25,12 @@
 #include "api/task_queue/task_queue_base.h"
 #include "api/video/video_adaptation_counters.h"
 #include "api/video/video_frame.h"
-#include "api/video/video_stream_encoder_observer.h"
 #include "call/adaptation/resource_adaptation_processor_interface.h"
 #include "call/adaptation/video_source_restrictions.h"
 #include "call/adaptation/video_stream_adapter.h"
 #include "call/adaptation/video_stream_input_state.h"
 #include "call/adaptation/video_stream_input_state_provider.h"
+#include "video/video_stream_encoder_observer.h"
 
 namespace webrtc {
 
@@ -57,8 +58,6 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
   explicit ResourceAdaptationProcessor(
       VideoStreamAdapter* video_stream_adapter);
   ~ResourceAdaptationProcessor() override;
-
-  void SetTaskQueue(TaskQueueBase* task_queue) override;
 
   // ResourceAdaptationProcessorInterface implementation.
   void AddResourceLimitationsListener(
@@ -90,7 +89,6 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
    public:
     explicit ResourceListenerDelegate(ResourceAdaptationProcessor* processor);
 
-    void SetTaskQueue(TaskQueueBase* task_queue);
     void OnProcessorDestroyed();
 
     // ResourceListener implementation.
@@ -111,7 +109,8 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
 
   struct MitigationResultAndLogMessage {
     MitigationResultAndLogMessage();
-    MitigationResultAndLogMessage(MitigationResult result, std::string message);
+    MitigationResultAndLogMessage(MitigationResult result,
+                                  absl::string_view message);
     MitigationResult result;
     std::string message;
   };

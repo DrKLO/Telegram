@@ -32,9 +32,8 @@ class SimpleStringBuilder {
   SimpleStringBuilder(const SimpleStringBuilder&) = delete;
   SimpleStringBuilder& operator=(const SimpleStringBuilder&) = delete;
 
-  SimpleStringBuilder& operator<<(const char* str);
   SimpleStringBuilder& operator<<(char ch);
-  SimpleStringBuilder& operator<<(const std::string& str);
+  SimpleStringBuilder& operator<<(absl::string_view str);
   SimpleStringBuilder& operator<<(int i);
   SimpleStringBuilder& operator<<(unsigned i);
   SimpleStringBuilder& operator<<(long i);                // NOLINT
@@ -60,10 +59,6 @@ class SimpleStringBuilder {
 #endif
   SimpleStringBuilder&
   AppendFormat(const char* fmt, ...);
-
-  // An alternate way from operator<<() to append a string. This variant is
-  // slightly more efficient when the length of the string to append, is known.
-  SimpleStringBuilder& Append(const char* str, size_t length);
 
  private:
   bool IsConsistent() const {

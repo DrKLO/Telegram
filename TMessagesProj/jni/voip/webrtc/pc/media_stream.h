@@ -27,10 +27,10 @@ class MediaStream : public Notifier<MediaStreamInterface> {
 
   std::string id() const override { return id_; }
 
-  bool AddTrack(AudioTrackInterface* track) override;
-  bool AddTrack(VideoTrackInterface* track) override;
-  bool RemoveTrack(AudioTrackInterface* track) override;
-  bool RemoveTrack(VideoTrackInterface* track) override;
+  bool AddTrack(rtc::scoped_refptr<AudioTrackInterface> track) override;
+  bool AddTrack(rtc::scoped_refptr<VideoTrackInterface> track) override;
+  bool RemoveTrack(rtc::scoped_refptr<AudioTrackInterface> track) override;
+  bool RemoveTrack(rtc::scoped_refptr<VideoTrackInterface> track) override;
   rtc::scoped_refptr<AudioTrackInterface> FindAudioTrack(
       const std::string& track_id) override;
   rtc::scoped_refptr<VideoTrackInterface> FindVideoTrack(
@@ -44,9 +44,10 @@ class MediaStream : public Notifier<MediaStreamInterface> {
 
  private:
   template <typename TrackVector, typename Track>
-  bool AddTrack(TrackVector* Tracks, Track* track);
+  bool AddTrack(TrackVector* Tracks, rtc::scoped_refptr<Track> track);
   template <typename TrackVector>
-  bool RemoveTrack(TrackVector* Tracks, MediaStreamTrackInterface* track);
+  bool RemoveTrack(TrackVector* Tracks,
+                   rtc::scoped_refptr<MediaStreamTrackInterface> track);
 
   const std::string id_;
   AudioTrackVector audio_tracks_;

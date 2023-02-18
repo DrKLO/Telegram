@@ -40,7 +40,7 @@ static uint64_t Mix(uint64_t v0, uint64_t v1) {
 }
 
 uint64_t LowLevelHash(const void* data, size_t len, uint64_t seed,
-                      const uint64_t salt[]) {
+                      const uint64_t salt[5]) {
   const uint8_t* ptr = static_cast<const uint8_t*>(data);
   uint64_t starting_length = static_cast<uint64_t>(len);
   uint64_t current_state = seed ^ salt[0];
@@ -106,7 +106,8 @@ uint64_t LowLevelHash(const void* data, size_t len, uint64_t seed,
   } else if (len > 0) {
     // If we have at least 1 and at most 3 bytes, read all of the provided
     // bits into A, with some adjustments.
-    a = ((ptr[0] << 16) | (ptr[len >> 1] << 8) | ptr[len - 1]);
+    a = static_cast<uint64_t>((ptr[0] << 16) | (ptr[len >> 1] << 8) |
+                              ptr[len - 1]);
     b = 0;
   } else {
     a = 0;

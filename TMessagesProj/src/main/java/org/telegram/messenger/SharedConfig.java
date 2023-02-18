@@ -28,6 +28,7 @@ import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
 
@@ -108,6 +109,7 @@ public class SharedConfig {
     public static String lastUpdateVersion;
     public static int suggestStickers;
     public static boolean suggestAnimatedEmoji;
+    public static boolean playEmojiInKeyboard;
     public static boolean loopStickers;
     public static int keepMedia = CacheByChatsController.KEEP_MEDIA_ONE_MONTH; //deprecated
     public static int lastKeepMediaCheckTime;
@@ -137,8 +139,9 @@ public class SharedConfig {
 //    public static int saveToGalleryFlags;
     public static int mapPreviewType = 2;
     public static boolean chatBubbles = Build.VERSION.SDK_INT >= 30;
-    public static boolean autoplayGifs = true;
-    public static boolean autoplayVideo = true;
+    // force values here is for out of lite mode:
+    private static boolean autoplayGifs = true;
+    private static boolean autoplayVideo = true, forceAutoplayVideo = false;
     public static boolean raiseToSpeak = false;
     public static boolean recordViaSco = false;
     public static boolean customTabs = true;
@@ -182,7 +185,10 @@ public class SharedConfig {
 
     public static boolean hasEmailLogin;
 
+    @PerformanceClass
     private static int devicePerformanceClass;
+    @PerformanceClass
+    private static int overrideDevicePerformanceClass;
 
     public static boolean drawDialogIcons;
     public static boolean useThreeLinesLayout;
@@ -200,6 +206,48 @@ public class SharedConfig {
     public static boolean isFloatingDebugActive;
     public static LiteMode liteMode;
     public static Set<String> usingFilePaths = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private static final int[] LOW_SOC = {
+            -1775228513, // EXYNOS 850
+            802464304,  // EXYNOS 7872
+            802464333,  // EXYNOS 7880
+            802464302,  // EXYNOS 7870
+            2067362118, // MSM8953
+            2067362060, // MSM8937
+            2067362084, // MSM8940
+            2067362241, // MSM8992
+            2067362117, // MSM8952
+            2067361998, // MSM8917
+            -1853602818 // SDM439
+    };
+
+    private static final int[] LOW_DEVICES = {
+            1903542002, // XIAOMI NIKEL (Redmi Note 4)
+            1904553494, // XIAOMI OLIVE (Redmi 8)
+            1616144535, // OPPO CPH2273 (Oppo A54s)
+            -713271737, // OPPO OP4F2F (Oppo A54)
+            -1394191140, // SAMSUNG A12 (Galaxy A12)
+            -270252297, // SAMSUNG A12S (Galaxy A12)
+            -270251367, // SAMSUNG A21S (Galaxy A21s)
+            -270252359  // SAMSUNG A10S (Galaxy A10s)
+    };
+
+    private static final int[] AVERAGE_DEVICES = {
+            812981419, // XIAOMI ANGELICA (Redmi 9C)
+            -993913431 // XIAOMI DANDELION (Redmi 9A)
+    };
+
+    private static final int[] HIGH_DEVICES = {
+            1908570923, // XIAOMI SWEET (Redmi Note 10 Pro)
+            -980514379, // XIAOMI SECRET (Redmi Note 10S)
+            577463889, // XIAOMI JOYEUSE (Redmi Note 9 Pro)
+            1764745014, // XIAOMI BEGONIA (Redmi Note 8 Pro)
+            1908524435, // XIAOMI SURYA (Poco X3)
+            -215458996, // XIAOMI VAYU (Poco X3 Pro)
+            -1394179578, // SAMSUNG M21
+            220599115, // SAMSUNG J6LTE
+            1737652784 // SAMSUNG J6PRIMELTE
+    };
 
     static {
         loadConfig();
@@ -421,6 +469,7 @@ public class SharedConfig {
             SaveToGallerySettingsHelper.load(preferences);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
+            forceAutoplayVideo = preferences.getBoolean("autoplay_video_liteforce", false);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
             raiseToSpeak = preferences.getBoolean("raise_to_speak", false);
             recordViaSco = preferences.getBoolean("record_via_sco", false);
@@ -448,6 +497,9 @@ public class SharedConfig {
             streamMkv = preferences.getBoolean("streamMkv", false);
             suggestStickers = preferences.getInt("suggestStickers", 0);
             suggestAnimatedEmoji = preferences.getBoolean("suggestAnimatedEmoji", true);
+            overrideDevicePerformanceClass = preferences.getInt("overrideDevicePerformanceClass", -1);
+            devicePerformanceClass = preferences.getInt("devicePerformanceClass", -1);
+            playEmojiInKeyboard = preferences.getBoolean("playEmojiInKeyboard", getDevicePerformanceClass() >= PERFORMANCE_CLASS_HIGH);
             sortContactsByName = preferences.getBoolean("sortContactsByName", false);
             sortFilesByName = preferences.getBoolean("sortFilesByName", false);
             noSoundHintShowed = preferences.getBoolean("noSoundHintShowed", false);
@@ -455,7 +507,6 @@ public class SharedConfig {
             useThreeLinesLayout = preferences.getBoolean("useThreeLinesLayout", false);
             archiveHidden = preferences.getBoolean("archiveHidden", false);
             distanceSystemType = preferences.getInt("distanceSystemType", 0);
-            devicePerformanceClass = preferences.getInt("devicePerformanceClass", -1);
             loopStickers = preferences.getBoolean("loopStickers", true);
             keepMedia = preferences.getInt("keep_media", CacheByChatsController.KEEP_MEDIA_ONE_MONTH);
             noStatusBar = preferences.getBoolean("noStatusBar", true);
@@ -532,6 +583,14 @@ public class SharedConfig {
             lastUptimeMillis = SystemClock.elapsedRealtime();
         }
         saveConfig();
+    }
+
+    public static boolean isAutoplayVideo() {
+        return autoplayVideo && (forceAutoplayVideo || !getLiteMode().enabled());
+    }
+
+    public static boolean isAutoplayGifs() {
+        return autoplayGifs;
     }
 
     public static boolean isPassportConfigLoaded() {
@@ -837,11 +896,13 @@ public class SharedConfig {
                     try {
                         File[] files = dir.listFiles();
                         ArrayList<CacheByChatsController.KeepMediaFile> keepMediaFiles = new ArrayList<>();
-                        for (int i = 0; i < files.length; i++) {
-                            if (usingFilePaths.contains(files[i].getAbsolutePath())) {
-                                continue;
+                        if (files != null) {
+                            for (int i = 0; i < files.length; i++) {
+                                if (files[i].isDirectory() || usingFilePaths.contains(files[i].getAbsolutePath())) {
+                                    continue;
+                                }
+                                keepMediaFiles.add(new CacheByChatsController.KeepMediaFile(files[i]));
                             }
-                            keepMediaFiles.add(new CacheByChatsController.KeepMediaFile(files[i]));
                         }
                         for (int i = 0; i < cacheByChatsControllers.size(); i++) {
                             cacheByChatsControllers.get(i).lookupFiles(keepMediaFiles);
@@ -1051,6 +1112,14 @@ public class SharedConfig {
         editor.commit();
     }
 
+    public static void togglePlayEmojiInKeyboard() {
+        playEmojiInKeyboard = !playEmojiInKeyboard;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("playEmojiInKeyboard", playEmojiInKeyboard);
+        editor.commit();
+    }
+
     public static void setPlaybackOrderType(int type) {
         if (type == 2) {
             shuffleMusic = true;
@@ -1093,10 +1162,19 @@ public class SharedConfig {
 //        ImageLoader.getInstance().getCacheOutQueue().postRunnable(() -> {
 //            checkSaveToGalleryFiles();
 //        });
+
+    }
+
+    public static void overrideDevicePerformanceClass(int performanceClass) {
+        MessagesController.getGlobalMainSettings().edit().putInt("overrideDevicePerformanceClass", overrideDevicePerformanceClass = performanceClass).remove("light_mode").commit();
+        if (liteMode != null) {
+            liteMode.loadPreference();
+        }
     }
 
     public static void toggleAutoplayGifs() {
-        autoplayGifs = !autoplayGifs;
+        final boolean value = isAutoplayGifs();
+        autoplayGifs = !value;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("autoplay_gif", autoplayGifs);
@@ -1121,10 +1199,15 @@ public class SharedConfig {
     }
 
     public static void toggleAutoplayVideo() {
-        autoplayVideo = !autoplayVideo;
+        final boolean value = isAutoplayVideo();
+        autoplayVideo = !value;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("autoplay_video", autoplayVideo);
+        if (getLiteMode().enabled()) {
+            forceAutoplayVideo = !value;
+            editor.putBoolean("autoplay_video_liteforce", forceAutoplayVideo);
+        }
         editor.commit();
     }
 
@@ -1509,38 +1592,105 @@ public class SharedConfig {
 
     @PerformanceClass
     public static int getDevicePerformanceClass() {
+        if (overrideDevicePerformanceClass != -1) {
+            return overrideDevicePerformanceClass;
+        }
         if (devicePerformanceClass == -1) {
-            int androidVersion = Build.VERSION.SDK_INT;
-            int cpuCount = ConnectionsManager.CPU_COUNT;
-            int memoryClass = ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
-            int totalCpuFreq = 0;
-            int freqResolved = 0;
-            for (int i = 0; i < cpuCount; i++) {
-                try {
-                    RandomAccessFile reader = new RandomAccessFile(String.format(Locale.ENGLISH, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i), "r");
-                    String line = reader.readLine();
-                    if (line != null) {
-                        totalCpuFreq += Utilities.parseInt(line) / 1000;
-                        freqResolved++;
-                    }
-                    reader.close();
-                } catch (Throwable ignore) {}
-            }
-            int maxCpuFreq = freqResolved == 0 ? -1 : (int) Math.ceil(totalCpuFreq / (float) freqResolved);
+            devicePerformanceClass = measureDevicePerformanceClass();
+        }
+        return devicePerformanceClass;
+    }
 
-            if (androidVersion < 21 || cpuCount <= 2 || memoryClass <= 100 || cpuCount <= 4 && maxCpuFreq != -1 && maxCpuFreq <= 1250 || cpuCount <= 4 && maxCpuFreq <= 1600 && memoryClass <= 128 && androidVersion <= 21 || cpuCount <= 4 && maxCpuFreq <= 1300 && memoryClass <= 128 && androidVersion <= 24) {
-                devicePerformanceClass = PERFORMANCE_CLASS_LOW;
-            } else if (cpuCount < 8 || memoryClass <= 160 || maxCpuFreq != -1 && maxCpuFreq <= 2050 || maxCpuFreq == -1 && cpuCount == 8 && androidVersion <= 23) {
-                devicePerformanceClass = PERFORMANCE_CLASS_AVERAGE;
-            } else {
-                devicePerformanceClass = PERFORMANCE_CLASS_HIGH;
+    public static int measureDevicePerformanceClass() {
+        int androidVersion = Build.VERSION.SDK_INT;
+        int cpuCount = ConnectionsManager.CPU_COUNT;
+        int memoryClass = ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
+
+        if (Build.DEVICE != null && Build.MANUFACTURER != null) {
+            int hash = (Build.MANUFACTURER + " " + Build.DEVICE).toUpperCase().hashCode();
+            for (int i = 0; i < LOW_DEVICES.length; ++i) {
+                if (LOW_DEVICES[i] == hash) {
+                    return PERFORMANCE_CLASS_LOW;
+                }
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("device performance info selected_class = " + devicePerformanceClass + " (cpu_count = " + cpuCount + ", freq = " + maxCpuFreq + ", memoryClass = " + memoryClass + ", android version " + androidVersion + ", manufacture " + Build.MANUFACTURER + ")");
+            for (int i = 0; i < AVERAGE_DEVICES.length; ++i) {
+                if (AVERAGE_DEVICES[i] == hash) {
+                    return PERFORMANCE_CLASS_AVERAGE;
+                }
+            }
+            for (int i = 0; i < HIGH_DEVICES.length; ++i) {
+                if (HIGH_DEVICES[i] == hash) {
+                    return PERFORMANCE_CLASS_HIGH;
+                }
             }
         }
 
-        return devicePerformanceClass;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Build.SOC_MODEL != null) {
+            int hash = Build.SOC_MODEL.toUpperCase().hashCode();
+            for (int i = 0; i < LOW_SOC.length; ++i) {
+                if (LOW_SOC[i] == hash) {
+                    return PERFORMANCE_CLASS_LOW;
+                }
+            }
+        }
+
+        int totalCpuFreq = 0;
+        int freqResolved = 0;
+        for (int i = 0; i < cpuCount; i++) {
+            try {
+                RandomAccessFile reader = new RandomAccessFile(String.format(Locale.ENGLISH, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i), "r");
+                String line = reader.readLine();
+                if (line != null) {
+                    totalCpuFreq += Utilities.parseInt(line) / 1000;
+                    freqResolved++;
+                }
+                reader.close();
+            } catch (Throwable ignore) {}
+        }
+        int maxCpuFreq = freqResolved == 0 ? -1 : (int) Math.ceil(totalCpuFreq / (float) freqResolved);
+
+        long ram = -1;
+        try {
+            ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+            ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryInfo(memoryInfo);
+            ram = memoryInfo.totalMem;
+        } catch (Exception ignore) {}
+
+        int performanceClass;
+        if (
+            androidVersion < 21 ||
+            cpuCount <= 2 ||
+            memoryClass <= 100 ||
+            cpuCount <= 4 && maxCpuFreq != -1 && maxCpuFreq <= 1250 ||
+            cpuCount <= 4 && maxCpuFreq <= 1600 && memoryClass <= 128 && androidVersion <= 21 ||
+            cpuCount <= 4 && maxCpuFreq <= 1300 && memoryClass <= 128 && androidVersion <= 24 ||
+            ram != -1 && ram < 2L * 1024L * 1024L * 1024L
+        ) {
+            performanceClass = PERFORMANCE_CLASS_LOW;
+        } else if (
+            cpuCount < 8 ||
+            memoryClass <= 160 ||
+            maxCpuFreq != -1 && maxCpuFreq <= 2055 ||
+            maxCpuFreq == -1 && cpuCount == 8 && androidVersion <= 23
+        ) {
+            performanceClass = PERFORMANCE_CLASS_AVERAGE;
+        } else {
+            performanceClass = PERFORMANCE_CLASS_HIGH;
+        }
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("device performance info selected_class = " + performanceClass + " (cpu_count = " + cpuCount + ", freq = " + maxCpuFreq + ", memoryClass = " + memoryClass + ", android version " + androidVersion + ", manufacture " + Build.MANUFACTURER + ", screenRefreshRate=" + AndroidUtilities.screenRefreshRate + ")");
+        }
+
+        return performanceClass;
+    }
+
+    public static String performanceClassName(int perfClass) {
+        switch (perfClass) {
+            case PERFORMANCE_CLASS_HIGH: return "HIGH";
+            case PERFORMANCE_CLASS_AVERAGE: return "AVERAGE";
+            case PERFORMANCE_CLASS_LOW: return "LOW";
+            default: return "UNKNOWN";
+        }
     }
 
     public static void setMediaColumnsCount(int count) {
@@ -1618,25 +1768,36 @@ public class SharedConfig {
 
     public static class LiteMode {
 
-        private boolean enabled;
+        public boolean enabled;
+
+        public boolean animatedEmoji;
+        public boolean animatedBackground;
+        public boolean other;
+        public boolean topicsInRightMenu;
+        public boolean skeletonAnimation;
 
         LiteMode() {
             loadPreference();
         }
 
         public boolean enabled() {
-            return enabled;
+            return enabled && !other;
         }
 
         public void toggleMode() {
             enabled = !enabled;
             savePreference();
-            AnimatedEmojiDrawable.lightModeChanged();
+            AnimatedEmojiDrawable.updateAll();
+            Theme.reloadWallpaper();
         }
 
         private void loadPreference() {
             int flags = MessagesController.getGlobalMainSettings().getInt("light_mode", getDevicePerformanceClass() == PERFORMANCE_CLASS_LOW ? 1 : 0) ;
             enabled = (flags & 1) != 0;
+            animatedEmoji = (flags & 2) != 0;
+            animatedBackground = (flags & 4) != 0;
+            other = (flags & 8) != 0;
+            topicsInRightMenu = (flags & 16) != 0;
         }
 
         public void savePreference() {
@@ -1644,11 +1805,37 @@ public class SharedConfig {
             if (enabled) {
                 flags |= 1;
             }
-            MessagesController.getGlobalMainSettings().edit().putInt("light_mode", flags).apply();
+            if (animatedEmoji) {
+                flags |= 2;
+            }
+            if (animatedBackground) {
+                flags |= 4;
+            }
+            if (other) {
+                flags |= 8;
+            }
+            if (topicsInRightMenu) {
+                flags |= 16;
+            }
+            SharedPreferences.Editor edit = MessagesController.getGlobalMainSettings().edit();
+            edit.putInt("light_mode", flags);
+            if (!enabled) {
+                edit.remove("autoplay_video_liteforce");
+                forceAutoplayVideo = false;
+            }
+            edit.apply();
         }
 
         public boolean animatedEmojiEnabled() {
-            return !enabled;
+            return !enabled || animatedEmoji;
+        }
+
+        public boolean animatedBackgroundEnabled() {
+            return !enabled || animatedBackground;
+        }
+
+        public boolean topicsInRightMenuEnabled() {
+            return !enabled || topicsInRightMenu;
         }
     }
 
@@ -1678,5 +1865,17 @@ public class SharedConfig {
             return;
         }
         usingFilePaths.remove(file);
+    }
+
+    public static boolean deviceIsLow() {
+        return getDevicePerformanceClass() == PERFORMANCE_CLASS_LOW;
+    }
+
+    public static boolean deviceIsAboveAverage() {
+        return getDevicePerformanceClass() >= PERFORMANCE_CLASS_AVERAGE;
+    }
+
+    public static boolean deviceIsHigh() {
+        return getDevicePerformanceClass() >= PERFORMANCE_CLASS_HIGH;
     }
 }

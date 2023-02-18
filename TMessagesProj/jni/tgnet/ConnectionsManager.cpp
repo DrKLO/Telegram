@@ -2833,6 +2833,16 @@ std::unique_ptr<TLObject> ConnectionsManager::wrapInLayer(TLObject *object, Data
             objectValue->key = "tz_offset";
             objectValue->value = std::unique_ptr<JSONValue>(jsonNumber);
 
+            if (currentPerformanceClass != -1) {
+                objectValue = new TL_jsonObjectValue();
+                jsonObject->value.push_back(std::unique_ptr<TL_jsonObjectValue>(objectValue));
+
+                auto jsonNumber = new TL_jsonNumber();
+                jsonNumber->value = currentPerformanceClass + 1;
+                objectValue->key = "perf_cat";
+                objectValue->value = std::unique_ptr<JSONValue>(jsonNumber);
+            }
+
             request->flags |= 2;
 
             if (!proxyAddress.empty() && !proxySecret.empty()) {
@@ -3278,7 +3288,7 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
     });
 }
 
-void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, std::string packageId, int32_t timezoneOffset, int64_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
+void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, std::string packageId, int32_t timezoneOffset, int64_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType, int32_t performanceClass) {
     currentVersion = version;
     currentLayer = layer;
     currentApiId = apiId;
@@ -3298,6 +3308,7 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     pushConnectionEnabled = enablePushConnection;
     currentNetworkType = networkType;
     networkAvailable = hasNetwork;
+    currentPerformanceClass = performanceClass;
     if (isPaused) {
         lastPauseTime = getCurrentTimeMonotonicMillis();
     }

@@ -34,7 +34,7 @@ class RmsLevel {
     int peak;
   };
 
-  enum : int { kMinLevelDb = 127 };
+  enum : int { kMinLevelDb = 127, kInaudibleButNotMuted = 126 };
 
   RmsLevel();
   ~RmsLevel();

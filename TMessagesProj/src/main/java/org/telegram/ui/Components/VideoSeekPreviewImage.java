@@ -286,10 +286,10 @@ public class VideoSeekPreviewImage extends View {
                 } else {
                     path = FileLoader.getInstance(currentAccount).getPathToAttach(document, false).getAbsolutePath();
                 }
-                fileDrawable = new AnimatedFileDrawable(new File(path), true, document.size, document, null, parentObject, 0, currentAccount, true, null);
+                fileDrawable = new AnimatedFileDrawable(new File(path), true, document.size, FileLoader.PRIORITY_NORMAL, document, null, parentObject, 0, currentAccount, true, null);
             } else {
                 path = uri.getPath();
-                fileDrawable = new AnimatedFileDrawable(new File(path), true, 0, null, null, null, 0, 0, true, null);
+                fileDrawable = new AnimatedFileDrawable(new File(path), true, 0, 0, null, null, null, 0, 0, true, null);
             }
             duration = fileDrawable.getDurationMs();
             if (pendingProgress != 0.0f) {

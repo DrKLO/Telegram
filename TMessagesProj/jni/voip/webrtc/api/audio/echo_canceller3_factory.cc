@@ -25,7 +25,8 @@ std::unique_ptr<EchoControl> EchoCanceller3Factory::Create(
     int num_render_channels,
     int num_capture_channels) {
   return std::make_unique<EchoCanceller3>(
-      config_, sample_rate_hz, num_render_channels, num_capture_channels);
+      config_, /*multichannel_config=*/absl::nullopt, sample_rate_hz,
+      num_render_channels, num_capture_channels);
 }
 
 }  // namespace webrtc

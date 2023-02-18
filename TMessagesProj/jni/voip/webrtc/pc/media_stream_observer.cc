@@ -54,7 +54,7 @@ void MediaStreamObserver::OnChanged() {
             [cached_track](const AudioTrackVector::value_type& new_track) {
               return new_track->id() == cached_track->id();
             })) {
-      audio_track_removed_callback_(cached_track.get(), stream_);
+      audio_track_removed_callback_(cached_track.get(), stream_.get());
     }
   }
 
@@ -65,7 +65,7 @@ void MediaStreamObserver::OnChanged() {
             [new_track](const AudioTrackVector::value_type& cached_track) {
               return new_track->id() == cached_track->id();
             })) {
-      audio_track_added_callback_(new_track.get(), stream_);
+      audio_track_added_callback_(new_track.get(), stream_.get());
     }
   }
 
@@ -76,7 +76,7 @@ void MediaStreamObserver::OnChanged() {
             [cached_track](const VideoTrackVector::value_type& new_track) {
               return new_track->id() == cached_track->id();
             })) {
-      video_track_removed_callback_(cached_track.get(), stream_);
+      video_track_removed_callback_(cached_track.get(), stream_.get());
     }
   }
 
@@ -87,7 +87,7 @@ void MediaStreamObserver::OnChanged() {
             [new_track](const VideoTrackVector::value_type& cached_track) {
               return new_track->id() == cached_track->id();
             })) {
-      video_track_added_callback_(new_track.get(), stream_);
+      video_track_added_callback_(new_track.get(), stream_.get());
     }
   }
 

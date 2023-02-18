@@ -16,7 +16,6 @@
 #include "absl/types/optional.h"
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace audio_network_adaptor {
@@ -39,6 +38,9 @@ class BitrateController final : public Controller {
 
   ~BitrateController() override;
 
+  BitrateController(const BitrateController&) = delete;
+  BitrateController& operator=(const BitrateController&) = delete;
+
   void UpdateNetworkMetrics(const NetworkMetrics& network_metrics) override;
 
   void MakeDecision(AudioEncoderRuntimeConfig* config) override;
@@ -49,7 +51,6 @@ class BitrateController final : public Controller {
   int frame_length_ms_;
   absl::optional<int> target_audio_bitrate_bps_;
   absl::optional<size_t> overhead_bytes_per_packet_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(BitrateController);
 };
 
 }  // namespace audio_network_adaptor

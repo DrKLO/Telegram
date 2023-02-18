@@ -187,6 +187,7 @@ public class CounterView extends View {
                 if (parent != null) {
                     parent.invalidate();
                 }
+                return;
             }
             String newStr = getStringOfCCount(count);
 

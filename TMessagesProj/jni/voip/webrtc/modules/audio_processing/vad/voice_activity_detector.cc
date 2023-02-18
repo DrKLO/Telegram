@@ -38,6 +38,7 @@ void VoiceActivityDetector::ProcessChunk(const int16_t* audio,
                                          size_t length,
                                          int sample_rate_hz) {
   RTC_DCHECK_EQ(length, sample_rate_hz / 100);
+  // TODO(bugs.webrtc.org/7494): Remove resampling and force 16 kHz audio.
   // Resample to the required rate.
   const int16_t* resampled_ptr = audio;
   if (sample_rate_hz != kSampleRateHz) {

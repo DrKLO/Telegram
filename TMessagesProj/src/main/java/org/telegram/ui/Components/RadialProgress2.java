@@ -66,7 +66,7 @@ public class RadialProgress2 {
     private Canvas miniDrawCanvas;
 
     private float overrideAlpha = 1.0f;
-    private final Theme.ResourcesProvider resourcesProvider;
+    private Theme.ResourcesProvider resourcesProvider;
     private int maxIconSize;
     private float overlayImageAlpha = 1f;
 
@@ -95,6 +95,10 @@ public class RadialProgress2 {
         overlayImageView.setRoundRadius(circleRadius);
 
         overlayPaint.setColor(0x64000000);
+    }
+
+    public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
     }
 
     public void setAsMini() {
