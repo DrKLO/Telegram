@@ -7,6 +7,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -102,6 +103,31 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private final static int STATE_GONE = 0;
     private final static int STATE_FULLSCREEN = 1;
     private final static int STATE_FLOATING = 2;
+
+    // Color gradients for backgrounds
+    // Format is []{main,light, dark}
+    int[][] GRADIENT_BLUE_VIOLET = {
+            {0xFF20A4D7, 0xFF3F8BEA, 0xFF8148EC, 0xFFB456D8},
+            {0xFF2DC0F9, 0xFF57A1FF, 0xFF9258FD, 0xFFD664FF},
+            {0xFFF995C9, 0xFF287AE1, 0xFF6A2BDD, 0xFFA736d0}
+    };
+    int[][] GRADIENT_BLUE_GREEN = {
+            {0xFF08B0A3, 0xFF17AAE4, 0xFF3B7AF1, 0xFF4576E9},
+            {0xFF04DCCC, 0xFF28C2FF, 0xFF5FABFF, 0xFF558BFF},
+            {0xFF009595, 0xFF0291C9, 0xFF2C6ADF, 0xFF2D60D6}
+    };
+
+    int[][] GRADIENT_GREEN = {
+            {0xFFA9CC66, 0xFF5AB147, 0xFF07BA63, 0xFF07A9AC},
+            {0xFFC7EF60, 0xFF6DD957, 0xFF09E279, 0xFF00D2D5},
+            {0xFF8FBD37, 0xFF319D27, 0xFF01934C, 0xFF008B8E}
+    };
+
+    int[][] GRADIENT_ORANGE_RED = {
+            {0xFFDB904C, 0xFFDE7238, 0xFFE7618F, 0xFFE86958},
+            {0xFFFEB055, 0xFFFF8E51, 0xFFFF82A5, 0xFFFF7866},
+            {0xFFC77616, 0xFFD75A16, 0xFFE6306F, 0xFFE23F29}
+    };
 
     private final int currentAccount;
 
@@ -237,6 +263,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     ValueAnimator zoomBackAnimator;
     /* === pinch to zoom === */
 
+
+    // whether the current theme is dark theme
+    private final boolean isDarkTheme = Theme.getActiveTheme().isDark();
+
     public static void show(Activity activity, int account) {
         show(activity, false, account);
     }
@@ -367,6 +397,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     public static void clearInstance() {
+
         if (instance != null) {
             if (VoIPService.getSharedInstance() != null) {
                 int h = instance.windowView.getMeasuredHeight();
@@ -696,9 +727,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         frameLayout.addView(callingUserPhotoView);
         frameLayout.addView(callingUserTextureView);
+        int position = isDarkTheme ? 2 : 1;
 
+        final BackgroundGradientDrawable gradientDrawable = new BackgroundGradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, GRADIENT_BLUE_GREEN[position]);
 
-        final BackgroundGradientDrawable gradientDrawable = new BackgroundGradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xFF1b354e, 0xFF255b7d});
         final BackgroundGradientDrawable.Sizes sizes = BackgroundGradientDrawable.Sizes.ofDeviceScreen(BackgroundGradientDrawable.Sizes.Orientation.PORTRAIT);
         gradientDrawable.startDithering(sizes, new BackgroundGradientDrawable.ListenerAdapter() {
             @Override
@@ -716,7 +748,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             }
         });
 
-        callingUserPhotoView.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_BIG), null, gradientDrawable, callingUser);
+
+        callingUserPhotoView.setImageDrawable(gradientDrawable);
+        //callingUserPhotoView.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_BIG), null, gradientDrawable, callingUser);
 
         currentUserCameraFloatingLayout = new VoIPFloatingLayout(context);
         currentUserCameraFloatingLayout.setDelegate((progress, value) -> currentUserTextureView.setScreenshareMiniProgress(progress, value));
@@ -851,8 +885,18 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         // Add rounded icon which shows caller DP
         roundedIcon = new BackupImageView(context);
-        roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(135), 0xFF000000), callingUser);
+        roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), callingUser);
         roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
+
+        ObjectAnimator scaleDown = ObjectAnimator.ofPropertyValuesHolder(
+                roundedIcon,
+                PropertyValuesHolder.ofFloat("scaleX", 1.1f),
+                PropertyValuesHolder.ofFloat("scaleY", 1.1f));
+        scaleDown.setDuration(900);
+        scaleDown.setRepeatCount(ObjectAnimator.INFINITE);
+        scaleDown.setRepeatMode(ObjectAnimator.REVERSE);
+        scaleDown.start();
+
 
 
         callingUserTitle = new TextView(context);
@@ -869,7 +913,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         ViewCompat.setImportantForAccessibility(statusTextView, ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
         // add layouts to first status, this is the first view seen by a person when calling
-        statusLayout.addView(roundedIcon, LayoutHelper.createLinear(135, 135, Gravity.CENTER_HORIZONTAL, 0, 68, 0, 0));
+        statusLayout.addView(roundedIcon, LayoutHelper.createLinear(135, 135, Gravity.CENTER_HORIZONTAL, 0, 68, 0, 20));
         statusLayout.addView(callingUserTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
         statusLayout.addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
 
@@ -2166,7 +2210,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     private void setFrontalCameraAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         if (!currentUserIsVideo) {
-            bottomButton.setData(R.drawable.calls_flip,  ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated);
+            bottomButton.setData(R.drawable.calls_flip, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated);
             bottomButton.setOnClickListener(null);
             bottomButton.setEnabled(false);
         } else {
