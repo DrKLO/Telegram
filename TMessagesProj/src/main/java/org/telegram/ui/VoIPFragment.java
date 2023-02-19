@@ -120,6 +120,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     private TextView callingUserTitle;
 
+    // represents rounded bitmap below the person who we are calling
+    private BackupImageView roundedIcon;
+
+    private TextView topText;
     private VoIPStatusTextView statusTextView;
     private ImageView backIcon;
     private ImageView speakerPhoneIcon;
@@ -843,7 +847,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserPhotoViewMini = new BackupImageView(context);
         callingUserPhotoViewMini.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(135), 0xFF000000), callingUser);
         callingUserPhotoViewMini.setRoundRadius(AndroidUtilities.dp(135) / 2);
-        callingUserPhotoViewMini.setVisibility(View.GONE);
+        callingUserPhotoViewMini.setVisibility(View.VISIBLE);
+
+        // Add rounded icon which shows caller DP
+        roundedIcon = new BackupImageView(context);
+        roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(135), 0xFF000000), callingUser);
+        roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
+
 
         callingUserTitle = new TextView(context);
         callingUserTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
@@ -854,10 +864,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserTitle.setTextColor(Color.WHITE);
         callingUserTitle.setGravity(Gravity.CENTER_HORIZONTAL);
         callingUserTitle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        statusLayout.addView(callingUserTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
 
         statusTextView = new VoIPStatusTextView(context);
         ViewCompat.setImportantForAccessibility(statusTextView, ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+
+        // add layouts to first status, this is the first view seen by a person when calling
+        statusLayout.addView(roundedIcon, LayoutHelper.createLinear(135, 135, Gravity.CENTER_HORIZONTAL, 0, 68, 0, 0));
+        statusLayout.addView(callingUserTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
         statusLayout.addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
 
         statusLayout.setClipChildren(false);
