@@ -980,7 +980,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         backIcon = new ImageView(context);
         backIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
-        backIcon.setImageResource(R.drawable.ic_ab_back);
+        backIcon.setImageResource(R.drawable.msg_calls_minimize);
         backIcon.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
         backIcon.setContentDescription(LocaleController.getString("Back", R.string.Back));
         frameLayout.addView(backIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.LEFT));
