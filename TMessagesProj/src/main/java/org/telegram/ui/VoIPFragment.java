@@ -76,6 +76,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.BlobDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -266,6 +267,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     // whether the current theme is dark theme
     private final boolean isDarkTheme = Theme.getActiveTheme().isDark();
+
+    // blob drawabled
+    BlobDrawable tinyWaveDrawable = new BlobDrawable(11);
+    BlobDrawable bigWaveDrawable = new BlobDrawable(12);
+    BlobDrawable anotherRandomWave = new BlobDrawable(15);
+
+
+
+
 
     public static void show(Activity activity, int account) {
         show(activity, false, account);
@@ -883,20 +893,50 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserPhotoViewMini.setRoundRadius(AndroidUtilities.dp(135) / 2);
         callingUserPhotoViewMini.setVisibility(View.VISIBLE);
 
+        {
+            // blob generators that wrap around caller pictture
+            // initialize to default values
+
+            tinyWaveDrawable.minRadius = AndroidUtilities.dp(84);
+            tinyWaveDrawable.maxRadius = AndroidUtilities.dp(86);
+            // WHITE WITH with 15 alpha
+            tinyWaveDrawable.paint.setColor(0x0F_FF_FF_FF);
+            tinyWaveDrawable.generateBlob();
+
+            bigWaveDrawable.minRadius = AndroidUtilities.dp(74);
+            bigWaveDrawable.maxRadius = AndroidUtilities.dp(76);
+            // white with 63 alpha
+            bigWaveDrawable.paint.setColor(0x3F_FF_FF_FF);
+
+            bigWaveDrawable.generateBlob();
+        }
+
+
         // Add rounded icon which shows caller DP
-        roundedIcon = new BackupImageView(context);
+        roundedIcon = new BackupImageView(context) {
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                int center = AndroidUtilities.dp(135)/2;
+                // draw canvas behind the picture
+                // this has to be in this order so that the paint isn't on top
+                // of the picture
+                bigWaveDrawable.draw(center, center,canvas, bigWaveDrawable.paint);
+                tinyWaveDrawable.draw(center, center, canvas, tinyWaveDrawable.paint);
+                super.onDraw(canvas);
+            }
+        };
         roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), callingUser);
         roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
 
         ObjectAnimator scaleDown = ObjectAnimator.ofPropertyValuesHolder(
                 roundedIcon,
-                PropertyValuesHolder.ofFloat("scaleX", 1.1f),
-                PropertyValuesHolder.ofFloat("scaleY", 1.1f));
-        scaleDown.setDuration(900);
+                PropertyValuesHolder.ofFloat("scaleX", 1.05f),
+                PropertyValuesHolder.ofFloat("scaleY", 1.05f));
+        scaleDown.setDuration(1200);
         scaleDown.setRepeatCount(ObjectAnimator.INFINITE);
         scaleDown.setRepeatMode(ObjectAnimator.REVERSE);
         scaleDown.start();
-
 
 
         callingUserTitle = new TextView(context);
@@ -920,6 +960,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         statusLayout.setClipChildren(false);
         statusLayout.setClipToPadding(false);
         statusLayout.setPadding(0, 0, 0, AndroidUtilities.dp(15));
+
 
         frameLayout.addView(callingUserPhotoViewMini, LayoutHelper.createFrame(135, 135, Gravity.CENTER_HORIZONTAL, 0, 68, 0, 0));
         frameLayout.addView(statusLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 68, 0, 0));
