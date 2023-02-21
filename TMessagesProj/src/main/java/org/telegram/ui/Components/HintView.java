@@ -34,8 +34,9 @@ public class HintView extends FrameLayout {
     public static final int TYPE_POLL_VOTE = 5;
 
     public TextView textView;
+    public ImageView arrowImageView;
+
     private ImageView imageView;
-    private ImageView arrowImageView;
     private ChatMessageCell messageCell;
     private View currentView;
     private AnimatorSet animatorSet;
