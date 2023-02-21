@@ -1066,6 +1066,14 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         tapToVideoTooltip.setVisibility(View.GONE);
 
 
+        upperToolTip = new HintView(context, HintView.ROUND_CORNERS, false);
+        upperToolTip.setText(LocaleController.getString("WeakNetworkSignal",R.string.WeakNetworkSignal));
+        upperToolTip.setBackgroundColor(0x1F_00_00_00, Color.WHITE);
+        frameLayout.addView(upperToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,  Gravity.CENTER, 0,0, 0, AndroidUtilities.dp(10)));
+        upperToolTip.arrowImageView.setVisibility(View.GONE);
+        upperToolTip.setBottomOffset(AndroidUtilities.dp(4));
+        upperToolTip.setVisibility(View.GONE);
+
         lowerToolTip = new HintView(context, HintView.ROUND_CORNERS, false);
         lowerToolTip.setText(LocaleController.getString("MicrophoneOff", R.string.MicrophoneOff));
         lowerToolTip.setBackgroundColor(0x1F_00_00_00, Color.WHITE);
