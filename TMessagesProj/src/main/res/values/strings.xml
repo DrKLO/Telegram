@@ -6255,4 +6255,5 @@
     <string name="ClearStorageHintTitle">Free up to **%s**</string>
     <string name="ClearStorageHintMessage">Clear storage space on your phone</string>
     <string name="YourCurrentPlan">your current plan</string>
+    <string name="MicrophoneOff">Your Microphone is turned off</string>
 </resources>
