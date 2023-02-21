@@ -33,6 +33,7 @@ public class HintView extends FrameLayout {
     public static final int TYPE_COMMON = 4;
     public static final int TYPE_POLL_VOTE = 5;
 
+    public static final int ROUND_CORNERS = 90;
     public TextView textView;
     public ImageView arrowImageView;
 
@@ -113,7 +114,13 @@ public class HintView extends FrameLayout {
     public void setBackgroundColor(int background, int text) {
         textView.setTextColor(text);
         arrowImageView.setColorFilter(new PorterDuffColorFilter(background, PorterDuff.Mode.MULTIPLY));
-        textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 ? 6 : 3), background));
+        if (currentType == ROUND_CORNERS){
+            // set to an abitrary hight value which forces border radius
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), background));
+
+        } else {
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 ? 6 : 3), background));
+        }
     }
 
     public void setOverrideText(String text) {
