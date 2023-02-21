@@ -1388,7 +1388,6 @@ public class Theme {
                 }
                 myMessagesAccent = getAccentColor(hsvTemp1, color, firstColor);
             }
-
             boolean changeMyMessagesColors = (myMessagesAccent != 0 && (parentTheme.accentBaseColor != 0 && myMessagesAccent != parentTheme.accentBaseColor || accentColor != 0 && accentColor != myMessagesAccent));
             if (changeMyMessagesColors || accentColor2 != 0) {
                 if (accentColor2 != 0) {
@@ -9902,7 +9901,7 @@ public class Theme {
         }
 
         Drawable drawable = wallpaperOverride != null ? wallpaperOverride : currentWallpaper;
-        boolean drawServiceGradient = drawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && !SharedConfig.getLiteMode().enabled();
+        boolean drawServiceGradient = drawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && SharedConfig.getLiteMode().animatedBackgroundEnabled();
         if (drawServiceGradient) {
             Bitmap newBitmap = ((MotionBackgroundDrawable) drawable).getBitmap();
             if (serviceBitmap != newBitmap) {
@@ -10712,6 +10711,23 @@ public class Theme {
                 }
                 settings.wallpaper = new ColorDrawable(selectedColor);
             }
+        }
+
+        if (!SharedConfig.getLiteMode().animatedEmojiEnabled() && settings.wallpaper instanceof MotionBackgroundDrawable) {
+            MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) settings.wallpaper;
+            int w, h;
+            if (motionBackgroundDrawable.getPatternBitmap() == null) {
+                w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            } else {
+                w = motionBackgroundDrawable.getPatternBitmap().getWidth();
+                h = motionBackgroundDrawable.getPatternBitmap().getHeight();
+            }
+            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            settings.wallpaper.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            settings.wallpaper.draw(canvas);
+            settings.wallpaper = new BitmapDrawable(bitmap);
         }
         return settings;
     }

@@ -26,10 +26,10 @@ namespace media_optimization {
 // Number of time periods used for (max) window filter for packet loss
 // TODO(marpan): set reasonable window size for filtered packet loss,
 // adjustment should be based on logged/real data of loss stats/correlation.
-enum { kLossPrHistorySize = 10 };
+constexpr int kLossPrHistorySize = 10;
 
 // 1000 ms, total filter length is (kLossPrHistorySize * 1000) ms
-enum { kLossPrShortFilterWinMs = 1000 };
+constexpr int kLossPrShortFilterWinMs = 1000;
 
 // The type of filter used on the received packet loss reports.
 enum FilterPacketLossMode {
@@ -41,11 +41,11 @@ enum FilterPacketLossMode {
 
 // Thresholds for hybrid NACK/FEC
 // common to media optimization and the jitter buffer.
-const int64_t kLowRttNackMs = 20;
+constexpr int64_t kLowRttNackMs = 20;
 
 // If the RTT is higher than this an extra RTT wont be added to to the jitter
 // buffer delay.
-const int kMaxRttDelayThreshold = 500;
+constexpr int kMaxRttDelayThreshold = 500;
 
 struct VCMProtectionParameters {
   VCMProtectionParameters();
@@ -175,15 +175,15 @@ class VCMFecMethod : public VCMProtectionMethod {
   int BitsPerFrame(const VCMProtectionParameters* parameters);
 
  protected:
-  enum { kUpperLimitFramesFec = 6 };
+  static constexpr int kUpperLimitFramesFec = 6;
   // Thresholds values for the bytes/frame and round trip time, below which we
   // may turn off FEC, depending on `_numLayers` and `_maxFramesFec`.
   // Max bytes/frame for VGA, corresponds to ~140k at 25fps.
-  enum { kMaxBytesPerFrameForFec = 700 };
+  static constexpr int kMaxBytesPerFrameForFec = 700;
   // Max bytes/frame for CIF and lower: corresponds to ~80k at 25fps.
-  enum { kMaxBytesPerFrameForFecLow = 400 };
+  static constexpr int kMaxBytesPerFrameForFecLow = 400;
   // Max bytes/frame for frame size larger than VGA, ~200k at 25fps.
-  enum { kMaxBytesPerFrameForFecHigh = 1000 };
+  static constexpr int kMaxBytesPerFrameForFecHigh = 1000;
 
   const RateControlSettings rate_control_settings_;
 };

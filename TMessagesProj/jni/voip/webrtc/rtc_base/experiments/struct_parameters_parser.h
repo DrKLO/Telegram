@@ -28,7 +28,7 @@ namespace webrtc {
 namespace struct_parser_impl {
 struct TypedMemberParser {
  public:
-  bool (*parse)(const absl::string_view src, void* target);
+  bool (*parse)(absl::string_view src, void* target);
   void (*encode)(const void* src, std::string* target);
 };
 

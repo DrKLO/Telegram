@@ -17,7 +17,6 @@
 #include "api/task_queue/task_queue_factory.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
-#include "modules/utility/include/process_thread.h"
 #include "rtc_base/synchronization/yield_policy.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/clock.h"
@@ -41,9 +40,6 @@ class TimeController {
   // is destroyed.
   std::unique_ptr<TaskQueueFactory> CreateTaskQueueFactory();
 
-  // Creates a process thread.
-  virtual std::unique_ptr<ProcessThread> CreateProcessThread(
-      const char* thread_name) = 0;
   // Creates an rtc::Thread instance. If `socket_server` is nullptr, a default
   // noop socket server is created.
   // Returned thread is not null and started.

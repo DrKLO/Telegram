@@ -17,15 +17,22 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "rtc_base/network_monitor.h"
 #include "rtc_base/network_monitor_factory.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
+#include "rtc_base/string_utils.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 
 namespace webrtc {
+namespace test {
+class AndroidNetworkMonitorTest;
+}  // namespace test
+
 namespace jni {
 
 typedef int64_t NetworkHandle;
@@ -67,7 +74,8 @@ struct NetworkInformation {
 class AndroidNetworkMonitor : public rtc::NetworkMonitorInterface {
  public:
   AndroidNetworkMonitor(JNIEnv* env,
-                        const JavaRef<jobject>& j_application_context);
+                        const JavaRef<jobject>& j_application_context,
+                        const FieldTrialsView& field_trials);
   ~AndroidNetworkMonitor() override;
 
   // TODO(sakal): Remove once down stream dependencies have been updated.
@@ -83,12 +91,9 @@ class AndroidNetworkMonitor : public rtc::NetworkMonitorInterface {
   rtc::NetworkBindingResult BindSocketToNetwork(
       int socket_fd,
       const rtc::IPAddress& address,
-      const std::string& if_name) override;
-  rtc::AdapterType GetAdapterType(const std::string& if_name) override;
-  rtc::AdapterType GetVpnUnderlyingAdapterType(
-      const std::string& if_name) override;
-  rtc::NetworkPreference GetNetworkPreference(
-      const std::string& if_name) override;
+      absl::string_view if_name) override;
+
+  InterfaceInfo GetInterfaceInfo(absl::string_view if_name) override;
 
   // Always expected to be called on the network thread.
   void SetNetworkInfos(const std::vector<NetworkInformation>& network_infos);
@@ -112,26 +117,26 @@ class AndroidNetworkMonitor : public rtc::NetworkMonitorInterface {
   // Visible for testing.
   absl::optional<NetworkHandle> FindNetworkHandleFromAddressOrName(
       const rtc::IPAddress& address,
-      const std::string& ifname) const;
+      absl::string_view ifname) const;
 
  private:
+  void reset();
   void OnNetworkConnected_n(const NetworkInformation& network_info);
   void OnNetworkDisconnected_n(NetworkHandle network_handle);
   void OnNetworkPreference_n(NetworkType type,
                              rtc::NetworkPreference preference);
 
+  rtc::NetworkPreference GetNetworkPreference(rtc::AdapterType) const;
   absl::optional<NetworkHandle> FindNetworkHandleFromIfname(
-      const std::string& ifname) const;
+      absl::string_view ifname) const;
 
   const int android_sdk_int_;
   ScopedJavaGlobalRef<jobject> j_application_context_;
   ScopedJavaGlobalRef<jobject> j_network_monitor_;
   rtc::Thread* const network_thread_;
   bool started_ RTC_GUARDED_BY(network_thread_) = false;
-  std::map<std::string, rtc::AdapterType> adapter_type_by_name_
-      RTC_GUARDED_BY(network_thread_);
-  std::map<std::string, rtc::AdapterType> vpn_underlying_adapter_type_by_name_
-      RTC_GUARDED_BY(network_thread_);
+  std::map<std::string, NetworkHandle, rtc::AbslStringViewCmp>
+      network_handle_by_if_name_ RTC_GUARDED_BY(network_thread_);
   std::map<rtc::IPAddress, NetworkHandle> network_handle_by_address_
       RTC_GUARDED_BY(network_thread_);
   std::map<NetworkHandle, NetworkInformation> network_info_by_handle_
@@ -149,8 +154,17 @@ class AndroidNetworkMonitor : public rtc::NetworkMonitorInterface {
   // This applies to adapter_type_by_name_, vpn_underlying_adapter_type_by_name_
   // and FindNetworkHandleFromIfname.
   bool bind_using_ifname_ RTC_GUARDED_BY(network_thread_) = true;
+
+  // NOTE: disable_is_adapter_available_ is a kill switch for the impl.
+  // of IsAdapterAvailable().
+  bool disable_is_adapter_available_ RTC_GUARDED_BY(network_thread_) = false;
+
   rtc::scoped_refptr<PendingTaskSafetyFlag> safety_flag_
       RTC_PT_GUARDED_BY(network_thread_) = nullptr;
+
+  const FieldTrialsView& field_trials_;
+
+  friend class webrtc::test::AndroidNetworkMonitorTest;
 };
 
 class AndroidNetworkMonitorFactory : public rtc::NetworkMonitorFactory {
@@ -163,7 +177,8 @@ class AndroidNetworkMonitorFactory : public rtc::NetworkMonitorFactory {
 
   ~AndroidNetworkMonitorFactory() override;
 
-  rtc::NetworkMonitorInterface* CreateNetworkMonitor() override;
+  rtc::NetworkMonitorInterface* CreateNetworkMonitor(
+      const FieldTrialsView& field_trials) override;
 
  private:
   ScopedJavaGlobalRef<jobject> j_application_context_;

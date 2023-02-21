@@ -406,7 +406,7 @@ template <typename StorageT>
 StorageT* FlagImpl::OffsetValue() const {
   char* p = reinterpret_cast<char*>(const_cast<FlagImpl*>(this));
   // The offset is deduced via Flag value type specific op_.
-  size_t offset = flags_internal::ValueOffset(op_);
+  ptrdiff_t offset = flags_internal::ValueOffset(op_);
 
   return reinterpret_cast<StorageT*>(p + offset);
 }
@@ -486,7 +486,7 @@ bool FlagImpl::ReadOneBool() const {
 }
 
 void FlagImpl::ReadSequenceLockedData(void* dst) const {
-  int size = Sizeof(op_);
+  size_t size = Sizeof(op_);
   // Attempt to read using the sequence lock.
   if (ABSL_PREDICT_TRUE(seq_lock_.TryRead(dst, AtomicBufferValue(), size))) {
     return;

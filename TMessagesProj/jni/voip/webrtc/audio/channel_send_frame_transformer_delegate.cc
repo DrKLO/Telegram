@@ -102,7 +102,7 @@ void ChannelSendFrameTransformerDelegate::OnTransformedFrame(
   MutexLock lock(&send_lock_);
   if (!send_frame_callback_)
     return;
-  rtc::scoped_refptr<ChannelSendFrameTransformerDelegate> delegate = this;
+  rtc::scoped_refptr<ChannelSendFrameTransformerDelegate> delegate(this);
   encoder_queue_->PostTask(
       [delegate = std::move(delegate), frame = std::move(frame)]() mutable {
         delegate->SendFrame(std::move(frame));

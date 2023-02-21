@@ -14,8 +14,10 @@
 
 #include <cstdlib>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_device/dummy/file_audio_device.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/string_utils.h"
 
 namespace webrtc {
 
@@ -38,15 +40,15 @@ FileAudioDevice* FileAudioDeviceFactory::CreateFileAudioDevice() {
 }
 
 void FileAudioDeviceFactory::SetFilenamesToUse(
-    const char* inputAudioFilename,
-    const char* outputAudioFilename) {
+    absl::string_view inputAudioFilename,
+    absl::string_view outputAudioFilename) {
 #ifdef WEBRTC_DUMMY_FILE_DEVICES
-  RTC_DCHECK_LT(strlen(inputAudioFilename), MAX_FILENAME_LEN);
-  RTC_DCHECK_LT(strlen(outputAudioFilename), MAX_FILENAME_LEN);
+  RTC_DCHECK_LT(inputAudioFilename.size(), MAX_FILENAME_LEN);
+  RTC_DCHECK_LT(outputAudioFilename.size(), MAX_FILENAME_LEN);
 
   // Copy the strings since we don't know the lifetime of the input pointers.
-  strncpy(_inputAudioFilename, inputAudioFilename, MAX_FILENAME_LEN);
-  strncpy(_outputAudioFilename, outputAudioFilename, MAX_FILENAME_LEN);
+  rtc::strcpyn(_inputAudioFilename, MAX_FILENAME_LEN, inputAudioFilename);
+  rtc::strcpyn(_outputAudioFilename, MAX_FILENAME_LEN, outputAudioFilename);
   _isConfigured = true;
 #else
   // Sanity: must be compiled with the right define to run this.

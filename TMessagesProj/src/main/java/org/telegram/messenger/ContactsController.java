@@ -1895,7 +1895,8 @@ public class ContactsController extends BaseController {
     private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         Cursor cursor = null;
         try {
-            if (!hasContactsPermission()) {
+            Account account = systemAccount;
+            if (!hasContactsPermission() || account == null) {
                 return;
             }
             final SharedPreferences settings = MessagesController.getMainSettings(currentAccount);
@@ -2195,7 +2196,7 @@ public class ContactsController extends BaseController {
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.CALLER_IS_SYNCADAPTER, "true").appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type).build();
             int value = contentResolver.delete(rawContactUri, ContactsContract.RawContacts.SYNC2 + " = " + uid, null);
         } catch (Exception e) {
-            FileLog.e(e);
+            FileLog.e(e, false);
         }
         synchronized (observerLock) {
             ignoreChanges = false;

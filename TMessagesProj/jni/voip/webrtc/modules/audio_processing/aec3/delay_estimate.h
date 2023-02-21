@@ -11,6 +11,8 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_DELAY_ESTIMATE_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_DELAY_ESTIMATE_H_
 
+#include <stddef.h>
+
 namespace webrtc {
 
 // Stores delay_estimates.

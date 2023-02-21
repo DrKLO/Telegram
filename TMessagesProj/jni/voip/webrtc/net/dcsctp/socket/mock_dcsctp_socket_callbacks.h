@@ -20,6 +20,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "net/dcsctp/public/dcsctp_message.h"
 #include "net/dcsctp/public/dcsctp_socket.h"
 #include "net/dcsctp/public/timeout.h"
@@ -87,7 +88,9 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
               (rtc::ArrayView<const uint8_t> data),
               (override));
 
-  std::unique_ptr<Timeout> CreateTimeout() override {
+  std::unique_ptr<Timeout> CreateTimeout(
+      webrtc::TaskQueueBase::DelayPrecision precision) override {
+    // The fake timeout manager does not implement |precision|.
     return timeout_manager_.CreateTimeout();
   }
 
@@ -123,6 +126,19 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
               (override));
   MOCK_METHOD(void, OnBufferedAmountLow, (StreamID stream_id), (override));
   MOCK_METHOD(void, OnTotalBufferedAmountLow, (), (override));
+  MOCK_METHOD(void,
+              OnLifecycleMessageExpired,
+              (LifecycleId lifecycle_id, bool maybe_delivered),
+              (override));
+  MOCK_METHOD(void,
+              OnLifecycleMessageFullySent,
+              (LifecycleId lifecycle_id),
+              (override));
+  MOCK_METHOD(void,
+              OnLifecycleMessageDelivered,
+              (LifecycleId lifecycle_id),
+              (override));
+  MOCK_METHOD(void, OnLifecycleEnd, (LifecycleId lifecycle_id), (override));
 
   bool HasPacket() const { return !sent_packets_.empty(); }
 
@@ -148,12 +164,6 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
 
   absl::optional<TimeoutID> GetNextExpiredTimeout() {
     return timeout_manager_.GetNextExpiredTimeout();
-  }
-
-  void Reset() {
-    sent_packets_.clear();
-    received_messages_.clear();
-    timeout_manager_.Reset();
   }
 
  private:

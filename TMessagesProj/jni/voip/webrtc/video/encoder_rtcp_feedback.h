@@ -16,11 +16,11 @@
 #include "api/sequence_checker.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
-#include "api/video/video_stream_encoder_interface.h"
 #include "call/rtp_video_sender_interface.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "system_wrappers/include/clock.h"
+#include "video/video_stream_encoder_interface.h"
 
 namespace webrtc {
 

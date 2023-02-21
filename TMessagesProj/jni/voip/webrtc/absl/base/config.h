@@ -56,6 +56,25 @@
 #include <cstddef>
 #endif  // __cplusplus
 
+// ABSL_INTERNAL_CPLUSPLUS_LANG
+//
+// MSVC does not set the value of __cplusplus correctly, but instead uses
+// _MSVC_LANG as a stand-in.
+// https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+//
+// However, there are reports that MSVC even sets _MSVC_LANG incorrectly at
+// times, for example:
+// https://github.com/microsoft/vscode-cpptools/issues/1770
+// https://reviews.llvm.org/D70996
+//
+// For this reason, this symbol is considered INTERNAL and code outside of
+// Abseil must not use it.
+#if defined(_MSVC_LANG)
+#define ABSL_INTERNAL_CPLUSPLUS_LANG _MSVC_LANG
+#elif defined(__cplusplus)
+#define ABSL_INTERNAL_CPLUSPLUS_LANG __cplusplus
+#endif
+
 #if defined(__APPLE__)
 // Included for TARGET_OS_IPHONE, __IPHONE_OS_VERSION_MIN_REQUIRED,
 // __IPHONE_8_0.
@@ -183,12 +202,6 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #define ABSL_HAVE_BUILTIN(x) 0
 #endif
 
-#if defined(__is_identifier)
-#define ABSL_INTERNAL_HAS_KEYWORD(x) !(__is_identifier(x))
-#else
-#define ABSL_INTERNAL_HAS_KEYWORD(x) 0
-#endif
-
 #ifdef __has_feature
 #define ABSL_HAVE_FEATURE(f) __has_feature(f)
 #else
@@ -212,11 +225,12 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #endif
 
 // ABSL_HAVE_TLS is defined to 1 when __thread should be supported.
-// We assume __thread is supported on Linux when compiled with Clang or compiled
-// against libstdc++ with _GLIBCXX_HAVE_TLS defined.
+// We assume __thread is supported on Linux or Asylo when compiled with Clang or
+// compiled against libstdc++ with _GLIBCXX_HAVE_TLS defined.
 #ifdef ABSL_HAVE_TLS
 #error ABSL_HAVE_TLS cannot be directly set
-#elif defined(__linux__) && (defined(__clang__) || defined(_GLIBCXX_HAVE_TLS))
+#elif (defined(__linux__) || defined(__ASYLO__)) && \
+    (defined(__clang__) || defined(_GLIBCXX_HAVE_TLS))
 #define ABSL_HAVE_TLS 1
 #endif
 
@@ -229,6 +243,7 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #ifdef ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE
 #error ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE cannot be directly set
 #elif defined(_LIBCPP_VERSION) || defined(_MSC_VER) || \
+    (defined(__clang__) && __clang_major__ >= 15) ||   \
     (!defined(__clang__) && defined(__GLIBCXX__) &&    \
      ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(4, 8))
 #define ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE 1
@@ -250,26 +265,25 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #elif defined(ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE)
 #error ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE cannot directly set
 #elif (defined(__clang__) && defined(_LIBCPP_VERSION)) ||                    \
+    (defined(__clang__) && __clang_major__ >= 15) ||                         \
     (!defined(__clang__) &&                                                  \
      ((ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(7, 4) && defined(__GLIBCXX__)) || \
       (ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(8, 2) &&                          \
        defined(_LIBCPP_VERSION)))) ||                                        \
-    (defined(_MSC_VER) && !defined(__NVCC__))
+    (defined(_MSC_VER) && !defined(__NVCC__) && !defined(__clang__))
 #define ABSL_HAVE_STD_IS_TRIVIALLY_CONSTRUCTIBLE 1
 #define ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE 1
 #endif
 
-// ABSL_HAVE_SOURCE_LOCATION_CURRENT
+// ABSL_HAVE_STD_IS_TRIVIALLY_COPYABLE
 //
-// Indicates whether `absl::SourceLocation::current()` will return useful
-// information in some contexts.
-#ifndef ABSL_HAVE_SOURCE_LOCATION_CURRENT
-#if ABSL_INTERNAL_HAS_KEYWORD(__builtin_LINE) && \
-    ABSL_INTERNAL_HAS_KEYWORD(__builtin_FILE)
-#define ABSL_HAVE_SOURCE_LOCATION_CURRENT 1
-#elif ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(5, 0)
-#define ABSL_HAVE_SOURCE_LOCATION_CURRENT 1
-#endif
+// Checks whether `std::is_trivially_copyable<T>` is supported.
+//
+// Notes: Clang 15+ with libc++ supports these features, GCC hasn't been tested.
+#if defined(ABSL_HAVE_STD_IS_TRIVIALLY_COPYABLE)
+#error ABSL_HAVE_STD_IS_TRIVIALLY_COPYABLE cannot be directly set
+#elif defined(__clang__) && (__clang_major__ >= 15)
+#define ABSL_HAVE_STD_IS_TRIVIALLY_COPYABLE 1
 #endif
 
 // ABSL_HAVE_THREAD_LOCAL
@@ -414,7 +428,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
     defined(_AIX) || defined(__ros__) || defined(__native_client__) ||    \
     defined(__asmjs__) || defined(__wasm__) || defined(__Fuchsia__) ||    \
     defined(__sun) || defined(__ASYLO__) || defined(__myriad2__) ||       \
-    defined(__HAIKU__)
+    defined(__HAIKU__) || defined(__OpenBSD__) || defined(__NetBSD__) ||  \
+    defined(__QNX__)
 #define ABSL_HAVE_MMAP 1
 #endif
 
@@ -425,7 +440,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #ifdef ABSL_HAVE_PTHREAD_GETSCHEDPARAM
 #error ABSL_HAVE_PTHREAD_GETSCHEDPARAM cannot be directly set
 #elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
-    defined(_AIX) || defined(__ros__)
+    defined(_AIX) || defined(__ros__) || defined(__OpenBSD__) ||          \
+    defined(__NetBSD__)
 #define ABSL_HAVE_PTHREAD_GETSCHEDPARAM 1
 #endif
 
@@ -559,6 +575,9 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #else
 #define ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE 0
 #endif
+
+#undef ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE
+#define ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE 1
 
 // ABSL_HAVE_STD_ANY
 //
@@ -724,8 +743,6 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #endif
 #endif
 
-#undef ABSL_INTERNAL_HAS_KEYWORD
-
 // ABSL_DLL
 //
 // When building Abseil as a DLL, this macro expands to `__declspec(dllexport)`
@@ -793,9 +810,26 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 // ABSL_HAVE_LEAK_SANITIZER
 //
 // LeakSanitizer (or lsan) is a detector of memory leaks.
+// https://clang.llvm.org/docs/LeakSanitizer.html
+// https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer
+//
+// The macro ABSL_HAVE_LEAK_SANITIZER can be used to detect at compile-time
+// whether the LeakSanitizer is potentially available. However, just because the
+// LeakSanitizer is available does not mean it is active. Use the
+// always-available run-time interface in //absl/debugging/leak_check.h for
+// interacting with LeakSanitizer.
 #ifdef ABSL_HAVE_LEAK_SANITIZER
 #error "ABSL_HAVE_LEAK_SANITIZER cannot be directly set."
+#elif defined(LEAK_SANITIZER)
+// GCC provides no method for detecting the presense of the standalone
+// LeakSanitizer (-fsanitize=leak), so GCC users of -fsanitize=leak should also
+// use -DLEAK_SANITIZER.
+#define ABSL_HAVE_LEAK_SANITIZER 1
+// Clang standalone LeakSanitizer (-fsanitize=leak)
 #elif ABSL_HAVE_FEATURE(leak_sanitizer)
+#define ABSL_HAVE_LEAK_SANITIZER 1
+#elif defined(ABSL_HAVE_ADDRESS_SANITIZER)
+// GCC or Clang using the LeakSanitizer integrated into AddressSanitizer.
 #define ABSL_HAVE_LEAK_SANITIZER 1
 #endif
 
@@ -808,6 +842,29 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #define ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION 1
 #endif
 
+// ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
+//
+// Prior to C++17, static constexpr variables defined in classes required a
+// separate definition outside of the class body, for example:
+//
+// class Foo {
+//   static constexpr int kBar = 0;
+// };
+// constexpr int Foo::kBar;
+//
+// In C++17, these variables defined in classes are considered inline variables,
+// and the extra declaration is redundant. Since some compilers warn on the
+// extra declarations, ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL can be used
+// conditionally ignore them:
+//
+// #ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
+// constexpr int Foo::kBar;
+// #endif
+#if defined(ABSL_INTERNAL_CPLUSPLUS_LANG) && \
+    ABSL_INTERNAL_CPLUSPLUS_LANG < 201703L
+#define ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL 1
+#endif
+
 // `ABSL_INTERNAL_HAS_RTTI` determines whether abseil is being compiled with
 // RTTI support.
 #ifdef ABSL_INTERNAL_HAS_RTTI
@@ -815,5 +872,63 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #elif !defined(__GNUC__) || defined(__GXX_RTTI)
 #define ABSL_INTERNAL_HAS_RTTI 1
 #endif  // !defined(__GNUC__) || defined(__GXX_RTTI)
+
+// ABSL_INTERNAL_HAVE_SSE is used for compile-time detection of SSE support.
+// See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html for an overview of
+// which architectures support the various x86 instruction sets.
+#ifdef ABSL_INTERNAL_HAVE_SSE
+#error ABSL_INTERNAL_HAVE_SSE cannot be directly set
+#elif defined(__SSE__)
+#define ABSL_INTERNAL_HAVE_SSE 1
+#elif defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 1)
+// MSVC only defines _M_IX86_FP for x86 32-bit code, and _M_IX86_FP >= 1
+// indicates that at least SSE was targeted with the /arch:SSE option.
+// All x86-64 processors support SSE, so support can be assumed.
+// https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+#define ABSL_INTERNAL_HAVE_SSE 1
+#endif
+
+// ABSL_INTERNAL_HAVE_SSE2 is used for compile-time detection of SSE2 support.
+// See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html for an overview of
+// which architectures support the various x86 instruction sets.
+#ifdef ABSL_INTERNAL_HAVE_SSE2
+#error ABSL_INTERNAL_HAVE_SSE2 cannot be directly set
+#elif defined(__SSE2__)
+#define ABSL_INTERNAL_HAVE_SSE2 1
+#elif defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+// MSVC only defines _M_IX86_FP for x86 32-bit code, and _M_IX86_FP >= 2
+// indicates that at least SSE2 was targeted with the /arch:SSE2 option.
+// All x86-64 processors support SSE2, so support can be assumed.
+// https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+#define ABSL_INTERNAL_HAVE_SSE2 1
+#endif
+
+// ABSL_INTERNAL_HAVE_SSSE3 is used for compile-time detection of SSSE3 support.
+// See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html for an overview of
+// which architectures support the various x86 instruction sets.
+//
+// MSVC does not have a mode that targets SSSE3 at compile-time. To use SSSE3
+// with MSVC requires either assuming that the code will only every run on CPUs
+// that support SSSE3, otherwise __cpuid() can be used to detect support at
+// runtime and fallback to a non-SSSE3 implementation when SSSE3 is unsupported
+// by the CPU.
+#ifdef ABSL_INTERNAL_HAVE_SSSE3
+#error ABSL_INTERNAL_HAVE_SSSE3 cannot be directly set
+#elif defined(__SSSE3__)
+#define ABSL_INTERNAL_HAVE_SSSE3 1
+#endif
+
+// ABSL_INTERNAL_HAVE_ARM_NEON is used for compile-time detection of NEON (ARM
+// SIMD).
+//
+// If __CUDA_ARCH__ is defined, then we are compiling CUDA code in device mode.
+// In device mode, NEON intrinsics are not available, regardless of host
+// platform.
+// https://llvm.org/docs/CompileCudaWithLLVM.html#detecting-clang-vs-nvcc-from-code
+#ifdef ABSL_INTERNAL_HAVE_ARM_NEON
+#error ABSL_INTERNAL_HAVE_ARM_NEON cannot be directly set
+#elif defined(__ARM_NEON) && !defined(__CUDA_ARCH__)
+#define ABSL_INTERNAL_HAVE_ARM_NEON 1
+#endif
 
 #endif  // ABSL_BASE_CONFIG_H_

@@ -222,7 +222,7 @@ public class CodeFieldContainer extends LinearLayout {
                             }
 
 
-                            if (n != length - 1) {
+                            if (n + 1 >= 0 && n + 1 < codeField.length) {
                                 codeField[n + 1].setSelection(codeField[n + 1].length());
                                 codeField[n + 1].requestFocus();
                             }
@@ -271,6 +271,9 @@ public class CodeFieldContainer extends LinearLayout {
     }
 
     public void setText(String code, boolean fromPaste) {
+        if (codeField == null) {
+            return;
+        }
         int startFrom = 0;
         if (fromPaste) {
             for (int i = 0; i < codeField.length; i++) {

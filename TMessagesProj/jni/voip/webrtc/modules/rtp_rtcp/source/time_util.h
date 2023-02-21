@@ -13,6 +13,8 @@
 
 #include <stdint.h>
 
+#include "api/units/time_delta.h"
+#include "rtc_base/numerics/safe_conversions.h"
 #include "system_wrappers/include/ntp_time.h"
 
 namespace webrtc {
@@ -29,14 +31,26 @@ inline uint32_t CompactNtp(NtpTime ntp) {
   return (ntp.seconds() << 16) | (ntp.fractions() >> 16);
 }
 
-// Converts interval in microseconds to compact ntp (1/2^16 seconds) resolution.
+// Converts interval to compact ntp (1/2^16 seconds) resolution.
 // Negative values converted to 0, Overlarge values converted to max uint32_t.
-uint32_t SaturatedUsToCompactNtp(int64_t us);
+uint32_t SaturatedToCompactNtp(TimeDelta delta);
 
-// Converts interval between compact ntp timestamps to milliseconds.
+// Convert interval to the NTP time resolution (1/2^32 seconds ~= 0.2 ns).
+// For deltas with absolute value larger than 35 minutes result is unspecified.
+inline constexpr int64_t ToNtpUnits(TimeDelta delta) {
+  // For better precision `delta` is taken with best TimeDelta precision (us),
+  // then multiplaction and conversion to seconds are swapped to avoid float
+  // arithmetic.
+  // 2^31 us ~= 35.8 minutes.
+  return (rtc::saturated_cast<int32_t>(delta.us()) * (int64_t{1} << 32)) /
+         1'000'000;
+}
+
+// Converts interval from compact ntp (1/2^16 seconds) resolution to TimeDelta.
 // This interval can be up to ~9.1 hours (2^15 seconds).
-// Values close to 2^16 seconds consider negative and result in minimum rtt = 1.
-int64_t CompactNtpRttToMs(uint32_t compact_ntp_interval);
+// Values close to 2^16 seconds are considered negative and are converted to
+// minimum value of 1ms.
+TimeDelta CompactNtpRttToTimeDelta(uint32_t compact_ntp_interval);
 
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_TIME_UTIL_H_

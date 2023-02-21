@@ -12,15 +12,17 @@
 #pragma warning(disable : 4786)
 #endif
 
+#include "rtc_base/socket_adapters.h"
+
 #include <algorithm>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/http_common.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/socket_adapters.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/zero_memory.h"
 
@@ -217,9 +219,9 @@ void AsyncSSLSocket::ProcessInput(char* data, size_t* len) {
 ///////////////////////////////////////////////////////////////////////////////
 
 AsyncHttpsProxySocket::AsyncHttpsProxySocket(Socket* socket,
-                                             const std::string& user_agent,
+                                             absl::string_view user_agent,
                                              const SocketAddress& proxy,
-                                             const std::string& username,
+                                             absl::string_view username,
                                              const CryptString& password)
     : BufferedReadAdapter(socket, 1024),
       proxy_(proxy),
@@ -409,8 +411,9 @@ void AsyncHttpsProxySocket::ProcessLine(char* data, size_t len) {
   } else if ((state_ == PS_AUTHENTICATE) &&
              absl::StartsWithIgnoreCase(data, "Proxy-Authenticate:")) {
     std::string response, auth_method;
-    switch (HttpAuthenticate(data + 19, len - 19, proxy_, "CONNECT", "/", user_,
-                             pass_, context_, response, auth_method)) {
+    switch (HttpAuthenticate(absl::string_view(data + 19, len - 19), proxy_,
+                             "CONNECT", "/", user_, pass_, context_, response,
+                             auth_method)) {
       case HAR_IGNORE:
         RTC_LOG(LS_VERBOSE) << "Ignoring Proxy-Authenticate: " << auth_method;
         if (!unknown_mechanisms_.empty())
@@ -470,7 +473,7 @@ void AsyncHttpsProxySocket::Error(int error) {
 
 AsyncSocksProxySocket::AsyncSocksProxySocket(Socket* socket,
                                              const SocketAddress& proxy,
-                                             const std::string& username,
+                                             absl::string_view username,
                                              const CryptString& password)
     : BufferedReadAdapter(socket, 1024),
       state_(SS_ERROR),

@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/candidate.h"
 #include "api/rtc_error.h"
@@ -38,6 +39,19 @@ struct IceTransportStats {
   // Initially 0 and 1 once the first candidate pair has been selected.
   // The counter is increase also when "unselecting" a connection.
   uint32_t selected_candidate_pair_changes = 0;
+
+  // Bytes/packets sent/received.
+  // note: Is not the same as sum(connection_infos.bytes_sent)
+  // as connections are created and destroyed while the ICE transport
+  // is alive.
+  uint64_t bytes_sent = 0;
+  uint64_t bytes_received = 0;
+  uint64_t packets_sent = 0;
+  uint64_t packets_received = 0;
+
+  IceRole ice_role = ICEROLE_UNKNOWN;
+  std::string ice_local_username_fragment;
+  webrtc::IceTransportState ice_state = webrtc::IceTransportState::kNew;
 };
 
 typedef std::vector<Candidate> Candidates;
@@ -246,11 +260,11 @@ class RTC_EXPORT IceTransportInternal : public rtc::PacketTransportInternal {
   // remoting/protocol/libjingle_transport_factory.cc
   virtual void SetIceProtocolType(IceProtocolType type) {}
 
-  virtual void SetIceCredentials(const std::string& ice_ufrag,
-                                 const std::string& ice_pwd);
+  virtual void SetIceCredentials(absl::string_view ice_ufrag,
+                                 absl::string_view ice_pwd);
 
-  virtual void SetRemoteIceCredentials(const std::string& ice_ufrag,
-                                       const std::string& ice_pwd);
+  virtual void SetRemoteIceCredentials(absl::string_view ice_ufrag,
+                                       absl::string_view ice_pwd);
 
   // The ufrag and pwd in `ice_params` must be set
   // before candidate gathering can start.

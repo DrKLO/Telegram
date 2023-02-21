@@ -17,11 +17,13 @@
 #include <cassert>
 #include <memory>
 
+#include "absl/base/internal/raw_logging.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/internal/cord_rep_btree.h"
 #include "absl/strings/internal/cord_rep_crc.h"
 #include "absl/strings/internal/cord_rep_flat.h"
 #include "absl/strings/internal/cord_rep_ring.h"
+#include "absl/strings/str_cat.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -32,6 +34,11 @@ ABSL_CONST_INIT std::atomic<bool> cord_ring_buffer_enabled(
 ABSL_CONST_INIT std::atomic<bool> shallow_subcords_enabled(
     kCordShallowSubcordsDefault);
 ABSL_CONST_INIT std::atomic<bool> cord_btree_exhaustive_validation(false);
+
+void LogFatalNodeType(CordRep* rep) {
+  ABSL_INTERNAL_LOG(FATAL, absl::StrCat("Unexpected node type: ",
+                                        static_cast<int>(rep->tag)));
+}
 
 void CordRep::Destroy(CordRep* rep) {
   assert(rep != nullptr);

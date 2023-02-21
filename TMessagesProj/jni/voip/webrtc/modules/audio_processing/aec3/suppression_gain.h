@@ -12,6 +12,7 @@
 #define MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_GAIN_H_
 
 #include <array>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -25,7 +26,6 @@
 #include "modules/audio_processing/aec3/nearend_detector.h"
 #include "modules/audio_processing/aec3/render_signal_analyzer.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -36,6 +36,10 @@ class SuppressionGain {
                   int sample_rate_hz,
                   size_t num_capture_channels);
   ~SuppressionGain();
+
+  SuppressionGain(const SuppressionGain&) = delete;
+  SuppressionGain& operator=(const SuppressionGain&) = delete;
+
   void GetGain(
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
           nearend_spectrum,
@@ -48,7 +52,7 @@ class SuppressionGain {
           comfort_noise_spectrum,
       const RenderSignalAnalyzer& render_signal_analyzer,
       const AecState& aec_state,
-      const std::vector<std::vector<std::vector<float>>>& render,
+      const Block& render,
       bool clock_drift,
       float* high_bands_gain,
       std::array<float, kFftLengthBy2Plus1>* low_band_gain);
@@ -68,7 +72,7 @@ class SuppressionGain {
           comfort_noise_spectrum,
       const absl::optional<int>& narrow_peak_band,
       bool saturated_echo,
-      const std::vector<std::vector<std::vector<float>>>& render,
+      const Block& render,
       const std::array<float, kFftLengthBy2Plus1>& low_band_gain) const;
 
   void GainToNoAudibleEcho(const std::array<float, kFftLengthBy2Plus1>& nearend,
@@ -97,7 +101,7 @@ class SuppressionGain {
 
   class LowNoiseRenderDetector {
    public:
-    bool Detect(const std::vector<std::vector<std::vector<float>>>& render);
+    bool Detect(const Block& render);
 
    private:
     float average_power_ = 32768.f * 32768.f;
@@ -115,7 +119,7 @@ class SuppressionGain {
     std::array<float, kFftLengthBy2Plus1> emr_transparent_;
   };
 
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   const Aec3Optimization optimization_;
   const EchoCanceller3Config config_;
@@ -134,8 +138,6 @@ class SuppressionGain {
   // echo spectrum.
   const bool use_unbounded_echo_spectrum_;
   std::unique_ptr<NearendDetector> dominant_nearend_detector_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SuppressionGain);
 };
 
 }  // namespace webrtc

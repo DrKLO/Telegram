@@ -104,7 +104,7 @@ struct RtpConfig {
   // changing codec without recreating the VideoSendStream. Then these
   // fields must be removed, and association between payload type and codec
   // must move above the per-stream level. Ownership could be with
-  // RtpTransportControllerSend, with a reference from PayloadRouter, where
+  // RtpTransportControllerSend, with a reference from RtpVideoSender, where
   // the latter would be responsible for mapping the codec type of encoded
   // images to the right payload type.
   std::string payload_name;

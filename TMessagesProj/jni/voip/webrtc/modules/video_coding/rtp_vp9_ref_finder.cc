@@ -16,17 +16,46 @@
 #include "rtc_base/logging.h"
 
 namespace webrtc {
-
 RtpFrameReferenceFinder::ReturnVector RtpVp9RefFinder::ManageFrame(
     std::unique_ptr<RtpFrameObject> frame) {
-  FrameDecision decision = ManageFrameInternal(frame.get());
+  const RTPVideoHeaderVP9& codec_header = absl::get<RTPVideoHeaderVP9>(
+      frame->GetRtpVideoHeader().video_type_header);
+
+  if (codec_header.temporal_idx != kNoTemporalIdx)
+    frame->SetTemporalIndex(codec_header.temporal_idx);
+  frame->SetSpatialIndex(codec_header.spatial_idx);
+  frame->SetId(codec_header.picture_id & (kFrameIdLength - 1));
+
+  FrameDecision decision;
+  if (codec_header.temporal_idx >= kMaxTemporalLayers ||
+      codec_header.spatial_idx >= kMaxSpatialLayers) {
+    decision = kDrop;
+  } else if (codec_header.flexible_mode) {
+    decision = ManageFrameFlexible(frame.get(), codec_header);
+  } else {
+    if (codec_header.tl0_pic_idx == kNoTl0PicIdx) {
+      RTC_LOG(LS_WARNING) << "TL0PICIDX is expected to be present in "
+                             "non-flexible mode.";
+      decision = kDrop;
+    } else {
+      int64_t unwrapped_tl0 =
+          tl0_unwrapper_.Unwrap(codec_header.tl0_pic_idx & 0xFF);
+      decision = ManageFrameGof(frame.get(), codec_header, unwrapped_tl0);
+
+      if (decision == kStash) {
+        if (stashed_frames_.size() > kMaxStashedFrames) {
+          stashed_frames_.pop_back();
+        }
+
+        stashed_frames_.push_front(
+            {.unwrapped_tl0 = unwrapped_tl0, .frame = std::move(frame)});
+      }
+    }
+  }
 
   RtpFrameReferenceFinder::ReturnVector res;
   switch (decision) {
     case kStash:
-      if (stashed_frames_.size() > kMaxStashedFrames)
-        stashed_frames_.pop_back();
-      stashed_frames_.push_front(std::move(frame));
       return res;
     case kHandOff:
       res.push_back(std::move(frame));
@@ -39,46 +68,28 @@ RtpFrameReferenceFinder::ReturnVector RtpVp9RefFinder::ManageFrame(
   return res;
 }
 
-RtpVp9RefFinder::FrameDecision RtpVp9RefFinder::ManageFrameInternal(
-    RtpFrameObject* frame) {
-  const RTPVideoHeader& video_header = frame->GetRtpVideoHeader();
-  const RTPVideoHeaderVP9& codec_header =
-      absl::get<RTPVideoHeaderVP9>(video_header.video_type_header);
-
-  // Protect against corrupted packets with arbitrary large temporal idx.
-  if (codec_header.temporal_idx >= kMaxTemporalLayers ||
-      codec_header.spatial_idx >= kMaxSpatialLayers)
-    return kDrop;
-
-  frame->SetSpatialIndex(codec_header.spatial_idx);
-  frame->SetId(codec_header.picture_id & (kFrameIdLength - 1));
-
-  if (last_picture_id_ == -1)
-    last_picture_id_ = frame->Id();
-
-  if (codec_header.flexible_mode) {
-    if (codec_header.num_ref_pics > EncodedFrame::kMaxFrameReferences) {
-      return kDrop;
-    }
-    frame->num_references = codec_header.num_ref_pics;
-    for (size_t i = 0; i < frame->num_references; ++i) {
-      frame->references[i] =
-          Subtract<kFrameIdLength>(frame->Id(), codec_header.pid_diff[i]);
-    }
-
-    FlattenFrameIdAndRefs(frame, codec_header.inter_layer_predicted);
-    return kHandOff;
-  }
-
-  if (codec_header.tl0_pic_idx == kNoTl0PicIdx) {
-    RTC_LOG(LS_WARNING) << "TL0PICIDX is expected to be present in "
-                           "non-flexible mode.";
+RtpVp9RefFinder::FrameDecision RtpVp9RefFinder::ManageFrameFlexible(
+    RtpFrameObject* frame,
+    const RTPVideoHeaderVP9& codec_header) {
+  if (codec_header.num_ref_pics > EncodedFrame::kMaxFrameReferences) {
     return kDrop;
   }
 
+  frame->num_references = codec_header.num_ref_pics;
+  for (size_t i = 0; i < frame->num_references; ++i) {
+    frame->references[i] =
+        Subtract<kFrameIdLength>(frame->Id(), codec_header.pid_diff[i]);
+  }
+
+  FlattenFrameIdAndRefs(frame, codec_header.inter_layer_predicted);
+  return kHandOff;
+}
+
+RtpVp9RefFinder::FrameDecision RtpVp9RefFinder::ManageFrameGof(
+    RtpFrameObject* frame,
+    const RTPVideoHeaderVP9& codec_header,
+    int64_t unwrapped_tl0) {
   GofInfo* info;
-  int64_t unwrapped_tl0 =
-      tl0_unwrapper_.Unwrap(codec_header.tl0_pic_idx & 0xFF);
   if (codec_header.ss_data_available) {
     if (codec_header.temporal_idx != 0) {
       RTC_LOG(LS_WARNING) << "Received scalability structure on a non base "
@@ -303,20 +314,23 @@ void RtpVp9RefFinder::RetryStashedFrames(
   bool complete_frame = false;
   do {
     complete_frame = false;
-    for (auto frame_it = stashed_frames_.begin();
-         frame_it != stashed_frames_.end();) {
-      FrameDecision decision = ManageFrameInternal(frame_it->get());
+    for (auto it = stashed_frames_.begin(); it != stashed_frames_.end();) {
+      const RTPVideoHeaderVP9& codec_header = absl::get<RTPVideoHeaderVP9>(
+          it->frame->GetRtpVideoHeader().video_type_header);
+      RTC_DCHECK(!codec_header.flexible_mode);
+      FrameDecision decision =
+          ManageFrameGof(it->frame.get(), codec_header, it->unwrapped_tl0);
 
       switch (decision) {
         case kStash:
-          ++frame_it;
+          ++it;
           break;
         case kHandOff:
           complete_frame = true;
-          res.push_back(std::move(*frame_it));
-          ABSL_FALLTHROUGH_INTENDED;
+          res.push_back(std::move(it->frame));
+          [[fallthrough]];
         case kDrop:
-          frame_it = stashed_frames_.erase(frame_it);
+          it = stashed_frames_.erase(it);
       }
     }
   } while (complete_frame);
@@ -342,7 +356,7 @@ void RtpVp9RefFinder::FlattenFrameIdAndRefs(RtpFrameObject* frame,
 void RtpVp9RefFinder::ClearTo(uint16_t seq_num) {
   auto it = stashed_frames_.begin();
   while (it != stashed_frames_.end()) {
-    if (AheadOf<uint16_t>(seq_num, (*it)->first_seq_num())) {
+    if (AheadOf<uint16_t>(seq_num, it->frame->first_seq_num())) {
       it = stashed_frames_.erase(it);
     } else {
       ++it;

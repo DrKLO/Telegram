@@ -19,7 +19,9 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/array_view.h"
 #include "api/async_resolver_factory.h"
+#include "api/audio/audio_mixer.h"
 #include "api/call/call_factory_interface.h"
 #include "api/fec_controller.h"
 #include "api/function_view.h"
@@ -34,6 +36,7 @@
 #include "api/test/simulated_network.h"
 #include "api/test/stats_observer_interface.h"
 #include "api/test/track_id_stream_info_map.h"
+#include "api/test/video/video_frame_writer.h"
 #include "api/test/video_quality_analyzer_interface.h"
 #include "api/transport/network_control.h"
 #include "api/units/time_delta.h"
@@ -41,6 +44,7 @@
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "media/base/media_constants.h"
+#include "modules/audio_processing/include/audio_processing.h"
 #include "rtc_base/network.h"
 #include "rtc_base/rtc_certificate_generator.h"
 #include "rtc_base/ssl_certificate.h"
@@ -124,7 +128,12 @@ class PeerConnectionE2EQualityTestFixture {
     std::vector<std::string> slides_yuv_file_names;
   };
 
-  // Config for Vp8 simulcast or Vp9 SVC testing.
+  // Config for Vp8 simulcast or non-standard Vp9 SVC testing.
+  //
+  // To configure standard SVC setting, use `scalability_mode` in the
+  // `encoding_params` array.
+  // This configures Vp9 SVC by requesting simulcast layers, the request is
+  // internally converted to a request for SVC layers.
   //
   // SVC support is limited:
   // During SVC testing there is no SFU, so framework will try to emulate SFU
@@ -141,43 +150,186 @@ class PeerConnectionE2EQualityTestFixture {
         : simulcast_streams_count(simulcast_streams_count) {
       RTC_CHECK_GT(simulcast_streams_count, 1);
     }
-    VideoSimulcastConfig(int simulcast_streams_count, int target_spatial_index)
-        : simulcast_streams_count(simulcast_streams_count),
-          target_spatial_index(target_spatial_index) {
-      RTC_CHECK_GT(simulcast_streams_count, 1);
-      RTC_CHECK_GE(target_spatial_index, 0);
-      RTC_CHECK_LT(target_spatial_index, simulcast_streams_count);
-    }
 
     // Specified amount of simulcast streams/SVC layers, depending on which
     // encoder is used.
     int simulcast_streams_count;
-    // Specifies spatial index of the video stream to analyze.
+  };
+
+  // Configuration for the emulated Selective Forward Unit (SFU)
+  //
+  // The framework can optionally filter out frames that are decoded
+  // using an emulated SFU.
+  // When using simulcast or SVC, it's not always desirable to receive
+  // all frames. In a real world call, a SFU will only forward a subset
+  // of the frames.
+  // The emulated SFU is not able to change its configuration dynamically,
+  // if adaptation happens during the call, layers may be dropped and the
+  // analyzer won't receive the required data which will cause wrong results or
+  // test failures.
+  struct EmulatedSFUConfig {
+    EmulatedSFUConfig() {}
+    explicit EmulatedSFUConfig(int target_layer_index)
+        : target_layer_index(target_layer_index) {
+      RTC_CHECK_GE(target_layer_index, 0);
+    }
+
+    EmulatedSFUConfig(absl::optional<int> target_layer_index,
+                      absl::optional<int> target_temporal_index)
+        : target_layer_index(target_layer_index),
+          target_temporal_index(target_temporal_index) {
+      RTC_CHECK_GE(target_temporal_index.value_or(0), 0);
+      if (target_temporal_index)
+        RTC_CHECK_GE(*target_temporal_index, 0);
+    }
+
+    // Specifies simulcast or spatial index of the video stream to analyze.
     // There are 2 cases:
-    // 1. simulcast encoder is used:
-    //    in such case `target_spatial_index` will specify the index of
+    // 1. simulcast encoding is used:
+    //    in such case `target_layer_index` will specify the index of
     //    simulcast stream, that should be analyzed. Other streams will be
     //    dropped.
-    // 2. SVC encoder is used:
-    //    in such case `target_spatial_index` will specify the top interesting
+    // 2. SVC encoding is used:
+    //    in such case `target_layer_index` will specify the top interesting
     //    spatial layer and all layers below, including target one will be
     //    processed. All layers above target one will be dropped.
-    // If not specified than whatever stream will be received will be analyzed.
-    // It requires Selective Forwarding Unit (SFU) to be configured in the
-    // network.
-    absl::optional<int> target_spatial_index;
+    // If not specified then all streams will be received and analyzed.
+    // When set, it instructs the framework to create an emulated Selective
+    // Forwarding Unit (SFU) that will propagate only the requested layers.
+    absl::optional<int> target_layer_index;
+    // Specifies the index of the maximum temporal unit to keep.
+    // If not specified then all temporal layers will be received and analyzed.
+    // When set, it instructs the framework to create an emulated Selective
+    // Forwarding Unit (SFU) that will propagate only up to the requested layer.
+    absl::optional<int> target_temporal_index;
+  };
 
-    // Encoding parameters per simulcast layer. If not empty, `encoding_params`
-    // size have to be equal to `simulcast_streams_count`. Will be used to set
-    // transceiver send encoding params for simulcast layers. Applicable only
-    // for codecs that support simulcast (ex. Vp8) and will be ignored
-    // otherwise. RtpEncodingParameters::rid may be changed by fixture
-    // implementation to ensure signaling correctness.
-    std::vector<RtpEncodingParameters> encoding_params;
+  class VideoResolution {
+   public:
+    // Determines special resolutions, which can't be expressed in terms of
+    // width, height and fps.
+    enum class Spec {
+      // No extra spec set. It describes a regular resolution described by
+      // width, height and fps.
+      kNone,
+      // Describes resolution which contains max value among all sender's
+      // video streams in each dimension (width, height, fps).
+      kMaxFromSender
+    };
+
+    VideoResolution(size_t width, size_t height, int32_t fps);
+    explicit VideoResolution(Spec spec = Spec::kNone);
+
+    bool operator==(const VideoResolution& other) const;
+    bool operator!=(const VideoResolution& other) const {
+      return !(*this == other);
+    }
+
+    size_t width() const { return width_; }
+    void set_width(size_t width) { width_ = width; }
+    size_t height() const { return height_; }
+    void set_height(size_t height) { height_ = height; }
+    int32_t fps() const { return fps_; }
+    void set_fps(int32_t fps) { fps_ = fps; }
+
+    // Returns if it is a regular resolution or not. The resolution is regular
+    // if it's spec is `Spec::kNone`.
+    bool IsRegular() const { return spec_ == Spec::kNone; }
+
+    std::string ToString() const;
+
+   private:
+    size_t width_ = 0;
+    size_t height_ = 0;
+    int32_t fps_ = 0;
+    Spec spec_ = Spec::kNone;
+  };
+
+  class VideoDumpOptions {
+   public:
+    static constexpr int kDefaultSamplingModulo = 1;
+
+    // output_directory - the output directory where stream will be dumped. The
+    // output files' names will be constructed as
+    // <stream_name>_<receiver_name>_<resolution>.<extension> for output dumps
+    // and <stream_name>_<resolution>.<extension> for input dumps.
+    // By default <extension> is "y4m". Resolution is in the format
+    // <width>x<height>_<fps>.
+    // sampling_modulo - the module for the video frames to be dumped. Modulo
+    // equals X means every Xth frame will be written to the dump file. The
+    // value must be greater than 0. (Default: 1)
+    // export_frame_ids - specifies if frame ids should be exported together
+    // with content of the stream. If true, an output file with the same name as
+    // video dump and suffix ".frame_ids.txt" will be created. It will contain
+    // the frame ids in the same order as original frames in the output
+    // file with stream content. File will contain one frame id per line.
+    // (Default: false)
+    // `video_frame_writer_factory` - factory function to create a video frame
+    // writer for input and output video files. (Default: Y4M video writer
+    // factory).
+    explicit VideoDumpOptions(
+        absl::string_view output_directory,
+        int sampling_modulo = kDefaultSamplingModulo,
+        bool export_frame_ids = false,
+        std::function<std::unique_ptr<test::VideoFrameWriter>(
+            absl::string_view file_name_prefix,
+            const VideoResolution& resolution)> video_frame_writer_factory =
+            Y4mVideoFrameWriterFactory);
+    VideoDumpOptions(absl::string_view output_directory, bool export_frame_ids);
+
+    VideoDumpOptions(const VideoDumpOptions&) = default;
+    VideoDumpOptions& operator=(const VideoDumpOptions&) = default;
+    VideoDumpOptions(VideoDumpOptions&&) = default;
+    VideoDumpOptions& operator=(VideoDumpOptions&&) = default;
+
+    std::string output_directory() const { return output_directory_; }
+    int sampling_modulo() const { return sampling_modulo_; }
+    bool export_frame_ids() const { return export_frame_ids_; }
+
+    std::unique_ptr<test::VideoFrameWriter> CreateInputDumpVideoFrameWriter(
+        absl::string_view stream_label,
+        const VideoResolution& resolution) const;
+
+    std::unique_ptr<test::VideoFrameWriter> CreateOutputDumpVideoFrameWriter(
+        absl::string_view stream_label,
+        absl::string_view receiver,
+        const VideoResolution& resolution) const;
+
+    std::string ToString() const;
+
+   private:
+    static std::unique_ptr<test::VideoFrameWriter> Y4mVideoFrameWriterFactory(
+        absl::string_view file_name_prefix,
+        const VideoResolution& resolution);
+    std::string GetInputDumpFileName(absl::string_view stream_label,
+                                     const VideoResolution& resolution) const;
+    // Returns file name for input frame ids dump if `export_frame_ids()` is
+    // true, absl::nullopt otherwise.
+    absl::optional<std::string> GetInputFrameIdsDumpFileName(
+        absl::string_view stream_label,
+        const VideoResolution& resolution) const;
+    std::string GetOutputDumpFileName(absl::string_view stream_label,
+                                      absl::string_view receiver,
+                                      const VideoResolution& resolution) const;
+    // Returns file name for output frame ids dump if `export_frame_ids()` is
+    // true, absl::nullopt otherwise.
+    absl::optional<std::string> GetOutputFrameIdsDumpFileName(
+        absl::string_view stream_label,
+        absl::string_view receiver,
+        const VideoResolution& resolution) const;
+
+    std::string output_directory_;
+    int sampling_modulo_ = 1;
+    bool export_frame_ids_ = false;
+    std::function<std::unique_ptr<test::VideoFrameWriter>(
+        absl::string_view file_name_prefix,
+        const VideoResolution& resolution)>
+        video_frame_writer_factory_;
   };
 
   // Contains properties of single video stream.
   struct VideoConfig {
+    explicit VideoConfig(const VideoResolution& resolution);
     VideoConfig(size_t width, size_t height, int32_t fps)
         : width(width), height(height), fps(fps) {}
     VideoConfig(std::string stream_label,
@@ -190,10 +342,14 @@ class PeerConnectionE2EQualityTestFixture {
           stream_label(std::move(stream_label)) {}
 
     // Video stream width.
-    const size_t width;
+    size_t width;
     // Video stream height.
-    const size_t height;
-    const int32_t fps;
+    size_t height;
+    int32_t fps;
+    VideoResolution GetResolution() const {
+      return VideoResolution(width, height, fps);
+    }
+
     // Have to be unique among all specified configs for all peers in the call.
     // Will be auto generated if omitted.
     absl::optional<std::string> stream_label;
@@ -209,67 +365,42 @@ class PeerConnectionE2EQualityTestFixture {
     // but only on non-lossy networks. See more in documentation to
     // VideoSimulcastConfig.
     absl::optional<VideoSimulcastConfig> simulcast_config;
+    // Configuration for the emulated Selective Forward Unit (SFU).
+    absl::optional<EmulatedSFUConfig> emulated_sfu_config;
+    // Encoding parameters for both singlecast and per simulcast layer.
+    // If singlecast is used, if not empty, a single value can be provided.
+    // If simulcast is used, if not empty, `encoding_params` size have to be
+    // equal to `simulcast_config.simulcast_streams_count`. Will be used to set
+    // transceiver send encoding params for each layer.
+    // RtpEncodingParameters::rid may be changed by fixture implementation to
+    // ensure signaling correctness.
+    std::vector<RtpEncodingParameters> encoding_params;
     // Count of temporal layers for video stream. This value will be set into
     // each RtpEncodingParameters of RtpParameters of corresponding
     // RtpSenderInterface for this video stream.
     absl::optional<int> temporal_layers_count;
-    // Sets the maximum encode bitrate in bps. If this value is not set, the
-    // encoder will be capped at an internal maximum value around 2 Mbps
-    // depending on the resolution. This means that it will never be able to
-    // utilize a high bandwidth link.
-    absl::optional<int> max_encode_bitrate_bps;
-    // Sets the minimum encode bitrate in bps. If this value is not set, the
-    // encoder will use an internal minimum value. Please note that if this
-    // value is set higher than the bandwidth of the link, the encoder will
-    // generate more data than the link can handle regardless of the bandwidth
-    // estimation.
-    absl::optional<int> min_encode_bitrate_bps;
-    // If specified the input stream will be also copied to specified file.
-    // It is actually one of the test's output file, which contains copy of what
-    // was captured during the test for this video stream on sender side.
-    // It is useful when generator is used as input.
-    absl::optional<std::string> input_dump_file_name;
-    // Used only if `input_dump_file_name` is set. Specifies the module for the
-    // video frames to be dumped. Modulo equals X means every Xth frame will be
-    // written to the dump file. The value must be greater than 0.
-    int input_dump_sampling_modulo = 1;
-    // If specified this file will be used as output on the receiver side for
-    // this stream.
-    //
-    // If multiple output streams will be produced by this stream (e.g. when the
-    // stream represented by this `VideoConfig` is received by more than one
-    // peer), output files will be appended with receiver names. If the second
-    // and other receivers will be added in the middle of the call after the
-    // first frame for this stream has been already written to the output file,
-    // then only dumps for newly added peers will be appended with receiver
-    // name, the dump for the first receiver will have name equal to the
-    // specified one. For example:
-    //   * If we have peers A and B and A has `VideoConfig` V_a with
-    //     V_a.output_dump_file_name = "/foo/a_output.yuv", then the stream
-    //     related to V_a will be written into "/foo/a_output.yuv".
-    //   * If we have peers A, B and C and A has `VideoConfig` V_a with
-    //     V_a.output_dump_file_name = "/foo/a_output.yuv", then the stream
-    //     related to V_a will be written for peer B into "/foo/a_output.yuv.B"
-    //     and for peer C into "/foo/a_output.yuv.C"
-    //   * If we have peers A and B and A has `VideoConfig` V_a with
-    //     V_a.output_dump_file_name = "/foo/a_output.yuv", then if after B
-    //     received the first frame related to V_a peer C joined the call, then
-    //     the stream related to V_a will be written for peer B into
-    //     "/foo/a_output.yuv" and for peer C into "/foo/a_output.yuv.C"
-    //
-    // The produced files contains what was rendered for this video stream on
-    // receiver side.
-    absl::optional<std::string> output_dump_file_name;
-    // Used only if `output_dump_file_name` is set. Specifies the module for the
-    // video frames to be dumped. Modulo equals X means every Xth frame will be
-    // written to the dump file. The value must be greater than 0.
-    int output_dump_sampling_modulo = 1;
+    // If specified defines how input should be dumped. It is actually one of
+    // the test's output file, which contains copy of what was captured during
+    // the test for this video stream on sender side. It is useful when
+    // generator is used as input.
+    absl::optional<VideoDumpOptions> input_dump_options;
+    // If specified defines how output should be dumped on the receiver side for
+    // this stream. The produced files contain what was rendered for this video
+    // stream on receiver side per each receiver.
+    absl::optional<VideoDumpOptions> output_dump_options;
+    // If set to true uses fixed frame rate while dumping output video to the
+    // file. Requested `VideoSubscription::fps()` will be used as frame rate.
+    bool output_dump_use_fixed_framerate = false;
     // If true will display input and output video on the user's screen.
     bool show_on_screen = false;
     // If specified, determines a sync group to which this video stream belongs.
     // According to bugs.webrtc.org/4762 WebRTC supports synchronization only
     // for pair of single audio and single video stream.
     absl::optional<std::string> sync_group;
+    // If specified, it will be set into RtpParameters of corresponding
+    // RtpSenderInterface for this video stream.
+    // Note that this setting takes precedence over `content_hint`.
+    absl::optional<DegradationPreference> degradation_preference;
   };
 
   // Contains properties for audio in the call.
@@ -325,6 +456,75 @@ class PeerConnectionE2EQualityTestFixture {
     std::map<std::string, std::string> required_params;
   };
 
+  // Subscription to the remote video streams. It declares which remote stream
+  // peer should receive and in which resolution (width x height x fps).
+  class VideoSubscription {
+   public:
+    // Returns the resolution constructed as maximum from all resolution
+    // dimensions: width, height and fps.
+    static absl::optional<VideoResolution> GetMaxResolution(
+        rtc::ArrayView<const VideoConfig> video_configs);
+    static absl::optional<VideoResolution> GetMaxResolution(
+        rtc::ArrayView<const VideoResolution> resolutions);
+
+    bool operator==(const VideoSubscription& other) const;
+    bool operator!=(const VideoSubscription& other) const {
+      return !(*this == other);
+    }
+
+    // Subscribes receiver to all streams sent by the specified peer with
+    // specified resolution. It will override any resolution that was used in
+    // `SubscribeToAll` independently from methods call order.
+    VideoSubscription& SubscribeToPeer(
+        absl::string_view peer_name,
+        VideoResolution resolution =
+            VideoResolution(VideoResolution::Spec::kMaxFromSender)) {
+      peers_resolution_[std::string(peer_name)] = resolution;
+      return *this;
+    }
+
+    // Subscribes receiver to the all sent streams with specified resolution.
+    // If any stream was subscribed to with `SubscribeTo` method that will
+    // override resolution passed to this function independently from methods
+    // call order.
+    VideoSubscription& SubscribeToAllPeers(
+        VideoResolution resolution =
+            VideoResolution(VideoResolution::Spec::kMaxFromSender)) {
+      default_resolution_ = resolution;
+      return *this;
+    }
+
+    // Returns resolution for specific sender. If no specific resolution was
+    // set for this sender, then will return resolution used for all streams.
+    // If subscription doesn't subscribe to all streams, `absl::nullopt` will be
+    // returned.
+    absl::optional<VideoResolution> GetResolutionForPeer(
+        absl::string_view peer_name) const {
+      auto it = peers_resolution_.find(std::string(peer_name));
+      if (it == peers_resolution_.end()) {
+        return default_resolution_;
+      }
+      return it->second;
+    }
+
+    // Returns a maybe empty list of senders for which peer explicitly
+    // subscribed to with specific resolution.
+    std::vector<std::string> GetSubscribedPeers() const {
+      std::vector<std::string> subscribed_streams;
+      subscribed_streams.reserve(peers_resolution_.size());
+      for (const auto& entry : peers_resolution_) {
+        subscribed_streams.push_back(entry.first);
+      }
+      return subscribed_streams;
+    }
+
+    std::string ToString() const;
+
+   private:
+    absl::optional<VideoResolution> default_resolution_ = absl::nullopt;
+    std::map<std::string, VideoResolution> peers_resolution_;
+  };
+
   // This class is used to fully configure one peer inside the call.
   class PeerConfigurer {
    public:
@@ -357,6 +557,14 @@ class PeerConnectionE2EQualityTestFixture {
     // Set a custom NetEqFactory to be used in the call.
     virtual PeerConfigurer* SetNetEqFactory(
         std::unique_ptr<NetEqFactory> neteq_factory) = 0;
+    virtual PeerConfigurer* SetAudioProcessing(
+        rtc::scoped_refptr<webrtc::AudioProcessing> audio_processing) = 0;
+    virtual PeerConfigurer* SetAudioMixer(
+        rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer) = 0;
+
+    // Forces the Peerconnection to use the network thread as the worker thread.
+    // Ie, worker thread and the network thread is the same thread.
+    virtual PeerConfigurer* SetUseNetworkThreadAsWorkerThread() = 0;
 
     // The parameters of the following 4 methods will be passed to the
     // PeerConnectionInterface implementation that will be created for this
@@ -371,6 +579,11 @@ class PeerConnectionE2EQualityTestFixture {
         std::unique_ptr<rtc::SSLCertificateVerifier> tls_cert_verifier) = 0;
     virtual PeerConfigurer* SetIceTransportFactory(
         std::unique_ptr<IceTransportFactory> factory) = 0;
+    // Flags to set on `cricket::PortAllocator`. These flags will be added
+    // to the default ones that are presented on the port allocator.
+    // For possible values check p2p/base/port_allocator.h.
+    virtual PeerConfigurer* SetPortAllocatorExtraFlags(
+        uint32_t extra_flags) = 0;
 
     // Add new video stream to the call that will be sent from this peer.
     // Default implementation of video frames generator will be used.
@@ -385,6 +598,11 @@ class PeerConnectionE2EQualityTestFixture {
     virtual PeerConfigurer* AddVideoConfig(
         VideoConfig config,
         CapturingDeviceIndex capturing_device_index) = 0;
+    // Sets video subscription for the peer. By default subscription will
+    // include all streams with `VideoSubscription::kSameAsSendStream`
+    // resolution. To override this behavior use this method.
+    virtual PeerConfigurer* SetVideoSubscription(
+        VideoSubscription subscription) = 0;
     // Set the list of video codecs used by the peer during the test. These
     // codecs will be negotiated in SDP during offer/answer exchange. The order
     // of these codecs during negotiation will be the same as in `video_codecs`.
@@ -396,6 +614,22 @@ class PeerConnectionE2EQualityTestFixture {
     // Set the audio stream for the call from this peer. If this method won't
     // be invoked, this peer will send no audio.
     virtual PeerConfigurer* SetAudioConfig(AudioConfig config) = 0;
+
+    // Set if ULP FEC should be used or not. False by default.
+    virtual PeerConfigurer* SetUseUlpFEC(bool value) = 0;
+    // Set if Flex FEC should be used or not. False by default.
+    // Client also must enable `enable_flex_fec_support` in the `RunParams` to
+    // be able to use this feature.
+    virtual PeerConfigurer* SetUseFlexFEC(bool value) = 0;
+    // Specifies how much video encoder target bitrate should be different than
+    // target bitrate, provided by WebRTC stack. Must be greater than 0. Can be
+    // used to emulate overshooting of video encoders. This multiplier will
+    // be applied for all video encoder on both sides for all layers. Bitrate
+    // estimated by WebRTC stack will be multiplied by this multiplier and then
+    // provided into VideoEncoder::SetRates(...). 1.0 by default.
+    virtual PeerConfigurer* SetVideoEncoderBitrateMultiplier(
+        double multiplier) = 0;
+
     // If is set, an RTCEventLog will be saved in that location and it will be
     // available for further analysis.
     virtual PeerConfigurer* SetRtcEventLogPath(std::string path) = 0;
@@ -404,6 +638,8 @@ class PeerConnectionE2EQualityTestFixture {
     virtual PeerConfigurer* SetAecDumpPath(std::string path) = 0;
     virtual PeerConfigurer* SetRTCConfiguration(
         PeerConnectionInterface::RTCConfiguration configuration) = 0;
+    virtual PeerConfigurer* SetRTCOfferAnswerOptions(
+        PeerConnectionInterface::RTCOfferAnswerOptions options) = 0;
     // Set bitrate parameters on PeerConnection. This constraints will be
     // applied to all summed RTP streams for this peer.
     virtual PeerConfigurer* SetBitrateSettings(
@@ -427,15 +663,9 @@ class PeerConnectionE2EQualityTestFixture {
     // it will be shut downed.
     TimeDelta run_duration;
 
-    bool use_ulp_fec = false;
-    bool use_flex_fec = false;
-    // Specifies how much video encoder target bitrate should be different than
-    // target bitrate, provided by WebRTC stack. Must be greater then 0. Can be
-    // used to emulate overshooting of video encoders. This multiplier will
-    // be applied for all video encoder on both sides for all layers. Bitrate
-    // estimated by WebRTC stack will be multiplied on this multiplier and then
-    // provided into VideoEncoder::SetRates(...).
-    double video_encoder_bitrate_multiplier = 1.0;
+    // If set to true peers will be able to use Flex FEC, otherwise they won't
+    // be able to negotiate it even if it's enabled on per peer level.
+    bool enable_flex_fec_support = false;
     // If true will set conference mode in SDP media section for all video
     // tracks for all peers.
     bool use_conference_mode = false;

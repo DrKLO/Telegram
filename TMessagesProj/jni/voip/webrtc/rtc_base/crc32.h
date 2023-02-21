@@ -16,6 +16,8 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace rtc {
 
 // Updates a CRC32 checksum with `len` bytes from `buf`. `initial` holds the
@@ -26,8 +28,8 @@ uint32_t UpdateCrc32(uint32_t initial, const void* buf, size_t len);
 inline uint32_t ComputeCrc32(const void* buf, size_t len) {
   return UpdateCrc32(0, buf, len);
 }
-inline uint32_t ComputeCrc32(const std::string& str) {
-  return ComputeCrc32(str.c_str(), str.size());
+inline uint32_t ComputeCrc32(absl::string_view str) {
+  return ComputeCrc32(str.data(), str.size());
 }
 
 }  // namespace rtc

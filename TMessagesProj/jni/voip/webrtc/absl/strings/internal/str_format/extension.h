@@ -19,6 +19,7 @@
 #include <limits.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ostream>
 
@@ -168,7 +169,7 @@ inline std::ostream& operator<<(std::ostream& os, Flags v) {
   X_VAL(f) X_SEP X_VAL(F) X_SEP X_VAL(e) X_SEP X_VAL(E) X_SEP \
   X_VAL(g) X_SEP X_VAL(G) X_SEP X_VAL(a) X_SEP X_VAL(A) X_SEP \
   /* misc */ \
-  X_VAL(n) X_SEP X_VAL(p)
+  X_VAL(n) X_SEP X_VAL(p) X_SEP X_VAL(v)
 // clang-format on
 
 // This type should not be referenced, it exists only to provide labels
@@ -190,7 +191,7 @@ struct FormatConversionCharInternal {
     c, s,                    // text
     d, i, o, u, x, X,        // int
     f, F, e, E, g, G, a, A,  // float
-    n, p,                    // misc
+    n, p, v,                    // misc
     kNone
   };
   // clang-format on
@@ -290,6 +291,8 @@ class FormatConversionSpecImpl {
     static_assert(offsetof(FormatConversionSpecImpl, conv_) == 0, "");
     return conv_;
   }
+
+  void set_conversion_char(FormatConversionChar c) { conv_ = c; }
 
   // Returns the specified width. If width is unspecfied, it returns a negative
   // value.

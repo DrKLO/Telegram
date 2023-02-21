@@ -116,7 +116,7 @@ MultiplexImageComponentHeader UnpackFrameHeader(const uint8_t* buffer) {
       ByteReader<uint32_t>::ReadBigEndian(buffer + offset);
   offset += sizeof(uint32_t);
 
-  // TODO(nisse): This makes the wire format depend on the numeric values of the
+  // This makes the wire format depend on the numeric values of the
   // VideoCodecType and VideoFrameType enum constants.
   frame_header.codec_type = static_cast<VideoCodecType>(
       ByteReader<uint8_t>::ReadBigEndian(buffer + offset));

@@ -132,7 +132,8 @@ class SplitIterator {
       const absl::string_view text = splitter_->text();
       const absl::string_view d = delimiter_.Find(text, pos_);
       if (d.data() == text.data() + text.size()) state_ = kLastState;
-      curr_ = text.substr(pos_, d.data() - (text.data() + pos_));
+      curr_ = text.substr(pos_,
+                          static_cast<size_t>(d.data() - (text.data() + pos_)));
       pos_ += curr_.size() + d.size();
     } while (!predicate_(curr_));
     return *this;

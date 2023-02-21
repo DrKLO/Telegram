@@ -33,6 +33,8 @@ std::string FlagsToString(Flags v) {
   return s;
 }
 
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
+
 #define ABSL_INTERNAL_X_VAL(id) \
   constexpr absl::FormatConversionChar FormatConversionCharInternal::id;
 ABSL_INTERNAL_CONVERSION_CHARS_EXPAND_(ABSL_INTERNAL_X_VAL, )
@@ -45,21 +47,19 @@ constexpr absl::FormatConversionChar FormatConversionCharInternal::kNone;
 ABSL_INTERNAL_CONVERSION_CHARS_EXPAND_(ABSL_INTERNAL_CHAR_SET_CASE, )
 #undef ABSL_INTERNAL_CHAR_SET_CASE
 
-// NOLINTNEXTLINE(readability-redundant-declaration)
 constexpr FormatConversionCharSet FormatConversionCharSetInternal::kStar;
-// NOLINTNEXTLINE(readability-redundant-declaration)
 constexpr FormatConversionCharSet FormatConversionCharSetInternal::kIntegral;
-// NOLINTNEXTLINE(readability-redundant-declaration)
 constexpr FormatConversionCharSet FormatConversionCharSetInternal::kFloating;
-// NOLINTNEXTLINE(readability-redundant-declaration)
 constexpr FormatConversionCharSet FormatConversionCharSetInternal::kNumeric;
-// NOLINTNEXTLINE(readability-redundant-declaration)
 constexpr FormatConversionCharSet FormatConversionCharSetInternal::kPointer;
+
+#endif  // ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 
 bool FormatSinkImpl::PutPaddedString(string_view value, int width,
                                      int precision, bool left) {
   size_t space_remaining = 0;
-  if (width >= 0) space_remaining = width;
+  if (width >= 0)
+    space_remaining = static_cast<size_t>(width);
   size_t n = value.size();
   if (precision >= 0) n = std::min(n, static_cast<size_t>(precision));
   string_view shown(value.data(), n);

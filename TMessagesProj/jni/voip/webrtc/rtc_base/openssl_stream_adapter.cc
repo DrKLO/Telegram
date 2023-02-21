@@ -16,6 +16,8 @@
 #include <openssl/rand.h>
 #include <openssl/tls1.h>
 #include <openssl/x509v3.h>
+
+#include "absl/strings/string_view.h"
 #ifndef OPENSSL_IS_BORINGSSL
 #include <openssl/dtls1.h>
 #include <openssl/ssl.h>
@@ -40,7 +42,7 @@
 #include "rtc_base/openssl_utility.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/stream.h"
-#include "rtc_base/task_utils/to_queued_task.h"
+#include "rtc_base/string_encode.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/time_utils.h"
 #include "system_wrappers/include/field_trial.h"
@@ -57,6 +59,7 @@
 
 namespace rtc {
 namespace {
+using ::webrtc::SafeTask;
 // SRTP cipher suite table. `internal_name` is used to construct a
 // colon-separated profile strings which is needed by
 // SSL_CTX_set_tlsext_use_srtp().
@@ -327,7 +330,7 @@ void OpenSSLStreamAdapter::SetServerRole(SSLRole role) {
 }
 
 bool OpenSSLStreamAdapter::SetPeerCertificateDigest(
-    const std::string& digest_alg,
+    absl::string_view digest_alg,
     const unsigned char* digest_val,
     size_t digest_len,
     SSLPeerCertificateDigestError* error) {
@@ -353,7 +356,7 @@ bool OpenSSLStreamAdapter::SetPeerCertificateDigest(
   }
 
   peer_certificate_digest_value_.SetData(digest_val, digest_len);
-  peer_certificate_digest_algorithm_ = digest_alg;
+  peer_certificate_digest_algorithm_ = std::string(digest_alg);
 
   if (!peer_cert_chain_) {
     // Normal case, where the digest is set before we obtain the certificate
@@ -387,9 +390,10 @@ std::string OpenSSLStreamAdapter::SslCipherSuiteToName(int cipher_suite) {
   }
   return SSL_CIPHER_standard_name(ssl_cipher);
 #else
+  const int openssl_cipher_id = 0x03000000L | cipher_suite;
   for (const SslCipherMapEntry* entry = kSslCipherMap; entry->rfc_name;
        ++entry) {
-    if (cipher_suite == static_cast<int>(entry->openssl_id)) {
+    if (openssl_cipher_id == static_cast<int>(entry->openssl_id)) {
       return entry->rfc_name;
     }
   }
@@ -445,15 +449,15 @@ bool OpenSSLStreamAdapter::GetSslVersionBytes(int* version) const {
 }
 
 // Key Extractor interface
-bool OpenSSLStreamAdapter::ExportKeyingMaterial(const std::string& label,
+bool OpenSSLStreamAdapter::ExportKeyingMaterial(absl::string_view label,
                                                 const uint8_t* context,
                                                 size_t context_len,
                                                 bool use_context,
                                                 uint8_t* result,
                                                 size_t result_len) {
-  if (SSL_export_keying_material(ssl_, result, result_len, label.c_str(),
-                                 label.length(), const_cast<uint8_t*>(context),
-                                 context_len, use_context) != 1) {
+  if (SSL_export_keying_material(ssl_, result, result_len, label.data(),
+                                 label.length(), context, context_len,
+                                 use_context) != 1) {
     return false;
   }
   return true;
@@ -818,8 +822,9 @@ void OpenSSLStreamAdapter::OnEvent(StreamInterface* stream,
 }
 
 void OpenSSLStreamAdapter::PostEvent(int events, int err) {
-  owner_->PostTask(webrtc::ToQueuedTask(
-      task_safety_, [this, events, err]() { SignalEvent(this, events, err); }));
+  owner_->PostTask(SafeTask(task_safety_.flag(), [this, events, err]() {
+    SignalEvent(this, events, err);
+  }));
 }
 
 void OpenSSLStreamAdapter::SetTimeout(int delay_ms) {
@@ -839,6 +844,8 @@ void OpenSSLStreamAdapter::SetTimeout(int delay_ms) {
             RTC_LOG(LS_INFO) << "DTLS retransmission";
           } else if (res < 0) {
             RTC_LOG(LS_INFO) << "DTLSv1_handle_timeout() return -1";
+            Error("DTLSv1_handle_timeout", res, -1, true);
+            return webrtc::TimeDelta::PlusInfinity();
           }
           ContinueSSL();
         } else {
@@ -954,7 +961,7 @@ int OpenSSLStreamAdapter::ContinueSSL() {
   return 0;
 }
 
-void OpenSSLStreamAdapter::Error(const char* context,
+void OpenSSLStreamAdapter::Error(absl::string_view context,
                                  int err,
                                  uint8_t alert,
                                  bool signal) {
@@ -1127,7 +1134,10 @@ bool OpenSSLStreamAdapter::VerifyPeerCertificate() {
   Buffer computed_digest(digest, digest_length);
   if (computed_digest != peer_certificate_digest_value_) {
     RTC_LOG(LS_WARNING)
-        << "Rejected peer certificate due to mismatched digest.";
+        << "Rejected peer certificate due to mismatched digest using "
+        << peer_certificate_digest_algorithm_ << ". Expected "
+        << rtc::hex_encode_with_delimiter(peer_certificate_digest_value_, ':')
+        << " got " << rtc::hex_encode_with_delimiter(computed_digest, ':');
     return false;
   }
   // Ignore any verification error if the digest matches, since there is no
@@ -1263,7 +1273,7 @@ bool OpenSSLStreamAdapter::IsAcceptableCipher(int cipher, KeyType key_type) {
   return false;
 }
 
-bool OpenSSLStreamAdapter::IsAcceptableCipher(const std::string& cipher,
+bool OpenSSLStreamAdapter::IsAcceptableCipher(absl::string_view cipher,
                                               KeyType key_type) {
   if (key_type == KT_RSA) {
     for (const cipher_list& c : OK_RSA_ciphers) {

@@ -38,6 +38,9 @@ class VideoSourceSinkController {
   void SetSource(rtc::VideoSourceInterface<VideoFrame>* source);
   bool HasSource() const;
 
+  // Requests a refresh frame from the current source, if set.
+  void RequestRefreshFrame();
+
   // Must be called in order for changes to settings to have an effect. This
   // allows you to modify multiple properties in a single push to the sink.
   void PushSourceSinkSettings();
@@ -48,6 +51,8 @@ class VideoSourceSinkController {
   bool rotation_applied() const;
   int resolution_alignment() const;
   const std::vector<rtc::VideoSinkWants::FrameSize>& resolutions() const;
+  bool active() const;
+  absl::optional<rtc::VideoSinkWants::FrameSize> requested_resolution() const;
 
   // Updates the settings stored internally. In order for these settings to be
   // applied to the sink, PushSourceSinkSettings() must subsequently be called.
@@ -58,6 +63,9 @@ class VideoSourceSinkController {
   void SetRotationApplied(bool rotation_applied);
   void SetResolutionAlignment(int resolution_alignment);
   void SetResolutions(std::vector<rtc::VideoSinkWants::FrameSize> resolutions);
+  void SetActive(bool active);
+  void SetRequestedResolution(
+      absl::optional<rtc::VideoSinkWants::FrameSize> requested_resolution);
 
  private:
   rtc::VideoSinkWants CurrentSettingsToSinkWants() const
@@ -83,6 +91,9 @@ class VideoSourceSinkController {
   bool rotation_applied_ RTC_GUARDED_BY(&sequence_checker_) = false;
   int resolution_alignment_ RTC_GUARDED_BY(&sequence_checker_) = 1;
   std::vector<rtc::VideoSinkWants::FrameSize> resolutions_
+      RTC_GUARDED_BY(&sequence_checker_);
+  bool active_ RTC_GUARDED_BY(&sequence_checker_) = true;
+  absl::optional<rtc::VideoSinkWants::FrameSize> requested_resolution_
       RTC_GUARDED_BY(&sequence_checker_);
 };
 

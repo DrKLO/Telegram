@@ -16,8 +16,9 @@ namespace libyuv {
 extern "C" {
 #endif
 
-// This module is for 32 bit Visual C x86 and clangcl
-#if !defined(LIBYUV_DISABLE_X86) && defined(_M_IX86) && defined(_MSC_VER)
+// This module is for 32 bit Visual C x86
+#if !defined(LIBYUV_DISABLE_X86) && defined(_MSC_VER) && \
+    !defined(__clang__) && defined(_M_IX86)
 
 // Offsets for source bytes 0 to 9
 static const uvec8 kShuf0 = {0,   1,   3,   4,   5,   7,   8,   9,

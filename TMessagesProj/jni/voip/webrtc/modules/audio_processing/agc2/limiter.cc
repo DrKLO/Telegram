@@ -14,6 +14,7 @@
 #include <array>
 #include <cmath>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
@@ -95,7 +96,7 @@ void CheckLimiterSampleRate(int sample_rate_hz) {
 
 Limiter::Limiter(int sample_rate_hz,
                  ApmDataDumper* apm_data_dumper,
-                 const std::string& histogram_name)
+                 absl::string_view histogram_name)
     : interp_gain_curve_(apm_data_dumper, histogram_name),
       level_estimator_(sample_rate_hz, apm_data_dumper),
       apm_data_dumper_(apm_data_dumper) {

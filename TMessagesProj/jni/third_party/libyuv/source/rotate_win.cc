@@ -16,8 +16,9 @@ namespace libyuv {
 extern "C" {
 #endif
 
-// This module is for 32 bit Visual C x86 and clangcl
-#if !defined(LIBYUV_DISABLE_X86) && defined(_M_IX86) && defined(_MSC_VER)
+// This module is for 32 bit Visual C x86
+#if !defined(LIBYUV_DISABLE_X86) && defined(_MSC_VER) && \
+    !defined(__clang__) && defined(_M_IX86)
 
 __declspec(naked) void TransposeWx8_SSSE3(const uint8_t* src,
                                           int src_stride,

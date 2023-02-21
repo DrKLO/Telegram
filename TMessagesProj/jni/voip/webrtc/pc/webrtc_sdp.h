@@ -22,6 +22,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/candidate.h"
 #include "api/jsep.h"
 #include "api/jsep_ice_candidate.h"
@@ -66,7 +67,7 @@ RTC_EXPORT std::string SdpSerializeCandidate(
 // jdesc - The JsepSessionDescription deserialized from the SDP string.
 // error - The detail error information when parsing fails.
 // return - true on success, false on failure.
-bool SdpDeserialize(const std::string& message,
+bool SdpDeserialize(absl::string_view message,
                     JsepSessionDescription* jdesc,
                     SdpParseError* error);
 
@@ -77,7 +78,7 @@ bool SdpDeserialize(const std::string& message,
 // candidates - The JsepIceCandidate from the SDP string.
 // error - The detail error information when parsing fails.
 // return - true on success, false on failure.
-RTC_EXPORT bool SdpDeserializeCandidate(const std::string& message,
+RTC_EXPORT bool SdpDeserializeCandidate(absl::string_view message,
                                         JsepIceCandidate* candidate,
                                         SdpParseError* error);
 
@@ -89,8 +90,8 @@ RTC_EXPORT bool SdpDeserializeCandidate(const std::string& message,
 // candidate - The cricket Candidate from the SDP string.
 // error - The detail error information when parsing fails.
 // return - true on success, false on failure.
-RTC_EXPORT bool SdpDeserializeCandidate(const std::string& transport_name,
-                                        const std::string& message,
+RTC_EXPORT bool SdpDeserializeCandidate(absl::string_view transport_name,
+                                        absl::string_view message,
                                         cricket::Candidate* candidate,
                                         SdpParseError* error);
 
@@ -100,7 +101,7 @@ RTC_EXPORT bool SdpDeserializeCandidate(const std::string& transport_name,
 // `error` is not null.
 // If `is_raw` is false, `message` is expected to be prefixed with "a=".
 // If `is_raw` is true, no prefix is expected in `messaage`.
-RTC_EXPORT bool ParseCandidate(const std::string& message,
+RTC_EXPORT bool ParseCandidate(absl::string_view message,
                                cricket::Candidate* candidate,
                                SdpParseError* error,
                                bool is_raw);

@@ -350,11 +350,13 @@ public class AnimatedTextView extends View {
                 toSetTextMoveDown = false;
                 t = 0;
 
-                currentParts = new Part[1];
-                currentParts[0] = new Part(makeLayout(currentText = text, bounds.width()), 0, -1);
-                currentWidth = currentParts[0].width;
-                currentHeight = currentParts[0].layout.getHeight();
-                isRTL = AndroidUtilities.isRTL(currentText);
+                if (!text.equals(currentText)) {
+                    currentParts = new Part[1];
+                    currentParts[0] = new Part(makeLayout(currentText = text, bounds.width()), 0, -1);
+                    currentWidth = currentParts[0].width;
+                    currentHeight = currentParts[0].layout.getHeight();
+                    isRTL = AndroidUtilities.isRTL(currentText);
+                }
 
                 oldParts = null;
                 oldText = null;

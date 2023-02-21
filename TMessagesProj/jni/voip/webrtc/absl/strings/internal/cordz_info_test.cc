@@ -124,7 +124,7 @@ TEST(CordzInfoTest, UntrackCord) {
   CordzInfo* info = data.data.cordz_info();
 
   info->Untrack();
-  EXPECT_THAT(DeleteQueue(), SizeIs(0));
+  EXPECT_THAT(DeleteQueue(), SizeIs(0u));
 }
 
 TEST(CordzInfoTest, UntrackCordWithSnapshot) {
@@ -263,8 +263,9 @@ TEST(CordzInfoTest, StackV2) {
   // resultant formatted stack will be "", but that still equals the stack
   // recorded in CordzInfo, which is also empty. The skip_count is 1 so that the
   // line number of the current stack isn't included in the HasSubstr check.
-  local_stack.resize(absl::GetStackTrace(local_stack.data(), kMaxStackDepth,
-                                         /*skip_count=*/1));
+  local_stack.resize(static_cast<size_t>(
+      absl::GetStackTrace(local_stack.data(), kMaxStackDepth,
+                          /*skip_count=*/1)));
 
   std::string got_stack = FormatStack(info->GetStack());
   std::string expected_stack = FormatStack(local_stack);

@@ -71,9 +71,6 @@ class Waiter {
   Waiter(const Waiter&) = delete;
   Waiter& operator=(const Waiter&) = delete;
 
-  // Destroy any data to track waits.
-  ~Waiter();
-
   // Blocks the calling thread until a matching call to `Post()` or
   // `t` has passed. Returns `true` if woken (`Post()` called),
   // `false` on timeout.
@@ -106,6 +103,12 @@ class Waiter {
 #endif
 
  private:
+  // The destructor must not be called since Mutex/CondVar
+  // can use PerThreadSem/Waiter after the thread exits.
+  // Waiter objects are embedded in ThreadIdentity objects,
+  // which are reused via a freelist and are never destroyed.
+  ~Waiter() = delete;
+
 #if ABSL_WAITER_MODE == ABSL_WAITER_MODE_FUTEX
   // Futexes are defined by specification to be 32-bits.
   // Thus std::atomic<int32_t> must be just an int32_t with lockfree methods.
@@ -136,8 +139,11 @@ class Waiter {
   // REQUIRES: WinHelper::GetLock(this) must be held.
   void InternalCondVarPoke();
 
-  // We can't include Windows.h in our headers, so we use aligned charachter
+  // We can't include Windows.h in our headers, so we use aligned character
   // buffers to define the storage of SRWLOCK and CONDITION_VARIABLE.
+  // SRW locks and condition variables do not need to be explicitly destroyed.
+  // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializesrwlock
+  // https://stackoverflow.com/questions/28975958/why-does-windows-have-no-deleteconditionvariable-function-to-go-together-with
   alignas(void*) unsigned char mu_storage_[sizeof(void*)];
   alignas(void*) unsigned char cv_storage_[sizeof(void*)];
   int waiter_count_;

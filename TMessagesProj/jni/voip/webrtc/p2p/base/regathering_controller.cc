@@ -9,7 +9,9 @@
  */
 
 #include "p2p/base/regathering_controller.h"
-#include "rtc_base/task_utils/to_queued_task.h"
+
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/units/time_delta.h"
 
 namespace webrtc {
 
@@ -18,6 +20,7 @@ BasicRegatheringController::BasicRegatheringController(
     cricket::IceTransportInternal* ice_transport,
     rtc::Thread* thread)
     : config_(config), ice_transport_(ice_transport), thread_(thread) {
+  RTC_DCHECK(thread_);
   RTC_DCHECK_RUN_ON(thread_);
   RTC_DCHECK(ice_transport_);
   ice_transport_->SignalStateChanged.connect(
@@ -58,21 +61,20 @@ void BasicRegatheringController::
   pending_regathering_.reset(new ScopedTaskSafety());
 
   thread_->PostDelayedTask(
-      ToQueuedTask(*pending_regathering_.get(),
-                   [this]() {
-                     RTC_DCHECK_RUN_ON(thread_);
-                     // Only regather when the current session is in the CLEARED
-                     // state (i.e., not running or stopped). It is only
-                     // possible to enter this state when we gather continually,
-                     // so there is an implicit check on continual gathering
-                     // here.
-                     if (allocator_session_ &&
-                         allocator_session_->IsCleared()) {
-                       allocator_session_->RegatherOnFailedNetworks();
-                     }
-                     ScheduleRecurringRegatheringOnFailedNetworks();
-                   }),
-      config_.regather_on_failed_networks_interval);
+      SafeTask(pending_regathering_->flag(),
+               [this]() {
+                 RTC_DCHECK_RUN_ON(thread_);
+                 // Only regather when the current session is in the CLEARED
+                 // state (i.e., not running or stopped). It is only
+                 // possible to enter this state when we gather continually,
+                 // so there is an implicit check on continual gathering
+                 // here.
+                 if (allocator_session_ && allocator_session_->IsCleared()) {
+                   allocator_session_->RegatherOnFailedNetworks();
+                 }
+                 ScheduleRecurringRegatheringOnFailedNetworks();
+               }),
+      TimeDelta::Millis(config_.regather_on_failed_networks_interval));
 }
 
 }  // namespace webrtc

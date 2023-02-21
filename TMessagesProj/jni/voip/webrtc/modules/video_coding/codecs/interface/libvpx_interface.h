@@ -15,10 +15,10 @@
 
 #include <memory>
 
-#include "libvpx/vp8cx.h"
-#include "libvpx/vpx_codec.h"
-#include "libvpx/vpx_encoder.h"
-#include "libvpx/vpx_image.h"
+#include <libvpx/vp8cx.h>
+#include <libvpx/vpx_codec.h>
+#include <libvpx/vpx_encoder.h>
+#include <libvpx/vpx_image.h>
 
 namespace webrtc {
 

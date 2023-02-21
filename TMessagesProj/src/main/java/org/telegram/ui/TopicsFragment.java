@@ -1205,6 +1205,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             getMessagesController().hidePeerSettingsBar(-chatId, null, getCurrentChat());
             updateChatInfo();
         });
+        closeReportSpam.setVisibility(View.GONE);
 
         updateChatInfo();
 

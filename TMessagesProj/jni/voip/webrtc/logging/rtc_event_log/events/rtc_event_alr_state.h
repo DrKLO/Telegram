@@ -12,11 +12,31 @@
 #define LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_ALR_STATE_H_
 
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/units/timestamp.h"
+#include "logging/rtc_event_log/events/rtc_event_definition.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
+#include "logging/rtc_event_log/events/rtc_event_field_extraction.h"
 
 namespace webrtc {
+
+struct LoggedAlrStateEvent {
+  LoggedAlrStateEvent() = default;
+  LoggedAlrStateEvent(Timestamp timestamp, bool in_alr)
+      : timestamp(timestamp), in_alr(in_alr) {}
+
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
+  Timestamp log_time() const { return timestamp; }
+
+  Timestamp timestamp = Timestamp::MinusInfinity();
+  bool in_alr;
+};
 
 class RtcEventAlrState final : public RtcEvent {
  public:
@@ -32,22 +52,26 @@ class RtcEventAlrState final : public RtcEvent {
 
   bool in_alr() const { return in_alr_; }
 
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    return RtcEventAlrState::definition_.EncodeBatch(batch);
+  }
+
+  static RtcEventLogParseStatus Parse(absl::string_view s,
+                                      bool batched,
+                                      std::vector<LoggedAlrStateEvent>& output);
+
  private:
   RtcEventAlrState(const RtcEventAlrState& other);
 
   const bool in_alr_;
-};
 
-struct LoggedAlrStateEvent {
-  LoggedAlrStateEvent() = default;
-  LoggedAlrStateEvent(Timestamp timestamp, bool in_alr)
-      : timestamp(timestamp), in_alr(in_alr) {}
-
-  int64_t log_time_us() const { return timestamp.us(); }
-  int64_t log_time_ms() const { return timestamp.ms(); }
-
-  Timestamp timestamp = Timestamp::MinusInfinity();
-  bool in_alr;
+  static constexpr RtcEventDefinition<RtcEventAlrState,
+                                      LoggedAlrStateEvent,
+                                      bool>
+      definition_{{"AlrState", RtcEventAlrState::kType},
+                  {&RtcEventAlrState::in_alr_,
+                   &LoggedAlrStateEvent::in_alr,
+                   {"in_alr", /*id=*/1, FieldType::kFixed8, /*width=*/1}}};
 };
 
 }  // namespace webrtc

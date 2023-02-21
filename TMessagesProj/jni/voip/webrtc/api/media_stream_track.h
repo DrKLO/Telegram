@@ -13,6 +13,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/media_stream_interface.h"
 #include "api/notifier.h"
 
@@ -41,7 +42,7 @@ class MediaStreamTrack : public Notifier<T> {
   void set_ended() { set_state(MediaStreamTrackInterface::TrackState::kEnded); }
 
  protected:
-  explicit MediaStreamTrack(const std::string& id)
+  explicit MediaStreamTrack(absl::string_view id)
       : enabled_(true), id_(id), state_(MediaStreamTrackInterface::kLive) {}
 
   bool set_state(MediaStreamTrackInterface::TrackState new_state) {

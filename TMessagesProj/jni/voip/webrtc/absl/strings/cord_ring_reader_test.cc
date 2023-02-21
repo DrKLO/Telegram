@@ -126,7 +126,7 @@ TEST(CordRingReaderTest, SeekForward) {
 
   reader.Reset(ring);
   size_t consumed = 0;
-  size_t remaining = ring->length;;
+  size_t remaining = ring->length;
   for (int i = 0; i < flats.size(); ++i) {
     CordRepRing::index_type index = ring->advance(head, i);
     size_t offset = consumed;

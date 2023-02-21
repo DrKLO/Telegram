@@ -97,8 +97,7 @@ bool IsBaseLayer(const RTPVideoHeader& video_header) {
   return true;
 }
 
-#if RTC_TRACE_EVENTS_ENABLED
-const char* FrameTypeToString(VideoFrameType frame_type) {
+[[maybe_unused]] const char* FrameTypeToString(VideoFrameType frame_type) {
   switch (frame_type) {
     case VideoFrameType::kEmptyFrame:
       return "empty";
@@ -111,14 +110,13 @@ const char* FrameTypeToString(VideoFrameType frame_type) {
       return "";
   }
 }
-#endif
 
 bool IsNoopDelay(const VideoPlayoutDelay& delay) {
   return delay.min_ms == -1 && delay.max_ms == -1;
 }
 
 absl::optional<VideoPlayoutDelay> LoadVideoPlayoutDelayOverride(
-    const WebRtcKeyValueConfig* key_value_config) {
+    const FieldTrialsView* key_value_config) {
   RTC_DCHECK(key_value_config);
   FieldTrialOptional<int> playout_delay_min_ms("min_ms", absl::nullopt);
   FieldTrialOptional<int> playout_delay_max_ms("max_ms", absl::nullopt);
@@ -173,7 +171,7 @@ RTPSenderVideo::RTPSenderVideo(const Config& config)
                     this,
                     config.frame_transformer,
                     rtp_sender_->SSRC(),
-                    config.send_transport_queue)
+                    config.task_queue_factory)
               : nullptr),
       include_capture_clock_offset_(!absl::StartsWith(
           config.field_trials->Lookup(kIncludeCaptureClockOffset),
@@ -477,10 +475,8 @@ bool RTPSenderVideo::SendVideo(
     rtc::ArrayView<const uint8_t> payload,
     RTPVideoHeader video_header,
     absl::optional<int64_t> expected_retransmission_time_ms) {
-#if RTC_TRACE_EVENTS_ENABLED
   TRACE_EVENT_ASYNC_STEP1("webrtc", "Video", capture_time_ms, "Send", "type",
                           FrameTypeToString(video_header.frame_type));
-#endif
   RTC_CHECK_RUNS_SERIALIZED(&send_checker_);
 
   if (video_header.frame_type == VideoFrameType::kEmptyFrame)
@@ -534,7 +530,7 @@ bool RTPSenderVideo::SendVideo(
   RTC_DCHECK_LE(packet_capacity, single_packet->capacity());
   single_packet->SetPayloadType(payload_type);
   single_packet->SetTimestamp(rtp_timestamp);
-  single_packet->set_capture_time_ms(capture_time_ms);
+  single_packet->set_capture_time(Timestamp::Millis(capture_time_ms));
 
   // Construct the absolute capture time extension if not provided.
   if (!video_header.absolute_capture_time.has_value()) {
@@ -695,7 +691,7 @@ bool RTPSenderVideo::SendVideo(
 
     // Put packetization finish timestamp into extension.
     if (packet->HasExtension<VideoTimingExtension>()) {
-      packet->set_packetization_finish_time_ms(clock_->TimeInMilliseconds());
+      packet->set_packetization_finish_time(clock_->CurrentTime());
     }
 
     packet->set_fec_protect_packet(use_fec);

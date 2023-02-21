@@ -1083,6 +1083,9 @@ static opus_int64 op_predict_link_start(const OpusSeekRecord *_sr,int _nsr,
       offset2=_sr[srj].offset;
       /*For once, we can subtract with impunity.*/
       den=gp2-gp1;
+      if (den == 0) {
+        return -1;
+      }
       ipart=gp2/den;
       num=offset2-offset1;
       OP_ASSERT(num>0);

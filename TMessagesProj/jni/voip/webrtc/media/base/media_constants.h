@@ -137,6 +137,8 @@ extern const char kH264FmtpSpsPpsIdrInKeyframe[];
 extern const char kH264ProfileLevelConstrainedBaseline[];
 extern const char kH264ProfileLevelConstrainedHigh[];
 
+extern const char kVP9ProfileId[];
+
 #ifndef DISABLE_H265
 // RFC 7798 RTP Payload Format for H.265 video
 RTC_EXPORT extern const char kH265FmtpProfileSpace[];

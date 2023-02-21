@@ -15,8 +15,6 @@
 
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
-
 typedef void* HANDLE;
 
 namespace rtc {
@@ -32,24 +30,27 @@ namespace rtc_win {
 enum Version {
   VERSION_PRE_XP = 0,  // Not supported.
   VERSION_XP = 1,
-  VERSION_SERVER_2003 = 2,  // Also includes XP Pro x64 and Server 2003 R2.
-  VERSION_VISTA = 3,        // Also includes Windows Server 2008.
-  VERSION_WIN7 = 4,         // Also includes Windows Server 2008 R2.
-  VERSION_WIN8 = 5,         // Also includes Windows Server 2012.
-  VERSION_WIN8_1 = 6,       // Also includes Windows Server 2012 R2.
-  VERSION_WIN10 = 7,        // Threshold 1: Version 1507, Build 10240.
-  VERSION_WIN10_TH2 = 8,    // Threshold 2: Version 1511, Build 10586.
-  VERSION_WIN10_RS1 = 9,    // Redstone 1: Version 1607, Build 14393.
-  VERSION_WIN10_RS2 = 10,   // Redstone 2: Version 1703, Build 15063.
-  VERSION_WIN10_RS3 = 11,   // Redstone 3: Version 1709, Build 16299.
-  VERSION_WIN10_RS4 = 12,   // Redstone 4: Version 1803, Build 17134.
-  VERSION_WIN10_RS5 = 13,   // Redstone 5: Version 1809, Build 17763.
-  VERSION_WIN10_19H1 = 14,  // 19H1: Version 1903, Build 18362.
-  VERSION_WIN10_19H2 = 15,  // 19H2: Version 1909, Build 18363.
-  VERSION_WIN10_20H1 = 16,  // 20H1 (Vibranium): Version 2004, Build 19041.
-  // On edit, update tools\metrics\histograms\enums.xml "WindowsVersion" and
-  // "GpuBlacklistFeatureTestResultsWindows2".
-  VERSION_WIN_LAST,  // Indicates error condition.
+  VERSION_SERVER_2003 = 2,   // Also includes XP Pro x64 and Server 2003 R2.
+  VERSION_VISTA = 3,         // Also includes Windows Server 2008.
+  VERSION_WIN7 = 4,          // Also includes Windows Server 2008 R2.
+  VERSION_WIN8 = 5,          // Also includes Windows Server 2012.
+  VERSION_WIN8_1 = 6,        // Also includes Windows Server 2012 R2.
+  VERSION_WIN10 = 7,         // Threshold 1: Version 1507, Build 10240.
+  VERSION_WIN10_TH2 = 8,     // Threshold 2: Version 1511, Build 10586.
+  VERSION_WIN10_RS1 = 9,     // Redstone 1: Version 1607, Build 14393.
+  VERSION_WIN10_RS2 = 10,    // Redstone 2: Version 1703, Build 15063.
+  VERSION_WIN10_RS3 = 11,    // Redstone 3: Version 1709, Build 16299.
+  VERSION_WIN10_RS4 = 12,    // Redstone 4: Version 1803, Build 17134.
+  VERSION_WIN10_RS5 = 13,    // Redstone 5: Version 1809, Build 17763.
+  VERSION_WIN10_19H1 = 14,   // 19H1: Version 1903, Build 18362.
+  VERSION_WIN10_19H2 = 15,   // 19H2: Version 1909, Build 18363.
+  VERSION_WIN10_20H1 = 16,   // 20H1: Version 2004, Build 19041.
+  VERSION_WIN10_20H2 = 17,   // 20H2: Build 19042.
+  VERSION_WIN10_21H1 = 18,   // 21H1: Build 19043.
+  VERSION_WIN10_21H2 = 19,   // 21H2: Build 19044.
+  VERSION_SERVER_2022 = 20,  // Server 2022: Build 20348.
+  VERSION_WIN11 = 21,        // Windows 11: Build 22000.
+  VERSION_WIN_LAST,          // Indicates error condition.
 };
 
 // A rough bucketing of the available types of versions of Windows. This is used
@@ -105,6 +106,9 @@ class OSInfo {
     WOW64_UNKNOWN,
   };
 
+  OSInfo(const OSInfo&) = delete;
+  OSInfo& operator=(const OSInfo&) = delete;
+
   static OSInfo* GetInstance();
 
   Version version() const { return version_; }
@@ -140,8 +144,6 @@ class OSInfo {
   size_t allocation_granularity_;
   WOW64Status wow64_status_;
   std::string processor_model_name_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OSInfo);
 };
 
 // Because this is by far the most commonly-requested value from the above

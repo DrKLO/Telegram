@@ -12,7 +12,7 @@
 #define RTC_BASE_EXPERIMENTS_BANDWIDTH_QUALITY_SCALER_SETTINGS_H_
 
 #include "absl/types/optional.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
@@ -25,7 +25,7 @@ class BandwidthQualityScalerSettings final {
 
  private:
   explicit BandwidthQualityScalerSettings(
-      const WebRtcKeyValueConfig* const key_value_config);
+      const FieldTrialsView* const key_value_config);
 
   FieldTrialOptional<uint32_t> bitrate_state_update_interval_s_;
 };

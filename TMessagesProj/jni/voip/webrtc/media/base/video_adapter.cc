@@ -20,6 +20,7 @@
 #include "media/base/video_common.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/strings/string_builder.h"
 #include "rtc_base/time_utils.h"
 #include "system_wrappers/include/field_trial.h"
 
@@ -121,6 +122,15 @@ Fraction FindScale(int input_width,
 
   return best_scale;
 }
+
+absl::optional<std::pair<int, int>> Swap(
+    const absl::optional<std::pair<int, int>>& in) {
+  if (!in) {
+    return absl::nullopt;
+  }
+  return std::make_pair(in->second, in->first);
+}
+
 }  // namespace
 
 namespace cricket {
@@ -132,7 +142,7 @@ VideoAdapter::VideoAdapter(int source_resolution_alignment)
       adaption_changes_(0),
       previous_width_(0),
       previous_height_(0),
-      variable_start_scale_factor_(webrtc::field_trial::IsEnabled(
+      variable_start_scale_factor_(!webrtc::field_trial::IsDisabled(
           "WebRTC-Video-VariableStartScaleFactor")),
       source_resolution_alignment_(source_resolution_alignment),
       resolution_alignment_(source_resolution_alignment),
@@ -146,8 +156,8 @@ VideoAdapter::~VideoAdapter() {}
 
 bool VideoAdapter::DropFrame(int64_t in_timestamp_ns) {
   int max_fps = max_framerate_request_;
-  if (max_fps_)
-    max_fps = std::min(max_fps, *max_fps_);
+  if (output_format_request_.max_fps)
+    max_fps = std::min(max_fps, *output_format_request_.max_fps);
 
   framerate_controller_.SetMaxFramerate(max_fps);
   return framerate_controller_.ShouldDropFrame(in_timestamp_ns);
@@ -171,13 +181,15 @@ bool VideoAdapter::AdaptFrameResolution(int in_width,
   // orientation.
   absl::optional<std::pair<int, int>> target_aspect_ratio;
   if (in_width > in_height) {
-    target_aspect_ratio = target_landscape_aspect_ratio_;
-    if (max_landscape_pixel_count_)
-      max_pixel_count = std::min(max_pixel_count, *max_landscape_pixel_count_);
+    target_aspect_ratio = output_format_request_.target_landscape_aspect_ratio;
+    if (output_format_request_.max_landscape_pixel_count)
+      max_pixel_count = std::min(
+          max_pixel_count, *output_format_request_.max_landscape_pixel_count);
   } else {
-    target_aspect_ratio = target_portrait_aspect_ratio_;
-    if (max_portrait_pixel_count_)
-      max_pixel_count = std::min(max_pixel_count, *max_portrait_pixel_count_);
+    target_aspect_ratio = output_format_request_.target_portrait_aspect_ratio;
+    if (output_format_request_.max_portrait_pixel_count)
+      max_pixel_count = std::min(
+          max_pixel_count, *output_format_request_.max_portrait_pixel_count);
   }
 
   int target_pixel_count =
@@ -195,7 +207,7 @@ bool VideoAdapter::AdaptFrameResolution(int in_width,
                        << " Input: " << in_width << "x" << in_height
                        << " timestamp: " << in_timestamp_ns
                        << " Output fps: " << max_framerate_request_ << "/"
-                       << max_fps_.value_or(-1)
+                       << output_format_request_.max_fps.value_or(-1)
                        << " alignment: " << resolution_alignment_;
     }
 
@@ -249,7 +261,7 @@ bool VideoAdapter::AdaptFrameResolution(int in_width,
                      << " Scale: " << scale.numerator << "/"
                      << scale.denominator << " Output: " << *out_width << "x"
                      << *out_height << " fps: " << max_framerate_request_ << "/"
-                     << max_fps_.value_or(-1)
+                     << output_format_request_.max_fps.value_or(-1)
                      << " alignment: " << resolution_alignment_;
   }
 
@@ -300,11 +312,27 @@ void VideoAdapter::OnOutputFormatRequest(
     const absl::optional<int>& max_portrait_pixel_count,
     const absl::optional<int>& max_fps) {
   webrtc::MutexLock lock(&mutex_);
-  target_landscape_aspect_ratio_ = target_landscape_aspect_ratio;
-  max_landscape_pixel_count_ = max_landscape_pixel_count;
-  target_portrait_aspect_ratio_ = target_portrait_aspect_ratio;
-  max_portrait_pixel_count_ = max_portrait_pixel_count;
-  max_fps_ = max_fps;
+
+  OutputFormatRequest request = {
+      .target_landscape_aspect_ratio = target_landscape_aspect_ratio,
+      .max_landscape_pixel_count = max_landscape_pixel_count,
+      .target_portrait_aspect_ratio = target_portrait_aspect_ratio,
+      .max_portrait_pixel_count = max_portrait_pixel_count,
+      .max_fps = max_fps};
+
+  if (stashed_output_format_request_) {
+    // Save the output format request for later use in case the encoder making
+    // this call would become active, because currently all active encoders use
+    // requested_resolution instead.
+    stashed_output_format_request_ = request;
+    RTC_LOG(LS_INFO) << "Stashing OnOutputFormatRequest: "
+                     << stashed_output_format_request_->ToString();
+  } else {
+    output_format_request_ = request;
+    RTC_LOG(LS_INFO) << "Setting output_format_request_: "
+                     << output_format_request_.ToString();
+  }
+
   framerate_controller_.Reset();
 }
 
@@ -317,6 +345,60 @@ void VideoAdapter::OnSinkWants(const rtc::VideoSinkWants& sink_wants) {
   max_framerate_request_ = sink_wants.max_framerate_fps;
   resolution_alignment_ = cricket::LeastCommonMultiple(
       source_resolution_alignment_, sink_wants.resolution_alignment);
+
+  if (!sink_wants.aggregates) {
+    RTC_LOG(LS_WARNING)
+        << "These should always be created by VideoBroadcaster!";
+    return;
+  }
+
+  // If requested_resolution is used, and there are no active encoders
+  // that are NOT using requested_resolution (aka newapi), then override
+  // calls to OnOutputFormatRequest and use values from requested_resolution
+  // instead (combined with qualityscaling based on pixel counts above).
+  if (webrtc::field_trial::IsDisabled(
+          "WebRTC-Video-RequestedResolutionOverrideOutputFormatRequest")) {
+    // kill-switch...
+    return;
+  }
+
+  if (!sink_wants.requested_resolution) {
+    if (stashed_output_format_request_) {
+      // because current active_output_format_request is based on
+      // requested_resolution logic, while current encoder(s) doesn't want that,
+      // we have to restore the stashed request.
+      RTC_LOG(LS_INFO) << "Unstashing OnOutputFormatRequest: "
+                       << stashed_output_format_request_->ToString();
+      output_format_request_ = *stashed_output_format_request_;
+      stashed_output_format_request_.reset();
+    }
+    return;
+  }
+
+  if (sink_wants.aggregates->any_active_without_requested_resolution) {
+    return;
+  }
+
+  if (!stashed_output_format_request_) {
+    // The active output format request is about to be rewritten by
+    // request_resolution. We need to save it for later use in case the encoder
+    // which doesn't use request_resolution logic become active in the future.
+    stashed_output_format_request_ = output_format_request_;
+    RTC_LOG(LS_INFO) << "Stashing OnOutputFormatRequest: "
+                     << stashed_output_format_request_->ToString();
+  }
+
+  auto res = *sink_wants.requested_resolution;
+  auto pixel_count = res.width * res.height;
+  output_format_request_.target_landscape_aspect_ratio =
+      std::make_pair(res.width, res.height);
+  output_format_request_.max_landscape_pixel_count = pixel_count;
+  output_format_request_.target_portrait_aspect_ratio =
+      std::make_pair(res.height, res.width);
+  output_format_request_.max_portrait_pixel_count = pixel_count;
+  output_format_request_.max_fps = max_framerate_request_;
+  RTC_LOG(LS_INFO) << "Setting output_format_request_ based on sink_wants: "
+                   << output_format_request_.ToString();
 }
 
 int VideoAdapter::GetTargetPixels() const {
@@ -326,15 +408,61 @@ int VideoAdapter::GetTargetPixels() const {
 
 float VideoAdapter::GetMaxFramerate() const {
   webrtc::MutexLock lock(&mutex_);
-  // Minimum of `max_fps_` and `max_framerate_request_` is used to throttle
-  // frame-rate.
-  int framerate = std::min(max_framerate_request_,
-                           max_fps_.value_or(max_framerate_request_));
+  // Minimum of `output_format_request_.max_fps` and `max_framerate_request_` is
+  // used to throttle frame-rate.
+  int framerate =
+      std::min(max_framerate_request_,
+               output_format_request_.max_fps.value_or(max_framerate_request_));
   if (framerate == std::numeric_limits<int>::max()) {
     return std::numeric_limits<float>::infinity();
   } else {
     return max_framerate_request_;
   }
+}
+
+std::string VideoAdapter::OutputFormatRequest::ToString() const {
+  rtc::StringBuilder oss;
+  oss << "[ ";
+  if (target_landscape_aspect_ratio == Swap(target_portrait_aspect_ratio) &&
+      max_landscape_pixel_count == max_portrait_pixel_count) {
+    if (target_landscape_aspect_ratio) {
+      oss << target_landscape_aspect_ratio->first << "x"
+          << target_landscape_aspect_ratio->second;
+    } else {
+      oss << "unset-resolution";
+    }
+    if (max_landscape_pixel_count) {
+      oss << " max_pixel_count: " << *max_landscape_pixel_count;
+    }
+  } else {
+    oss << "[ landscape: ";
+    if (target_landscape_aspect_ratio) {
+      oss << target_landscape_aspect_ratio->first << "x"
+          << target_landscape_aspect_ratio->second;
+    } else {
+      oss << "unset";
+    }
+    if (max_landscape_pixel_count) {
+      oss << " max_pixel_count: " << *max_landscape_pixel_count;
+    }
+    oss << " ] [ portrait: ";
+    if (target_portrait_aspect_ratio) {
+      oss << target_portrait_aspect_ratio->first << "x"
+          << target_portrait_aspect_ratio->second;
+    }
+    if (max_portrait_pixel_count) {
+      oss << " max_pixel_count: " << *max_portrait_pixel_count;
+    }
+    oss << " ]";
+  }
+  oss << " max_fps: ";
+  if (max_fps) {
+    oss << *max_fps;
+  } else {
+    oss << "unset";
+  }
+  oss << " ]";
+  return oss.Release();
 }
 
 }  // namespace cricket

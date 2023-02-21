@@ -25,8 +25,11 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/synchronization/yield_policy.h"
 #include "rtc_base/system/warn_current_thread_is_deadlocked.h"
+#include "rtc_base/time_utils.h"
 
 namespace rtc {
+
+using ::webrtc::TimeDelta;
 
 Event::Event() : Event(false, false) {}
 
@@ -51,9 +54,12 @@ void Event::Reset() {
   ResetEvent(event_handle_);
 }
 
-bool Event::Wait(const int give_up_after_ms, int /*warn_after_ms*/) {
+bool Event::Wait(TimeDelta give_up_after, TimeDelta /*warn_after*/) {
   ScopedYieldPolicy::YieldExecution();
-  const DWORD ms = give_up_after_ms == kForever ? INFINITE : give_up_after_ms;
+  const DWORD ms =
+      give_up_after.IsPlusInfinity()
+          ? INFINITE
+          : give_up_after.RoundUpTo(webrtc::TimeDelta::Millis(1)).ms();
   return (WaitForSingleObject(event_handle_, ms) == WAIT_OBJECT_0);
 }
 
@@ -108,7 +114,7 @@ void Event::Reset() {
 
 namespace {
 
-timespec GetTimespec(const int milliseconds_from_now) {
+timespec GetTimespec(TimeDelta duration_from_now) {
   timespec ts;
 
   // Get the current time.
@@ -118,17 +124,19 @@ timespec GetTimespec(const int milliseconds_from_now) {
   timeval tv;
   gettimeofday(&tv, nullptr);
   ts.tv_sec = tv.tv_sec;
-  ts.tv_nsec = tv.tv_usec * 1000;
+  ts.tv_nsec = tv.tv_usec * kNumNanosecsPerMicrosec;
 #endif
 
   // Add the specified number of milliseconds to it.
-  ts.tv_sec += (milliseconds_from_now / 1000);
-  ts.tv_nsec += (milliseconds_from_now % 1000) * 1000000;
+  int64_t microsecs_from_now = duration_from_now.us();
+  ts.tv_sec += microsecs_from_now / kNumMicrosecsPerSec;
+  ts.tv_nsec +=
+      (microsecs_from_now % kNumMicrosecsPerSec) * kNumNanosecsPerMicrosec;
 
   // Normalize.
-  if (ts.tv_nsec >= 1000000000) {
+  if (ts.tv_nsec >= kNumNanosecsPerSec) {
     ts.tv_sec++;
-    ts.tv_nsec -= 1000000000;
+    ts.tv_nsec -= kNumNanosecsPerSec;
   }
 
   return ts;
@@ -136,22 +144,21 @@ timespec GetTimespec(const int milliseconds_from_now) {
 
 }  // namespace
 
-bool Event::Wait(const int give_up_after_ms, const int warn_after_ms) {
+bool Event::Wait(TimeDelta give_up_after, TimeDelta warn_after) {
   // Instant when we'll log a warning message (because we've been waiting so
   // long it might be a bug), but not yet give up waiting. nullopt if we
   // shouldn't log a warning.
   const absl::optional<timespec> warn_ts =
-      warn_after_ms == kForever ||
-              (give_up_after_ms != kForever && warn_after_ms > give_up_after_ms)
+      warn_after >= give_up_after
           ? absl::nullopt
-          : absl::make_optional(GetTimespec(warn_after_ms));
+          : absl::make_optional(GetTimespec(warn_after));
 
   // Instant when we'll stop waiting and return an error. nullopt if we should
   // never give up.
   const absl::optional<timespec> give_up_ts =
-      give_up_after_ms == kForever
+      give_up_after.IsPlusInfinity()
           ? absl::nullopt
-          : absl::make_optional(GetTimespec(give_up_after_ms));
+          : absl::make_optional(GetTimespec(give_up_after));
 
   ScopedYieldPolicy::YieldExecution();
   pthread_mutex_lock(&event_mutex_);

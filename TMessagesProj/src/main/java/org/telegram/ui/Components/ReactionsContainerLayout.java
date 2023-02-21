@@ -55,7 +55,6 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -672,7 +671,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             int lastReactionX = 0;
             for (int i = 0; i < recyclerListView.getChildCount(); i++) {
                 View child = recyclerListView.getChildAt(i);
-                if (transitionProgress != 1f) {
+                if (transitionProgress != 1f && allowSmoothEnterTransition()) {
                     float childCenterX = child.getLeft() + child.getMeasuredWidth() / 2f;
                     delay = (int) (200 * ((Math.abs(childCenterX / (float) recyclerListView.getMeasuredWidth() - 0.8f))));
                 }
@@ -715,7 +714,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                                 if (transitionProgress != 1f) {
                                     customEmojiReactionsIconView.resetAnimation();
                                 }
-                                customEmojiReactionsIconView.play(delay);
+                                customEmojiReactionsIconView.play(delay, SharedConfig.playEmojiInKeyboard || SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE);
                                 delay += 30;
                             }
                             lastVisibleViews.add(child);
@@ -925,8 +924,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public void setTransitionProgress(float transitionProgress) {
         this.transitionProgress = transitionProgress;
-        if (parentLayout != null && parentLayout.getPopupWindowLayout() != null) {
-            parentLayout.getPopupWindowLayout().setReactionsTransitionProgress(animatePopup ? transitionProgress : 1);
+        if (parentLayout != null) {
+            parentLayout.setReactionsTransitionProgress(animatePopup && allowSmoothEnterTransition() ? transitionProgress : 1);
         }
         invalidate();
     }
@@ -1051,9 +1050,15 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         this.animatePopup = animatePopup;
         setTransitionProgress(0);
         setAlpha(1f);
-        ObjectAnimator animator = ObjectAnimator.ofFloat(this, ReactionsContainerLayout.TRANSITION_PROGRESS_VALUE, 0f, 1f).setDuration(350);
-        animator.setInterpolator(new OvershootInterpolator(0.5f));
-        animator.start();
+        if (allowSmoothEnterTransition()) {
+            ObjectAnimator animator = ObjectAnimator.ofFloat(this, ReactionsContainerLayout.TRANSITION_PROGRESS_VALUE, 0f, 1f).setDuration(400);
+            animator.setInterpolator(new OvershootInterpolator(1.004f));
+            animator.start();
+        } else {
+            ObjectAnimator animator = ObjectAnimator.ofFloat(this, ReactionsContainerLayout.TRANSITION_PROGRESS_VALUE, 0f, 1f).setDuration(250);
+            animator.setInterpolator(new OvershootInterpolator(0.5f));
+            animator.start();
+        }
     }
 
     public int getTotalWidth() {
@@ -1300,7 +1305,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             resetAnimation();
             currentReaction = react;
             selected = selectedReactions.contains(react);
-            hasEnterAnimation = currentReaction.emojicon != null && (!showCustomEmojiReaction() || allReactionsIsDefault) && !SharedConfig.getLiteMode().enabled();
+            hasEnterAnimation = currentReaction.emojicon != null && (showCustomEmojiReaction() || allReactionsIsDefault) && SharedConfig.getLiteMode().animatedEmojiEnabled() && SharedConfig.getDevicePerformanceClass() > SharedConfig.PERFORMANCE_CLASS_LOW;
             if (currentReaction.emojicon != null) {
                 updateImage(react);
 
@@ -1343,8 +1348,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 TLRPC.TL_availableReaction defaultReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(currentReaction.emojicon);
                 if (defaultReaction != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(defaultReaction.activate_animation, Theme.key_windowBackgroundGray, 1.0f);
-                    if (SharedConfig.getLiteMode().enabled()) {
-                        enterImageView.getImageReceiver().clearImage();
+                    if (!SharedConfig.getLiteMode().animatedEmojiEnabled() || SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW && !SharedConfig.playEmojiInKeyboard) {
+                        loopImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), "60_60_firstframe", null, null, hasEnterAnimation ? null : svgThumb, 0, "tgs", currentReaction, 0);
+                    } else if (!SharedConfig.playEmojiInKeyboard) {
+                        enterImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.appear_animation), ReactionsUtils.APPEAR_ANIMATION_FILTER, null, null, svgThumb, 0, "tgs", react, 0);
                         loopImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.select_animation), "60_60_firstframe", null, null, hasEnterAnimation ? null : svgThumb, 0, "tgs", currentReaction, 0);
                     } else {
                         enterImageView.getImageReceiver().setImage(ImageLocation.getForDocument(defaultReaction.appear_animation), ReactionsUtils.APPEAR_ANIMATION_FILTER, null, null, svgThumb, 0, "tgs", react, 0);
@@ -1596,7 +1603,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             super(context);
         }
 
-        public void play(int delay) {
+        public void play(int delay, boolean animated) {
             isEnter = true;
             invalidate();
             if (valueAnimator != null) {
@@ -1604,17 +1611,22 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 valueAnimator.cancel();
             }
 
-            valueAnimator = ValueAnimator.ofFloat(getScaleX(), 1f);
-            valueAnimator.setInterpolator(AndroidUtilities.overshootInterpolator);
-            valueAnimator.addUpdateListener(animation -> {
-                float s = (float) animation.getAnimatedValue();
-                setScaleX(s);
-                setScaleY(s);
-                customReactionsContainer.invalidate();
-            });
-            valueAnimator.setStartDelay((long) (delay * durationScale));
-            valueAnimator.setDuration(300);
-            valueAnimator.start();
+            if (animated) {
+                valueAnimator = ValueAnimator.ofFloat(getScaleX(), 1f);
+                valueAnimator.setInterpolator(AndroidUtilities.overshootInterpolator);
+                valueAnimator.addUpdateListener(animation -> {
+                    float s = (float) animation.getAnimatedValue();
+                    setScaleX(s);
+                    setScaleY(s);
+                    customReactionsContainer.invalidate();
+                });
+                valueAnimator.setStartDelay((long) (delay * durationScale));
+                valueAnimator.setDuration(300);
+                valueAnimator.start();
+            } else {
+                setScaleX(1f);
+                setScaleY(1f);
+            }
         }
 
         public void resetAnimation() {
@@ -1668,5 +1680,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public void setParentLayout(ChatScrimPopupContainerLayout layout) {
         parentLayout = layout;
+    }
+
+    public static boolean allowSmoothEnterTransition() {
+        return SharedConfig.deviceIsHigh();
     }
 }

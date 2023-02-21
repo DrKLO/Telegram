@@ -435,6 +435,7 @@ void FuzzSocket(DcSctpSocketInterface& socket,
         options.unordered = IsUnordered(flags & 0x01);
         options.max_retransmissions =
             (flags & 0x02) != 0 ? absl::make_optional(0) : absl::nullopt;
+        options.lifecycle_id = LifecycleId(42);
         size_t payload_exponent = (flags >> 2) % 16;
         size_t payload_size = static_cast<size_t>(1) << payload_exponent;
         socket.Send(DcSctpMessage(StreamID(state.GetByte()), PPID(53),

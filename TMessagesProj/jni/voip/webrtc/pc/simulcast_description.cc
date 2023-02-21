@@ -14,7 +14,7 @@
 
 namespace cricket {
 
-SimulcastLayer::SimulcastLayer(const std::string& rid, bool is_paused)
+SimulcastLayer::SimulcastLayer(absl::string_view rid, bool is_paused)
     : rid{rid}, is_paused{is_paused} {
   RTC_DCHECK(!rid.empty());
 }

@@ -48,7 +48,16 @@ class RtpVp9RefFinder {
     uint16_t last_picture_id;
   };
 
-  FrameDecision ManageFrameInternal(RtpFrameObject* frame);
+  struct UnwrappedTl0Frame {
+    int64_t unwrapped_tl0;
+    std::unique_ptr<RtpFrameObject> frame;
+  };
+
+  FrameDecision ManageFrameFlexible(RtpFrameObject* frame,
+                                    const RTPVideoHeaderVP9& vp9_header);
+  FrameDecision ManageFrameGof(RtpFrameObject* frame,
+                               const RTPVideoHeaderVP9& vp9_header,
+                               int64_t unwrapped_tl0);
   void RetryStashedFrames(RtpFrameReferenceFinder::ReturnVector& res);
 
   bool MissingRequiredFrameVp9(uint16_t picture_id, const GofInfo& info);
@@ -60,13 +69,9 @@ class RtpVp9RefFinder {
 
   void FlattenFrameIdAndRefs(RtpFrameObject* frame, bool inter_layer_predicted);
 
-  // Save the last picture id in order to detect when there is a gap in frames
-  // that have not yet been fully received.
-  int last_picture_id_ = -1;
-
   // Frames that have been fully received but didn't have all the information
   // needed to determine their references.
-  std::deque<std::unique_ptr<RtpFrameObject>> stashed_frames_;
+  std::deque<UnwrappedTl0Frame> stashed_frames_;
 
   // Where the current scalability structure is in the
   // `scalability_structures_` array.

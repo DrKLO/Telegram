@@ -353,6 +353,26 @@ FrameDependencyStructure ScalabilityStructureL2T2::DependencyStructure() const {
   return structure;
 }
 
+FrameDependencyStructure ScalabilityStructureL2T3::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 6;
+  structure.num_chains = 2;
+  structure.decode_target_protected_by_chain = {0, 0, 0, 1, 1, 1};
+  auto& t = structure.templates;
+  t.resize(10);
+  t[1].S(0).T(0).Dtis("SSSSSS").ChainDiffs({0, 0});
+  t[6].S(1).T(0).Dtis("---SSS").ChainDiffs({1, 1}).FrameDiffs({1});
+  t[3].S(0).T(2).Dtis("--D--R").ChainDiffs({2, 1}).FrameDiffs({2});
+  t[8].S(1).T(2).Dtis("-----D").ChainDiffs({3, 2}).FrameDiffs({2, 1});
+  t[2].S(0).T(1).Dtis("-DS-RR").ChainDiffs({4, 3}).FrameDiffs({4});
+  t[7].S(1).T(1).Dtis("----DS").ChainDiffs({5, 4}).FrameDiffs({4, 1});
+  t[4].S(0).T(2).Dtis("--D--R").ChainDiffs({6, 5}).FrameDiffs({2});
+  t[9].S(1).T(2).Dtis("-----D").ChainDiffs({7, 6}).FrameDiffs({2, 1});
+  t[0].S(0).T(0).Dtis("SSSRRR").ChainDiffs({8, 7}).FrameDiffs({8});
+  t[5].S(1).T(0).Dtis("---SSS").ChainDiffs({1, 1}).FrameDiffs({8, 1});
+  return structure;
+}
+
 FrameDependencyStructure ScalabilityStructureL3T1::DependencyStructure() const {
   FrameDependencyStructure structure;
   structure.num_decode_targets = 3;
@@ -366,6 +386,29 @@ FrameDependencyStructure ScalabilityStructureL3T1::DependencyStructure() const {
   templates[3].S(1).Dtis("-SS").ChainDiffs({1, 1, 1}).FrameDiffs({1});
   templates[4].S(2).Dtis("--S").ChainDiffs({2, 1, 1}).FrameDiffs({3, 1});
   templates[5].S(2).Dtis("--S").ChainDiffs({2, 1, 1}).FrameDiffs({1});
+  return structure;
+}
+
+FrameDependencyStructure ScalabilityStructureL3T2::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 6;
+  structure.num_chains = 3;
+  structure.decode_target_protected_by_chain = {0, 0, 1, 1, 2, 2};
+  auto& t = structure.templates;
+  t.resize(9);
+  // Templates are shown in the order frames following them appear in the
+  // stream, but in `structure.templates` array templates are sorted by
+  // (`spatial_id`, `temporal_id`) since that is a dependency descriptor
+  // requirement.
+  t[1].S(0).T(0).Dtis("SSSSSS").ChainDiffs({0, 0, 0});
+  t[4].S(1).T(0).Dtis("--SSSS").ChainDiffs({1, 1, 1}).FrameDiffs({1});
+  t[7].S(2).T(0).Dtis("----SS").ChainDiffs({2, 1, 1}).FrameDiffs({1});
+  t[2].S(0).T(1).Dtis("-D-R-R").ChainDiffs({3, 2, 1}).FrameDiffs({3});
+  t[5].S(1).T(1).Dtis("---D-R").ChainDiffs({4, 3, 2}).FrameDiffs({3, 1});
+  t[8].S(2).T(1).Dtis("-----D").ChainDiffs({5, 4, 3}).FrameDiffs({3, 1});
+  t[0].S(0).T(0).Dtis("SSRRRR").ChainDiffs({6, 5, 4}).FrameDiffs({6});
+  t[3].S(1).T(0).Dtis("--SSRR").ChainDiffs({1, 1, 1}).FrameDiffs({6, 1});
+  t[6].S(2).T(0).Dtis("----SS").ChainDiffs({2, 1, 1}).FrameDiffs({6, 1});
   return structure;
 }
 

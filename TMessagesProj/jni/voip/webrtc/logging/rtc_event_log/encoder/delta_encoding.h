@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
 namespace webrtc {
@@ -39,7 +40,7 @@ std::string EncodeDeltas(absl::optional<uint64_t> base,
 // vector, which signals an error.
 // TODO(eladalon): Split into optional and non-optional variants (efficiency).
 std::vector<absl::optional<uint64_t>> DecodeDeltas(
-    const std::string& input,
+    absl::string_view input,
     absl::optional<uint64_t> base,
     size_t num_of_deltas);
 

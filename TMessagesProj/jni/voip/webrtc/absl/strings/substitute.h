@@ -55,6 +55,8 @@
 //   * bool (Printed as "true" or "false")
 //   * pointer types other than char* (Printed as "0x<lower case hex string>",
 //     except that null is printed as "NULL")
+//   * user-defined types via the `AbslStringify()` customization point. See the
+//     documentation for `absl::StrCat` for an explanation on how to use this.
 //
 // If an invalid format string is provided, Substitute returns an empty string
 // and SubstituteAndAppend does not change the provided output string.
@@ -79,6 +81,7 @@
 #include "absl/base/port.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
+#include "absl/strings/internal/stringify_sink.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
@@ -102,14 +105,14 @@ class Arg {
   // Overloads for string-y things
   //
   // Explicitly overload `const char*` so the compiler doesn't cast to `bool`.
-  Arg(const char* value)  // NOLINT(runtime/explicit)
+  Arg(const char* value)  // NOLINT(google-explicit-constructor)
       : piece_(absl::NullSafeStringView(value)) {}
   template <typename Allocator>
   Arg(  // NOLINT
       const std::basic_string<char, std::char_traits<char>, Allocator>&
           value) noexcept
       : piece_(value) {}
-  Arg(absl::string_view value)  // NOLINT(runtime/explicit)
+  Arg(absl::string_view value)  // NOLINT(google-explicit-constructor)
       : piece_(value) {}
 
   // Overloads for primitives
@@ -119,45 +122,67 @@ class Arg {
   // probably using them as 8-bit integers and would probably prefer an integer
   // representation. However, we can't really know, so we make the caller decide
   // what to do.
-  Arg(char value)  // NOLINT(runtime/explicit)
+  Arg(char value)  // NOLINT(google-explicit-constructor)
       : piece_(scratch_, 1) {
     scratch_[0] = value;
   }
   Arg(short value)  // NOLINT(*)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
   Arg(unsigned short value)  // NOLINT(*)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
-  Arg(int value)  // NOLINT(runtime/explicit)
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
+  Arg(int value)  // NOLINT(google-explicit-constructor)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
-  Arg(unsigned int value)  // NOLINT(runtime/explicit)
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
+  Arg(unsigned int value)  // NOLINT(google-explicit-constructor)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
   Arg(long value)  // NOLINT(*)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
   Arg(unsigned long value)  // NOLINT(*)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
   Arg(long long value)  // NOLINT(*)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
   Arg(unsigned long long value)  // NOLINT(*)
       : piece_(scratch_,
-               numbers_internal::FastIntToBuffer(value, scratch_) - scratch_) {}
-  Arg(float value)  // NOLINT(runtime/explicit)
+               static_cast<size_t>(
+                   numbers_internal::FastIntToBuffer(value, scratch_) -
+                   scratch_)) {}
+  Arg(float value)  // NOLINT(google-explicit-constructor)
       : piece_(scratch_, numbers_internal::SixDigitsToBuffer(value, scratch_)) {
   }
-  Arg(double value)  // NOLINT(runtime/explicit)
+  Arg(double value)  // NOLINT(google-explicit-constructor)
       : piece_(scratch_, numbers_internal::SixDigitsToBuffer(value, scratch_)) {
   }
-  Arg(bool value)  // NOLINT(runtime/explicit)
+  Arg(bool value)  // NOLINT(google-explicit-constructor)
       : piece_(value ? "true" : "false") {}
 
-  Arg(Hex hex);  // NOLINT(runtime/explicit)
-  Arg(Dec dec);  // NOLINT(runtime/explicit)
+  template <typename T, typename = typename std::enable_if<
+                            strings_internal::HasAbslStringify<T>::value>::type>
+  Arg(  // NOLINT(google-explicit-constructor)
+      const T& v, strings_internal::StringifySink&& sink = {})
+      : piece_(strings_internal::ExtractStringification(sink, v)) {}
+
+  Arg(Hex hex);  // NOLINT(google-explicit-constructor)
+  Arg(Dec dec);  // NOLINT(google-explicit-constructor)
 
   // vector<bool>::reference and const_reference require special help to convert
   // to `Arg` because it requires two user defined conversions.
@@ -172,7 +197,7 @@ class Arg {
 
   // `void*` values, with the exception of `char*`, are printed as
   // "0x<hex value>". However, in the case of `nullptr`, "NULL" is printed.
-  Arg(const void* value);  // NOLINT(runtime/explicit)
+  Arg(const void* value);  // NOLINT(google-explicit-constructor)
 
   // Normal enums are already handled by the integer formatters.
   // This overload matches only scoped enums.

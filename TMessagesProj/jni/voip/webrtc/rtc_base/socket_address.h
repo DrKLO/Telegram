@@ -12,6 +12,8 @@
 #define RTC_BASE_SOCKET_ADDRESS_H_
 
 #include <string>
+
+#include "absl/strings/string_view.h"
 #ifdef WEBRTC_UNIT_TEST
 #include <ostream>  // no-presubmit-check TODO(webrtc:8982)
 #endif              // WEBRTC_UNIT_TEST
@@ -34,7 +36,7 @@ class RTC_EXPORT SocketAddress {
   // Creates the address with the given host and port. Host may be a
   // literal IP string or a hostname to be resolved later.
   // DCHECKs that port is in valid range (0 to 2^16-1).
-  SocketAddress(const std::string& hostname, int port);
+  SocketAddress(absl::string_view hostname, int port);
 
   // Creates the address with the given IP and port.
   // IP is given as an integer in host byte order. V4 only, to be deprecated.
@@ -69,7 +71,7 @@ class RTC_EXPORT SocketAddress {
 
   // Changes the hostname of this address to the given one.
   // Does not resolve the address; use Resolve to do so.
-  void SetIP(const std::string& hostname);
+  void SetIP(absl::string_view hostname);
 
   // Sets the IP address while retaining the hostname.  Useful for bypassing
   // DNS for a pre-resolved IP.
@@ -129,7 +131,7 @@ class RTC_EXPORT SocketAddress {
   std::string ToResolvedSensitiveString() const;
 
   // Parses hostname:port and [hostname]:port.
-  bool FromString(const std::string& str);
+  bool FromString(absl::string_view str);
 
 #ifdef WEBRTC_UNIT_TEST
   inline std::ostream& operator<<(  // no-presubmit-check TODO(webrtc:8982)

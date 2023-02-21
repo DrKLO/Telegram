@@ -378,9 +378,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public boolean animateMove(RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY, int toX, int toY) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate move");
-        }
         final View view = holder.itemView;
         ChatMessageCell chatMessageCell = null;
         if (holder.itemView instanceof ChatMessageCell) {
@@ -663,9 +660,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     protected void animateMoveImpl(RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate move impl");
-        }
         int fromX = moveInfo.fromX;
         int fromY = moveInfo.fromY;
         int toX = moveInfo.toX;
@@ -886,19 +880,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     @Override
-    public void resetAnimation(RecyclerView.ViewHolder holder) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("reset animation");
-        }
-        super.resetAnimation(holder);
-    }
-
-    @Override
     public boolean animateChange(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder, ItemHolderInfo info,
                                  int fromX, int fromY, int toX, int toY) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate change");
-        }
         if (oldHolder == newHolder) {
             // Don't know how to run change animations when the same view holder is re-used.
             // run a move animation to handle position changes.
@@ -940,9 +923,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     void animateChangeImpl(final ChangeInfo changeInfo) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate change impl");
-        }
         final RecyclerView.ViewHolder holder = changeInfo.oldHolder;
         final View view = holder == null ? null : holder.itemView;
         final RecyclerView.ViewHolder newHolder = changeInfo.newHolder;
@@ -1035,9 +1015,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     @Override
     protected void onAllAnimationsDone() {
         super.onAllAnimationsDone();
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("all animations done");
-        }
 
         recyclerListView.setClipChildren(true);
         while (!runOnAnimationsEnd.isEmpty()) {
@@ -1047,9 +1024,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     private void cancelAnimators() {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("cancel animations");
-        }
         ArrayList<Animator> anim = new ArrayList<>(animators.values());
         animators.clear();
         for (Animator animator : anim) {
@@ -1067,9 +1041,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         }
         super.endAnimation(item);
         restoreTransitionParams(item.itemView);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("end animation");
-        }
     }
 
     private void restoreTransitionParams(View view) {

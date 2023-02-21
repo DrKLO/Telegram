@@ -49,7 +49,6 @@ class VCMSessionInfo {
   // Returns the number of bytes deleted from the session.
   size_t MakeDecodable();
 
-  // TODO(nisse): Used by tests only.
   size_t SessionLength() const;
   int NumPackets() const;
   bool HaveFirstPacket() const;

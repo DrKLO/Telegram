@@ -26,6 +26,7 @@ namespace cricket {
 class BasicPortAllocator;
 class P2PTransportChannel;
 class IceTransportInternal;
+class RelayPortFactoryInterface;
 } // namespace cricket
 
 namespace webrtc {
@@ -98,6 +99,7 @@ private:
 	std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;
 	std::unique_ptr<rtc::BasicNetworkManager> _networkManager;
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;
+    std::unique_ptr<cricket::RelayPortFactoryInterface> _relayPortFactory;
 	std::unique_ptr<cricket::BasicPortAllocator> _portAllocator;
 	std::unique_ptr<webrtc::BasicAsyncResolverFactory> _asyncResolverFactory;
 	std::unique_ptr<cricket::P2PTransportChannel> _transportChannel;

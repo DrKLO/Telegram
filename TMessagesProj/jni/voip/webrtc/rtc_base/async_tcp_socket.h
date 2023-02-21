@@ -17,7 +17,6 @@
 
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 
@@ -30,6 +29,9 @@ class AsyncTCPSocketBase : public AsyncPacketSocket {
  public:
   AsyncTCPSocketBase(Socket* socket, size_t max_packet_size);
   ~AsyncTCPSocketBase() override;
+
+  AsyncTCPSocketBase(const AsyncTCPSocketBase&) = delete;
+  AsyncTCPSocketBase& operator=(const AsyncTCPSocketBase&) = delete;
 
   // Pure virtual methods to send and recv data.
   int Send(const void* pv,
@@ -78,8 +80,6 @@ class AsyncTCPSocketBase : public AsyncPacketSocket {
   Buffer outbuf_;
   size_t max_insize_;
   size_t max_outsize_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncTCPSocketBase);
 };
 
 class AsyncTCPSocket : public AsyncTCPSocketBase {
@@ -93,13 +93,13 @@ class AsyncTCPSocket : public AsyncTCPSocketBase {
   explicit AsyncTCPSocket(Socket* socket);
   ~AsyncTCPSocket() override {}
 
+  AsyncTCPSocket(const AsyncTCPSocket&) = delete;
+  AsyncTCPSocket& operator=(const AsyncTCPSocket&) = delete;
+
   int Send(const void* pv,
            size_t cb,
            const rtc::PacketOptions& options) override;
   void ProcessInput(char* data, size_t* len) override;
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncTCPSocket);
 };
 
 class AsyncTcpListenSocket : public AsyncListenSocket {

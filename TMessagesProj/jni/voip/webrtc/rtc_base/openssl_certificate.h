@@ -18,7 +18,6 @@
 #include <string>
 
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 
@@ -38,9 +37,12 @@ class OpenSSLCertificate final : public SSLCertificate {
       OpenSSLKeyPair* key_pair,
       const SSLIdentityParams& params);
   static std::unique_ptr<OpenSSLCertificate> FromPEMString(
-      const std::string& pem_string);
+      absl::string_view pem_string);
 
   ~OpenSSLCertificate() override;
+
+  OpenSSLCertificate(const OpenSSLCertificate&) = delete;
+  OpenSSLCertificate& operator=(const OpenSSLCertificate&) = delete;
 
   std::unique_ptr<SSLCertificate> Clone() const override;
 
@@ -52,14 +54,14 @@ class OpenSSLCertificate final : public SSLCertificate {
   bool operator!=(const OpenSSLCertificate& other) const;
 
   // Compute the digest of the certificate given algorithm
-  bool ComputeDigest(const std::string& algorithm,
+  bool ComputeDigest(absl::string_view algorithm,
                      unsigned char* digest,
                      size_t size,
                      size_t* length) const override;
 
   // Compute the digest of a certificate as an X509 *
   static bool ComputeDigest(const X509* x509,
-                            const std::string& algorithm,
+                            absl::string_view algorithm,
                             unsigned char* digest,
                             size_t size,
                             size_t* length);
@@ -70,7 +72,6 @@ class OpenSSLCertificate final : public SSLCertificate {
 
  private:
   X509* x509_;  // NOT OWNED
-  RTC_DISALLOW_COPY_AND_ASSIGN(OpenSSLCertificate);
 };
 
 }  // namespace rtc

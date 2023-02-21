@@ -29,8 +29,6 @@ class CallFactory : public CallFactoryInterface {
   Call* CreateCall(const CallConfig& config) override;
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker call_thread_;
-  rtc::scoped_refptr<SharedModuleThread> module_thread_
-      RTC_GUARDED_BY(call_thread_);
 };
 
 }  // namespace webrtc

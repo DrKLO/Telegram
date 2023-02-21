@@ -143,8 +143,8 @@ class CordRepBtreeNavigator {
   // `index_` and `node_` contain the navigation state as the 'path' to the
   // current data edge which is at `node_[0]->Edge(index_[0])`. The contents
   // of these are undefined until the instance is initialized (`height_ >= 0`).
-  uint8_t index_[CordRepBtree::kMaxHeight];
-  CordRepBtree* node_[CordRepBtree::kMaxHeight];
+  uint8_t index_[CordRepBtree::kMaxDepth];
+  CordRepBtree* node_[CordRepBtree::kMaxDepth];
 };
 
 // Returns true if this instance is not empty.
@@ -173,6 +173,7 @@ template <CordRepBtree::EdgeType edge_type>
 inline CordRep* CordRepBtreeNavigator::Init(CordRepBtree* tree) {
   assert(tree != nullptr);
   assert(tree->size() > 0);
+  assert(tree->height() <= CordRepBtree::kMaxHeight);
   int height = height_ = tree->height();
   size_t index = tree->index(edge_type);
   node_[height] = tree;
@@ -206,6 +207,7 @@ inline CordRepBtreeNavigator::Position CordRepBtreeNavigator::Seek(
 inline CordRepBtreeNavigator::Position CordRepBtreeNavigator::InitOffset(
     CordRepBtree* tree, size_t offset) {
   assert(tree != nullptr);
+  assert(tree->height() <= CordRepBtree::kMaxHeight);
   if (ABSL_PREDICT_FALSE(offset >= tree->length)) return {nullptr, 0};
   height_ = tree->height();
   node_[height_] = tree;

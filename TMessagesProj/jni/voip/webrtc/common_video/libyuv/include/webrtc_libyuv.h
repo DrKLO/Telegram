@@ -39,6 +39,7 @@ enum class VideoType {
   kUYVY,
   kMJPEG,
   kBGRA,
+  kNV12,
 };
 
 // This is the max PSNR value our algorithms can return.
@@ -87,10 +88,23 @@ double I420SSE(const I420BufferInterface& ref_buffer,
                const I420BufferInterface& test_buffer);
 
 // Compute PSNR for an I420 frame (all planes).
-// Returns the PSNR in decibel, to a maximum of kInfinitePSNR.
+// Returns the PSNR in decibel, to a maximum of kPerfectPSNR.
 double I420PSNR(const VideoFrame* ref_frame, const VideoFrame* test_frame);
 double I420PSNR(const I420BufferInterface& ref_buffer,
                 const I420BufferInterface& test_buffer);
+
+// Computes the weighted PSNR-YUV for an I420 buffer.
+//
+// For the definition and motivation, see
+// J. Ohm, G. J. Sullivan, H. Schwarz, T. K. Tan and T. Wiegand,
+// "Comparison of the Coding Efficiency of Video Coding Standards—Including
+// High Efficiency Video Coding (HEVC)," in IEEE Transactions on Circuits and
+// Systems for Video Technology, vol. 22, no. 12, pp. 1669-1684, Dec. 2012
+// doi: 10.1109/TCSVT.2012.2221192.
+//
+// Returns the PSNR-YUV in decibel, to a maximum of kPerfectPSNR.
+double I420WeightedPSNR(const I420BufferInterface& ref_buffer,
+                        const I420BufferInterface& test_buffer);
 
 // Compute SSIM for an I420 frame (all planes).
 double I420SSIM(const VideoFrame* ref_frame, const VideoFrame* test_frame);

@@ -109,11 +109,13 @@ public class DrawerActionCell extends FrameLayout {
                 imageView.setImageDrawable(null);
                 lottieImageView.setAnimation(currentLottieId = lottieId, 28, 28);
             } else {
-                Drawable drawable = getResources().getDrawable(resId).mutate();
-                if (drawable != null) {
-                    drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
-                }
-                imageView.setImageDrawable(drawable);
+                post(() -> {
+                    Drawable drawable = getResources().getDrawable(resId).mutate();
+                    if (drawable != null) {
+                        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
+                    }
+                    imageView.setImageDrawable(drawable);
+                });
                 lottieImageView.clearAnimationDrawable();
                 currentLottieId = 0;
             }

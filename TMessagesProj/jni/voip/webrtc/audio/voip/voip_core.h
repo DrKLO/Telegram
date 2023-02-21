@@ -53,9 +53,6 @@ class VoipCore : public VoipEngine,
                  public VoipVolumeControl {
  public:
   // Construct VoipCore with provided arguments.
-  // ProcessThread implementation can be injected by `process_thread`
-  // (mainly for testing purpose) and when set to nullptr, default
-  // implementation will be used.
   VoipCore(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
            rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
            std::unique_ptr<TaskQueueFactory> task_queue_factory,

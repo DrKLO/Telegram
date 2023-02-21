@@ -14,14 +14,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "rtc_base/constructor_magic.h"
-
 namespace webrtc {
 
 class BufferLevelFilter {
  public:
   BufferLevelFilter();
   virtual ~BufferLevelFilter() {}
+
+  BufferLevelFilter(const BufferLevelFilter&) = delete;
+  BufferLevelFilter& operator=(const BufferLevelFilter&) = delete;
+
   virtual void Reset();
 
   // Updates the filter. Current buffer size is `buffer_size_samples`.
@@ -46,8 +48,6 @@ class BufferLevelFilter {
  private:
   int level_factor_;  // Filter factor for the buffer level filter in Q8.
   int filtered_current_level_;  // Filtered current buffer level in Q8.
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BufferLevelFilter);
 };
 
 }  // namespace webrtc

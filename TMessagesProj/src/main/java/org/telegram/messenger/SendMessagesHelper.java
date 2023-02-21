@@ -8145,7 +8145,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     public static Bitmap createVideoThumbnailAtTime(String filePath, long time, int[] orientation, boolean precise) {
         Bitmap bitmap = null;
         if (precise) {
-            AnimatedFileDrawable fileDrawable = new AnimatedFileDrawable(new File(filePath), true, 0, null, null, null, 0, 0, true, null);
+            AnimatedFileDrawable fileDrawable = new AnimatedFileDrawable(new File(filePath), true, 0, 0, null, null, null, 0, 0, true, null);
             bitmap = fileDrawable.getFrameAtTime(time, precise);
             if (orientation != null) {
                 orientation[0] = fileDrawable.getOrientation();

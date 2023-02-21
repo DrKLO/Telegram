@@ -36,7 +36,7 @@ class RtpVideoSenderInterface : public EncodedImageCallback,
   virtual void SetActive(bool active) = 0;
   // Sets the sending status of the rtp modules and appropriately sets the
   // RtpVideoSender to active if any rtp modules are active.
-  virtual void SetActiveModules(const std::vector<bool> active_modules) = 0;
+  virtual void SetActiveModules(std::vector<bool> active_modules) = 0;
   virtual bool IsActive() = 0;
 
   virtual void OnNetworkAvailability(bool network_available) = 0;

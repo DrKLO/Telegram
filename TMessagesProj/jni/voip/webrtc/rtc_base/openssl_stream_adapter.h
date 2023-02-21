@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "rtc_base/buffer.h"
 #ifdef OPENSSL_IS_BORINGSSL
@@ -26,11 +27,11 @@
 #else
 #include "rtc_base/openssl_identity.h"
 #endif
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/stream.h"
 #include "rtc_base/system/rtc_export.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
 
 namespace rtc {
@@ -80,7 +81,7 @@ class OpenSSLStreamAdapter final : public SSLStreamAdapter {
   // Default argument is for compatibility
   void SetServerRole(SSLRole role = SSL_SERVER) override;
   bool SetPeerCertificateDigest(
-      const std::string& digest_alg,
+      absl::string_view digest_alg,
       const unsigned char* digest_val,
       size_t digest_len,
       SSLPeerCertificateDigestError* error = nullptr) override;
@@ -113,7 +114,7 @@ class OpenSSLStreamAdapter final : public SSLStreamAdapter {
   SSLProtocolVersion GetSslVersion() const override;
   bool GetSslVersionBytes(int* version) const override;
   // Key Extractor interface
-  bool ExportKeyingMaterial(const std::string& label,
+  bool ExportKeyingMaterial(absl::string_view label,
                             const uint8_t* context,
                             size_t context_len,
                             bool use_context,
@@ -130,7 +131,7 @@ class OpenSSLStreamAdapter final : public SSLStreamAdapter {
   static bool IsBoringSsl();
 
   static bool IsAcceptableCipher(int cipher, KeyType key_type);
-  static bool IsAcceptableCipher(const std::string& cipher, KeyType key_type);
+  static bool IsAcceptableCipher(absl::string_view cipher, KeyType key_type);
 
   // Use our timeutils.h source of timing in BoringSSL, allowing us to test
   // using a fake clock.
@@ -172,7 +173,7 @@ class OpenSSLStreamAdapter final : public SSLStreamAdapter {
   // `alert` indicates an alert description (one of the SSL_AD constants) to
   // send to the remote endpoint when closing the association. If 0, a normal
   // shutdown will be performed.
-  void Error(const char* context, int err, uint8_t alert, bool signal);
+  void Error(absl::string_view context, int err, uint8_t alert, bool signal);
   void Cleanup(uint8_t alert);
 
   // Flush the input buffers by reading left bytes (for DTLS)

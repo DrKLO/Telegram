@@ -82,9 +82,10 @@ constexpr string_view ConsumeFront(string_view str, size_t len = 1) {
 }
 
 constexpr string_view ConsumeAnyOf(string_view format, const char* chars) {
-  return ContainsChar(chars, GetChar(format, 0))
-             ? ConsumeAnyOf(ConsumeFront(format), chars)
-             : format;
+  while (ContainsChar(chars, GetChar(format, 0))) {
+    format = ConsumeFront(format);
+  }
+  return format;
 }
 
 constexpr bool IsDigit(char c) { return c >= '0' && c <= '9'; }
@@ -98,16 +99,22 @@ struct Integer {
   // If the next character is a '$', consume it.
   // Otherwise, make `this` an invalid positional argument.
   constexpr Integer ConsumePositionalDollar() const {
-    return GetChar(format, 0) == '$' ? Integer{ConsumeFront(format), value}
-                                     : Integer{format, 0};
+    if (GetChar(format, 0) == '$') {
+      return Integer{ConsumeFront(format), value};
+    } else {
+      return Integer{format, 0};
+    }
   }
 };
 
-constexpr Integer ParseDigits(string_view format, int value = 0) {
-  return IsDigit(GetChar(format, 0))
-             ? ParseDigits(ConsumeFront(format),
-                           10 * value + GetChar(format, 0) - '0')
-             : Integer{format, value};
+constexpr Integer ParseDigits(string_view format) {
+  int value = 0;
+  while (IsDigit(GetChar(format, 0))) {
+    value = 10 * value + GetChar(format, 0) - '0';
+    format = ConsumeFront(format);
+  }
+
+  return Integer{format, value};
 }
 
 // Parse digits for a positional argument.
@@ -163,30 +170,36 @@ class ConvParser {
   // If it is '*', we verify that it matches `args_`. `error_` is set if it
   // doesn't match.
   constexpr ConvParser ParseWidth() const {
-    return IsDigit(GetChar(format_, 0))
-               ? SetFormat(ParseDigits(format_).format)
-               : GetChar(format_, 0) == '*'
-                     ? is_positional_
-                           ? VerifyPositional(
-                                 ParsePositional(ConsumeFront(format_)), '*')
-                           : SetFormat(ConsumeFront(format_))
-                                 .ConsumeNextArg('*')
-                     : *this;
+    char first_char = GetChar(format_, 0);
+
+    if (IsDigit(first_char)) {
+      return SetFormat(ParseDigits(format_).format);
+    } else if (first_char == '*') {
+      if (is_positional_) {
+        return VerifyPositional(ParsePositional(ConsumeFront(format_)), '*');
+      } else {
+        return SetFormat(ConsumeFront(format_)).ConsumeNextArg('*');
+      }
+    } else {
+      return *this;
+    }
   }
 
   // Consume the precision.
   // If it is '*', we verify that it matches `args_`. `error_` is set if it
   // doesn't match.
   constexpr ConvParser ParsePrecision() const {
-    return GetChar(format_, 0) != '.'
-               ? *this
-               : GetChar(format_, 1) == '*'
-                     ? is_positional_
-                           ? VerifyPositional(
-                                 ParsePositional(ConsumeFront(format_, 2)), '*')
-                           : SetFormat(ConsumeFront(format_, 2))
-                                 .ConsumeNextArg('*')
-                     : SetFormat(ParseDigits(ConsumeFront(format_)).format);
+    if (GetChar(format_, 0) != '.') {
+      return *this;
+    } else if (GetChar(format_, 1) == '*') {
+      if (is_positional_) {
+        return VerifyPositional(ParsePositional(ConsumeFront(format_, 2)), '*');
+      } else {
+        return SetFormat(ConsumeFront(format_, 2)).ConsumeNextArg('*');
+      }
+    } else {
+      return SetFormat(ParseDigits(ConsumeFront(format_)).format);
+    }
   }
 
   // Consume the length characters.
@@ -197,11 +210,18 @@ class ConvParser {
   // Consume the conversion character and verify that it matches `args_`.
   // `error_` is set if it doesn't match.
   constexpr ConvParser ParseConversion() const {
-    return is_positional_
-               ? VerifyPositional({ConsumeFront(format_), arg_position_},
-                                  GetChar(format_, 0))
-               : ConsumeNextArg(GetChar(format_, 0))
-                     .SetFormat(ConsumeFront(format_));
+    char first_char = GetChar(format_, 0);
+
+    if (first_char == 'v' && *(format_.data() - 1) != '%') {
+      return SetError(true);
+    }
+
+    if (is_positional_) {
+      return VerifyPositional({ConsumeFront(format_), arg_position_},
+                              first_char);
+    } else {
+      return ConsumeNextArg(first_char).SetFormat(ConsumeFront(format_));
+    }
   }
 
   constexpr ConvParser(string_view format, ConvList args, bool error,
@@ -224,8 +244,13 @@ class ConvParser {
   // `format()` will be set to the character after the conversion character.
   // `error()` will be set if any of the arguments do not match.
   constexpr ConvParser Run() const {
-    return (is_positional_ ? ParseArgPosition(ParsePositional(format_)) : *this)
-        .ParseFlags()
+    ConvParser parser = *this;
+
+    if (is_positional_) {
+      parser = ParseArgPosition(ParsePositional(format_));
+    }
+
+    return parser.ParseFlags()
         .ParseWidth()
         .ParsePrecision()
         .ParseLength()
@@ -262,29 +287,40 @@ class FormatParser {
   // We use an inner function to increase the recursion limit.
   // The inner function consumes up to `limit` characters on every run.
   // This increases the limit from 512 to ~512*limit.
-  static constexpr string_view ConsumeNonPercentInner(string_view format,
-                                                      int limit = 20) {
-    return FoundPercent(format) || !limit
-               ? format
-               : ConsumeNonPercentInner(
-                     ConsumeFront(format, GetChar(format, 0) == '%' &&
-                                                  GetChar(format, 1) == '%'
-                                              ? 2
-                                              : 1),
-                     limit - 1);
+  static constexpr string_view ConsumeNonPercentInner(string_view format) {
+    int limit = 20;
+    while (!FoundPercent(format) && limit != 0) {
+      size_t len = 0;
+
+      if (GetChar(format, 0) == '%' && GetChar(format, 1) == '%') {
+        len = 2;
+      } else {
+        len = 1;
+      }
+
+      format = ConsumeFront(format, len);
+      --limit;
+    }
+
+    return format;
   }
 
   // Consume characters until the next conversion spec %.
   // It skips %%.
   static constexpr string_view ConsumeNonPercent(string_view format) {
-    return FoundPercent(format)
-               ? format
-               : ConsumeNonPercent(ConsumeNonPercentInner(format));
+    while (!FoundPercent(format)) {
+      format = ConsumeNonPercentInner(format);
+    }
+
+    return format;
   }
 
   static constexpr bool IsPositional(string_view format) {
-    return IsDigit(GetChar(format, 0)) ? IsPositional(ConsumeFront(format))
-                                       : GetChar(format, 0) == '$';
+    while (IsDigit(GetChar(format, 0))) {
+      format = ConsumeFront(format);
+    }
+
+    return GetChar(format, 0) == '$';
   }
 
   constexpr bool RunImpl(bool is_positional) const {

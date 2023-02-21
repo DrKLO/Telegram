@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "benchmark/benchmark.h"
+#include "absl/algorithm/container.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -34,9 +35,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/internal/hashtable_debug.h"
-#include "absl/flags/flag.h"
 #include "absl/hash/hash.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
+#include "absl/random/random.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
@@ -732,6 +734,29 @@ double ContainerInfo(const btree_map<int, BigTypePtr<Size>>& b) {
   MY_BENCHMARK3(btree_256_map_size##SIZE##copies##SIZE##ptr)
 
 BIG_TYPE_PTR_BENCHMARKS(32);
+
+void BM_BtreeSet_IteratorSubtraction(benchmark::State& state) {
+  absl::InsecureBitGen bitgen;
+  std::vector<int> vec;
+  // Randomize the set's insertion order so the nodes aren't all full.
+  vec.reserve(state.range(0));
+  for (int i = 0; i < state.range(0); ++i) vec.push_back(i);
+  absl::c_shuffle(vec, bitgen);
+
+  absl::btree_set<int> set;
+  for (int i : vec) set.insert(i);
+
+  size_t distance = absl::Uniform(bitgen, 0u, set.size());
+  while (state.KeepRunningBatch(distance)) {
+    size_t end = absl::Uniform(bitgen, distance, set.size());
+    size_t begin = end - distance;
+    benchmark::DoNotOptimize(set.find(static_cast<int>(end)) -
+                             set.find(static_cast<int>(begin)));
+    distance = absl::Uniform(bitgen, 0u, set.size());
+  }
+}
+
+BENCHMARK(BM_BtreeSet_IteratorSubtraction)->Range(1 << 10, 1 << 20);
 
 }  // namespace
 }  // namespace container_internal

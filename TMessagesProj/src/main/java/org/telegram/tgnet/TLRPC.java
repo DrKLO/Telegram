@@ -8,6 +8,7 @@
 
 package org.telegram.tgnet;
 
+import android.graphics.Path;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.text.TextUtils;
@@ -20,6 +21,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
@@ -58789,12 +58791,13 @@ public class TLRPC {
 
     public static class TL_photoPathSize extends PhotoSize {
         public static int constructor = 0xd8214d41;
-
+        public Path svgPath;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             type = stream.readString(exception);
             bytes = stream.readByteArray(exception);
             w = h = 50;
+            svgPath = SvgHelper.doPath(SvgHelper.decompress(bytes));
         }
 
         public void serializeToStream(AbstractSerializedData stream) {

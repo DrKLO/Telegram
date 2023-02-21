@@ -18,8 +18,8 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 
@@ -39,9 +39,12 @@ class BoringSSLCertificate final : public SSLCertificate {
       OpenSSLKeyPair* key_pair,
       const SSLIdentityParams& params);
   static std::unique_ptr<BoringSSLCertificate> FromPEMString(
-      const std::string& pem_string);
+      absl::string_view pem_string);
 
   ~BoringSSLCertificate() override;
+
+  BoringSSLCertificate(const BoringSSLCertificate&) = delete;
+  BoringSSLCertificate& operator=(const BoringSSLCertificate&) = delete;
 
   std::unique_ptr<SSLCertificate> Clone() const override;
 
@@ -53,14 +56,14 @@ class BoringSSLCertificate final : public SSLCertificate {
   bool operator!=(const BoringSSLCertificate& other) const;
 
   // Compute the digest of the certificate given `algorithm`.
-  bool ComputeDigest(const std::string& algorithm,
+  bool ComputeDigest(absl::string_view algorithm,
                      unsigned char* digest,
                      size_t size,
                      size_t* length) const override;
 
   // Compute the digest of a certificate as a CRYPTO_BUFFER.
   static bool ComputeDigest(const CRYPTO_BUFFER* cert_buffer,
-                            const std::string& algorithm,
+                            absl::string_view algorithm,
                             unsigned char* digest,
                             size_t size,
                             size_t* length);
@@ -72,7 +75,6 @@ class BoringSSLCertificate final : public SSLCertificate {
  private:
   // A handle to the DER encoded certificate data.
   bssl::UniquePtr<CRYPTO_BUFFER> cert_buffer_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(BoringSSLCertificate);
 };
 
 }  // namespace rtc

@@ -129,7 +129,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             return;
         }
 
-        fromRadius = chatActivityEnterView.getRecordCicle().drawingCircleRadius;
+        ChatActivityEnterView.RecordCircle recordCircle = chatActivityEnterView.getRecordCircle();
+        fromRadius = recordCircle == null ? 0 : recordCircle.drawingCircleRadius;
         bitmapPaint.setFilterBitmap(true);
         currentMessageObject = messageView.getMessageObject();
 
@@ -139,7 +140,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
         messageView.setEnterTransitionInProgress(true);
 
-        CharSequence editText = chatActivityEnterView.getEditField().getLayout().getText();
+        CharSequence editText = chatActivityEnterView.getEditText();
         CharSequence text = messageView.getMessageObject().messageText;
 
         crossfade = false;

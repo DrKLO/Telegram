@@ -99,19 +99,28 @@ void CascadedBiQuadFilter::ApplyBiQuad(rtc::ArrayView<const float> x,
                                        rtc::ArrayView<float> y,
                                        CascadedBiQuadFilter::BiQuad* biquad) {
   RTC_DCHECK_EQ(x.size(), y.size());
-  const auto* c_b = biquad->coefficients.b;
-  const auto* c_a = biquad->coefficients.a;
-  auto* m_x = biquad->x;
-  auto* m_y = biquad->y;
+  const float c_a_0 = biquad->coefficients.a[0];
+  const float c_a_1 = biquad->coefficients.a[1];
+  const float c_b_0 = biquad->coefficients.b[0];
+  const float c_b_1 = biquad->coefficients.b[1];
+  const float c_b_2 = biquad->coefficients.b[2];
+  float m_x_0 = biquad->x[0];
+  float m_x_1 = biquad->x[1];
+  float m_y_0 = biquad->y[0];
+  float m_y_1 = biquad->y[1];
   for (size_t k = 0; k < x.size(); ++k) {
     const float tmp = x[k];
-    y[k] = c_b[0] * tmp + c_b[1] * m_x[0] + c_b[2] * m_x[1] - c_a[0] * m_y[0] -
-           c_a[1] * m_y[1];
-    m_x[1] = m_x[0];
-    m_x[0] = tmp;
-    m_y[1] = m_y[0];
-    m_y[0] = y[k];
+    y[k] = c_b_0 * tmp + c_b_1 * m_x_0 + c_b_2 * m_x_1 - c_a_0 * m_y_0 -
+           c_a_1 * m_y_1;
+    m_x_1 = m_x_0;
+    m_x_0 = tmp;
+    m_y_1 = m_y_0;
+    m_y_0 = y[k];
   }
+  biquad->x[0] = m_x_0;
+  biquad->x[1] = m_x_1;
+  biquad->y[0] = m_y_0;
+  biquad->y[1] = m_y_1;
 }
 
 }  // namespace webrtc

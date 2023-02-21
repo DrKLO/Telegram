@@ -152,7 +152,7 @@ struct GroupInstanceDescriptor {
     bool disableIncomingChannels{false};
     std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
     std::shared_ptr<VideoCaptureInterface> videoCapture; // deprecated
-    std::function<webrtc::VideoTrackSourceInterface*()> getVideoSource;
+    std::function<rtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource;
     std::function<std::shared_ptr<BroadcastPartTask>(std::function<void(int64_t)>)> requestCurrentTime;
     std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> requestAudioBroadcastPart;
     std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> requestVideoBroadcastPart;
@@ -190,7 +190,7 @@ public:
     virtual void setIsMuted(bool isMuted) = 0;
     virtual void setIsNoiseSuppressionEnabled(bool isNoiseSuppressionEnabled) = 0;
     virtual void setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) = 0;
-    virtual void setVideoSource(std::function<webrtc::VideoTrackSourceInterface*()> getVideoSource) = 0;
+    virtual void setVideoSource(std::function<rtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> getVideoSource) = 0;
     virtual void setAudioOutputDevice(std::string id) = 0;
     virtual void setAudioInputDevice(std::string id) = 0;
     virtual void addExternalAudioSamples(std::vector<uint8_t> &&samples) = 0;

@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
+
 #if !defined(WEBRTC_EXTERNAL_JSON)
 #include "json/json.h"
 #else
@@ -62,22 +64,20 @@ Json::Value DoubleVectorToJsonArray(const std::vector<double>& in);
 
 // Pull values out of a JSON object.
 bool GetValueFromJsonObject(const Json::Value& in,
-                            const std::string& k,
+                            absl::string_view k,
                             Json::Value* out);
-bool GetIntFromJsonObject(const Json::Value& in,
-                          const std::string& k,
-                          int* out);
+bool GetIntFromJsonObject(const Json::Value& in, absl::string_view k, int* out);
 bool GetUIntFromJsonObject(const Json::Value& in,
-                           const std::string& k,
+                           absl::string_view k,
                            unsigned int* out);
 bool GetStringFromJsonObject(const Json::Value& in,
-                             const std::string& k,
+                             absl::string_view k,
                              std::string* out);
 bool GetBoolFromJsonObject(const Json::Value& in,
-                           const std::string& k,
+                           absl::string_view k,
                            bool* out);
 bool GetDoubleFromJsonObject(const Json::Value& in,
-                             const std::string& k,
+                             absl::string_view k,
                              double* out);
 
 // Writes out a Json value as a string.

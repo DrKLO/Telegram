@@ -12,7 +12,6 @@
 
 #include "api/scoped_refptr.h"
 #include "common_video/include/video_frame_buffer.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/time_utils.h"
 #include "sdk/android/generated_video_jni/VideoFrame_jni.h"
 #include "sdk/android/src/jni/jni_helpers.h"

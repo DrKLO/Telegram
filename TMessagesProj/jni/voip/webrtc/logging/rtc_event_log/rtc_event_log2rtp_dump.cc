@@ -21,6 +21,7 @@
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/rtc_event_log/rtc_event_log.h"
@@ -75,7 +76,7 @@ using MediaType = webrtc::ParsedRtcEventLog::MediaType;
 // The empty string must be validated as true, because it is the default value
 // of the command-line flag. In this case, no value is written to the output
 // variable.
-absl::optional<uint32_t> ParseSsrc(std::string str) {
+absl::optional<uint32_t> ParseSsrc(absl::string_view str) {
   // If the input string starts with 0x or 0X it indicates a hexadecimal number.
   uint32_t ssrc;
   auto read_mode = std::dec;
@@ -84,7 +85,7 @@ absl::optional<uint32_t> ParseSsrc(std::string str) {
     read_mode = std::hex;
     str = str.substr(2);
   }
-  std::stringstream ss(str);
+  std::stringstream ss(std::string{str});
   ss >> read_mode >> ssrc;
   if (str.empty() || (!ss.fail() && ss.eof()))
     return ssrc;

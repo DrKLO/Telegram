@@ -57,6 +57,16 @@ enum AdapterType {
 
 std::string AdapterTypeToString(AdapterType type);
 
+// Useful for testing!
+constexpr AdapterType kAllAdapterTypes[] = {
+    ADAPTER_TYPE_UNKNOWN,     ADAPTER_TYPE_ETHERNET,
+    ADAPTER_TYPE_WIFI,        ADAPTER_TYPE_CELLULAR,
+    ADAPTER_TYPE_VPN,         ADAPTER_TYPE_LOOPBACK,
+    ADAPTER_TYPE_ANY,         ADAPTER_TYPE_CELLULAR_2G,
+    ADAPTER_TYPE_CELLULAR_3G, ADAPTER_TYPE_CELLULAR_4G,
+    ADAPTER_TYPE_CELLULAR_5G,
+};
+
 }  // namespace rtc
 
 #endif  // RTC_BASE_NETWORK_CONSTANTS_H_

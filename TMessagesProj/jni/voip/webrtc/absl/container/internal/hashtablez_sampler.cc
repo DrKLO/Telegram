@@ -21,7 +21,7 @@
 #include <limits>
 
 #include "absl/base/attributes.h"
-#include "absl/container/internal/have_sse.h"
+#include "absl/base/config.h"
 #include "absl/debugging/stacktrace.h"
 #include "absl/memory/memory.h"
 #include "absl/profiling/internal/exponential_biased.h"
@@ -32,7 +32,10 @@
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace container_internal {
+
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 constexpr int HashtablezInfo::kMaxStackDepth;
+#endif
 
 namespace {
 ABSL_CONST_INIT std::atomic<bool> g_hashtablez_enabled{
@@ -160,7 +163,7 @@ void RecordInsertSlow(HashtablezInfo* info, size_t hash,
   // SwissTables probe in groups of 16, so scale this to count items probes and
   // not offset from desired.
   size_t probe_length = distance_from_desired;
-#if ABSL_INTERNAL_RAW_HASH_SET_HAVE_SSE2
+#ifdef ABSL_INTERNAL_HAVE_SSE2
   probe_length /= 16;
 #else
   probe_length /= 8;
@@ -212,21 +215,20 @@ void SetHashtablezSampleParameterInternal(int32_t rate) {
   }
 }
 
-int32_t GetHashtablezMaxSamples() {
+size_t GetHashtablezMaxSamples() {
   return GlobalHashtablezSampler().GetMaxSamples();
 }
 
-void SetHashtablezMaxSamples(int32_t max) {
+void SetHashtablezMaxSamples(size_t max) {
   SetHashtablezMaxSamplesInternal(max);
   TriggerHashtablezConfigListener();
 }
 
-void SetHashtablezMaxSamplesInternal(int32_t max) {
+void SetHashtablezMaxSamplesInternal(size_t max) {
   if (max > 0) {
     GlobalHashtablezSampler().SetMaxSamples(max);
   } else {
-    ABSL_RAW_LOG(ERROR, "Invalid hashtablez max samples: %lld",
-                 static_cast<long long>(max));  // NOLINT(runtime/int)
+    ABSL_RAW_LOG(ERROR, "Invalid hashtablez max samples: 0");
   }
 }
 

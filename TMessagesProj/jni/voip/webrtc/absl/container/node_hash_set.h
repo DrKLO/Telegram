@@ -74,6 +74,10 @@ struct NodeHashSetPolicy;
 // absl/hash/hash.h for information on extending Abseil hashing to user-defined
 // types.
 //
+// Using `absl::node_hash_set` at interface boundaries in dynamically loaded
+// libraries (e.g. .dll, .so) is unsupported due to way `absl::Hash` values may
+// be randomized across dynamically loaded libraries.
+//
 // Example:
 //
 //   // Create a node hash set of three strings

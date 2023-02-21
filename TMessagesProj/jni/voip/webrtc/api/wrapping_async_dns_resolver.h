@@ -13,6 +13,7 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 
 #include "absl/memory/memory.h"
 #include "api/async_dns_resolver.h"
@@ -68,12 +69,16 @@ class RTC_EXPORT WrappingAsyncDnsResolver : public AsyncDnsResolverInterface,
   void Start(const rtc::SocketAddress& addr,
              std::function<void()> callback) override {
     RTC_DCHECK_RUN_ON(&sequence_checker_);
-    RTC_DCHECK_EQ(State::kNotStarted, state_);
-    state_ = State::kStarted;
-    callback_ = callback;
-    wrapped_->SignalDone.connect(this,
-                                 &WrappingAsyncDnsResolver::OnResolveResult);
+    PrepareToResolve(std::move(callback));
     wrapped_->Start(addr);
+  }
+
+  void Start(const rtc::SocketAddress& addr,
+             int family,
+             std::function<void()> callback) override {
+    RTC_DCHECK_RUN_ON(&sequence_checker_);
+    PrepareToResolve(std::move(callback));
+    wrapped_->Start(addr, family);
   }
 
   const AsyncDnsResolverResult& result() const override {
@@ -90,6 +95,15 @@ class RTC_EXPORT WrappingAsyncDnsResolver : public AsyncDnsResolverInterface,
   rtc::AsyncResolverInterface* wrapped() const {
     RTC_DCHECK_RUN_ON(&sequence_checker_);
     return wrapped_.get();
+  }
+
+  void PrepareToResolve(std::function<void()> callback) {
+    RTC_DCHECK_RUN_ON(&sequence_checker_);
+    RTC_DCHECK_EQ(State::kNotStarted, state_);
+    state_ = State::kStarted;
+    callback_ = std::move(callback);
+    wrapped_->SignalDone.connect(this,
+                                 &WrappingAsyncDnsResolver::OnResolveResult);
   }
 
   void OnResolveResult(rtc::AsyncResolverInterface* ref) {

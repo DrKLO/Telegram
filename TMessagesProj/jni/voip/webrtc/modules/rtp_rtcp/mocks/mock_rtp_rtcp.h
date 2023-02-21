@@ -17,9 +17,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/video/video_bitrate_allocation.h"
-#include "modules/include/module.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -66,8 +66,7 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
   MOCK_METHOD(RtpState, GetRtpState, (), (const, override));
   MOCK_METHOD(RtpState, GetRtxState, (), (const, override));
   MOCK_METHOD(uint32_t, SSRC, (), (const, override));
-  MOCK_METHOD(void, SetRid, (const std::string& rid), (override));
-  MOCK_METHOD(void, SetMid, (const std::string& mid), (override));
+  MOCK_METHOD(void, SetMid, (absl::string_view mid), (override));
   MOCK_METHOD(void, SetCsrcs, (const std::vector<uint32_t>& csrcs), (override));
   MOCK_METHOD(void, SetRtxSendStatus, (int modes), (override));
   MOCK_METHOD(int, RtxSendStatus, (), (const, override));
@@ -99,6 +98,10 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               (),
               (override));
   MOCK_METHOD(void,
+              OnAbortedRetransmissions,
+              (rtc::ArrayView<const uint16_t>),
+              (override));
+  MOCK_METHOD(void,
               OnPacketsAcknowledged,
               (rtc::ArrayView<const uint16_t>),
               (override));
@@ -114,10 +117,7 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
   MOCK_METHOD(void, OnPacketSendingThreadSwitched, (), (override));
   MOCK_METHOD(RtcpMode, RTCP, (), (const, override));
   MOCK_METHOD(void, SetRTCPStatus, (RtcpMode method), (override));
-  MOCK_METHOD(int32_t,
-              SetCNAME,
-              (const char cname[RTCP_CNAME_SIZE]),
-              (override));
+  MOCK_METHOD(int32_t, SetCNAME, (absl::string_view cname), (override));
   MOCK_METHOD(int32_t,
               RemoteNTP,
               (uint32_t * received_ntp_secs,

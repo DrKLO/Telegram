@@ -18,7 +18,6 @@
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/scoped_refptr.h"
 #include "api/units/time_delta.h"
-#include "rtc_base/constructor_magic.h"
 #include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
@@ -43,6 +42,9 @@ class AudioEncoderIsacT final : public AudioEncoder {
 
   explicit AudioEncoderIsacT(const Config& config);
   ~AudioEncoderIsacT() override;
+
+  AudioEncoderIsacT(const AudioEncoderIsacT&) = delete;
+  AudioEncoderIsacT& operator=(const AudioEncoderIsacT&) = delete;
 
   int SampleRateHz() const override;
   size_t NumChannels() const override;
@@ -99,8 +101,6 @@ class AudioEncoderIsacT final : public AudioEncoder {
   // Start out with a reasonable default that we can use until we receive a real
   // value.
   DataSize overhead_per_packet_ = DataSize::Bytes(28);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderIsacT);
 };
 
 }  // namespace webrtc

@@ -19,10 +19,8 @@
 #include "absl/types/optional.h"
 #include "api/neteq/tick_timer.h"
 #include "modules/audio_coding/neteq/histogram.h"
-#include "modules/audio_coding/neteq/relative_arrival_delay_tracker.h"
 #include "modules/audio_coding/neteq/reorder_optimizer.h"
 #include "modules/audio_coding/neteq/underrun_optimizer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -37,7 +35,6 @@ class DelayManager {
     double forget_factor = 0.983;
     absl::optional<double> start_forget_weight = 2;
     absl::optional<int> resample_interval_ms = 500;
-    int max_history_ms = 2000;
 
     bool use_reorder_optimizer = true;
     double reorder_forget_factor = 0.9993;
@@ -52,20 +49,26 @@ class DelayManager {
 
   virtual ~DelayManager();
 
-  // Updates the delay manager with a new incoming packet, with `timestamp` from
-  // the RTP header. This updates the statistics and a new target buffer level
-  // is calculated. Returns the relative delay if it can be calculated. If
-  // `reset` is true, restarts the relative arrival delay calculation from this
-  // packet.
-  virtual absl::optional<int> Update(uint32_t timestamp,
-                                     int sample_rate_hz,
-                                     bool reset = false);
+  DelayManager(const DelayManager&) = delete;
+  DelayManager& operator=(const DelayManager&) = delete;
+
+  // Updates the delay manager that a new packet arrived with delay
+  // `arrival_delay_ms`. This updates the statistics and a new target buffer
+  // level is calculated. The `reordered` flag indicates if the packet was
+  // reordered.
+  virtual void Update(int arrival_delay_ms, bool reordered);
 
   // Resets all state.
   virtual void Reset();
 
-  // Gets the target buffer level in milliseconds.
+  // Gets the target buffer level in milliseconds. If a minimum or maximum delay
+  // has been set, the target delay reported here also respects the configured
+  // min/max delay.
   virtual int TargetDelayMs() const;
+
+  // Reports the target delay that would be used if no minimum/maximum delay
+  // would be set.
+  virtual int UnlimitedTargetLevelMs() const;
 
   // Notifies the DelayManager of how much audio data is carried in each packet.
   virtual int SetPacketAudioLength(int length_ms);
@@ -103,7 +106,6 @@ class DelayManager {
   const int max_packets_in_buffer_;
   UnderrunOptimizer underrun_optimizer_;
   std::unique_ptr<ReorderOptimizer> reorder_optimizer_;
-  RelativeArrivalDelayTracker relative_arrival_delay_tracker_;
 
   int base_minimum_delay_ms_;
   int effective_minimum_delay_ms_;  // Used as lower bound for target delay.
@@ -111,9 +113,8 @@ class DelayManager {
   int maximum_delay_ms_;            // Externally set maximum allowed delay.
 
   int packet_len_ms_ = 0;
-  int target_level_ms_;       // Currently preferred buffer level.
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DelayManager);
+  int target_level_ms_ = 0;  // Currently preferred buffer level.
+  int unlimited_target_level_ms_ = 0;
 };
 
 }  // namespace webrtc

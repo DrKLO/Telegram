@@ -20,29 +20,6 @@
 
 namespace webrtc {
 
-namespace {
-
-std::string WantsToString(const rtc::VideoSinkWants& wants) {
-  rtc::StringBuilder ss;
-
-  ss << "max_fps=" << wants.max_framerate_fps
-     << " max_pixel_count=" << wants.max_pixel_count << " target_pixel_count="
-     << (wants.target_pixel_count.has_value()
-             ? std::to_string(wants.target_pixel_count.value())
-             : "null")
-     << " resolutions={";
-  for (size_t i = 0; i < wants.resolutions.size(); ++i) {
-    if (i != 0)
-      ss << ",";
-    ss << wants.resolutions[i].width << "x" << wants.resolutions[i].height;
-  }
-  ss << "}";
-
-  return ss.Release();
-}
-
-}  // namespace
-
 VideoSourceSinkController::VideoSourceSinkController(
     rtc::VideoSinkInterface<VideoFrame>* sink,
     rtc::VideoSourceInterface<VideoFrame>* source)
@@ -75,13 +52,17 @@ bool VideoSourceSinkController::HasSource() const {
   return source_ != nullptr;
 }
 
+void VideoSourceSinkController::RequestRefreshFrame() {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  if (source_)
+    source_->RequestRefreshFrame();
+}
+
 void VideoSourceSinkController::PushSourceSinkSettings() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   if (!source_)
     return;
   rtc::VideoSinkWants wants = CurrentSettingsToSinkWants();
-  RTC_LOG(LS_INFO) << "Pushing SourceSink restrictions: "
-                   << WantsToString(wants);
   source_->AddOrUpdateSink(sink_, wants);
 }
 
@@ -116,6 +97,17 @@ const std::vector<rtc::VideoSinkWants::FrameSize>&
 VideoSourceSinkController::resolutions() const {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   return resolutions_;
+}
+
+bool VideoSourceSinkController::active() const {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  return active_;
+}
+
+absl::optional<rtc::VideoSinkWants::FrameSize>
+VideoSourceSinkController::requested_resolution() const {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  return requested_resolution_;
 }
 
 void VideoSourceSinkController::SetRestrictions(
@@ -153,6 +145,17 @@ void VideoSourceSinkController::SetResolutions(
   resolutions_ = std::move(resolutions);
 }
 
+void VideoSourceSinkController::SetActive(bool active) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  active_ = active;
+}
+
+void VideoSourceSinkController::SetRequestedResolution(
+    absl::optional<rtc::VideoSinkWants::FrameSize> requested_resolution) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  requested_resolution_ = std::move(requested_resolution);
+}
+
 // RTC_EXCLUSIVE_LOCKS_REQUIRED(sequence_checker_)
 rtc::VideoSinkWants VideoSourceSinkController::CurrentSettingsToSinkWants()
     const {
@@ -182,6 +185,8 @@ rtc::VideoSinkWants VideoSourceSinkController::CurrentSettingsToSinkWants()
                    ? static_cast<int>(frame_rate_upper_limit_.value())
                    : std::numeric_limits<int>::max());
   wants.resolutions = resolutions_;
+  wants.is_active = active_;
+  wants.requested_resolution = requested_resolution_;
   return wants;
 }
 

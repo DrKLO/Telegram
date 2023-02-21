@@ -33,6 +33,11 @@ namespace webrtc {
 class TimeDelta final : public rtc_units_impl::RelativeUnit<TimeDelta> {
  public:
   template <typename T>
+  static constexpr TimeDelta Minutes(T value) {
+    static_assert(std::is_arithmetic<T>::value, "");
+    return Seconds(value * 60);
+  }
+  template <typename T>
   static constexpr TimeDelta Seconds(T value) {
     static_assert(std::is_arithmetic<T>::value, "");
     return FromFraction(1'000'000, value);

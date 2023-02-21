@@ -30,6 +30,8 @@ import android.view.View;
 
 import androidx.annotation.Keep;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
@@ -43,6 +45,7 @@ import org.telegram.ui.Components.RecyclableDrawable;
 import org.telegram.ui.Components.VectorAvatarThumbDrawable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
@@ -988,6 +991,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void onDetachedFromWindow() {
+        if (!attachedToWindow) {
+            return;
+        }
         attachedToWindow = false;
         if (currentImageLocation != null || currentMediaLocation != null || currentThumbLocation != null || staticThumbDrawable != null) {
             if (setImageBackup == null) {
@@ -1073,6 +1079,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public boolean onAttachedToWindow() {
+        if (attachedToWindow) {
+            return false;
+        }
         attachedToWindow = true;
         currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
         currentOpenedLayerFlags &= ~currentLayerNum;

@@ -10,24 +10,6 @@
 
 #include "system_wrappers/include/clock.h"
 
-#include "system_wrappers/include/field_trial.h"
-
-#if defined(WEBRTC_WIN)
-
-// Windows needs to be included before mmsystem.h
-#include "rtc_base/win32.h"
-
-#include <mmsystem.h>
-
-
-#elif defined(WEBRTC_POSIX)
-
-#include <sys/time.h>
-#include <time.h>
-
-#endif  // defined(WEBRTC_POSIX)
-
-#include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/time_utils.h"
 
 namespace webrtc {
@@ -60,210 +42,23 @@ NtpTime TimeMicrosToNtp(int64_t time_us) {
   return NtpTime(ntp_seconds, ntp_fractions);
 }
 
-void GetSecondsAndFraction(const timeval& time,
-                           uint32_t* seconds,
-                           double* fraction) {
-  *seconds = time.tv_sec + kNtpJan1970;
-  *fraction = time.tv_usec / 1e6;
-
-  while (*fraction >= 1) {
-    --*fraction;
-    ++*seconds;
-  }
-  while (*fraction < 0) {
-    ++*fraction;
-    --*seconds;
-  }
-}
-
 }  // namespace
 
 class RealTimeClock : public Clock {
  public:
-  RealTimeClock()
-      : use_system_independent_ntp_time_(!field_trial::IsEnabled(
-            "WebRTC-SystemIndependentNtpTimeKillSwitch")) {}
+  RealTimeClock() = default;
 
   Timestamp CurrentTime() override {
     return Timestamp::Micros(rtc::TimeMicros());
   }
 
-  NtpTime CurrentNtpTime() override {
-    return use_system_independent_ntp_time_ ? TimeMicrosToNtp(rtc::TimeMicros())
-                                            : SystemDependentNtpTime();
-  }
-
   NtpTime ConvertTimestampToNtpTime(Timestamp timestamp) override {
-    // This method does not check `use_system_independent_ntp_time_` because
-    // all callers never used the old behavior of `CurrentNtpTime`.
     return TimeMicrosToNtp(timestamp.us());
   }
-
- protected:
-  virtual timeval CurrentTimeVal() = 0;
-
- private:
-  NtpTime SystemDependentNtpTime() {
-    uint32_t seconds;
-    double fraction;
-    GetSecondsAndFraction(CurrentTimeVal(), &seconds, &fraction);
-
-    return NtpTime(seconds, static_cast<uint32_t>(
-                                fraction * kMagicNtpFractionalUnit + 0.5));
-  }
-
-  bool use_system_independent_ntp_time_;
 };
-
-#if defined(WINUWP)
-class WinUwpRealTimeClock final : public RealTimeClock {
- public:
-  WinUwpRealTimeClock() = default;
-  ~WinUwpRealTimeClock() override {}
-
- protected:
-  timeval CurrentTimeVal() override {
-    // The rtc::WinUwpSystemTimeNanos() method is already time offset from a
-    // base epoch value and might as be synchronized against an NTP time server
-    // as an added bonus.
-    auto nanos = rtc::WinUwpSystemTimeNanos();
-
-    struct timeval tv;
-
-    tv.tv_sec = rtc::dchecked_cast<long>(nanos / 1000000000);
-    tv.tv_usec = rtc::dchecked_cast<long>(nanos / 1000);
-
-    return tv;
-  }
-};
-
-#elif defined(WEBRTC_WIN)
-// TODO(pbos): Consider modifying the implementation to synchronize itself
-// against system time (update ref_point_) periodically to
-// prevent clock drift.
-class WindowsRealTimeClock : public RealTimeClock {
- public:
-  WindowsRealTimeClock()
-      : last_time_ms_(0),
-        num_timer_wraps_(0),
-        ref_point_(GetSystemReferencePoint()) {}
-
-  ~WindowsRealTimeClock() override {}
-
- protected:
-  struct ReferencePoint {
-    FILETIME file_time;
-    LARGE_INTEGER counter_ms;
-  };
-
-  timeval CurrentTimeVal() override {
-    const uint64_t FILETIME_1970 = 0x019db1ded53e8000;
-
-    FILETIME StartTime;
-    uint64_t Time;
-    struct timeval tv;
-
-    // We can't use query performance counter since they can change depending on
-    // speed stepping.
-    GetTime(&StartTime);
-
-    Time = (((uint64_t)StartTime.dwHighDateTime) << 32) +
-           (uint64_t)StartTime.dwLowDateTime;
-
-    // Convert the hecto-nano second time to tv format.
-    Time -= FILETIME_1970;
-
-    tv.tv_sec = (uint32_t)(Time / (uint64_t)10000000);
-    tv.tv_usec = (uint32_t)((Time % (uint64_t)10000000) / 10);
-    return tv;
-  }
-
-  void GetTime(FILETIME* current_time) {
-    DWORD t;
-    LARGE_INTEGER elapsed_ms;
-    {
-      MutexLock lock(&mutex_);
-      // time MUST be fetched inside the critical section to avoid non-monotonic
-      // last_time_ms_ values that'll register as incorrect wraparounds due to
-      // concurrent calls to GetTime.
-      t = timeGetTime();
-      if (t < last_time_ms_)
-        num_timer_wraps_++;
-      last_time_ms_ = t;
-      elapsed_ms.HighPart = num_timer_wraps_;
-    }
-    elapsed_ms.LowPart = t;
-    elapsed_ms.QuadPart = elapsed_ms.QuadPart - ref_point_.counter_ms.QuadPart;
-
-    // Translate to 100-nanoseconds intervals (FILETIME resolution)
-    // and add to reference FILETIME to get current FILETIME.
-    ULARGE_INTEGER filetime_ref_as_ul;
-    filetime_ref_as_ul.HighPart = ref_point_.file_time.dwHighDateTime;
-    filetime_ref_as_ul.LowPart = ref_point_.file_time.dwLowDateTime;
-    filetime_ref_as_ul.QuadPart +=
-        static_cast<ULONGLONG>((elapsed_ms.QuadPart) * 1000 * 10);
-
-    // Copy to result
-    current_time->dwHighDateTime = filetime_ref_as_ul.HighPart;
-    current_time->dwLowDateTime = filetime_ref_as_ul.LowPart;
-  }
-
-  static ReferencePoint GetSystemReferencePoint() {
-    ReferencePoint ref = {};
-    FILETIME ft0 = {};
-    FILETIME ft1 = {};
-    // Spin waiting for a change in system time. As soon as this change happens,
-    // get the matching call for timeGetTime() as soon as possible. This is
-    // assumed to be the most accurate offset that we can get between
-    // timeGetTime() and system time.
-
-    // Set timer accuracy to 1 ms.
-    timeBeginPeriod(1);
-    GetSystemTimeAsFileTime(&ft0);
-    do {
-      GetSystemTimeAsFileTime(&ft1);
-
-      ref.counter_ms.QuadPart = timeGetTime();
-      Sleep(0);
-    } while ((ft0.dwHighDateTime == ft1.dwHighDateTime) &&
-             (ft0.dwLowDateTime == ft1.dwLowDateTime));
-    ref.file_time = ft1;
-    timeEndPeriod(1);
-    return ref;
-  }
-
-  Mutex mutex_;
-  DWORD last_time_ms_;
-  LONG num_timer_wraps_;
-  const ReferencePoint ref_point_;
-};
-
-#elif defined(WEBRTC_POSIX)
-class UnixRealTimeClock : public RealTimeClock {
- public:
-  UnixRealTimeClock() {}
-
-  ~UnixRealTimeClock() override {}
-
- protected:
-  timeval CurrentTimeVal() override {
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    return tv;
-  }
-};
-#endif  // defined(WEBRTC_POSIX)
 
 Clock* Clock::GetRealTimeClock() {
-#if defined(WINUWP)
-  static Clock* const clock = new WinUwpRealTimeClock();
-#elif defined(WEBRTC_WIN)
-  static Clock* const clock = new WindowsRealTimeClock();
-#elif defined(WEBRTC_POSIX)
-  static Clock* const clock = new UnixRealTimeClock();
-#else
-  static Clock* const clock = nullptr;
-#endif
+  static Clock* const clock = new RealTimeClock();
   return clock;
 }
 

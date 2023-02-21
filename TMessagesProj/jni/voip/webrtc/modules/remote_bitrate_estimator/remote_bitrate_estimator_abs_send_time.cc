@@ -278,13 +278,7 @@ void RemoteBitrateEstimatorAbsSendTime::IncomingPacketInfo(
     TimeoutStreams(now);
     RTC_DCHECK(inter_arrival_);
     RTC_DCHECK(estimator_);
-    // TODO(danilchap): Replace 5 lines below with insert_or_assign when that
-    // c++17 function is available.
-    auto inserted = ssrcs_.insert(std::make_pair(ssrc, now));
-    if (!inserted.second) {
-      // Already inserted, update.
-      inserted.first->second = now;
-    }
+    ssrcs_.insert_or_assign(ssrc, now);
 
     // For now only try to detect probes while we don't have a valid estimate.
     // We currently assume that only packets larger than 200 bytes are paced by
@@ -359,11 +353,8 @@ void RemoteBitrateEstimatorAbsSendTime::IncomingPacketInfo(
   }
 }
 
-void RemoteBitrateEstimatorAbsSendTime::Process() {}
-
-int64_t RemoteBitrateEstimatorAbsSendTime::TimeUntilNextProcess() {
-  const int64_t kDisabledModuleTime = 1000;
-  return kDisabledModuleTime;
+TimeDelta RemoteBitrateEstimatorAbsSendTime::Process() {
+  return TimeDelta::PlusInfinity();
 }
 
 void RemoteBitrateEstimatorAbsSendTime::TimeoutStreams(Timestamp now) {
@@ -396,32 +387,13 @@ void RemoteBitrateEstimatorAbsSendTime::RemoveStream(uint32_t ssrc) {
   ssrcs_.erase(ssrc);
 }
 
-bool RemoteBitrateEstimatorAbsSendTime::LatestEstimate(
-    std::vector<uint32_t>* ssrcs,
-    uint32_t* bitrate_bps) const {
-  // Currently accessed from both the process thread (see
-  // ModuleRtpRtcpImpl::Process()) and the configuration thread (see
-  // Call::GetStats()). Should in the future only be accessed from a single
-  // thread.
-  RTC_DCHECK(ssrcs);
-  RTC_DCHECK(bitrate_bps);
+DataRate RemoteBitrateEstimatorAbsSendTime::LatestEstimate() const {
+  // Currently accessed only from the worker thread (see Call::GetStats()).
   MutexLock lock(&mutex_);
-  if (!remote_rate_.ValidEstimate()) {
-    return false;
+  if (!remote_rate_.ValidEstimate() || ssrcs_.empty()) {
+    return DataRate::Zero();
   }
-  *ssrcs = Keys(ssrcs_);
-  if (ssrcs_.empty()) {
-    *bitrate_bps = 0;
-  } else {
-    *bitrate_bps = remote_rate_.LatestEstimate().bps<uint32_t>();
-  }
-  return true;
+  return remote_rate_.LatestEstimate();
 }
 
-void RemoteBitrateEstimatorAbsSendTime::SetMinBitrate(int min_bitrate_bps) {
-  // Called from both the configuration thread and the network thread. Shouldn't
-  // be called from the network thread in the future.
-  MutexLock lock(&mutex_);
-  remote_rate_.SetMinBitrate(DataRate::BitsPerSec(min_bitrate_bps));
-}
 }  // namespace webrtc

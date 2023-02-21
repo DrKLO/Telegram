@@ -41,17 +41,6 @@ PeerConnectionInterface::RTCConfiguration::RTCConfiguration(
 
 PeerConnectionInterface::RTCConfiguration::~RTCConfiguration() = default;
 
-RTCError PeerConnectionInterface::RemoveTrackNew(
-    rtc::scoped_refptr<RtpSenderInterface> sender) {
-  return RTCError(RemoveTrack(sender) ? RTCErrorType::NONE
-                                      : RTCErrorType::INTERNAL_ERROR);
-}
-
-RTCError PeerConnectionInterface::SetConfiguration(
-    const PeerConnectionInterface::RTCConfiguration& config) {
-  return RTCError();
-}
-
 PeerConnectionDependencies::PeerConnectionDependencies(
     PeerConnectionObserver* observer_in)
     : observer(observer_in) {}

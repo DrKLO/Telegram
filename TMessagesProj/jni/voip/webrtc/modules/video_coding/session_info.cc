@@ -293,6 +293,9 @@ size_t VCMSessionInfo::Insert(const uint8_t* buffer,
                               size_t length,
                               bool insert_start_code,
                               uint8_t* frame_buffer) {
+  if (!buffer || !frame_buffer) {
+    return 0;
+  }
   if (insert_start_code) {
     const unsigned char startCode[] = {0, 0, 0, 1};
     memcpy(frame_buffer, startCode, kH264StartCodeLengthBytes);

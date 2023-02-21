@@ -12,11 +12,33 @@
 #define LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_GENERIC_PACKET_RECEIVED_H_
 
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/units/timestamp.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
 
 namespace webrtc {
+
+struct LoggedGenericPacketReceived {
+  LoggedGenericPacketReceived() = default;
+  LoggedGenericPacketReceived(Timestamp timestamp,
+                              int64_t packet_number,
+                              int packet_length)
+      : timestamp(timestamp),
+        packet_number(packet_number),
+        packet_length(packet_length) {}
+
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
+  Timestamp log_time() const { return timestamp; }
+
+  Timestamp timestamp = Timestamp::MinusInfinity();
+  int64_t packet_number;
+  int packet_length;
+};
 
 class RtcEventGenericPacketReceived final : public RtcEvent {
  public:
@@ -37,28 +59,24 @@ class RtcEventGenericPacketReceived final : public RtcEvent {
   // including ICE/TURN/IP overheads.
   size_t packet_length() const { return packet_length_; }
 
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    // TODO(terelius): Implement
+    return "";
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::vector<LoggedGenericPacketReceived>& output) {
+    // TODO(terelius): Implement
+    return RtcEventLogParseStatus::Error("Not Implemented", __FILE__, __LINE__);
+  }
+
  private:
   RtcEventGenericPacketReceived(const RtcEventGenericPacketReceived& packet);
 
   const int64_t packet_number_;
   const size_t packet_length_;
-};
-
-struct LoggedGenericPacketReceived {
-  LoggedGenericPacketReceived() = default;
-  LoggedGenericPacketReceived(Timestamp timestamp,
-                              int64_t packet_number,
-                              int packet_length)
-      : timestamp(timestamp),
-        packet_number(packet_number),
-        packet_length(packet_length) {}
-
-  int64_t log_time_us() const { return timestamp.us(); }
-  int64_t log_time_ms() const { return timestamp.ms(); }
-
-  Timestamp timestamp = Timestamp::MinusInfinity();
-  int64_t packet_number;
-  int packet_length;
 };
 
 }  // namespace webrtc

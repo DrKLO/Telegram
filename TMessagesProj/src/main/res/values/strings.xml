@@ -1374,6 +1374,7 @@
     <string name="ImportFileTooLarge">Importing file is too large.</string>
     <string name="ImportFailedToUpload">Failed to upload file.</string>
     <string name="AudioSpeedNormal">Audio will play at normal speed.</string>
+    <string name="AudioSpeedMedium">Audio will play at 1.5x speed.</string>
     <string name="AudioSpeedFast">Audio will play two times faster.</string>
     <string name="MessageCopied">Message copied to clipboard.</string>
     <string name="HintSent">Delivered</string>
@@ -1880,6 +1881,7 @@
     <string name="SuggestStickersNone">None</string>
     <string name="SuggestAnimatedEmoji">Suggest Animated Emoji</string>
     <string name="SuggestAnimatedEmojiInfo">Each time you enter an emoji you can replace it with an alternative animated emoji.</string>
+    <string name="PlayEmojiInKeyboard">Emoji Panel Animations</string>
     <string name="FeaturedStickersInfo">These stickers are currently trending on Telegram. You can add custom stickers via the @stickers bot.</string>
     <string name="StickersBotInfo">Artists are welcome to add their own sticker sets using our @stickers bot.</string>
     <string name="EmojiBotInfo">Artists are welcome to add their own emoji packs using our @stickers bot.</string>
@@ -3013,6 +3015,8 @@
     <string name="SpeedFast">Fast</string>
     <string name="SpeedVeryFast">Very fast</string>
     <string name="SpeedNormal">Normal</string>
+    <string name="SpeedMedium">Medium</string>
+    <string name="SpeedSuperFast">Super Fast</string>
     <string name="ShowAsList">Show as list</string>
     <string name="ShowAsGrid">Show as grid</string>
     <string name="ShowAllMedia">Show all media</string>
@@ -6255,4 +6259,7 @@
     <string name="ClearStorageHintTitle">Free up to **%s**</string>
     <string name="ClearStorageHintMessage">Clear storage space on your phone</string>
     <string name="YourCurrentPlan">your current plan</string>
+    <string name="AccDescrDocumentType">, %s file</string>
+    <string name="AccDescrArchivedChatsShown">Archived chats shown</string>
+    <string name="AccDescrArchivedChatsHidden">Archived chats hidden</string>
 </resources>

@@ -25,6 +25,8 @@ class RTC_EXPORT RtcEventLogFactory : public RtcEventLogFactoryInterface {
   explicit RtcEventLogFactory(TaskQueueFactory* task_queue_factory);
   ~RtcEventLogFactory() override {}
 
+  std::unique_ptr<RtcEventLog> Create(
+      RtcEventLog::EncodingType encoding_type) const override;
   std::unique_ptr<RtcEventLog> CreateRtcEventLog(
       RtcEventLog::EncodingType encoding_type) override;
 

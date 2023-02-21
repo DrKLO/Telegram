@@ -672,8 +672,12 @@ bool RtpPacket::RemoveExtension(ExtensionType type) {
   }
 
   // Copy payload data to new packet.
-  memcpy(new_packet.AllocatePayload(payload_size()), payload().data(),
-         payload_size());
+  if (payload_size() > 0) {
+    memcpy(new_packet.AllocatePayload(payload_size()), payload().data(),
+           payload_size());
+  } else {
+    new_packet.SetPayloadSize(0);
+  }
 
   // Allocate padding -- must be last!
   new_packet.SetPadding(padding_size());
@@ -685,7 +689,7 @@ bool RtpPacket::RemoveExtension(ExtensionType type) {
 
 std::string RtpPacket::ToString() const {
   rtc::StringBuilder result;
-  result << "{payload_type=" << payload_type_ << "marker=" << marker_
+  result << "{payload_type=" << payload_type_ << ", marker=" << marker_
          << ", sequence_number=" << sequence_number_
          << ", padding_size=" << padding_size_ << ", timestamp=" << timestamp_
          << ", ssrc=" << ssrc_ << ", payload_offset=" << payload_offset_

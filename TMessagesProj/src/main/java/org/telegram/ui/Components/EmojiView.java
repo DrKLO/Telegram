@@ -6204,7 +6204,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             if (imageLocation == null) {
                 return;
             }
-            String filter = SharedConfig.getLiteMode().enabled() ? "30_30_firstframe" : "30_30";
+            String filter = SharedConfig.getLiteMode().enabled() || emoji && !SharedConfig.playEmojiInKeyboard ? "30_30_firstframe" : "30_30";
             if (object instanceof TLRPC.Document && (MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isVideoSticker(document))) {
                 if (svgThumb != null) {
                     imageView.setImage(ImageLocation.getForDocument(document), filter, svgThumb, 0, set);

@@ -68,7 +68,8 @@ constexpr ProfilePattern kProfilePatterns[] = {
     {0x58, BitPattern("10xx0000"), H264Profile::kProfileBaseline},
     {0x4D, BitPattern("0x0x0000"), H264Profile::kProfileMain},
     {0x64, BitPattern("00000000"), H264Profile::kProfileHigh},
-    {0x64, BitPattern("00001100"), H264Profile::kProfileConstrainedHigh}};
+    {0x64, BitPattern("00001100"), H264Profile::kProfileConstrainedHigh},
+    {0xF4, BitPattern("00000000"), H264Profile::kProfilePredictiveHigh444}};
 
 struct LevelConstraint {
   const int max_macroblocks_per_second;
@@ -227,6 +228,9 @@ absl::optional<std::string> H264ProfileLevelIdToString(
       break;
     case H264Profile::kProfileHigh:
       profile_idc_iop_string = "6400";
+      break;
+    case H264Profile::kProfilePredictiveHigh444:
+      profile_idc_iop_string = "f400";
       break;
     // Unrecognized profile.
     default:

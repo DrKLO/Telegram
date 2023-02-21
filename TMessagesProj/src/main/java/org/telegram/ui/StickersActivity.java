@@ -112,6 +112,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private int currentType;
 
     private int suggestRow;
+    private int playEmojiInKeyboardRow;
     private int suggestAnimatedEmojiRow;
     private int suggestAnimatedEmojiInfoRow;
     private int loopRow;
@@ -444,6 +445,10 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             } else if (position == largeEmojiRow) {
                 SharedConfig.toggleBigEmoji();
                 ((TextCheckCell) view).setChecked(SharedConfig.allowBigEmoji);
+            } else if (position == playEmojiInKeyboardRow) {
+                SharedConfig.togglePlayEmojiInKeyboard();
+                AnimatedEmojiDrawable.updateAll();
+                ((TextCheckCell) view).setChecked(SharedConfig.playEmojiInKeyboard);
             } else if (position == suggestAnimatedEmojiRow) {
                 SharedConfig.toggleSuggestAnimatedEmoji();
                 ((TextCheckCell) view).setChecked(SharedConfig.suggestAnimatedEmoji);
@@ -629,10 +634,12 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             loopInfoRow = -1;
         }
 
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS && hasUsefulPacks) {
+        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
+            playEmojiInKeyboardRow = rowCount++;
             suggestAnimatedEmojiRow = rowCount++;
             suggestAnimatedEmojiInfoRow = rowCount++;
         } else {
+            playEmojiInKeyboardRow = -1;
             suggestAnimatedEmojiRow = -1;
             suggestAnimatedEmojiInfoRow = -1;
         }
@@ -1151,6 +1158,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         cell.setTextAndCheck(LocaleController.getString("LargeEmoji", R.string.LargeEmoji), SharedConfig.allowBigEmoji, true);
                     } else if (position == suggestAnimatedEmojiRow) {
                         cell.setTextAndCheck(LocaleController.getString("SuggestAnimatedEmoji", R.string.SuggestAnimatedEmoji), SharedConfig.suggestAnimatedEmoji, false);
+                    } else if (position == playEmojiInKeyboardRow) {
+                        cell.setTextAndCheck(LocaleController.getString("PlayEmojiInKeyboard", R.string.PlayEmojiInKeyboard), SharedConfig.playEmojiInKeyboard, true);
                     }
                     break;
                 case TYPE_DOUBLE_TAP_REACTIONS: {
@@ -1363,7 +1372,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 return TYPE_TEXT_AND_VALUE;
             } else if (i == stickersShadowRow || i == featuredStickersShadowRow) {
                 return TYPE_SHADOW;
-            } else if (i == loopRow || i == largeEmojiRow || i == suggestAnimatedEmojiRow) {
+            } else if (i == loopRow || i == largeEmojiRow || i == suggestAnimatedEmojiRow || i == playEmojiInKeyboardRow) {
                 return TYPE_SWITCH;
             } else if (i == reactionsDoubleTapRow) {
                 return TYPE_DOUBLE_TAP_REACTIONS;

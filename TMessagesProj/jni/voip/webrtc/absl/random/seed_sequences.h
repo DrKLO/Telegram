@@ -28,6 +28,7 @@
 #include <iterator>
 #include <random>
 
+#include "absl/base/config.h"
 #include "absl/random/internal/salted_seed_seq.h"
 #include "absl/random/internal/seed_material.h"
 #include "absl/random/seed_gen_exception.h"

@@ -31,10 +31,10 @@ PROXY_METHOD1(rtc::scoped_refptr<AudioTrackInterface>,
 PROXY_METHOD1(rtc::scoped_refptr<VideoTrackInterface>,
               FindVideoTrack,
               const std::string&)
-PROXY_METHOD1(bool, AddTrack, AudioTrackInterface*)
-PROXY_METHOD1(bool, AddTrack, VideoTrackInterface*)
-PROXY_METHOD1(bool, RemoveTrack, AudioTrackInterface*)
-PROXY_METHOD1(bool, RemoveTrack, VideoTrackInterface*)
+PROXY_METHOD1(bool, AddTrack, rtc::scoped_refptr<AudioTrackInterface>)
+PROXY_METHOD1(bool, AddTrack, rtc::scoped_refptr<VideoTrackInterface>)
+PROXY_METHOD1(bool, RemoveTrack, rtc::scoped_refptr<AudioTrackInterface>)
+PROXY_METHOD1(bool, RemoveTrack, rtc::scoped_refptr<VideoTrackInterface>)
 PROXY_METHOD1(void, RegisterObserver, ObserverInterface*)
 PROXY_METHOD1(void, UnregisterObserver, ObserverInterface*)
 END_PROXY_MAP(MediaStream)

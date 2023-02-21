@@ -39,7 +39,6 @@ struct ConnectionInfo {
   bool writable;             // Has this connection received a STUN response?
   bool receiving;            // Has this connection received anything?
   bool timeout;              // Has this connection timed out?
-  bool new_connection;       // Is this a newly created connection?
   size_t rtt;                // The STUN RTT for this connection.
   size_t sent_discarded_bytes;  // Number of outgoing bytes discarded due to
                                 // socket errors.

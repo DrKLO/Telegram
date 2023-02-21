@@ -3133,7 +3133,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             req.limit = 100;
             req.peer = MessagesController.getInstance(profileActivity.getCurrentAccount()).getInputPeer(dialog_id);
             int reqIndex = sharedMediaData[type].requestIndex;
-            int reqId = ConnectionsManager.getInstance(profileActivity.getCurrentAccount()).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            int reqId = ConnectionsManager.getInstance(profileActivity.getCurrentAccount()).sendRequest(req, (response, error) ->
+                    AndroidUtilities.runOnUIThread(() ->
+                    NotificationCenter.getInstance(profileActivity.getCurrentAccount()).doOnIdle(() -> {
                 if (error != null) {
                     return;
                 }
@@ -3161,7 +3163,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
                 photoVideoAdapter.notifyDataSetChanged();
-            }));
+            })));
             ConnectionsManager.getInstance(profileActivity.getCurrentAccount()).bindRequestToGuid(reqId, profileActivity.getClassGuid());
         }
     }

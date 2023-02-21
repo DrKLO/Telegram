@@ -14,12 +14,12 @@
 
 #include "absl/types/optional.h"
 #include "api/dtls_transport_interface.h"
+#include "api/make_ref_counted.h"
 #include "api/sequence_checker.h"
 #include "pc/ice_transport.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
-#include "rtc_base/ssl_certificate.h"
+#include "rtc_base/ssl_stream_adapter.h"
 
 namespace webrtc {
 
@@ -105,22 +105,35 @@ void DtlsTransport::UpdateInformation() {
     if (internal_dtls_transport_->dtls_state() ==
         DtlsTransportState::kConnected) {
       bool success = true;
+      rtc::SSLRole internal_role;
+      absl::optional<DtlsTransportTlsRole> role;
       int ssl_cipher_suite;
       int tls_version;
       int srtp_cipher;
+      success &= internal_dtls_transport_->GetDtlsRole(&internal_role);
+      if (success) {
+        switch (internal_role) {
+          case rtc::SSL_CLIENT:
+            role = DtlsTransportTlsRole::kClient;
+            break;
+          case rtc::SSL_SERVER:
+            role = DtlsTransportTlsRole::kServer;
+            break;
+        }
+      }
       success &= internal_dtls_transport_->GetSslVersionBytes(&tls_version);
       success &= internal_dtls_transport_->GetSslCipherSuite(&ssl_cipher_suite);
       success &= internal_dtls_transport_->GetSrtpCryptoSuite(&srtp_cipher);
       if (success) {
         info_ = DtlsTransportInformation(
-            internal_dtls_transport_->dtls_state(), tls_version,
+            internal_dtls_transport_->dtls_state(), role, tls_version,
             ssl_cipher_suite, srtp_cipher,
             internal_dtls_transport_->GetRemoteSSLCertChain());
       } else {
         RTC_LOG(LS_ERROR) << "DtlsTransport in connected state has incomplete "
                              "TLS information";
         info_ = DtlsTransportInformation(
-            internal_dtls_transport_->dtls_state(), absl::nullopt,
+            internal_dtls_transport_->dtls_state(), role, absl::nullopt,
             absl::nullopt, absl::nullopt,
             internal_dtls_transport_->GetRemoteSSLCertChain());
       }

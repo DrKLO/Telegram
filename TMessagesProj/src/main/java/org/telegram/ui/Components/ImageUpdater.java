@@ -163,6 +163,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         return canceled;
     }
 
+    public void showAvatarConstructor(TLRPC.VideoSize emojiMarkup) {
+        createChatAttachView();
+        chatAttachAlert.getPhotoLayout().showAvatarConstructorFragment(null, emojiMarkup);
+    }
+
     public interface ImageUpdaterDelegate {
         void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize, boolean isVideo, TLRPC.VideoSize emojiMarkup);
 

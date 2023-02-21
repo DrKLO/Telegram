@@ -553,7 +553,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 if (photoSize != null) {
                     TLRPC.Photo photo = messageObject.messageOwner.action.photo;
                     TLRPC.VideoSize videoSize = null;
-                    if (!photo.video_sizes.isEmpty() && SharedConfig.autoplayGifs) {
+                    if (!photo.video_sizes.isEmpty() && SharedConfig.isAutoplayGifs()) {
                         videoSize = FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 1000);
                         if (!messageObject.mediaExists && !DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, videoSize.size)) {
                             currentVideoLocation = ImageLocation.getForPhoto(videoSize, photo);

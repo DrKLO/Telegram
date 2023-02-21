@@ -19,7 +19,7 @@
 #include "absl/debugging/internal/vdso_support.h"  // a no-op on non-elf or non-glibc systems
 #include "absl/debugging/stacktrace.h"
 
-static const uintptr_t kUnknownFrameSize = 0;
+static const size_t kUnknownFrameSize = 0;
 
 #if defined(__linux__)
 // Returns the address of the VDSO __kernel_rt_sigreturn function, if present.
@@ -65,11 +65,12 @@ static const unsigned char* GetKernelRtSigreturnAddress() {
 // Compute the size of a stack frame in [low..high).  We assume that
 // low < high.  Return size of kUnknownFrameSize.
 template<typename T>
-static inline uintptr_t ComputeStackFrameSize(const T* low,
-                                              const T* high) {
+static inline size_t ComputeStackFrameSize(const T* low,
+                                           const T* high) {
   const char* low_char_ptr = reinterpret_cast<const char *>(low);
   const char* high_char_ptr = reinterpret_cast<const char *>(high);
-  return low < high ? high_char_ptr - low_char_ptr : kUnknownFrameSize;
+  return low < high ? static_cast<size_t>(high_char_ptr - low_char_ptr)
+                    : kUnknownFrameSize;
 }
 
 // Given a pointer to a stack frame, locate and return the calling
@@ -110,15 +111,15 @@ static void **NextStackFrame(void **old_frame_pointer, const void *uc) {
   }
 #endif
 
-  // aarch64 ABI requires stack pointer to be 16-byte-aligned.
-  if ((reinterpret_cast<uintptr_t>(new_frame_pointer) & 15) != 0)
+  // The frame pointer should be 8-byte aligned.
+  if ((reinterpret_cast<uintptr_t>(new_frame_pointer) & 7) != 0)
     return nullptr;
 
   // Check frame size.  In strict mode, we assume frames to be under
   // 100,000 bytes.  In non-strict mode, we relax the limit to 1MB.
   if (check_frame_size) {
-    const uintptr_t max_size = STRICT_UNWINDING ? 100000 : 1000000;
-    const uintptr_t frame_size =
+    const size_t max_size = STRICT_UNWINDING ? 100000 : 1000000;
+    const size_t frame_size =
         ComputeStackFrameSize(old_frame_pointer, new_frame_pointer);
     if (frame_size == kUnknownFrameSize || frame_size > max_size)
       return nullptr;
@@ -165,7 +166,8 @@ static int UnwindImpl(void** result, int* sizes, int max_depth, int skip_count,
     } else {
       result[n] = prev_return_address;
       if (IS_STACK_FRAMES) {
-        sizes[n] = ComputeStackFrameSize(frame_pointer, next_frame_pointer);
+        sizes[n] = static_cast<int>(
+            ComputeStackFrameSize(frame_pointer, next_frame_pointer));
       }
       n++;
     }

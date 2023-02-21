@@ -17,12 +17,14 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ConfigurationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -3296,7 +3298,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 (AndroidUtilities.isTabletInternal() && BuildVars.DEBUG_PRIVATE_VERSION) ? (SharedConfig.forceDisableTabletMode ? "Enable tablet mode" : "Disable tablet mode") : null,
                                 LocaleController.getString(SharedConfig.useLNavigation ? R.string.AltNavigationDisable : R.string.AltNavigationEnable),
                                 BuildVars.DEBUG_PRIVATE_VERSION ? LocaleController.getString(SharedConfig.isFloatingDebugActive ? R.string.FloatingDebugDisable : R.string.FloatingDebugEnable) : null,
-                                BuildVars.DEBUG_PRIVATE_VERSION ? "Force remove premium suggestions" : null
+                                BuildVars.DEBUG_PRIVATE_VERSION ? "Force remove premium suggestions" : null,
+                                BuildVars.DEBUG_PRIVATE_VERSION ? "Share device info" : null,
+                                BuildVars.DEBUG_PRIVATE_VERSION ? "Force performance class" : null
                         };
 
                         builder.setItems(items, (dialog, which) -> {
@@ -3406,6 +3410,122 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                         getMessagesController().loadAppConfig();
                                     });
                                 });
+                            } else if (which == 24) {
+                                int androidVersion = Build.VERSION.SDK_INT;
+                                int cpuCount = ConnectionsManager.CPU_COUNT;
+                                int memoryClass = ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
+                                long minFreqSum = 0, minFreqCount = 0;
+                                long maxFreqSum = 0, maxFreqCount = 0;
+                                long curFreqSum = 0, curFreqCount = 0;
+                                long capacitySum = 0, capacityCount = 0;
+                                StringBuilder cpusInfo = new StringBuilder();
+                                for (int i = 0; i < cpuCount; i++) {
+                                    Long minFreq = AndroidUtilities.getSysInfoLong("/sys/devices/system/cpu/cpu" + i + "/cpufreq/cpuinfo_min_freq");
+                                    Long curFreq = AndroidUtilities.getSysInfoLong("/sys/devices/system/cpu/cpu" + i + "/cpufreq/cpuinfo_cur_freq");
+                                    Long maxFreq = AndroidUtilities.getSysInfoLong("/sys/devices/system/cpu/cpu" + i + "/cpufreq/cpuinfo_max_freq");
+                                    Long capacity = AndroidUtilities.getSysInfoLong("/sys/devices/system/cpu/cpu" + i + "/cpu_capacity");
+                                    cpusInfo.append("#").append(i).append(" ");
+                                    if (minFreq != null) {
+                                        cpusInfo.append("min=").append(minFreq / 1000L).append(" ");
+                                        minFreqSum += (minFreq / 1000L);
+                                        minFreqCount++;
+                                    }
+                                    if (curFreq != null) {
+                                        cpusInfo.append("cur=").append(curFreq / 1000L).append(" ");
+                                        curFreqSum += (curFreq / 1000L);
+                                        curFreqCount++;
+                                    }
+                                    if (maxFreq != null) {
+                                        cpusInfo.append("max=").append(maxFreq / 1000L).append(" ");
+                                        maxFreqSum += (maxFreq / 1000L);
+                                        maxFreqCount++;
+                                    }
+                                    if (capacity != null) {
+                                        cpusInfo.append("cpc=").append(capacity).append(" ");
+                                        capacitySum += capacity;
+                                        capacityCount++;
+                                    }
+                                    cpusInfo.append("\n");
+                                }
+                                StringBuilder info = new StringBuilder();
+                                info.append(Build.MANUFACTURER).append(", ").append(Build.MODEL).append(" (").append(Build.PRODUCT).append(", ").append(Build.DEVICE).append(") ").append(" (android ").append(Build.VERSION.SDK_INT).append(")\n");
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    info.append("SoC: ").append(Build.SOC_MANUFACTURER).append(", ").append(Build.SOC_MODEL).append("\n");
+                                }
+                                String gpuModel = AndroidUtilities.getSysInfoString("/sys/kernel/gpu/gpu_model");
+                                if (gpuModel != null) {
+                                    info.append("GPU: ").append(gpuModel);
+                                    Long minClock = AndroidUtilities.getSysInfoLong("/sys/kernel/gpu/gpu_min_clock");
+                                    Long mminClock = AndroidUtilities.getSysInfoLong("/sys/kernel/gpu/gpu_mm_min_clock");
+                                    Long maxClock = AndroidUtilities.getSysInfoLong("/sys/kernel/gpu/gpu_max_clock");
+                                    if (minClock != null) {
+                                        info.append(", min=").append(minClock / 1000L);
+                                    }
+                                    if (mminClock != null) {
+                                        info.append(", mmin=").append(mminClock / 1000L);
+                                    }
+                                    if (maxClock != null) {
+                                        info.append(", max=").append(maxClock / 1000L);
+                                    }
+                                    info.append("\n");
+                                }
+                                ConfigurationInfo configurationInfo = ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getDeviceConfigurationInfo();
+                                info.append("GLES Version: ").append(configurationInfo.getGlEsVersion()).append("\n");
+                                info.append("Memory: class=").append(AndroidUtilities.formatFileSize(memoryClass * 1024L * 1024L));
+                                ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+                                ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryInfo(memoryInfo);
+                                info.append(", total=").append(AndroidUtilities.formatFileSize(memoryInfo.totalMem));
+                                info.append(", avail=").append(AndroidUtilities.formatFileSize(memoryInfo.availMem));
+                                info.append(", low?=").append(memoryInfo.lowMemory);
+                                info.append(" (threshold=").append(AndroidUtilities.formatFileSize(memoryInfo.threshold)).append(")");
+                                info.append("\n");
+                                info.append("Current class: ").append(SharedConfig.performanceClassName(SharedConfig.getDevicePerformanceClass())).append(", measured: ").append(SharedConfig.performanceClassName(SharedConfig.measureDevicePerformanceClass()));
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    info.append(", suggest=").append(Build.VERSION.MEDIA_PERFORMANCE_CLASS);
+                                }
+                                info.append("\n");
+                                info.append(cpuCount).append(" CPUs");
+                                if (minFreqCount > 0) {
+                                    info.append(", avgMinFreq=").append(minFreqSum / minFreqCount);
+                                }
+                                if (curFreqCount > 0) {
+                                    info.append(", avgCurFreq=").append(curFreqSum / curFreqCount);
+                                }
+                                if (maxFreqCount > 0) {
+                                    info.append(", avgMaxFreq=").append(maxFreqSum / maxFreqCount);
+                                }
+                                if (capacityCount > 0) {
+                                    info.append(", avgCapacity=").append(capacitySum / capacityCount);
+                                }
+                                info.append("\n").append(cpusInfo);
+
+                                showDialog(new ShareAlert(getParentActivity(), null, info.toString(), false, null, false) {
+                                    @Override
+                                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                                        AndroidUtilities.runOnUIThread(() -> {
+                                            BulletinFactory.createInviteSentBulletin(getParentActivity(), contentView, dids.size(), dids.size() == 1 ? dids.valueAt(0).id : 0, count, getThemedColor(Theme.key_undo_background), getThemedColor(Theme.key_undo_infoColor)).show();
+                                        }, 250);
+                                    }
+                                });
+                            } else if (which == 25) {
+                                AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity(), resourcesProvider);
+                                builder2.setTitle("Force performance class");
+                                int currentClass = SharedConfig.getDevicePerformanceClass();
+                                int trueClass = SharedConfig.measureDevicePerformanceClass();
+                                builder2.setItems(new CharSequence[] {
+                                    AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? "**HIGH**" : "HIGH") + (trueClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? " (measured)" : "")),
+                                    AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? "**AVERAGE**" : "AVERAGE") + (trueClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? " (measured)" : "")),
+                                    AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_LOW ? "**LOW**" : "LOW") + (trueClass == SharedConfig.PERFORMANCE_CLASS_LOW ? " (measured)" : ""))
+                                }, (dialog2, which2) -> {
+                                    int newClass = 2 - which2;
+                                    if (newClass == trueClass) {
+                                        SharedConfig.overrideDevicePerformanceClass(-1);
+                                    } else {
+                                        SharedConfig.overrideDevicePerformanceClass(newClass);
+                                    }
+                                });
+                                builder2.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                builder2.show();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -7647,7 +7767,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         onlineTextView[a].setText(a == 0 ? statusString : profileStatusString);
                     } else if (a == 0 && ChatObject.isChannel(currentChat) && chatInfo != null && chatInfo.participants_count != 0 && (currentChat.megagroup || currentChat.broadcast)) {
                         int[] result = new int[1];
-                        String shortNumber = LocaleController.formatShortNumber(chatInfo.participants_count, result);
+                        boolean ignoreShort = AndroidUtilities.isAccessibilityScreenReaderEnabled();
+                        String shortNumber = ignoreShort ? String.valueOf(result[0] = chatInfo.participants_count) : LocaleController.formatShortNumber(chatInfo.participants_count, result);
                         if (currentChat.megagroup) {
                             if (chatInfo.participants_count == 0) {
                                 if (chat.has_geo) {
@@ -8487,8 +8608,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     files.add(f);
                 }
 
-                if (FileLog.databaseIsMalformed) {
-                    files.addAll(MessagesStorage.getInstance(UserConfig.selectedAccount).getDatabaseFiles());
+                File filesDir = ApplicationLoader.getFilesDirFixed();
+                filesDir = new File(filesDir, "malformed_database/");
+                if (filesDir.exists() && filesDir.isDirectory()) {
+                    File[] malformedDatabaseFiles = filesDir.listFiles();
+                    for (File file : malformedDatabaseFiles) {
+                        files.add(file);
+                    }
                 }
 
                 boolean[] finished = new boolean[1];

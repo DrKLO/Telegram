@@ -20,9 +20,11 @@
 #include <functional>
 #include <queue>
 #include <thread>  // NOLINT(build/c++11)
+#include <utility>
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/synchronization/mutex.h"
 
 namespace absl {
@@ -33,6 +35,7 @@ namespace synchronization_internal {
 class ThreadPool {
  public:
   explicit ThreadPool(int num_threads) {
+    threads_.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
       threads_.push_back(std::thread(&ThreadPool::WorkLoop, this));
     }
@@ -54,7 +57,7 @@ class ThreadPool {
   }
 
   // Schedule a function to be run on a ThreadPool thread immediately.
-  void Schedule(std::function<void()> func) {
+  void Schedule(absl::AnyInvocable<void()> func) {
     assert(func != nullptr);
     absl::MutexLock l(&mu_);
     queue_.push(std::move(func));
@@ -67,7 +70,7 @@ class ThreadPool {
 
   void WorkLoop() {
     while (true) {
-      std::function<void()> func;
+      absl::AnyInvocable<void()> func;
       {
         absl::MutexLock l(&mu_);
         mu_.Await(absl::Condition(this, &ThreadPool::WorkAvailable));
@@ -82,7 +85,7 @@ class ThreadPool {
   }
 
   absl::Mutex mu_;
-  std::queue<std::function<void()>> queue_ ABSL_GUARDED_BY(mu_);
+  std::queue<absl::AnyInvocable<void()>> queue_ ABSL_GUARDED_BY(mu_);
   std::vector<std::thread> threads_;
 };
 

@@ -95,17 +95,13 @@ const char MediaConstraints::kValueFalse[] = "false";
 // Audio constraints.
 const char MediaConstraints::kGoogEchoCancellation[] = "googEchoCancellation";
 const char MediaConstraints::kAutoGainControl[] = "googAutoGainControl";
-const char MediaConstraints::kExperimentalAutoGainControl[] =
-    "googAutoGainControl2";
 const char MediaConstraints::kNoiseSuppression[] = "googNoiseSuppression";
-const char MediaConstraints::kExperimentalNoiseSuppression[] =
-    "googNoiseSuppression2";
 const char MediaConstraints::kHighpassFilter[] = "googHighpassFilter";
-const char MediaConstraints::kTypingNoiseDetection[] =
-    "googTypingNoiseDetection";
 const char MediaConstraints::kAudioMirroring[] = "googAudioMirroring";
 const char MediaConstraints::kAudioNetworkAdaptorConfig[] =
     "googAudioNetworkAdaptorConfig";
+const char MediaConstraints::kInitAudioRecordingOnSend[] =
+    "InitAudioRecordingOnSend";
 
 // Constraint keys for CreateOffer / CreateAnswer defined in W3C specification.
 const char MediaConstraints::kOfferToReceiveAudio[] = "OfferToReceiveAudio";
@@ -119,7 +115,6 @@ const char MediaConstraints::kUseRtpMux[] = "googUseRtpMUX";
 // Below constraints should be used during PeerConnection construction.
 // Google-specific constraint keys.
 const char MediaConstraints::kEnableDscp[] = "googDscp";
-const char MediaConstraints::kEnableIPv6[] = "googIPv6";
 const char MediaConstraints::kEnableVideoSuspendBelowMinBitrate[] =
     "googSuspendBelowMinBitrate";
 const char MediaConstraints::kCombinedAudioVideoBwe[] =
@@ -155,11 +150,6 @@ void CopyConstraintsIntoRtcConfiguration(
     return;
   }
 
-  bool enable_ipv6;
-  if (FindConstraint(constraints, MediaConstraints::kEnableIPv6, &enable_ipv6,
-                     nullptr)) {
-    configuration->disable_ipv6 = !enable_ipv6;
-  }
   FindConstraint(constraints, MediaConstraints::kEnableDscp,
                  &configuration->media_config.enable_dscp, nullptr);
   FindConstraint(constraints, MediaConstraints::kCpuOveruseDetection,
@@ -188,19 +178,10 @@ void CopyConstraintsIntoAudioOptions(const MediaConstraints* constraints,
                              &options->echo_cancellation);
   ConstraintToOptional<bool>(constraints, MediaConstraints::kAutoGainControl,
                              &options->auto_gain_control);
-  ConstraintToOptional<bool>(constraints,
-                             MediaConstraints::kExperimentalAutoGainControl,
-                             &options->experimental_agc);
   ConstraintToOptional<bool>(constraints, MediaConstraints::kNoiseSuppression,
                              &options->noise_suppression);
-  ConstraintToOptional<bool>(constraints,
-                             MediaConstraints::kExperimentalNoiseSuppression,
-                             &options->experimental_ns);
   ConstraintToOptional<bool>(constraints, MediaConstraints::kHighpassFilter,
                              &options->highpass_filter);
-  ConstraintToOptional<bool>(constraints,
-                             MediaConstraints::kTypingNoiseDetection,
-                             &options->typing_detection);
   ConstraintToOptional<bool>(constraints, MediaConstraints::kAudioMirroring,
                              &options->stereo_swapping);
   ConstraintToOptional<std::string>(
@@ -211,6 +192,9 @@ void CopyConstraintsIntoAudioOptions(const MediaConstraints* constraints,
   if (options->audio_network_adaptor_config) {
     options->audio_network_adaptor = true;
   }
+  ConstraintToOptional<bool>(constraints,
+                             MediaConstraints::kInitAudioRecordingOnSend,
+                             &options->init_recording_on_send);
 }
 
 bool CopyConstraintsIntoOfferAnswerOptions(

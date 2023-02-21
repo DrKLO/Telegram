@@ -500,6 +500,20 @@ public class SvgHelper {
         }
     }
 
+    public static SvgDrawable getDrawableByPath(Path path, int w, int h) {
+        try {
+            SvgDrawable drawable = new SvgDrawable();
+            drawable.commands.add(path);
+            drawable.paints.put(path, new Paint(Paint.ANTI_ALIAS_FLAG));
+            drawable.width = w;
+            drawable.height = h;
+            return drawable;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
     public static Bitmap getBitmapByPathOnly(String pathString, int svgWidth, int svgHeight, int width, int height) {
         try {
             Path path = doPath(pathString);
@@ -666,7 +680,7 @@ public class SvgHelper {
         return null;
     }
 
-    private static Path doPath(String s) {
+    public static Path doPath(String s) {
         int n = s.length();
         ParserHelper ph = new ParserHelper(s, 0);
         ph.skipWhitespace();

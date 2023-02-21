@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "api/audio_codecs/audio_decoder.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -39,7 +40,7 @@ DecoderDatabase::DecoderInfo::DecoderInfo(
     const SdpAudioFormat& audio_format,
     absl::optional<AudioCodecPairId> codec_pair_id,
     AudioDecoderFactory* factory,
-    const std::string& codec_name)
+    absl::string_view codec_name)
     : name_(codec_name),
       audio_format_(audio_format),
       codec_pair_id_(codec_pair_id),
@@ -71,12 +72,8 @@ AudioDecoder* DecoderDatabase::DecoderInfo::GetDecoder() const {
   return decoder_.get();
 }
 
-bool DecoderDatabase::DecoderInfo::IsType(const char* name) const {
+bool DecoderDatabase::DecoderInfo::IsType(absl::string_view name) const {
   return absl::EqualsIgnoreCase(audio_format_.name, name);
-}
-
-bool DecoderDatabase::DecoderInfo::IsType(const std::string& name) const {
-  return IsType(name.c_str());
 }
 
 absl::optional<DecoderDatabase::DecoderInfo::CngDecoder>
@@ -111,12 +108,6 @@ bool DecoderDatabase::Empty() const {
 
 int DecoderDatabase::Size() const {
   return static_cast<int>(decoders_.size());
-}
-
-void DecoderDatabase::Reset() {
-  decoders_.clear();
-  active_decoder_type_ = -1;
-  active_cng_decoder_type_ = -1;
 }
 
 std::vector<int> DecoderDatabase::SetCodecs(
@@ -261,16 +252,6 @@ ComfortNoiseDecoder* DecoderDatabase::GetActiveCngDecoder() const {
 AudioDecoder* DecoderDatabase::GetDecoder(uint8_t rtp_payload_type) const {
   const DecoderInfo* info = GetDecoderInfo(rtp_payload_type);
   return info ? info->GetDecoder() : nullptr;
-}
-
-bool DecoderDatabase::IsType(uint8_t rtp_payload_type, const char* name) const {
-  const DecoderInfo* info = GetDecoderInfo(rtp_payload_type);
-  return info && info->IsType(name);
-}
-
-bool DecoderDatabase::IsType(uint8_t rtp_payload_type,
-                             const std::string& name) const {
-  return IsType(rtp_payload_type, name.c_str());
 }
 
 bool DecoderDatabase::IsComfortNoise(uint8_t rtp_payload_type) const {

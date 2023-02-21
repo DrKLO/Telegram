@@ -144,8 +144,8 @@ std::unique_ptr<OpenSSLCertificate> OpenSSLCertificate::Generate(
 }
 
 std::unique_ptr<OpenSSLCertificate> OpenSSLCertificate::FromPEMString(
-    const std::string& pem_string) {
-  BIO* bio = BIO_new_mem_buf(const_cast<char*>(pem_string.c_str()), -1);
+    absl::string_view pem_string) {
+  BIO* bio = BIO_new_mem_buf(const_cast<char*>(pem_string.data()), -1);
   if (!bio) {
     return nullptr;
   }
@@ -208,7 +208,7 @@ bool OpenSSLCertificate::GetSignatureDigestAlgorithm(
   return true;
 }
 
-bool OpenSSLCertificate::ComputeDigest(const std::string& algorithm,
+bool OpenSSLCertificate::ComputeDigest(absl::string_view algorithm,
                                        unsigned char* digest,
                                        size_t size,
                                        size_t* length) const {
@@ -216,7 +216,7 @@ bool OpenSSLCertificate::ComputeDigest(const std::string& algorithm,
 }
 
 bool OpenSSLCertificate::ComputeDigest(const X509* x509,
-                                       const std::string& algorithm,
+                                       absl::string_view algorithm,
                                        unsigned char* digest,
                                        size_t size,
                                        size_t* length) {

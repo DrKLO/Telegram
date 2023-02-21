@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/crypto/crypto_options.h"
 #include "api/fec_controller.h"
@@ -41,6 +42,7 @@ class TaskQueue;
 namespace webrtc {
 
 class FrameEncryptorInterface;
+class MaybeWorkerThread;
 class TargetTransferRateObserver;
 class Transport;
 class PacketRouter;
@@ -92,7 +94,9 @@ struct RtpSenderFrameEncryptionConfig {
 class RtpTransportControllerSendInterface {
  public:
   virtual ~RtpTransportControllerSendInterface() {}
-  virtual rtc::TaskQueue* GetWorkerQueue() = 0;
+  // TODO(webrtc:14502): Remove MaybeWorkerThread when experiment has been
+  // evaluated.
+  virtual MaybeWorkerThread* GetWorkerQueue() = 0;
   virtual PacketRouter* packet_router() = 0;
 
   virtual RtpVideoSenderInterface* CreateRtpVideoSender(
@@ -127,7 +131,7 @@ class RtpTransportControllerSendInterface {
   virtual void RegisterTargetTransferRateObserver(
       TargetTransferRateObserver* observer) = 0;
   virtual void OnNetworkRouteChanged(
-      const std::string& transport_name,
+      absl::string_view transport_name,
       const rtc::NetworkRoute& network_route) = 0;
   virtual void OnNetworkAvailability(bool network_available) = 0;
   virtual RtcpBandwidthObserver* GetBandwidthObserver() = 0;

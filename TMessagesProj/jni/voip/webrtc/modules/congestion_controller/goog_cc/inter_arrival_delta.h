@@ -42,7 +42,7 @@ class InterArrivalDelta {
   // `arrival_time` is the time at which the packet arrived.
   // `packet_size` is the size of the packet.
   // `timestamp_delta` (output) is the computed send time delta.
-  // `arrival_time_delta_ms` (output) is the computed arrival-time delta.
+  // `arrival_time_delta` (output) is the computed arrival-time delta.
   // `packet_size_delta` (output) is the computed size delta.
   bool ComputeDeltas(Timestamp send_time,
                      Timestamp arrival_time,

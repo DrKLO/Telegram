@@ -494,12 +494,12 @@ public class DataSettingsActivity extends BaseFragment {
             } else if (position == autoplayGifsRow) {
                 SharedConfig.toggleAutoplayGifs();
                 if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.autoplayGifs);
+                    ((TextCheckCell) view).setChecked(SharedConfig.isAutoplayGifs());
                 }
             } else if (position == autoplayVideoRow) {
                 SharedConfig.toggleAutoplayVideo();
                 if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.autoplayVideo);
+                    ((TextCheckCell) view).setChecked(SharedConfig.isAutoplayGifs());
                 }
             } else if (position == clearDraftsRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -656,9 +656,9 @@ public class DataSettingsActivity extends BaseFragment {
                     } else if (position == enableAllStreamRow) {
                         checkCell.setTextAndCheck("(beta only) Stream All Videos", SharedConfig.streamAllVideo, false);
                     } else if (position == autoplayGifsRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayGIF", R.string.AutoplayGIF), SharedConfig.autoplayGifs, true);
+                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayGIF", R.string.AutoplayGIF), SharedConfig.isAutoplayGifs(), true);
                     } else if (position == autoplayVideoRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayVideo", R.string.AutoplayVideo), SharedConfig.autoplayVideo, false);
+                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayVideo", R.string.AutoplayVideo), SharedConfig.isAutoplayVideo(), false);
                     }
                     break;
                 }
@@ -770,9 +770,9 @@ public class DataSettingsActivity extends BaseFragment {
                 } else if (position == enableMkvRow) {
                     checkCell.setChecked(SharedConfig.streamMkv);
                 } else if (position == autoplayGifsRow) {
-                    checkCell.setChecked(SharedConfig.autoplayGifs);
+                    checkCell.setChecked(SharedConfig.isAutoplayGifs());
                 } else if (position == autoplayVideoRow) {
-                    checkCell.setChecked(SharedConfig.autoplayVideo);
+                    checkCell.setChecked(SharedConfig.isAutoplayVideo());
                 }
             }
         }

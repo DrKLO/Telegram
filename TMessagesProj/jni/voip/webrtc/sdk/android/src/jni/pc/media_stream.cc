@@ -29,7 +29,7 @@ JavaMediaStream::JavaMediaStream(
   // Create an observer to update the Java stream when the native stream's set
   // of tracks changes.
   observer_.reset(new MediaStreamObserver(
-      media_stream,
+      media_stream.get(),
       [this](AudioTrackInterface* audio_track,
              MediaStreamInterface* media_stream) {
         OnAudioTrackAddedToStream(audio_track, media_stream);
@@ -113,7 +113,8 @@ static jboolean JNI_MediaStream_AddAudioTrackToNativeStream(
     jlong pointer,
     jlong j_audio_track_pointer) {
   return reinterpret_cast<MediaStreamInterface*>(pointer)->AddTrack(
-      reinterpret_cast<AudioTrackInterface*>(j_audio_track_pointer));
+      rtc::scoped_refptr<AudioTrackInterface>(
+          reinterpret_cast<AudioTrackInterface*>(j_audio_track_pointer)));
 }
 
 static jboolean JNI_MediaStream_AddVideoTrackToNativeStream(
@@ -121,21 +122,24 @@ static jboolean JNI_MediaStream_AddVideoTrackToNativeStream(
     jlong pointer,
     jlong j_video_track_pointer) {
   return reinterpret_cast<MediaStreamInterface*>(pointer)->AddTrack(
-      reinterpret_cast<VideoTrackInterface*>(j_video_track_pointer));
+      rtc::scoped_refptr<VideoTrackInterface>(
+          reinterpret_cast<VideoTrackInterface*>(j_video_track_pointer)));
 }
 
 static jboolean JNI_MediaStream_RemoveAudioTrack(JNIEnv* jni,
                                                  jlong pointer,
                                                  jlong j_audio_track_pointer) {
   return reinterpret_cast<MediaStreamInterface*>(pointer)->RemoveTrack(
-      reinterpret_cast<AudioTrackInterface*>(j_audio_track_pointer));
+      rtc::scoped_refptr<AudioTrackInterface>(
+          reinterpret_cast<AudioTrackInterface*>(j_audio_track_pointer)));
 }
 
 static jboolean JNI_MediaStream_RemoveVideoTrack(JNIEnv* jni,
                                                  jlong pointer,
                                                  jlong j_video_track_pointer) {
   return reinterpret_cast<MediaStreamInterface*>(pointer)->RemoveTrack(
-      reinterpret_cast<VideoTrackInterface*>(j_video_track_pointer));
+      rtc::scoped_refptr<VideoTrackInterface>(
+          reinterpret_cast<VideoTrackInterface*>(j_video_track_pointer)));
 }
 
 static ScopedJavaLocalRef<jstring> JNI_MediaStream_GetId(JNIEnv* jni,

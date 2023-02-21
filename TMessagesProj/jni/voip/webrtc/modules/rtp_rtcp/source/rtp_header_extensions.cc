@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 
+#include "absl/strings/string_view.h"
 #include "modules/rtp_rtcp/include/rtp_cvo.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
 // TODO(bug:9855) Move kNoSpatialIdx from vp9_globals.h to common_constants
@@ -800,7 +801,7 @@ bool BaseRtpStringExtension::Parse(rtc::ArrayView<const uint8_t> data,
 }
 
 bool BaseRtpStringExtension::Write(rtc::ArrayView<uint8_t> data,
-                                   const std::string& str) {
+                                   absl::string_view str) {
   if (str.size() > kMaxValueSizeBytes) {
     return false;
   }

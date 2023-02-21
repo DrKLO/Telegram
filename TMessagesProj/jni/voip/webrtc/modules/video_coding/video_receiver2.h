@@ -11,12 +11,17 @@
 #ifndef MODULES_VIDEO_CODING_VIDEO_RECEIVER2_H_
 #define MODULES_VIDEO_CODING_VIDEO_RECEIVER2_H_
 
+#include <memory>
+#include <vector>
+
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/decoder_database.h"
 #include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/generic_decoder.h"
-#include "modules/video_coding/timing.h"
+#include "modules/video_coding/timing/timing.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -28,47 +33,33 @@ namespace webrtc {
 // VideoCodingModule api.
 class VideoReceiver2 {
  public:
-  VideoReceiver2(Clock* clock, VCMTiming* timing);
+  VideoReceiver2(Clock* clock,
+                 VCMTiming* timing,
+                 const FieldTrialsView& field_trials);
   ~VideoReceiver2();
 
   void RegisterReceiveCodec(uint8_t payload_type,
                             const VideoDecoder::Settings& decoder_settings);
+  void DeregisterReceiveCodec(uint8_t payload_type);
+  void DeregisterReceiveCodecs();
 
-  void RegisterExternalDecoder(VideoDecoder* externalDecoder,
-                               uint8_t payloadType);
-  bool IsExternalDecoderRegistered(uint8_t payloadType) const;
-  int32_t RegisterReceiveCallback(VCMReceiveCallback* receiveCallback);
+  void RegisterExternalDecoder(std::unique_ptr<VideoDecoder> decoder,
+                               uint8_t payload_type);
 
-  int32_t Decode(const webrtc::VCMEncodedFrame* frame);
+  bool IsExternalDecoderRegistered(uint8_t payload_type) const;
+  int32_t RegisterReceiveCallback(VCMReceiveCallback* receive_callback);
 
-  // Notification methods that are used to check our internal state and validate
-  // threading assumptions. These are called by VideoReceiveStream.
-  // See `IsDecoderThreadRunning()` for more details.
-  void DecoderThreadStarting();
-  void DecoderThreadStopped();
+  int32_t Decode(const VCMEncodedFrame* frame);
 
  private:
-  // Used for DCHECKing thread correctness.
-  // In build where DCHECKs are enabled, will return false before
-  // DecoderThreadStarting is called, then true until DecoderThreadStopped
-  // is called.
-  // In builds where DCHECKs aren't enabled, it will return true.
-  bool IsDecoderThreadRunning();
-
-  SequenceChecker construction_sequence_checker_;
-  SequenceChecker decoder_sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker construction_sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker decoder_sequence_checker_;
   Clock* const clock_;
-  VCMTiming* timing_;
-  VCMDecodedFrameCallback decodedFrameCallback_;
-
+  VCMDecodedFrameCallback decoded_frame_callback_;
   // Callbacks are set before the decoder thread starts.
   // Once the decoder thread has been started, usage of `_codecDataBase` moves
   // over to the decoder thread.
-  VCMDecoderDataBase codecDataBase_;
-
-#if RTC_DCHECK_IS_ON
-  bool decoder_thread_is_running_ = false;
-#endif
+  VCMDecoderDatabase codec_database_;
 };
 
 }  // namespace webrtc

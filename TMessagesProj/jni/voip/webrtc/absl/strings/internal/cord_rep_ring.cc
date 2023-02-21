@@ -129,7 +129,9 @@ class CordRepRing::Filler {
   index_type pos_;
 };
 
-constexpr size_t CordRepRing::kMaxCapacity; // NOLINT: needed for c++11
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
+constexpr size_t CordRepRing::kMaxCapacity;
+#endif
 
 bool CordRepRing::IsValid(std::ostream& output) const {
   if (capacity_ == 0) {

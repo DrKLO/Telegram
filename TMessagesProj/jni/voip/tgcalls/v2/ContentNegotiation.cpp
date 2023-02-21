@@ -1,6 +1,7 @@
 #include "v2/ContentNegotiation.h"
 
 #include "rtc_base/rtc_certificate_generator.h"
+#include "media/base/media_engine.h"
 
 #include <sstream>
 
@@ -195,10 +196,10 @@ std::string contentIdBySsrc(uint32_t ssrc) {
 
 }
 
-ContentNegotiationContext::ContentNegotiationContext(bool isOutgoing, rtc::UniqueRandomIdGenerator *uniqueRandomIdGenerator) :
+ContentNegotiationContext::ContentNegotiationContext(const webrtc::WebRtcKeyValueConfig& fieldTrials, bool isOutgoing, rtc::UniqueRandomIdGenerator *uniqueRandomIdGenerator) :
 _isOutgoing(isOutgoing),
 _uniqueRandomIdGenerator(uniqueRandomIdGenerator) {
-    _transportDescriptionFactory = std::make_unique<cricket::TransportDescriptionFactory>();
+    _transportDescriptionFactory = std::make_unique<cricket::TransportDescriptionFactory>(fieldTrials);
     
     // tempCertificate is only used to fill in the local SDP
     auto tempCertificate = rtc::RTCCertificateGenerator::GenerateCertificate(rtc::KeyParams(rtc::KT_ECDSA), absl::nullopt);
@@ -214,16 +215,11 @@ ContentNegotiationContext::~ContentNegotiationContext() {
     
 }
 
-void ContentNegotiationContext::copyCodecsFromChannelManager(cricket::ChannelManager *channelManager, bool randomize) {
-    cricket::AudioCodecs audioSendCodecs;
-    cricket::AudioCodecs audioRecvCodecs;
-    cricket::VideoCodecs videoSendCodecs;
-    cricket::VideoCodecs videoRecvCodecs;
-    
-    channelManager->GetSupportedAudioSendCodecs(&audioSendCodecs);
-    channelManager->GetSupportedAudioReceiveCodecs(&audioRecvCodecs);
-    channelManager->GetSupportedVideoSendCodecs(&videoSendCodecs);
-    channelManager->GetSupportedVideoReceiveCodecs(&videoRecvCodecs);
+void ContentNegotiationContext::copyCodecsFromChannelManager(cricket::MediaEngineInterface *mediaEngine, bool randomize) {
+    cricket::AudioCodecs audioSendCodecs = mediaEngine->voice().send_codecs();
+    cricket::AudioCodecs audioRecvCodecs = mediaEngine->voice().recv_codecs();
+    cricket::VideoCodecs videoSendCodecs = mediaEngine->video().send_codecs();
+    cricket::VideoCodecs videoRecvCodecs = mediaEngine->video().recv_codecs();
     
     for (const auto &codec : audioSendCodecs) {
         if (codec.name == "opus") {

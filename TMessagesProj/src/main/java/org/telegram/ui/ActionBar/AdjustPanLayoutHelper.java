@@ -276,7 +276,7 @@ public class AdjustPanLayoutHelper {
     public AdjustPanLayoutHelper(View parent, boolean useInsetsAnimator) {
         this.useInsetsAnimator = useInsetsAnimator;
         this.parent = parent;
-        onAttach();
+        AndroidUtilities.runOnUIThread(this::onAttach);
     }
 
     public void onAttach() {

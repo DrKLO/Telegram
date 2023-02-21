@@ -18,6 +18,7 @@
 
 #include <string.h>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 
 using std::vector;
@@ -85,7 +86,7 @@ bool Base64::GetNextBase64Char(char ch, char* next_ch) {
   return true;
 }
 
-bool Base64::IsBase64Encoded(const std::string& str) {
+bool Base64::IsBase64Encoded(absl::string_view str) {
   for (size_t i = 0; i < str.size(); ++i) {
     if (!IsBase64Char(str.at(i)))
       return false;

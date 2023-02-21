@@ -18,7 +18,6 @@
 
 #include "api/array_view.h"
 #include "modules/audio_coding/neteq/audio_vector.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -33,6 +32,9 @@ class AudioMultiVector {
   AudioMultiVector(size_t N, size_t initial_size);
 
   virtual ~AudioMultiVector();
+
+  AudioMultiVector(const AudioMultiVector&) = delete;
+  AudioMultiVector& operator=(const AudioMultiVector&) = delete;
 
   // Deletes all values and make the vector empty.
   virtual void Clear();
@@ -130,9 +132,6 @@ class AudioMultiVector {
  protected:
   std::vector<AudioVector*> channels_;
   size_t num_channels_;
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioMultiVector);
 };
 
 }  // namespace webrtc

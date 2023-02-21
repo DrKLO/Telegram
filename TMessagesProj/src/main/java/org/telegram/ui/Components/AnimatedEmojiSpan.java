@@ -730,7 +730,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         }
 
         private void checkBackgroundRendering() {
-            if (allowBackgroundRendering && holders.size() >= 10 && backgroundThreadDrawable == null && !SharedConfig.getLiteMode().enabled()) {
+            if (allowBackgroundRendering && holders.size() >= 10 && backgroundThreadDrawable == null && SharedConfig.getLiteMode().animatedEmojiEnabled() && SharedConfig.playEmojiInKeyboard) {
                 backgroundThreadDrawable = new DrawingInBackgroundThreadDrawable() {
 
                     private final ArrayList<AnimatedEmojiHolder> backgroundHolders = new ArrayList<>();
@@ -798,8 +798,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
                 };
                 backgroundThreadDrawable.padding = AndroidUtilities.dp(3);
                 backgroundThreadDrawable.onAttachToWindow();
-            }
-            else if (holders.size() < 10 && backgroundThreadDrawable != null) {
+            } else if (holders.size() < 10 && backgroundThreadDrawable != null) {
                 backgroundThreadDrawable.onDetachFromWindow();
                 backgroundThreadDrawable = null;
             }

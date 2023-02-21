@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_device/audio_device_generic.h"
 #include "rtc_base/platform_thread.h"
 #include "rtc_base/synchronization/mutex.h"
@@ -34,7 +35,8 @@ class FileAudioDevice : public AudioDeviceGeneric {
   // The input file should be a readable 48k stereo raw file, and the output
   // file should point to a writable location. The output format will also be
   // 48k stereo raw audio.
-  FileAudioDevice(const char* inputFilename, const char* outputFilename);
+  FileAudioDevice(absl::string_view inputFilename,
+                  absl::string_view outputFilename);
   virtual ~FileAudioDevice();
 
   // Retrieve the currently utilized audio layer

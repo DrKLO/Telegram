@@ -23,6 +23,7 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
@@ -60,6 +61,8 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
 
     private final float selectionAlpha = 0.2f;
     private final float rippleAlpha = 0.8f;
+
+    private final boolean isLite = SharedConfig.getLiteMode().enabled();
 
     public LinkSpanDrawable(S span, Theme.ResourcesProvider resourcesProvider, float touchX, float touchY) {
         this(span, resourcesProvider, touchX, touchY, true);
@@ -120,7 +123,8 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
     }
 
     public boolean draw(Canvas canvas) {
-        boolean cornerRadiusUpdate = cornerRadius != AndroidUtilities.dp(CORNER_RADIUS_DP);
+        final int radius = isLite ? 0 : AndroidUtilities.dp(CORNER_RADIUS_DP);
+        boolean cornerRadiusUpdate = cornerRadius != radius;
         if (mSelectionPaint == null) {
             mSelectionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             mSelectionPaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -134,9 +138,14 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             mRippleAlpha = Color.alpha(color);
         }
         if (cornerRadiusUpdate) {
-            cornerRadius = AndroidUtilities.dp(CORNER_RADIUS_DP);
-            mSelectionPaint.setPathEffect(new CornerPathEffect(cornerRadius));
-            mRipplePaint.setPathEffect(new CornerPathEffect(cornerRadius));
+            cornerRadius = radius;
+            if (radius <= 0) {
+                mSelectionPaint.setPathEffect(null);
+                mRipplePaint.setPathEffect(null);
+            } else {
+                mSelectionPaint.setPathEffect(new CornerPathEffect(cornerRadius));
+                mRipplePaint.setPathEffect(new CornerPathEffect(cornerRadius));
+            }
         }
         if (mBounds == null && mPathesCount > 0) {
             mPathes.get(0).computeBounds(AndroidUtilities.rectTmp, false);
@@ -165,6 +174,13 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                     )
                 )
             );
+        }
+
+        if (isLite) {
+            for (int i = 0; i < mPathesCount; ++i) {
+                canvas.drawPath(mPathes.get(i), mRipplePaint);
+            }
+            return false;
         }
 
         final long now = SystemClock.elapsedRealtime();
