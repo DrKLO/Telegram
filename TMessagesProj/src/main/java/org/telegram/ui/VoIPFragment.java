@@ -56,7 +56,6 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -273,8 +272,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     BlobDrawable bigWaveDrawable = new BlobDrawable(12);
     BlobDrawable anotherRandomWave = new BlobDrawable(15);
 
-
-
+    //  tooltip text
+    private HintView lowerToolTip;
+    private HintView upperToolTip;
 
 
     public static void show(Activity activity, int account) {
@@ -739,7 +739,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         frameLayout.addView(callingUserTextureView);
         int position = isDarkTheme ? 2 : 1;
 
-        final BackgroundGradientDrawable gradientDrawable = new BackgroundGradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, GRADIENT_BLUE_GREEN[position]);
+        final BackgroundGradientDrawable gradientDrawable = new BackgroundGradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, GRADIENT_ORANGE_RED[position]);
+        //gradientDrawable.setGradientCenter();
 
         final BackgroundGradientDrawable.Sizes sizes = BackgroundGradientDrawable.Sizes.ofDeviceScreen(BackgroundGradientDrawable.Sizes.Orientation.PORTRAIT);
         gradientDrawable.startDithering(sizes, new BackgroundGradientDrawable.ListenerAdapter() {
@@ -751,12 +752,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         overlayBackground = new VoIPOverlayBackground(context);
         overlayBackground.setVisibility(View.GONE);
 
-        callingUserPhotoView.getImageReceiver().setDelegate((imageReceiver, set, thumb, memCache) -> {
-            ImageReceiver.BitmapHolder bmp = imageReceiver.getBitmapSafe();
-            if (bmp != null) {
-                overlayBackground.setBackground(bmp);
-            }
-        });
+//        callingUserPhotoView.getImageReceiver().setDelegate((imageReceiver, set, thumb, memCache) -> {
+//            ImageReceiver.BitmapHolder bmp = imageReceiver.getBitmapSafe();
+//            if (bmp != null) {
+//                overlayBackground.setBackground(bmp);
+//            }
+//        });
 
 
         callingUserPhotoView.setImageDrawable(gradientDrawable);
@@ -818,10 +819,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         bottomShadow = new View(context);
         bottomShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.5f))}));
+        bottomShadow.setVisibility(View.GONE);
         frameLayout.addView(bottomShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.BOTTOM));
 
         topShadow = new View(context);
         topShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f)), Color.TRANSPARENT}));
+        bottomShadow.setVisibility(View.GONE);
         frameLayout.addView(topShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.TOP));
 
 
@@ -917,11 +920,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
             @Override
             protected void onDraw(Canvas canvas) {
-                int center = AndroidUtilities.dp(135)/2;
+                int center = AndroidUtilities.dp(135) / 2;
                 // draw canvas behind the picture
                 // this has to be in this order so that the paint isn't on top
                 // of the picture
-                bigWaveDrawable.draw(center, center,canvas, bigWaveDrawable.paint);
+                bigWaveDrawable.draw(center, center, canvas, bigWaveDrawable.paint);
                 tinyWaveDrawable.draw(center, center, canvas, tinyWaveDrawable.paint);
                 super.onDraw(canvas);
             }
@@ -1073,6 +1076,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         frameLayout.addView(tapToVideoTooltip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 8));
         tapToVideoTooltip.setBottomOffset(AndroidUtilities.dp(4));
         tapToVideoTooltip.setVisibility(View.GONE);
+
+
+        lowerToolTip = new HintView(context, 4,false);
+        lowerToolTip.setText(LocaleController.getString("MicrophoneOff",R.string.MicrophoneOff));
+        lowerToolTip.setBackgroundColor(0x1F_00_00_00,0xff_ff_ff_ff);
+        frameLayout.addView(lowerToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER, 0, 0, 0, AndroidUtilities.dp(85)));
+        lowerToolTip.arrowImageView.setVisibility(View.GONE);
+        lowerToolTip.setBottomOffset(AndroidUtilities.dp(4));
+
 
         updateViewState();
 
