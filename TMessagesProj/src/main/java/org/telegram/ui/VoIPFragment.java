@@ -74,6 +74,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.DarkAlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlobDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -917,7 +918,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 super.onDraw(canvas);
             }
         };
-        roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), callingUser);
+        if (callingUser.photo == null) {
+            AvatarDrawable userDp = new AvatarDrawable(callingUser);
+            roundedIcon.setImageDrawable(userDp);
+        } else {
+            roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), callingUser);
+        }
+
         roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
 
         ObjectAnimator scaleDown = ObjectAnimator.ofPropertyValuesHolder(
@@ -1075,7 +1082,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         upperToolTip.setVisibility(View.GONE);
 
         lowerToolTip = new HintView(context, HintView.ROUND_CORNERS, false);
-        lowerToolTip.setText(LocaleController.getString("MicrophoneOff", R.string.MicrophoneOff));
         lowerToolTip.setBackgroundColor(0x1F_00_00_00, Color.WHITE);
         frameLayout.addView(lowerToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER, 0, 0, 0, AndroidUtilities.dp(85)));
         lowerToolTip.arrowImageView.setVisibility(View.GONE);
@@ -2155,6 +2161,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         if (service.isMicMute()) {
+            lowerToolTip.setText(LocaleController.getString("MicrophoneOff", R.string.MicrophoneOff));
             lowerToolTip.setVisibility(View.VISIBLE);
             bottomButton.setData(R.drawable.calls_unmute, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), true, animated);
         } else {
