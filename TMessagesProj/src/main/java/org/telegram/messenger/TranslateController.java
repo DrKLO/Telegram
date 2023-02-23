@@ -745,57 +745,54 @@ public class TranslateController extends BaseController {
             pendingTranslation.language = language;
             pendingTranslation.symbolsCount += messageSymbolsCount;
             final PendingTranslation pendingTranslation1 = pendingTranslation;
-            pendingTranslation.runnable = () -> {
-                synchronized (TranslateController.this) {
-                    ArrayList<PendingTranslation> dialogPendingTranslations1 = pendingTranslations.get(dialogId);
-                    if (dialogPendingTranslations1 != null) {
-                        dialogPendingTranslations1.remove(pendingTranslation1);
-                        if (dialogPendingTranslations1.isEmpty()) {
-                            pendingTranslations.remove(dialogId);
-                        }
+            synchronized (TranslateController.this) {
+                ArrayList<PendingTranslation> dialogPendingTranslations1 = pendingTranslations.get(dialogId);
+                if (dialogPendingTranslations1 != null) {
+                    dialogPendingTranslations1.remove(pendingTranslation1);
+                    if (dialogPendingTranslations1.isEmpty()) {
+                        pendingTranslations.remove(dialogId);
                     }
                 }
+            }
 
-                TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
-                req.flags |= 1;
-                req.peer = getMessagesController().getInputPeer(dialogId);
-                req.id = pendingTranslation1.messageIds;
-                req.to_lang = pendingTranslation1.language;
+            TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
+            req.flags |= 1;
+            req.peer = getMessagesController().getInputPeer(dialogId);
+            req.id = pendingTranslation1.messageIds;
+            req.to_lang = pendingTranslation1.language;
 
-                final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-                    final ArrayList<Integer> ids;
-                    final ArrayList<Utilities.Callback2<TLRPC.TL_textWithEntities, String>> callbacks;
-                    final ArrayList<TLRPC.TL_textWithEntities> texts;
-                    synchronized (TranslateController.this) {
-                        ids = pendingTranslation1.messageIds;
-                        callbacks = pendingTranslation1.callbacks;
-                        texts = pendingTranslation1.messageTexts;
-                    }
-                    if (res instanceof TLRPC.TL_messages_translateResult) {
-                        ArrayList<TLRPC.TL_textWithEntities> translated = ((TLRPC.TL_messages_translateResult) res).result;
-                        final int count = Math.min(callbacks.size(), translated.size());
-                        for (int i = 0; i < count; ++i) {
-                            callbacks.get(i).run(TranslateAlert2.preprocess(texts.get(i), translated.get(i)), pendingTranslation1.language);
-                        }
-                    } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
-                        toggleTranslatingDialog(dialogId, false);
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString("TranslationFailedAlert2", R.string.TranslationFailedAlert2));
-                    } else {
-                        for (int i = 0; i < callbacks.size(); ++i) {
-                            callbacks.get(i).run(null, pendingTranslation1.language);
-                        }
-                    }
-                    synchronized (TranslateController.this) {
-                        for (int i = 0; i < ids.size(); ++i) {
-                            loadingTranslations.remove(ids.get(i));
-                        }
-                    }
-                }));
+            final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                final ArrayList<Integer> ids;
+                final ArrayList<Utilities.Callback2<TLRPC.TL_textWithEntities, String>> callbacks;
+                final ArrayList<TLRPC.TL_textWithEntities> texts;
                 synchronized (TranslateController.this) {
-                    pendingTranslation1.reqId = reqId;
+                    ids = pendingTranslation1.messageIds;
+                    callbacks = pendingTranslation1.callbacks;
+                    texts = pendingTranslation1.messageTexts;
                 }
-            };
-            AndroidUtilities.runOnUIThread(pendingTranslation.runnable, GROUPING_TRANSLATIONS_TIMEOUT);
+                if (res instanceof TLRPC.TL_messages_translateResult) {
+                    ArrayList<TLRPC.TL_textWithEntities> translated = ((TLRPC.TL_messages_translateResult) res).result;
+                    final int count = Math.min(callbacks.size(), translated.size());
+                    for (int i = 0; i < count; ++i) {
+                        callbacks.get(i).run(TranslateAlert2.preprocess(texts.get(i), translated.get(i)), pendingTranslation1.language);
+                    }
+                } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
+                    toggleTranslatingDialog(dialogId, false);
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString("TranslationFailedAlert2", R.string.TranslationFailedAlert2));
+                } else {
+                    for (int i = 0; i < callbacks.size(); ++i) {
+                        callbacks.get(i).run(null, pendingTranslation1.language);
+                    }
+                }
+                synchronized (TranslateController.this) {
+                    for (int i = 0; i < ids.size(); ++i) {
+                        loadingTranslations.remove(ids.get(i));
+                    }
+                }
+            }));
+            synchronized (TranslateController.this) {
+                pendingTranslation1.reqId = reqId;
+            }
         }
     }
 
