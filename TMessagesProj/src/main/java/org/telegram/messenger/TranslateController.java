@@ -38,7 +38,6 @@ public class TranslateController extends BaseController {
 
     private static final int MAX_SYMBOLS_PER_REQUEST = 25000;
     private static final int MAX_MESSAGES_PER_REQUEST = 20;
-    private static final int GROUPING_TRANSLATIONS_TIMEOUT = 200;
 
     private final Set<Long> translatingDialogs = new HashSet<>();
     private final Set<Long> translatableDialogs = new HashSet<>();
