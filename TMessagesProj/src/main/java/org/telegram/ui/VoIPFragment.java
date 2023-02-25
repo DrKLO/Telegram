@@ -20,10 +20,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
-import android.os.Handler;
 import android.os.PowerManager;
 import android.text.TextUtils;
 import android.transition.ChangeBounds;
@@ -42,7 +40,6 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -54,7 +51,6 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
-import androidx.dynamicanimation.animation.DynamicAnimation;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -152,7 +148,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private ViewGroup fragmentView;
     private VoIPOverlayBackground overlayBackground;
 
-    private BackupImageView callingUserPhotoView;
+    private BackupImageView backgroundView;
     private TransitionDrawable drawable;
     private BackupImageView callingUserPhotoViewMini;
 
@@ -720,11 +716,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
             @Override
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (child == callingUserPhotoView && (currentUserIsVideo || callingUserIsVideo)) {
+                if (child == backgroundView && (currentUserIsVideo || callingUserIsVideo)) {
                     return false;
                 }
                 if (
-                        child == callingUserPhotoView ||
+                        child == backgroundView ||
                                 child == callingUserTextureView ||
                                 (child == currentUserCameraFloatingLayout && currentUserCameraIsFullscreen)
                 ) {
@@ -746,7 +742,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         updateSystemBarColors();
         fragmentView = frameLayout;
         frameLayout.setFitsSystemWindows(true);
-        callingUserPhotoView = new BackupImageView(context) {
+        backgroundView = new BackupImageView(context) {
 
             int blackoutColor = ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.3f));
 
@@ -761,9 +757,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserTextureView.renderer.setEnableHardwareScaler(true);
         callingUserTextureView.renderer.setRotateTextureWithScreen(true);
         callingUserTextureView.scaleType = VoIPTextureView.SCALE_TYPE_FIT;
-        //     callingUserTextureView.attachBackgroundRenderer();
 
-        frameLayout.addView(callingUserPhotoView);
+        frameLayout.addView(backgroundView);
         frameLayout.addView(callingUserTextureView);
         int position = isDarkTheme ? 2 : 1;
 
@@ -774,10 +769,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         drawable = new TransitionDrawable(new MotionBackgroundDrawable[]{mainBackGroundGradient, tempBackgroundGradient});
         drawable.setCrossFadeEnabled(false);
 
-        callingUserPhotoView.setImageDrawable(drawable);
-        mainBackGroundGradient.setParentView(callingUserPhotoView);
-        tempBackgroundGradient.setParentView(callingUserPhotoView);
-        tempBackgroundGradient.setCallback(callingUserPhotoView);
+        backgroundView.setImageDrawable(drawable);
+        mainBackGroundGradient.setParentView(backgroundView);
+        tempBackgroundGradient.setParentView(backgroundView);
+        tempBackgroundGradient.setCallback(backgroundView);
 
 
         currentUserCameraFloatingLayout = new VoIPFloatingLayout(context);
@@ -1293,7 +1288,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             topShadow.setAlpha(0f);
             speakerPhoneIcon.setAlpha(0f);
             notificationsLayout.setAlpha(0f);
-            callingUserPhotoView.setAlpha(0f);
+            backgroundView.setAlpha(0f);
 
             currentUserCameraFloatingLayout.switchingToPip = true;
             AndroidUtilities.runOnUIThread(() -> {
@@ -1308,7 +1303,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 bottomShadow.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
                 topShadow.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
                 notificationsLayout.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-                callingUserPhotoView.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+                backgroundView.animate().alpha(1f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
 
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
@@ -1393,11 +1388,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             callingUserTextureView.setTranslationY(callingUserToY);
             callingUserTextureView.setRoundCorners(AndroidUtilities.dp(6) * 1f / callingUserToScale);
 
-            callingUserPhotoView.setAlpha(0f);
-            callingUserPhotoView.setScaleX(callingUserToScale);
-            callingUserPhotoView.setScaleY(callingUserToScale);
-            callingUserPhotoView.setTranslationX(callingUserToX);
-            callingUserPhotoView.setTranslationY(callingUserToY);
+            backgroundView.setAlpha(0f);
+            backgroundView.setScaleX(callingUserToScale);
+            backgroundView.setScaleY(callingUserToScale);
+            backgroundView.setTranslationX(callingUserToX);
+            backgroundView.setTranslationY(callingUserToY);
         }
         ValueAnimator animator = ValueAnimator.ofFloat(enter ? 1f : 0, enter ? 0 : 1f);
 
@@ -1434,11 +1429,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 currentUserTextureView.setScreenshareMiniProgress(v, false);
             }
 
-            callingUserPhotoView.setScaleX(callingUserScale);
-            callingUserPhotoView.setScaleY(callingUserScale);
-            callingUserPhotoView.setTranslationX(tx);
-            callingUserPhotoView.setTranslationY(ty);
-            callingUserPhotoView.setAlpha(1f - v);
+            backgroundView.setScaleX(callingUserScale);
+            backgroundView.setScaleY(callingUserScale);
+            backgroundView.setTranslationX(tx);
+            backgroundView.setTranslationY(ty);
+            backgroundView.setAlpha(1f - v);
         });
         return animator;
     }
@@ -1688,7 +1683,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         if (callingUserIsVideo) {
             if (!switchingToPip) {
-                callingUserPhotoView.setAlpha(1f);
+                backgroundView.setAlpha(1f);
             }
             if (animated) {
                 callingUserTextureView.animate().alpha(1f).setDuration(250).start();
@@ -1705,7 +1700,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             fillNavigationBar(true, animated);
         } else {
             fillNavigationBar(false, animated);
-            callingUserPhotoView.setVisibility(View.VISIBLE);
+            backgroundView.setVisibility(View.VISIBLE);
             if (animated) {
                 callingUserTextureView.animate().alpha(0f).setDuration(250).start();
             } else {
