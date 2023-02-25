@@ -1603,6 +1603,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 topHint.setText(LocaleController.getString("VOIPCallEncryptionKey",R.string.VOIPCallEncryptionKey));
                 topHint.setVisibility(View.VISIBLE);
                 topHint.setAlpha(1.0f);
+                // Explicit fall through
 
             case VoIPService.STATE_RECONNECTING:
                 updateKeyView(animated);
