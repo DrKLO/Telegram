@@ -119,6 +119,9 @@ public class CodeFieldContainer extends LinearLayout {
                             return false;
                         }
                         int keyCode = event.getKeyCode();
+                        if (num >= codeField.length) {
+                            return false;
+                        }
                         if (event.getAction() == KeyEvent.ACTION_UP) {
                             if (keyCode == KeyEvent.KEYCODE_DEL && codeField[num].length() == 1) {
                                 codeField[num].startExitAnimation();
@@ -215,7 +218,9 @@ public class CodeFieldContainer extends LinearLayout {
                                         s.replace(0, len, text.substring(a, a + 1));
                                     } else {
                                         n++;
-                                        codeField[num + a].setText(text.substring(a, a + 1));
+                                        if (num + a < codeField.length) {
+                                            codeField[num + a].setText(text.substring(a, a + 1));
+                                        }
                                     }
                                 }
                                 ignoreOnTextChange = false;

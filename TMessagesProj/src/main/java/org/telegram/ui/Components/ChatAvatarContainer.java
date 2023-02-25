@@ -293,7 +293,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 TLRPC.ChatFull chatInfo = parentFragment.getCurrentChatInfo();
                 TLRPC.UserFull userInfo = parentFragment.getCurrentUserInfo();
                 if (userInfo != null || chatInfo != null) {
-                    parentFragment.getUndoView().showWithAction(parentFragment.getDialogId(), action, parentFragment.getCurrentUser(), userInfo != null ? userInfo.ttl_period : chatInfo.ttl_period, null, null);
+                    UndoView undoView = parentFragment.getUndoView();
+                    if (undoView != null) {
+                        undoView.showWithAction(parentFragment.getDialogId(), action, parentFragment.getCurrentUser(), userInfo != null ? userInfo.ttl_period : chatInfo.ttl_period, null, null);
+                    }
                 }
 
             }

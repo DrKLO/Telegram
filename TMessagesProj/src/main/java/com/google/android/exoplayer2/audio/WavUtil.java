@@ -30,6 +30,10 @@ public final class WavUtil {
   public static final int FMT_FOURCC = 0x666d7420;
   /** Four character code for "data". */
   public static final int DATA_FOURCC = 0x64617461;
+  /** Four character code for "RF64". */
+  public static final int RF64_FOURCC = 0x52463634;
+  /** Four character code for "ds64". */
+  public static final int DS64_FOURCC = 0x64733634;
 
   /** WAVE type value for integer PCM audio data. */
   public static final int TYPE_PCM = 0x0001;

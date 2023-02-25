@@ -1768,6 +1768,12 @@ int32_t ConnectionsManager::sendRequestInternal(TLObject *object, onCompleteFunc
     auto request = new Request(instanceNum, lastRequestToken++, connetionType, flags, datacenterId, onComplete, onQuickAck, nullptr);
     request->rawRequest = object;
     request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
+    auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
+    if (cancelledIterator != tokensToBeCancelled.end()) {
+        tokensToBeCancelled.erase(cancelledIterator);
+        delete request;
+        return request->requestToken;
+    }
     requestsQueue.push_back(std::unique_ptr<Request>(request));
     if (immediate) {
         processRequestQueue(0, 0);
@@ -1793,6 +1799,11 @@ int32_t ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onCompl
         auto request = new Request(instanceNum, requestToken, connetionType, flags, datacenterId, onComplete, onQuickAck, nullptr);
         request->rawRequest = object;
         request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
+        auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
+        if (cancelledIterator != tokensToBeCancelled.end()) {
+            tokensToBeCancelled.erase(cancelledIterator);
+            delete request;
+        }
         requestsQueue.push_back(std::unique_ptr<Request>(request));
         if (immediate) {
             processRequestQueue(0, 0);
@@ -1834,6 +1845,12 @@ void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete
         request->ptr3 = ptr3;
         request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
         if (LOGS_ENABLED) DEBUG_D("send request wrapped %p - %s", request->rpcRequest.get(), typeid(*(request->rpcRequest.get())).name());
+        auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
+        if (cancelledIterator != tokensToBeCancelled.end()) {
+            tokensToBeCancelled.erase(cancelledIterator);
+            delete request;
+            return;
+        }
         requestsQueue.push_back(std::unique_ptr<Request>(request));
         if (immediate) {
             processRequestQueue(0, 0);
@@ -1928,6 +1945,10 @@ void ConnectionsManager::removeRequestFromGuid(int32_t requestToken) {
 }
 
 bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId, bool notifyServer, bool removeFromClass) {
+    if (!tokensToBeCancelled.empty() && (connectionState != ConnectionStateWaitingForNetwork || tokensToBeCancelled.size() > 5000)) {
+        tokensToBeCancelled.clear();
+    }
+
     for (auto iter = requestsQueue.begin(); iter != requestsQueue.end(); iter++) {
         Request *request = iter->get();
         if ((token != 0 && request->requestToken == token) || (messageId != 0 && request->respondsToMessageId(messageId))) {
@@ -1958,6 +1979,11 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
             return true;
         }
     }
+
+    if (token != 0 && connectionState == ConnectionStateWaitingForNetwork) {
+        tokensToBeCancelled.insert(token);
+    }
+
     return false;
 }
 

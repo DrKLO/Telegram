@@ -21,17 +21,17 @@ import com.google.android.exoplayer2.decoder.SimpleDecoder;
 import com.google.android.exoplayer2.util.Assertions;
 import java.nio.ByteBuffer;
 
-/**
- * Base class for subtitle parsers that use their own decode thread.
- */
-public abstract class SimpleSubtitleDecoder extends
-    SimpleDecoder<SubtitleInputBuffer, SubtitleOutputBuffer, SubtitleDecoderException> implements
-    SubtitleDecoder {
+/** Base class for subtitle parsers that use their own decode thread. */
+public abstract class SimpleSubtitleDecoder
+    extends SimpleDecoder<SubtitleInputBuffer, SubtitleOutputBuffer, SubtitleDecoderException>
+    implements SubtitleDecoder {
 
   private final String name;
 
-  /** @param name The name of the decoder. */
-  @SuppressWarnings("initialization:method.invocation.invalid")
+  /**
+   * @param name The name of the decoder.
+   */
+  @SuppressWarnings("nullness:method.invocation")
   protected SimpleSubtitleDecoder(String name) {
     super(new SubtitleInputBuffer[2], new SubtitleOutputBuffer[2]);
     this.name = name;
@@ -44,7 +44,7 @@ public abstract class SimpleSubtitleDecoder extends
   }
 
   @Override
-  public void setPositionUs(long timeUs) {
+  public void setPositionUs(long positionUs) {
     // Do nothing
   }
 
@@ -55,17 +55,17 @@ public abstract class SimpleSubtitleDecoder extends
 
   @Override
   protected final SubtitleOutputBuffer createOutputBuffer() {
-    return new SimpleSubtitleOutputBuffer(this);
+    return new SubtitleOutputBuffer() {
+      @Override
+      public void release() {
+        SimpleSubtitleDecoder.this.releaseOutputBuffer(this);
+      }
+    };
   }
 
   @Override
   protected final SubtitleDecoderException createUnexpectedDecodeException(Throwable error) {
     return new SubtitleDecoderException("Unexpected decode error", error);
-  }
-
-  @Override
-  protected final void releaseOutputBuffer(SubtitleOutputBuffer buffer) {
-    super.releaseOutputBuffer(buffer);
   }
 
   @SuppressWarnings("ByteBufferBackingArray")
@@ -89,12 +89,11 @@ public abstract class SimpleSubtitleDecoder extends
    * Decodes data into a {@link Subtitle}.
    *
    * @param data An array holding the data to be decoded, starting at position 0.
-   * @param size The size of the data to be decoded.
+   * @param length The number of bytes from {@code data} to be decoded.
    * @param reset Whether the decoder must be reset before decoding.
    * @return The decoded {@link Subtitle}.
    * @throws SubtitleDecoderException If a decoding error occurs.
    */
-  protected abstract Subtitle decode(byte[] data, int size, boolean reset)
+  protected abstract Subtitle decode(byte[] data, int length, boolean reset)
       throws SubtitleDecoderException;
-
 }

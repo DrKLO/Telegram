@@ -1007,7 +1007,10 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
 
         // getting language name from system
-        String systemLangName = systemLanguageName(simplifiedLocale);
+        String systemLangName = systemLanguageName(locale);
+        if (systemLangName == null) {
+            systemLangName = systemLanguageName(simplifiedLocale);
+        }
         if (systemLangName != null) {
             return systemLangName;
         }
@@ -1035,19 +1038,34 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 
     private static HashMap<String, Locale> localesByCode;
     public static String systemLanguageName(String langCode, boolean inItsOwnLocale) {
+        if (langCode == null) {
+            return null;
+        }
         if (localesByCode == null) {
             localesByCode = new HashMap<>();
             try {
                 Locale[] allLocales = Locale.getAvailableLocales();
                 for (int i = 0; i < allLocales.length; ++i) {
                     localesByCode.put(allLocales[i].getLanguage(), allLocales[i]);
+                    String region = allLocales[i].getCountry();
+                    if (region != null && region.length() > 0) {
+                        localesByCode.put(allLocales[i].getLanguage() + "-" + region.toLowerCase(), allLocales[i]);
+                    }
                 }
             } catch (Exception ignore) {}
         }
+        langCode = langCode.replace("_", "-").toLowerCase();
         try {
             Locale locale = localesByCode.get(langCode);
             if (locale != null) {
-                return locale.getDisplayLanguage(inItsOwnLocale ? locale : Locale.getDefault());
+                String name = locale.getDisplayLanguage(inItsOwnLocale ? locale : Locale.getDefault());
+                if (langCode.contains("-")) {
+                    String region = locale.getDisplayCountry(inItsOwnLocale ? locale : Locale.getDefault());
+                    if (!TextUtils.isEmpty(region)) {
+                        name += " (" + region + ")";
+                    }
+                }
+                return name;
             }
         } catch (Exception ignore) {}
         return null;

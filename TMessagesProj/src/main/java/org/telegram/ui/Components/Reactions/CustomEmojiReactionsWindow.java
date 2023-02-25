@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -268,7 +269,7 @@ public class CustomEmojiReactionsWindow {
         reactionsContainerLayout.setCustomEmojiEnterProgress(enterTransitionProgress);
 
         if (enter) {
-            cascadeAnimation = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && !SharedConfig.getLiteMode().enabled();
+            cascadeAnimation = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
             enterTransitionFinished = false;
         } else {
             cascadeAnimation = false;

@@ -7,6 +7,7 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
@@ -43,7 +44,7 @@ public class AnimatedEmojiEffect {
         this.currentAccount = currentAccount;
         this.showGeneric = showGeneric;
         startTime = System.currentTimeMillis();
-        if (!longAnimation && showGeneric && !SharedConfig.getLiteMode().enabled()) {
+        if (!longAnimation && showGeneric && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_CHAT)) {
             effectImageReceiver = new ImageReceiver();
         }
     }

@@ -17,7 +17,6 @@ import org.telegram.ui.Storage.CacheModel;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -127,7 +126,7 @@ public class FileLoadOperation {
     private ArrayList<Range> notCheckedCdnRanges;
     private long requestedBytesCount;
 
-    private int currentAccount;
+    public int currentAccount;
     private boolean started;
     private int datacenterId;
     private int initialDatacenterId;
@@ -681,9 +680,10 @@ public class FileLoadOperation {
             if (isStream) {
                 currentDownloadChunkSize = downloadChunkSizeAnimation;
                 currentMaxDownloadRequests = maxDownloadRequestsAnimation;
+            } else {
+                currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom ? downloadChunkSizeBig : downloadChunkSize;
+                currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom ? maxDownloadRequestsBig : maxDownloadRequests;
             }
-            currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom || isStream ? downloadChunkSizeBig : downloadChunkSize;
-            currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom || isStream ? maxDownloadRequestsBig : maxDownloadRequests;
         }
         final boolean alreadyStarted = state != stateIdle;
         final boolean wasPaused = paused;
@@ -968,7 +968,7 @@ public class FileLoadOperation {
                         }
                     }
                 } catch (Exception e) {
-                    FileLog.e(e);
+                    FileLog.e(e, !AndroidUtilities.isFilNotFoundException(e));
                 }
             }
 
@@ -983,7 +983,7 @@ public class FileLoadOperation {
                 } else {
                     long totalDownloadedLen = cacheFileTemp.length();
                     if (fileNameIv != null && (totalDownloadedLen % currentDownloadChunkSize) != 0) {
-                        requestedBytesCount =  0;
+                        requestedBytesCount = 0;
                     } else {
                         requestedBytesCount = downloadedBytes = (cacheFileTemp.length()) / ((long) currentDownloadChunkSize) * currentDownloadChunkSize;
                     }
@@ -1140,14 +1140,7 @@ public class FileLoadOperation {
     public void cancel(boolean deleteFiles) {
         Utilities.stageQueue.postRunnable(() -> {
             if (state != stateFinished && state != stateFailed) {
-                if (requestInfos != null) {
-                    for (int a = 0; a < requestInfos.size(); a++) {
-                        RequestInfo requestInfo = requestInfos.get(a);
-                        if (requestInfo.requestToken != 0) {
-                            ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, true);
-                        }
-                    }
-                }
+                cancelRequests();
                 onFail(false, 1);
             }
             if (deleteFiles) {
@@ -1198,6 +1191,17 @@ public class FileLoadOperation {
                 }
             }
         });
+    }
+
+    private void cancelRequests() {
+        if (requestInfos != null) {
+            for (int a = 0; a < requestInfos.size(); a++) {
+                RequestInfo requestInfo = requestInfos.get(a);
+                if (requestInfo.requestToken != 0) {
+                    ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, false);
+                }
+            }
+        }
     }
 
     private void cleanup() {
@@ -1331,7 +1335,7 @@ public class FileLoadOperation {
                         } catch (ZipException zipException) {
                             ungzip = false;
                         } catch (Throwable e) {
-                            FileLog.e(e, !(e instanceof FileNotFoundException));
+                            FileLog.e(e, !AndroidUtilities.isFilNotFoundException(e));
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.e("unable to ungzip temp = " + cacheFileTempFinal + " to final = " + cacheFileFinal);
                             }
@@ -1751,14 +1755,14 @@ public class FileLoadOperation {
 
                 if (finishedDownloading) {
                     onFinishLoadingFile(true);
-                } else if (state != stateCanceled){
+                } else if (state != stateCanceled) {
                     startDownloadRequest();
                 }
             } catch (Exception e) {
                 if (AndroidUtilities.isENOSPC(e)) {
                     onFail(false, -1);
                 } else {
-                    FileLog.e(e);
+                    FileLog.e(e, !AndroidUtilities.isFilNotFoundException(e));
                     onFail(false, 0);
                 }
             }
@@ -1892,7 +1896,7 @@ public class FileLoadOperation {
                 state != stateDownloading ||
                 streamPriorityStartOffset == 0 && (
                         !nextPartWasPreloaded && (requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) ||
-                        isPreloadVideoOperation && (requestedBytesCount > preloadMaxBytes || moovFound != 0 && requestInfos.size() > 0))) {
+                                isPreloadVideoOperation && (requestedBytesCount > preloadMaxBytes || moovFound != 0 && requestInfos.size() > 0))) {
             return;
         }
         int count = 1;
@@ -2048,7 +2052,7 @@ public class FileLoadOperation {
                 }
             }
             requestInfo.forceSmallChunk = forceSmallChunk;
-            requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
+            requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequestSync(request, (response, error) -> {
                 if (!requestInfos.contains(requestInfo)) {
                     return;
                 }

@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.upstream.crypto;
 
 import static com.google.android.exoplayer2.util.Util.castNonNull;
+import static java.lang.Math.min;
 
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.upstream.DataSink;
@@ -23,9 +24,7 @@ import com.google.android.exoplayer2.upstream.DataSpec;
 import java.io.IOException;
 import javax.crypto.Cipher;
 
-/**
- * A wrapping {@link DataSink} that encrypts the data being consumed.
- */
+/** A wrapping {@link DataSink} that encrypts the data being consumed. */
 public final class AesCipherDataSink implements DataSink {
 
   private final DataSink wrappedDataSink;
@@ -67,24 +66,27 @@ public final class AesCipherDataSink implements DataSink {
   @Override
   public void open(DataSpec dataSpec) throws IOException {
     wrappedDataSink.open(dataSpec);
-    long nonce = CryptoUtil.getFNV64Hash(dataSpec.key);
-    cipher = new AesFlushingCipher(Cipher.ENCRYPT_MODE, secretKey, nonce,
-        dataSpec.absoluteStreamPosition);
+    cipher =
+        new AesFlushingCipher(
+            Cipher.ENCRYPT_MODE,
+            secretKey,
+            dataSpec.key,
+            dataSpec.uriPositionOffset + dataSpec.position);
   }
 
   @Override
-  public void write(byte[] data, int offset, int length) throws IOException {
+  public void write(byte[] buffer, int offset, int length) throws IOException {
     if (scratch == null) {
       // In-place mode. Writes over the input data.
-      castNonNull(cipher).updateInPlace(data, offset, length);
-      wrappedDataSink.write(data, offset, length);
+      castNonNull(cipher).updateInPlace(buffer, offset, length);
+      wrappedDataSink.write(buffer, offset, length);
     } else {
       // Use scratch space. The original data remains intact.
       int bytesProcessed = 0;
       while (bytesProcessed < length) {
-        int bytesToProcess = Math.min(length - bytesProcessed, scratch.length);
+        int bytesToProcess = min(length - bytesProcessed, scratch.length);
         castNonNull(cipher)
-            .update(data, offset + bytesProcessed, bytesToProcess, scratch, /* outOffset= */ 0);
+            .update(buffer, offset + bytesProcessed, bytesToProcess, scratch, /* outOffset= */ 0);
         wrappedDataSink.write(scratch, /* offset= */ 0, bytesToProcess);
         bytesProcessed += bytesToProcess;
       }

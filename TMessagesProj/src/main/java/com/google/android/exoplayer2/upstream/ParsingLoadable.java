@@ -19,6 +19,7 @@ import android.net.Uri;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
+import com.google.android.exoplayer2.source.LoadEventInfo;
 import com.google.android.exoplayer2.upstream.Loader.Loadable;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
@@ -34,9 +35,7 @@ import java.util.Map;
  */
 public final class ParsingLoadable<T> implements Loadable {
 
-  /**
-   * Parses an object from loaded data.
-   */
+  /** Parses an object from loaded data. */
   public interface Parser<T> {
 
     /**
@@ -49,7 +48,6 @@ public final class ParsingLoadable<T> implements Loadable {
      * @throws IOException If an error occurs reading data from the stream.
      */
     T parse(Uri uri, InputStream inputStream) throws IOException;
-
   }
 
   /**
@@ -87,9 +85,9 @@ public final class ParsingLoadable<T> implements Loadable {
     return Assertions.checkNotNull(loadable.getResult());
   }
 
-  /**
-   * The {@link DataSpec} that defines the data to be loaded.
-   */
+  /** Identifies the load task for this loadable. */
+  public final long loadTaskId;
+  /** The {@link DataSpec} that defines the data to be loaded. */
   public final DataSpec dataSpec;
   /**
    * The type of the data. One of the {@code DATA_TYPE_*} constants defined in {@link C}. For
@@ -100,7 +98,7 @@ public final class ParsingLoadable<T> implements Loadable {
   private final StatsDataSource dataSource;
   private final Parser<? extends T> parser;
 
-  private volatile @Nullable T result;
+  @Nullable private volatile T result;
 
   /**
    * @param dataSource A {@link DataSource} to use when loading the data.
@@ -109,7 +107,11 @@ public final class ParsingLoadable<T> implements Loadable {
    * @param parser Parses the object from the response.
    */
   public ParsingLoadable(DataSource dataSource, Uri uri, int type, Parser<? extends T> parser) {
-    this(dataSource, new DataSpec(uri, DataSpec.FLAG_ALLOW_GZIP), type, parser);
+    this(
+        dataSource,
+        new DataSpec.Builder().setUri(uri).setFlags(DataSpec.FLAG_ALLOW_GZIP).build(),
+        type,
+        parser);
   }
 
   /**
@@ -118,16 +120,18 @@ public final class ParsingLoadable<T> implements Loadable {
    * @param type See {@link #type}.
    * @param parser Parses the object from the response.
    */
-  public ParsingLoadable(DataSource dataSource, DataSpec dataSpec, int type,
-      Parser<? extends T> parser) {
+  public ParsingLoadable(
+      DataSource dataSource, DataSpec dataSpec, int type, Parser<? extends T> parser) {
     this.dataSource = new StatsDataSource(dataSource);
     this.dataSpec = dataSpec;
     this.type = type;
     this.parser = parser;
+    loadTaskId = LoadEventInfo.getNewId();
   }
 
   /** Returns the loaded object, or null if an object has not been loaded. */
-  public final @Nullable T getResult() {
+  @Nullable
+  public final T getResult() {
     return result;
   }
 

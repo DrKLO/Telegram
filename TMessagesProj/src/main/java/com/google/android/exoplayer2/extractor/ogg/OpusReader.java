@@ -15,118 +15,127 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
-import com.google.android.exoplayer2.C;
+import static com.google.android.exoplayer2.util.Assertions.checkStateNotNull;
+
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.ParserException;
+import com.google.android.exoplayer2.audio.OpusUtil;
+import com.google.android.exoplayer2.extractor.VorbisUtil;
+import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
+import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 
-/**
- * {@link StreamReader} to extract Opus data out of Ogg byte stream.
- */
+/** {@link StreamReader} to extract Opus data out of Ogg byte stream. */
 /* package */ final class OpusReader extends StreamReader {
 
-  private static final int DEFAULT_SEEK_PRE_ROLL_SAMPLES = 3840;
+  private static final byte[] OPUS_ID_HEADER_SIGNATURE = {'O', 'p', 'u', 's', 'H', 'e', 'a', 'd'};
+  private static final byte[] OPUS_COMMENT_HEADER_SIGNATURE = {
+    'O', 'p', 'u', 's', 'T', 'a', 'g', 's'
+  };
 
-  /**
-   * Opus streams are always decoded at 48000 Hz.
-   */
-  private static final int SAMPLE_RATE = 48000;
-
-  private static final int OPUS_CODE = 0x4f707573;
-  private static final byte[] OPUS_SIGNATURE = {'O', 'p', 'u', 's', 'H', 'e', 'a', 'd'};
-
-  private boolean headerRead;
+  private boolean firstCommentHeaderSeen;
 
   public static boolean verifyBitstreamType(ParsableByteArray data) {
-    if (data.bytesLeft() < OPUS_SIGNATURE.length) {
-      return false;
-    }
-    byte[] header = new byte[OPUS_SIGNATURE.length];
-    data.readBytes(header, 0, OPUS_SIGNATURE.length);
-    return Arrays.equals(header, OPUS_SIGNATURE);
+    return peekPacketStartsWith(data, OPUS_ID_HEADER_SIGNATURE);
   }
 
   @Override
   protected void reset(boolean headerData) {
     super.reset(headerData);
     if (headerData) {
-      headerRead = false;
+      firstCommentHeaderSeen = false;
     }
   }
 
   @Override
   protected long preparePayload(ParsableByteArray packet) {
-    return convertTimeToGranule(getPacketDurationUs(packet.data));
+    return convertTimeToGranule(OpusUtil.getPacketDurationUs(packet.getData()));
   }
 
   @Override
-  protected boolean readHeaders(ParsableByteArray packet, long position, SetupData setupData) {
-    if (!headerRead) {
-      byte[] metadata = Arrays.copyOf(packet.data, packet.limit());
-      int channelCount = metadata[9] & 0xFF;
-      int preskip = ((metadata[11] & 0xFF) << 8) | (metadata[10] & 0xFF);
+  @EnsuresNonNullIf(expression = "#3.format", result = false)
+  protected boolean readHeaders(ParsableByteArray packet, long position, SetupData setupData)
+      throws ParserException {
+    if (peekPacketStartsWith(packet, OPUS_ID_HEADER_SIGNATURE)) {
+      byte[] headerBytes = Arrays.copyOf(packet.getData(), packet.limit());
+      int channelCount = OpusUtil.getChannelCount(headerBytes);
+      List<byte[]> initializationData = OpusUtil.buildInitializationData(headerBytes);
 
-      List<byte[]> initializationData = new ArrayList<>(3);
-      initializationData.add(metadata);
-      putNativeOrderLong(initializationData, preskip);
-      putNativeOrderLong(initializationData, DEFAULT_SEEK_PRE_ROLL_SAMPLES);
-
-      setupData.format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_OPUS, null,
-          Format.NO_VALUE, Format.NO_VALUE, channelCount, SAMPLE_RATE, initializationData, null, 0,
-          null);
-      headerRead = true;
+      if (setupData.format != null) {
+        // setupData.format being non-null indicates we've already seen an ID header. Multiple ID
+        // headers are not permitted by the Opus spec [1], but have been observed in real files [2],
+        // so we just ignore all subsequent ones.
+        // [1] https://datatracker.ietf.org/doc/html/rfc7845#section-3 and
+        //     https://datatracker.ietf.org/doc/html/rfc7845#section-5
+        // [2] https://github.com/google/ExoPlayer/issues/10038
+        return true;
+      }
+      setupData.format =
+          new Format.Builder()
+              .setSampleMimeType(MimeTypes.AUDIO_OPUS)
+              .setChannelCount(channelCount)
+              .setSampleRate(OpusUtil.SAMPLE_RATE)
+              .setInitializationData(initializationData)
+              .build();
+      return true;
+    } else if (peekPacketStartsWith(packet, OPUS_COMMENT_HEADER_SIGNATURE)) {
+      // The comment header must come immediately after the ID header, so the format will already
+      // be populated: https://datatracker.ietf.org/doc/html/rfc7845#section-3
+      checkStateNotNull(setupData.format);
+      if (firstCommentHeaderSeen) {
+        // Multiple comment headers are not permitted by the Opus spec [1], but have been observed
+        // in real files [2], so we just ignore all subsequent ones.
+        // [1] https://datatracker.ietf.org/doc/html/rfc7845#section-3 and
+        //     https://datatracker.ietf.org/doc/html/rfc7845#section-5
+        // [2] https://github.com/google/ExoPlayer/issues/10038
+        return true;
+      }
+      firstCommentHeaderSeen = true;
+      packet.skipBytes(OPUS_COMMENT_HEADER_SIGNATURE.length);
+      VorbisUtil.CommentHeader commentHeader =
+          VorbisUtil.readVorbisCommentHeader(
+              packet, /* hasMetadataHeader= */ false, /* hasFramingBit= */ false);
+      @Nullable
+      Metadata vorbisMetadata =
+          VorbisUtil.parseVorbisComments(ImmutableList.copyOf(commentHeader.comments));
+      if (vorbisMetadata == null) {
+        return true;
+      }
+      setupData.format =
+          setupData
+              .format
+              .buildUpon()
+              .setMetadata(vorbisMetadata.copyWithAppendedEntriesFrom(setupData.format.metadata))
+              .build();
+      return true;
     } else {
-      boolean headerPacket = packet.readInt() == OPUS_CODE;
-      packet.setPosition(0);
-      return headerPacket;
+      // The ID header must come at the start of the file, so the format must already be populated:
+      // https://datatracker.ietf.org/doc/html/rfc7845#section-3
+      checkStateNotNull(setupData.format);
+      return false;
     }
-    return true;
-  }
-
-  private void putNativeOrderLong(List<byte[]> initializationData, int samples) {
-    long ns = (samples * C.NANOS_PER_SECOND) / SAMPLE_RATE;
-    byte[] array = ByteBuffer.allocate(8).order(ByteOrder.nativeOrder()).putLong(ns).array();
-    initializationData.add(array);
   }
 
   /**
-   * Returns the duration of the given audio packet.
+   * Returns true if the given {@link ParsableByteArray} starts with {@code expectedPrefix}. Does
+   * not change the {@link ParsableByteArray#getPosition() position} of {@code packet}.
    *
-   * @param packet Contains audio data.
-   * @return Returns the duration of the given audio packet.
+   * @param packet The packet data.
+   * @return True if the packet starts with {@code expectedPrefix}, false if not.
    */
-  private long getPacketDurationUs(byte[] packet) {
-    int toc = packet[0] & 0xFF;
-    int frames;
-    switch (toc & 0x3) {
-      case 0:
-        frames = 1;
-        break;
-      case 1:
-      case 2:
-        frames = 2;
-        break;
-      default:
-        frames = packet[1] & 0x3F;
-        break;
+  private static boolean peekPacketStartsWith(ParsableByteArray packet, byte[] expectedPrefix) {
+    if (packet.bytesLeft() < expectedPrefix.length) {
+      return false;
     }
-
-    int config = toc >> 3;
-    int length = config & 0x3;
-    if (config >= 16) {
-      length = 2500 << length;
-    } else if (config >= 12) {
-      length = 10000 << (length & 0x1);
-    } else if (length == 3) {
-      length = 60000;
-    } else {
-      length = 10000 << length;
-    }
-    return (long) frames * length;
+    int startPosition = packet.getPosition();
+    byte[] header = new byte[expectedPrefix.length];
+    packet.readBytes(header, 0, expectedPrefix.length);
+    packet.setPosition(startPosition);
+    return Arrays.equals(header, expectedPrefix);
   }
 }

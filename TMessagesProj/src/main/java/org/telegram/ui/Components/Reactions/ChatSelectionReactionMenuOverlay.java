@@ -277,11 +277,12 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
             if (msg.getGroupId() != 0) {
                 MessageObject.GroupedMessages groupedMessages = parentFragment.getGroup(msg.getGroupId());
-
-                for (MessageObject obj : groupedMessages.messages) {
-                    if (obj.messageOwner != null && obj.messageOwner.reactions != null && obj.messageOwner.reactions.results != null &&
-                            !obj.messageOwner.reactions.results.isEmpty()) {
-                        return obj;
+                if (groupedMessages != null && groupedMessages.messages != null) {
+                    for (MessageObject obj : groupedMessages.messages) {
+                        if (obj.messageOwner != null && obj.messageOwner.reactions != null && obj.messageOwner.reactions.results != null &&
+                                !obj.messageOwner.reactions.results.isEmpty()) {
+                            return obj;
+                        }
                     }
                 }
             }

@@ -129,13 +129,13 @@ public class ReactionsLayoutInBubble {
                 for (int i = 0; i < messageObject.messageOwner.reactions.results.size(); i++) {
                     TLRPC.ReactionCount reactionCount = messageObject.messageOwner.reactions.results.get(i);
                     ReactionButton old = null;
-                    for (int j = 0; j < oldButtons.size(); ++j) {
-                        ReactionButton btn = oldButtons.get(j);
-                        if (btn.reaction.equals(reactionCount.reaction)) {
-                            old = btn;
-                            break;
-                        }
-                    }
+//                    for (int j = 0; j < oldButtons.size(); ++j) {
+//                        ReactionButton btn = oldButtons.get(j);
+//                        if (btn.reaction.equals(reactionCount.reaction)) {
+//                            old = btn;
+//                            break;
+//                        }
+//                    }
                     ReactionButton button = new ReactionButton(old, reactionCount, isSmall);
                     reactionButtons.add(button);
                     if (!isSmall && messageObject.messageOwner.reactions.recent_reactions != null) {
@@ -143,14 +143,24 @@ public class ReactionsLayoutInBubble {
 
                         if (messageObject.getDialogId() > 0) {
                             users = new ArrayList<>();
+                            TLRPC.User me = UserConfig.getInstance(currentAccount).getCurrentUser();
+                            TLRPC.User dialogUser = MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId());
                             if (reactionCount.count == 2) {
-                                users.add(UserConfig.getInstance(currentAccount).getCurrentUser());
-                                users.add(MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId()));
+                                if (me != null) {
+                                    users.add(me);
+                                }
+                                if (dialogUser != null) {
+                                    users.add(dialogUser);
+                                }
                             } else {
                                 if (reactionCount.chosen) {
-                                    users.add(UserConfig.getInstance(currentAccount).getCurrentUser());
+                                    if (me != null) {
+                                        users.add(me);
+                                    }
                                 } else {
-                                    users.add(MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId()));
+                                    if (dialogUser != null) {
+                                        users.add(dialogUser);
+                                    }
                                 }
                             }
                             button.setUsers(users);
@@ -160,14 +170,17 @@ public class ReactionsLayoutInBubble {
                             }
                         } else if (reactionCount.count <= 3 && totalCount <= 3) {
                             for (int j = 0; j < messageObject.messageOwner.reactions.recent_reactions.size(); j++) {
-                                TLRPC.MessagePeerReaction reccent = messageObject.messageOwner.reactions.recent_reactions.get(j);
-                                VisibleReaction visibleReactionPeer = VisibleReaction.fromTLReaction(reccent.reaction);
+                                TLRPC.MessagePeerReaction recent = messageObject.messageOwner.reactions.recent_reactions.get(j);
+                                VisibleReaction visibleReactionPeer = VisibleReaction.fromTLReaction(recent.reaction);
                                 VisibleReaction visibleReactionCount = VisibleReaction.fromTLReaction(reactionCount.reaction);
-                                if (visibleReactionPeer.equals(visibleReactionCount) && MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(reccent.peer_id)) != null) {
-                                    if (users == null) {
-                                        users = new ArrayList<>();
+                                if (visibleReactionPeer.equals(visibleReactionCount) && MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(recent.peer_id)) != null) {
+                                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(recent.peer_id));
+                                    if (user != null) {
+                                        if (users == null) {
+                                            users = new ArrayList<>();
+                                        }
+                                        users.add(user);
                                     }
-                                    users.add(MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(reccent.peer_id)));
                                 }
                             }
                             button.setUsers(users);
@@ -426,11 +439,13 @@ public class ReactionsLayoutInBubble {
     }
 
     private boolean equalsUsersList(ArrayList<TLRPC.User> users, ArrayList<TLRPC.User> users1) {
-        if (users.size() != users1.size()) {
+        if (users == null || users1 == null || users.size() != users1.size()) {
             return false;
         }
         for (int i = 0; i < users.size(); i++) {
-            if (users.get(i).id != users.get(i).id) {
+            TLRPC.User user1 = users.get(i);
+            TLRPC.User user2 = users1.get(i);
+            if (user1 == null || user2 == null || user1.id != user2.id) {
                 return false;
             }
         }
@@ -510,14 +525,7 @@ public class ReactionsLayoutInBubble {
 
         public ReactionButton(ReactionButton reuseFrom, TLRPC.ReactionCount reactionCount, boolean isSmall) {
             if (reuseFrom != null) {
-                imageReceiver = reuseFrom.imageReceiver;
                 counterDrawable = reuseFrom.counterDrawable;
-//                avatarsDrawable = reuseFrom.avatarsDrawable;
-                animatedEmojiDrawable = reuseFrom.animatedEmojiDrawable;
-                reuseFrom.counterDrawable = null;
-                reuseFrom.imageReceiver = null;
-//                reuseFrom.avatarsDrawable = null;
-                reuseFrom.animatedEmojiDrawable = null;
             }
             if (imageReceiver == null) {
                 imageReceiver = new ImageReceiver();
@@ -919,12 +927,16 @@ public class ReactionsLayoutInBubble {
         public String emojicon;
         public long documentId;
 
+        public long hash;
+
         public static VisibleReaction fromTLReaction(TLRPC.Reaction reaction) {
             VisibleReaction visibleReaction = new VisibleReaction();
             if (reaction instanceof TLRPC.TL_reactionEmoji) {
                 visibleReaction.emojicon = ((TLRPC.TL_reactionEmoji) reaction).emoticon;
+                visibleReaction.hash = visibleReaction.emojicon.hashCode();
             } else if (reaction instanceof TLRPC.TL_reactionCustomEmoji) {
                 visibleReaction.documentId = ((TLRPC.TL_reactionCustomEmoji) reaction).document_id;
+                visibleReaction.hash = visibleReaction.documentId;
             }
 
             return visibleReaction;
@@ -933,19 +945,27 @@ public class ReactionsLayoutInBubble {
         public static VisibleReaction fromEmojicon(TLRPC.TL_availableReaction reaction) {
             VisibleReaction visibleReaction = new VisibleReaction();
             visibleReaction.emojicon = reaction.reaction;
+            visibleReaction.hash = visibleReaction.emojicon.hashCode();
             return visibleReaction;
         }
 
         public static VisibleReaction fromEmojicon(String reaction) {
+            if (reaction == null) {
+                reaction = "";
+            }
+
             VisibleReaction visibleReaction = new VisibleReaction();
             if (reaction.startsWith("animated_")) {
                 try {
                     visibleReaction.documentId = Long.parseLong(reaction.substring(9));
+                    visibleReaction.hash = visibleReaction.documentId;
                 } catch (Exception ignore) {
                     visibleReaction.emojicon = reaction;
+                    visibleReaction.hash = visibleReaction.emojicon.hashCode();
                 }
             } else {
                 visibleReaction.emojicon = reaction;
+                visibleReaction.hash = visibleReaction.emojicon.hashCode();
             }
             return visibleReaction;
         }
@@ -953,6 +973,7 @@ public class ReactionsLayoutInBubble {
         public static VisibleReaction fromCustomEmoji(Long documentId) {
             VisibleReaction visibleReaction = new VisibleReaction();
             visibleReaction.documentId = documentId;
+            visibleReaction.hash = visibleReaction.documentId;
             return visibleReaction;
         }
 
@@ -962,11 +983,6 @@ public class ReactionsLayoutInBubble {
             if (o == null || getClass() != o.getClass()) return false;
             VisibleReaction that = (VisibleReaction) o;
             return documentId == that.documentId && Objects.equals(emojicon, that.emojicon);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(emojicon, documentId);
         }
     }
 }

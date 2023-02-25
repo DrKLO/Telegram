@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
@@ -878,7 +879,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                         title = LocaleController.getString("InviteToGroupErrorTitleSomeUsers", R.string.InviteToGroupErrorTitleSomeUsers);
                                         description = LocaleController.getString("InviteToGroupErrorMessageMultipleSome", R.string.InviteToGroupErrorMessageMultipleSome);
                                     }
-                                    new AlertDialog.Builder(context)
+                                    new AlertDialog.Builder(fragment.getContext())
                                             .setTitle(title)
                                             .setMessage(description)
                                             .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)

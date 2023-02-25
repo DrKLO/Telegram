@@ -30,6 +30,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
@@ -984,7 +985,7 @@ public class GroupCallUserCell extends FrameLayout {
         }
 
         public void draw(Canvas canvas, float cx, float cy, View parentView) {
-            if (SharedConfig.getLiteMode().enabled()) {
+            if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
                 return;
             }
             float scaleBlob = 0.8f + 0.4f * amplitude;

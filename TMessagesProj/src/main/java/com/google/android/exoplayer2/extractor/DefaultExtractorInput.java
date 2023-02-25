@@ -15,25 +15,31 @@
  */
 package com.google.android.exoplayer2.extractor;
 
+import static java.lang.Math.min;
+
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
+import com.google.android.exoplayer2.upstream.DataReader;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.Arrays;
 
-/**
- * An {@link ExtractorInput} that wraps a {@link DataSource}.
- */
+/** An {@link ExtractorInput} that wraps a {@link DataReader}. */
 public final class DefaultExtractorInput implements ExtractorInput {
+
+  static {
+    ExoPlayerLibraryInfo.registerModule("goog.exo.extractor");
+  }
 
   private static final int PEEK_MIN_FREE_SPACE_AFTER_RESIZE = 64 * 1024;
   private static final int PEEK_MAX_FREE_SPACE = 512 * 1024;
   private static final int SCRATCH_SPACE_SIZE = 4096;
 
   private final byte[] scratchSpace;
-  private final DataSource dataSource;
+  private final DataReader dataReader;
   private final long streamLength;
 
   private long position;
@@ -42,12 +48,12 @@ public final class DefaultExtractorInput implements ExtractorInput {
   private int peekBufferLength;
 
   /**
-   * @param dataSource The wrapped {@link DataSource}.
+   * @param dataReader The wrapped {@link DataReader}.
    * @param position The initial position in the stream.
    * @param length The length of the stream, or {@link C#LENGTH_UNSET} if it is unknown.
    */
-  public DefaultExtractorInput(DataSource dataSource, long position, long length) {
-    this.dataSource = dataSource;
+  public DefaultExtractorInput(DataReader dataReader, long position, long length) {
+    this.dataReader = dataReader;
     this.position = position;
     this.streamLength = length;
     peekBuffer = new byte[PEEK_MIN_FREE_SPACE_AFTER_RESIZE];
@@ -55,12 +61,12 @@ public final class DefaultExtractorInput implements ExtractorInput {
   }
 
   @Override
-  public int read(byte[] target, int offset, int length) throws IOException, InterruptedException {
-    int bytesRead = readFromPeekBuffer(target, offset, length);
+  public int read(byte[] buffer, int offset, int length) throws IOException {
+    int bytesRead = readFromPeekBuffer(buffer, offset, length);
     if (bytesRead == 0) {
       bytesRead =
-          readFromDataSource(
-              target, offset, length, /* bytesAlreadyRead= */ 0, /* allowEndOfInput= */ true);
+          readFromUpstream(
+              buffer, offset, length, /* bytesAlreadyRead= */ 0, /* allowEndOfInput= */ true);
     }
     commitBytesRead(bytesRead);
     return bytesRead;
@@ -68,58 +74,55 @@ public final class DefaultExtractorInput implements ExtractorInput {
 
   @Override
   public boolean readFully(byte[] target, int offset, int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
+      throws IOException {
     int bytesRead = readFromPeekBuffer(target, offset, length);
     while (bytesRead < length && bytesRead != C.RESULT_END_OF_INPUT) {
-      bytesRead = readFromDataSource(target, offset, length, bytesRead, allowEndOfInput);
+      bytesRead = readFromUpstream(target, offset, length, bytesRead, allowEndOfInput);
     }
     commitBytesRead(bytesRead);
     return bytesRead != C.RESULT_END_OF_INPUT;
   }
 
   @Override
-  public void readFully(byte[] target, int offset, int length)
-      throws IOException, InterruptedException {
+  public void readFully(byte[] target, int offset, int length) throws IOException {
     readFully(target, offset, length, false);
   }
 
   @Override
-  public int skip(int length) throws IOException, InterruptedException {
+  public int skip(int length) throws IOException {
     int bytesSkipped = skipFromPeekBuffer(length);
     if (bytesSkipped == 0) {
-      bytesSkipped =
-          readFromDataSource(scratchSpace, 0, Math.min(length, scratchSpace.length), 0, true);
+      bytesSkipped = readFromUpstream(scratchSpace, 0, min(length, scratchSpace.length), 0, true);
     }
     commitBytesRead(bytesSkipped);
     return bytesSkipped;
   }
 
   @Override
-  public boolean skipFully(int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
+  public boolean skipFully(int length, boolean allowEndOfInput) throws IOException {
     int bytesSkipped = skipFromPeekBuffer(length);
     while (bytesSkipped < length && bytesSkipped != C.RESULT_END_OF_INPUT) {
-      int minLength = Math.min(length, bytesSkipped + scratchSpace.length);
+      int minLength = min(length, bytesSkipped + scratchSpace.length);
       bytesSkipped =
-          readFromDataSource(scratchSpace, -bytesSkipped, minLength, bytesSkipped, allowEndOfInput);
+          readFromUpstream(scratchSpace, -bytesSkipped, minLength, bytesSkipped, allowEndOfInput);
     }
     commitBytesRead(bytesSkipped);
     return bytesSkipped != C.RESULT_END_OF_INPUT;
   }
 
   @Override
-  public void skipFully(int length) throws IOException, InterruptedException {
+  public void skipFully(int length) throws IOException {
     skipFully(length, false);
   }
 
   @Override
-  public int peek(byte[] target, int offset, int length) throws IOException, InterruptedException {
+  public int peek(byte[] target, int offset, int length) throws IOException {
     ensureSpaceForPeek(length);
     int peekBufferRemainingBytes = peekBufferLength - peekBufferPosition;
     int bytesPeeked;
     if (peekBufferRemainingBytes == 0) {
       bytesPeeked =
-          readFromDataSource(
+          readFromUpstream(
               peekBuffer,
               peekBufferPosition,
               length,
@@ -130,7 +133,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
       }
       peekBufferLength += bytesPeeked;
     } else {
-      bytesPeeked = Math.min(length, peekBufferRemainingBytes);
+      bytesPeeked = min(length, peekBufferRemainingBytes);
     }
     System.arraycopy(peekBuffer, peekBufferPosition, target, offset, bytesPeeked);
     peekBufferPosition += bytesPeeked;
@@ -139,7 +142,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
 
   @Override
   public boolean peekFully(byte[] target, int offset, int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
+      throws IOException {
     if (!advancePeekPosition(length, allowEndOfInput)) {
       return false;
     }
@@ -148,19 +151,17 @@ public final class DefaultExtractorInput implements ExtractorInput {
   }
 
   @Override
-  public void peekFully(byte[] target, int offset, int length)
-      throws IOException, InterruptedException {
+  public void peekFully(byte[] target, int offset, int length) throws IOException {
     peekFully(target, offset, length, false);
   }
 
   @Override
-  public boolean advancePeekPosition(int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
+  public boolean advancePeekPosition(int length, boolean allowEndOfInput) throws IOException {
     ensureSpaceForPeek(length);
     int bytesPeeked = peekBufferLength - peekBufferPosition;
     while (bytesPeeked < length) {
-      bytesPeeked = readFromDataSource(peekBuffer, peekBufferPosition, length, bytesPeeked,
-          allowEndOfInput);
+      bytesPeeked =
+          readFromUpstream(peekBuffer, peekBufferPosition, length, bytesPeeked, allowEndOfInput);
       if (bytesPeeked == C.RESULT_END_OF_INPUT) {
         return false;
       }
@@ -171,7 +172,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
   }
 
   @Override
-  public void advancePeekPosition(int length) throws IOException, InterruptedException {
+  public void advancePeekPosition(int length) throws IOException {
     advancePeekPosition(length, false);
   }
 
@@ -209,8 +210,11 @@ public final class DefaultExtractorInput implements ExtractorInput {
   private void ensureSpaceForPeek(int length) {
     int requiredLength = peekBufferPosition + length;
     if (requiredLength > peekBuffer.length) {
-      int newPeekCapacity = Util.constrainValue(peekBuffer.length * 2,
-          requiredLength + PEEK_MIN_FREE_SPACE_AFTER_RESIZE, requiredLength + PEEK_MAX_FREE_SPACE);
+      int newPeekCapacity =
+          Util.constrainValue(
+              peekBuffer.length * 2,
+              requiredLength + PEEK_MIN_FREE_SPACE_AFTER_RESIZE,
+              requiredLength + PEEK_MAX_FREE_SPACE);
       peekBuffer = Arrays.copyOf(peekBuffer, newPeekCapacity);
     }
   }
@@ -222,7 +226,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
    * @return The number of bytes skipped.
    */
   private int skipFromPeekBuffer(int length) {
-    int bytesSkipped = Math.min(peekBufferLength, length);
+    int bytesSkipped = min(peekBufferLength, length);
     updatePeekBuffer(bytesSkipped);
     return bytesSkipped;
   }
@@ -239,7 +243,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
     if (peekBufferLength == 0) {
       return 0;
     }
-    int peekBytes = Math.min(peekBufferLength, length);
+    int peekBytes = min(peekBufferLength, length);
     System.arraycopy(peekBuffer, 0, target, offset, peekBytes);
     updatePeekBuffer(peekBytes);
     return peekBytes;
@@ -262,7 +266,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
   }
 
   /**
-   * Starts or continues a read from the data source.
+   * Starts or continues a read from the data reader.
    *
    * @param target A target array into which data should be written.
    * @param offset The offset into the target array at which to write.
@@ -271,20 +275,20 @@ public final class DefaultExtractorInput implements ExtractorInput {
    * @param allowEndOfInput True if encountering the end of the input having read no data is
    *     allowed, and should result in {@link C#RESULT_END_OF_INPUT} being returned. False if it
    *     should be considered an error, causing an {@link EOFException} to be thrown.
-   * @return The total number of bytes read so far, or {@link C#RESULT_END_OF_INPUT} if
-   *     {@code allowEndOfInput} is true and the input has ended having read no bytes.
+   * @return The total number of bytes read so far, or {@link C#RESULT_END_OF_INPUT} if {@code
+   *     allowEndOfInput} is true and the input has ended having read no bytes.
    * @throws EOFException If the end of input was encountered having partially satisfied the read
    *     (i.e. having read at least one byte, but fewer than {@code length}), or if no bytes were
    *     read and {@code allowEndOfInput} is false.
    * @throws IOException If an error occurs reading from the input.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  private int readFromDataSource(byte[] target, int offset, int length, int bytesAlreadyRead,
-      boolean allowEndOfInput) throws InterruptedException, IOException {
+  private int readFromUpstream(
+      byte[] target, int offset, int length, int bytesAlreadyRead, boolean allowEndOfInput)
+      throws IOException {
     if (Thread.interrupted()) {
-      throw new InterruptedException();
+      throw new InterruptedIOException();
     }
-    int bytesRead = dataSource.read(target, offset + bytesAlreadyRead, length - bytesAlreadyRead);
+    int bytesRead = dataReader.read(target, offset + bytesAlreadyRead, length - bytesAlreadyRead);
     if (bytesRead == C.RESULT_END_OF_INPUT) {
       if (bytesAlreadyRead == 0 && allowEndOfInput) {
         return C.RESULT_END_OF_INPUT;
@@ -304,5 +308,4 @@ public final class DefaultExtractorInput implements ExtractorInput {
       position += bytesRead;
     }
   }
-
 }

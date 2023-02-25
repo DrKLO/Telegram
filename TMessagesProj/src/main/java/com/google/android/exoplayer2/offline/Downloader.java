@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.offline;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import java.io.IOException;
+import java.util.concurrent.CancellationException;
 
 /** Downloads and removes a piece of content. */
 public interface Downloader {
@@ -27,6 +28,10 @@ public interface Downloader {
 
     /**
      * Called when progress is made during a download operation.
+     *
+     * <p>May be called directly from {@link #download}, or from any other thread used by the
+     * downloader. In all cases, {@link #download} is guaranteed not to return until after the last
+     * call to this method has finished executing.
      *
      * @param contentLength The length of the content in bytes, or {@link C#LENGTH_UNSET} if
      *     unknown.
@@ -40,21 +45,32 @@ public interface Downloader {
   /**
    * Downloads the content.
    *
+   * <p>If downloading fails, this method can be called again to resume the download. It cannot be
+   * called again after the download has been {@link #cancel canceled}.
+   *
+   * <p>If downloading is canceled whilst this method is executing, then it is expected that it will
+   * return reasonably quickly. However, there are no guarantees about how the method will return,
+   * meaning that it can return without throwing, or by throwing any of its documented exceptions.
+   * The caller must use its own knowledge about whether downloading has been canceled to determine
+   * whether this is why the method has returned, rather than relying on the method returning in a
+   * particular way.
+   *
    * @param progressListener A listener to receive progress updates, or {@code null}.
-   * @throws DownloadException Thrown if the content cannot be downloaded.
-   * @throws InterruptedException If the thread has been interrupted.
-   * @throws IOException Thrown when there is an io error while downloading.
+   * @throws IOException If the download failed to complete successfully.
+   * @throws InterruptedException If the download was interrupted.
+   * @throws CancellationException If the download was canceled.
    */
   void download(@Nullable ProgressListener progressListener)
-      throws InterruptedException, IOException;
-
-  /** Cancels the download operation and prevents future download operations from running. */
-  void cancel();
+      throws IOException, InterruptedException;
 
   /**
-   * Removes the content.
+   * Permanently cancels the downloading by this downloader. The caller should also interrupt the
+   * downloading thread immediately after calling this method.
    *
-   * @throws InterruptedException Thrown if the thread was interrupted.
+   * <p>Once canceled, {@link #download} cannot be called again.
    */
-  void remove() throws InterruptedException;
+  void cancel();
+
+  /** Removes the content. */
+  void remove();
 }

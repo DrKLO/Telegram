@@ -2183,11 +2183,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
                 if (mediaPage.selectedType == 7 && view instanceof UserCell) {
                     final TLRPC.ChatParticipant participant;
+                    int index = position;
                     if (!chatUsersAdapter.sortedUsers.isEmpty()) {
-                        participant = chatUsersAdapter.chatInfo.participants.participants.get(chatUsersAdapter.sortedUsers.get(position));
-                    } else {
-                        participant = chatUsersAdapter.chatInfo.participants.participants.get(position);
+                        if (position >= chatUsersAdapter.sortedUsers.size()) {
+                            return false;
+                        }
+                        index = chatUsersAdapter.sortedUsers.get(position);
                     }
+                    if (index < 0 || index >= chatUsersAdapter.chatInfo.participants.participants.size()) {
+                        return false;
+                    }
+                    participant = chatUsersAdapter.chatInfo.participants.participants.get(index);
                     return onMemberClick(participant, true);
                 } else if (mediaPage.selectedType == 1 && view instanceof SharedDocumentCell) {
                     return onItemLongClick(((SharedDocumentCell) view).getMessage(), view, 0);

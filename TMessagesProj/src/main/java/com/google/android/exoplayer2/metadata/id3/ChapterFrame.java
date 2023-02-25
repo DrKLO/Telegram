@@ -23,9 +23,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 
-/**
- * Chapter information ID3 frame.
- */
+/** Chapter information ID3 frame. */
 public final class ChapterFrame extends Id3Frame {
 
   public static final String ID = "CHAP";
@@ -33,18 +31,20 @@ public final class ChapterFrame extends Id3Frame {
   public final String chapterId;
   public final int startTimeMs;
   public final int endTimeMs;
-  /**
-   * The byte offset of the start of the chapter, or {@link C#POSITION_UNSET} if not set.
-   */
+  /** The byte offset of the start of the chapter, or {@link C#POSITION_UNSET} if not set. */
   public final long startOffset;
-  /**
-   * The byte offset of the end of the chapter, or {@link C#POSITION_UNSET} if not set.
-   */
+  /** The byte offset of the end of the chapter, or {@link C#POSITION_UNSET} if not set. */
   public final long endOffset;
+
   private final Id3Frame[] subFrames;
 
-  public ChapterFrame(String chapterId, int startTimeMs, int endTimeMs, long startOffset,
-      long endOffset, Id3Frame[] subFrames) {
+  public ChapterFrame(
+      String chapterId,
+      int startTimeMs,
+      int endTimeMs,
+      long startOffset,
+      long endOffset,
+      Id3Frame[] subFrames) {
     super(ID);
     this.chapterId = chapterId;
     this.startTimeMs = startTimeMs;
@@ -68,16 +68,12 @@ public final class ChapterFrame extends Id3Frame {
     }
   }
 
-  /**
-   * Returns the number of sub-frames.
-   */
+  /** Returns the number of sub-frames. */
   public int getSubFrameCount() {
     return subFrames.length;
   }
 
-  /**
-   * Returns the sub-frame at {@code index}.
-   */
+  /** Returns the sub-frame at {@code index}. */
   public Id3Frame getSubFrame(int index) {
     return subFrames[index];
   }
@@ -128,18 +124,17 @@ public final class ChapterFrame extends Id3Frame {
     return 0;
   }
 
-  public static final Creator<ChapterFrame> CREATOR = new Creator<ChapterFrame>() {
+  public static final Creator<ChapterFrame> CREATOR =
+      new Creator<ChapterFrame>() {
 
-    @Override
-    public ChapterFrame createFromParcel(Parcel in) {
-      return new ChapterFrame(in);
-    }
+        @Override
+        public ChapterFrame createFromParcel(Parcel in) {
+          return new ChapterFrame(in);
+        }
 
-    @Override
-    public ChapterFrame[] newArray(int size) {
-      return new ChapterFrame[size];
-    }
-
-  };
-
+        @Override
+        public ChapterFrame[] newArray(int size) {
+          return new ChapterFrame[size];
+        }
+      };
 }

@@ -15,48 +15,44 @@
  */
 package com.google.android.exoplayer2.source;
 
-import android.net.Uri;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.drm.DrmSession;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.offline.StreamKey;
-import java.util.List;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.drm.DrmSessionManagerProvider;
+import com.google.android.exoplayer2.upstream.LoadErrorHandlingPolicy;
 
-/** Factory for creating {@link MediaSource}s from URIs. */
-public interface MediaSourceFactory {
-
-  /**
-   * Sets a list of {@link StreamKey StreamKeys} by which the manifest is filtered.
-   *
-   * @param streamKeys A list of {@link StreamKey StreamKeys}.
-   * @return This factory, for convenience.
-   * @throws IllegalStateException If {@link #createMediaSource(Uri)} has already been called.
-   */
-  default MediaSourceFactory setStreamKeys(List<StreamKey> streamKeys) {
-    return this;
-  }
+/**
+ * @deprecated Use {@link MediaSource.Factory}.
+ */
+@Deprecated
+public interface MediaSourceFactory extends MediaSource.Factory {
 
   /**
-   * Sets the {@link DrmSessionManager} to use for acquiring {@link DrmSession DrmSessions}.
-   *
-   * @param drmSessionManager The {@link DrmSessionManager}.
-   * @return This factory, for convenience.
-   * @throws IllegalStateException If one of the {@code create} methods has already been called.
+   * An instance that throws {@link UnsupportedOperationException} from {@link #createMediaSource}
+   * and {@link #getSupportedTypes()}.
    */
-  MediaSourceFactory setDrmSessionManager(DrmSessionManager<?> drmSessionManager);
+  MediaSourceFactory UNSUPPORTED =
+      new MediaSourceFactory() {
+        @Override
+        public MediaSourceFactory setDrmSessionManagerProvider(
+            @Nullable DrmSessionManagerProvider drmSessionManagerProvider) {
+          return this;
+        }
 
-  /**
-   * Creates a new {@link MediaSource} with the specified {@code uri}.
-   *
-   * @param uri The URI to play.
-   * @return The new {@link MediaSource media source}.
-   */
-  MediaSource createMediaSource(Uri uri);
+        @Override
+        public MediaSourceFactory setLoadErrorHandlingPolicy(
+            @Nullable LoadErrorHandlingPolicy loadErrorHandlingPolicy) {
+          return this;
+        }
 
-  /**
-   * Returns the {@link C.ContentType content types} supported by media sources created by this
-   * factory.
-   */
-  @C.ContentType
-  int[] getSupportedTypes();
+        @Override
+        public @C.ContentType int[] getSupportedTypes() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public MediaSource createMediaSource(MediaItem mediaItem) {
+          throw new UnsupportedOperationException();
+        }
+      };
 }

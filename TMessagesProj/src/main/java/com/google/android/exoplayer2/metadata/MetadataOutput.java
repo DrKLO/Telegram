@@ -15,9 +15,8 @@
  */
 package com.google.android.exoplayer2.metadata;
 
-/**
- * Receives metadata output.
- */
+
+/** Receives metadata output. */
 public interface MetadataOutput {
 
   /**
@@ -26,5 +25,4 @@ public interface MetadataOutput {
    * @param metadata The metadata.
    */
   void onMetadata(Metadata metadata);
-
 }

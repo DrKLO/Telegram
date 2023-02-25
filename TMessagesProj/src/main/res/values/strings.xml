@@ -1881,7 +1881,6 @@
     <string name="SuggestStickersNone">None</string>
     <string name="SuggestAnimatedEmoji">Suggest Animated Emoji</string>
     <string name="SuggestAnimatedEmojiInfo">Each time you enter an emoji you can replace it with an alternative animated emoji.</string>
-    <string name="PlayEmojiInKeyboard">Emoji Panel Animations</string>
     <string name="FeaturedStickersInfo">These stickers are currently trending on Telegram. You can add custom stickers via the @stickers bot.</string>
     <string name="StickersBotInfo">Artists are welcome to add their own sticker sets using our @stickers bot.</string>
     <string name="EmojiBotInfo">Artists are welcome to add their own emoji packs using our @stickers bot.</string>
@@ -3017,6 +3016,7 @@
     <string name="SpeedNormal">Normal</string>
     <string name="SpeedMedium">Medium</string>
     <string name="SpeedSuperFast">Super Fast</string>
+    <string name="SpeedHint">Long tap for more speed values.</string>
     <string name="ShowAsList">Show as list</string>
     <string name="ShowAsGrid">Show as grid</string>
     <string name="ShowAllMedia">Show all media</string>
@@ -6170,6 +6170,7 @@
     <string name="CacheOpenFile">Open File</string>
     <string name="PlayFile">Play File</string>
     <string name="LightMode">Lite Mode (Beta)</string>
+    <string name="PowerUsage">Power Usage</string>
     <string name="EnableLightMode">Enable lite mode</string>
     <string name="LightModeInfoRow">This mode turns off all visual effects in the app. It is recommended only for those devices that are low on CPU and memory.</string>
     <string name="DeleteAllProxies">Delete All Proxies</string>
@@ -6259,7 +6260,29 @@
     <string name="ClearStorageHintTitle">Free up to **%s**</string>
     <string name="ClearStorageHintMessage">Clear storage space on your phone</string>
     <string name="YourCurrentPlan">your current plan</string>
-    <string name="AccDescrDocumentType">, %s file</string>
+    <string name="AccDescrDocumentType">%s file, </string>
     <string name="AccDescrArchivedChatsShown">Archived chats shown</string>
     <string name="AccDescrArchivedChatsHidden">Archived chats hidden</string>
+    <string name="AccDescrNotificationsMuted">Muted</string>
+    <string name="AccDescrUserOnline">Online</string>
+    <string name="LitePresetTitle">Power usage</string>
+    <string name="LitePresetInfo">You can switch to low power mode to increase battery life. Recommended for weak devices.</string>
+    <string name="LiteOptionsTitle">Power saving options</string>
+    <string name="LiteOptionsAutoplayKeyboard">Autoplay in keyboard</string>
+    <string name="LiteOptionsAutoplayChat">Autoplay in chat</string>
+    <string name="LiteOptionsAutoplayReactions">Autoplay in reactions menu</string>
+    <string name="LiteOptionsChat">Animations in Chats</string>
+    <string name="LiteOptionsBackground">Background rotation</string>
+    <string name="LiteOptionsTopics">Side menu in topics</string>
+    <string name="LiteOptionsSpoiler">Animated spoiler effect</string>
+    <string name="LiteOptionsBlur">Night theme blur</string>
+    <string name="LiteOptionsCalls">Animations in Calls</string>
+    <string name="LiteOptionsAutoplayVideo">Autoplay Videos</string>
+    <string name="LiteOptionsAutoplayGifs">Autoplay GIFs</string>
+    <string name="LiteSmoothTransitions">Enable Smooth Transitions</string>
+    <string name="LiteSmoothTransitionsInfo">You can disable animated transitions between different sections of the apps.</string>
+    <string name="LitePowerSaver">Save Power on Low Battery</string>
+    <string name="LitePowerSaverInfo">Automatically switch to low power usage when your devices is in Battery Saving Mode.</string>
+    <string name="DynamicPackOrder">Dynamic Pack Order</string>
+    <string name="DynamicPackOrderInfo">Automatically place recently used sticker packs at the front of the panel.</string>
 </resources>

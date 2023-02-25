@@ -24,29 +24,19 @@ import java.util.List;
 @SuppressWarnings("ConstantField")
 /* package */ abstract class Atom {
 
-  /**
-   * Size of an atom header, in bytes.
-   */
+  /** Size of an atom header, in bytes. */
   public static final int HEADER_SIZE = 8;
 
-  /**
-   * Size of a full atom header, in bytes.
-   */
+  /** Size of a full atom header, in bytes. */
   public static final int FULL_HEADER_SIZE = 12;
 
-  /**
-   * Size of a long atom header, in bytes.
-   */
+  /** Size of a long atom header, in bytes. */
   public static final int LONG_HEADER_SIZE = 16;
 
-  /**
-   * Value for the size field in an atom that defines its size in the largesize field.
-   */
+  /** Value for the size field in an atom that defines its size in the largesize field. */
   public static final int DEFINES_LARGE_SIZE = 1;
 
-  /**
-   * Value for the size field in an atom that extends to the end of the file.
-   */
+  /** Value for the size field in an atom that extends to the end of the file. */
   public static final int EXTENDS_TO_END_SIZE = 0;
 
   @SuppressWarnings("ConstantCaseForConstants")
@@ -86,6 +76,9 @@ import java.util.List;
   public static final int TYPE_av1C = 0x61763143;
 
   @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_colr = 0x636f6c72;
+
+  @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_dvav = 0x64766176;
 
   @SuppressWarnings("ConstantCaseForConstants")
@@ -106,6 +99,8 @@ import java.util.List;
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_s263 = 0x73323633;
 
+  public static final int TYPE_H263 = 0x48323633;
+
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_d263 = 0x64323633;
 
@@ -116,7 +111,19 @@ import java.util.List;
   public static final int TYPE_mp4a = 0x6d703461;
 
   @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE__mp2 = 0x2e6d7032;
+
+  @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE__mp3 = 0x2e6d7033;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mha1 = 0x6d686131;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mhm1 = 0x6d686d31;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mhaC = 0x6d686143;
 
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_wave = 0x77617665;
@@ -146,6 +153,12 @@ import java.util.List;
   public static final int TYPE_dac4 = 0x64616334;
 
   @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mlpa = 0x6d6c7061;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_dmlp = 0x646d6c70;
+
+  @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_dtsc = 0x64747363;
 
   @SuppressWarnings("ConstantCaseForConstants")
@@ -156,6 +169,9 @@ import java.util.List;
 
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_dtse = 0x64747365;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_dtsx = 0x64747378;
 
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_ddts = 0x64647473;
@@ -177,6 +193,9 @@ import java.util.List;
 
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_moov = 0x6d6f6f76;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mpvd = 0x6d707664;
 
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_mvhd = 0x6d766864;
@@ -275,7 +294,7 @@ import java.util.List;
   public static final int TYPE_TTML = 0x54544d4c;
 
   @SuppressWarnings("ConstantCaseForConstants")
-  public static final int TYPE_vmhd = 0x766d6864;
+  public static final int TYPE_m1v_ = 0x6d317620;
 
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_mp4v = 0x6d703476;
@@ -329,6 +348,12 @@ import java.util.List;
   public static final int TYPE_meta = 0x6d657461;
 
   @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_smta = 0x736d7461;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_saut = 0x73617574;
+
+  @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_keys = 0x6b657973;
 
   @SuppressWarnings("ConstantCaseForConstants")
@@ -359,6 +384,9 @@ import java.util.List;
   public static final int TYPE_camm = 0x63616d6d;
 
   @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mett = 0x6d657474;
+
+  @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_alac = 0x616c6163;
 
   @SuppressWarnings("ConstantCaseForConstants")
@@ -382,6 +410,12 @@ import java.util.List;
   @SuppressWarnings("ConstantCaseForConstants")
   public static final int TYPE_twos = 0x74776f73;
 
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_clli = 0x636c6c69;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  public static final int TYPE_mdcv = 0x6d646376;
+
   public final int type;
 
   public Atom(int type) {
@@ -393,14 +427,10 @@ import java.util.List;
     return getAtomTypeString(type);
   }
 
-  /**
-   * An MP4 atom that is a leaf.
-   */
+  /** An MP4 atom that is a leaf. */
   /* package */ static final class LeafAtom extends Atom {
 
-    /**
-     * The atom data.
-     */
+    /** The atom data. */
     public final ParsableByteArray data;
 
     /**
@@ -411,12 +441,9 @@ import java.util.List;
       super(type);
       this.data = data;
     }
-
   }
 
-  /**
-   * An MP4 atom that has child atoms.
-   */
+  /** An MP4 atom that has child atoms. */
   /* package */ static final class ContainerAtom extends Atom {
 
     public final long endPosition;
@@ -522,22 +549,19 @@ import java.util.List;
     @Override
     public String toString() {
       return getAtomTypeString(type)
-          + " leaves: " + Arrays.toString(leafChildren.toArray())
-          + " containers: " + Arrays.toString(containerChildren.toArray());
+          + " leaves: "
+          + Arrays.toString(leafChildren.toArray())
+          + " containers: "
+          + Arrays.toString(containerChildren.toArray());
     }
-
   }
 
-  /**
-   * Parses the version number out of the additional integer component of a full atom.
-   */
+  /** Parses the version number out of the additional integer component of a full atom. */
   public static int parseFullAtomVersion(int fullAtomInt) {
     return 0x000000FF & (fullAtomInt >> 24);
   }
 
-  /**
-   * Parses the atom flags out of the additional integer component of a full atom.
-   */
+  /** Parses the atom flags out of the additional integer component of a full atom. */
   public static int parseFullAtomFlags(int fullAtomInt) {
     return 0x00FFFFFF & fullAtomInt;
   }
@@ -549,10 +573,10 @@ import java.util.List;
    * @return The corresponding four character string.
    */
   public static String getAtomTypeString(int type) {
-    return "" + (char) ((type >> 24) & 0xFF)
+    return ""
+        + (char) ((type >> 24) & 0xFF)
         + (char) ((type >> 16) & 0xFF)
         + (char) ((type >> 8) & 0xFF)
         + (char) (type & 0xFF);
   }
-
 }

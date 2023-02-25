@@ -450,6 +450,9 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
                 MessagesController.getInstance(currentAccount).processUpdates(updates, false);
             }
             AndroidUtilities.runOnUIThread(() -> {
+                if (fragment == null || fragment.getParentActivity() == null) {
+                    return;
+                }
                 if (error == null) {
                     TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
                     if (!updates.chats.isEmpty()) {

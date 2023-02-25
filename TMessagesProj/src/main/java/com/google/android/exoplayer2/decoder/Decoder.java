@@ -24,7 +24,7 @@ import androidx.annotation.Nullable;
  * @param <O> The type of buffer output from the decoder.
  * @param <E> The type of exception thrown from the decoder.
  */
-public interface Decoder<I, O, E extends Exception> {
+public interface Decoder<I, O, E extends DecoderException> {
 
   /**
    * Returns the name of the decoder.
@@ -65,9 +65,6 @@ public interface Decoder<I, O, E extends Exception> {
    */
   void flush();
 
-  /**
-   * Releases the decoder. Must be called when the decoder is no longer needed.
-   */
+  /** Releases the decoder. Must be called when the decoder is no longer needed. */
   void release();
-
 }

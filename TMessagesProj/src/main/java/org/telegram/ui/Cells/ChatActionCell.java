@@ -846,6 +846,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private void createLayout(CharSequence text, int width) {
         int maxWidth = width - AndroidUtilities.dp(30);
+        if (maxWidth < 0) {
+            return;
+        }
         invalidatePath = true;
         TextPaint paint;
         if (currentMessageObject != null && currentMessageObject.drawServiceWithDefaultTypeface) {

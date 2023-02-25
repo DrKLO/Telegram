@@ -634,6 +634,9 @@ public class AvatarConstructorFragment extends BaseFragment {
 
     public void startFrom(AvatarConstructorPreviewCell previewCell) {
         BackgroundGradient gradient = previewCell.getBackgroundGradient();
+        if (previewView == null) {
+            return;
+        }
         previewView.setGradient(gradient);
         if (previewCell.getAnimatedEmoji() != null) {
             long docId = previewCell.getAnimatedEmoji().getDocumentId();

@@ -91,6 +91,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.AutoDeleteMediaTask;
 import org.telegram.messenger.BackupAgent;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
@@ -5438,7 +5439,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         for (Runnable callback : onUserLeaveHintListeners) {
             callback.run();
         }
-        actionBarLayout.onUserLeaveHint();
+        if (actionBarLayout != null) {
+            actionBarLayout.onUserLeaveHint();
+        }
     }
 
     View feedbackView;
@@ -5459,6 +5462,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4096);
         MediaController.getInstance().setFeedbackView(feedbackView = actionBarLayout.getView(), true);
         ApplicationLoader.mainInterfacePaused = false;
+        MessagesController.getInstance(currentAccount).sortDialogs(null);
         showLanguageAlert(false);
         Utilities.stageQueue.postRunnable(() -> {
             ApplicationLoader.mainInterfacePausedStageQueue = false;
@@ -6212,25 +6216,27 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (voIPService == null || mainFragmentsStack.isEmpty() || voIPService.groupCall == null) {
             return;
         }
-        if (!mainFragmentsStack.isEmpty()) {
-            TLRPC.Chat chat = voIPService.getChat();
-            BaseFragment fragment = actionBarLayout.getFragmentStack().get(actionBarLayout.getFragmentStack().size() - 1);
-            if (fragment instanceof ChatActivity) {
-                ChatActivity chatActivity = (ChatActivity) fragment;
-                if (chatActivity.getDialogId() == -chat.id) {
-                    chat = null;
-                }
-                chatActivity.getUndoView().showWithAction(0, action, chat);
-            } else if (fragment instanceof DialogsActivity) {
-                DialogsActivity dialogsActivity = (DialogsActivity) fragment;
-                dialogsActivity.getUndoView().showWithAction(0, action, chat);
-            } else if (fragment instanceof ProfileActivity) {
-                ProfileActivity profileActivity = (ProfileActivity) fragment;
-                profileActivity.getUndoView().showWithAction(0, action, chat);
+        TLRPC.Chat chat = voIPService.getChat();
+        BaseFragment fragment = actionBarLayout.getFragmentStack().get(actionBarLayout.getFragmentStack().size() - 1);
+        if (fragment instanceof ChatActivity) {
+            ChatActivity chatActivity = (ChatActivity) fragment;
+            if (chatActivity.getDialogId() == -chat.id) {
+                chat = null;
             }
-            if (action == UndoView.ACTION_VOIP_CAN_NOW_SPEAK && VoIPService.getSharedInstance() != null) {
-                VoIPService.getSharedInstance().playAllowTalkSound();
+            UndoView undoView = chatActivity.getUndoView();
+            if (undoView != null) {
+                undoView.showWithAction(0, action, chat);
             }
+        } else if (fragment instanceof DialogsActivity) {
+            DialogsActivity dialogsActivity = (DialogsActivity) fragment;
+            dialogsActivity.getUndoView().showWithAction(0, action, chat);
+        } else if (fragment instanceof ProfileActivity) {
+            ProfileActivity profileActivity = (ProfileActivity) fragment;
+            profileActivity.getUndoView().showWithAction(0, action, chat);
+        }
+
+        if (action == UndoView.ACTION_VOIP_CAN_NOW_SPEAK && VoIPService.getSharedInstance() != null) {
+            VoIPService.getSharedInstance().playAllowTalkSound();
         }
     }
 
@@ -6271,7 +6277,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private static LaunchActivity staticInstanceForAlerts;
     private void checkFreeDiscSpace(final int force) {
         staticInstanceForAlerts = this;
-        SharedConfig.checkKeepMedia();
+        AutoDeleteMediaTask.run();
         SharedConfig.checkLogsToDelete();
         if (Build.VERSION.SDK_INT >= 26 && force == 0 || checkFreeDiscSpaceShown) {
             return;
@@ -6878,7 +6884,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             ArticleViewer.getInstance().close(false, true);
         }
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity || fragment instanceof IntroActivity || fragment instanceof CountrySelectActivity) && layersActionBarLayout.getView().getVisibility() != View.VISIBLE, true);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity || fragment instanceof IntroActivity || fragment instanceof CountrySelectActivity) && (layersActionBarLayout == null || layersActionBarLayout.getView().getVisibility() != View.VISIBLE), true);
             if (fragment instanceof DialogsActivity) {
                 DialogsActivity dialogsActivity = (DialogsActivity) fragment;
                 if (dialogsActivity.isMainDialogList() && layout != actionBarLayout) {

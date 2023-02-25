@@ -30,6 +30,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Fetcher;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -583,7 +584,7 @@ public class StickerCategoriesListView extends RecyclerListView {
     }
 
     protected boolean isTabIconsAnimationEnabled(boolean loaded) {
-        return !SharedConfig.getLiteMode().enabled() && !loaded;
+        return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) && !loaded;
     }
 
     static int loadedCategoryIcons = 0;

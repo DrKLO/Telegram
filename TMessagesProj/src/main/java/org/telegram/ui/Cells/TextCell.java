@@ -410,7 +410,7 @@ public class TextCell extends FrameLayout {
         imageView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), color));
     }
 
-    public void setTextAndCheck(String text, boolean checked, boolean divider) {
+    public void setTextAndCheck(CharSequence text, boolean checked, boolean divider) {
         imageLeft = 21;
         offsetFromImage = 71;
         textView.setText(text);
@@ -425,7 +425,7 @@ public class TextCell extends FrameLayout {
         setWillNotDraw(!needDivider);
     }
 
-    public void setTextAndCheckAndIcon(String text, boolean checked, int resId, boolean divider) {
+    public void setTextAndCheckAndIcon(CharSequence text, boolean checked, int resId, boolean divider) {
         imageLeft = 21;
         offsetFromImage = 71;
         textView.setText(text);

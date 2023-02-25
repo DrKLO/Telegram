@@ -15,24 +15,20 @@
  */
 package com.google.android.exoplayer2.extractor.flv;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 
-/**
- * Extracts individual samples from FLV tags, preserving original order.
- */
+/** Extracts individual samples from FLV tags, preserving original order. */
 /* package */ abstract class TagPayloadReader {
 
-  /**
-   * Thrown when the format is not supported.
-   */
+  /** Thrown when the format is not supported. */
   public static final class UnsupportedFormatException extends ParserException {
 
     public UnsupportedFormatException(String msg) {
-      super(msg);
+      super(msg, /* cause= */ null, /* contentIsMalformed= */ false, C.DATA_TYPE_MEDIA);
     }
-
   }
 
   protected final TrackOutput output;
@@ -46,10 +42,10 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 
   /**
    * Notifies the reader that a seek has occurred.
-   * <p>
-   * Following a call to this method, the data passed to the next invocation of
-   * {@link #consume(ParsableByteArray, long)} will not be a continuation of the data that
-   * was previously passed. Hence the reader should reset any internal state.
+   *
+   * <p>Following a call to this method, the data passed to the next invocation of {@link
+   * #consume(ParsableByteArray, long)} will not be a continuation of the data that was previously
+   * passed. Hence the reader should reset any internal state.
    */
   public abstract void seek();
 

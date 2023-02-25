@@ -18,13 +18,14 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Process;
+
 import androidx.annotation.Nullable;
-import java.lang.Thread;
-import java.nio.ByteBuffer;
 
 import org.webrtc.ContextUtils;
 import org.webrtc.Logging;
 import org.webrtc.ThreadUtils;
+
+import java.nio.ByteBuffer;
 
 public class WebRtcAudioTrack {
   private static final boolean DEBUG = false;

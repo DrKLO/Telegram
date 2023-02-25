@@ -15,23 +15,25 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import android.util.SparseArray;
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.EsInfo;
-import com.google.android.exoplayer2.text.cea.Cea708InitializationData;
+import com.google.android.exoplayer2.util.CodecSpecificDataUtil;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import com.google.common.collect.ImmutableList;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-/**
- * Default {@link TsPayloadReader.Factory} implementation.
- */
+/** Default {@link TsPayloadReader.Factory} implementation. */
 public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Factory {
 
   /**
@@ -43,6 +45,7 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef(
       flag = true,
       value = {
@@ -79,7 +82,10 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
    * delimiters (AUDs).
    */
   public static final int FLAG_DETECT_ACCESS_UNITS = 1 << 3;
-  /** Prevents the creation of {@link SpliceInfoSectionReader} instances. */
+  /**
+   * Prevents the creation of {@link SectionPayloadReader}s for splice information sections
+   * (SCTE-35).
+   */
   public static final int FLAG_IGNORE_SPLICE_INFO_STREAM = 1 << 4;
   /**
    * Whether the list of {@code closedCaptionFormats} passed to {@link
@@ -96,7 +102,7 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
 
   private static final int DESCRIPTOR_TAG_CAPTION_SERVICE = 0x86;
 
-  @Flags private final int flags;
+  private final @Flags int flags;
   private final List<Format> closedCaptionFormats;
 
   public DefaultTsPayloadReaderFactory() {
@@ -108,21 +114,18 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
    *     readers.
    */
   public DefaultTsPayloadReaderFactory(@Flags int flags) {
-    this(
-        flags,
-        Collections.singletonList(
-            Format.createTextSampleFormat(null, MimeTypes.APPLICATION_CEA608, 0, null)));
+    this(flags, ImmutableList.of());
   }
 
   /**
    * @param flags A combination of {@code FLAG_*} values that control the behavior of the created
    *     readers.
    * @param closedCaptionFormats {@link Format}s to be exposed by payload readers for streams with
-   *     embedded closed captions when no caption service descriptors are provided. If
-   *     {@link #FLAG_OVERRIDE_CAPTION_DESCRIPTORS} is set, {@code closedCaptionFormats} overrides
-   *     any descriptor information. If not set, and {@code closedCaptionFormats} is empty, a
-   *     closed caption track with {@link Format#accessibilityChannel} {@link Format#NO_VALUE} will
-   *     be exposed.
+   *     embedded closed captions when no caption service descriptors are provided. If {@link
+   *     #FLAG_OVERRIDE_CAPTION_DESCRIPTORS} is set, {@code closedCaptionFormats} overrides any
+   *     descriptor information. If not set, and {@code closedCaptionFormats} is empty, a closed
+   *     caption track with {@link Format#accessibilityChannel} {@link Format#NO_VALUE} will be
+   *     exposed.
    */
   public DefaultTsPayloadReaderFactory(@Flags int flags, List<Format> closedCaptionFormats) {
     this.flags = flags;
@@ -135,6 +138,7 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
   }
 
   @Override
+  @Nullable
   public TsPayloadReader createPayloadReader(int streamType, EsInfo esInfo) {
     switch (streamType) {
       case TsExtractor.TS_STREAM_TYPE_MPA:
@@ -142,10 +146,12 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
         return new PesReader(new MpegAudioReader(esInfo.language));
       case TsExtractor.TS_STREAM_TYPE_AAC_ADTS:
         return isSet(FLAG_IGNORE_AAC_STREAM)
-            ? null : new PesReader(new AdtsReader(false, esInfo.language));
+            ? null
+            : new PesReader(new AdtsReader(false, esInfo.language));
       case TsExtractor.TS_STREAM_TYPE_AAC_LATM:
         return isSet(FLAG_IGNORE_AAC_STREAM)
-            ? null : new PesReader(new LatmReader(esInfo.language));
+            ? null
+            : new PesReader(new LatmReader(esInfo.language));
       case TsExtractor.TS_STREAM_TYPE_AC3:
       case TsExtractor.TS_STREAM_TYPE_E_AC3:
         return new PesReader(new Ac3Reader(esInfo.language));
@@ -159,31 +165,40 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
       case TsExtractor.TS_STREAM_TYPE_DTS:
         return new PesReader(new DtsReader(esInfo.language));
       case TsExtractor.TS_STREAM_TYPE_H262:
+      case TsExtractor.TS_STREAM_TYPE_DC2_H262:
         return new PesReader(new H262Reader(buildUserDataReader(esInfo)));
+      case TsExtractor.TS_STREAM_TYPE_H263:
+        return new PesReader(new H263Reader(buildUserDataReader(esInfo)));
       case TsExtractor.TS_STREAM_TYPE_H264:
-        return isSet(FLAG_IGNORE_H264_STREAM) ? null
-            : new PesReader(new H264Reader(buildSeiReader(esInfo),
-                isSet(FLAG_ALLOW_NON_IDR_KEYFRAMES), isSet(FLAG_DETECT_ACCESS_UNITS)));
+        return isSet(FLAG_IGNORE_H264_STREAM)
+            ? null
+            : new PesReader(
+                new H264Reader(
+                    buildSeiReader(esInfo),
+                    isSet(FLAG_ALLOW_NON_IDR_KEYFRAMES),
+                    isSet(FLAG_DETECT_ACCESS_UNITS)));
       case TsExtractor.TS_STREAM_TYPE_H265:
         return new PesReader(new H265Reader(buildSeiReader(esInfo)));
       case TsExtractor.TS_STREAM_TYPE_SPLICE_INFO:
         return isSet(FLAG_IGNORE_SPLICE_INFO_STREAM)
-            ? null : new SectionReader(new SpliceInfoSectionReader());
+            ? null
+            : new SectionReader(new PassthroughSectionPayloadReader(MimeTypes.APPLICATION_SCTE35));
       case TsExtractor.TS_STREAM_TYPE_ID3:
         return new PesReader(new Id3Reader());
       case TsExtractor.TS_STREAM_TYPE_DVBSUBS:
-        return new PesReader(
-            new DvbSubtitleReader(esInfo.dvbSubtitleInfos));
+        return new PesReader(new DvbSubtitleReader(esInfo.dvbSubtitleInfos));
+      case TsExtractor.TS_STREAM_TYPE_AIT:
+        return new SectionReader(new PassthroughSectionPayloadReader(MimeTypes.APPLICATION_AIT));
       default:
         return null;
     }
   }
 
   /**
-   * If {@link #FLAG_OVERRIDE_CAPTION_DESCRIPTORS} is set, returns a {@link SeiReader} for
-   * {@link #closedCaptionFormats}. If unset, parses the PMT descriptor information and returns a
-   * {@link SeiReader} for the declared formats, or {@link #closedCaptionFormats} if the descriptor
-   * is not present.
+   * If {@link #FLAG_OVERRIDE_CAPTION_DESCRIPTORS} is set, returns a {@link SeiReader} for {@link
+   * #closedCaptionFormats}. If unset, parses the PMT descriptor information and returns a {@link
+   * SeiReader} for the declared formats, or {@link #closedCaptionFormats} if the descriptor is not
+   * present.
    *
    * @param esInfo The {@link EsInfo} passed to {@link #createPayloadReader(int, EsInfo)}.
    * @return A {@link SeiReader} for closed caption tracks.
@@ -247,25 +262,21 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
           // Skip reserved (8).
           scratchDescriptorData.skipBytes(1);
 
-          List<byte[]> initializationData = null;
+          @Nullable List<byte[]> initializationData = null;
           // The wide_aspect_ratio flag only has meaning for CEA-708.
           if (isDigital) {
             boolean isWideAspectRatio = (flags & 0x40) != 0;
-            initializationData = Cea708InitializationData.buildData(isWideAspectRatio);
+            initializationData =
+                CodecSpecificDataUtil.buildCea708InitializationData(isWideAspectRatio);
           }
 
           closedCaptionFormats.add(
-              Format.createTextSampleFormat(
-                  /* id= */ null,
-                  mimeType,
-                  /* codecs= */ null,
-                  /* bitrate= */ Format.NO_VALUE,
-                  /* selectionFlags= */ 0,
-                  language,
-                  accessibilityChannel,
-                  /* drmInitData= */ null,
-                  Format.OFFSET_SAMPLE_RELATIVE,
-                  initializationData));
+              new Format.Builder()
+                  .setSampleMimeType(mimeType)
+                  .setLanguage(language)
+                  .setAccessibilityChannel(accessibilityChannel)
+                  .setInitializationData(initializationData)
+                  .build());
         }
       } else {
         // Unknown descriptor. Ignore.

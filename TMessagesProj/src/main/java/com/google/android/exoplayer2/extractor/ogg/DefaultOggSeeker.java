@@ -15,6 +15,9 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
+import static com.google.android.exoplayer2.extractor.ExtractorUtil.skipFullyQuietly;
+
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
@@ -29,9 +32,9 @@ import java.io.IOException;
 /** Seeks in an Ogg stream. */
 /* package */ final class DefaultOggSeeker implements OggSeeker {
 
-  private static final int MATCH_RANGE = 72000;
-  private static final int MATCH_BYTE_RANGE = 100000;
-  private static final int DEFAULT_OFFSET = 30000;
+  private static final int MATCH_RANGE = 72_000;
+  private static final int MATCH_BYTE_RANGE = 100_000;
+  private static final int DEFAULT_OFFSET = 30_000;
 
   private static final int STATE_SEEK_TO_END = 0;
   private static final int STATE_READ_LAST_PAGE = 1;
@@ -39,7 +42,7 @@ import java.io.IOException;
   private static final int STATE_SKIP = 3;
   private static final int STATE_IDLE = 4;
 
-  private final OggPageHeader pageHeader = new OggPageHeader();
+  private final OggPageHeader pageHeader;
   private final long payloadStartPosition;
   private final long payloadEndPosition;
   private final StreamReader streamReader;
@@ -83,10 +86,11 @@ import java.io.IOException;
     } else {
       state = STATE_SEEK_TO_END;
     }
+    pageHeader = new OggPageHeader();
   }
 
   @Override
-  public long read(ExtractorInput input) throws IOException, InterruptedException {
+  public long read(ExtractorInput input) throws IOException {
     switch (state) {
       case STATE_IDLE:
         return -1;
@@ -121,6 +125,7 @@ import java.io.IOException;
   }
 
   @Override
+  @Nullable
   public OggSeekMap createSeekMap() {
     return totalGranules != 0 ? new OggSeekMap() : null;
   }
@@ -145,15 +150,14 @@ import java.io.IOException;
    * @return The byte position from which data should be provided for the next step, or {@link
    *     C#POSITION_UNSET} if the search has converged.
    * @throws IOException If reading from the input fails.
-   * @throws InterruptedException If interrupted while reading from the input.
    */
-  private long getNextSeekPosition(ExtractorInput input) throws IOException, InterruptedException {
+  private long getNextSeekPosition(ExtractorInput input) throws IOException {
     if (start == end) {
       return C.POSITION_UNSET;
     }
 
     long currentPosition = input.getPosition();
-    if (!skipToNextPage(input, end)) {
+    if (!pageHeader.skipToNextPage(input, end)) {
       if (start == currentPosition) {
         throw new IOException("No ogg page can be found.");
       }
@@ -196,73 +200,21 @@ import java.io.IOException;
    * @param input The {@link ExtractorInput} to read from.
    * @throws ParserException If populating the page header fails.
    * @throws IOException If reading from the input fails.
-   * @throws InterruptedException If interrupted while reading from the input.
    */
-  private void skipToPageOfTargetGranule(ExtractorInput input)
-      throws IOException, InterruptedException {
-    pageHeader.populate(input, /* quiet= */ false);
-    while (pageHeader.granulePosition <= targetGranule) {
+  private void skipToPageOfTargetGranule(ExtractorInput input) throws IOException {
+    while (true) {
+      // If pageHeader.skipToNextPage fails to find a page it will advance input.position to the
+      // end of the file, so pageHeader.populate will throw EOFException (because quiet=false).
+      pageHeader.skipToNextPage(input);
+      pageHeader.populate(input, /* quiet= */ false);
+      if (pageHeader.granulePosition > targetGranule) {
+        break;
+      }
       input.skipFully(pageHeader.headerSize + pageHeader.bodySize);
       start = input.getPosition();
       startGranule = pageHeader.granulePosition;
-      pageHeader.populate(input, /* quiet= */ false);
     }
     input.resetPeekPosition();
-  }
-
-  /**
-   * Skips to the next page.
-   *
-   * @param input The {@code ExtractorInput} to skip to the next page.
-   * @throws IOException If peeking/reading from the input fails.
-   * @throws InterruptedException If the thread is interrupted.
-   * @throws EOFException If the next page can't be found before the end of the input.
-   */
-  @VisibleForTesting
-  void skipToNextPage(ExtractorInput input) throws IOException, InterruptedException {
-    if (!skipToNextPage(input, payloadEndPosition)) {
-      // Not found until eof.
-      throw new EOFException();
-    }
-  }
-
-  /**
-   * Skips to the next page. Searches for the next page header.
-   *
-   * @param input The {@code ExtractorInput} to skip to the next page.
-   * @param limit The limit up to which the search should take place.
-   * @return Whether the next page was found.
-   * @throws IOException If peeking/reading from the input fails.
-   * @throws InterruptedException If interrupted while peeking/reading from the input.
-   */
-  private boolean skipToNextPage(ExtractorInput input, long limit)
-      throws IOException, InterruptedException {
-    limit = Math.min(limit + 3, payloadEndPosition);
-    byte[] buffer = new byte[2048];
-    int peekLength = buffer.length;
-    while (true) {
-      if (input.getPosition() + peekLength > limit) {
-        // Make sure to not peek beyond the end of the input.
-        peekLength = (int) (limit - input.getPosition());
-        if (peekLength < 4) {
-          // Not found until end.
-          return false;
-        }
-      }
-      input.peekFully(buffer, 0, peekLength, false);
-      for (int i = 0; i < peekLength - 3; i++) {
-        if (buffer[i] == 'O'
-            && buffer[i + 1] == 'g'
-            && buffer[i + 2] == 'g'
-            && buffer[i + 3] == 'S') {
-          // Match! Skip to the start of the pattern.
-          input.skipFully(i);
-          return true;
-        }
-      }
-      // Overlap by not skipping the entire peekLength.
-      input.skipFully(peekLength - 3);
-    }
   }
 
   /**
@@ -272,17 +224,28 @@ import java.io.IOException;
    * @param input The {@link ExtractorInput} to read from.
    * @return The total number of samples of this input.
    * @throws IOException If reading from the input fails.
-   * @throws InterruptedException If the thread is interrupted.
    */
   @VisibleForTesting
-  long readGranuleOfLastPage(ExtractorInput input) throws IOException, InterruptedException {
-    skipToNextPage(input);
+  long readGranuleOfLastPage(ExtractorInput input) throws IOException {
     pageHeader.reset();
-    while ((pageHeader.type & 0x04) != 0x04 && input.getPosition() < payloadEndPosition) {
-      pageHeader.populate(input, /* quiet= */ false);
-      input.skipFully(pageHeader.headerSize + pageHeader.bodySize);
+    if (!pageHeader.skipToNextPage(input)) {
+      throw new EOFException();
     }
-    return pageHeader.granulePosition;
+    pageHeader.populate(input, /* quiet= */ false);
+    input.skipFully(pageHeader.headerSize + pageHeader.bodySize);
+    long granulePosition = pageHeader.granulePosition;
+    while ((pageHeader.type & 0x04) != 0x04
+        && pageHeader.skipToNextPage(input)
+        && input.getPosition() < payloadEndPosition) {
+      boolean hasPopulated = pageHeader.populate(input, /* quiet= */ true);
+      if (!hasPopulated || !skipFullyQuietly(input, pageHeader.headerSize + pageHeader.bodySize)) {
+        // The input file contains a partial page at the end. Ignore it and return the granule
+        // position of the last complete page.
+        return granulePosition;
+      }
+      granulePosition = pageHeader.granulePosition;
+    }
+    return granulePosition;
   }
 
   private final class OggSeekMap implements SeekMap {

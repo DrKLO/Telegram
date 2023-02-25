@@ -15,9 +15,7 @@
  */
 package com.google.android.exoplayer2.source;
 
-/**
- * A factory to create composite {@link SequenceableLoader}s.
- */
+/** A factory to create composite {@link SequenceableLoader}s. */
 public interface CompositeSequenceableLoaderFactory {
 
   /**
@@ -27,5 +25,4 @@ public interface CompositeSequenceableLoaderFactory {
    * @return A composite {@link SequenceableLoader} that comprises the given loaders.
    */
   SequenceableLoader createCompositeSequenceableLoader(SequenceableLoader... loaders);
-
 }

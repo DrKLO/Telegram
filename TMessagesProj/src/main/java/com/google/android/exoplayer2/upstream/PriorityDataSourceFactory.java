@@ -19,8 +19,9 @@ import com.google.android.exoplayer2.upstream.DataSource.Factory;
 import com.google.android.exoplayer2.util.PriorityTaskManager;
 
 /**
- * A {@link DataSource.Factory} that produces {@link PriorityDataSource} instances.
+ * @deprecated Use {@link PriorityDataSource.Factory}.
  */
+@Deprecated
 public final class PriorityDataSourceFactory implements Factory {
 
   private final Factory upstreamFactory;
@@ -33,8 +34,8 @@ public final class PriorityDataSourceFactory implements Factory {
    * @param priorityTaskManager The priority manager to which PriorityDataSource task is registered.
    * @param priority The priority of PriorityDataSource task.
    */
-  public PriorityDataSourceFactory(Factory upstreamFactory, PriorityTaskManager priorityTaskManager,
-      int priority) {
+  public PriorityDataSourceFactory(
+      Factory upstreamFactory, PriorityTaskManager priorityTaskManager, int priority) {
     this.upstreamFactory = upstreamFactory;
     this.priorityTaskManager = priorityTaskManager;
     this.priority = priority;
@@ -42,8 +43,7 @@ public final class PriorityDataSourceFactory implements Factory {
 
   @Override
   public PriorityDataSource createDataSource() {
-    return new PriorityDataSource(upstreamFactory.createDataSource(), priorityTaskManager,
-        priority);
+    return new PriorityDataSource(
+        upstreamFactory.createDataSource(), priorityTaskManager, priority);
   }
-
 }

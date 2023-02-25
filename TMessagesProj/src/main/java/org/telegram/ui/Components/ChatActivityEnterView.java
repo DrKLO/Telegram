@@ -103,6 +103,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -679,6 +680,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 slideText.setAlpha(1.0f);
                 slideText.setTranslationY(0);
             }
+            audioToSendPath = null;
+            audioToSend = null;
             if (isInVideoMode()) {
                 if (Build.VERSION.SDK_INT >= 23) {
                     boolean hasAudio = parentActivity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
@@ -1971,7 +1974,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     notifyButton.setImageDrawable(notifySilentDrawable);
                     MessagesController.getNotificationsSettings(currentAccount).edit().putBoolean("silent_" + dialog_id, silent).commit();
                     NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(dialog_id, fragment == null ? 0 :fragment.getTopicId());
-                    fragment.getUndoView().showWithAction(0, !silent ? UndoView.ACTION_NOTIFY_ON : UndoView.ACTION_NOTIFY_OFF, null);
+                    UndoView undoView = fragment.getUndoView();
+                    if (undoView != null) {
+                        undoView.showWithAction(0, !silent ? UndoView.ACTION_NOTIFY_ON : UndoView.ACTION_NOTIFY_OFF, null);
+                    }
                     notifyButton.setContentDescription(silent ? LocaleController.getString("AccDescrChanSilentOn", R.string.AccDescrChanSilentOn) : LocaleController.getString("AccDescrChanSilentOff", R.string.AccDescrChanSilentOff));
                     updateFieldHint(true);
                 }
@@ -2423,7 +2429,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         if (Build.VERSION.SDK_INT >= 21) {
             scheduledButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         }
-        messageEditTextContainer.addView(scheduledButton, 1, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.RIGHT));
+        messageEditTextContainer.addView(scheduledButton, 2, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.RIGHT));
         scheduledButton.setOnClickListener(v -> {
             if (delegate != null) {
                 delegate.openScheduledMessages();
@@ -2596,6 +2602,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 }
             }
             if (audioToSendPath != null) {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("delete file " + audioToSendPath);
+                }
                 new File(audioToSendPath).delete();
             }
             hideRecordedAudioPanel(false);
@@ -3646,7 +3655,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
 
         private void openPhotoViewerForEdit(ArrayList<Object> entries, File sourceFile) {
-            if (parentFragment.getParentActivity() == null) {
+            if (parentFragment == null || parentFragment.getParentActivity() == null) {
                 return;
             }
             MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entries.get(0);
@@ -7398,9 +7407,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
         boolean hasScheduled = delegate != null && !isInScheduleMode() && delegate.hasScheduledMessages();
         boolean visible = hasScheduled && !scheduleButtonHidden && !recordingAudioVideo;
-        if (hasScheduled) {
-            createScheduledButton();
-        }
+        createScheduledButton();
         if (scheduledButton != null) {
             if (scheduledButton.getTag() != null && visible || scheduledButton.getTag() == null && !visible) {
                 if (notifyButton != null) {
