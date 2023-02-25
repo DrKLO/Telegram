@@ -1600,7 +1600,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 callingUserIsVideo = false;
                 break;
             case VoIPService.STATE_ESTABLISHED:
-                topHint.setText("Encryption Key For this call");
+                topHint.setText(LocaleController.getString("VOIPCallEncryptionKey",R.string.VOIPCallEncryptionKey));
                 topHint.setVisibility(View.VISIBLE);
                 topHint.setAlpha(1.0f);
 

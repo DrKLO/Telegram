@@ -6257,4 +6257,5 @@
     <string name="YourCurrentPlan">your current plan</string>
     <string name="MicrophoneOff">Your Microphone is turned off</string>
     <string name="WeakNetworkSignal">Weak network signal</string>
+    <string name="VOIPCallEncryptionKey">Encryption key of this call</string>
 </resources>
