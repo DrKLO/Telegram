@@ -20,6 +20,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -40,6 +42,7 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -51,6 +54,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
+import androidx.dynamicanimation.animation.DynamicAnimation;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -100,6 +104,11 @@ import org.webrtc.TextureViewRenderer;
 
 import java.io.ByteArrayOutputStream;
 
+enum GradientState {
+    BLUE_VIOLET,
+    BLUE_GREEN,
+}
+
 public class VoIPFragment implements VoIPService.StateListener, NotificationCenter.NotificationCenterDelegate {
 
     private final static int STATE_GONE = 0;
@@ -144,6 +153,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private VoIPOverlayBackground overlayBackground;
 
     private BackupImageView callingUserPhotoView;
+    private TransitionDrawable drawable;
     private BackupImageView callingUserPhotoViewMini;
 
     private TextView callingUserTitle;
@@ -276,11 +286,14 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     BlobDrawable anotherRandomWave = new BlobDrawable(15);
 
     //  tooltip text
-    private HintView lowerToolTip;
-    private HintView upperToolTip;
+    private VoIPStatusTextView lowerToolTip;
+    private VoIPStatusTextView upperToolTip;
     // background gradient
-    final MotionBackgroundDrawable backgroundGradient = new MotionBackgroundDrawable(GRADIENT_BLUE_VIOLET[0][0], GRADIENT_BLUE_VIOLET[0][2], GRADIENT_BLUE_VIOLET[0][1], GRADIENT_BLUE_VIOLET[0][3], false);
+    MotionBackgroundDrawable mainBackGroundGradient = new MotionBackgroundDrawable(GRADIENT_BLUE_VIOLET[0][0], GRADIENT_BLUE_VIOLET[0][2], GRADIENT_BLUE_VIOLET[0][1], GRADIENT_BLUE_VIOLET[0][3], false);
+    MotionBackgroundDrawable tempBackgroundGradient = new MotionBackgroundDrawable(GRADIENT_BLUE_GREEN[0][0], GRADIENT_BLUE_GREEN[0][2], GRADIENT_BLUE_GREEN[0][1], GRADIENT_BLUE_GREEN[0][3], false);
+    ValueAnimator patternAlphaAnimator = ValueAnimator.ofFloat(0f, 1f);
 
+    GradientState gradientState = GradientState.BLUE_VIOLET;
 
 
     public static void show(Activity activity, int account) {
@@ -520,6 +533,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     @Override
     public void onSignalBarsCountChanged(int count) {
+        if (count < 3) {
+            if (upperToolTip != null) {
+                upperToolTip.setVisibility(View.VISIBLE);
+                upperToolTip.setText("Weak Network Signal", false, true);
+            }
+
+        } else if (upperToolTip != null && upperToolTip.getVisibility() == View.VISIBLE) {
+            upperToolTip.setVisibility(View.GONE);
+        }
         if (statusTextView != null) {
             statusTextView.setSignalBarCount(count);
         }
@@ -749,7 +771,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         overlayBackground = new VoIPOverlayBackground(context);
         overlayBackground.setVisibility(View.GONE);
 
-        callingUserPhotoView.setImageDrawable(backgroundGradient);
+        drawable = new TransitionDrawable(new MotionBackgroundDrawable[]{mainBackGroundGradient, tempBackgroundGradient});
+        drawable.setCrossFadeEnabled(false);
+
+        callingUserPhotoView.setImageDrawable(drawable);
+        mainBackGroundGradient.setParentView(callingUserPhotoView);
+        tempBackgroundGradient.setParentView(callingUserPhotoView);
+        tempBackgroundGradient.setCallback(callingUserPhotoView);
 
 
         currentUserCameraFloatingLayout = new VoIPFloatingLayout(context);
@@ -1073,20 +1101,17 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         tapToVideoTooltip.setVisibility(View.GONE);
 
 
-        upperToolTip = new HintView(context, HintView.ROUND_CORNERS, false);
-        upperToolTip.setText(LocaleController.getString("WeakNetworkSignal",R.string.WeakNetworkSignal));
-        upperToolTip.setBackgroundColor(0x1F_00_00_00, Color.WHITE);
-        frameLayout.addView(upperToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,  Gravity.CENTER, 0,0, 0, AndroidUtilities.dp(10)));
-        upperToolTip.arrowImageView.setVisibility(View.GONE);
-        upperToolTip.setBottomOffset(AndroidUtilities.dp(4));
+        upperToolTip = new VoIPStatusTextView(context);
+        frameLayout.addView(upperToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, AndroidUtilities.dp(10)));
         upperToolTip.setVisibility(View.GONE);
+        upperToolTip.setPadding(23, 7, 23, 7);
+        upperToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), 0x1F_00_00_00));
 
-        lowerToolTip = new HintView(context, HintView.ROUND_CORNERS, false);
-        lowerToolTip.setBackgroundColor(0x1F_00_00_00, Color.WHITE);
+        lowerToolTip = new VoIPStatusTextView(context);
+        lowerToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), 0x1F_00_00_00));
+        lowerToolTip.setPadding(23, 7, 23, 7);
+
         frameLayout.addView(lowerToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER, 0, 0, 0, AndroidUtilities.dp(85)));
-        lowerToolTip.arrowImageView.setVisibility(View.GONE);
-        lowerToolTip.setBottomOffset(AndroidUtilities.dp(4));
-
         lowerToolTip.setVisibility(View.GONE);
 
         updateViewState();
@@ -1434,6 +1459,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                     .setDuration(250)
                     .start();
+
             emojiRationalTextView.animate().setListener(null).cancel();
             if (emojiRationalTextView.getVisibility() != View.VISIBLE) {
                 emojiRationalTextView.setVisibility(View.VISIBLE);
@@ -1490,6 +1516,38 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         boolean showCallingAvatarMini = false;
         int statusLayoutOffset = 0;
         VoIPService service = VoIPService.getSharedInstance();
+
+        mainBackGroundGradient.setIndeterminateAnimation(true);
+        tempBackgroundGradient.setIndeterminateAnimation(true);
+
+
+        if (!patternAlphaAnimator.isRunning()) {
+            patternAlphaAnimator.setDuration(4000);
+
+            patternAlphaAnimator.setRepeatCount(ValueAnimator.INFINITE);
+            patternAlphaAnimator.setRepeatMode(ValueAnimator.REVERSE);
+            patternAlphaAnimator.addListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animator) {}
+                @Override
+                public void onAnimationEnd(Animator animator) {}
+                @Override
+                public void onAnimationCancel(Animator animator) {}
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
+
+                    if (gradientState == GradientState.BLUE_GREEN) {
+                        drawable.reverseTransition(4000);
+                        gradientState = GradientState.BLUE_VIOLET;
+                    } else {
+                        drawable.startTransition(4000);
+                        gradientState = GradientState.BLUE_GREEN;
+                    }
+                }
+            });
+            patternAlphaAnimator.start();
+        }
 
         switch (currentState) {
             case VoIPService.STATE_WAITING_INCOMING:
@@ -1736,9 +1794,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             }
             if ((currentUserIsVideo || callingUserIsVideo) && (currentState == VoIPService.STATE_ESTABLISHED || currentState == VoIPService.STATE_RECONNECTING) && service.getCallDuration() > 500) {
                 if (service.getRemoteAudioState() == Instance.AUDIO_STATE_MUTED) {
-                    notificationsLayout.addNotification(R.drawable.calls_mute_mini, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
+
+                    lowerToolTip.setVisibility(View.VISIBLE);
+                    lowerToolTip.setAlpha(1.0f);
+                    lowerToolTip.setText(LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), false, animated);
                 } else {
-                    notificationsLayout.removeNotification("muted");
+                    //lowerToolTip.setVisibility(View.GONE);
                 }
                 if (service.getRemoteVideoState() == Instance.VIDEO_STATE_INACTIVE) {
                     notificationsLayout.addNotification(R.drawable.calls_camera_mini, LocaleController.formatString("VoipUserCameraIsOff", R.string.VoipUserCameraIsOff, UserObject.getFirstName(callingUser)), "video", animated);
@@ -1747,8 +1808,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 }
             } else {
                 if (service.getRemoteAudioState() == Instance.AUDIO_STATE_MUTED) {
-                    notificationsLayout.addNotification(R.drawable.calls_mute_mini, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
+                    lowerToolTip.setVisibility(View.VISIBLE);
+                    lowerToolTip.setAlpha(1.0f);
+                    lowerToolTip.setText(LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), false, animated);
                 } else {
+                    //lowerToolTip.setVisibility(View.GONE);
                     notificationsLayout.removeNotification("muted");
                 }
                 notificationsLayout.removeNotification("video");
@@ -2161,11 +2225,16 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         if (service.isMicMute()) {
-            lowerToolTip.setText(LocaleController.getString("MicrophoneOff", R.string.MicrophoneOff));
-            lowerToolTip.setVisibility(View.VISIBLE);
+            if (lowerToolTip != null) {
+                lowerToolTip.setText(LocaleController.getString("MicrophoneOff", R.string.MicrophoneOff), false, animated);
+                lowerToolTip.setAlpha(1.0f);
+                lowerToolTip.setVisibility(View.VISIBLE);
+            }
             bottomButton.setData(R.drawable.calls_unmute, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), true, animated);
         } else {
-            lowerToolTip.setVisibility(View.GONE);
+            if (lowerToolTip != null) {
+                lowerToolTip.setVisibility(View.GONE);
+            }
             bottomButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated);
         }
         currentUserCameraFloatingLayout.setMuted(service.isMicMute(), animated);
