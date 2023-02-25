@@ -32,8 +32,9 @@ public class HintView extends FrameLayout {
     public static final int TYPE_SEARCH_AS_LIST = 3;
     public static final int TYPE_COMMON = 4;
     public static final int TYPE_POLL_VOTE = 5;
-
     public static final int ROUND_CORNERS = 90;
+
+
     public TextView textView;
     public ImageView arrowImageView;
 
@@ -61,11 +62,20 @@ public class HintView extends FrameLayout {
         this(context, type, topArrow, null);
     }
 
+
     public HintView(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         this(context, type, false, resourcesProvider);
     }
 
+    public HintView(Context context, int type, boolean topArrow, boolean centerArrow) {
+        this(context, type, topArrow, centerArrow, null);
+    }
+
     public HintView(Context context, int type, boolean topArrow, Theme.ResourcesProvider resourcesProvider) {
+        this(context, type, topArrow, false, resourcesProvider);
+    }
+
+    public HintView(Context context, int type, boolean topArrow, boolean centerArrow, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
@@ -108,13 +118,13 @@ public class HintView extends FrameLayout {
         arrowImageView = new ImageView(context);
         arrowImageView.setImageResource(topArrow ? R.drawable.tooltip_arrow_up : R.drawable.tooltip_arrow);
         arrowImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
-        addView(arrowImageView, LayoutHelper.createFrame(14, 6, Gravity.LEFT | (topArrow ? Gravity.TOP : Gravity.BOTTOM), 0, 0, 0, 0));
+        addView(arrowImageView, LayoutHelper.createFrame(14, 6, (centerArrow ? Gravity.CENTER : Gravity.LEFT) | (topArrow ? Gravity.TOP : Gravity.BOTTOM), 0, 0, 0, 0));
     }
 
     public void setBackgroundColor(int background, int text) {
         textView.setTextColor(text);
         arrowImageView.setColorFilter(new PorterDuffColorFilter(background, PorterDuff.Mode.MULTIPLY));
-        if (currentType == ROUND_CORNERS){
+        if (currentType == ROUND_CORNERS) {
             // set to an abitrary hight value which forces border radius
             textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), background));
 
