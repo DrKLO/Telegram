@@ -276,6 +276,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     // whether the current theme is dark theme
     private final boolean isDarkTheme = Theme.getActiveTheme().isDark();
 
+    ObjectAnimator scaleDown;
+
     // blob drawabled
     BlobDrawable tinyWaveDrawable = new BlobDrawable(11);
     BlobDrawable bigWaveDrawable = new BlobDrawable(12);
@@ -953,7 +955,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
 
-        ObjectAnimator scaleDown = ObjectAnimator.ofPropertyValuesHolder(
+        scaleDown = ObjectAnimator.ofPropertyValuesHolder(
                 roundedIcon,
                 PropertyValuesHolder.ofFloat("scaleX", 1.05f),
                 PropertyValuesHolder.ofFloat("scaleY", 1.05f));
@@ -985,16 +987,16 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         statusLayout.setClipToPadding(false);
         statusLayout.setPadding(0, 0, 0, AndroidUtilities.dp(15));
 
-        topHint = new HintView(context,HintView.TYPE_COMMON,true,true);
+        topHint = new HintView(context, HintView.TYPE_COMMON, true, true);
         topHint.setVisibility(View.GONE);
 
 
-        topHint.setBackgroundColor(0x1F_00_00_00,0xFF_FF_FF_FF);
+        topHint.setBackgroundColor(0x1F_00_00_00, 0xFF_FF_FF_FF);
 
         frameLayout.addView(callingUserPhotoViewMini, LayoutHelper.createFrame(135, 135, Gravity.CENTER_HORIZONTAL, 0, 68, 0, 0));
         frameLayout.addView(statusLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 68, 0, 0));
         frameLayout.addView(emojiLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 17, 0, 0));
-        frameLayout.addView(topHint,LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,LayoutHelper.WRAP_CONTENT,Gravity.CENTER_HORIZONTAL,0,100,0,0));
+        frameLayout.addView(topHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 100, 0, 0));
 
         frameLayout.addView(emojiRationalTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 32, 24, 0));
 
@@ -1533,11 +1535,16 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             patternAlphaAnimator.setRepeatMode(ValueAnimator.REVERSE);
             patternAlphaAnimator.addListener(new Animator.AnimatorListener() {
                 @Override
-                public void onAnimationStart(Animator animator) {}
+                public void onAnimationStart(Animator animator) {
+                }
+
                 @Override
-                public void onAnimationEnd(Animator animator) {}
+                public void onAnimationEnd(Animator animator) {
+                }
+
                 @Override
-                public void onAnimationCancel(Animator animator) {}
+                public void onAnimationCancel(Animator animator) {
+                }
 
                 @Override
                 public void onAnimationRepeat(Animator animator) {
@@ -1551,7 +1558,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     }
                 }
             });
-            shouldStartPatternAnimator=false;
+            shouldStartPatternAnimator = false;
             patternAlphaAnimator.start();
         }
 
@@ -1600,9 +1607,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 callingUserIsVideo = false;
                 break;
             case VoIPService.STATE_ESTABLISHED:
-                topHint.setText(LocaleController.getString("VOIPCallEncryptionKey",R.string.VOIPCallEncryptionKey));
+                topHint.setText(LocaleController.getString("VOIPCallEncryptionKey", R.string.VOIPCallEncryptionKey));
                 topHint.setVisibility(View.VISIBLE);
                 topHint.setAlpha(1.0f);
+                // stop the bubbling animation
+                if (scaleDown != null && scaleDown.isRunning()) {
+                    scaleDown.cancel();
+                }
+
+
                 // Explicit fall through
 
             case VoIPService.STATE_RECONNECTING:
