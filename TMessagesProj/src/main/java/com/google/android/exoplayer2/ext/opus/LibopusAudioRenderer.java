@@ -21,28 +21,30 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
-import com.google.android.exoplayer2.audio.SimpleDecoderAudioRenderer;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.drm.ExoMediaCrypto;
-import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.audio.AudioSink;
+import com.google.android.exoplayer2.audio.AudioSink.SinkFormatSupport;
+import com.google.android.exoplayer2.audio.DecoderAudioRenderer;
+import com.google.android.exoplayer2.decoder.CryptoConfig;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.TraceUtil;
+import com.google.android.exoplayer2.util.Util;
 
 /** Decodes and renders audio using the native Opus decoder. */
-public class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
+public class LibopusAudioRenderer extends DecoderAudioRenderer<OpusDecoder> {
 
+  private static final String TAG = "LibopusAudioRenderer";
   /** The number of input and output buffers. */
   private static final int NUM_BUFFERS = 16;
   /** The default input buffer size. */
   private static final int DEFAULT_INPUT_BUFFER_SIZE = 960 * 6;
-
-  private int channelCount;
-  private int sampleRate;
 
   public LibopusAudioRenderer() {
     this(/* eventHandler= */ null, /* eventListener= */ null);
   }
 
   /**
+   * Creates a new instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
@@ -56,55 +58,52 @@ public class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
   }
 
   /**
+   * Creates a new instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
-   * @param drmSessionManager For use with encrypted media. May be null if support for encrypted
-   *     media is not required.
-   * @param playClearSamplesWithoutKeys Encrypted media may contain clear (un-encrypted) regions.
-   *     For example a media file may start with a short clear region so as to allow playback to
-   *     begin in parallel with key acquisition. This parameter specifies whether the renderer is
-   *     permitted to play clear regions of encrypted media files before {@code drmSessionManager}
-   *     has obtained the keys necessary to decrypt encrypted regions of the media.
-   * @param audioProcessors Optional {@link AudioProcessor}s that will process audio before output.
-   * @deprecated Use {@link #LibopusAudioRenderer(Handler, AudioRendererEventListener,
-   *     AudioProcessor...)} instead, and pass DRM-related parameters to the {@link MediaSource}
-   *     factories.
+   * @param audioSink The sink to which audio will be output.
    */
-  @Deprecated
   public LibopusAudioRenderer(
       @Nullable Handler eventHandler,
       @Nullable AudioRendererEventListener eventListener,
-      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager,
-      boolean playClearSamplesWithoutKeys,
-      AudioProcessor... audioProcessors) {
-    super(eventHandler, eventListener, null, drmSessionManager, playClearSamplesWithoutKeys,
-        audioProcessors);
+      AudioSink audioSink) {
+    super(eventHandler, eventListener, audioSink);
   }
 
   @Override
-  @FormatSupport
-  protected int supportsFormatInternal(
-      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager, Format format) {
-    boolean drmIsSupported =
-        format.drmInitData == null
-            || OpusLibrary.matchesExpectedExoMediaCryptoType(format.exoMediaCryptoType)
-            || (format.exoMediaCryptoType == null
-                && supportsFormatDrm(drmSessionManager, format.drmInitData));
-    if (!MimeTypes.AUDIO_OPUS.equalsIgnoreCase(format.sampleMimeType)) {
-      return FORMAT_UNSUPPORTED_TYPE;
-    } else if (!supportsOutput(format.channelCount, C.ENCODING_PCM_16BIT)) {
-      return FORMAT_UNSUPPORTED_SUBTYPE;
+  public String getName() {
+    return TAG;
+  }
+
+  @Override
+  protected @C.FormatSupport int supportsFormatInternal(Format format) {
+    boolean drmIsSupported = OpusLibrary.supportsCryptoType(format.cryptoType);
+    if (!OpusLibrary.isAvailable()
+        || !MimeTypes.AUDIO_OPUS.equalsIgnoreCase(format.sampleMimeType)) {
+      return C.FORMAT_UNSUPPORTED_TYPE;
+    } else if (!sinkSupportsFormat(
+        Util.getPcmFormat(C.ENCODING_PCM_16BIT, format.channelCount, format.sampleRate))) {
+      return C.FORMAT_UNSUPPORTED_SUBTYPE;
     } else if (!drmIsSupported) {
-      return FORMAT_UNSUPPORTED_DRM;
+      return C.FORMAT_UNSUPPORTED_DRM;
     } else {
-      return FORMAT_HANDLED;
+      return C.FORMAT_HANDLED;
     }
   }
 
+  /** {@inheritDoc} */
   @Override
-  protected OpusDecoder createDecoder(Format format, @Nullable ExoMediaCrypto mediaCrypto)
+  protected final OpusDecoder createDecoder(Format format, @Nullable CryptoConfig cryptoConfig)
       throws OpusDecoderException {
+    TraceUtil.beginSection("createOpusDecoder");
+    @SinkFormatSupport
+    int formatSupport =
+        getSinkFormatSupport(
+            Util.getPcmFormat(C.ENCODING_PCM_FLOAT, format.channelCount, format.sampleRate));
+    boolean outputFloat = formatSupport == AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY;
+
     int initialInputBufferSize =
         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
     OpusDecoder decoder =
@@ -113,26 +112,29 @@ public class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
             NUM_BUFFERS,
             initialInputBufferSize,
             format.initializationData,
-            mediaCrypto);
-    channelCount = decoder.getChannelCount();
-    sampleRate = decoder.getSampleRate();
+            cryptoConfig,
+            outputFloat);
+    decoder.experimentalSetDiscardPaddingEnabled(experimentalGetDiscardPaddingEnabled());
+
+    TraceUtil.endSection();
     return decoder;
   }
 
+  /** {@inheritDoc} */
   @Override
-  protected Format getOutputFormat() {
-    return Format.createAudioSampleFormat(
-        /* id= */ null,
-        MimeTypes.AUDIO_RAW,
-        /* codecs= */ null,
-        Format.NO_VALUE,
-        Format.NO_VALUE,
-        channelCount,
-        sampleRate,
-        C.ENCODING_PCM_16BIT,
-        /* initializationData= */ null,
-        /* drmInitData= */ null,
-        /* selectionFlags= */ 0,
-        /* language= */ null);
+  protected final Format getOutputFormat(OpusDecoder decoder) {
+    @C.PcmEncoding
+    int pcmEncoding = decoder.outputFloat ? C.ENCODING_PCM_FLOAT : C.ENCODING_PCM_16BIT;
+    return Util.getPcmFormat(pcmEncoding, decoder.channelCount, OpusDecoder.SAMPLE_RATE);
+  }
+
+  /**
+   * Returns true if support for padding removal from the end of decoder output buffer should be
+   * enabled.
+   *
+   * <p>This method is experimental, and will be renamed or removed in a future release.
+   */
+  protected boolean experimentalGetDiscardPaddingEnabled() {
+    return false;
   }
 }

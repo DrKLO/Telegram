@@ -5,6 +5,7 @@ import android.graphics.Paint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -52,7 +53,7 @@ public class AudioVisualizerDrawable {
 
 
     public void setWaveform(boolean playing, boolean animate, float[] waveform) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
         if (!playing && !animate) {
@@ -114,7 +115,7 @@ public class AudioVisualizerDrawable {
     float rotation;
 
     public void draw(Canvas canvas, float cx, float cy, boolean outOwner, float alpha, Theme.ResourcesProvider resourcesProvider) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
         if (outOwner) {
@@ -128,7 +129,7 @@ public class AudioVisualizerDrawable {
     }
 
     public void draw(Canvas canvas, float cx, float cy, boolean outOwner, Theme.ResourcesProvider resourcesProvider) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
         if (outOwner) {
@@ -142,7 +143,7 @@ public class AudioVisualizerDrawable {
     }
 
     public void draw(Canvas canvas, float cx, float cy) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
         for (int i = 0; i < 8; i++) {

@@ -18,9 +18,7 @@ package com.google.android.exoplayer2.text;
 import com.google.android.exoplayer2.C;
 import java.util.List;
 
-/**
- * A subtitle consisting of timed {@link Cue}s.
- */
+/** A subtitle consisting of timed {@link Cue}s. */
 public interface Subtitle {
 
   /**
@@ -55,5 +53,4 @@ public interface Subtitle {
    * @return A list of cues that should be displayed, possibly empty.
    */
   List<Cue> getCues(long timeUs);
-
 }

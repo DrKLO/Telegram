@@ -301,7 +301,7 @@ public:
         return webrtc::DtlsSrtpTransport::SendRtpPacket(packet, options, flags);
     }
 
-    void ProcessRtpPacket(webrtc::RtpPacketReceived const &packet, bool isUnresolved) {
+    void ProcessRtpPacket(webrtc::RtpPacketReceived const &packet, bool isUnresolved) override {
         _processRtpPacket(packet, isUnresolved);
     }
 

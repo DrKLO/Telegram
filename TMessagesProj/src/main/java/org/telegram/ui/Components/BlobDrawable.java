@@ -5,6 +5,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 
 import java.util.Random;
@@ -85,7 +86,7 @@ public class BlobDrawable {
     }
 
     public void update(float amplitude, float speedScale) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
             return;
         }
         for (int i = 0; i < N; i++) {
@@ -100,7 +101,7 @@ public class BlobDrawable {
     }
 
     public void draw(float cX, float cY, Canvas canvas, Paint paint) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
             return;
         }
         path.reset();
@@ -171,7 +172,7 @@ public class BlobDrawable {
 
     public void setValue(float value, boolean isBig) {
         animateToAmplitude = value;
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
             return;
         }
         if (isBig) {

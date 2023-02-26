@@ -22,11 +22,13 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Pair;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
 import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -115,7 +117,7 @@ public class ActionBarMenuSlider extends FrameLayout {
                 }
             });
             valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-            valueAnimator.setDuration(320);
+            valueAnimator.setDuration(220);
             valueAnimator.start();
         }
     }
@@ -169,7 +171,7 @@ public class ActionBarMenuSlider extends FrameLayout {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec) + getPaddingRight() + getPaddingLeft(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(44) + getPaddingTop() + getPaddingBottom(), MeasureSpec.EXACTLY));
 
-        final boolean canDoBlur = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && !SharedConfig.getLiteMode().enabled;
+        final boolean canDoBlur = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
         if (blurBitmap == null && !preparingBlur && canDoBlur) {
             this.prepareBlur.run();
 //            removeCallbacks(this.prepareBlur);
@@ -316,7 +318,7 @@ public class ActionBarMenuSlider extends FrameLayout {
 
     private float fromX;
     private float fromValue;
-
+    private long tapStart;
     private boolean dragging;
 
     @Override
@@ -328,10 +330,19 @@ public class ActionBarMenuSlider extends FrameLayout {
             dragging = true;
             fromX = x;
             fromValue = value;
+            tapStart = System.currentTimeMillis();
             return true;
         } else if (action == MotionEvent.ACTION_MOVE || action == MotionEvent.ACTION_UP) {
             if (action == MotionEvent.ACTION_UP) {
                 dragging = false;
+                if (System.currentTimeMillis() - tapStart < ViewConfiguration.getTapTimeout()) {
+                    final float value = (x - getPaddingLeft()) / (getWidth() - getPaddingLeft() - getPaddingRight());
+//                    setValue(value, true);
+                    if (onValueChange != null) {
+                        onValueChange.run(value, true);
+                    }
+                    return true;
+                }
             }
             final float value = fromValue + (x - fromX) / Math.max(1, getWidth() - getPaddingLeft() - getPaddingRight());
             updateValue(value, !dragging);

@@ -124,6 +124,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         if (language == null) {
             return false;
         }
+        language = language.toLowerCase();
         LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
         HashSet<String> selectedLanguages = getRestrictedLanguages();
         if (language != null && language.equals(currentLocaleInfo.pluralLangCode) && doNotTranslate) {
@@ -308,17 +309,28 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         final String currentLanguageCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
         TranslateController.Language currentLanguage = null;
         ArrayList<TranslateController.Language> selectedLanguages = new ArrayList<>();
+        ArrayList<String> notAddedSelectedLanguages = new ArrayList<>(firstSelectedLanguages);
         for (int i = 0; i < allLanguages.size(); ++i) {
             TranslateController.Language l = allLanguages.get(i);
             if (TextUtils.equals(l.code, currentLanguageCode)) {
                 currentLanguage = l;
+                notAddedSelectedLanguages.remove(l.code);
                 allLanguages.remove(i);
                 i--;
             } else if (firstSelectedLanguages.contains(l.code)) {
                 selectedLanguages.add(l);
+                notAddedSelectedLanguages.remove(l.code);
                 allLanguages.remove(i);
                 i--;
             }
+        }
+
+        for (int i = 0; i < notAddedSelectedLanguages.size(); ++i) {
+            TranslateController.Language lang = new TranslateController.Language();
+            lang.code = notAddedSelectedLanguages.get(i);
+            lang.ownDisplayName = lang.displayName = lang.code.toUpperCase();
+            lang.q = lang.code.toLowerCase();
+            selectedLanguages.add(lang);
         }
 
         separatorRow = 0;

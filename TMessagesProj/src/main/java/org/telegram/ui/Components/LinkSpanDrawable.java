@@ -23,6 +23,7 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -62,7 +63,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
     private final float selectionAlpha = 0.2f;
     private final float rippleAlpha = 0.8f;
 
-    private final boolean isLite = SharedConfig.getLiteMode().enabled();
+    private final boolean isLite = !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
 
     public LinkSpanDrawable(S span, Theme.ResourcesProvider resourcesProvider, float touchX, float touchY) {
         this(span, resourcesProvider, touchX, touchY, true);

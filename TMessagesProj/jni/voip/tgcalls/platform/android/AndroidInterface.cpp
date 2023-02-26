@@ -37,7 +37,6 @@ std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderF
     webrtc::ScopedJavaLocalRef<jclass> factory_class = webrtc::GetClass(env, "org/webrtc/DefaultVideoEncoderFactory");
     jmethodID factory_constructor = env->GetMethodID(factory_class.obj(), "<init>", "(Lorg/webrtc/EglBase$Context;ZZ)V");
     webrtc::ScopedJavaLocalRef<jobject> factory_object(env, env->NewObject(factory_class.obj(), factory_constructor, eglContext, false, true));
-
     return webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj());
 }
 

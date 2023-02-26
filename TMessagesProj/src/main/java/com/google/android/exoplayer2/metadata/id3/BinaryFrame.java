@@ -22,9 +22,7 @@ import android.os.Parcelable;
 import androidx.annotation.Nullable;
 import java.util.Arrays;
 
-/**
- * Binary ID3 frame.
- */
+/** Binary ID3 frame. */
 public final class BinaryFrame extends Id3Frame {
 
   public final byte[] data;
@@ -77,7 +75,5 @@ public final class BinaryFrame extends Id3Frame {
         public BinaryFrame[] newArray(int size) {
           return new BinaryFrame[size];
         }
-
       };
-
 }

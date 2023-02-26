@@ -517,7 +517,7 @@ public class CountrySelectActivity extends BaseFragment {
         }
 
         public Country getItem(int i) {
-            if (i < 0 || i >= searchResult.size()) {
+            if (searchResult == null || i < 0 || i >= searchResult.size()) {
                 return null;
             }
             return searchResult.get(i);

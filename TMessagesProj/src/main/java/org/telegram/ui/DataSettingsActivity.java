@@ -499,7 +499,7 @@ public class DataSettingsActivity extends BaseFragment {
             } else if (position == autoplayVideoRow) {
                 SharedConfig.toggleAutoplayVideo();
                 if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.isAutoplayGifs());
+                    ((TextCheckCell) view).setChecked(SharedConfig.isAutoplayVideo());
                 }
             } else if (position == clearDraftsRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());

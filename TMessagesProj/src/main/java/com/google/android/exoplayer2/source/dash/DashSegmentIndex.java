@@ -18,9 +18,7 @@ package com.google.android.exoplayer2.source.dash;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.source.dash.manifest.RangedUri;
 
-/**
- * Indexes the segments within a media stream.
- */
+/** Indexes the segments within a media stream. */
 public interface DashSegmentIndex {
 
   int INDEX_UNBOUNDED = -1;
@@ -64,38 +62,66 @@ public interface DashSegmentIndex {
    */
   RangedUri getSegmentUrl(long segmentNum);
 
-  /**
-   * Returns the segment number of the first segment.
-   *
-   * @return The segment number of the first segment.
-   */
+  /** Returns the segment number of the first defined segment in the index. */
   long getFirstSegmentNum();
 
   /**
-   * Returns the number of segments in the index, or {@link #INDEX_UNBOUNDED}.
-   * <p>
-   * An unbounded index occurs if a dynamic manifest uses SegmentTemplate elements without a
-   * SegmentTimeline element, and if the period duration is not yet known. In this case the caller
-   * must manually determine the window of currently available segments.
+   * Returns the segment number of the first available segment in the index.
    *
-   * @param periodDurationUs The duration of the enclosing period in microseconds, or
-   *     {@link C#TIME_UNSET} if the period's duration is not yet known.
+   * @param periodDurationUs The duration of the enclosing period in microseconds, or {@link
+   *     C#TIME_UNSET} if the period's duration is not yet known.
+   * @param nowUnixTimeUs The current time in milliseconds since the Unix epoch.
+   * @return The number of the first available segment.
+   */
+  long getFirstAvailableSegmentNum(long periodDurationUs, long nowUnixTimeUs);
+
+  /**
+   * Returns the number of segments defined in the index, or {@link #INDEX_UNBOUNDED}.
+   *
+   * <p>An unbounded index occurs if a dynamic manifest uses SegmentTemplate elements without a
+   * SegmentTimeline element, and if the period duration is not yet known. In this case the caller
+   * can query the available segment using {@link #getFirstAvailableSegmentNum(long, long)} and
+   * {@link #getAvailableSegmentCount(long, long)}.
+   *
+   * @param periodDurationUs The duration of the enclosing period in microseconds, or {@link
+   *     C#TIME_UNSET} if the period's duration is not yet known.
    * @return The number of segments in the index, or {@link #INDEX_UNBOUNDED}.
    */
-  int getSegmentCount(long periodDurationUs);
+  long getSegmentCount(long periodDurationUs);
+
+  /**
+   * Returns the number of available segments in the index.
+   *
+   * @param periodDurationUs The duration of the enclosing period in microseconds, or {@link
+   *     C#TIME_UNSET} if the period's duration is not yet known.
+   * @param nowUnixTimeUs The current time in milliseconds since the Unix epoch.
+   * @return The number of available segments in the index.
+   */
+  long getAvailableSegmentCount(long periodDurationUs, long nowUnixTimeUs);
+
+  /**
+   * Returns the time, in microseconds, at which a new segment becomes available, or {@link
+   * C#TIME_UNSET} if not applicable.
+   *
+   * @param periodDurationUs The duration of the enclosing period in microseconds, or {@link
+   *     C#TIME_UNSET} if the period's duration is not yet known.
+   * @param nowUnixTimeUs The current time in milliseconds since the Unix epoch.
+   * @return The time, in microseconds, at which a new segment becomes available, or {@link
+   *     C#TIME_UNSET} if not applicable.
+   */
+  long getNextSegmentAvailableTimeUs(long periodDurationUs, long nowUnixTimeUs);
 
   /**
    * Returns true if segments are defined explicitly by the index.
-   * <p>
-   * If true is returned, each segment is defined explicitly by the index data, and all of the
+   *
+   * <p>If true is returned, each segment is defined explicitly by the index data, and all of the
    * listed segments are guaranteed to be available at the time when the index was obtained.
-   * <p>
-   * If false is returned then segment information was derived from properties such as a fixed
+   *
+   * <p>If false is returned then segment information was derived from properties such as a fixed
    * segment duration. If the presentation is dynamic, it's possible that only a subset of the
    * segments are available.
    *
    * @return Whether segments are defined explicitly by the index.
    */
   boolean isExplicit();
-
 }

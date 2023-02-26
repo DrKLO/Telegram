@@ -1,7 +1,5 @@
 package org.telegram.messenger.voip;
 
-import android.os.Build;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.ApplicationLoader;
@@ -15,7 +13,7 @@ import java.util.List;
 
 public final class Instance {
 
-    public static final List<String> AVAILABLE_VERSIONS = Build.VERSION.SDK_INT >= 18 ? Arrays.asList("4.1.2", "4.0.2", "4.0.1", "4.0.0", "5.0.0", "2.7.7", "2.4.4") : Arrays.asList("2.4.4");
+    public static final List<String> AVAILABLE_VERSIONS = Arrays.asList("2.4.4", "2.7.7", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0");
 
     public static final int AUDIO_STATE_MUTED = 0;
     public static final int AUDIO_STATE_ACTIVE = 1;

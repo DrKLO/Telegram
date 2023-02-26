@@ -1285,6 +1285,10 @@ public class DatabaseMigrationHelper {
             excludeTables.add("topics");
             excludeTables.add("media_counts_v2");
             excludeTables.add("media_counts_topics");
+            excludeTables.add("dialogs");
+            excludeTables.add("dialog_filter");
+            excludeTables.add("dialog_filter_ep");
+            excludeTables.add("dialog_filter_pin_v2");
 
             //restore whole tables
             for (int i = 0; i < MessagesStorage.DATABASE_TABLES.length; i++) {

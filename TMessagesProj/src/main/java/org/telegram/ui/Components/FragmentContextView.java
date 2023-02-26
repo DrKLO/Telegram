@@ -123,8 +123,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private RLottieDrawable muteDrawable;
     private ImageView closeButton;
     private ActionBarMenuItem playbackSpeedButton;
-    private final float MIN_SPEED = 0.1f;
-    private final float MAX_SPEED = 3f;
+    private final float MIN_SPEED = 0.3f;
+    private final float MAX_SPEED = 2.5f;
     private SpeedIconDrawable speedIcon;
     private ActionBarMenuSlider speedSlider;
     private AnimatedTextView speedSliderText;
@@ -720,6 +720,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         });
     }
 
+    private long lastPlaybackClick;
+
     private void createPlaybackSpeedButton() {
         if (playbackSpeedButton != null) {
             return;
@@ -736,22 +738,18 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 return;
             }
             float oldSpeed = MediaController.getInstance().getPlaybackSpeed(isMusic), newSpeed = speeds[id];
-            if (id == 5) {
-                newSpeed = 1.8f;
-            }
-            MediaController.getInstance().setPlaybackSpeed(isMusic, newSpeed, id == 5);
+            MediaController.getInstance().setPlaybackSpeed(isMusic, newSpeed);
             if (oldSpeed != newSpeed) {
                 playbackSpeedChanged(oldSpeed, newSpeed);
             }
         });
         speedIcon = new SpeedIconDrawable(true);
         playbackSpeedButton.setIcon(speedIcon);
-        final float[] toggleSpeeds = new float[] { 1.0F, 1.5F, 1.8F };
+        final float[] toggleSpeeds = new float[] { 1.0F, 1.5F, 2F };
         speedSlider = new ActionBarMenuSlider(getContext(), resourcesProvider);
         speedSlider.setOnValueChange((value, isFinal) -> {
             final float speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * value;
             MediaController.getInstance().setPlaybackSpeed(isMusic, speed);
-            updatePlaybackButton(isFinal, true);
         });
         speedSliderText = new AnimatedTextView(getContext(), false, true, true);
         speedSliderText.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
@@ -787,20 +785,66 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 index = 0;
             }
             newSpeed = toggleSpeeds[index];
-            MediaController.getInstance().setPlaybackSpeed(isMusic, newSpeed, equals(newSpeed, 1.8f));
+            MediaController.getInstance().setPlaybackSpeed(isMusic, newSpeed);
             playbackSpeedChanged(currentPlaybackSpeed, newSpeed);
+
+            final long now = System.currentTimeMillis();
+            if (now - lastPlaybackClick > 400) {
+                int hintValue = MessagesController.getGlobalNotificationsSettings().getInt("speedhint", 2);
+                hintValue--;
+                if (hintValue < -10) {
+                    hintValue = 2;
+                }
+                MessagesController.getGlobalNotificationsSettings().edit().putInt("speedhint", hintValue).apply();
+                if (hintValue >= 0) {
+                    showSpeedHint();
+                }
+            }
+            lastPlaybackClick = now;
         });
         playbackSpeedButton.setOnLongClickListener(view -> {
             final float speed = MediaController.getInstance().getPlaybackSpeed(isMusic);
             speedSlider.setValue((speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED), false);
             speedSlider.invalidateBlur(fragment instanceof ChatActivity);
+            playbackSpeedButton.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+            playbackSpeedButton.updateColor();
             playbackSpeedButton.toggleSubMenu(speedSlider, null);
             return true;
         });
-        updatePlaybackButton(true, false);
+        updatePlaybackButton(false);
     }
 
-    private void updatePlaybackButton(boolean isFinal, boolean animated) {
+    private HintView speedHintView;
+
+    private void showSpeedHint() {
+        if (fragment != null && fragment.getFragmentView() instanceof ViewGroup) {
+            speedHintView = new HintView(getContext(), 5, true) {
+                @Override
+                public void setVisibility(int visibility) {
+                    super.setVisibility(visibility);
+                    if (visibility != View.VISIBLE) {
+                        try {
+                            ((ViewGroup) getParent()).removeView(this);
+                        } catch (Exception e) {}
+                    }
+                }
+            };
+            speedHintView.setExtraTranslationY(AndroidUtilities.dp(64 + 22));
+            speedHintView.setText(LocaleController.getString("SpeedHint"));
+            MarginLayoutParams params = new MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.rightMargin = AndroidUtilities.dp(3);
+            ((ViewGroup) fragment.getFragmentView()).addView(speedHintView, params);
+            speedHintView.showForView(playbackSpeedButton, true);
+        }
+    }
+
+    public void onPanTranslationUpdate(float y) {
+        if (speedHintView != null) {
+            speedHintView.setExtraTranslationY(AndroidUtilities.dp(64 + 22) + y);
+        }
+    }
+
+    private void updatePlaybackButton(boolean animated) {
         if (speedIcon == null) {
             return;
         }
@@ -809,14 +853,14 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         updateColors();
 
         for (int a = 0; a < speedItems.length; a++) {
-            if (isFinal && equals(currentPlaybackSpeed, speeds[a])) {
+            if (equals(currentPlaybackSpeed, speeds[a])) {
                 speedItems[a].setColors(getThemedColor(Theme.key_featuredStickers_addButtonPressed), getThemedColor(Theme.key_featuredStickers_addButtonPressed));
             } else {
                 speedItems[a].setColors(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
             }
         }
 
-        speedSlider.setValue((currentPlaybackSpeed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED), isFinal && animated);
+        speedSlider.setValue((currentPlaybackSpeed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED), animated);
         if (speedSliderText != null) {
             float roundedSpeed = Math.round(currentPlaybackSpeed * 10f) / 10f;
             String text;
@@ -836,7 +880,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             speedIcon.setColor(color);
         }
         if (playbackSpeedButton != null && Build.VERSION.SDK_INT >= 21) {
-            playbackSpeedButton.setBackgroundDrawable(Theme.createSelectorDrawable(color & 0x19ffffff, 1, AndroidUtilities.dp(14)));
+            playbackSpeedButton.setBackground(Theme.createSelectorDrawable(color & 0x19ffffff, 1, AndroidUtilities.dp(14)));
         }
     }
 
@@ -1227,7 +1271,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             } else {
                 checkCall(true);
                 checkPlayer(true);
-                updatePlaybackButton(true, false);
+                updatePlaybackButton(false);
             }
         }
 
@@ -1323,7 +1367,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             checkImport(false);
         } else if (id == NotificationCenter.messagePlayingSpeedChanged) {
-            updatePlaybackButton(true, true);
+            updatePlaybackButton(true);
         } else if (id == NotificationCenter.webRtcMicAmplitudeEvent) {
             if (VoIPService.getSharedInstance() == null || VoIPService.getSharedInstance().isMicMute()) {
                 micAmplitude = 0;
@@ -1722,7 +1766,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         textView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
                     }
 
-                    updatePlaybackButton(true, false);
+                    updatePlaybackButton(false);
                 } else {
                     isMusic = true;
                     if (playbackSpeedButton != null) {
@@ -1730,7 +1774,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                             playbackSpeedButton.setAlpha(1.0f);
                             playbackSpeedButton.setEnabled(true);
                             titleTextView.setPadding(0, 0, AndroidUtilities.dp(44), 0);
-                            updatePlaybackButton(true, false);
+                            updatePlaybackButton(false);
                         } else {
                             playbackSpeedButton.setAlpha(0.0f);
                             playbackSpeedButton.setEnabled(false);

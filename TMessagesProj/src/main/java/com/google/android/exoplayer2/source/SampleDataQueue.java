@@ -15,16 +15,21 @@
  */
 package com.google.android.exoplayer2.source;
 
+import static java.lang.Math.min;
+
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.decoder.CryptoInfo;
 import com.google.android.exoplayer2.decoder.DecoderInputBuffer;
-import com.google.android.exoplayer2.extractor.ExtractorInput;
+import com.google.android.exoplayer2.decoder.DecoderInputBuffer.InsufficientCapacityException;
 import com.google.android.exoplayer2.extractor.TrackOutput.CryptoData;
 import com.google.android.exoplayer2.source.SampleQueue.SampleExtrasHolder;
 import com.google.android.exoplayer2.upstream.Allocation;
 import com.google.android.exoplayer2.upstream.Allocator;
+import com.google.android.exoplayer2.upstream.DataReader;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -61,7 +66,7 @@ import java.util.Arrays;
   /** Clears all sample data. */
   public void reset() {
     clearAllocationNodes(firstAllocationNode);
-    firstAllocationNode = new AllocationNode(0, allocationLength);
+    firstAllocationNode.reset(/* startPosition= */ 0, allocationLength);
     readAllocationNode = firstAllocationNode;
     writeAllocationNode = firstAllocationNode;
     totalBytesWritten = 0;
@@ -75,6 +80,7 @@ import java.util.Arrays;
    *     discarded, or 0 if the queue is now empty.
    */
   public void discardUpstreamSampleBytes(long totalBytesWritten) {
+    Assertions.checkArgument(totalBytesWritten <= this.totalBytesWritten);
     this.totalBytesWritten = totalBytesWritten;
     if (this.totalBytesWritten == 0
         || this.totalBytesWritten == firstAllocationNode.startPosition) {
@@ -88,8 +94,8 @@ import java.util.Arrays;
       while (this.totalBytesWritten > lastNodeToKeep.endPosition) {
         lastNodeToKeep = lastNodeToKeep.next;
       }
-      // Discard all subsequent nodes.
-      AllocationNode firstNodeToDiscard = lastNodeToKeep.next;
+      // Discard all subsequent nodes. lastNodeToKeep is initialized, therefore next cannot be null.
+      AllocationNode firstNodeToDiscard = Assertions.checkNotNull(lastNodeToKeep.next);
       clearAllocationNodes(firstNodeToDiscard);
       // Reset the successor of the last node to be an uninitialized node.
       lastNodeToKeep.next = new AllocationNode(lastNodeToKeep.endPosition, allocationLength);
@@ -112,39 +118,29 @@ import java.util.Arrays;
   }
 
   /**
-   * Reads data from the rolling buffer to populate a decoder input buffer.
+   * Reads data from the rolling buffer to populate a decoder input buffer, and advances the read
+   * position.
    *
    * @param buffer The buffer to populate.
    * @param extrasHolder The extras holder whose offset should be read and subsequently adjusted.
+   * @throws InsufficientCapacityException If the {@code buffer} has insufficient capacity to hold
+   *     the data being read.
    */
   public void readToBuffer(DecoderInputBuffer buffer, SampleExtrasHolder extrasHolder) {
-    // Read encryption data if the sample is encrypted.
-    if (buffer.isEncrypted()) {
-      readEncryptionData(buffer, extrasHolder);
-    }
-    // Read sample data, extracting supplemental data into a separate buffer if needed.
-    if (buffer.hasSupplementalData()) {
-      // If there is supplemental data, the sample data is prefixed by its size.
-      scratch.reset(4);
-      readData(extrasHolder.offset, scratch.data, 4);
-      int sampleSize = scratch.readUnsignedIntToInt();
-      extrasHolder.offset += 4;
-      extrasHolder.size -= 4;
+    readAllocationNode = readSampleData(readAllocationNode, buffer, extrasHolder, scratch);
+  }
 
-      // Write the sample data.
-      buffer.ensureSpaceForWrite(sampleSize);
-      readData(extrasHolder.offset, buffer.data, sampleSize);
-      extrasHolder.offset += sampleSize;
-      extrasHolder.size -= sampleSize;
-
-      // Write the remaining data as supplemental data.
-      buffer.resetSupplementalData(extrasHolder.size);
-      readData(extrasHolder.offset, buffer.supplementalData, extrasHolder.size);
-    } else {
-      // Write the sample data.
-      buffer.ensureSpaceForWrite(extrasHolder.size);
-      readData(extrasHolder.offset, buffer.data, extrasHolder.size);
-    }
+  /**
+   * Peeks data from the rolling buffer to populate a decoder input buffer, without advancing the
+   * read position.
+   *
+   * @param buffer The buffer to populate.
+   * @param extrasHolder The extras holder whose offset should be read and subsequently adjusted.
+   * @throws InsufficientCapacityException If the {@code buffer} has insufficient capacity to hold
+   *     the data being peeked.
+   */
+  public void peekToBuffer(DecoderInputBuffer buffer, SampleExtrasHolder extrasHolder) {
+    readSampleData(readAllocationNode, buffer, extrasHolder, scratch);
   }
 
   /**
@@ -176,8 +172,7 @@ import java.util.Arrays;
     return totalBytesWritten;
   }
 
-  public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
+  public int sampleData(DataReader input, int length, boolean allowEndOfInput) throws IOException {
     length = preAppend(length);
     int bytesAppended =
         input.read(
@@ -209,23 +204,123 @@ import java.util.Arrays;
   // Private methods.
 
   /**
-   * Reads encryption data for the current sample.
+   * Clears allocation nodes starting from {@code fromNode}.
+   *
+   * @param fromNode The node from which to clear.
+   */
+  private void clearAllocationNodes(AllocationNode fromNode) {
+    if (fromNode.allocation == null) {
+      return;
+    }
+    // Bulk release allocations for performance (it's significantly faster when using
+    // DefaultAllocator because the allocator's lock only needs to be acquired and released once)
+    // [Internal: See b/29542039].
+    allocator.release(fromNode);
+    fromNode.clear();
+  }
+
+  /**
+   * Called before writing sample data to {@link #writeAllocationNode}. May cause {@link
+   * #writeAllocationNode} to be initialized.
+   *
+   * @param length The number of bytes that the caller wishes to write.
+   * @return The number of bytes that the caller is permitted to write, which may be less than
+   *     {@code length}.
+   */
+  private int preAppend(int length) {
+    if (writeAllocationNode.allocation == null) {
+      writeAllocationNode.initialize(
+          allocator.allocate(),
+          new AllocationNode(writeAllocationNode.endPosition, allocationLength));
+    }
+    return min(length, (int) (writeAllocationNode.endPosition - totalBytesWritten));
+  }
+
+  /**
+   * Called after writing sample data. May cause {@link #writeAllocationNode} to be advanced.
+   *
+   * @param length The number of bytes that were written.
+   */
+  private void postAppend(int length) {
+    totalBytesWritten += length;
+    if (totalBytesWritten == writeAllocationNode.endPosition) {
+      writeAllocationNode = writeAllocationNode.next;
+    }
+  }
+
+  /**
+   * Reads data from the rolling buffer to populate a decoder input buffer.
+   *
+   * @param allocationNode The first {@link AllocationNode} containing data yet to be read.
+   * @param buffer The buffer to populate.
+   * @param extrasHolder The extras holder whose offset should be read and subsequently adjusted.
+   * @param scratch A scratch {@link ParsableByteArray}.
+   * @return The first {@link AllocationNode} that contains unread bytes after the last byte that
+   *     the invocation read.
+   * @throws InsufficientCapacityException If the {@code buffer} has insufficient capacity to hold
+   *     the sample data.
+   */
+  private static AllocationNode readSampleData(
+      AllocationNode allocationNode,
+      DecoderInputBuffer buffer,
+      SampleExtrasHolder extrasHolder,
+      ParsableByteArray scratch) {
+    if (buffer.isEncrypted()) {
+      allocationNode = readEncryptionData(allocationNode, buffer, extrasHolder, scratch);
+    }
+    // Read sample data, extracting supplemental data into a separate buffer if needed.
+    if (buffer.hasSupplementalData()) {
+      // If there is supplemental data, the sample data is prefixed by its size.
+      scratch.reset(4);
+      allocationNode = readData(allocationNode, extrasHolder.offset, scratch.getData(), 4);
+      int sampleSize = scratch.readUnsignedIntToInt();
+      extrasHolder.offset += 4;
+      extrasHolder.size -= 4;
+
+      // Write the sample data.
+      buffer.ensureSpaceForWrite(sampleSize);
+      allocationNode = readData(allocationNode, extrasHolder.offset, buffer.data, sampleSize);
+      extrasHolder.offset += sampleSize;
+      extrasHolder.size -= sampleSize;
+
+      // Write the remaining data as supplemental data.
+      buffer.resetSupplementalData(extrasHolder.size);
+      allocationNode =
+          readData(allocationNode, extrasHolder.offset, buffer.supplementalData, extrasHolder.size);
+    } else {
+      // Write the sample data.
+      buffer.ensureSpaceForWrite(extrasHolder.size);
+      allocationNode =
+          readData(allocationNode, extrasHolder.offset, buffer.data, extrasHolder.size);
+    }
+    return allocationNode;
+  }
+
+  /**
+   * Reads encryption data for the sample described by {@code extrasHolder}.
    *
    * <p>The encryption data is written into {@link DecoderInputBuffer#cryptoInfo}, and {@link
    * SampleExtrasHolder#size} is adjusted to subtract the number of bytes that were read. The same
    * value is added to {@link SampleExtrasHolder#offset}.
    *
+   * @param allocationNode The first {@link AllocationNode} containing data yet to be read.
    * @param buffer The buffer into which the encryption data should be written.
    * @param extrasHolder The extras holder whose offset should be read and subsequently adjusted.
+   * @param scratch A scratch {@link ParsableByteArray}.
+   * @return The first {@link AllocationNode} that contains unread bytes after this method returns.
    */
-  private void readEncryptionData(DecoderInputBuffer buffer, SampleExtrasHolder extrasHolder) {
+  private static AllocationNode readEncryptionData(
+      AllocationNode allocationNode,
+      DecoderInputBuffer buffer,
+      SampleExtrasHolder extrasHolder,
+      ParsableByteArray scratch) {
     long offset = extrasHolder.offset;
 
     // Read the signal byte.
     scratch.reset(1);
-    readData(offset, scratch.data, 1);
+    allocationNode = readData(allocationNode, offset, scratch.getData(), 1);
     offset++;
-    byte signalByte = scratch.data[0];
+    byte signalByte = scratch.getData()[0];
     boolean subsampleEncryption = (signalByte & 0x80) != 0;
     int ivSize = signalByte & 0x7F;
 
@@ -237,14 +332,14 @@ import java.util.Arrays;
       // Zero out cryptoInfo.iv so that if ivSize < 16, the remaining bytes are correctly set to 0.
       Arrays.fill(cryptoInfo.iv, (byte) 0);
     }
-    readData(offset, cryptoInfo.iv, ivSize);
+    allocationNode = readData(allocationNode, offset, cryptoInfo.iv, ivSize);
     offset += ivSize;
 
     // Read the subsample count, if present.
     int subsampleCount;
     if (subsampleEncryption) {
       scratch.reset(2);
-      readData(offset, scratch.data, 2);
+      allocationNode = readData(allocationNode, offset, scratch.getData(), 2);
       offset += 2;
       subsampleCount = scratch.readUnsignedShort();
     } else {
@@ -263,7 +358,7 @@ import java.util.Arrays;
     if (subsampleEncryption) {
       int subsampleDataLength = 6 * subsampleCount;
       scratch.reset(subsampleDataLength);
-      readData(offset, scratch.data, subsampleDataLength);
+      allocationNode = readData(allocationNode, offset, scratch.getData(), subsampleDataLength);
       offset += subsampleDataLength;
       scratch.setPosition(0);
       for (int i = 0; i < subsampleCount; i++) {
@@ -276,7 +371,7 @@ import java.util.Arrays;
     }
 
     // Populate the cryptoInfo.
-    CryptoData cryptoData = extrasHolder.cryptoData;
+    CryptoData cryptoData = Util.castNonNull(extrasHolder.cryptoData);
     cryptoInfo.set(
         subsampleCount,
         clearDataSizes,
@@ -291,136 +386,92 @@ import java.util.Arrays;
     int bytesRead = (int) (offset - extrasHolder.offset);
     extrasHolder.offset += bytesRead;
     extrasHolder.size -= bytesRead;
+    return allocationNode;
   }
 
   /**
-   * Reads data from the front of the rolling buffer.
+   * Reads data from {@code allocationNode} and its following nodes.
    *
+   * @param allocationNode The first {@link AllocationNode} containing data yet to be read.
    * @param absolutePosition The absolute position from which data should be read.
    * @param target The buffer into which data should be written.
    * @param length The number of bytes to read.
+   * @return The first {@link AllocationNode} that contains unread bytes after this method returns.
    */
-  private void readData(long absolutePosition, ByteBuffer target, int length) {
-    advanceReadTo(absolutePosition);
+  private static AllocationNode readData(
+      AllocationNode allocationNode, long absolutePosition, ByteBuffer target, int length) {
+    allocationNode = getNodeContainingPosition(allocationNode, absolutePosition);
     int remaining = length;
     while (remaining > 0) {
-      int toCopy = Math.min(remaining, (int) (readAllocationNode.endPosition - absolutePosition));
-      Allocation allocation = readAllocationNode.allocation;
-      target.put(allocation.data, readAllocationNode.translateOffset(absolutePosition), toCopy);
+      int toCopy = min(remaining, (int) (allocationNode.endPosition - absolutePosition));
+      Allocation allocation = allocationNode.allocation;
+      target.put(allocation.data, allocationNode.translateOffset(absolutePosition), toCopy);
       remaining -= toCopy;
       absolutePosition += toCopy;
-      if (absolutePosition == readAllocationNode.endPosition) {
-        readAllocationNode = readAllocationNode.next;
+      if (absolutePosition == allocationNode.endPosition) {
+        allocationNode = allocationNode.next;
       }
     }
+    return allocationNode;
   }
 
   /**
-   * Reads data from the front of the rolling buffer.
+   * Reads data from {@code allocationNode} and its following nodes.
    *
+   * @param allocationNode The first {@link AllocationNode} containing data yet to be read.
    * @param absolutePosition The absolute position from which data should be read.
    * @param target The array into which data should be written.
    * @param length The number of bytes to read.
+   * @return The first {@link AllocationNode} that contains unread bytes after this method returns.
    */
-  private void readData(long absolutePosition, byte[] target, int length) {
-    advanceReadTo(absolutePosition);
+  private static AllocationNode readData(
+      AllocationNode allocationNode, long absolutePosition, byte[] target, int length) {
+    allocationNode = getNodeContainingPosition(allocationNode, absolutePosition);
     int remaining = length;
     while (remaining > 0) {
-      int toCopy = Math.min(remaining, (int) (readAllocationNode.endPosition - absolutePosition));
-      Allocation allocation = readAllocationNode.allocation;
+      int toCopy = min(remaining, (int) (allocationNode.endPosition - absolutePosition));
+      Allocation allocation = allocationNode.allocation;
       System.arraycopy(
           allocation.data,
-          readAllocationNode.translateOffset(absolutePosition),
+          allocationNode.translateOffset(absolutePosition),
           target,
           length - remaining,
           toCopy);
       remaining -= toCopy;
       absolutePosition += toCopy;
-      if (absolutePosition == readAllocationNode.endPosition) {
-        readAllocationNode = readAllocationNode.next;
+      if (absolutePosition == allocationNode.endPosition) {
+        allocationNode = allocationNode.next;
       }
     }
+    return allocationNode;
   }
 
   /**
-   * Advances the read position to the specified absolute position.
-   *
-   * @param absolutePosition The position to which {@link #readAllocationNode} should be advanced.
+   * Returns the {@link AllocationNode} in {@code allocationNode}'s chain which contains the given
+   * {@code absolutePosition}.
    */
-  private void advanceReadTo(long absolutePosition) {
-    while (absolutePosition >= readAllocationNode.endPosition) {
-      readAllocationNode = readAllocationNode.next;
+  private static AllocationNode getNodeContainingPosition(
+      AllocationNode allocationNode, long absolutePosition) {
+    while (absolutePosition >= allocationNode.endPosition) {
+      allocationNode = allocationNode.next;
     }
-  }
-
-  /**
-   * Clears allocation nodes starting from {@code fromNode}.
-   *
-   * @param fromNode The node from which to clear.
-   */
-  private void clearAllocationNodes(AllocationNode fromNode) {
-    if (!fromNode.wasInitialized) {
-      return;
-    }
-    // Bulk release allocations for performance (it's significantly faster when using
-    // DefaultAllocator because the allocator's lock only needs to be acquired and released once)
-    // [Internal: See b/29542039].
-    int allocationCount =
-        (writeAllocationNode.wasInitialized ? 1 : 0)
-            + ((int) (writeAllocationNode.startPosition - fromNode.startPosition)
-                / allocationLength);
-    Allocation[] allocationsToRelease = new Allocation[allocationCount];
-    AllocationNode currentNode = fromNode;
-    for (int i = 0; i < allocationsToRelease.length; i++) {
-      allocationsToRelease[i] = currentNode.allocation;
-      currentNode = currentNode.clear();
-    }
-    allocator.release(allocationsToRelease);
-  }
-
-  /**
-   * Called before writing sample data to {@link #writeAllocationNode}. May cause {@link
-   * #writeAllocationNode} to be initialized.
-   *
-   * @param length The number of bytes that the caller wishes to write.
-   * @return The number of bytes that the caller is permitted to write, which may be less than
-   *     {@code length}.
-   */
-  private int preAppend(int length) {
-    if (!writeAllocationNode.wasInitialized) {
-      writeAllocationNode.initialize(
-          allocator.allocate(),
-          new AllocationNode(writeAllocationNode.endPosition, allocationLength));
-    }
-    return Math.min(length, (int) (writeAllocationNode.endPosition - totalBytesWritten));
-  }
-
-  /**
-   * Called after writing sample data. May cause {@link #writeAllocationNode} to be advanced.
-   *
-   * @param length The number of bytes that were written.
-   */
-  private void postAppend(int length) {
-    totalBytesWritten += length;
-    if (totalBytesWritten == writeAllocationNode.endPosition) {
-      writeAllocationNode = writeAllocationNode.next;
-    }
+    return allocationNode;
   }
 
   /** A node in a linked list of {@link Allocation}s held by the output. */
-  private static final class AllocationNode {
+  private static final class AllocationNode implements Allocator.AllocationNode {
 
     /** The absolute position of the start of the data (inclusive). */
-    public final long startPosition;
+    public long startPosition;
     /** The absolute position of the end of the data (exclusive). */
-    public final long endPosition;
-    /** Whether the node has been initialized. Remains true after {@link #clear()}. */
-    public boolean wasInitialized;
-    /** The {@link Allocation}, or {@code null} if the node is not initialized. */
+    public long endPosition;
+    /**
+     * The {@link Allocation}, or {@code null} if the node is not {@link #initialize initialized}.
+     */
     @Nullable public Allocation allocation;
     /**
-     * The next {@link AllocationNode} in the list, or {@code null} if the node has not been
-     * initialized. Remains set after {@link #clear()}.
+     * The next {@link AllocationNode} in the list, or {@code null} if the node is not {@link
+     * #initialize initialized}.
      */
     @Nullable public AllocationNode next;
 
@@ -430,6 +481,17 @@ import java.util.Arrays;
      *     initialized.
      */
     public AllocationNode(long startPosition, int allocationLength) {
+      reset(startPosition, allocationLength);
+    }
+
+    /**
+     * Sets the {@link #startPosition} and the {@link Allocation} length.
+     *
+     * <p>Must only be called for uninitialized instances, where {@link #allocation} is {@code
+     * null}.
+     */
+    public void reset(long startPosition, int allocationLength) {
+      Assertions.checkState(allocation == null);
       this.startPosition = startPosition;
       this.endPosition = startPosition + allocationLength;
     }
@@ -443,7 +505,6 @@ import java.util.Arrays;
     public void initialize(Allocation allocation, AllocationNode next) {
       this.allocation = allocation;
       this.next = next;
-      wasInitialized = true;
     }
 
     /**
@@ -467,6 +528,23 @@ import java.util.Arrays;
       AllocationNode temp = next;
       next = null;
       return temp;
+    }
+
+    // AllocationChainNode implementation.
+
+    @Override
+    public Allocation getAllocation() {
+      return Assertions.checkNotNull(allocation);
+    }
+
+    @Override
+    @Nullable
+    public Allocator.AllocationNode next() {
+      if (next == null || next.allocation == null) {
+        return null;
+      } else {
+        return next;
+      }
     }
   }
 }

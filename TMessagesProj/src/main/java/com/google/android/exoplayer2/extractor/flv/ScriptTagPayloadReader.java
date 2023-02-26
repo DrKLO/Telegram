@@ -17,21 +17,22 @@ package com.google.android.exoplayer2.extractor.flv;
 
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.DummyTrackOutput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-/**
- * Parses Script Data tags from an FLV stream and extracts metadata information.
- */
+/** Parses Script Data tags from an FLV stream and extracts metadata information. */
 /* package */ final class ScriptTagPayloadReader extends TagPayloadReader {
 
   private static final String NAME_METADATA = "onMetaData";
   private static final String KEY_DURATION = "duration";
+  private static final String KEY_KEY_FRAMES = "keyframes";
+  private static final String KEY_FILE_POSITIONS = "filepositions";
+  private static final String KEY_TIMES = "times";
 
   // AMF object types
   private static final int AMF_TYPE_NUMBER = 0;
@@ -44,14 +45,26 @@ import java.util.Map;
   private static final int AMF_TYPE_DATE = 11;
 
   private long durationUs;
+  private long[] keyFrameTimesUs;
+  private long[] keyFrameTagPositions;
 
   public ScriptTagPayloadReader() {
     super(new DummyTrackOutput());
     durationUs = C.TIME_UNSET;
+    keyFrameTimesUs = new long[0];
+    keyFrameTagPositions = new long[0];
   }
 
   public long getDurationUs() {
     return durationUs;
+  }
+
+  public long[] getKeyFrameTimesUs() {
+    return keyFrameTimesUs;
+  }
+
+  public long[] getKeyFrameTagPositions() {
+    return keyFrameTagPositions;
   }
 
   @Override
@@ -65,15 +78,19 @@ import java.util.Map;
   }
 
   @Override
-  protected boolean parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
+  protected boolean parsePayload(ParsableByteArray data, long timeUs) {
     int nameType = readAmfType(data);
     if (nameType != AMF_TYPE_STRING) {
-      // Should never happen.
-      throw new ParserException();
+      // Ignore segments with unexpected name type.
+      return false;
     }
     String name = readAmfString(data);
     if (!NAME_METADATA.equals(name)) {
       // We're only interested in metadata.
+      return false;
+    }
+    if (data.bytesLeft() == 0) {
+      // The metadata script tag has no value.
       return false;
     }
     int type = readAmfType(data);
@@ -81,12 +98,39 @@ import java.util.Map;
       // We're not interested in this metadata.
       return false;
     }
-    // Set the duration to the value contained in the metadata, if present.
     Map<String, Object> metadata = readAmfEcmaArray(data);
-    if (metadata.containsKey(KEY_DURATION)) {
-      double durationSeconds = (double) metadata.get(KEY_DURATION);
+    // Set the duration to the value contained in the metadata, if present.
+    @Nullable Object durationSecondsObj = metadata.get(KEY_DURATION);
+    if (durationSecondsObj instanceof Double) {
+      double durationSeconds = (double) durationSecondsObj;
       if (durationSeconds > 0.0) {
         durationUs = (long) (durationSeconds * C.MICROS_PER_SECOND);
+      }
+    }
+    // Set the key frame times and positions to the value contained in the metadata, if present.
+    @Nullable Object keyFramesObj = metadata.get(KEY_KEY_FRAMES);
+    if (keyFramesObj instanceof Map) {
+      Map<?, ?> keyFrames = (Map<?, ?>) keyFramesObj;
+      @Nullable Object positionsObj = keyFrames.get(KEY_FILE_POSITIONS);
+      @Nullable Object timesSecondsObj = keyFrames.get(KEY_TIMES);
+      if (positionsObj instanceof List && timesSecondsObj instanceof List) {
+        List<?> positions = (List<?>) positionsObj;
+        List<?> timesSeconds = (List<?>) timesSecondsObj;
+        int keyFrameCount = timesSeconds.size();
+        keyFrameTimesUs = new long[keyFrameCount];
+        keyFrameTagPositions = new long[keyFrameCount];
+        for (int i = 0; i < keyFrameCount; i++) {
+          Object positionObj = positions.get(i);
+          Object timeSecondsObj = timesSeconds.get(i);
+          if (timeSecondsObj instanceof Double && positionObj instanceof Double) {
+            keyFrameTimesUs[i] = (long) (((Double) timeSecondsObj) * C.MICROS_PER_SECOND);
+            keyFrameTagPositions[i] = ((Double) positionObj).longValue();
+          } else {
+            keyFrameTimesUs = new long[0];
+            keyFrameTagPositions = new long[0];
+            break;
+          }
+        }
       }
     }
     return false;
@@ -126,7 +170,7 @@ import java.util.Map;
     int size = data.readUnsignedShort();
     int position = data.getPosition();
     data.skipBytes(size);
-    return new String(data.data, position, size);
+    return new String(data.getData(), position, size);
   }
 
   /**

@@ -720,7 +720,7 @@ public class CalendarActivity extends BaseFragment {
                         cellJump.setTextAndIcon(LocaleController.getString("JumpToDate", R.string.JumpToDate), R.drawable.msg_message);
                         cellJump.setMinimumWidth(160);
                         cellJump.setOnClickListener(view -> {
-                            if (parentLayout.getFragmentStack().size() >= 3) {
+                            if (parentLayout != null && parentLayout.getFragmentStack().size() >= 3) {
                                 BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3);
                                 if (fragment instanceof ChatActivity) {
                                     AndroidUtilities.runOnUIThread(() -> {

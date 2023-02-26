@@ -294,7 +294,7 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
         return 0;
     }
     
-    _fileOs = fopen(path, "wb");
+    _fileOs = fopen(path, "w");
     if (!_fileOs) {
         LOGE("error cannot open file: %s", path);
         return 0;

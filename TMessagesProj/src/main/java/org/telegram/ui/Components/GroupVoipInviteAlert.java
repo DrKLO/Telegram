@@ -207,8 +207,8 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
         int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
         Collections.sort(contacts, (o1, o2) -> {
-            TLRPC.User user1 = messagesController.getUser(((TLRPC.TL_contact) o2).user_id);
-            TLRPC.User user2 = messagesController.getUser(((TLRPC.TL_contact) o1).user_id);
+            TLRPC.User user1 = o2 instanceof TLRPC.TL_contact ? messagesController.getUser(((TLRPC.TL_contact) o2).user_id) : null;
+            TLRPC.User user2 = o1 instanceof TLRPC.TL_contact ? messagesController.getUser(((TLRPC.TL_contact) o1).user_id) : null;
             int status1 = 0;
             int status2 = 0;
             if (user1 != null) {

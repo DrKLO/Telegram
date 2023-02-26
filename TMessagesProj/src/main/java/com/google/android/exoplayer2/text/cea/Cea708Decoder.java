@@ -34,16 +34,18 @@ import com.google.android.exoplayer2.text.Subtitle;
 import com.google.android.exoplayer2.text.SubtitleDecoder;
 import com.google.android.exoplayer2.text.SubtitleInputBuffer;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.CodecSpecificDataUtil;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
-/**
- * A {@link SubtitleDecoder} for CEA-708 (also known as "EIA-708").
- */
+/** A {@link SubtitleDecoder} for CEA-708 (also known as "EIA-708"). */
 public final class Cea708Decoder extends CeaDecoder {
 
   private static final String TAG = "Cea708Decoder";
@@ -55,62 +57,62 @@ public final class Cea708Decoder extends CeaDecoder {
   private static final int CC_VALID_FLAG = 0x04;
 
   // Base Commands
-  private static final int GROUP_C0_END = 0x1F;  // Miscellaneous Control Codes
-  private static final int GROUP_G0_END = 0x7F;  // ASCII Printable Characters
-  private static final int GROUP_C1_END = 0x9F;  // Captioning Command Control Codes
-  private static final int GROUP_G1_END = 0xFF;  // ISO 8859-1 LATIN-1 Character Set
+  private static final int GROUP_C0_END = 0x1F; // Miscellaneous Control Codes
+  private static final int GROUP_G0_END = 0x7F; // ASCII Printable Characters
+  private static final int GROUP_C1_END = 0x9F; // Captioning Command Control Codes
+  private static final int GROUP_G1_END = 0xFF; // ISO 8859-1 LATIN-1 Character Set
 
   // Extended Commands
-  private static final int GROUP_C2_END = 0x1F;  // Extended Control Code Set 1
-  private static final int GROUP_G2_END = 0x7F;  // Extended Miscellaneous Characters
-  private static final int GROUP_C3_END = 0x9F;  // Extended Control Code Set 2
-  private static final int GROUP_G3_END = 0xFF;  // Future Expansion
+  private static final int GROUP_C2_END = 0x1F; // Extended Control Code Set 1
+  private static final int GROUP_G2_END = 0x7F; // Extended Miscellaneous Characters
+  private static final int GROUP_C3_END = 0x9F; // Extended Control Code Set 2
+  private static final int GROUP_G3_END = 0xFF; // Future Expansion
 
   // Group C0 Commands
-  private static final int COMMAND_NUL = 0x00;        // Nul
-  private static final int COMMAND_ETX = 0x03;        // EndOfText
-  private static final int COMMAND_BS = 0x08;         // Backspace
-  private static final int COMMAND_FF = 0x0C;         // FormFeed (Flush)
-  private static final int COMMAND_CR = 0x0D;         // CarriageReturn
-  private static final int COMMAND_HCR = 0x0E;        // ClearLine
-  private static final int COMMAND_EXT1 = 0x10;       // Extended Control Code Flag
+  private static final int COMMAND_NUL = 0x00; // Nul
+  private static final int COMMAND_ETX = 0x03; // EndOfText
+  private static final int COMMAND_BS = 0x08; // Backspace
+  private static final int COMMAND_FF = 0x0C; // FormFeed (Flush)
+  private static final int COMMAND_CR = 0x0D; // CarriageReturn
+  private static final int COMMAND_HCR = 0x0E; // ClearLine
+  private static final int COMMAND_EXT1 = 0x10; // Extended Control Code Flag
   private static final int COMMAND_EXT1_START = 0x11;
   private static final int COMMAND_EXT1_END = 0x17;
   private static final int COMMAND_P16_START = 0x18;
   private static final int COMMAND_P16_END = 0x1F;
 
   // Group C1 Commands
-  private static final int COMMAND_CW0 = 0x80;  // SetCurrentWindow to 0
-  private static final int COMMAND_CW1 = 0x81;  // SetCurrentWindow to 1
-  private static final int COMMAND_CW2 = 0x82;  // SetCurrentWindow to 2
-  private static final int COMMAND_CW3 = 0x83;  // SetCurrentWindow to 3
-  private static final int COMMAND_CW4 = 0x84;  // SetCurrentWindow to 4
-  private static final int COMMAND_CW5 = 0x85;  // SetCurrentWindow to 5
-  private static final int COMMAND_CW6 = 0x86;  // SetCurrentWindow to 6
-  private static final int COMMAND_CW7 = 0x87;  // SetCurrentWindow to 7
-  private static final int COMMAND_CLW = 0x88;  // ClearWindows (+1 byte)
-  private static final int COMMAND_DSW = 0x89;  // DisplayWindows (+1 byte)
-  private static final int COMMAND_HDW = 0x8A;  // HideWindows (+1 byte)
-  private static final int COMMAND_TGW = 0x8B;  // ToggleWindows (+1 byte)
-  private static final int COMMAND_DLW = 0x8C;  // DeleteWindows (+1 byte)
-  private static final int COMMAND_DLY = 0x8D;  // Delay (+1 byte)
-  private static final int COMMAND_DLC = 0x8E;  // DelayCancel
-  private static final int COMMAND_RST = 0x8F;  // Reset
-  private static final int COMMAND_SPA = 0x90;  // SetPenAttributes (+2 bytes)
-  private static final int COMMAND_SPC = 0x91;  // SetPenColor (+3 bytes)
-  private static final int COMMAND_SPL = 0x92;  // SetPenLocation (+2 bytes)
-  private static final int COMMAND_SWA = 0x97;  // SetWindowAttributes (+4 bytes)
-  private static final int COMMAND_DF0 = 0x98;  // DefineWindow 0 (+6 bytes)
-  private static final int COMMAND_DF1 = 0x99;  // DefineWindow 1 (+6 bytes)
-  private static final int COMMAND_DF2 = 0x9A;  // DefineWindow 2 (+6 bytes)
-  private static final int COMMAND_DF3 = 0x9B;  // DefineWindow 3 (+6 bytes)
+  private static final int COMMAND_CW0 = 0x80; // SetCurrentWindow to 0
+  private static final int COMMAND_CW1 = 0x81; // SetCurrentWindow to 1
+  private static final int COMMAND_CW2 = 0x82; // SetCurrentWindow to 2
+  private static final int COMMAND_CW3 = 0x83; // SetCurrentWindow to 3
+  private static final int COMMAND_CW4 = 0x84; // SetCurrentWindow to 4
+  private static final int COMMAND_CW5 = 0x85; // SetCurrentWindow to 5
+  private static final int COMMAND_CW6 = 0x86; // SetCurrentWindow to 6
+  private static final int COMMAND_CW7 = 0x87; // SetCurrentWindow to 7
+  private static final int COMMAND_CLW = 0x88; // ClearWindows (+1 byte)
+  private static final int COMMAND_DSW = 0x89; // DisplayWindows (+1 byte)
+  private static final int COMMAND_HDW = 0x8A; // HideWindows (+1 byte)
+  private static final int COMMAND_TGW = 0x8B; // ToggleWindows (+1 byte)
+  private static final int COMMAND_DLW = 0x8C; // DeleteWindows (+1 byte)
+  private static final int COMMAND_DLY = 0x8D; // Delay (+1 byte)
+  private static final int COMMAND_DLC = 0x8E; // DelayCancel
+  private static final int COMMAND_RST = 0x8F; // Reset
+  private static final int COMMAND_SPA = 0x90; // SetPenAttributes (+2 bytes)
+  private static final int COMMAND_SPC = 0x91; // SetPenColor (+3 bytes)
+  private static final int COMMAND_SPL = 0x92; // SetPenLocation (+2 bytes)
+  private static final int COMMAND_SWA = 0x97; // SetWindowAttributes (+4 bytes)
+  private static final int COMMAND_DF0 = 0x98; // DefineWindow 0 (+6 bytes)
+  private static final int COMMAND_DF1 = 0x99; // DefineWindow 1 (+6 bytes)
+  private static final int COMMAND_DF2 = 0x9A; // DefineWindow 2 (+6 bytes)
+  private static final int COMMAND_DF3 = 0x9B; // DefineWindow 3 (+6 bytes)
   private static final int COMMAND_DF4 = 0x9C; // DefineWindow 4 (+6 bytes)
-  private static final int COMMAND_DF5 = 0x9D;  // DefineWindow 5 (+6 bytes)
-  private static final int COMMAND_DF6 = 0x9E;  // DefineWindow 6 (+6 bytes)
-  private static final int COMMAND_DF7 = 0x9F;  // DefineWindow 7 (+6 bytes)
+  private static final int COMMAND_DF5 = 0x9D; // DefineWindow 5 (+6 bytes)
+  private static final int COMMAND_DF6 = 0x9E; // DefineWindow 6 (+6 bytes)
+  private static final int COMMAND_DF7 = 0x9F; // DefineWindow 7 (+6 bytes)
 
   // G0 Table Special Chars
-  private static final int CHARACTER_MN = 0x7F;  // MusicNote
+  private static final int CHARACTER_MN = 0x7F; // MusicNote
 
   // G2 Table Special Chars
   private static final int CHARACTER_TSP = 0x20;
@@ -141,31 +143,37 @@ public final class Cea708Decoder extends CeaDecoder {
   private static final int CHARACTER_UPPER_LEFT_BORDER = 0x7F;
 
   private final ParsableByteArray ccData;
-  private final ParsableBitArray serviceBlockPacket;
+  private final ParsableBitArray captionChannelPacketData;
+  private int previousSequenceNumber;
+  // TODO: Use isWideAspectRatio in decoding.
+  @SuppressWarnings({"unused", "FieldCanBeLocal"})
+  private final boolean isWideAspectRatio;
 
   private final int selectedServiceNumber;
-  private final CueBuilder[] cueBuilders;
+  private final CueInfoBuilder[] cueInfoBuilders;
 
-  private CueBuilder currentCueBuilder;
-  private List<Cue> cues;
-  private List<Cue> lastCues;
+  private CueInfoBuilder currentCueInfoBuilder;
+  @Nullable private List<Cue> cues;
+  @Nullable private List<Cue> lastCues;
 
-  private DtvCcPacket currentDtvCcPacket;
+  @Nullable private DtvCcPacket currentDtvCcPacket;
   private int currentWindow;
 
-  // TODO: Retrieve isWideAspectRatio from initializationData and use it.
   public Cea708Decoder(int accessibilityChannel, @Nullable List<byte[]> initializationData) {
     ccData = new ParsableByteArray();
-    serviceBlockPacket = new ParsableBitArray();
+    captionChannelPacketData = new ParsableBitArray();
+    previousSequenceNumber = C.INDEX_UNSET;
     selectedServiceNumber = accessibilityChannel == Format.NO_VALUE ? 1 : accessibilityChannel;
+    isWideAspectRatio =
+        initializationData != null
+            && CodecSpecificDataUtil.parseCea708InitializationData(initializationData);
 
-    cueBuilders = new CueBuilder[NUM_WINDOWS];
+    cueInfoBuilders = new CueInfoBuilder[NUM_WINDOWS];
     for (int i = 0; i < NUM_WINDOWS; i++) {
-      cueBuilders[i] = new CueBuilder();
+      cueInfoBuilders[i] = new CueInfoBuilder();
     }
 
-    currentCueBuilder = cueBuilders[0];
-    resetCueBuilders();
+    currentCueInfoBuilder = cueInfoBuilders[0];
   }
 
   @Override
@@ -179,7 +187,7 @@ public final class Cea708Decoder extends CeaDecoder {
     cues = null;
     lastCues = null;
     currentWindow = 0;
-    currentCueBuilder = cueBuilders[currentWindow];
+    currentCueInfoBuilder = cueInfoBuilders[currentWindow];
     resetCueBuilders();
     currentDtvCcPacket = null;
   }
@@ -192,15 +200,16 @@ public final class Cea708Decoder extends CeaDecoder {
   @Override
   protected Subtitle createSubtitle() {
     lastCues = cues;
-    return new CeaSubtitle(cues);
+    return new CeaSubtitle(Assertions.checkNotNull(cues));
   }
 
   @Override
   protected void decode(SubtitleInputBuffer inputBuffer) {
     // Subtitle input buffers are non-direct and the position is zero, so calling array() is safe.
+    ByteBuffer subtitleData = Assertions.checkNotNull(inputBuffer.data);
     @SuppressWarnings("ByteBufferBackingArray")
-    byte[] inputBufferData = inputBuffer.data.array();
-    ccData.reset(inputBufferData, inputBuffer.data.limit());
+    byte[] inputBufferData = subtitleData.array();
+    ccData.reset(inputBufferData, subtitleData.limit());
     while (ccData.bytesLeft() >= 3) {
       int ccTypeAndValid = (ccData.readUnsignedByte() & 0x07);
 
@@ -223,6 +232,18 @@ public final class Cea708Decoder extends CeaDecoder {
         finalizeCurrentPacket();
 
         int sequenceNumber = (ccData1 & 0xC0) >> 6; // first 2 bits
+        if (previousSequenceNumber != C.INDEX_UNSET
+            && sequenceNumber != (previousSequenceNumber + 1) % 4) {
+          resetCueBuilders();
+          Log.w(
+              TAG,
+              "Sequence number discontinuity. previous="
+                  + previousSequenceNumber
+                  + " current="
+                  + sequenceNumber);
+        }
+        previousSequenceNumber = sequenceNumber;
+
         int packetSize = ccData1 & 0x3F; // last 6 bits
         if (packetSize == 0) {
           packetSize = 64;
@@ -259,37 +280,21 @@ public final class Cea708Decoder extends CeaDecoder {
     currentDtvCcPacket = null;
   }
 
+  @RequiresNonNull("currentDtvCcPacket")
   private void processCurrentPacket() {
     if (currentDtvCcPacket.currentIndex != (currentDtvCcPacket.packetSize * 2 - 1)) {
-      Log.w(TAG, "DtvCcPacket ended prematurely; size is " + (currentDtvCcPacket.packetSize * 2 - 1)
-          + ", but current index is " + currentDtvCcPacket.currentIndex + " (sequence number "
-          + currentDtvCcPacket.sequenceNumber + "); ignoring packet");
-      return;
-    }
-
-    serviceBlockPacket.reset(currentDtvCcPacket.packetData, currentDtvCcPacket.currentIndex);
-
-    int serviceNumber = serviceBlockPacket.readBits(3);
-    int blockSize = serviceBlockPacket.readBits(5);
-    if (serviceNumber == 7) {
-      // extended service numbers
-      serviceBlockPacket.skipBits(2);
-      serviceNumber = serviceBlockPacket.readBits(6);
-      if (serviceNumber < 7) {
-        Log.w(TAG, "Invalid extended service number: " + serviceNumber);
-      }
-    }
-
-    // Ignore packets in which blockSize is 0
-    if (blockSize == 0) {
-      if (serviceNumber != 0) {
-        Log.w(TAG, "serviceNumber is non-zero (" + serviceNumber + ") when blockSize is 0");
-      }
-      return;
-    }
-
-    if (serviceNumber != selectedServiceNumber) {
-      return;
+      Log.d(
+          TAG,
+          "DtvCcPacket ended prematurely; size is "
+              + (currentDtvCcPacket.packetSize * 2 - 1)
+              + ", but current index is "
+              + currentDtvCcPacket.currentIndex
+              + " (sequence number "
+              + currentDtvCcPacket.sequenceNumber
+              + ");");
+      // We've received cc_type=0x03 (packet start) before receiving packetSize byte pairs of data.
+      // This might indicate a byte pair has been lost, but we'll still attempt to process the data
+      // we have received.
     }
 
     // The cues should be updated if we receive a C0 ETX command, any C1 command, or if after
@@ -297,39 +302,78 @@ public final class Cea708Decoder extends CeaDecoder {
     // 8.10.4 for more details.
     boolean cuesNeedUpdate = false;
 
-    while (serviceBlockPacket.bitsLeft() > 0) {
-      int command = serviceBlockPacket.readBits(8);
-      if (command != COMMAND_EXT1) {
-        if (command <= GROUP_C0_END) {
-          handleC0Command(command);
-          // If the C0 command was an ETX command, the cues are updated in handleC0Command.
-        } else if (command <= GROUP_G0_END) {
-          handleG0Character(command);
-          cuesNeedUpdate = true;
-        } else if (command <= GROUP_C1_END) {
-          handleC1Command(command);
-          cuesNeedUpdate = true;
-        } else if (command <= GROUP_G1_END) {
-          handleG1Character(command);
-          cuesNeedUpdate = true;
-        } else {
-          Log.w(TAG, "Invalid base command: " + command);
+    // Streams with multiple embedded CC tracks (different language tracks) can be delivered
+    // in the same frame packet, so captionChannelPacketData can contain service blocks with
+    // different service numbers.
+    //
+    // We iterate over the full buffer until we find a null service block or until the buffer is
+    // exhausted. On each iteration we process a single service block. If the block has a service
+    // number different to the currently selected service, then we skip it and continue with the
+    // next service block.
+    captionChannelPacketData.reset(currentDtvCcPacket.packetData, currentDtvCcPacket.currentIndex);
+    while (captionChannelPacketData.bitsLeft() > 0) {
+      // Parse the Standard Service Block Header (see CEA-708B 6.2.1)
+      int serviceNumber = captionChannelPacketData.readBits(3);
+      int blockSize = captionChannelPacketData.readBits(5);
+      if (serviceNumber == 7) {
+        // Parse the Extended Service Block Header (see CEA-708B 6.2.2)
+        captionChannelPacketData.skipBits(2);
+        serviceNumber = captionChannelPacketData.readBits(6);
+        if (serviceNumber < 7) {
+          Log.w(TAG, "Invalid extended service number: " + serviceNumber);
         }
-      } else {
-        // Read the extended command
-        command = serviceBlockPacket.readBits(8);
-        if (command <= GROUP_C2_END) {
-          handleC2Command(command);
-        } else if (command <= GROUP_G2_END) {
-          handleG2Character(command);
-          cuesNeedUpdate = true;
-        } else if (command <= GROUP_C3_END) {
-          handleC3Command(command);
-        } else if (command <= GROUP_G3_END) {
-          handleG3Character(command);
-          cuesNeedUpdate = true;
+      }
+
+      // Ignore packets with the Null Service Block Header (see CEA-708B 6.2.3)
+      if (blockSize == 0) {
+        if (serviceNumber != 0) {
+          Log.w(TAG, "serviceNumber is non-zero (" + serviceNumber + ") when blockSize is 0");
+        }
+        break;
+      }
+
+      if (serviceNumber != selectedServiceNumber) {
+        captionChannelPacketData.skipBytes(blockSize);
+        continue;
+      }
+
+      // Process only the information for the current service block (there could be
+      // more data in the buffer, but it is not part of the current service block).
+      int endBlockPosition = captionChannelPacketData.getPosition() + (blockSize * 8);
+      while (captionChannelPacketData.getPosition() < endBlockPosition) {
+        int command = captionChannelPacketData.readBits(8);
+        if (command != COMMAND_EXT1) {
+          if (command <= GROUP_C0_END) {
+            handleC0Command(command);
+            // If the C0 command was an ETX command, the cues are updated in handleC0Command.
+          } else if (command <= GROUP_G0_END) {
+            handleG0Character(command);
+            cuesNeedUpdate = true;
+          } else if (command <= GROUP_C1_END) {
+            handleC1Command(command);
+            cuesNeedUpdate = true;
+          } else if (command <= GROUP_G1_END) {
+            handleG1Character(command);
+            cuesNeedUpdate = true;
+          } else {
+            Log.w(TAG, "Invalid base command: " + command);
+          }
         } else {
-          Log.w(TAG, "Invalid extended command: " + command);
+          // Read the extended command
+          command = captionChannelPacketData.readBits(8);
+          if (command <= GROUP_C2_END) {
+            handleC2Command(command);
+          } else if (command <= GROUP_G2_END) {
+            handleG2Character(command);
+            cuesNeedUpdate = true;
+          } else if (command <= GROUP_C3_END) {
+            handleC3Command(command);
+          } else if (command <= GROUP_G3_END) {
+            handleG3Character(command);
+            cuesNeedUpdate = true;
+          } else {
+            Log.w(TAG, "Invalid extended command: " + command);
+          }
         }
       }
     }
@@ -348,13 +392,13 @@ public final class Cea708Decoder extends CeaDecoder {
         cues = getDisplayCues();
         break;
       case COMMAND_BS:
-        currentCueBuilder.backspace();
+        currentCueInfoBuilder.backspace();
         break;
       case COMMAND_FF:
         resetCueBuilders();
         break;
       case COMMAND_CR:
-        currentCueBuilder.append('\n');
+        currentCueInfoBuilder.append('\n');
         break;
       case COMMAND_HCR:
         // TODO: Add support for this command.
@@ -362,10 +406,10 @@ public final class Cea708Decoder extends CeaDecoder {
       default:
         if (command >= COMMAND_EXT1_START && command <= COMMAND_EXT1_END) {
           Log.w(TAG, "Currently unsupported COMMAND_EXT1 Command: " + command);
-          serviceBlockPacket.skipBits(8);
+          captionChannelPacketData.skipBits(8);
         } else if (command >= COMMAND_P16_START && command <= COMMAND_P16_END) {
           Log.w(TAG, "Currently unsupported COMMAND_P16 Command: " + command);
-          serviceBlockPacket.skipBits(16);
+          captionChannelPacketData.skipBits(16);
         } else {
           Log.w(TAG, "Invalid C0 command: " + command);
         }
@@ -386,48 +430,48 @@ public final class Cea708Decoder extends CeaDecoder {
         window = (command - COMMAND_CW0);
         if (currentWindow != window) {
           currentWindow = window;
-          currentCueBuilder = cueBuilders[window];
+          currentCueInfoBuilder = cueInfoBuilders[window];
         }
         break;
       case COMMAND_CLW:
         for (int i = 1; i <= NUM_WINDOWS; i++) {
-          if (serviceBlockPacket.readBit()) {
-            cueBuilders[NUM_WINDOWS - i].clear();
+          if (captionChannelPacketData.readBit()) {
+            cueInfoBuilders[NUM_WINDOWS - i].clear();
           }
         }
         break;
       case COMMAND_DSW:
         for (int i = 1; i <= NUM_WINDOWS; i++) {
-          if (serviceBlockPacket.readBit()) {
-            cueBuilders[NUM_WINDOWS - i].setVisibility(true);
+          if (captionChannelPacketData.readBit()) {
+            cueInfoBuilders[NUM_WINDOWS - i].setVisibility(true);
           }
         }
         break;
       case COMMAND_HDW:
         for (int i = 1; i <= NUM_WINDOWS; i++) {
-          if (serviceBlockPacket.readBit()) {
-            cueBuilders[NUM_WINDOWS - i].setVisibility(false);
+          if (captionChannelPacketData.readBit()) {
+            cueInfoBuilders[NUM_WINDOWS - i].setVisibility(false);
           }
         }
         break;
       case COMMAND_TGW:
         for (int i = 1; i <= NUM_WINDOWS; i++) {
-          if (serviceBlockPacket.readBit()) {
-            CueBuilder cueBuilder = cueBuilders[NUM_WINDOWS - i];
-            cueBuilder.setVisibility(!cueBuilder.isVisible());
+          if (captionChannelPacketData.readBit()) {
+            CueInfoBuilder cueInfoBuilder = cueInfoBuilders[NUM_WINDOWS - i];
+            cueInfoBuilder.setVisibility(!cueInfoBuilder.isVisible());
           }
         }
         break;
       case COMMAND_DLW:
         for (int i = 1; i <= NUM_WINDOWS; i++) {
-          if (serviceBlockPacket.readBit()) {
-            cueBuilders[NUM_WINDOWS - i].reset();
+          if (captionChannelPacketData.readBit()) {
+            cueInfoBuilders[NUM_WINDOWS - i].reset();
           }
         }
         break;
       case COMMAND_DLY:
         // TODO: Add support for delay commands.
-        serviceBlockPacket.skipBits(8);
+        captionChannelPacketData.skipBits(8);
         break;
       case COMMAND_DLC:
         // TODO: Add support for delay commands.
@@ -436,33 +480,33 @@ public final class Cea708Decoder extends CeaDecoder {
         resetCueBuilders();
         break;
       case COMMAND_SPA:
-        if (!currentCueBuilder.isDefined()) {
+        if (!currentCueInfoBuilder.isDefined()) {
           // ignore this command if the current window/cue isn't defined
-          serviceBlockPacket.skipBits(16);
+          captionChannelPacketData.skipBits(16);
         } else {
           handleSetPenAttributes();
         }
         break;
       case COMMAND_SPC:
-        if (!currentCueBuilder.isDefined()) {
+        if (!currentCueInfoBuilder.isDefined()) {
           // ignore this command if the current window/cue isn't defined
-          serviceBlockPacket.skipBits(24);
+          captionChannelPacketData.skipBits(24);
         } else {
           handleSetPenColor();
         }
         break;
       case COMMAND_SPL:
-        if (!currentCueBuilder.isDefined()) {
+        if (!currentCueInfoBuilder.isDefined()) {
           // ignore this command if the current window/cue isn't defined
-          serviceBlockPacket.skipBits(16);
+          captionChannelPacketData.skipBits(16);
         } else {
           handleSetPenLocation();
         }
         break;
       case COMMAND_SWA:
-        if (!currentCueBuilder.isDefined()) {
+        if (!currentCueInfoBuilder.isDefined()) {
           // ignore this command if the current window/cue isn't defined
-          serviceBlockPacket.skipBits(32);
+          captionChannelPacketData.skipBits(32);
         } else {
           handleSetWindowAttributes();
         }
@@ -480,7 +524,7 @@ public final class Cea708Decoder extends CeaDecoder {
         // We also set the current window to the newly defined window.
         if (currentWindow != window) {
           currentWindow = window;
-          currentCueBuilder = cueBuilders[window];
+          currentCueInfoBuilder = cueInfoBuilders[window];
         }
         break;
       default:
@@ -493,121 +537,121 @@ public final class Cea708Decoder extends CeaDecoder {
     if (command <= 0x07) {
       // Do nothing.
     } else if (command <= 0x0F) {
-      serviceBlockPacket.skipBits(8);
+      captionChannelPacketData.skipBits(8);
     } else if (command <= 0x17) {
-      serviceBlockPacket.skipBits(16);
+      captionChannelPacketData.skipBits(16);
     } else if (command <= 0x1F) {
-      serviceBlockPacket.skipBits(24);
+      captionChannelPacketData.skipBits(24);
     }
   }
 
   private void handleC3Command(int command) {
     // C3 Table doesn't contain any commands in CEA-708-B, but we do need to skip bytes
     if (command <= 0x87) {
-      serviceBlockPacket.skipBits(32);
+      captionChannelPacketData.skipBits(32);
     } else if (command <= 0x8F) {
-      serviceBlockPacket.skipBits(40);
+      captionChannelPacketData.skipBits(40);
     } else if (command <= 0x9F) {
       // 90-9F are variable length codes; the first byte defines the header with the first
       // 2 bits specifying the type and the last 6 bits specifying the remaining length of the
       // command in bytes
-      serviceBlockPacket.skipBits(2);
-      int length = serviceBlockPacket.readBits(6);
-      serviceBlockPacket.skipBits(8 * length);
+      captionChannelPacketData.skipBits(2);
+      int length = captionChannelPacketData.readBits(6);
+      captionChannelPacketData.skipBits(8 * length);
     }
   }
 
   private void handleG0Character(int characterCode) {
     if (characterCode == CHARACTER_MN) {
-      currentCueBuilder.append('\u266B');
+      currentCueInfoBuilder.append('\u266B');
     } else {
-      currentCueBuilder.append((char) (characterCode & 0xFF));
+      currentCueInfoBuilder.append((char) (characterCode & 0xFF));
     }
   }
 
   private void handleG1Character(int characterCode) {
-    currentCueBuilder.append((char) (characterCode & 0xFF));
+    currentCueInfoBuilder.append((char) (characterCode & 0xFF));
   }
 
   private void handleG2Character(int characterCode) {
     switch (characterCode) {
       case CHARACTER_TSP:
-        currentCueBuilder.append('\u0020');
+        currentCueInfoBuilder.append('\u0020');
         break;
       case CHARACTER_NBTSP:
-        currentCueBuilder.append('\u00A0');
+        currentCueInfoBuilder.append('\u00A0');
         break;
       case CHARACTER_ELLIPSIS:
-        currentCueBuilder.append('\u2026');
+        currentCueInfoBuilder.append('\u2026');
         break;
       case CHARACTER_BIG_CARONS:
-        currentCueBuilder.append('\u0160');
+        currentCueInfoBuilder.append('\u0160');
         break;
       case CHARACTER_BIG_OE:
-        currentCueBuilder.append('\u0152');
+        currentCueInfoBuilder.append('\u0152');
         break;
       case CHARACTER_SOLID_BLOCK:
-        currentCueBuilder.append('\u2588');
+        currentCueInfoBuilder.append('\u2588');
         break;
       case CHARACTER_OPEN_SINGLE_QUOTE:
-        currentCueBuilder.append('\u2018');
+        currentCueInfoBuilder.append('\u2018');
         break;
       case CHARACTER_CLOSE_SINGLE_QUOTE:
-        currentCueBuilder.append('\u2019');
+        currentCueInfoBuilder.append('\u2019');
         break;
       case CHARACTER_OPEN_DOUBLE_QUOTE:
-        currentCueBuilder.append('\u201C');
+        currentCueInfoBuilder.append('\u201C');
         break;
       case CHARACTER_CLOSE_DOUBLE_QUOTE:
-        currentCueBuilder.append('\u201D');
+        currentCueInfoBuilder.append('\u201D');
         break;
       case CHARACTER_BOLD_BULLET:
-        currentCueBuilder.append('\u2022');
+        currentCueInfoBuilder.append('\u2022');
         break;
       case CHARACTER_TM:
-        currentCueBuilder.append('\u2122');
+        currentCueInfoBuilder.append('\u2122');
         break;
       case CHARACTER_SMALL_CARONS:
-        currentCueBuilder.append('\u0161');
+        currentCueInfoBuilder.append('\u0161');
         break;
       case CHARACTER_SMALL_OE:
-        currentCueBuilder.append('\u0153');
+        currentCueInfoBuilder.append('\u0153');
         break;
       case CHARACTER_SM:
-        currentCueBuilder.append('\u2120');
+        currentCueInfoBuilder.append('\u2120');
         break;
       case CHARACTER_DIAERESIS_Y:
-        currentCueBuilder.append('\u0178');
+        currentCueInfoBuilder.append('\u0178');
         break;
       case CHARACTER_ONE_EIGHTH:
-        currentCueBuilder.append('\u215B');
+        currentCueInfoBuilder.append('\u215B');
         break;
       case CHARACTER_THREE_EIGHTHS:
-        currentCueBuilder.append('\u215C');
+        currentCueInfoBuilder.append('\u215C');
         break;
       case CHARACTER_FIVE_EIGHTHS:
-        currentCueBuilder.append('\u215D');
+        currentCueInfoBuilder.append('\u215D');
         break;
       case CHARACTER_SEVEN_EIGHTHS:
-        currentCueBuilder.append('\u215E');
+        currentCueInfoBuilder.append('\u215E');
         break;
       case CHARACTER_VERTICAL_BORDER:
-        currentCueBuilder.append('\u2502');
+        currentCueInfoBuilder.append('\u2502');
         break;
       case CHARACTER_UPPER_RIGHT_BORDER:
-        currentCueBuilder.append('\u2510');
+        currentCueInfoBuilder.append('\u2510');
         break;
       case CHARACTER_LOWER_LEFT_BORDER:
-        currentCueBuilder.append('\u2514');
+        currentCueInfoBuilder.append('\u2514');
         break;
       case CHARACTER_HORIZONTAL_BORDER:
-        currentCueBuilder.append('\u2500');
+        currentCueInfoBuilder.append('\u2500');
         break;
       case CHARACTER_LOWER_RIGHT_BORDER:
-        currentCueBuilder.append('\u2518');
+        currentCueInfoBuilder.append('\u2518');
         break;
       case CHARACTER_UPPER_LEFT_BORDER:
-        currentCueBuilder.append('\u250C');
+        currentCueInfoBuilder.append('\u250C');
         break;
       default:
         Log.w(TAG, "Invalid G2 character: " + characterCode);
@@ -618,142 +662,166 @@ public final class Cea708Decoder extends CeaDecoder {
 
   private void handleG3Character(int characterCode) {
     if (characterCode == 0xA0) {
-      currentCueBuilder.append('\u33C4');
+      currentCueInfoBuilder.append('\u33C4');
     } else {
       Log.w(TAG, "Invalid G3 character: " + characterCode);
       // Substitute any unsupported G3 character with an underscore as per CEA-708 specification.
-      currentCueBuilder.append('_');
+      currentCueInfoBuilder.append('_');
     }
   }
 
   private void handleSetPenAttributes() {
     // the SetPenAttributes command contains 2 bytes of data
     // first byte
-    int textTag = serviceBlockPacket.readBits(4);
-    int offset = serviceBlockPacket.readBits(2);
-    int penSize = serviceBlockPacket.readBits(2);
+    int textTag = captionChannelPacketData.readBits(4);
+    int offset = captionChannelPacketData.readBits(2);
+    int penSize = captionChannelPacketData.readBits(2);
     // second byte
-    boolean italicsToggle = serviceBlockPacket.readBit();
-    boolean underlineToggle = serviceBlockPacket.readBit();
-    int edgeType = serviceBlockPacket.readBits(3);
-    int fontStyle = serviceBlockPacket.readBits(3);
+    boolean italicsToggle = captionChannelPacketData.readBit();
+    boolean underlineToggle = captionChannelPacketData.readBit();
+    int edgeType = captionChannelPacketData.readBits(3);
+    int fontStyle = captionChannelPacketData.readBits(3);
 
-    currentCueBuilder.setPenAttributes(textTag, offset, penSize, italicsToggle, underlineToggle,
-        edgeType, fontStyle);
+    currentCueInfoBuilder.setPenAttributes(
+        textTag, offset, penSize, italicsToggle, underlineToggle, edgeType, fontStyle);
   }
 
   private void handleSetPenColor() {
     // the SetPenColor command contains 3 bytes of data
     // first byte
-    int foregroundO = serviceBlockPacket.readBits(2);
-    int foregroundR = serviceBlockPacket.readBits(2);
-    int foregroundG = serviceBlockPacket.readBits(2);
-    int foregroundB = serviceBlockPacket.readBits(2);
-    int foregroundColor = CueBuilder.getArgbColorFromCeaColor(foregroundR, foregroundG, foregroundB,
-        foregroundO);
+    int foregroundO = captionChannelPacketData.readBits(2);
+    int foregroundR = captionChannelPacketData.readBits(2);
+    int foregroundG = captionChannelPacketData.readBits(2);
+    int foregroundB = captionChannelPacketData.readBits(2);
+    int foregroundColor =
+        CueInfoBuilder.getArgbColorFromCeaColor(foregroundR, foregroundG, foregroundB, foregroundO);
     // second byte
-    int backgroundO = serviceBlockPacket.readBits(2);
-    int backgroundR = serviceBlockPacket.readBits(2);
-    int backgroundG = serviceBlockPacket.readBits(2);
-    int backgroundB = serviceBlockPacket.readBits(2);
-    int backgroundColor = CueBuilder.getArgbColorFromCeaColor(backgroundR, backgroundG, backgroundB,
-        backgroundO);
+    int backgroundO = captionChannelPacketData.readBits(2);
+    int backgroundR = captionChannelPacketData.readBits(2);
+    int backgroundG = captionChannelPacketData.readBits(2);
+    int backgroundB = captionChannelPacketData.readBits(2);
+    int backgroundColor =
+        CueInfoBuilder.getArgbColorFromCeaColor(backgroundR, backgroundG, backgroundB, backgroundO);
     // third byte
-    serviceBlockPacket.skipBits(2); // null padding
-    int edgeR = serviceBlockPacket.readBits(2);
-    int edgeG = serviceBlockPacket.readBits(2);
-    int edgeB = serviceBlockPacket.readBits(2);
-    int edgeColor = CueBuilder.getArgbColorFromCeaColor(edgeR, edgeG, edgeB);
+    captionChannelPacketData.skipBits(2); // null padding
+    int edgeR = captionChannelPacketData.readBits(2);
+    int edgeG = captionChannelPacketData.readBits(2);
+    int edgeB = captionChannelPacketData.readBits(2);
+    int edgeColor = CueInfoBuilder.getArgbColorFromCeaColor(edgeR, edgeG, edgeB);
 
-    currentCueBuilder.setPenColor(foregroundColor, backgroundColor, edgeColor);
+    currentCueInfoBuilder.setPenColor(foregroundColor, backgroundColor, edgeColor);
   }
 
   private void handleSetPenLocation() {
     // the SetPenLocation command contains 2 bytes of data
     // first byte
-    serviceBlockPacket.skipBits(4);
-    int row = serviceBlockPacket.readBits(4);
+    captionChannelPacketData.skipBits(4);
+    int row = captionChannelPacketData.readBits(4);
     // second byte
-    serviceBlockPacket.skipBits(2);
-    int column = serviceBlockPacket.readBits(6);
+    captionChannelPacketData.skipBits(2);
+    int column = captionChannelPacketData.readBits(6);
 
-    currentCueBuilder.setPenLocation(row, column);
+    currentCueInfoBuilder.setPenLocation(row, column);
   }
 
   private void handleSetWindowAttributes() {
     // the SetWindowAttributes command contains 4 bytes of data
     // first byte
-    int fillO = serviceBlockPacket.readBits(2);
-    int fillR = serviceBlockPacket.readBits(2);
-    int fillG = serviceBlockPacket.readBits(2);
-    int fillB = serviceBlockPacket.readBits(2);
-    int fillColor = CueBuilder.getArgbColorFromCeaColor(fillR, fillG, fillB, fillO);
+    int fillO = captionChannelPacketData.readBits(2);
+    int fillR = captionChannelPacketData.readBits(2);
+    int fillG = captionChannelPacketData.readBits(2);
+    int fillB = captionChannelPacketData.readBits(2);
+    int fillColor = CueInfoBuilder.getArgbColorFromCeaColor(fillR, fillG, fillB, fillO);
     // second byte
-    int borderType = serviceBlockPacket.readBits(2); // only the lower 2 bits of borderType
-    int borderR = serviceBlockPacket.readBits(2);
-    int borderG = serviceBlockPacket.readBits(2);
-    int borderB = serviceBlockPacket.readBits(2);
-    int borderColor = CueBuilder.getArgbColorFromCeaColor(borderR, borderG, borderB);
+    int borderType = captionChannelPacketData.readBits(2); // only the lower 2 bits of borderType
+    int borderR = captionChannelPacketData.readBits(2);
+    int borderG = captionChannelPacketData.readBits(2);
+    int borderB = captionChannelPacketData.readBits(2);
+    int borderColor = CueInfoBuilder.getArgbColorFromCeaColor(borderR, borderG, borderB);
     // third byte
-    if (serviceBlockPacket.readBit()) {
+    if (captionChannelPacketData.readBit()) {
       borderType |= 0x04; // set the top bit of the 3-bit borderType
     }
-    boolean wordWrapToggle = serviceBlockPacket.readBit();
-    int printDirection = serviceBlockPacket.readBits(2);
-    int scrollDirection = serviceBlockPacket.readBits(2);
-    int justification = serviceBlockPacket.readBits(2);
+    boolean wordWrapToggle = captionChannelPacketData.readBit();
+    int printDirection = captionChannelPacketData.readBits(2);
+    int scrollDirection = captionChannelPacketData.readBits(2);
+    int justification = captionChannelPacketData.readBits(2);
     // fourth byte
     // Note that we don't intend to support display effects
-    serviceBlockPacket.skipBits(8); // effectSpeed(4), effectDirection(2), displayEffect(2)
+    captionChannelPacketData.skipBits(8); // effectSpeed(4), effectDirection(2), displayEffect(2)
 
-    currentCueBuilder.setWindowAttributes(fillColor, borderColor, wordWrapToggle, borderType,
-        printDirection, scrollDirection, justification);
+    currentCueInfoBuilder.setWindowAttributes(
+        fillColor,
+        borderColor,
+        wordWrapToggle,
+        borderType,
+        printDirection,
+        scrollDirection,
+        justification);
   }
 
   private void handleDefineWindow(int window) {
-    CueBuilder cueBuilder = cueBuilders[window];
+    CueInfoBuilder cueInfoBuilder = cueInfoBuilders[window];
 
     // the DefineWindow command contains 6 bytes of data
     // first byte
-    serviceBlockPacket.skipBits(2); // null padding
-    boolean visible = serviceBlockPacket.readBit();
-    boolean rowLock = serviceBlockPacket.readBit();
-    boolean columnLock = serviceBlockPacket.readBit();
-    int priority = serviceBlockPacket.readBits(3);
+    captionChannelPacketData.skipBits(2); // null padding
+    boolean visible = captionChannelPacketData.readBit();
+    boolean rowLock = captionChannelPacketData.readBit();
+    boolean columnLock = captionChannelPacketData.readBit();
+    int priority = captionChannelPacketData.readBits(3);
     // second byte
-    boolean relativePositioning = serviceBlockPacket.readBit();
-    int verticalAnchor = serviceBlockPacket.readBits(7);
+    boolean relativePositioning = captionChannelPacketData.readBit();
+    int verticalAnchor = captionChannelPacketData.readBits(7);
     // third byte
-    int horizontalAnchor = serviceBlockPacket.readBits(8);
+    int horizontalAnchor = captionChannelPacketData.readBits(8);
     // fourth byte
-    int anchorId = serviceBlockPacket.readBits(4);
-    int rowCount = serviceBlockPacket.readBits(4);
+    int anchorId = captionChannelPacketData.readBits(4);
+    int rowCount = captionChannelPacketData.readBits(4);
     // fifth byte
-    serviceBlockPacket.skipBits(2); // null padding
-    int columnCount = serviceBlockPacket.readBits(6);
+    captionChannelPacketData.skipBits(2); // null padding
+    int columnCount = captionChannelPacketData.readBits(6);
     // sixth byte
-    serviceBlockPacket.skipBits(2); // null padding
-    int windowStyle = serviceBlockPacket.readBits(3);
-    int penStyle = serviceBlockPacket.readBits(3);
+    captionChannelPacketData.skipBits(2); // null padding
+    int windowStyle = captionChannelPacketData.readBits(3);
+    int penStyle = captionChannelPacketData.readBits(3);
 
-    cueBuilder.defineWindow(visible, rowLock, columnLock, priority, relativePositioning,
-        verticalAnchor, horizontalAnchor, rowCount, columnCount, anchorId, windowStyle, penStyle);
+    cueInfoBuilder.defineWindow(
+        visible,
+        rowLock,
+        columnLock,
+        priority,
+        relativePositioning,
+        verticalAnchor,
+        horizontalAnchor,
+        rowCount,
+        columnCount,
+        anchorId,
+        windowStyle,
+        penStyle);
   }
 
   private List<Cue> getDisplayCues() {
-    List<Cea708Cue> displayCues = new ArrayList<>();
+    List<Cea708CueInfo> displayCueInfos = new ArrayList<>();
     for (int i = 0; i < NUM_WINDOWS; i++) {
-      if (!cueBuilders[i].isEmpty() && cueBuilders[i].isVisible()) {
-        displayCues.add(cueBuilders[i].build());
+      if (!cueInfoBuilders[i].isEmpty() && cueInfoBuilders[i].isVisible()) {
+        @Nullable Cea708CueInfo cueInfo = cueInfoBuilders[i].build();
+        if (cueInfo != null) {
+          displayCueInfos.add(cueInfo);
+        }
       }
     }
-    Collections.sort(displayCues);
+    Collections.sort(displayCueInfos, Cea708CueInfo.LEAST_IMPORTANT_FIRST);
+    List<Cue> displayCues = new ArrayList<>(displayCueInfos.size());
+    for (int i = 0; i < displayCueInfos.size(); i++) {
+      displayCues.add(displayCueInfos.get(i).cue);
+    }
     return Collections.unmodifiableList(displayCues);
   }
 
   private void resetCueBuilders() {
     for (int i = 0; i < NUM_WINDOWS; i++) {
-      cueBuilders[i].reset();
+      cueInfoBuilders[i].reset();
     }
   }
 
@@ -771,12 +839,11 @@ public final class Cea708Decoder extends CeaDecoder {
       packetData = new byte[2 * packetSize - 1];
       currentIndex = 0;
     }
-
   }
 
-  // TODO: There is a lot of overlap between Cea708Decoder.CueBuilder and Cea608Decoder.CueBuilder
-  // which could be refactored into a separate class.
-  private static final class CueBuilder {
+  // TODO: There is a lot of overlap between Cea708Decoder.CueInfoBuilder and
+  // Cea608Decoder.CueBuilder which could be refactored into a separate class.
+  private static final class CueInfoBuilder {
 
     private static final int RELATIVE_CUE_SIZE = 99;
     private static final int VERTICAL_SIZE = 74;
@@ -818,45 +885,64 @@ public final class Cea708Decoder extends CeaDecoder {
     private static final int PEN_OFFSET_NORMAL = 1;
 
     // The window style properties are specified in the CEA-708 specification.
-    private static final int[] WINDOW_STYLE_JUSTIFICATION = new int[] {
-        JUSTIFICATION_LEFT, JUSTIFICATION_LEFT, JUSTIFICATION_LEFT,
-        JUSTIFICATION_LEFT, JUSTIFICATION_LEFT, JUSTIFICATION_CENTER,
-        JUSTIFICATION_LEFT
-    };
-    private static final int[] WINDOW_STYLE_PRINT_DIRECTION = new int[] {
-        DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT,
-        DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT,
-        DIRECTION_TOP_TO_BOTTOM
-    };
-    private static final int[] WINDOW_STYLE_SCROLL_DIRECTION = new int[] {
-        DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP,
-        DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP,
-        DIRECTION_RIGHT_TO_LEFT
-    };
-    private static final boolean[] WINDOW_STYLE_WORD_WRAP = new boolean[] {
-        false, false, false, true, true, true, false
-    };
-    private static final int[] WINDOW_STYLE_FILL = new int[] {
-        COLOR_SOLID_BLACK, COLOR_TRANSPARENT, COLOR_SOLID_BLACK, COLOR_SOLID_BLACK,
-        COLOR_TRANSPARENT, COLOR_SOLID_BLACK, COLOR_SOLID_BLACK
-    };
+    private static final int[] WINDOW_STYLE_JUSTIFICATION =
+        new int[] {
+          JUSTIFICATION_LEFT, JUSTIFICATION_LEFT, JUSTIFICATION_LEFT,
+          JUSTIFICATION_LEFT, JUSTIFICATION_LEFT, JUSTIFICATION_CENTER,
+          JUSTIFICATION_LEFT
+        };
+    private static final int[] WINDOW_STYLE_PRINT_DIRECTION =
+        new int[] {
+          DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT,
+          DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT, DIRECTION_LEFT_TO_RIGHT,
+          DIRECTION_TOP_TO_BOTTOM
+        };
+    private static final int[] WINDOW_STYLE_SCROLL_DIRECTION =
+        new int[] {
+          DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP,
+          DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP, DIRECTION_BOTTOM_TO_TOP,
+          DIRECTION_RIGHT_TO_LEFT
+        };
+    private static final boolean[] WINDOW_STYLE_WORD_WRAP =
+        new boolean[] {false, false, false, true, true, true, false};
+    private static final int[] WINDOW_STYLE_FILL =
+        new int[] {
+          COLOR_SOLID_BLACK,
+          COLOR_TRANSPARENT,
+          COLOR_SOLID_BLACK,
+          COLOR_SOLID_BLACK,
+          COLOR_TRANSPARENT,
+          COLOR_SOLID_BLACK,
+          COLOR_SOLID_BLACK
+        };
 
     // The pen style properties are specified in the CEA-708 specification.
-    private static final int[] PEN_STYLE_FONT_STYLE = new int[] {
-        PEN_FONT_STYLE_DEFAULT, PEN_FONT_STYLE_MONOSPACED_WITH_SERIFS,
-        PEN_FONT_STYLE_PROPORTIONALLY_SPACED_WITH_SERIFS, PEN_FONT_STYLE_MONOSPACED_WITHOUT_SERIFS,
-        PEN_FONT_STYLE_PROPORTIONALLY_SPACED_WITHOUT_SERIFS,
-        PEN_FONT_STYLE_MONOSPACED_WITHOUT_SERIFS,
-        PEN_FONT_STYLE_PROPORTIONALLY_SPACED_WITHOUT_SERIFS
-    };
-    private static final int[] PEN_STYLE_EDGE_TYPE = new int[] {
-        BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_NONE,
-        BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_UNIFORM,
-        BORDER_AND_EDGE_TYPE_UNIFORM
-    };
-    private static final int[] PEN_STYLE_BACKGROUND = new int[] {
-        COLOR_SOLID_BLACK, COLOR_SOLID_BLACK, COLOR_SOLID_BLACK, COLOR_SOLID_BLACK,
-        COLOR_SOLID_BLACK, COLOR_TRANSPARENT, COLOR_TRANSPARENT};
+    private static final int[] PEN_STYLE_FONT_STYLE =
+        new int[] {
+          PEN_FONT_STYLE_DEFAULT,
+          PEN_FONT_STYLE_MONOSPACED_WITH_SERIFS,
+          PEN_FONT_STYLE_PROPORTIONALLY_SPACED_WITH_SERIFS,
+          PEN_FONT_STYLE_MONOSPACED_WITHOUT_SERIFS,
+          PEN_FONT_STYLE_PROPORTIONALLY_SPACED_WITHOUT_SERIFS,
+          PEN_FONT_STYLE_MONOSPACED_WITHOUT_SERIFS,
+          PEN_FONT_STYLE_PROPORTIONALLY_SPACED_WITHOUT_SERIFS
+        };
+    private static final int[] PEN_STYLE_EDGE_TYPE =
+        new int[] {
+          BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_NONE,
+          BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_NONE, BORDER_AND_EDGE_TYPE_UNIFORM,
+          BORDER_AND_EDGE_TYPE_UNIFORM
+        };
+    private static final int[] PEN_STYLE_BACKGROUND =
+        new int[] {
+          COLOR_SOLID_BLACK,
+          COLOR_SOLID_BLACK,
+          COLOR_SOLID_BLACK,
+          COLOR_SOLID_BLACK,
+          COLOR_SOLID_BLACK,
+          COLOR_TRANSPARENT,
+          COLOR_TRANSPARENT
+        };
 
     private final List<SpannableString> rolledUpCaptions;
     private final SpannableStringBuilder captionStringBuilder;
@@ -885,7 +971,7 @@ public final class Cea708Decoder extends CeaDecoder {
     private int backgroundColor;
     private int row;
 
-    public CueBuilder() {
+    public CueInfoBuilder() {
       rolledUpCaptions = new ArrayList<>();
       captionStringBuilder = new SpannableStringBuilder();
       reset();
@@ -938,9 +1024,19 @@ public final class Cea708Decoder extends CeaDecoder {
       return visible;
     }
 
-    public void defineWindow(boolean visible, boolean rowLock, boolean columnLock, int priority,
-        boolean relativePositioning, int verticalAnchor, int horizontalAnchor, int rowCount,
-        int columnCount, int anchorId, int windowStyleId, int penStyleId) {
+    public void defineWindow(
+        boolean visible,
+        boolean rowLock,
+        boolean columnLock,
+        int priority,
+        boolean relativePositioning,
+        int verticalAnchor,
+        int horizontalAnchor,
+        int rowCount,
+        int columnCount,
+        int anchorId,
+        int windowStyleId,
+        int penStyleId) {
       this.defined = true;
       this.visible = visible;
       this.rowLock = rowLock;
@@ -968,8 +1064,11 @@ public final class Cea708Decoder extends CeaDecoder {
         // windowStyleId is 1-based.
         int windowStyleIdIndex = windowStyleId - 1;
         // Note that Border type and border color are the same for all window styles.
-        setWindowAttributes(WINDOW_STYLE_FILL[windowStyleIdIndex], COLOR_TRANSPARENT,
-            WINDOW_STYLE_WORD_WRAP[windowStyleIdIndex], BORDER_AND_EDGE_TYPE_NONE,
+        setWindowAttributes(
+            WINDOW_STYLE_FILL[windowStyleIdIndex],
+            COLOR_TRANSPARENT,
+            WINDOW_STYLE_WORD_WRAP[windowStyleIdIndex],
+            BORDER_AND_EDGE_TYPE_NONE,
             WINDOW_STYLE_PRINT_DIRECTION[windowStyleIdIndex],
             WINDOW_STYLE_SCROLL_DIRECTION[windowStyleIdIndex],
             WINDOW_STYLE_JUSTIFICATION[windowStyleIdIndex]);
@@ -981,34 +1080,53 @@ public final class Cea708Decoder extends CeaDecoder {
         int penStyleIdIndex = penStyleId - 1;
         // Note that pen size, offset, italics, underline, foreground color, and foreground
         // opacity are the same for all pen styles.
-        setPenAttributes(0, PEN_OFFSET_NORMAL, PEN_SIZE_STANDARD, false, false,
-            PEN_STYLE_EDGE_TYPE[penStyleIdIndex], PEN_STYLE_FONT_STYLE[penStyleIdIndex]);
+        setPenAttributes(
+            0,
+            PEN_OFFSET_NORMAL,
+            PEN_SIZE_STANDARD,
+            false,
+            false,
+            PEN_STYLE_EDGE_TYPE[penStyleIdIndex],
+            PEN_STYLE_FONT_STYLE[penStyleIdIndex]);
         setPenColor(COLOR_SOLID_WHITE, PEN_STYLE_BACKGROUND[penStyleIdIndex], COLOR_SOLID_BLACK);
       }
     }
 
-
-    public void setWindowAttributes(int fillColor, int borderColor, boolean wordWrapToggle,
-        int borderType, int printDirection, int scrollDirection, int justification) {
+    public void setWindowAttributes(
+        int fillColor,
+        int borderColor,
+        boolean wordWrapToggle,
+        int borderType,
+        int printDirection,
+        int scrollDirection,
+        int justification) {
       this.windowFillColor = fillColor;
       // TODO: Add support for border color and types.
       // TODO: Add support for word wrap.
       // TODO: Add support for other scroll directions.
       // TODO: Add support for other print directions.
       this.justification = justification;
-
     }
 
-    public void setPenAttributes(int textTag, int offset, int penSize, boolean italicsToggle,
-        boolean underlineToggle, int edgeType, int fontStyle) {
+    public void setPenAttributes(
+        int textTag,
+        int offset,
+        int penSize,
+        boolean italicsToggle,
+        boolean underlineToggle,
+        int edgeType,
+        int fontStyle) {
       // TODO: Add support for text tags.
       // TODO: Add support for other offsets.
       // TODO: Add support for other pen sizes.
 
       if (italicsStartPosition != C.POSITION_UNSET) {
         if (!italicsToggle) {
-          captionStringBuilder.setSpan(new StyleSpan(Typeface.ITALIC), italicsStartPosition,
-              captionStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          captionStringBuilder.setSpan(
+              new StyleSpan(Typeface.ITALIC),
+              italicsStartPosition,
+              captionStringBuilder.length(),
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
           italicsStartPosition = C.POSITION_UNSET;
         }
       } else if (italicsToggle) {
@@ -1017,8 +1135,11 @@ public final class Cea708Decoder extends CeaDecoder {
 
       if (underlineStartPosition != C.POSITION_UNSET) {
         if (!underlineToggle) {
-          captionStringBuilder.setSpan(new UnderlineSpan(), underlineStartPosition,
-              captionStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          captionStringBuilder.setSpan(
+              new UnderlineSpan(),
+              underlineStartPosition,
+              captionStringBuilder.length(),
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
           underlineStartPosition = C.POSITION_UNSET;
         }
       } else if (underlineToggle) {
@@ -1032,8 +1153,10 @@ public final class Cea708Decoder extends CeaDecoder {
     public void setPenColor(int foregroundColor, int backgroundColor, int edgeColor) {
       if (foregroundColorStartPosition != C.POSITION_UNSET) {
         if (this.foregroundColor != foregroundColor) {
-          captionStringBuilder.setSpan(new ForegroundColorSpan(this.foregroundColor),
-              foregroundColorStartPosition, captionStringBuilder.length(),
+          captionStringBuilder.setSpan(
+              new ForegroundColorSpan(this.foregroundColor),
+              foregroundColorStartPosition,
+              captionStringBuilder.length(),
               Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
       }
@@ -1044,8 +1167,10 @@ public final class Cea708Decoder extends CeaDecoder {
 
       if (backgroundColorStartPosition != C.POSITION_UNSET) {
         if (this.backgroundColor != backgroundColor) {
-          captionStringBuilder.setSpan(new BackgroundColorSpan(this.backgroundColor),
-              backgroundColorStartPosition, captionStringBuilder.length(),
+          captionStringBuilder.setSpan(
+              new BackgroundColorSpan(this.backgroundColor),
+              backgroundColorStartPosition,
+              captionStringBuilder.length(),
               Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
       }
@@ -1111,30 +1236,43 @@ public final class Cea708Decoder extends CeaDecoder {
 
       if (length > 0) {
         if (italicsStartPosition != C.POSITION_UNSET) {
-          spannableStringBuilder.setSpan(new StyleSpan(Typeface.ITALIC), italicsStartPosition,
-              length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          spannableStringBuilder.setSpan(
+              new StyleSpan(Typeface.ITALIC),
+              italicsStartPosition,
+              length,
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         if (underlineStartPosition != C.POSITION_UNSET) {
-          spannableStringBuilder.setSpan(new UnderlineSpan(), underlineStartPosition,
-              length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          spannableStringBuilder.setSpan(
+              new UnderlineSpan(),
+              underlineStartPosition,
+              length,
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         if (foregroundColorStartPosition != C.POSITION_UNSET) {
-          spannableStringBuilder.setSpan(new ForegroundColorSpan(foregroundColor),
-              foregroundColorStartPosition, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          spannableStringBuilder.setSpan(
+              new ForegroundColorSpan(foregroundColor),
+              foregroundColorStartPosition,
+              length,
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         if (backgroundColorStartPosition != C.POSITION_UNSET) {
-          spannableStringBuilder.setSpan(new BackgroundColorSpan(backgroundColor),
-              backgroundColorStartPosition, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          spannableStringBuilder.setSpan(
+              new BackgroundColorSpan(backgroundColor),
+              backgroundColorStartPosition,
+              length,
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
       }
 
       return new SpannableString(spannableStringBuilder);
     }
 
-    public Cea708Cue build() {
+    @Nullable
+    public Cea708CueInfo build() {
       if (isEmpty()) {
         // The cue is empty.
         return null;
@@ -1190,18 +1328,18 @@ public final class Cea708Decoder extends CeaDecoder {
       //   |           |
       //   6-----7-----8
       @AnchorType int verticalAnchorType;
-      if (anchorId % 3 == 0) {
+      if (anchorId / 3 == 0) {
         verticalAnchorType = Cue.ANCHOR_TYPE_START;
-      } else if (anchorId % 3 == 1) {
+      } else if (anchorId / 3 == 1) {
         verticalAnchorType = Cue.ANCHOR_TYPE_MIDDLE;
       } else {
         verticalAnchorType = Cue.ANCHOR_TYPE_END;
       }
       // TODO: Add support for right-to-left languages (i.e. where start is on the right).
       @AnchorType int horizontalAnchorType;
-      if (anchorId / 3 == 0) {
+      if (anchorId % 3 == 0) {
         horizontalAnchorType = Cue.ANCHOR_TYPE_START;
-      } else if (anchorId / 3 == 1) {
+      } else if (anchorId % 3 == 1) {
         horizontalAnchorType = Cue.ANCHOR_TYPE_MIDDLE;
       } else {
         horizontalAnchorType = Cue.ANCHOR_TYPE_END;
@@ -1209,8 +1347,17 @@ public final class Cea708Decoder extends CeaDecoder {
 
       boolean windowColorSet = (windowFillColor != COLOR_SOLID_BLACK);
 
-      return new Cea708Cue(cueString, alignment, line, Cue.LINE_TYPE_FRACTION, verticalAnchorType,
-          position, horizontalAnchorType, Cue.DIMEN_UNSET, windowColorSet, windowFillColor,
+      return new Cea708CueInfo(
+          cueString,
+          alignment,
+          line,
+          Cue.LINE_TYPE_FRACTION,
+          verticalAnchorType,
+          position,
+          horizontalAnchorType,
+          Cue.DIMEN_UNSET,
+          windowColorSet,
+          windowFillColor,
           priority);
     }
 
@@ -1244,12 +1391,70 @@ public final class Cea708Decoder extends CeaDecoder {
       // TODO: Add support for the Alternative Minimum Color List or the full 64 RGB combinations.
 
       // Return values based on the Minimum Color List
-      return Color.argb(alpha,
-          (red > 1 ? 255 : 0),
-          (green > 1 ? 255 : 0),
-          (blue > 1 ? 255 : 0));
+      return Color.argb(alpha, (red > 1 ? 255 : 0), (green > 1 ? 255 : 0), (blue > 1 ? 255 : 0));
     }
-
   }
 
+  /** A {@link Cue} for CEA-708. */
+  private static final class Cea708CueInfo {
+
+    /**
+     * Sorts cue infos in order of ascending {@link Cea708CueInfo#priority} (which is descending by
+     * numeric value).
+     */
+    private static final Comparator<Cea708CueInfo> LEAST_IMPORTANT_FIRST =
+        (thisInfo, thatInfo) -> Integer.compare(thatInfo.priority, thisInfo.priority);
+
+    public final Cue cue;
+
+    /**
+     * The priority of the cue box. Low values are higher priority.
+     *
+     * <p>If cue boxes overlap, higher priority cue boxes are drawn on top.
+     *
+     * <p>See 8.4.2 of the CEA-708B spec.
+     */
+    public final int priority;
+
+    /**
+     * @param text See {@link Cue#text}.
+     * @param textAlignment See {@link Cue#textAlignment}.
+     * @param line See {@link Cue#line}.
+     * @param lineType See {@link Cue#lineType}.
+     * @param lineAnchor See {@link Cue#lineAnchor}.
+     * @param position See {@link Cue#position}.
+     * @param positionAnchor See {@link Cue#positionAnchor}.
+     * @param size See {@link Cue#size}.
+     * @param windowColorSet See {@link Cue#windowColorSet}.
+     * @param windowColor See {@link Cue#windowColor}.
+     * @param priority See {@link #priority}.
+     */
+    public Cea708CueInfo(
+        CharSequence text,
+        Alignment textAlignment,
+        float line,
+        @Cue.LineType int lineType,
+        @AnchorType int lineAnchor,
+        float position,
+        @AnchorType int positionAnchor,
+        float size,
+        boolean windowColorSet,
+        int windowColor,
+        int priority) {
+      Cue.Builder cueBuilder =
+          new Cue.Builder()
+              .setText(text)
+              .setTextAlignment(textAlignment)
+              .setLine(line, lineType)
+              .setLineAnchor(lineAnchor)
+              .setPosition(position)
+              .setPositionAnchor(positionAnchor)
+              .setSize(size);
+      if (windowColorSet) {
+        cueBuilder.setWindowColor(windowColor);
+      }
+      this.cue = cueBuilder.build();
+      this.priority = priority;
+    }
+  }
 }

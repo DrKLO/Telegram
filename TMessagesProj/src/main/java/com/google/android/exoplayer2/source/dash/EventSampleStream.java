@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.source.dash;
 
+import static java.lang.Math.max;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.FormatHolder;
@@ -27,8 +29,8 @@ import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 
 /**
- * A {@link SampleStream} consisting of serialized {@link EventMessage}s read from an
- * {@link EventStream}.
+ * A {@link SampleStream} consisting of serialized {@link EventMessage}s read from an {@link
+ * EventStream}.
  */
 /* package */ final class EventSampleStream implements SampleStream {
 
@@ -96,41 +98,41 @@ import java.io.IOException;
   }
 
   @Override
-  public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer,
-      boolean formatRequired) {
-    if (formatRequired || !isFormatSentDownstream) {
+  public int readData(
+      FormatHolder formatHolder, DecoderInputBuffer buffer, @ReadFlags int readFlags) {
+    boolean noMoreEventsInStream = currentIndex == eventTimesUs.length;
+    if (noMoreEventsInStream && !eventStreamAppendable) {
+      buffer.setFlags(C.BUFFER_FLAG_END_OF_STREAM);
+      return C.RESULT_BUFFER_READ;
+    }
+    if ((readFlags & FLAG_REQUIRE_FORMAT) != 0 || !isFormatSentDownstream) {
       formatHolder.format = upstreamFormat;
       isFormatSentDownstream = true;
       return C.RESULT_FORMAT_READ;
     }
-    if (currentIndex == eventTimesUs.length) {
-      if (!eventStreamAppendable) {
-        buffer.setFlags(C.BUFFER_FLAG_END_OF_STREAM);
-        return C.RESULT_BUFFER_READ;
-      } else {
-        return C.RESULT_NOTHING_READ;
-      }
-    }
-    int sampleIndex = currentIndex++;
-    byte[] serializedEvent = eventMessageEncoder.encode(eventStream.events[sampleIndex]);
-    if (serializedEvent != null) {
-      buffer.ensureSpaceForWrite(serializedEvent.length);
-      buffer.data.put(serializedEvent);
-      buffer.timeUs = eventTimesUs[sampleIndex];
-      buffer.setFlags(C.BUFFER_FLAG_KEY_FRAME);
-      return C.RESULT_BUFFER_READ;
-    } else {
+    if (noMoreEventsInStream) {
+      // More events may be appended later.
       return C.RESULT_NOTHING_READ;
     }
+    int sampleIndex = currentIndex;
+    if ((readFlags & SampleStream.FLAG_PEEK) == 0) {
+      currentIndex++;
+    }
+    if ((readFlags & SampleStream.FLAG_OMIT_SAMPLE_DATA) == 0) {
+      byte[] serializedEvent = eventMessageEncoder.encode(eventStream.events[sampleIndex]);
+      buffer.ensureSpaceForWrite(serializedEvent.length);
+      buffer.data.put(serializedEvent);
+    }
+    buffer.timeUs = eventTimesUs[sampleIndex];
+    buffer.setFlags(C.BUFFER_FLAG_KEY_FRAME);
+    return C.RESULT_BUFFER_READ;
   }
 
   @Override
   public int skipData(long positionUs) {
-    int newIndex =
-        Math.max(currentIndex, Util.binarySearchCeil(eventTimesUs, positionUs, true, false));
+    int newIndex = max(currentIndex, Util.binarySearchCeil(eventTimesUs, positionUs, true, false));
     int skipped = newIndex - currentIndex;
     currentIndex = newIndex;
     return skipped;
   }
-
 }

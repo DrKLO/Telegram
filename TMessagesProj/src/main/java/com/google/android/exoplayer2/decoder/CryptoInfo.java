@@ -15,12 +15,16 @@
  */
 package com.google.android.exoplayer2.decoder;
 
-import android.annotation.TargetApi;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 
 /**
- * Compatibility wrapper for {@link android.media.MediaCodec.CryptoInfo}.
+ * Metadata describing the structure of an encrypted input sample.
+ *
+ * <p>This class is a compatibility wrapper for {@link android.media.MediaCodec.CryptoInfo}.
  */
 public final class CryptoInfo {
 
@@ -30,33 +34,33 @@ public final class CryptoInfo {
    *
    * @see android.media.MediaCodec.CryptoInfo#iv
    */
-  public byte[] iv;
+  @Nullable public byte[] iv;
   /**
    * The 16 byte key id.
    *
    * @see android.media.MediaCodec.CryptoInfo#key
    */
-  public byte[] key;
+  @Nullable public byte[] key;
   /**
    * The type of encryption that has been applied. Must be one of the {@link C.CryptoMode} values.
    *
    * @see android.media.MediaCodec.CryptoInfo#mode
    */
-  @C.CryptoMode public int mode;
+  public @C.CryptoMode int mode;
   /**
    * The number of leading unencrypted bytes in each sub-sample. If null, all bytes are treated as
    * encrypted and {@link #numBytesOfEncryptedData} must be specified.
    *
    * @see android.media.MediaCodec.CryptoInfo#numBytesOfClearData
    */
-  public int[] numBytesOfClearData;
+  @Nullable public int[] numBytesOfClearData;
   /**
    * The number of trailing encrypted bytes in each sub-sample. If null, all bytes are treated as
    * clear and {@link #numBytesOfClearData} must be specified.
    *
    * @see android.media.MediaCodec.CryptoInfo#numBytesOfEncryptedData
    */
-  public int[] numBytesOfEncryptedData;
+  @Nullable public int[] numBytesOfEncryptedData;
   /**
    * The number of subSamples that make up the buffer's contents.
    *
@@ -73,7 +77,7 @@ public final class CryptoInfo {
   public int clearBlocks;
 
   private final android.media.MediaCodec.CryptoInfo frameworkCryptoInfo;
-  private final PatternHolderV24 patternHolder;
+  @Nullable private final PatternHolderV24 patternHolder;
 
   public CryptoInfo() {
     frameworkCryptoInfo = new android.media.MediaCodec.CryptoInfo();
@@ -83,8 +87,15 @@ public final class CryptoInfo {
   /**
    * @see android.media.MediaCodec.CryptoInfo#set(int, int[], int[], byte[], byte[], int)
    */
-  public void set(int numSubSamples, int[] numBytesOfClearData, int[] numBytesOfEncryptedData,
-      byte[] key, byte[] iv, @C.CryptoMode int mode, int encryptedBlocks, int clearBlocks) {
+  public void set(
+      int numSubSamples,
+      int[] numBytesOfClearData,
+      int[] numBytesOfEncryptedData,
+      byte[] key,
+      byte[] iv,
+      @C.CryptoMode int mode,
+      int encryptedBlocks,
+      int clearBlocks) {
     this.numSubSamples = numSubSamples;
     this.numBytesOfClearData = numBytesOfClearData;
     this.numBytesOfEncryptedData = numBytesOfEncryptedData;
@@ -102,7 +113,7 @@ public final class CryptoInfo {
     frameworkCryptoInfo.iv = iv;
     frameworkCryptoInfo.mode = mode;
     if (Util.SDK_INT >= 24) {
-      patternHolder.set(encryptedBlocks, clearBlocks);
+      Assertions.checkNotNull(patternHolder).set(encryptedBlocks, clearBlocks);
     }
   }
 
@@ -119,13 +130,30 @@ public final class CryptoInfo {
     return frameworkCryptoInfo;
   }
 
-  /** @deprecated Use {@link #getFrameworkCryptoInfo()}. */
-  @Deprecated
-  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfoV16() {
-    return getFrameworkCryptoInfo();
+  /**
+   * Increases the number of clear data for the first sub sample by {@code count}.
+   *
+   * <p>If {@code count} is 0, this method is a no-op. Otherwise, it adds {@code count} to {@link
+   * #numBytesOfClearData}[0].
+   *
+   * <p>If {@link #numBytesOfClearData} is null (which is permitted), this method will instantiate
+   * it to a new {@code int[1]}.
+   *
+   * @param count The number of bytes to be added to the first subSample of {@link
+   *     #numBytesOfClearData}.
+   */
+  public void increaseClearDataFirstSubSampleBy(int count) {
+    if (count == 0) {
+      return;
+    }
+    if (numBytesOfClearData == null) {
+      numBytesOfClearData = new int[1];
+      frameworkCryptoInfo.numBytesOfClearData = numBytesOfClearData;
+    }
+    numBytesOfClearData[0] += count;
   }
 
-  @TargetApi(24)
+  @RequiresApi(24)
   private static final class PatternHolderV24 {
 
     private final android.media.MediaCodec.CryptoInfo frameworkCryptoInfo;
@@ -140,7 +168,5 @@ public final class CryptoInfo {
       pattern.set(encryptedBlocks, clearBlocks);
       frameworkCryptoInfo.setPattern(pattern);
     }
-
   }
-
 }

@@ -21,6 +21,9 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private String finishedFilePath;
     private int loadingPriority;
 
+    private int debugCanceledCount;
+    private boolean debugReportSend;
+
     public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev, int loadingPriority) {
         document = d;
         location = l;
@@ -42,6 +45,14 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     public int read(int offset, int readLength) {
         synchronized (sync) {
             if (canceled) {
+                debugCanceledCount++;
+                if (!debugReportSend && debugCanceledCount > 100) {
+                    debugReportSend = true;
+                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                        throw new RuntimeException("infinity stream reading!!!");
+                    }
+                    FileLog.e(new RuntimeException("infinity stream reading!!!"));
+                }
                 return 0;
             }
         }

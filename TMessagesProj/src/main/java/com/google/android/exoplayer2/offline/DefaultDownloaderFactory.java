@@ -15,10 +15,15 @@
  */
 package com.google.android.exoplayer2.offline;
 
-import android.net.Uri;
+import android.util.SparseArray;
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Util;
 import java.lang.reflect.Constructor;
-import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * Default {@link DownloaderFactory}, supporting creation of progressive, DASH, HLS and
@@ -27,93 +32,120 @@ import java.util.List;
  */
 public class DefaultDownloaderFactory implements DownloaderFactory {
 
-  @Nullable private static final Constructor<? extends Downloader> DASH_DOWNLOADER_CONSTRUCTOR;
-  @Nullable private static final Constructor<? extends Downloader> HLS_DOWNLOADER_CONSTRUCTOR;
-  @Nullable private static final Constructor<? extends Downloader> SS_DOWNLOADER_CONSTRUCTOR;
+  private static final SparseArray<Constructor<? extends Downloader>> CONSTRUCTORS =
+      createDownloaderConstructors();
 
-  static {
-    Constructor<? extends Downloader> dashDownloaderConstructor = null;
-    try {
-      // LINT.IfChange
-      dashDownloaderConstructor =
-          getDownloaderConstructor(
-              Class.forName("com.google.android.exoplayer2.source.dash.offline.DashDownloader"));
-      // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
-    } catch (ClassNotFoundException e) {
-      // Expected if the app was built without the DASH module.
-    }
-    DASH_DOWNLOADER_CONSTRUCTOR = dashDownloaderConstructor;
-    Constructor<? extends Downloader> hlsDownloaderConstructor = null;
-    try {
-      // LINT.IfChange
-      hlsDownloaderConstructor =
-          getDownloaderConstructor(
-              Class.forName("com.google.android.exoplayer2.source.hls.offline.HlsDownloader"));
-      // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
-    } catch (ClassNotFoundException e) {
-      // Expected if the app was built without the HLS module.
-    }
-    HLS_DOWNLOADER_CONSTRUCTOR = hlsDownloaderConstructor;
-    Constructor<? extends Downloader> ssDownloaderConstructor = null;
-    try {
-      // LINT.IfChange
-      ssDownloaderConstructor =
-          getDownloaderConstructor(
-              Class.forName(
-                  "com.google.android.exoplayer2.source.smoothstreaming.offline.SsDownloader"));
-      // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
-    } catch (ClassNotFoundException e) {
-      // Expected if the app was built without the SmoothStreaming module.
-    }
-    SS_DOWNLOADER_CONSTRUCTOR = ssDownloaderConstructor;
+  private final CacheDataSource.Factory cacheDataSourceFactory;
+  private final Executor executor;
+
+  /**
+   * Creates an instance.
+   *
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which
+   *     downloads will be written.
+   * @deprecated Use {@link #DefaultDownloaderFactory(CacheDataSource.Factory, Executor)}.
+   */
+  @Deprecated
+  public DefaultDownloaderFactory(CacheDataSource.Factory cacheDataSourceFactory) {
+    this(cacheDataSourceFactory, /* executor= */ Runnable::run);
   }
 
-  private final DownloaderConstructorHelper downloaderConstructorHelper;
-
-  /** @param downloaderConstructorHelper A helper for instantiating downloaders. */
-  public DefaultDownloaderFactory(DownloaderConstructorHelper downloaderConstructorHelper) {
-    this.downloaderConstructorHelper = downloaderConstructorHelper;
+  /**
+   * Creates an instance.
+   *
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which
+   *     downloads will be written.
+   * @param executor An {@link Executor} used to download data. Passing {@code Runnable::run} will
+   *     cause each download task to download data on its own thread. Passing an {@link Executor}
+   *     that uses multiple threads will speed up download tasks that can be split into smaller
+   *     parts for parallel execution.
+   */
+  public DefaultDownloaderFactory(
+      CacheDataSource.Factory cacheDataSourceFactory, Executor executor) {
+    this.cacheDataSourceFactory = Assertions.checkNotNull(cacheDataSourceFactory);
+    this.executor = Assertions.checkNotNull(executor);
   }
 
   @Override
   public Downloader createDownloader(DownloadRequest request) {
-    switch (request.type) {
-      case DownloadRequest.TYPE_PROGRESSIVE:
+    @C.ContentType
+    int contentType = Util.inferContentTypeForUriAndMimeType(request.uri, request.mimeType);
+    switch (contentType) {
+      case C.CONTENT_TYPE_DASH:
+      case C.CONTENT_TYPE_HLS:
+      case C.CONTENT_TYPE_SS:
+        return createDownloader(request, contentType);
+      case C.CONTENT_TYPE_OTHER:
         return new ProgressiveDownloader(
-            request.uri, request.customCacheKey, downloaderConstructorHelper);
-      case DownloadRequest.TYPE_DASH:
-        return createDownloader(request, DASH_DOWNLOADER_CONSTRUCTOR);
-      case DownloadRequest.TYPE_HLS:
-        return createDownloader(request, HLS_DOWNLOADER_CONSTRUCTOR);
-      case DownloadRequest.TYPE_SS:
-        return createDownloader(request, SS_DOWNLOADER_CONSTRUCTOR);
+            new MediaItem.Builder()
+                .setUri(request.uri)
+                .setCustomCacheKey(request.customCacheKey)
+                .build(),
+            cacheDataSourceFactory,
+            executor);
       default:
-        throw new IllegalArgumentException("Unsupported type: " + request.type);
+        throw new IllegalArgumentException("Unsupported type: " + contentType);
     }
   }
 
-  private Downloader createDownloader(
-      DownloadRequest request, @Nullable Constructor<? extends Downloader> constructor) {
+  private Downloader createDownloader(DownloadRequest request, @C.ContentType int contentType) {
+    @Nullable Constructor<? extends Downloader> constructor = CONSTRUCTORS.get(contentType);
     if (constructor == null) {
-      throw new IllegalStateException("Module missing for: " + request.type);
+      throw new IllegalStateException("Module missing for content type " + contentType);
+    }
+    MediaItem mediaItem =
+        new MediaItem.Builder()
+            .setUri(request.uri)
+            .setStreamKeys(request.streamKeys)
+            .setCustomCacheKey(request.customCacheKey)
+            .build();
+    try {
+      return constructor.newInstance(mediaItem, cacheDataSourceFactory, executor);
+    } catch (Exception e) {
+      throw new IllegalStateException(
+          "Failed to instantiate downloader for content type " + contentType);
+    }
+  }
+
+  private static SparseArray<Constructor<? extends Downloader>> createDownloaderConstructors() {
+    SparseArray<Constructor<? extends Downloader>> array = new SparseArray<>();
+    try {
+      array.put(
+          C.CONTENT_TYPE_DASH,
+          getDownloaderConstructor(
+              Class.forName("com.google.android.exoplayer2.source.dash.offline.DashDownloader")));
+    } catch (ClassNotFoundException e) {
+      // Expected if the app was built without the DASH module.
+    }
+
+    try {
+      array.put(
+          C.CONTENT_TYPE_HLS,
+          getDownloaderConstructor(
+              Class.forName("com.google.android.exoplayer2.source.hls.offline.HlsDownloader")));
+    } catch (ClassNotFoundException e) {
+      // Expected if the app was built without the HLS module.
     }
     try {
-      return constructor.newInstance(request.uri, request.streamKeys, downloaderConstructorHelper);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to instantiate downloader for: " + request.type, e);
+      array.put(
+          C.CONTENT_TYPE_SS,
+          getDownloaderConstructor(
+              Class.forName(
+                  "com.google.android.exoplayer2.source.smoothstreaming.offline.SsDownloader")));
+    } catch (ClassNotFoundException e) {
+      // Expected if the app was built without the SmoothStreaming module.
     }
+    return array;
   }
 
-  // LINT.IfChange
   private static Constructor<? extends Downloader> getDownloaderConstructor(Class<?> clazz) {
     try {
       return clazz
           .asSubclass(Downloader.class)
-          .getConstructor(Uri.class, List.class, DownloaderConstructorHelper.class);
+          .getConstructor(MediaItem.class, CacheDataSource.Factory.class, Executor.class);
     } catch (NoSuchMethodException e) {
       // The downloader is present, but the expected constructor is missing.
-      throw new RuntimeException("Downloader constructor missing", e);
+      throw new IllegalStateException("Downloader constructor missing", e);
     }
   }
-  // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
 }

@@ -15,9 +15,17 @@
  */
 package com.google.android.exoplayer2.text.ssa;
 
+import static com.google.android.exoplayer2.text.Cue.LINE_TYPE_FRACTION;
 import static com.google.android.exoplayer2.util.Util.castNonNull;
 
+import android.graphics.Typeface;
 import android.text.Layout;
+import android.text.SpannableString;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.text.Cue;
@@ -27,6 +35,7 @@ import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
+import com.google.common.base.Ascii;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,15 +108,15 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
   }
 
   @Override
-  protected Subtitle decode(byte[] bytes, int length, boolean reset) {
+  protected Subtitle decode(byte[] data, int length, boolean reset) {
     List<List<Cue>> cues = new ArrayList<>();
     List<Long> cueTimesUs = new ArrayList<>();
 
-    ParsableByteArray data = new ParsableByteArray(bytes, length);
+    ParsableByteArray parsableData = new ParsableByteArray(data, length);
     if (!haveInitializationData) {
-      parseHeader(data);
+      parseHeader(parsableData);
     }
-    parseEventBody(data, cues, cueTimesUs);
+    parseEventBody(parsableData, cues, cueTimesUs);
     return new SsaSubtitle(cues, cueTimesUs);
   }
 
@@ -139,7 +148,7 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
    * starts with {@code [} (i.e. the title of the next section).
    *
    * @param data A {@link ParsableByteArray} with {@link ParsableByteArray#getPosition() position}
-   *     set to the beginning of of the first line after {@code [Script Info]}.
+   *     set to the beginning of the first line after {@code [Script Info]}.
    */
   private void parseScriptInfo(ParsableByteArray data) {
     @Nullable String currentLine;
@@ -149,7 +158,7 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
       if (infoNameAndValue.length != 2) {
         continue;
       }
-      switch (Util.toLowerInvariant(infoNameAndValue[0].trim())) {
+      switch (Ascii.toLowerCase(infoNameAndValue[0].trim())) {
         case "playresx":
           try {
             screenWidth = Float.parseFloat(infoNameAndValue[1].trim());
@@ -175,7 +184,7 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
    * starts with {@code [} (i.e. the title of the next section).
    *
    * @param data A {@link ParsableByteArray} with {@link ParsableByteArray#getPosition()} pointing
-   *     at the beginning of of the first line after {@code [V4+ Styles]}.
+   *     at the beginning of the first line after {@code [V4+ Styles]}.
    */
   private static Map<String, SsaStyle> parseStyles(ParsableByteArray data) {
     Map<String, SsaStyle> styles = new LinkedHashMap<>();
@@ -262,8 +271,9 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
     SsaStyle.Overrides styleOverrides = SsaStyle.Overrides.parseFromDialogue(rawText);
     String text =
         SsaStyle.Overrides.stripStyleOverrides(rawText)
-            .replaceAll("\\\\N", "\n")
-            .replaceAll("\\\\n", "\n");
+            .replace("\\N", "\n")
+            .replace("\\n", "\n")
+            .replace("\\h", "\u00A0");
     Cue cue = createCue(text, style, styleOverrides, screenWidth, screenHeight);
 
     int startTimeIndex = addCuePlacerholderByTime(startTimeUs, cueTimesUs, cues);
@@ -299,6 +309,63 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
       SsaStyle.Overrides styleOverrides,
       float screenWidth,
       float screenHeight) {
+    SpannableString spannableText = new SpannableString(text);
+    Cue.Builder cue = new Cue.Builder().setText(spannableText);
+
+    if (style != null) {
+      if (style.primaryColor != null) {
+        spannableText.setSpan(
+            new ForegroundColorSpan(style.primaryColor),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+      if (style.borderStyle == SsaStyle.SSA_BORDER_STYLE_BOX && style.outlineColor != null) {
+        spannableText.setSpan(
+            new BackgroundColorSpan(style.outlineColor),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+      if (style.fontSize != Cue.DIMEN_UNSET && screenHeight != Cue.DIMEN_UNSET) {
+        cue.setTextSize(
+            style.fontSize / screenHeight, Cue.TEXT_SIZE_TYPE_FRACTIONAL_IGNORE_PADDING);
+      }
+      if (style.bold && style.italic) {
+        spannableText.setSpan(
+            new StyleSpan(Typeface.BOLD_ITALIC),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      } else if (style.bold) {
+        spannableText.setSpan(
+            new StyleSpan(Typeface.BOLD),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      } else if (style.italic) {
+        spannableText.setSpan(
+            new StyleSpan(Typeface.ITALIC),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+      if (style.underline) {
+        spannableText.setSpan(
+            new UnderlineSpan(),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+      if (style.strikeout) {
+        spannableText.setSpan(
+            new StrikethroughSpan(),
+            /* start= */ 0,
+            /* end= */ spannableText.length(),
+            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+    }
+
     @SsaStyle.SsaAlignment int alignment;
     if (styleOverrides.alignment != SsaStyle.SSA_ALIGNMENT_UNKNOWN) {
       alignment = styleOverrides.alignment;
@@ -307,31 +374,22 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
     } else {
       alignment = SsaStyle.SSA_ALIGNMENT_UNKNOWN;
     }
-    @Cue.AnchorType int positionAnchor = toPositionAnchor(alignment);
-    @Cue.AnchorType int lineAnchor = toLineAnchor(alignment);
+    cue.setTextAlignment(toTextAlignment(alignment))
+        .setPositionAnchor(toPositionAnchor(alignment))
+        .setLineAnchor(toLineAnchor(alignment));
 
-    float position;
-    float line;
     if (styleOverrides.position != null
         && screenHeight != Cue.DIMEN_UNSET
         && screenWidth != Cue.DIMEN_UNSET) {
-      position = styleOverrides.position.x / screenWidth;
-      line = styleOverrides.position.y / screenHeight;
+      cue.setPosition(styleOverrides.position.x / screenWidth);
+      cue.setLine(styleOverrides.position.y / screenHeight, LINE_TYPE_FRACTION);
     } else {
       // TODO: Read the MarginL, MarginR and MarginV values from the Style & Dialogue lines.
-      position = computeDefaultLineOrPosition(positionAnchor);
-      line = computeDefaultLineOrPosition(lineAnchor);
+      cue.setPosition(computeDefaultLineOrPosition(cue.getPositionAnchor()));
+      cue.setLine(computeDefaultLineOrPosition(cue.getLineAnchor()), LINE_TYPE_FRACTION);
     }
 
-    return new Cue(
-        text,
-        toTextAlignment(alignment),
-        line,
-        Cue.LINE_TYPE_FRACTION,
-        lineAnchor,
-        position,
-        positionAnchor,
-        /* size= */ Cue.DIMEN_UNSET);
+    return cue.build();
   }
 
   @Nullable
@@ -357,8 +415,7 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
     }
   }
 
-  @Cue.AnchorType
-  private static int toLineAnchor(@SsaStyle.SsaAlignment int alignment) {
+  private static @Cue.AnchorType int toLineAnchor(@SsaStyle.SsaAlignment int alignment) {
     switch (alignment) {
       case SsaStyle.SSA_ALIGNMENT_BOTTOM_LEFT:
       case SsaStyle.SSA_ALIGNMENT_BOTTOM_CENTER:
@@ -380,8 +437,7 @@ public final class SsaDecoder extends SimpleSubtitleDecoder {
     }
   }
 
-  @Cue.AnchorType
-  private static int toPositionAnchor(@SsaStyle.SsaAlignment int alignment) {
+  private static @Cue.AnchorType int toPositionAnchor(@SsaStyle.SsaAlignment int alignment) {
     switch (alignment) {
       case SsaStyle.SSA_ALIGNMENT_BOTTOM_LEFT:
       case SsaStyle.SSA_ALIGNMENT_MIDDLE_LEFT:

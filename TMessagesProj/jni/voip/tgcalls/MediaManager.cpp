@@ -245,7 +245,7 @@ MediaManager::MediaManager(
 	std::function<void(Message &&)> sendSignalingMessage,
 	std::function<void(Message &&)> sendTransportMessage,
     std::function<void(int)> signalBarsUpdated,
-    std::function<void(float)> audioLevelUpdated,
+    std::function<void(float, float)> audioLevelsUpdated,
     std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
     bool enableHighBitrateVideo,
     std::vector<std::string> preferredCodecs,
@@ -256,7 +256,7 @@ _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
 _sendSignalingMessage(std::move(sendSignalingMessage)),
 _sendTransportMessage(std::move(sendTransportMessage)),
 _signalBarsUpdated(std::move(signalBarsUpdated)),
-_audioLevelUpdated(std::move(audioLevelUpdated)),
+_audioLevelsUpdated(std::move(audioLevelsUpdated)),
 _createAudioDeviceModule(std::move(createAudioDeviceModule)),
 _protocolVersion(protocolVersion),
 _outgoingVideoState(videoCapture ? VideoState::Active : VideoState::Inactive),
@@ -467,7 +467,7 @@ void MediaManager::start() {
     }
 
     beginStatsTimer(3000);
-    if (_audioLevelUpdated != nullptr) {
+    if (_audioLevelsUpdated != nullptr) {
         beginLevelsTimer(100);
     }
 }
@@ -595,8 +595,7 @@ void MediaManager::beginLevelsTimer(int timeoutMs) {
             return;
         }
 
-        float effectiveLevel = fmaxf(strong->_currentAudioLevel, strong->_currentMyAudioLevel);
-        strong->_audioLevelUpdated(effectiveLevel);
+        strong->_audioLevelsUpdated(strong->_currentMyAudioLevel, strong->_currentAudioLevel);
 
         strong->beginLevelsTimer(100);
     }, webrtc::TimeDelta::Millis(timeoutMs));

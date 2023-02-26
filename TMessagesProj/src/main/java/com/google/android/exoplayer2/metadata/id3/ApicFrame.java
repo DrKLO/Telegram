@@ -20,12 +20,11 @@ import static com.google.android.exoplayer2.util.Util.castNonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.MediaMetadata;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 
-/**
- * APIC (Attached Picture) ID3 frame.
- */
+/** APIC (Attached Picture) ID3 frame. */
 public final class ApicFrame extends Id3Frame {
 
   public static final String ID = "APIC";
@@ -53,6 +52,11 @@ public final class ApicFrame extends Id3Frame {
   }
 
   @Override
+  public void populateMediaMetadata(MediaMetadata.Builder builder) {
+    builder.maybeSetArtworkData(pictureData, pictureType);
+  }
+
+  @Override
   public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
@@ -61,7 +65,8 @@ public final class ApicFrame extends Id3Frame {
       return false;
     }
     ApicFrame other = (ApicFrame) obj;
-    return pictureType == other.pictureType && Util.areEqual(mimeType, other.mimeType)
+    return pictureType == other.pictureType
+        && Util.areEqual(mimeType, other.mimeType)
         && Util.areEqual(description, other.description)
         && Arrays.equals(pictureData, other.pictureData);
   }
@@ -91,18 +96,17 @@ public final class ApicFrame extends Id3Frame {
     dest.writeByteArray(pictureData);
   }
 
-  public static final Parcelable.Creator<ApicFrame> CREATOR = new Parcelable.Creator<ApicFrame>() {
+  public static final Parcelable.Creator<ApicFrame> CREATOR =
+      new Parcelable.Creator<ApicFrame>() {
 
-    @Override
-    public ApicFrame createFromParcel(Parcel in) {
-      return new ApicFrame(in);
-    }
+        @Override
+        public ApicFrame createFromParcel(Parcel in) {
+          return new ApicFrame(in);
+        }
 
-    @Override
-    public ApicFrame[] newArray(int size) {
-      return new ApicFrame[size];
-    }
-
-  };
-
+        @Override
+        public ApicFrame[] newArray(int size) {
+          return new ApicFrame[size];
+        }
+      };
 }

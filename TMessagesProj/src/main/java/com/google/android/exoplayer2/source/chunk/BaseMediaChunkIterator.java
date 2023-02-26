@@ -34,7 +34,7 @@ public abstract class BaseMediaChunkIterator implements MediaChunkIterator {
    * @param fromIndex The first available index.
    * @param toIndex The last available index.
    */
-  @SuppressWarnings("method.invocation.invalid")
+  @SuppressWarnings("nullness:method.invocation")
   public BaseMediaChunkIterator(long fromIndex, long toIndex) {
     this.fromIndex = fromIndex;
     this.toIndex = toIndex;

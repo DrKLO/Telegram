@@ -210,6 +210,8 @@ private:
     cricket::ProtocolAddress server_address_;
     uint8_t serverId_ = 0;
     
+    std::map<std::string, uint32_t> resolved_peer_tags_by_hostname_;
+    
     cricket::RelayCredentials credentials_;
     AttemptedServerSet attempted_server_addresses_;
     

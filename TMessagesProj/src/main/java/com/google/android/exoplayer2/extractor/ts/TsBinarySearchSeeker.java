@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static java.lang.Math.min;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.BinarySearchSeeker;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
@@ -35,13 +37,16 @@ import java.io.IOException;
 
   private static final long SEEK_TOLERANCE_US = 100_000;
   private static final int MINIMUM_SEARCH_RANGE_BYTES = 5 * TsExtractor.TS_PACKET_SIZE;
-  private static final int TIMESTAMP_SEARCH_BYTES = 600 * TsExtractor.TS_PACKET_SIZE;
 
   public TsBinarySearchSeeker(
-      TimestampAdjuster pcrTimestampAdjuster, long streamDurationUs, long inputLength, int pcrPid) {
+      TimestampAdjuster pcrTimestampAdjuster,
+      long streamDurationUs,
+      long inputLength,
+      int pcrPid,
+      int timestampSearchBytes) {
     super(
         new DefaultSeekTimestampConverter(),
-        new TsPcrSeeker(pcrPid, pcrTimestampAdjuster),
+        new TsPcrSeeker(pcrPid, pcrTimestampAdjuster, timestampSearchBytes),
         streamDurationUs,
         /* floorTimePosition= */ 0,
         /* ceilingTimePosition= */ streamDurationUs + 1,
@@ -56,7 +61,7 @@ import java.io.IOException;
    * position in a TS stream.
    *
    * <p>Given a PCR timestamp, and a position within a TS stream, this seeker will peek up to {@link
-   * #TIMESTAMP_SEARCH_BYTES} from that stream position, look for all packets with PID equal to
+   * #timestampSearchBytes} from that stream position, look for all packets with PID equal to
    * PCR_PID, and then compare the PCR timestamps (if available) of these packets to the target
    * timestamp.
    */
@@ -65,21 +70,24 @@ import java.io.IOException;
     private final TimestampAdjuster pcrTimestampAdjuster;
     private final ParsableByteArray packetBuffer;
     private final int pcrPid;
+    private final int timestampSearchBytes;
 
-    public TsPcrSeeker(int pcrPid, TimestampAdjuster pcrTimestampAdjuster) {
+    public TsPcrSeeker(
+        int pcrPid, TimestampAdjuster pcrTimestampAdjuster, int timestampSearchBytes) {
       this.pcrPid = pcrPid;
       this.pcrTimestampAdjuster = pcrTimestampAdjuster;
+      this.timestampSearchBytes = timestampSearchBytes;
       packetBuffer = new ParsableByteArray();
     }
 
     @Override
     public TimestampSearchResult searchForTimestamp(ExtractorInput input, long targetTimestamp)
-        throws IOException, InterruptedException {
+        throws IOException {
       long inputPosition = input.getPosition();
-      int bytesToSearch = (int) Math.min(TIMESTAMP_SEARCH_BYTES, input.getLength() - inputPosition);
+      int bytesToSearch = (int) min(timestampSearchBytes, input.getLength() - inputPosition);
 
       packetBuffer.reset(bytesToSearch);
-      input.peekFully(packetBuffer.data, /* offset= */ 0, bytesToSearch);
+      input.peekFully(packetBuffer.getData(), /* offset= */ 0, bytesToSearch);
 
       return searchForPcrValueInBuffer(packetBuffer, targetTimestamp, inputPosition);
     }
@@ -94,7 +102,7 @@ import java.io.IOException;
 
       while (packetBuffer.bytesLeft() >= TsExtractor.TS_PACKET_SIZE) {
         int startOfPacket =
-            TsUtil.findSyncBytePosition(packetBuffer.data, packetBuffer.getPosition(), limit);
+            TsUtil.findSyncBytePosition(packetBuffer.getData(), packetBuffer.getPosition(), limit);
         int endOfPacket = startOfPacket + TsExtractor.TS_PACKET_SIZE;
         if (endOfPacket > limit) {
           break;

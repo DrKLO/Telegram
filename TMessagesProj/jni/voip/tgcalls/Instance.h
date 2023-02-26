@@ -229,7 +229,7 @@ struct Descriptor {
 	std::shared_ptr<VideoCaptureInterface> videoCapture;
 	std::function<void(State)> stateUpdated;
 	std::function<void(int)> signalBarsUpdated;
-    std::function<void(float)> audioLevelUpdated;
+    std::function<void(float, float)> audioLevelsUpdated;
     std::function<void(bool)> remoteBatteryLevelIsLowUpdated;
 	std::function<void(AudioState, VideoState)> remoteMediaStateUpdated;
     std::function<void(float)> remotePrefferedAspectRatioUpdated;

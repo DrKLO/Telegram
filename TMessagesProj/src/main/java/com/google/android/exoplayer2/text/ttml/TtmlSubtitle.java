@@ -24,9 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A representation of a TTML subtitle.
- */
+/** A representation of a TTML subtitle. */
 /* package */ final class TtmlSubtitle implements Subtitle {
 
   private final TtmlNode root;

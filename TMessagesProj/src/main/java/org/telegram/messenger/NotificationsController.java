@@ -1392,7 +1392,8 @@ public class NotificationsController extends BaseController {
                                     }
                                 }
                             } catch (Exception e) {
-                                FileLog.e(e);
+                                //ignore, no thread synchronizations for fast
+                                FileLog.e(e, false);
                             }
                         } else {
                             count += controller.pushDialogs.size();
@@ -3958,7 +3959,10 @@ public class NotificationsController extends BaseController {
             showExtraNotifications(mBuilder, detailText, dialog_id, topicId, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
             scheduleNotificationRepeat();
         } catch (Exception e) {
-            FileLog.e(e);
+            //  ignore xiaomi issues
+            //  Remote stack trace
+            //  To many PendingIntent's
+            FileLog.e(e, !(e instanceof  SecurityException));
         }
     }
 

@@ -22,9 +22,7 @@ import com.google.android.exoplayer2.util.Assertions;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A representation of a CEA subtitle.
- */
+/** A representation of a CEA subtitle. */
 /* package */ final class CeaSubtitle implements Subtitle {
 
   private final List<Cue> cues;
@@ -56,5 +54,4 @@ import java.util.List;
   public List<Cue> getCues(long timeUs) {
     return timeUs >= 0 ? cues : Collections.emptyList();
   }
-
 }

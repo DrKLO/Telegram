@@ -34,7 +34,6 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 
@@ -347,11 +346,7 @@ public class MessagesStorage extends BaseController {
             if (openTries < 3 && e.getMessage() != null && e.getMessage().contains("malformed")) {
                 if (openTries == 2) {
                     cleanupInternal(true);
-                    for (int a = 0; a < 2; a++) {
-                        getUserConfig().setDialogsLoadOffset(a, 0, 0, 0, 0, 0, 0);
-                        getUserConfig().setTotalDialogsCount(a, 0);
-                    }
-                    getUserConfig().saveConfig(false);
+                    clearLoadingDialogsOffsets();
                 } else {
                     cleanupInternal(false);
                 }
@@ -379,6 +374,14 @@ public class MessagesStorage extends BaseController {
             showClearDatabaseAlert = false;//getDatabaseSize() > 150 * 1024 * 1024;
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onDatabaseOpened);
         });
+    }
+
+    private void clearLoadingDialogsOffsets() {
+        for (int a = 0; a < 2; a++) {
+            getUserConfig().setDialogsLoadOffset(a, 0, 0, 0, 0, 0, 0);
+            getUserConfig().setTotalDialogsCount(a, 0);
+        }
+        getUserConfig().saveConfig(false);
     }
 
     private boolean recoverDatabase() {
@@ -678,6 +681,28 @@ public class MessagesStorage extends BaseController {
     }
 
     private void cleanupInternal(boolean deleteFiles) {
+        clearDatabaseValues();
+        if (database != null) {
+            database.close();
+            database = null;
+        }
+        if (deleteFiles) {
+            if (cacheFile != null) {
+                cacheFile.delete();
+                cacheFile = null;
+            }
+            if (walCacheFile != null) {
+                walCacheFile.delete();
+                walCacheFile = null;
+            }
+            if (shmCacheFile != null) {
+                shmCacheFile.delete();
+                shmCacheFile = null;
+            }
+        }
+    }
+
+    private void clearDatabaseValues() {
         lastDateValue = 0;
         lastSeqValue = 0;
         lastPtsValue = 0;
@@ -698,24 +723,6 @@ public class MessagesStorage extends BaseController {
 
         secretPBytes = null;
         secretG = 0;
-        if (database != null) {
-            database.close();
-            database = null;
-        }
-        if (deleteFiles) {
-            if (cacheFile != null) {
-                cacheFile.delete();
-                cacheFile = null;
-            }
-            if (walCacheFile != null) {
-                walCacheFile.delete();
-                walCacheFile = null;
-            }
-            if (shmCacheFile != null) {
-                shmCacheFile.delete();
-                shmCacheFile = null;
-            }
-        }
     }
 
     public void cleanup(boolean isLogin) {
@@ -759,6 +766,10 @@ public class MessagesStorage extends BaseController {
             tryRecover = true;
             if (recoverDatabase()) {
                 tryRecover = false;
+                clearLoadingDialogsOffsets();
+                AndroidUtilities.runOnUIThread(() -> {
+                   getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
+                });
                 FileLog.e(new Exception("database restored!!"));
             } else {
                 FileLog.e(new Exception(e), logToAppCenter);
@@ -5007,7 +5018,8 @@ public class MessagesStorage extends BaseController {
             for (int a = 0, N = users.size(); a < N; a++) {
                 TLRPC.User user = users.get(a);
                 boolean muted = getMessagesController().isDialogMuted(user.id, 0);
-                int idx1 = dialogsByFolders.get(user.id);
+                Integer folderId = dialogsByFolders.get(user.id);
+                int idx1 = folderId == null || folderId < 0 || folderId > 1 ? 0 : folderId;
                 int idx2 = muted ? 1 : 0;
                 if (muted) {
                     mutedDialogs.put(user.id, true);
@@ -5043,7 +5055,8 @@ public class MessagesStorage extends BaseController {
                     }
                     long did = DialogObject.makeEncryptedDialogId(encryptedChat.id);
                     boolean muted = getMessagesController().isDialogMuted(did, 0);
-                    int idx1 = dialogsByFolders.get(did);
+                    Integer folderId = dialogsByFolders.get(did);
+                    int idx1 = folderId == null || folderId < 0 || folderId > 1 ? 0 : folderId;
                     int idx2 = muted ? 1 : 0;
                     if (muted) {
                         mutedDialogs.put(user.id, true);
@@ -5071,7 +5084,8 @@ public class MessagesStorage extends BaseController {
                 boolean muted = getMessagesController().isDialogMuted(-chat.id, 0, chat);
                 boolean hasUnread = dialogsWithUnread.indexOfKey(-chat.id) >= 0;
                 boolean hasMention = dialogsWithMentions.indexOfKey(-chat.id) >= 0;
-                int idx1 = dialogsByFolders.get(-chat.id);
+                Integer folderId = dialogsByFolders.get(-chat.id);
+                int idx1 = folderId == null || folderId < 0 || folderId > 1 ? 0 : folderId;
                 int idx2 = muted ? 1 : 0;
                 if (muted) {
                     mutedDialogs.put(-chat.id, true);
@@ -9274,6 +9288,10 @@ public class MessagesStorage extends BaseController {
     }
 
     public void getChatsInternal(String chatsToLoad, ArrayList<TLRPC.Chat> result) throws Exception {
+        getChatsInternal(chatsToLoad, result, true);
+    }
+
+    public void getChatsInternal(String chatsToLoad, ArrayList<TLRPC.Chat> result, boolean parseFullData) throws Exception {
         if (chatsToLoad == null || chatsToLoad.length() == 0 || result == null) {
             return;
         }
@@ -9282,7 +9300,7 @@ public class MessagesStorage extends BaseController {
             try {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
                 if (data != null) {
-                    TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
+                    TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false, parseFullData);
                     data.reuse();
                     if (chat != null) {
                         result.add(chat);

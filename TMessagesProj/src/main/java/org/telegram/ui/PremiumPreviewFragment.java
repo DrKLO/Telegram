@@ -1590,11 +1590,17 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         event.data = data;
 
         TLRPC.TL_jsonObjectValue sourceObj = new TLRPC.TL_jsonObjectValue();
-        TLRPC.TL_jsonString jsonString = new TLRPC.TL_jsonString();
-        jsonString.value = source;
+        TLRPC.JSONValue sourceVal;
+        if (source != null) {
+            TLRPC.TL_jsonString jsonString = new TLRPC.TL_jsonString();
+            jsonString.value = source;
+            sourceVal = jsonString;
+        } else {
+            sourceVal = new TLRPC.TL_jsonNull();
+        }
 
         sourceObj.key = "source";
-        sourceObj.value = jsonString;
+        sourceObj.value = sourceVal;
 
         data.value.add(sourceObj);
         req.events.add(event);
@@ -1638,13 +1644,17 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         TLRPC.TL_jsonObject data = new TLRPC.TL_jsonObject();
         event.data = data;
         TLRPC.TL_jsonObjectValue item = new TLRPC.TL_jsonObjectValue();
-        TLRPC.TL_jsonString jsonString = new TLRPC.TL_jsonString();
-        jsonString.value = PremiumPreviewFragment.featureTypeToServerString(type);
+        String value = PremiumPreviewFragment.featureTypeToServerString(type);
+        if (value != null) {
+            TLRPC.TL_jsonString jsonString = new TLRPC.TL_jsonString();
+            jsonString.value = value;
+            item.value = jsonString;
+        } else {
+            item.value = new TLRPC.TL_jsonNull();
+        }
         item.key = "item";
-        item.value = jsonString;
         data.value.add(item);
         req.events.add(event);
-        event.data = data;
 
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 

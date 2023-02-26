@@ -17,21 +17,14 @@ package com.google.android.exoplayer2.upstream;
 
 import java.io.IOException;
 
-/**
- * A component to which streams of data can be written.
- */
+/** A component to which streams of data can be written. */
 public interface DataSink {
 
-  /**
-   * A factory for {@link DataSink} instances.
-   */
+  /** A factory for {@link DataSink} instances. */
   interface Factory {
 
-    /**
-     * Creates a {@link DataSink} instance.
-     */
+    /** Creates a {@link DataSink} instance. */
     DataSink createDataSink();
-
   }
 
   /**
