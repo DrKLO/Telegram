@@ -376,10 +376,10 @@ public class PipVideoOverlay {
 
     private void onDismissedInternal() {
         try {
-            if (controlsView.getParent() != null) {
+            if (contentView != null && contentView.getParent() != null) {
                 windowManager.removeViewImmediate(contentView);
             }
-        } catch (IllegalArgumentException ignored) {}
+        } catch (Exception ignored) {}
 
         if (photoViewerWebView != null) {
             photoViewerWebView.showControls();

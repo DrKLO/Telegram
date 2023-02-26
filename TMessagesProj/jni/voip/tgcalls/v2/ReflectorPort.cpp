@@ -364,7 +364,17 @@ cricket::Connection* ReflectorPort::CreateConnection(const cricket::Candidate& r
     if (!SupportsProtocol(remote_candidate.protocol())) {
         return nullptr;
     }
-    if (remote_candidate.address().port() != serverId_) {
+    
+    auto remoteHostname = remote_candidate.address().hostname();
+    if (remoteHostname.empty()) {
+        return nullptr;
+    }
+    std::ostringstream ipFormat;
+    ipFormat << "reflector-" << (uint32_t)serverId_ << "-";
+    if (!absl::StartsWith(remoteHostname, ipFormat.str()) || !absl::EndsWith(remoteHostname, ".reflector")) {
+        return nullptr;
+    }
+    if (remote_candidate.address().port() != server_address_.address.port()) {
         return nullptr;
     }
     
@@ -424,9 +434,44 @@ int ReflectorPort::SendTo(const void* data,
                           const rtc::PacketOptions& options,
                           bool payload) {
     rtc::CopyOnWriteBuffer targetPeerTag;
-    uint32_t ipAddress = addr.ip();
+    
+    auto syntheticHostname = addr.hostname();
+    
+    uint32_t resolvedPeerTag = 0;
+    auto resolvedPeerTagIt = resolved_peer_tags_by_hostname_.find(syntheticHostname);
+    if (resolvedPeerTagIt != resolved_peer_tags_by_hostname_.end()) {
+        resolvedPeerTag = resolvedPeerTagIt->second;
+    } else {
+        std::ostringstream prefixFormat;
+        prefixFormat << "reflector-" << (uint32_t)serverId_ << "-";
+        std::string suffixFormat = ".reflector";
+        if (!absl::StartsWith(syntheticHostname, prefixFormat.str()) || !absl::EndsWith(syntheticHostname, suffixFormat)) {
+            RTC_LOG(LS_ERROR) << ToString()
+            << ": Discarding SendTo request with destination "
+            << addr.ToString();
+            
+            return -1;
+        }
+        
+        auto startPosition = prefixFormat.str().size();
+        auto tagString = syntheticHostname.substr(startPosition, syntheticHostname.size() - suffixFormat.size() - startPosition);
+        
+        std::stringstream tagStringStream(tagString);
+        tagStringStream >> resolvedPeerTag;
+        
+        if (resolvedPeerTag == 0) {
+            RTC_LOG(LS_ERROR) << ToString()
+            << ": Discarding SendTo request with destination "
+            << addr.ToString() << " (could not parse peer tag)";
+            
+            return -1;
+        }
+        
+        resolved_peer_tags_by_hostname_.insert(std::make_pair(syntheticHostname, resolvedPeerTag));
+    }
+    
     targetPeerTag.AppendData(peer_tag_.data(), peer_tag_.size() - 4);
-    targetPeerTag.AppendData((uint8_t *)&ipAddress, 4);
+    targetPeerTag.AppendData((uint8_t *)&resolvedPeerTag, 4);
     
     rtc::ByteBufferWriter bufferWriter;
     bufferWriter.WriteBytes((const char *)targetPeerTag.data(), targetPeerTag.size());
@@ -505,7 +550,13 @@ bool ReflectorPort::HandleIncomingPacket(rtc::AsyncPacketSocket* socket,
     if (state_ != STATE_READY) {
         state_ = STATE_READY;
         
-        rtc::SocketAddress candidateAddress(randomTag_, serverId_);
+        RTC_LOG(LS_INFO)
+        << ToString()
+        << ": REFLECTOR " << server_address_.address.ToString() << " is now ready";
+        
+        std::ostringstream ipFormat;
+        ipFormat << "reflector-" << (uint32_t)serverId_ << "-" << randomTag_ << ".reflector";
+        rtc::SocketAddress candidateAddress(ipFormat.str(), server_address_.address.port());
         
         // For relayed candidate, Base is the candidate itself.
         AddAddress(candidateAddress,          // Candidate address.
@@ -545,7 +596,10 @@ bool ReflectorPort::HandleIncomingPacket(rtc::AsyncPacketSocket* socket,
                 << ToString()
                 << ": Received data packet with invalid size tag";
             } else {
-                rtc::SocketAddress candidateAddress(senderTag, serverId_);
+                std::ostringstream ipFormat;
+                ipFormat << "reflector-" << (uint32_t)serverId_ << "-" << senderTag << ".reflector";
+                rtc::SocketAddress candidateAddress(ipFormat.str(), server_address_.address.port());
+                candidateAddress.SetResolvedIP(server_address_.address.ipaddr());
                 
                 DispatchPacket(data + 16 + 4 + 4, dataSize, candidateAddress, cricket::ProtocolType::PROTO_UDP, packet_time_us);
             }

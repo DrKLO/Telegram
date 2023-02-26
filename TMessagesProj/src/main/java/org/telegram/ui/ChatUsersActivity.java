@@ -856,6 +856,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         fragment.setDelegate(new GroupCreateActivity.ContactsAddActivityDelegate() {
                             @Override
                             public void didSelectUsers(ArrayList<TLRPC.User> users, int fwdCount) {
+                                if (fragment.getParentActivity() == null) {
+                                    return;
+                                }
                                 final int count = users.size();
                                 final int[] processed = new int[1];
                                 final ArrayList<TLRPC.User> userRestrictedPrivacy = new ArrayList<>();
@@ -879,7 +882,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                         title = LocaleController.getString("InviteToGroupErrorTitleSomeUsers", R.string.InviteToGroupErrorTitleSomeUsers);
                                         description = LocaleController.getString("InviteToGroupErrorMessageMultipleSome", R.string.InviteToGroupErrorMessageMultipleSome);
                                     }
-                                    new AlertDialog.Builder(fragment.getContext())
+                                    new AlertDialog.Builder(fragment.getParentActivity())
                                             .setTitle(title)
                                             .setMessage(description)
                                             .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)

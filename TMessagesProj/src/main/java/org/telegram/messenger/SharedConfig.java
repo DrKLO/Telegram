@@ -945,7 +945,7 @@ public class SharedConfig {
     }
 
     public static void toggleAutoplayVideo() {
-        LiteMode.toggleFlag(LiteMode.FLAG_AUTOPLAY_VIDEOS, !isAutoplayVideo());
+        LiteMode.toggleFlag(LiteMode.FLAG_AUTOPLAY_VIDEOS);
     }
 
     public static boolean isSecretMapPreviewSet() {

@@ -2360,6 +2360,7 @@ public class MessageObject {
         messageOwner.peer_id.channel_id = chat.id;
         messageOwner.unread = false;
         MediaController mediaController = MediaController.getInstance();
+        isOutOwnerCached = null;
 
         if (message instanceof TLRPC.TL_messageEmpty) {
             message = null;
@@ -5608,7 +5609,7 @@ public class MessageObject {
         return messageOwner.out;
     }
 
-    Boolean isOutOwnerCached;
+    public Boolean isOutOwnerCached;
     public boolean isOutOwner() {
         if (preview) {
             return true;

@@ -16726,6 +16726,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     obj.messageOwner = newMsgObj;
                     if (fwdHeader != null && newMsgObj.fwd_from != null && !TextUtils.isEmpty(newMsgObj.fwd_from.from_name)) {
                         obj.messageOwner.fwd_from = fwdHeader;
+                        obj.isOutOwnerCached = null;
                     }
                     obj.generateThumbs(true);
                     obj.setType();

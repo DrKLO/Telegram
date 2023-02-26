@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import org.telegram.messenger.utils.ImmutableByteArrayOutputStream;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
@@ -35,6 +36,7 @@ public class FileLoadOperation {
     long streamOffset;
 
     public static volatile DispatchQueue filesQueue = new DispatchQueue("writeFileQueue");
+    public static ImmutableByteArrayOutputStream filesQueueByteBuffer;
     private boolean forceSmallChunk;
 
     public void setStream(FileLoadOperationStream stream, boolean streamPriority, long streamOffset) {
@@ -518,18 +520,28 @@ public class FileLoadOperation {
                 filesQueue.postRunnable(() -> {
                     long time = System.currentTimeMillis();
                     try {
+                        if (filePartsStream == null) {
+                            return;
+                        }
+                        int countFinal = rangesFinal.size();
+                        int bufferSize = 4 + 8 * 2 * countFinal;
+                        if (filesQueueByteBuffer == null) {
+                            filesQueueByteBuffer = new ImmutableByteArrayOutputStream(bufferSize);
+                        } else {
+                            filesQueueByteBuffer.reset();
+                        }
+                        filesQueueByteBuffer.writeInt(countFinal);
+                        for (int a = 0; a < countFinal; a++) {
+                            Range rangeFinal = rangesFinal.get(a);
+                            filesQueueByteBuffer.writeLong(rangeFinal.start);
+                            filesQueueByteBuffer.writeLong(rangeFinal.end);
+                        }
                         synchronized (FileLoadOperation.this) {
                             if (filePartsStream == null) {
                                 return;
                             }
                             filePartsStream.seek(0);
-                            int countFinal = rangesFinal.size();
-                            filePartsStream.writeInt(countFinal);
-                            for (int a = 0; a < countFinal; a++) {
-                                Range rangeFinal = rangesFinal.get(a);
-                                filePartsStream.writeLong(rangeFinal.start);
-                                filePartsStream.writeLong(rangeFinal.end);
-                            }
+                            filePartsStream.write(filesQueueByteBuffer.buf, 0, bufferSize);
                         }
                     } catch (Exception e) {
                         if (AndroidUtilities.isENOSPC(e)) {

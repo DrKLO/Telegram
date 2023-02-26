@@ -1159,9 +1159,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     ((TextCheckCell) view).setChecked(SharedConfig.chatBlurEnabled());
                 }
             } else if (position == lightModeRow) {
-                LiteMode.setAllFlags(LiteMode.getValue() == LiteMode.PRESET_LOW ? LiteMode.PRESET_HIGH : LiteMode.PRESET_LOW);
+                boolean liteModeEnabled = (LiteMode.getValue() & LiteMode.ENABLED) == 0;
+                int newFlags = (liteModeEnabled ? LiteMode.ENABLED : 0) | (LiteMode.getValue() & ~LiteMode.ENABLED);
+                LiteMode.setAllFlags(newFlags);
                 if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(LiteMode.getValue() == LiteMode.PRESET_LOW);
+                    ((TextCheckCell) view).setChecked((LiteMode.getValue() & LiteMode.ENABLED) == 0);
                 }
             } else if (position == nightThemeRow) {
                 if (LocaleController.isRTL && x <= AndroidUtilities.dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - AndroidUtilities.dp(76)) {
@@ -2254,7 +2256,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     } else if (position == chatBlurRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("BlurInChat", R.string.BlurInChat), SharedConfig.chatBlurEnabled(), true);
                     } else if (position == lightModeRow) {
-                        textCheckCell.setTextAndCheck(LocaleController.getString("LightMode", R.string.LightMode), LiteMode.getValue() == LiteMode.PRESET_LOW, true);
+                        textCheckCell.setTextAndCheck(LocaleController.getString("LightMode", R.string.LightMode), (LiteMode.getValue() & LiteMode.ENABLED) == 0, true);
                     }
                     break;
                 }

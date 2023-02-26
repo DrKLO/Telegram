@@ -30,11 +30,18 @@ public class LiteMode {
     public static final int FLAG_AUTOPLAY_VIDEOS = 1024;
     public static final int FLAG_AUTOPLAY_GIFS = 2048;
 
+    public static final int ENABLED = (
+        FLAGS_ANIMATED_STICKERS |
+        FLAGS_ANIMATED_EMOJI |
+        FLAGS_CHAT |
+        FLAG_CALLS_ANIMATIONS
+    );
+
     public static final int PRESET_LOW = 0;
     public static final int PRESET_MEDIUM = (
-        FLAG_ANIMATED_STICKERS_CHAT |
-        FLAG_ANIMATED_EMOJI_CHAT |
-        FLAG_CHAT_FORUM_TWOCOLUMN |
+        FLAGS_ANIMATED_STICKERS |
+        FLAGS_ANIMATED_EMOJI |
+        FLAGS_CHAT |
         FLAG_CALLS_ANIMATIONS |
         FLAG_AUTOPLAY_VIDEOS |
         FLAG_AUTOPLAY_GIFS
@@ -111,6 +118,14 @@ public class LiteMode {
 
         final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         if (!preferences.contains("lite_mode")) {
+            if (preferences.contains("light_mode")) {
+                boolean prevLiteModeEnabled = (preferences.getInt("light_mode", SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW ? 1 : 0) & 1) > 0;
+                if (prevLiteModeEnabled) {
+                    defaultValue = PRESET_LOW;
+                } else {
+                    defaultValue = PRESET_HIGH;
+                }
+            }
             // migrate settings
             if (preferences.contains("loopStickers")) {
                 boolean loopStickers = preferences.getBoolean("loopStickers", true);
