@@ -1614,10 +1614,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 if (scaleDown != null && scaleDown.isRunning()) {
                     scaleDown.cancel();
                 }
-
-
                 // Explicit fall through
-
             case VoIPService.STATE_RECONNECTING:
                 updateKeyView(animated);
                 showTimer = true;
