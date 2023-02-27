@@ -54,8 +54,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
@@ -119,6 +117,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private final static int STATE_GONE = 0;
     private final static int STATE_FULLSCREEN = 1;
     private final static int STATE_FLOATING = 2;
+
+    private final static int BACKGROUND_ALPHA = 0x1F_00_00_00;
 
     // Color gradients for backgrounds
     // Format is []{main,light, dark}
@@ -315,6 +315,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private NetworkState networkState = NetworkState.FairNetwork;
 
     private boolean alreadyClickedEmojiIcons = false;
+    private boolean alreadyClickedHideEmojiIcons = false;
+
     private TextView closeEmojiText;
 
     private RelativeLayout topEmojiLayout;
@@ -923,7 +925,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         closeEmojiText.setTypeface(Typeface.DEFAULT_BOLD);
         closeEmojiText.setVisibility(View.GONE);
-        closeEmojiText.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), 0x1F_00_00_00));
+        closeEmojiText.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), BACKGROUND_ALPHA));
 
 
         topEmojiLayout = new RelativeLayout(context);
@@ -936,25 +938,29 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             if (System.currentTimeMillis() - lastContentTapTime < 500) {
                 return;
             }
+            if (topHint != null) {
+                topHint.setVisibility(View.GONE);
+            }
 
             lastContentTapTime = System.currentTimeMillis();
 
-            if (emojiLoaded) {
-                expandEmoji(!emojiExpanded);
-            }
-
-            if (emojiExpanded && !alreadyClickedEmojiIcons) {
+            if (!emojiExpanded && !alreadyClickedHideEmojiIcons) {
                 closeEmojiText.setScaleY(0f);
                 closeEmojiText.setScaleX(0f);
                 closeEmojiText.setVisibility(View.VISIBLE);
 
                 closeEmojiText.animate().scaleX(1f).scaleY(1f).setInterpolator(CubicBezierInterpolator.EASE_IN).setDuration(250).start();
                 emojiLayout.animate().scaleX(0f).scaleY(0f).setInterpolator(CubicBezierInterpolator.EASE_OUT).setDuration(250).start();
-            } else {
+                alreadyClickedHideEmojiIcons=true;
+            } else  {
 
                 emojiLayout.animate().scaleX(1f).scaleY(1f).setInterpolator(CubicBezierInterpolator.EASE_IN).setDuration(250).start();
                 closeEmojiText.animate().scaleX(0f).scaleY(0f).setInterpolator(CubicBezierInterpolator.EASE_OUT).setDuration(250).start();
             }
+            if (emojiLoaded) {
+                expandEmoji(!emojiExpanded);
+            }
+
         });
         topEmojiLayout.setPadding(10, 10, 10, 10);
 
@@ -1010,13 +1016,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             tinyWaveDrawable.minRadius = AndroidUtilities.dp(84);
             tinyWaveDrawable.maxRadius = AndroidUtilities.dp(86);
             // WHITE WITH with 15 alpha
-            tinyWaveDrawable.paint.setColor(0x0F_FF_FF_FF);
+            tinyWaveDrawable.paint.setColor(0x14_FF_FF_FF);
             tinyWaveDrawable.generateBlob();
 
             bigWaveDrawable.minRadius = AndroidUtilities.dp(74);
             bigWaveDrawable.maxRadius = AndroidUtilities.dp(76);
-            // white with 63 alpha
-            bigWaveDrawable.paint.setColor(0x3F_FF_FF_FF);
+            // white with 36 alpha
+            bigWaveDrawable.paint.setColor(0x24_FF_FF_FF);
 
             bigWaveDrawable.generateBlob();
         }
@@ -1083,7 +1089,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         expandedEmojiLayout.addView(encryptionText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         expandedEmojiLayout.addView(emojiRationalTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
         expandedEmojiLayout.setPadding(10, 20, 10, 10);
-        expandedEmojiLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), 0x1f_00_00_00));
+        expandedEmojiLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), BACKGROUND_ALPHA));
         expandedEmojiLayout.setVisibility(View.GONE);
 
         // add layouts to first status, this is the first view seen by a person when calling
@@ -1112,7 +1118,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         topHint.setVisibility(View.GONE);
 
 
-        topHint.setBackgroundColor(0x1F_00_00_00, 0xFF_FF_FF_FF);
+        // alpha is 180/255-> 180 -> 0xB4
+        topHint.setBackgroundColor(BACKGROUND_ALPHA, 0xFF_FF_FF_FF);
 
         frameLayout.addView(callingUserPhotoViewMini, LayoutHelper.createFrame(135, 135, Gravity.CENTER_HORIZONTAL, 0, 68, 0, 0));
 
@@ -1233,10 +1240,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         frameLayout.addView(upperToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, AndroidUtilities.dp(30), 0, AndroidUtilities.dp(20)));
         upperToolTip.setVisibility(View.GONE);
         upperToolTip.setPadding(23, 7, 23, 7);
-        upperToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), 0x1F_00_00_00));
+        upperToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), BACKGROUND_ALPHA));
 
         lowerToolTip = new VoIPStatusTextView(context);
-        lowerToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), 0x1F_00_00_00));
+        lowerToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), BACKGROUND_ALPHA));
         lowerToolTip.setPadding(23, 7, 23, 7);
 
         frameLayout.addView(lowerToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER, 0, 0, 0, AndroidUtilities.dp(85)));
@@ -1618,6 +1625,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
             patternAlphaAnimator.setRepeatCount(ValueAnimator.INFINITE);
             patternAlphaAnimator.setRepeatMode(ValueAnimator.REVERSE);
+
             patternAlphaAnimator.addListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -1634,8 +1642,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 @Override
                 public void onAnimationRepeat(Animator animator) {
                     if (drawable != null) {
+
                         if (gradientState == GradientState.BLUE_GREEN) {
                             drawable.reverseTransition(4000);
+
                             gradientState = GradientState.BLUE_VIOLET;
                         } else {
                             drawable.startTransition(4000);
@@ -2355,7 +2365,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             if (lowerToolTip != null) {
                 lowerToolTip.setVisibility(View.GONE);
             }
-            bottomButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated);
+            bottomButton.setData(R.drawable.calls_unmute, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.07f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated);
         }
         currentUserCameraFloatingLayout.setMuted(service.isMicMute(), animated);
         bottomButton.setOnClickListener(view -> {
