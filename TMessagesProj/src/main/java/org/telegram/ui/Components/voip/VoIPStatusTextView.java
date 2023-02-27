@@ -22,8 +22,10 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
+import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ public class VoIPStatusTextView extends FrameLayout {
 
     TextView[] textView = new TextView[2];
     TextView reconnectTextView;
+    TextView weakNetwork;
     VoIPTimerView timerView;
 
     CharSequence nextTextToSet;
@@ -62,6 +65,17 @@ public class VoIPStatusTextView extends FrameLayout {
         reconnectTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 22, 0, 0));
 
+        weakNetwork = new TextView(context);
+        weakNetwork.setText("Weak Network");
+        weakNetwork.setVisibility(View.GONE);
+        weakNetwork.setPadding(30, 7, 30, 7);
+        weakNetwork.setTextColor(Color.WHITE);
+        //weakNetwork.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        weakNetwork.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), 0x3F_00_00_00));
+
+        addView(weakNetwork, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 30, 0, 0));
+
         ellipsizeAnimator = new EllipsizeSpanAnimator(this);
         SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString("VoipReconnecting", R.string.VoipReconnecting));
         SpannableString ell = new SpannableString("...");
@@ -73,6 +87,17 @@ public class VoIPStatusTextView extends FrameLayout {
         timerView = new VoIPTimerView(context);
         addView(timerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+    }
+
+    public void showWeakNetwork() {
+        if (weakNetwork.getVisibility() != View.VISIBLE) {
+            weakNetwork.setVisibility(VISIBLE);
+        }
+    }
+
+    public void hideWeakNetwork() {
+        if (weakNetwork.getVisibility() != GONE)
+            weakNetwork.setVisibility(GONE);
     }
 
     public void setText(String text, boolean ellipsis, boolean animated) {

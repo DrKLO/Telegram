@@ -298,7 +298,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     //  tooltip text
     private VoIPStatusTextView lowerToolTip;
-    private VoIPStatusTextView upperToolTip;
     // background gradient
     private final MotionBackgroundDrawable mainBackGroundGradient = new MotionBackgroundDrawable(GRADIENT_BLUE_VIOLET[0][0], GRADIENT_BLUE_VIOLET[0][2], GRADIENT_BLUE_VIOLET[0][1], GRADIENT_BLUE_VIOLET[0][3], false);
     private final MotionBackgroundDrawable tempBackgroundGradient = new MotionBackgroundDrawable(GRADIENT_BLUE_GREEN[0][0], GRADIENT_BLUE_GREEN[0][2], GRADIENT_BLUE_GREEN[0][1], GRADIENT_BLUE_GREEN[0][3], false);
@@ -561,14 +560,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     public void onSignalBarsCountChanged(int count) {
         if (count < 3) {
             backgroundView.setImageDrawable(weakNetWorkSignalGradient);
-            if (upperToolTip != null) {
-                upperToolTip.setVisibility(View.VISIBLE);
-                upperToolTip.setText("Weak Network Signal", false, true);
-            }
+
+            statusTextView.showWeakNetwork();
+
             networkState = NetworkState.WeaKNetwork;
 
-        } else if (upperToolTip != null && upperToolTip.getVisibility() == View.VISIBLE) {
-            upperToolTip.setVisibility(View.GONE);
+        } else {
+                statusTextView.hideWeakNetwork();
         }
         if (count > 3 && networkState == NetworkState.WeaKNetwork) {
             backgroundView.setImageDrawable(drawable);
@@ -1049,7 +1047,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), callingUser);
         }
 
-        roundedIcon.setVisibility(View.VISIBLE);
+        if (callingUserIsVideo|| currentUserIsVideo) {
+            roundedIcon.setVisibility(View.GONE);
+        } else {
+            roundedIcon.setVisibility(View.VISIBLE);
+
+        }
         roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
 
         scaleDown = ObjectAnimator.ofPropertyValuesHolder(
@@ -1236,11 +1239,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         tapToVideoTooltip.setVisibility(View.GONE);
 
 
-        upperToolTip = new VoIPStatusTextView(context);
-        frameLayout.addView(upperToolTip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, AndroidUtilities.dp(30), 0, AndroidUtilities.dp(20)));
-        upperToolTip.setVisibility(View.GONE);
-        upperToolTip.setPadding(23, 7, 23, 7);
-        upperToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), BACKGROUND_ALPHA));
 
         lowerToolTip = new VoIPStatusTextView(context);
         lowerToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), BACKGROUND_ALPHA));
@@ -1600,6 +1598,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             roundedIcon.animate().scaleX(1f).scaleY(1f).setDuration(250).setInterpolator(CubicBezierInterpolator.EASE_IN).start();
             expandedEmojiLayout.animate().scaleY(0f).scaleX(0f).setDuration(250).setInterpolator(CubicBezierInterpolator.EASE_OUT).start();
 
+            if (callingUserIsVideo || currentUserIsVideo){
+                // hide it forever now
+                expandedEmojiLayout.setVisibility(View.GONE);
+            }
+
         }
     }
 
@@ -1828,6 +1831,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
 
         if (currentUserIsVideo || callingUserIsVideo) {
+            roundedIcon.setVisibility(View.GONE);
+            if (alreadyClickedEmojiIcons && alreadyClickedHideEmojiIcons){
+                expandedEmojiLayout.setVisibility(View.GONE);
+            }
             fillNavigationBar(true, animated);
         } else {
             fillNavigationBar(false, animated);
