@@ -1503,7 +1503,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             return false;
         }
         fragment.setParentLayout(this);
-        if (position == -1) {
+        if (position == -1 || position == INavigationLayout.FORCE_NOT_ATTACH_VIEW) {
             if (!fragmentsStack.isEmpty()) {
                 BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                 previousFragment.onPause();
@@ -1522,11 +1522,13 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                 }
             }
             fragmentsStack.add(fragment);
-            attachView(fragment);
-            fragment.onResume();
-            fragment.onTransitionAnimationEnd(false, true);
-            fragment.onTransitionAnimationEnd(true, true);
-            fragment.onBecomeFullyVisible();
+            if (position != INavigationLayout.FORCE_NOT_ATTACH_VIEW) {
+                attachView(fragment);
+                fragment.onResume();
+                fragment.onTransitionAnimationEnd(false, true);
+                fragment.onTransitionAnimationEnd(true, true);
+                fragment.onBecomeFullyVisible();
+            }
             onFragmentStackChanged("addFragmentToStack " + position);
         } else {
             fragmentsStack.add(position, fragment);

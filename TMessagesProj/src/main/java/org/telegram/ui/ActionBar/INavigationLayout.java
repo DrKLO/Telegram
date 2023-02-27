@@ -20,6 +20,8 @@ import java.util.List;
 public interface INavigationLayout {
     int REBUILD_FLAG_REBUILD_LAST = 1, REBUILD_FLAG_REBUILD_ONLY_LAST = 2;
 
+    int FORCE_NOT_ATTACH_VIEW = -2;
+
     boolean presentFragment(NavigationParams params);
     boolean checkTransitionAnimation();
     boolean addFragmentToStack(BaseFragment fragment, int position);
