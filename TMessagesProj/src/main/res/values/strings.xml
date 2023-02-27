@@ -6258,4 +6258,6 @@
     <string name="MicrophoneOff">Your Microphone is turned off</string>
     <string name="WeakNetworkSignal">Weak network signal</string>
     <string name="VOIPCallEncryptionKey">Encryption key of this call</string>
+    <string name="EndToEndEncryptionText">This call is end-to-end encrypted</string>
+    <string name="HideEmoji">Hide Emoji</string>
 </resources>
