@@ -984,5 +984,10 @@ public class ReactionsLayoutInBubble {
             VisibleReaction that = (VisibleReaction) o;
             return documentId == that.documentId && Objects.equals(emojicon, that.emojicon);
         }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(emojicon, documentId);
+        }
     }
 }
