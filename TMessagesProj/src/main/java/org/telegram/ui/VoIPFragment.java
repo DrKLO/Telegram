@@ -864,14 +864,14 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
 
         bottomShadow = new View(context);
-        bottomShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.5f))}));
+        bottomShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.TRANSPARENT,ColorUtils.setAlphaComponent(Color.BLACK,(int)(255.0f*180.0f/255.0f))}));
         bottomShadow.setVisibility(View.GONE);
-        frameLayout.addView(bottomShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.BOTTOM));
+        frameLayout.addView(bottomShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 170, Gravity.BOTTOM));
 
         topShadow = new View(context);
-        topShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f)), Color.TRANSPARENT}));
+        topShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{Color.TRANSPARENT,ColorUtils.setAlphaComponent(Color.BLACK, (int) (255.0f*180.0f/255.0f))}));
         bottomShadow.setVisibility(View.GONE);
-        frameLayout.addView(topShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.TOP));
+        frameLayout.addView(topShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 170, Gravity.TOP));
 
 
         emojiLayout = new LinearLayout(context) {
@@ -1237,8 +1237,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         frameLayout.addView(tapToVideoTooltip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 8));
         tapToVideoTooltip.setBottomOffset(AndroidUtilities.dp(4));
         tapToVideoTooltip.setVisibility(View.GONE);
-
-
 
         lowerToolTip = new VoIPStatusTextView(context);
         lowerToolTip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(500), BACKGROUND_ALPHA));
@@ -1835,8 +1833,14 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             if (alreadyClickedEmojiIcons && alreadyClickedHideEmojiIcons){
                 expandedEmojiLayout.setVisibility(View.GONE);
             }
+            bottomShadow.setVisibility(View.VISIBLE);
+            topShadow.setVisibility(View.VISIBLE);
+
             fillNavigationBar(true, animated);
         } else {
+            bottomShadow.setVisibility(View.GONE);
+            topShadow.setVisibility(View.GONE);
+
             fillNavigationBar(false, animated);
             backgroundView.setVisibility(View.VISIBLE);
             if (animated) {
