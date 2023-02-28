@@ -62,6 +62,8 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -1014,6 +1016,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     cell.setOnClickListener(e -> {
                         openDirections(location);
                         if (popupWindow != null) {
+                            if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), false);}
+                            }
                             popupWindow.dismiss();
                         }
                     });
@@ -1034,8 +1040,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     int[] loc = new int[2];
                     view.getLocationInWindow(loc);
                     popupWindow.showAtLocation(view, Gravity.TOP, 0, loc[1] - AndroidUtilities.dp(48 + 4));
-                    popupWindow.dimBehind();
-
+                    if (popupWindow != null && ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), true);}
+                    } else {
+                        popupWindow.dimBehind();
+                    }
                     return true;
                 }
             }

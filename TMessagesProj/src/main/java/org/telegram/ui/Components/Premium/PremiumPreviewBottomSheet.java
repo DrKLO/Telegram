@@ -104,7 +104,9 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
     boolean animateConfetti;
     FrameLayout buttonContainer;
     FrameLayout bulletinContainer;
-
+    public BaseFragment getFragment(){
+        return fragment;
+    }
     public PremiumPreviewBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user, Theme.ResourcesProvider resourcesProvider) {
         this(fragment, currentAccount, user, null, resourcesProvider);
     }

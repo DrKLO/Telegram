@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools"
+    xmlns:tools="http://schemas.android.com/tools"
     package="org.telegram.messenger"
     android:installLocation="auto">
 
     <supports-screens android:anyDensity="true"
-                      android:largeScreens="true"
-                      android:normalScreens="true"
-                      android:resizeable="true"
-                      android:smallScreens="true"
-                      android:xlargeScreens="true"/>
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:resizeable="true"
+        android:smallScreens="true"
+        android:xlargeScreens="true"/>
 
     <uses-feature android:glEsVersion="0x00020000" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
@@ -324,15 +324,15 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
             </intent-filter>
         </activity>
-<!--        <activity-->
-<!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
-<!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
-<!--            android:hardwareAccelerated="@bool/useHardwareAcceleration"-->
-<!--            android:windowSoftInputMode="adjustPan">-->
-<!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
-<!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
-<!--            </intent-filter>-->
-<!--        </activity>-->
+        <!--        <activity-->
+        <!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
+        <!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
+        <!--            android:hardwareAccelerated="@bool/useHardwareAcceleration"-->
+        <!--            android:windowSoftInputMode="adjustPan">-->
+        <!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
+        <!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
+        <!--            </intent-filter>-->
+        <!--        </activity>-->
         <activity
             android:name="org.telegram.messenger.OpenChatReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
@@ -349,15 +349,15 @@
             android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
         <activity android:name="org.telegram.ui.VoIPPermissionActivity"
-                  android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
-                  android:taskAffinity="${applicationId}.voip"
-                  android:excludeFromRecents="true"
-                android:theme="@style/Theme.TMessages.Transparent"/>
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:taskAffinity="${applicationId}.voip"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.TMessages.Transparent"/>
         <activity android:name="org.telegram.ui.VoIPFeedbackActivity"
-                  android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
-				  android:taskAffinity="${applicationId}.voip_feedback"
-                  android:excludeFromRecents="true"
-                android:theme="@style/Theme.TMessages.TransparentWithAlerts"/>
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:taskAffinity="${applicationId}.voip_feedback"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.TMessages.TransparentWithAlerts"/>
 
         <receiver
             android:name=".AutoMessageHeardReceiver"
@@ -416,8 +416,8 @@
         </service>
 
         <service android:name=".KeepAliveJob"
-                 android:exported="false"
-                 android:permission="android.permission.BIND_JOB_SERVICE"/>
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
         <service android:name=".BringAppForegroundService" android:enabled="true"  android:exported="true"/>
         <service android:name=".NotificationsService" android:enabled="true"  android:exported="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
@@ -440,7 +440,7 @@
             </intent-filter>
         </service>
 
-		<receiver android:name=".MusicPlayerReceiver" android:exported="false">
+        <receiver android:name=".MusicPlayerReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="org.telegram.android.musicplayer.close" />
                 <action android:name="org.telegram.android.musicplayer.pause" />
@@ -531,17 +531,17 @@
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 
-<!--        <receiver android:name=".FeedWidgetProvider">-->
-<!--            <meta-data android:name="android.appwidget.provider"-->
-<!--                android:resource="@xml/feed_widget_info" />-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
-<!--            </intent-filter>-->
-<!--        </receiver>-->
+        <!--        <receiver android:name=".FeedWidgetProvider">-->
+        <!--            <meta-data android:name="android.appwidget.provider"-->
+        <!--                android:resource="@xml/feed_widget_info" />-->
+        <!--            <intent-filter>-->
+        <!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
+        <!--            </intent-filter>-->
+        <!--        </receiver>-->
 
-<!--        <service android:name=".FeedWidgetService"-->
-<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
-<!--            android:exported="false" />-->
+        <!--        <service android:name=".FeedWidgetService"-->
+        <!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+        <!--            android:exported="false" />-->
         <service android:name=".FilesMigrationService" android:exported="false"/>
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />

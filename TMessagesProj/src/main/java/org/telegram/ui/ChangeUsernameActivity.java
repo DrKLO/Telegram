@@ -18,7 +18,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
@@ -50,6 +53,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
@@ -1299,6 +1303,9 @@ public class ChangeUsernameActivity extends BaseFragment {
                 final TLRPC.User user1 = (TLRPC.User) response;
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                        if (blurInModals){ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                         progressDialog.dismiss();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -1313,6 +1320,9 @@ public class ChangeUsernameActivity extends BaseFragment {
             } else if ("USERNAME_NOT_MODIFIED".equals(error.text)) {
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                        if (blurInModals){ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                         progressDialog.dismiss();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -1322,6 +1332,9 @@ public class ChangeUsernameActivity extends BaseFragment {
             } else if ("USERNAME_PURCHASE_AVAILABLE".equals(error.text) || "USERNAME_INVALID".equals(error.text)) {
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                        if (blurInModals){ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                         progressDialog.dismiss();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -1331,6 +1344,9 @@ public class ChangeUsernameActivity extends BaseFragment {
             } else {
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                        if (blurInModals){ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                         progressDialog.dismiss();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -1343,6 +1359,10 @@ public class ChangeUsernameActivity extends BaseFragment {
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
         progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+        if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}}
         progressDialog.show();
     }
 

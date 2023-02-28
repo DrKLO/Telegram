@@ -17,6 +17,7 @@ import android.annotation.TargetApi;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Outline;
@@ -26,6 +27,8 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -67,6 +70,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -1139,7 +1144,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     private ActionBarPopupWindow scrimPopupWindow;
     private int scrimPopupX, scrimPopupY;
     private void closeMenu() {
-        if (scrimPopupWindow != null) {
+        if (scrimPopupWindow != null && ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), false);}
             scrimPopupWindow.dismiss();
         }
     }
@@ -1464,6 +1471,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             final int finalPopupY = scrimPopupY = popupY;
             scrimPopupContainerLayout.setMaxHeight(totalHeight - popupY);
             scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, finalPopupX, finalPopupY);
+            if (scrimPopupWindow != null && ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), true);}
+            }
+
             scrimPopupWindow.dimBehind();
         };
 
@@ -2712,9 +2724,18 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             boolean[] canceled = new boolean[1];
                             final AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                             progressDialog.setOnCancelListener(dialogInterface -> {
+                                SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                                boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                                if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                                 linviteLoading = false;
                                 canceled[0] = true;
                             });
+                            SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                            float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+                            boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                            if (blurInModals){
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}
+                            }
                             progressDialog.showDelayed(300);
 
                             int reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -2737,6 +2758,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                     if (canceled[0]) {
                                         return;
                                     }
+                                    if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                                     progressDialog.dismiss();
                                     if (finalInvite != null) {
                                         showInviteLinkBottomSheet(finalInvite, usersMap);

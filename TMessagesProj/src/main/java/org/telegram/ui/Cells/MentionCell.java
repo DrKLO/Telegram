@@ -14,14 +14,17 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -105,6 +108,15 @@ public class MentionCell extends LinearLayout {
         }
         imageView.setVisibility(VISIBLE);
         usernameTextView.setVisibility(VISIBLE);
+    }
+
+    public void setTagAll(){
+        nameTextView.setText(LocaleController.getString("mentionAll", R.string.mentionAll));
+        usernameTextView.setText(LocaleController.getString("doNotAbuse", R.string.doNotAbuse));
+        imageView.setImageDrawable(getResources().getDrawable(R.drawable.dino_pic));
+        nameTextView.setVisibility(View.VISIBLE);
+        usernameTextView.setVisibility(View.VISIBLE);
+        imageView.setVisibility(View.VISIBLE);
     }
 
     private boolean needsDivider = false;

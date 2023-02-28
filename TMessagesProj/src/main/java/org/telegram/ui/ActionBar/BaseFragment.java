@@ -10,6 +10,7 @@ package org.telegram.ui.ActionBar;
 
 import android.animation.Animator;
 import android.animation.AnimatorSet;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
@@ -17,6 +18,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,6 +36,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.CallSuper;
 import androidx.core.graphics.ColorUtils;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -51,7 +55,21 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.ui.Components.ChatAttachAlert;
+import org.telegram.ui.Components.ChatThemeBottomSheet;
+import org.telegram.ui.Components.EmojiPacksAlert;
+import org.telegram.ui.Components.InviteLinkBottomSheet;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MemberRequestsBottomSheet;
+import org.telegram.ui.Components.Paint.ColorPickerBottomSheet;
+import org.telegram.ui.Components.PermanentLinkBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
+import org.telegram.ui.Components.StickersAlert;
+import org.telegram.ui.Components.TrendingStickersAlert;
+import org.telegram.ui.GroupCallActivity;
+import org.telegram.ui.NewContactBottomSheet;
+import org.telegram.ui.SessionBottomSheet;
 
 import java.util.ArrayList;
 
@@ -588,13 +606,16 @@ public abstract class BaseFragment {
     }
 
     public Dialog showDialog(Dialog dialog, boolean allowInTransition, final Dialog.OnDismissListener onDismissListener) {
+        SharedPreferences sharedPreferences = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        boolean isBlurInModalsEnabled = sharedPreferences.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+        boolean isBlurInSlidingMenusEnabled = sharedPreferences.getBoolean(LilSettingsActivity.isBlurInSlidingMenusEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+        float blurAlpha = sharedPreferences.getFloat(LilSettingsActivity.blurAlpha, 20F);
         if (dialog == null || parentLayout == null || parentLayout.isTransitionAnimationInProgress() || parentLayout.isSwipeInProgress() || !allowInTransition && parentLayout.checkTransitionAnimation()) {
             return null;
         }
         try {
             if (visibleDialog != null) {
                 visibleDialog.dismiss();
-                visibleDialog = null;
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -603,14 +624,78 @@ public abstract class BaseFragment {
             visibleDialog = dialog;
             visibleDialog.setCanceledOnTouchOutside(true);
             visibleDialog.setOnDismissListener(dialog1 -> {
+                if (isBlurInModalsEnabled){
+                    if (visibleDialog instanceof BottomSheet){
+                        if (!(visibleDialog instanceof ChatAttachAlert) && !(visibleDialog instanceof EmojiPacksAlert) && !(visibleDialog instanceof ChatThemeBottomSheet) &&
+                                !(visibleDialog instanceof InviteLinkBottomSheet) && !(visibleDialog instanceof MemberRequestsBottomSheet) && !(visibleDialog instanceof NewContactBottomSheet) &&
+                                !(visibleDialog instanceof PermanentLinkBottomSheet) && !(visibleDialog instanceof PremiumFeatureBottomSheet) && !(visibleDialog instanceof PremiumPreviewBottomSheet) &&
+                                !(visibleDialog instanceof SessionBottomSheet) && !(visibleDialog instanceof StickersAlert) && !(visibleDialog instanceof TrendingStickersAlert)){
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                ValueAnimator va = ValueAnimator.ofFloat(blurAlpha, 0.1F);
+                                va.setDuration(220);
+                                va.addUpdateListener(valueAnimator -> {
+                                    float val = (float) valueAnimator.getAnimatedValue();
+                                    if (val != 0.1F){
+                                        getLayoutContainer().setRenderEffect(RenderEffect.createBlurEffect(val, val, Shader.TileMode.MIRROR));
+                                    } else {
+                                        getLayoutContainer().setRenderEffect(null);
+                                    }
+                                });
+                                va.start();
+                            }
+                        }
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            ValueAnimator va = ValueAnimator.ofFloat(blurAlpha, 0.1F);
+                            va.setDuration(220);
+                            va.addUpdateListener(valueAnimator -> {
+                                float val = (float) valueAnimator.getAnimatedValue();
+                                if (val != 0.1F){
+                                    if (getLayoutContainer() != null){getLayoutContainer().setRenderEffect(RenderEffect.createBlurEffect(val, val, Shader.TileMode.MIRROR));}
+                                } else {
+                                    if (getLayoutContainer() != null){getLayoutContainer().setRenderEffect(null);}
+                                }
+                            });
+                            va.start();
+                        }
+                    }
+                }
                 if (onDismissListener != null) {
                     onDismissListener.onDismiss(dialog1);
                 }
                 onDialogDismiss((Dialog) dialog1);
                 if (dialog1 == visibleDialog) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        this.getFragmentView().setRenderEffect(null);
+                    }
                     visibleDialog = null;
                 }
             });
+            if (visibleDialog instanceof BottomSheet && (!(visibleDialog instanceof ColorPickerBottomSheet) && (!(visibleDialog instanceof GroupCallActivity)))){
+                if (isBlurInSlidingMenusEnabled){
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        ValueAnimator va = ValueAnimator.ofFloat(0.1F, blurAlpha);
+                        va.setDuration(250);
+                        va.addUpdateListener(valueAnimator -> {
+                            float val = (float) va.getAnimatedValue();
+                            getLayoutContainer().setRenderEffect(RenderEffect.createBlurEffect(val, val, Shader.TileMode.MIRROR));
+                        });
+                        va.start();
+                    }
+                }
+            } else {
+                if (isBlurInModalsEnabled){
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        ValueAnimator va = ValueAnimator.ofFloat(0.1F, blurAlpha);
+                        va.setDuration(180);
+                        va.addUpdateListener(valueAnimator -> {
+                            float val = (float) va.getAnimatedValue();
+                            getLayoutContainer().setRenderEffect(RenderEffect.createBlurEffect(val, val, Shader.TileMode.MIRROR));
+                        });
+                        va.start();
+                    }
+                }
+            }
             visibleDialog.show();
             return visibleDialog;
         } catch (Exception e) {

@@ -24,7 +24,11 @@ import android.widget.TextView;
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -91,6 +95,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private String[] lastSearchKeyboardLanguage;
     private ArrayList<TLRPC.User> searchResultCommandsUsers;
     private ArrayList<TLRPC.BotInlineResult> searchResultBotContext;
+    public static final ArrayList<String> usernames = new ArrayList<>(6);
     private TLRPC.TL_inlineBotSwitchPM searchResultBotContextSwitch;
     private MentionsAdapterDelegate delegate;
     private LongSparseArray<TLRPC.BotInfo> botInfo;
@@ -1072,18 +1077,20 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             if (!usernameOnly && needBotContext && dogPostion == 0 && !inlineBots.isEmpty()) {
                 int count = 0;
                 for (int a = 0; a < inlineBots.size(); a++) {
+                    boolean mentionAll = ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.mentionAll, true);
                     TLRPC.User user = messagesController.getUser(inlineBots.get(a).peer.user_id);
                     if (user == null) {
                         continue;
                     }
                     String username = UserObject.getPublicUsername(user);
+                    if (mentionAll){usernames.add(username);}
                     if (!TextUtils.isEmpty(username) && (usernameString.length() == 0 || username.toLowerCase().startsWith(usernameString))) {
                         newResult.add(user);
                         newResultsHashMap.put(user.id, user);
                         newMap.put(user.id, user);
                         count++;
                     }
-                    if (count == 5) {
+                    if (count == (mentionAll ? 6 : 5)) {
                         break;
                     }
                 }
@@ -1344,6 +1351,15 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     }
 
     private void showUsersResult(ArrayList<TLObject> newResult, LongSparseArray<TLObject> newMap, boolean notify) {
+        if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.mentionAll, true)){
+            if (newResult != null){
+                try {
+                    newResult.add(0, newResult.get(0));
+                } catch (IndexOutOfBoundsException e) {
+                    Log.d("LILCHILL", e.getMessage());
+                }
+            }
+        }
         searchResultUsernames = newResult;
         searchResultUsernamesMap = newMap;
         if (cancelDelayRunnable != null) {
@@ -1597,10 +1613,19 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), foundContextBot, contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0, "gif".equals(searchingContextUsername));
             }
         } else {
+            boolean isMentionAllEnabled = ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.mentionAll, true);
             if (searchResultUsernames != null) {
                 TLObject object = searchResultUsernames.get(position);
                 if (object instanceof TLRPC.User) {
-                    ((MentionCell) holder.itemView).setUser((TLRPC.User) object);
+                    if (position == 0){
+                        if (isMentionAllEnabled){
+                            ((MentionCell) holder.itemView).setTagAll();
+                        } else {
+                            ((MentionCell) holder.itemView).setUser((TLRPC.User) object);
+                        }
+                    } else {
+                        ((MentionCell) holder.itemView).setUser((TLRPC.User) object);
+                    }
                 } else if (object instanceof TLRPC.Chat) {
                     ((MentionCell) holder.itemView).setChat((TLRPC.Chat) object);
                 }

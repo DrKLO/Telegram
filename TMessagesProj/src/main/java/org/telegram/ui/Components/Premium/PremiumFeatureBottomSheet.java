@@ -421,7 +421,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         setButtonText();
         return this;
     }
-
+    public BaseFragment getFragment(){
+        return baseFragment;
+    }
     private void setButtonText() {
         if (forceAbout) {
             premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.AboutTelegramPremium));

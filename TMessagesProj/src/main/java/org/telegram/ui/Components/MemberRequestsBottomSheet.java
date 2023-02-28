@@ -27,9 +27,12 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
     private float yOffset;
     private boolean enterEventSent;
 
+    private BaseFragment fragment;
+
     public MemberRequestsBottomSheet(BaseFragment fragment, long chatId) {
         super(fragment.getParentActivity(), false, fragment.getCurrentAccount(), fragment.getResourceProvider());
         this.needSnapToTop = false;
+        this.fragment = fragment;
         this.isEmptyViewVisible = false;
         this.delegate = new MemberRequestsDelegate(fragment, container, chatId, false) {
             @Override
@@ -153,5 +156,8 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
         if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
             delegate.setAdapterItemsEnabled(true);
         }
+    }
+    public BaseFragment getFragment(){
+        return fragment;
     }
 }

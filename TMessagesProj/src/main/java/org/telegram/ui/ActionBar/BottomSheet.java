@@ -16,6 +16,7 @@ import android.animation.ValueAnimator;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Insets;
@@ -24,6 +25,8 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -51,6 +54,7 @@ import androidx.core.view.NestedScrollingParent;
 import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -60,8 +64,20 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.ChatAttachAlert;
+import org.telegram.ui.Components.ChatThemeBottomSheet;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EmojiPacksAlert;
+import org.telegram.ui.Components.InviteLinkBottomSheet;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MemberRequestsBottomSheet;
+import org.telegram.ui.Components.PermanentLinkBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
+import org.telegram.ui.Components.StickersAlert;
+import org.telegram.ui.Components.TrendingStickersAlert;
+import org.telegram.ui.NewContactBottomSheet;
+import org.telegram.ui.SessionBottomSheet;
 
 import java.util.ArrayList;
 
@@ -1555,6 +1571,25 @@ public class BottomSheet extends Dialog {
                     container.invalidate();
                 }
             });
+            SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, 0);
+            if (sp.getBoolean(LilSettingsActivity.isBlurInSlidingMenusEnabled, true)){
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+                    View view = getViewToBlur();
+                    if (view != null){
+                        float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+                        ValueAnimator va = ValueAnimator.ofFloat(bi, 0.1F);
+                        va.setDuration(250);
+                        va.addUpdateListener(a -> {
+                            if ((float) a.getAnimatedValue() != 0.1F){
+                                view.setRenderEffect(RenderEffect.createBlurEffect((float) a.getAnimatedValue(), (float) a.getAnimatedValue(), Shader.TileMode.MIRROR));
+                            } else {
+                                view.setRenderEffect(null);
+                            }
+                        });
+                        va.start();
+                    }
+                }
+            }
             currentSheetAnimation.playTogether(
                 containerView == null ? null : ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)),
                 ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
@@ -1606,6 +1641,34 @@ public class BottomSheet extends Dialog {
                 bulletin.hide();
             }
         }
+    }
+    private View getViewToBlur(){
+        if (this instanceof ChatAttachAlert){
+            return ((ChatAttachAlert) this).getBaseFragment().getLayoutContainer();
+        } else if (this instanceof EmojiPacksAlert){
+            return ((EmojiPacksAlert) this).getFragment().getLayoutContainer();
+        } else if (this instanceof ChatThemeBottomSheet) {
+            return ((ChatThemeBottomSheet) this).getFragment().getRootView(); //Needs testing
+        }  else if (this instanceof InviteLinkBottomSheet) {
+            return ((InviteLinkBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof MemberRequestsBottomSheet) {
+            return ((MemberRequestsBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof NewContactBottomSheet) {
+            return ((NewContactBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof PermanentLinkBottomSheet) {
+            return ((PermanentLinkBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof PremiumFeatureBottomSheet) {
+            return ((PremiumFeatureBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof PremiumPreviewBottomSheet) {
+            return ((PremiumPreviewBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof SessionBottomSheet) {
+            return ((SessionBottomSheet) this).getFragment().getLayoutContainer();
+        } else if (this instanceof StickersAlert) {
+            return ((StickersAlert) this).getFragment().getLayoutContainer();
+        } else if (this instanceof TrendingStickersAlert) {
+            return ((TrendingStickersAlert) this).getFragment().getLayoutContainer();
+        }
+        return null;
     }
 
     public int getSheetAnimationType() {

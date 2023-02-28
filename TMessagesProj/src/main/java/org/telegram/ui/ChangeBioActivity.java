@@ -10,6 +10,9 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
+import android.os.Build;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -26,6 +29,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -219,6 +223,9 @@ public class ChangeBioActivity extends BaseFragment {
                 final TLRPC.User user = (TLRPC.User)response;
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                        if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                         progressDialog.dismiss();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -230,6 +237,9 @@ public class ChangeBioActivity extends BaseFragment {
             } else {
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                        if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                         progressDialog.dismiss();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -241,7 +251,13 @@ public class ChangeBioActivity extends BaseFragment {
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
         progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
         progressDialog.show();
+        if (blurInModals){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}
+        }
     }
 
     @Override

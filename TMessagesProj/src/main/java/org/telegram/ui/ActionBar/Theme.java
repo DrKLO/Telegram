@@ -74,6 +74,7 @@ import androidx.core.math.MathUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
@@ -710,23 +711,34 @@ public class Theme {
                     return;
                 }
             }
+            int type = ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE).getInt(LilSettingsActivity.messagesStyle, 2);
             int padding = dp(2);
-            int rad;
-            int nearRad;
-            if (overrideRoundRadius != 0) {
-                rad = overrideRoundRadius;
-                nearRad = overrideRoundRadius;
-            } else if (overrideRounding > 0) {
-                rad = AndroidUtilities.lerp(dp(SharedConfig.bubbleRadius), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
-                nearRad = AndroidUtilities.lerp(dp(Math.min(6, SharedConfig.bubbleRadius)), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
-            } else if (currentType == TYPE_PREVIEW) {
-                rad = dp(6);
-                nearRad = dp(6);
-            } else {
-                rad = dp(SharedConfig.bubbleRadius);
-                nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
-            }
+            int rad = 0;
+            int nearRad = 0;
             int smallRad = dp(6);
+            switch (type) {
+                case 0:
+                case 1:
+                    if (overrideRoundRadius != 0) {
+                        rad = overrideRoundRadius;
+                        nearRad = overrideRoundRadius;
+                    } else if (overrideRounding > 0) {
+                        rad = AndroidUtilities.lerp(dp(SharedConfig.bubbleRadius), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+                        nearRad = AndroidUtilities.lerp(dp(Math.min(6, SharedConfig.bubbleRadius)), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+                    } else if (currentType == TYPE_PREVIEW) {
+                        rad = dp(6);
+                        nearRad = dp(6);
+                    } else {
+                        rad = dp(SharedConfig.bubbleRadius);
+                        nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
+                    }
+                    break;
+                case 2:
+                    rad = dp(SharedConfig.bubbleRadius);
+                    nearRad = dp(SharedConfig.bubbleRadius);
+                    smallRad = dp(SharedConfig.bubbleRadius);
+                    break;
+            }
 
             Paint p = paintToUse == null ? paint : paintToUse;
 
@@ -759,30 +771,41 @@ public class Theme {
                 path.rewind();
                 if (isOut) {
                     if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
+                        int radToUse = rad;
                         if (currentType == TYPE_MEDIA) {
-                            path.moveTo(bounds.right - dp(8) - rad, bounds.bottom - padding);
+                            path.moveTo(bounds.right - dp(8) - radToUse, bounds.bottom - padding);
                         } else {
                             path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
                         }
-                        path.lineTo(bounds.left + padding + rad, bounds.bottom - padding);
-                        rect.set(bounds.left + padding, bounds.bottom - padding - rad * 2, bounds.left + padding + rad * 2, bounds.bottom - padding);
+                        path.lineTo(bounds.left + padding + radToUse, bounds.bottom - padding);
+                        rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
                         path.arcTo(rect, 90, 90, false);
                     } else {
                         path.moveTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
                         path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
                     }
                     if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullTop) {
-                        path.lineTo(bounds.left + padding, bounds.top + padding + rad);
-                        rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
+                        int radToUse = rad;
+                        path.lineTo(bounds.left + padding, bounds.top + padding + radToUse);
+                        rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + radToUse * 2, bounds.top + padding + radToUse * 2);
                         path.arcTo(rect, 180, 90, false);
-
-                        int radToUse = isTopNear ? nearRad : rad;
                         if (currentType == TYPE_MEDIA) {
+                            radToUse = isTopNear ? nearRad : rad;
                             path.lineTo(bounds.right - padding - radToUse, bounds.top + padding);
                             rect.set(bounds.right - padding - radToUse * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + radToUse * 2);
                         } else {
-                            path.lineTo(bounds.right - dp(8) - radToUse, bounds.top + padding);
-                            rect.set(bounds.right - dp(8) - radToUse * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + radToUse * 2);
+                            if (type == 0){
+                                radToUse = isTopNear ? nearRad : rad;
+                                path.lineTo(bounds.right - dp(8) - radToUse, bounds.top + padding);
+                                rect.set(bounds.right - dp(8) - radToUse * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + radToUse * 2);
+                            } else if (type == 1) {
+                                radToUse = isTopNear ? nearRad : rad;
+                                path.lineTo(bounds.right - dp(8) - radToUse, bounds.top + padding);
+                                rect.set(bounds.right - dp(8) - radToUse * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + radToUse * 2);
+                            } else {
+                                path.lineTo(bounds.right - dp(8) - rad, bounds.top + padding);
+                                rect.set(bounds.right - dp(8) - rad * 2, bounds.top + padding, bounds.right - dp(7), bounds.top + padding + rad * 2);
+                            }
                         }
                         path.arcTo(rect, 270, 90, false);
                     } else {
@@ -795,8 +818,14 @@ public class Theme {
                     }
                     if (currentType == TYPE_MEDIA) {
                         if (paintToUse != null || drawFullBottom) {
-                            int radToUse = isBottomNear ? nearRad : rad;
-
+                            int radToUse;
+                            if (type == 0){
+                                radToUse = isBottomNear ? nearRad  : rad;
+                            } else if (type == 1){
+                                radToUse = isBottomNear ? nearRad  : rad;
+                            } else {
+                                radToUse = rad;
+                            }
                             path.lineTo(bounds.right - padding, bounds.bottom - padding - radToUse);
                             rect.set(bounds.right - padding - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - padding, bounds.bottom - padding);
                             path.arcTo(rect, 0, 90, false);
@@ -805,9 +834,17 @@ public class Theme {
                         }
                     } else {
                         if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
-                            path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
-                            rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
-                            path.arcTo(rect, 180, -83, false);
+                            if (type == 0){
+                                path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
+                                rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
+                                path.arcTo(rect, 180, -83, false);
+                            } else if (type == 1){
+                                rect.set(bounds.right - padding - rad * 2, bounds.bottom - padding - rad * 2, bounds.right - dp(7) - 2F, bounds.bottom - padding);
+                                path.arcTo(rect, 0, 90, false);
+                            } else {
+                                rect.set(bounds.right - padding - rad * 2, bounds.bottom - padding - rad * 2, bounds.right - dp(7) , bounds.bottom - padding);
+                                path.arcTo(rect, 0, 90, false);
+                            }
                         } else {
                             path.lineTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
                         }
@@ -827,17 +864,27 @@ public class Theme {
                         path.lineTo(bounds.right - padding, top - topY + currentBackgroundHeight);
                     }
                     if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullTop) {
-                        path.lineTo(bounds.right - padding, bounds.top + padding + rad);
-                        rect.set(bounds.right - padding - rad * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + rad * 2);
+                        int radToUse = rad;
+                        path.lineTo(bounds.right - padding, bounds.top + padding + radToUse);
+                        rect.set(bounds.right - padding - radToUse * 2, bounds.top + padding, bounds.right - padding, bounds.top + padding + radToUse * 2);
                         path.arcTo(rect, 0, -90, false);
-
-                        int radToUse = isTopNear ? nearRad : rad;
                         if (currentType == TYPE_MEDIA) {
+                            radToUse = isTopNear ? nearRad : rad;
                             path.lineTo(bounds.left + padding + radToUse, bounds.top + padding);
                             rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + radToUse * 2, bounds.top + padding + radToUse * 2);
                         } else {
-                            path.lineTo(bounds.left + dp(8) + radToUse, bounds.top + padding);
-                            rect.set(bounds.left + dp(8), bounds.top + padding, bounds.left + dp(8) + radToUse * 2, bounds.top + padding + radToUse * 2);
+                            if (type == 0){
+                                radToUse = isTopNear ? nearRad : rad;
+                                path.lineTo(bounds.left + dp(8) + radToUse, bounds.top + padding);
+                                rect.set(bounds.left + dp(8), bounds.top + padding, bounds.left + dp(8) + radToUse * 2, bounds.top + padding + radToUse * 2);
+                            } else if (type == 1){
+                                radToUse = isTopNear ? nearRad : rad;
+                                path.lineTo(bounds.left + dp(8) + radToUse, bounds.top + padding);
+                                rect.set(bounds.left + dp(8), bounds.top + padding, bounds.left + dp(8) + radToUse * 2, bounds.top + padding + radToUse * 2);
+                            } else {
+                                path.lineTo(bounds.left + dp(8) + rad, bounds.top + padding);
+                                rect.set(bounds.left + dp(8), bounds.top + padding, bounds.left + dp(8) + rad * 2, bounds.top + padding + rad * 2);
+                            }
                         }
                         path.arcTo(rect, 270, -90, false);
                     } else {
@@ -850,8 +897,14 @@ public class Theme {
                     }
                     if (currentType == TYPE_MEDIA) {
                         if (paintToUse != null || drawFullBottom) {
-                            int radToUse = isBottomNear ? nearRad : rad;
-
+                            int radToUse;
+                            if (type == 0){
+                                radToUse = isBottomNear ? nearRad : rad;
+                            } else if (type == 1){
+                                radToUse = isBottomNear ? nearRad : rad;
+                            } else {
+                                radToUse = rad;
+                            }
                             path.lineTo(bounds.left + padding, bounds.bottom - padding - radToUse);
                             rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
                             path.arcTo(rect, 180, -90, false);
@@ -860,14 +913,24 @@ public class Theme {
                         }
                     } else {
                         if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
-                            path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
-                            rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
-                            path.arcTo(rect, 0, 83, false);
+                            if (type == 0){
+                                path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
+                                rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
+                                path.arcTo(rect, 0, 83, false);
+                            } else if (type == 1){
+                                rect.set(bounds.left + dp(7) + 1.5F, bounds.bottom - padding - rad * 2, bounds.left + padding + rad * 2, bounds.bottom - padding);
+                                path.arcTo(rect, 180, -90, false);
+                            } else {
+                                rect.set(bounds.left + dp(7) + 1.5F, bounds.bottom - padding - rad * 2, bounds.left + padding + rad * 2, bounds.bottom - padding);
+                                path.arcTo(rect, 180, -90, false);
+                            }
                         } else {
                             path.lineTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
                         }
                     }
                 }
+
+
                 path.close();
             }
 

@@ -40,6 +40,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessagesController;
@@ -1148,7 +1149,7 @@ public class ViewPagerFixed extends FrameLayout {
                             return false;
                         }
                     }
-                    return super.canHighlightChildAt(child, x, y);
+                    return !getContext().getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areMaterialTabsEnabled, true);
                 }
             };
             if (hasStableIds) {
@@ -1436,7 +1437,17 @@ public class ViewPagerFixed extends FrameLayout {
                         indicatorX = (int) AndroidUtilities.lerp(lastDrawnIndicatorX, indicatorX, indicatorProgress2);
                         indicatorWidth = (int) AndroidUtilities.lerp(lastDrawnIndicatorW, indicatorWidth, indicatorProgress2);
                     }
-                    selectorDrawable.setBounds(indicatorX, (int) (height - AndroidUtilities.dpr(4) + hideProgress * AndroidUtilities.dpr(4)), indicatorX + indicatorWidth, (int) (height + hideProgress * AndroidUtilities.dpr(4)));
+                    boolean mt = getContext().getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areMaterialTabsEnabled, true);
+                    if (mt){
+                        indicatorX = indicatorX - 20;
+                        indicatorWidth = indicatorWidth + 40;
+                        selectorDrawable.setBounds(indicatorX, (int) (height - (height * 90 / 100)), indicatorX + indicatorWidth, (int) (height - (height * 10 / 100)));
+                        selectorDrawable.setCornerRadius(35F);
+                        selectorDrawable.setAlpha(80);
+                    } else {
+                        selectorDrawable.setAlpha((int) (255 * listView.getAlpha()));
+                        selectorDrawable.setBounds(indicatorX, (int) (height - AndroidUtilities.dpr(4) + hideProgress * AndroidUtilities.dpr(4)), indicatorX + indicatorWidth, (int) (height + hideProgress * AndroidUtilities.dpr(4)));
+                    }
                     selectorDrawable.draw(canvas);
                 }
                 if (crossfadeBitmap != null) {

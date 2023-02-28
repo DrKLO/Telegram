@@ -385,7 +385,9 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     public void setClearsInputField(boolean value) {
         clearsInputField = value;
     }
-
+    public BaseFragment getFragment(){
+        return parentFragment;
+    }
     public boolean isClearsInputField() {
         return clearsInputField;
     }

@@ -632,7 +632,9 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         codeDividerView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
         return fragmentView;
     }
-
+    public BaseFragment getFragment(){
+        return parentFragment;
+    }
     private void doOnDone() {
         if (donePressed || parentFragment == null || parentFragment.getParentActivity() == null) {
             return;

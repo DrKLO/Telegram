@@ -17,11 +17,13 @@ configurations.all {
 dependencies {
     implementation project(':TMessagesProj')
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.core:core-ktx:+'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 }
 
 android {
+
     compileSdkVersion 33
     buildToolsVersion '33.0.0'
 
@@ -113,13 +115,10 @@ android {
     flavorDimensions "minApi"
 
     productFlavors {
+
         bundleAfat {
-            ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            }
-            ext {
-                abiVersionCode = 1
-            }
+            ndk {abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"}
+            ext {abiVersionCode = 1}
         }
         bundleAfat_SDK23 {
             ndk {
@@ -155,6 +154,22 @@ android {
             ext {
                 abiVersionCode = 9
             }
+        }
+        x64 {
+            ndk {abiFilters "x86_64"}
+            ext {abiVersionCode = 4}
+        }
+        x86 {
+            ndk {abiFilters "x86"}
+            ext {abiVersionCode = 2}
+        }
+        armv7 {
+            ndk {abiFilters "armeabi-v7a"}
+            ext {abiVersionCode = 1}
+        }
+        arm64 {
+            ndk {abiFilters "arm64-v8a"}
+            ext {abiVersionCode = 3}
         }
     }
 
@@ -202,3 +217,4 @@ android {
 }
 
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'org.jetbrains.kotlin.android'

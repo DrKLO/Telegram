@@ -37,6 +37,8 @@ import android.widget.ScrollView;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
@@ -146,13 +148,20 @@ public class ActionBarPopupWindow extends PopupWindow {
         public ActionBarPopupWindowLayout(Context context, int resId, Theme.ResourcesProvider resourcesProvider, int flags) {
             super(context);
             this.resourcesProvider = resourcesProvider;
+            boolean areNewMenusEnabled = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE).getBoolean(LilSettingsActivity.areNewMenusEnabled, true);
             if (resId != 0) {
-                backgroundDrawable = getResources().getDrawable(resId).mutate();
-                setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+                if (areNewMenusEnabled){
+                    backgroundDrawable = LilHelper.getDrawable(26, true);
+                } else {
+                    backgroundDrawable = getResources().getDrawable(resId).mutate();
+                    setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+                    if (backgroundDrawable != null) {
+                        setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+                    }
+                }
             }
             if (backgroundDrawable != null) {
                 backgroundDrawable.getPadding(bgPaddings);
-                setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
             }
 
 

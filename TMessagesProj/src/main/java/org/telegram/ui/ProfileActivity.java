@@ -38,6 +38,8 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -93,6 +95,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -438,6 +442,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private TextCell setAvatarCell;
 
     private int rowCount;
+    private int lilSettingsRow;
 
     private int setAvatarRow;
     private int setAvatarSectionRow;
@@ -610,6 +615,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     };
     private boolean fragmentOpened;
     private NestedFrameLayout contentView;
+    private static NestedFrameLayout cw;
     private float titleAnimationsYDiff;
     private float customAvatarProgress;
     private float customPhotoOffset;
@@ -2779,6 +2785,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         fragmentView.setWillNotDraw(false);
         contentView = ((NestedFrameLayout) fragmentView);
+        cw = contentView;
         contentView.needBlur = true;
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
@@ -3235,6 +3242,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 ChatUsersActivity fragment = new ChatUsersActivity(args);
                 fragment.setInfo(chatInfo);
                 presentFragment(fragment);
+            } else if (position == lilSettingsRow){
+                presentFragment(new LilSettingsActivity());
             } else if (position == notificationRow) {
                 presentFragment(new NotificationsSettingsActivity());
             } else if (position == privacyRow) {
@@ -5058,8 +5067,34 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 py += pv.getY() + pv.getPaddingTop();
             }
             px -= popupLayout.getMeasuredWidth() / 2f;
+            SharedPreferences sp = getContext().getSharedPreferences("LilSettings", Context.MODE_PRIVATE);
+            boolean isBlurInModalsEnabled = sp.getBoolean("isBlurInModalsEnabled", true);
             popupWindow.showAtLocation(getFragmentView(), 0, (int) px, (int) py);
-            popupWindow.dimBehind();
+            if (isBlurInModalsEnabled){
+                LilHelper bh = new LilHelper();
+                float blurAlpha = sp.getFloat("blurAlpha", 20F);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    popupWindow.setOnDismissListener(() -> {
+                        fragmentView.setRenderEffect(null);
+                        ValueAnimator va = ValueAnimator.ofFloat(blurAlpha, 0.1f);
+                        va.setDuration(270);
+                        va.addUpdateListener(a -> {
+                            if ((float) a.getAnimatedValue() == 0.1f){
+                                fragmentView.setRenderEffect(null);
+                            } else {
+                                fragmentView.setRenderEffect(RenderEffect.createBlurEffect((float) a.getAnimatedValue(), (float) a.getAnimatedValue(), Shader.TileMode.MIRROR));
+                            }
+                        });
+                        va.start();
+                    });
+                    ValueAnimator va = ValueAnimator.ofFloat(0.1f, blurAlpha);
+                    va.setDuration(220);
+                    va.addUpdateListener(a -> fragmentView.setRenderEffect(RenderEffect.createBlurEffect((float) a.getAnimatedValue(), (float) a.getAnimatedValue(), Shader.TileMode.MIRROR)));
+                    va.start();
+                }
+            } else {
+                popupWindow.dimBehind();
+            }
             return true;
         } else if (position == channelInfoRow || position == userInfoRow || position == locationRow || position == bioRow) {
             if (position == bioRow && (userInfo == null || TextUtils.isEmpty(userInfo.about))) {
@@ -6986,6 +7021,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         settingsSectionRow = -1;
         settingsSectionRow2 = -1;
         notificationRow = -1;
+        lilSettingsRow = -1;
         languageRow = -1;
         premiumRow = -1;
         premiumSectionsRow = -1;
@@ -7088,6 +7124,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
 
                 settingsSectionRow2 = rowCount++;
+                lilSettingsRow = rowCount++;
                 notificationRow = rowCount++;
                 privacyRow = rowCount++;
                 dataRow = rowCount++;
@@ -8633,7 +8670,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         AlertDialog progressDialog = new AlertDialog(activity, AlertDialog.ALERT_TYPE_SPINNER);
         progressDialog.setCanCancel(false);
+        SharedPreferences sp = activity.getApplicationContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
         progressDialog.show();
+        if (blurInModals){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {cw.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}
+        }
         Utilities.globalQueue.postRunnable(() -> {
             try {
                 File dir = AndroidUtilities.getLogsDir();
@@ -8706,6 +8749,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        if (blurInModals){
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {cw.setRenderEffect(null);}
+                        }
                         progressDialog.dismiss();
                     } catch (Exception ignore) {
 
@@ -9220,6 +9266,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == languageRow) {
                         textCell.setTextAndIcon(LocaleController.getString("Language", R.string.Language), R.drawable.msg_language, false);
                         textCell.setImageLeft(23);
+                    } else if (position == lilSettingsRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("LilSettings", R.string.LilSettings), R.drawable.msg_settings, false);
                     } else if (position == notificationRow) {
                         textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.msg_notifications, true);
                     } else if (position == privacyRow) {
@@ -9460,7 +9508,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             if (notificationRow != -1) {
                 int position = holder.getAdapterPosition();
-                return position == notificationRow || position == numberRow || position == privacyRow ||
+                return position == lilSettingsRow || position == notificationRow  || position == numberRow || position == privacyRow ||
                         position == languageRow || position == setUsernameRow || position == bioRow ||
                         position == versionRow || position == dataRow || position == chatRow ||
                         position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
@@ -9502,7 +9550,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else if (position == settingsTimerRow || position == settingsKeyRow || position == reportRow || position == reportReactionRow ||
                     position == subscribersRow || position == subscribersRequestsRow || position == administratorsRow || position == blockedUsersRow ||
                     position == addMemberRow || position == joinRow || position == unblockRow ||
-                    position == sendMessageRow || position == notificationRow || position == privacyRow ||
+                    position == sendMessageRow || position == lilSettingsRow ||  position == notificationRow || position == privacyRow ||
                     position == languageRow || position == dataRow || position == chatRow ||
                     position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
                     position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
@@ -10577,6 +10625,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, passwordSuggestionSectionRow, sparseIntArray);
             put(++pointer, settingsSectionRow, sparseIntArray);
             put(++pointer, settingsSectionRow2, sparseIntArray);
+            put(++pointer, lilSettingsRow, sparseIntArray);
             put(++pointer, notificationRow, sparseIntArray);
             put(++pointer, languageRow, sparseIntArray);
             put(++pointer, premiumRow, sparseIntArray);

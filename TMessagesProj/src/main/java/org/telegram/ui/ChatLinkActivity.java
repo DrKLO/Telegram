@@ -10,6 +10,10 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -24,6 +28,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
@@ -456,6 +461,12 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                                     return;
                                 }
                                 progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(requestId, true));
+                                SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                                float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+                                boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+                                if (blurInModals){
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}
+                                }
                                 showDialog(progressDialog[0]);
                             }, 500);
                         }

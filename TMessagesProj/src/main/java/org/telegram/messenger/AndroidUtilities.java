@@ -119,6 +119,7 @@ import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.utils.CustomHtml;
@@ -602,6 +603,10 @@ public class AndroidUtilities {
         String url;
         int start;
         int end;
+    }
+
+    public static void removeCachedTypefaces(){
+        typefaceCache.clear();
     }
 
     private static String makeUrl(String url, String[] prefixes, Matcher matcher) {
@@ -1674,6 +1679,33 @@ public class AndroidUtilities {
 
     public static Typeface getTypeface(String assetPath) {
         synchronized (typefaceCache) {
+            int type = ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getInt(LilSettingsActivity.font, 2);
+            switch (type){
+                case 1:
+                    if (assetPath.equals("fonts/rmedium.ttf")){assetPath = "fonts/smedium.ttf";}
+                    if (assetPath.equals("fonts/ritalic.ttf")){assetPath = "fonts/sitalic.ttf";}
+                    if (assetPath.equals("fonts/rcondensedbold.ttf")){assetPath = "fonts/scondensedbold.ttf";}
+                    if (assetPath.equals("fonts/rmediumitalic.ttf")){assetPath = "fonts/smediumitalic.ttf";}
+                    break;
+                case 2:
+                    if (assetPath.equals("fonts/rmedium.ttf")){assetPath = "fonts/gmedium.ttf";}
+                    if (assetPath.equals("fonts/ritalic.ttf")){assetPath = "fonts/gitalic.ttf";}
+                    if (assetPath.equals("fonts/rcondensedbold.ttf")){assetPath = "fonts/gcondensedbold.ttf";}
+                    if (assetPath.equals("fonts/rmediumitalic.ttf")){assetPath = "fonts/gmediumitalic.ttf";}
+                    break;
+                case 3:
+                    if (assetPath.equals("fonts/rmedium.ttf")){assetPath = "fonts/omedium.ttf";}
+                    if (assetPath.equals("fonts/ritalic.ttf")){assetPath = "fonts/oitalic.ttf";}
+                    if (assetPath.equals("fonts/rcondensedbold.ttf")){assetPath = "fonts/ocondensedbold.ttf";}
+                    if (assetPath.equals("fonts/rmediumitalic.ttf")){assetPath = "fonts/omediumitalic.ttf";}
+                    break;
+                default:
+                    if (assetPath.equals("fonts/rmedium.ttf")){assetPath = "fonts/rmedium.ttf";}
+                    if (assetPath.equals("fonts/ritalic.ttf")){assetPath = "fonts/ritalic.ttf";}
+                    if (assetPath.equals("fonts/rcondensedbold.ttf")){assetPath = "fonts/rcondensedbold.ttf";}
+                    if (assetPath.equals("fonts/rmediumitalic.ttf")){assetPath = "fonts/rmediumitalic.ttf";}
+                    break;
+            }
             if (!typefaceCache.containsKey(assetPath)) {
                 try {
                     Typeface t;

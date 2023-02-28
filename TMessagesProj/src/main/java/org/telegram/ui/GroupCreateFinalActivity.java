@@ -40,7 +40,10 @@ import android.widget.LinearLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -574,6 +577,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 AutoDeletePopupWrapper autoDeletePopupWrapper = new AutoDeletePopupWrapper(getContext(), null, new AutoDeletePopupWrapper.Callback() {
                     @Override
                     public void dismiss() {
+                        if (popupWindow != null && ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), false);};
+                        }
                         popupWindow.dismiss();
                     }
 
@@ -598,7 +605,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
                 popupWindow.getContentView().setFocusableInTouchMode(true);
                 popupWindow.showAtLocation(getFragmentView(), 0, (int) (view.getX() + x), (int) (view.getY() + y + autoDeletePopupWrapper.windowLayout.getMeasuredHeight() / 2f));
-                popupWindow.dimBehind();
+                if (popupWindow != null && ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), true);}
+                } else {
+                    popupWindow.dimBehind();
+                }
             }
         });
 

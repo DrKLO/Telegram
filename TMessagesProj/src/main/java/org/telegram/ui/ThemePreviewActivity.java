@@ -58,6 +58,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -2067,6 +2068,13 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
                     editor.putString("lastDayTheme", applyingTheme.getKey());
                     editor.commit();
+                }
+                if (LilSettingsActivity.getHelper()){
+                    SharedPreferences sharedPreferences = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor spe = sharedPreferences.edit();
+                    spe.putInt("demoTries", sharedPreferences.getInt("demoTries", 3) - 1);
+                    spe.apply();
+                    LilSettingsActivity.setHelper(false);
                 }
                 finishFragment();
                 if (screenType == SCREEN_TYPE_PREVIEW) {

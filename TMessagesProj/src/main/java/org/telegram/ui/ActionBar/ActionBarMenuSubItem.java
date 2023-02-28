@@ -13,6 +13,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.CheckBox2;
@@ -257,8 +258,16 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     void updateBackground() {
-        int topBackgroundRadius = top ? 6 : 0;
-        int bottomBackgroundRadius = bottom ? 6 : 0;
+        boolean areNewMenusEnabled = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE).getBoolean(LilSettingsActivity.areNewMenusEnabled, true);
+        int topBackgroundRadius;
+        int bottomBackgroundRadius;
+        if (areNewMenusEnabled){
+            topBackgroundRadius = top ? 26 : 0;
+            bottomBackgroundRadius = bottom ? 26 : 0;
+        } else {
+            topBackgroundRadius = top ? 6 : 0;
+            bottomBackgroundRadius = bottom ? 6 : 0;
+        }
         setBackground(Theme.createRadSelectorDrawable(selectorColor, topBackgroundRadius, bottomBackgroundRadius));
     }
 

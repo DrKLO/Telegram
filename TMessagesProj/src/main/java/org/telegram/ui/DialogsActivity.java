@@ -84,6 +84,8 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -3913,7 +3915,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         floatingButton = new RLottieImageView(context);
         floatingButton.setScaleType(ImageView.ScaleType.CENTER);
-        floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
         if (initialDialogsType == DIALOGS_TYPE_WIDGET) {
             floatingButton.setImageResource(R.drawable.floating_check);
             floatingButtonContainer.setContentDescription(LocaleController.getString("Done", R.string.Done));
@@ -9704,6 +9705,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
                         v.getHitRect(popupRect);
                         if (!popupRect.contains((int) event.getX(), (int) event.getY())) {
+                            if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), false);}
+                            }
                             sendPopupWindow.dismiss();
                         }
                     }
@@ -9713,6 +9718,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
         sendPopupLayout2.setDispatchKeyEventListener(keyEvent -> {
             if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_BACK && keyEvent.getRepeatCount() == 0 && sendPopupWindow != null && sendPopupWindow.isShowing()) {
+                if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), false);}
+                }
                 sendPopupWindow.dismiss();
             }
         });
@@ -9725,6 +9734,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         sendPopupLayout2.addView(sendWithoutSound, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
         sendWithoutSound.setOnClickListener(v -> {
             if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
+                if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), false);}
+                }
                 sendPopupWindow.dismiss();
             }
             this.notify = false;
@@ -9756,7 +9769,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         view.getLocationInWindow(location);
         int y = location[1] - layout.getMeasuredHeight() - AndroidUtilities.dp(2);
         sendPopupWindow.showAtLocation(view, Gravity.LEFT | Gravity.TOP, location[0] + view.getMeasuredWidth() - layout.getMeasuredWidth() + AndroidUtilities.dp(8), y);
-        sendPopupWindow.dimBehind();
+        if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                LilHelper.blurAlert(fragmentView, ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getFloat(LilSettingsActivity.blurAlpha, 20F), true);}
+        } else {
+            sendPopupWindow.dimBehind();
+        }
         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
 
         return false;
@@ -10319,15 +10337,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (getParentActivity() == null || floatingButtonContainer == null) {
             return;
         }
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        boolean areMaterialButtonsEnabled = sp.getBoolean(LilSettingsActivity.areMaterialButtonsEnabled, true);
+        Drawable d;
+        if (Build.VERSION.SDK_INT > 21){
+            if (areMaterialButtonsEnabled){
+                d = LilHelper.getDrawable(AndroidUtilities.dp(5), false, Theme.key_chat_outBubble);
+                floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_actionIcon), PorterDuff.Mode.MULTIPLY));
+            } else {
+                d = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
+            }
+        } else {
             Drawable shadowDrawable = ContextCompat.getDrawable(getParentActivity(), R.drawable.floating_shadow).mutate();
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
+            d = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
+            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, d, 0, 0);
             combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-            drawable = combinedDrawable;
+            d = combinedDrawable;
         }
-        floatingButtonContainer.setBackground(drawable);
+        floatingButtonContainer.setBackground(d);
     }
 
     float slideFragmentProgress = 1f;

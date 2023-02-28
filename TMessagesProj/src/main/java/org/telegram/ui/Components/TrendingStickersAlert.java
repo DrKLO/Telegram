@@ -35,9 +35,11 @@ public class TrendingStickersAlert extends BottomSheet {
 
     private int scrollOffsetY;
 
+    private BaseFragment fragment;
+
     public TrendingStickersAlert(@NonNull Context context, BaseFragment parentFragment, TrendingStickersLayout trendingStickersLayout, Theme.ResourcesProvider resourcesProvider) {
         super(context, true, resourcesProvider);
-
+        this.fragment = parentFragment;
         alertContainerView = new AlertContainerView(context);
         alertContainerView.addView(trendingStickersLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -78,7 +80,9 @@ public class TrendingStickersAlert extends BottomSheet {
         super.show();
         setHeavyOperationsEnabled(false);
     }
-
+    public BaseFragment getFragment(){
+        return fragment;
+    }
     @Override
     public void dismiss() {
         super.dismiss();

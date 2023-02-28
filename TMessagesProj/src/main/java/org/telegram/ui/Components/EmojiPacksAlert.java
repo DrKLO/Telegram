@@ -108,7 +108,9 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
     int highlightStartPosition = -1, highlightEndPosition = -1;
     private AnimatedFloat highlightAlpha;
-
+    public BaseFragment getFragment(){
+        return fragment;
+    }
     private ContentPreviewViewer.ContentPreviewViewerDelegate previewDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
         public boolean can() {

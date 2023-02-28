@@ -354,6 +354,10 @@ public class InviteLinkBottomSheet extends BottomSheet {
         updateColors();
     }
 
+    public BaseFragment getFragment(){
+        return fragment;
+    }
+
     public void updateColors() {
         if (titleTextView != null) {
             titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));

@@ -279,7 +279,9 @@ public class SessionBottomSheet extends BottomSheet {
         }
         return true;
     }
-
+    public BaseFragment getFragment(){
+        return parentFragment;
+    }
     private void uploadSessionSettings() {
         TLRPC.TL_account_changeAuthorizationSettings req = new TLRPC.TL_account_changeAuthorizationSettings();
         req.encrypted_requests_disabled = session.encrypted_requests_disabled;

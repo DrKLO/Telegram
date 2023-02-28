@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="backgroundTheme">@android:color/system_neutral1_600</color>
+    <color name="backgroundThemeDark">@android:color/system_neutral1_900</color>
+
+    <color name="logoBackground">@android:color/system_accent1_100</color>
+    <color name="logo">@android:color/system_neutral1_800</color>
+    <color name="splashBackground">@android:color/system_accent1_10</color>
+
+    <color name="monet_accent">@android:color/system_accent1_100</color>
+</resources>

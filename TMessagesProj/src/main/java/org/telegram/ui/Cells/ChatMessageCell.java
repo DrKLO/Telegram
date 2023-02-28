@@ -18,6 +18,7 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -78,6 +79,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -7731,7 +7733,41 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (currentMessageObject.type == MessageObject.TYPE_GEO && MessageObject.getMedia(currentMessageObject) instanceof TLRPC.TL_messageMediaVenue) {
                     br = bl = nearRad;
                 }
-                photoImage.setRoundRadius(tl, tr, br, bl);
+                SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, 0);
+                int type = sp.getInt(LilSettingsActivity.messagesStyle, 2);
+                if (type == 2){
+                    if (currentMessageObject.isOutOwner() || currentMessageObject.isOut()){
+                        if (currentMessagesGroup != null){
+                            if (currentMessageObject.isDocument()){
+                                photoImage.setRoundRadius(tl, tr, br, bl);
+                            } else {
+                                if (currentMessageObject == currentMessagesGroup.findPrimaryMessageObject()){
+                                    photoImage.setRoundRadius(AndroidUtilities.dp(SharedConfig.bubbleRadius), tr, br, AndroidUtilities.dp(SharedConfig.bubbleRadius));
+                                } else {
+                                    photoImage.setRoundRadius(tl, rad, rad, bl);
+                                }
+                            }
+                        } else {
+                            photoImage.setRoundRadius(tl, AndroidUtilities.dp(SharedConfig.bubbleRadius), AndroidUtilities.dp(SharedConfig.bubbleRadius), bl);
+                        }
+                    } else {
+                        if (currentMessagesGroup != null) {
+                            if (currentMessageObject.isDocument()) {
+                                photoImage.setRoundRadius(tl, tr, br, bl);
+                            } else {
+                                if (currentMessageObject == currentMessagesGroup.findPrimaryMessageObject()) {
+                                    photoImage.setRoundRadius(AndroidUtilities.dp(SharedConfig.bubbleRadius), tr, br, AndroidUtilities.dp(SharedConfig.bubbleRadius));
+                                } else {
+                                    photoImage.setRoundRadius(tl, rad, rad, bl);
+                                }
+                            }
+                        } else {
+                            photoImage.setRoundRadius(AndroidUtilities.dp(SharedConfig.bubbleRadius), tr, br, AndroidUtilities.dp(SharedConfig.bubbleRadius));
+                        }
+                    }
+                } else {
+                    photoImage.setRoundRadius(tl, tr, br, bl);
+                }
             }
             updateAnimatedEmojis();
         }

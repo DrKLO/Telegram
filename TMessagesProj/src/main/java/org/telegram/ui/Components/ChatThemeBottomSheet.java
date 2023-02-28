@@ -247,6 +247,9 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         applyTextView.setVisibility(View.INVISIBLE);
         rootLayout.addView(applyTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.START, 16, 162, 16, 16));
     }
+    public SizeNotifierFrameLayout getFragment(){
+        return chatActivity.getContentView();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

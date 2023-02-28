@@ -17,6 +17,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
@@ -44,6 +45,7 @@ import androidx.annotation.Keep;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
@@ -110,9 +112,12 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                     }
                 }
                 boolean result = super.drawChild(canvas, child, drawingTime);
-                if (actionBarHeight != 0 && headerShadowDrawable != null) {
-                    headerShadowDrawable.setBounds(0, actionBarY + actionBarHeight, getMeasuredWidth(), actionBarY + actionBarHeight + headerShadowDrawable.getIntrinsicHeight());
-                    headerShadowDrawable.draw(canvas);
+                boolean removeDividers = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE).getBoolean(LilSettingsActivity.areDividersRemoved, true);
+                if (!removeDividers) {
+                    if (actionBarHeight != 0 && headerShadowDrawable != null) {
+                        headerShadowDrawable.setBounds(0, actionBarY + actionBarHeight, getMeasuredWidth(), actionBarY + actionBarHeight + headerShadowDrawable.getIntrinsicHeight());
+                        headerShadowDrawable.draw(canvas);
+                    }
                 }
                 return result;
             }
@@ -460,16 +465,20 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     @Override
     public void drawHeaderShadow(Canvas canvas, int alpha, int y) {
-        if (headerShadowDrawable != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                if (headerShadowDrawable.getAlpha() != alpha) {
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        boolean areDividersDisabled = sp.getBoolean(LilSettingsActivity.areDividersRemoved, true);
+        if (!areDividersDisabled) {
+            if (headerShadowDrawable != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    if (headerShadowDrawable.getAlpha() != alpha) {
+                        headerShadowDrawable.setAlpha(alpha);
+                    }
+                } else {
                     headerShadowDrawable.setAlpha(alpha);
                 }
-            } else {
-                headerShadowDrawable.setAlpha(alpha);
+                headerShadowDrawable.setBounds(0, y, getMeasuredWidth(), y + headerShadowDrawable.getIntrinsicHeight());
+                headerShadowDrawable.draw(canvas);
             }
-            headerShadowDrawable.setBounds(0, y, getMeasuredWidth(), y + headerShadowDrawable.getIntrinsicHeight());
-            headerShadowDrawable.draw(canvas);
         }
     }
 

@@ -110,7 +110,9 @@ public class PermanentLinkBottomSheet extends BottomSheet {
 
         updateColors();
     }
-
+    public BaseFragment getFragment(){
+        return fragment;
+    }
     boolean linkGenerating;
     TLRPC.TL_chatInviteExported invite;
 

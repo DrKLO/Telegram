@@ -55,7 +55,10 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -703,13 +706,19 @@ public class ActionBarMenuItem extends FrameLayout {
             FrameLayout frameLayout = new FrameLayout(getContext());
             frameLayout.setAlpha(0f);
             frameLayout.animate().alpha(1f).setDuration(100).start();
+            boolean areNewMenusEnabled = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE).getBoolean(LilSettingsActivity.areNewMenusEnabled, true);
             if (topView.getParent() instanceof ViewGroup) {
                 ((ViewGroup) topView.getParent()).removeView(topView);
             }
             if (topView instanceof ActionBarMenuSubItem || topView instanceof LinearLayout) {
-                Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert2).mutate();
-                drawable.setColorFilter(new PorterDuffColorFilter(popupLayout.getBackgroundColor(), PorterDuff.Mode.MULTIPLY));
-                frameLayout.setBackground(drawable);
+                Drawable d;
+                if (areNewMenusEnabled){
+                    d = LilHelper.getDrawable(12, true);
+                } else {
+                    d = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert2).mutate();
+                    d.setColorFilter(new PorterDuffColorFilter(popupLayout.getBackgroundColor(), PorterDuff.Mode.MULTIPLY));
+                }
+                frameLayout.setBackground(d);
             }
             frameLayout.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -2098,7 +2107,9 @@ public class ActionBarMenuItem extends FrameLayout {
         createPopupLayout();
         ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(getContext(), resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
         gap.setTag(R.id.fit_width_tag, 1);
-        popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+        if (!getContext().getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areNewMenusEnabled, true)){
+            popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+        }
         return gap;
     }
 
@@ -2191,10 +2202,12 @@ public class ActionBarMenuItem extends FrameLayout {
                 }
                 view = cell;
             } else if (viewType == VIEW_TYPE_COLORED_GAP) {
-                ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(parent.getContext(), parent.resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
-                gap.setTag(R.id.fit_width_tag, 1);
-                parent.popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
-                view = gap;
+                if (!ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areNewMenusEnabled, true)){
+                    ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(parent.getContext(), parent.resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
+                    gap.setTag(R.id.fit_width_tag, 1);
+                    parent.popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                    view = gap;
+                }
             } else if (viewType == VIEW_TYPE_SWIPEBACKITEM) {
                 ActionBarMenuSubItem cell = new ActionBarMenuSubItem(parent.getContext(), false, false, false, parent.resourcesProvider);
                 cell.setTextAndIcon(text, icon, iconDrawable);

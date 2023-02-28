@@ -46,6 +46,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
@@ -857,7 +858,7 @@ public class FilterTabsView extends FrameLayout {
                         return false;
                     }
                 }
-                return super.canHighlightChildAt(child, x, y);
+                return !getContext().getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areMaterialTabsEnabled, true) && super.canHighlightChildAt(child, x, y);
             }
         };
         listView.setClipChildren(false);
@@ -1223,6 +1224,7 @@ public class FilterTabsView extends FrameLayout {
             selectorDrawable.setAlpha((int) (255 * listView.getAlpha()));
             float indicatorX = 0;
             float indicatorWidth = 0;
+            boolean mt = getContext().getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areMaterialTabsEnabled, true);
             if (animatingIndicator || manualScrollingToPosition != -1) {
                 int position = layoutManager.findFirstVisibleItemPosition();
                 if (position != RecyclerListView.NO_POSITION) {
@@ -1263,7 +1265,17 @@ public class FilterTabsView extends FrameLayout {
                 canvas.save();
                 canvas.translate(listView.getTranslationX(), 0);
                 canvas.scale(listView.getScaleX(), 1f, listView.getPivotX() + listView.getX(), listView.getPivotY());
-                selectorDrawable.setBounds((int) indicatorX, height - AndroidUtilities.dpr(4), (int) (indicatorX + indicatorWidth), height);
+                if (mt){
+                    selectorDrawable.setColor(Theme.getColor(tabLineColorKey));
+                    indicatorX = indicatorX - 30;
+                    indicatorWidth = indicatorWidth + 60;
+                    selectorDrawable.setBounds((int) indicatorX, height - (height * 90 / 100), (int) (indicatorX + indicatorWidth), height - (height * 10 / 100));
+                    selectorDrawable.setCornerRadius(35F);
+                    selectorDrawable.setAlpha(80);
+                } else {
+                    selectorDrawable.setAlpha((int) (255 * listView.getAlpha()));
+                    selectorDrawable.setBounds((int) indicatorX, height - AndroidUtilities.dpr(4), (int) (indicatorX + indicatorWidth), height);
+                }
                 selectorDrawable.draw(canvas);
                 canvas.restore();
             }

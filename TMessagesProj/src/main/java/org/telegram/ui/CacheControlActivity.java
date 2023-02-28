@@ -13,6 +13,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -20,6 +21,8 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -48,6 +51,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.CacheByChatsController;
@@ -823,7 +827,11 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progressDialog.setCanCancel(false);
-        progressDialog.showDelayed(500);
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+        progressDialog.showDelayed(200);
+        if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}}
         getFileLoader().cancelLoadAllFiles();
         getFileLoader().getFileLoaderQueue().postRunnable(() -> Utilities.globalQueue.postRunnable(() -> {
             cleanupFoldersInternal();
@@ -1309,7 +1317,11 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     private void cleanupDialogFiles(DialogFileEntities dialogEntities, StorageDiagramView.ClearViewData[] clearViewData, CacheModel dialogCacheModel) {
         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progressDialog.setCanCancel(false);
-        progressDialog.showDelayed(500);
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+        boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+        progressDialog.showDelayed(200);
+        if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}}
 
         HashSet<CacheModel.FileInfo> filesToRemove = new HashSet<>();
         long totalSizeBefore = totalSize;
@@ -1387,6 +1399,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             AndroidUtilities.runOnUIThread(() -> {
                 FileLoader.getInstance(currentAccount).checkCurrentDownloadsFiles();
                 try {
+                    if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(null);}}
                     progressDialog.dismiss();
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -1415,7 +1428,11 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
             progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setCanCancel(false);
-            progressDialog.showDelayed(500);
+            SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+            float bi = sp.getFloat(LilSettingsActivity.blurAlpha, 20F);
+            boolean blurInModals = sp.getBoolean(LilSettingsActivity.isBlurInModalsEnabled, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S);
+            progressDialog.showDelayed(200);
+            if (blurInModals){if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {fragmentView.setRenderEffect(RenderEffect.createBlurEffect(bi, bi, Shader.TileMode.MIRROR));}}
             MessagesController.getInstance(currentAccount).clearQueryTime();
             getMessagesStorage().clearLocalDatabase();
         });

@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -35,6 +36,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import org.lilchill.LilHelper;
+import org.lilchill.lilsettings.LilSettingsActivity;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -109,11 +112,15 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         shadowView.setVisibility(INVISIBLE);
         shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
         shadowView.setImageResource(R.drawable.bottom_shadow);
-        addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.LEFT | Gravity.BOTTOM));
+        //addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.LEFT | Gravity.BOTTOM));
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
-        addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+        if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.isRoundedAvatarEnabled, true)){
+            avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(14));
+        } else {
+            avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
+        }
+        addView(avatarImageView, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
 
         nameTextView = new SimpleTextView(context) {
             @Override
@@ -132,7 +139,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             }
         });
         nameTextView.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
-        nameTextView.setTextSize(15);
+        nameTextView.setTextSize(19);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         nameTextView.setEllipsizeByGradient(true);
@@ -140,7 +147,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 52, 28));
 
         phoneTextView = new TextView(context);
-        phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         phoneTextView.setLines(1);
         phoneTextView.setMaxLines(1);
         phoneTextView.setSingleLine(true);
@@ -179,7 +186,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         darkThemeView.setFocusable(true);
         darkThemeView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0, 0));
         sunDrawable.beginApplyLayerColors();
-        int color = Theme.getColor(Theme.key_chats_menuName);
+        int color = Theme.getColor(Theme.key_chats_menuItemText);
         sunDrawable.setLayerColor("Sunny.**", color);
         sunDrawable.setLayerColor("Path 6.**", color);
         sunDrawable.setLayerColor("Path.**", color);
@@ -193,6 +200,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         }
         if (!playDrawable && sunDrawable.getCustomEndFrame() != sunDrawable.getCurrentFrame()) {
             darkThemeView.playAnimation();
+        }
+        if (ApplicationLoader.applicationContext.getSharedPreferences(LilSettingsActivity.ls, 0).getBoolean(LilSettingsActivity.areMaterialButtonsEnabled, true)){
+            darkThemeView.setBackground(LilHelper.getDrawable(5, false, Theme.key_chat_outBubble));
         }
         darkThemeView.setOnClickListener(v -> {
             if (switchingTheme) {
@@ -241,7 +251,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             }
             return false;
         });
-        addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 90));
+        addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 15, 100));
 
         if (Theme.getEventType() == 0) {
             snowflakesEffect = new SnowflakesEffect(0);
@@ -519,7 +529,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             currentColor = color;
             shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
-        color = Theme.getColor(Theme.key_chats_menuName);
+        color = Theme.getColor(Theme.key_chats_menuItemText);
         if (currentMoonColor == null || currentMoonColor != color) {
             currentMoonColor = color;
             sunDrawable.beginApplyLayerColors();
@@ -531,7 +541,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         }
         nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
         if (useImageBackground) {
-            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
+            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
             if (shadowView.getVisibility() != VISIBLE) {
                 shadowView.setVisibility(VISIBLE);
             }
@@ -562,7 +572,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             if (shadowView.getVisibility() != visibility) {
                 shadowView.setVisibility(visibility);
             }
-            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhoneCats));
+            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
             super.onDraw(canvas);
             darkBackColor = Theme.getColor(Theme.key_listSelector);
         }
@@ -674,7 +684,21 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         }
         animatedStatus.setColor(Theme.getColor(Theme.isCurrentThemeDark() ? Theme.key_chats_verifiedBackground : Theme.key_chats_menuPhoneCats));
         status.setColor(Theme.getColor(Theme.isCurrentThemeDark() ? Theme.key_chats_verifiedBackground : Theme.key_chats_menuPhoneCats));
-        phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        boolean numberIsHidden = sp.getBoolean(LilSettingsActivity.isNumberHidden, true);
+        if (numberIsHidden){
+            try {
+                if (user.username != null){
+                    phoneTextView.setText("@" + user.username);
+                } else {
+                    phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+                }
+            } catch (Exception e){
+                phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+            }
+        } else {
+            phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setForUserOrChat(user, avatarDrawable);
@@ -686,13 +710,15 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         String currentTag = (String) getTag();
         String backgroundKey = Theme.hasThemeKey(Theme.key_chats_menuTopBackground) && Theme.getColor(Theme.key_chats_menuTopBackground) != 0 ? Theme.key_chats_menuTopBackground : Theme.key_chats_menuTopBackgroundCats;
         if (force || !backgroundKey.equals(currentTag)) {
-            setBackgroundColor(Theme.getColor(backgroundKey));
+            setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
             setTag(backgroundKey);
         }
         return backgroundKey;
     }
 
     public void updateColors() {
+        SharedPreferences sp = getContext().getSharedPreferences(LilSettingsActivity.ls, Context.MODE_PRIVATE);
+        boolean areMaterialButtonsEnabled = sp.getBoolean(LilSettingsActivity.areMaterialButtonsEnabled, true);
         if (snowflakesEffect != null) {
             snowflakesEffect.updateColors();
         }
@@ -701,6 +727,32 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         }
         if (status != null) {
             status.setColor(Theme.getColor(Theme.isCurrentThemeDark() ? Theme.key_chats_verifiedBackground : Theme.key_chats_menuPhoneCats));
+        }
+        if (areMaterialButtonsEnabled){
+            if (darkThemeView.getBackground() != null){
+                GradientDrawable d = LilHelper.getDrawable(14, false, Theme.key_chat_outBubble);
+                darkThemeView.setBackground(d);
+            }
+        }
+        if (phoneTextView != null){
+            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
+        }
+        if (arrowView != null){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                arrowView.setImageTintList(ColorStateList.valueOf(Theme.getColor(Theme.key_actionBarTabActiveText)));
+            }
+        }
+        if (sunDrawable != null){
+            currentMoonColor = Theme.getColor(Theme.key_chats_menuItemText);
+            sunDrawable.beginApplyLayerColors();
+            sunDrawable.setLayerColor("Sunny.**", currentMoonColor);
+            sunDrawable.setLayerColor("Path 6.**", currentMoonColor);
+            sunDrawable.setLayerColor("Path.**", currentMoonColor);
+            sunDrawable.setLayerColor("Path 5.**", currentMoonColor);
+            sunDrawable.commitApplyLayerColors();
+        }
+        if (avatarImageView != null){
+            avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(sp.getBoolean(LilSettingsActivity.isRoundedAvatarEnabled, true) ? 19 : 50));
         }
     }
 

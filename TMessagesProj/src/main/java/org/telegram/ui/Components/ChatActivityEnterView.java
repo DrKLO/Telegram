@@ -100,6 +100,8 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -7303,6 +7305,22 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             messageEditText.setSelection(start + text.length());
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    public void tagAll(String text){
+        try {
+            SpannableStringBuilder builder = new SpannableStringBuilder(messageEditText.getText());
+            if (messageEditText.getText().toString().equals("@")){
+                builder.clear();
+            } else {
+                StringBuilder stringBuilder = new StringBuilder(text);
+                stringBuilder.deleteCharAt(builder.length() - 1);
+            }
+            builder.append(text);
+            messageEditText.setText(builder);
+        } catch (Exception e){
+            Log.d("LILCHILL", e.getMessage());
         }
     }
 
