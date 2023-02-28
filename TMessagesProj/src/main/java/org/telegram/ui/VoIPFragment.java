@@ -20,6 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
@@ -31,6 +32,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.transition.Visibility;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -84,7 +86,6 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.MultiLayerTransitionBackground;
 import org.telegram.ui.Components.voip.AcceptDeclineView;
 import org.telegram.ui.Components.voip.PrivateVideoPreviewDialog;
 import org.telegram.ui.Components.voip.VoIPButtonsLayout;
@@ -330,6 +331,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private int position = 0;
     private boolean goForward = false;
     private final Handler handler = new Handler();
+    private boolean alreadyTransitionedToFixColor =false;
 
     public static void show(Activity activity, int account) {
         show(activity, false, account);
@@ -630,42 +632,42 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        TransitionDrawable out = transitions[position];
+
+                        /* (cae)
+                        *
+                        *  How it works.
+                        *
+                        * An annoying thing about the call established background gradient is that
+                        * it is three transitions, i.e green->blue-green->violet
+                        *
+                        * TransitionDrawable supports only two layers, so we have to implement the
+                        * poor mans transition, and here it is
+                        *
+                        * The transition works as follows, we previously filled transitions variable
+                        * with a gradient like the following
+                        * [a,b] ,[b,c], [c,a], where the letters represent the gradients as they flow
+                        *
+                        * we then move from each transition as specified above, due to the nature of
+                        * how they were laid out, the end of one is the beginning of the other,
+                        * so they blend
+                        *
+                        * We wrap-around the array by taking position % number of transitions we can have
+                        * */
+                        TransitionDrawable out = transitions[position % transitions.length];
                         out.setCrossFadeEnabled(false);
                         backgroundView.setImageDrawable(out);
 
-                        if (goForward) {
-                            out.startTransition(3000);
-
-                            switch (position) {
-                                case 0:
-                                case 1:
-                                    position += 1;
-                                    break;
-                                case 2:
-                                    goForward = false;
-                                    break;
-                                default:
-                                    throw new RuntimeException("Unexpected position " + position);
+                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000){
+                            if (!alreadyTransitionedToFixColor) {
+                                out.startTransition(2000);
                             }
-                        } else {
-                            out.reverseTransition(3000);
-
-                            switch (position) {
-                                case 2:
-                                case 1:
-                                    position -= 1;
-                                    break;
-                                case 0:
-                                    goForward = true;
-                                    break;
-                                default:
-                                    throw new RuntimeException("Unexpected position " + position);
-
-                            }
+                            alreadyTransitionedToFixColor =true;
+                            return;
                         }
-//
-                        handler.postDelayed(this, 9000);
+                        alreadyTransitionedToFixColor = false;
+                        out.startTransition(2000);
+
+                        handler.postDelayed(this, 16000);
 
                     }
                 });
@@ -1794,6 +1796,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 }
 
                 if (!showCallEstablishedGradient) {
+                    // to check if device hasn't been on for 10 seconds.
+                    lastContentTapTime=System.currentTimeMillis();
                     patternAlphaAnimator.cancel();
                     shouldStartPatternAnimator = true;
                     gradientState = GradientState.BLUE_GREEN;
