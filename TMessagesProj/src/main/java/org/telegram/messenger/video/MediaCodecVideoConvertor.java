@@ -14,6 +14,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 
@@ -994,8 +995,12 @@ public class MediaCodecVideoConvertor {
             final int dstHeight, boolean external) {
 
         final float kernelSize = Utilities.clamp((float) (Math.max(srcWidth, srcHeight) / (float) Math.max(dstHeight, dstWidth)) * 0.8f, 2f, 1f);
-        final int kernelRadius = (int) kernelSize;
+        int kernelRadius = (int) kernelSize;
+        if (kernelRadius > 1 && SharedConfig.deviceIsAverage()) {
+            kernelRadius = 1;
+        }
         FileLog.d("source size " + srcWidth + "x" + srcHeight + "    dest size " + dstWidth + dstHeight + "   kernelRadius " + kernelRadius);
+
         if (external) {
             return "#extension GL_OES_EGL_image_external : require\n" +
                     "precision mediump float;\n" +
