@@ -11,6 +11,7 @@ package org.telegram.ui.Components;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -501,13 +502,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     public void setStreamType(int type) {
         if (player != null) {
             player.setAudioAttributes(new AudioAttributes.Builder()
-                            .setContentType(type)
-                            .build(), false);
+                .setUsage(type == AudioManager.STREAM_VOICE_CALL ? C.USAGE_VOICE_COMMUNICATION : C.USAGE_MEDIA)
+                .build(), false);
         }
         if (audioPlayer != null) {
             audioPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                    .setContentType(type)
-                    .build(), false);
+                .setUsage(type == AudioManager.STREAM_VOICE_CALL ? C.USAGE_VOICE_COMMUNICATION : C.USAGE_MEDIA)
+                .build(), true);
         }
     }
 

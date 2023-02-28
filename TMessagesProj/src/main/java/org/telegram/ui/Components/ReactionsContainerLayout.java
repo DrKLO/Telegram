@@ -977,7 +977,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             allReactionsAvailable = true;
             fillRecentReactionsList(visibleReactions);
         }
-
+        filterReactions(visibleReactions);
         setVisibleReactionsList(visibleReactions);
 
         if (message.messageOwner.reactions != null && message.messageOwner.reactions.results != null) {
@@ -986,6 +986,17 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     selectedReactions.add(ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(message.messageOwner.reactions.results.get(i).reaction));
                 }
             }
+        }
+    }
+
+    private void filterReactions(List<ReactionsLayoutInBubble.VisibleReaction> visibleReactions) {
+        HashSet<ReactionsLayoutInBubble.VisibleReaction> set = new HashSet<>();
+        for (int i = 0; i < visibleReactions.size(); i++) {
+            if (set.contains(visibleReactions.get(i))) {
+                i--;
+                visibleReactions.remove(i);
+            }
+            set.add(visibleReactions.get(i));
         }
     }
 

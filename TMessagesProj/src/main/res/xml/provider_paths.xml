@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-path name="media" path="."/>
+    <files-path name="logs" path="/logs/"/>
+    <files-path name="cache" path="/cache/"/>
     <root-path name="external_files" path="/storage/" />
 </paths>
