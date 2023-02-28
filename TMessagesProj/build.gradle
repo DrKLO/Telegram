@@ -77,12 +77,12 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
 
     defaultConfig {
+        defaultConfig.versionCode Integer.parseInt(APP_VERSION_CODE)
         minSdkVersion 19
         targetSdkVersion 31
-        versionName "8.9.0"
+        versionName APP_VERSION_CODE
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
