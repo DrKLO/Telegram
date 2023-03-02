@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -22,6 +23,8 @@ import org.telegram.ui.ActionBar.Theme;
 public class BetterRatingView extends View {
 	private Bitmap filledStar, hollowStar;
 	private Paint paint = new Paint();
+	RLottieDrawable animation = new RLottieDrawable(R.raw.star,""+R.raw.star,AndroidUtilities.dp(10),AndroidUtilities.dp(20),true,null);
+
 	private int numStars = 5;
 	private int selectedRating = 0;
 	private OnRatingChangeListener listener;
@@ -42,6 +45,8 @@ public class BetterRatingView extends View {
 		for (int i = 0; i < numStars; i++) {
 			//paint.setColor(Theme.getColor(i < selectedRating ? Theme.key_actionBarWhiteSelector : Theme.key_dialogTextHint));
 			paint.setColor(Color.WHITE);
+			animation.invalidateSelf();
+			animation.draw(canvas);
 			canvas.drawBitmap(i < selectedRating ? filledStar : hollowStar, i * AndroidUtilities.dp(32 + 16), 0, paint);
 		}
 	}
