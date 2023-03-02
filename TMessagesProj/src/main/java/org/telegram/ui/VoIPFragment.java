@@ -332,6 +332,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private boolean goForward = false;
     private final Handler handler = new Handler();
     private boolean alreadyTransitionedToFixColor =false;
+    private boolean firstRunOnBackgroundGradient= true;
 
     public static void show(Activity activity, int account) {
         show(activity, false, account);
@@ -460,6 +461,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 windowView.finish();
             }
         }
+    }
+    public void updateAmplitude(){
+        //tinyWaveDrawable.update();
+
     }
 
     public static void clearInstance() {
@@ -657,17 +662,26 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                         out.setCrossFadeEnabled(false);
                         backgroundView.setImageDrawable(out);
 
-                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000){
-                            if (!alreadyTransitionedToFixColor) {
-                                out.startTransition(2000);
-                            }
-                            alreadyTransitionedToFixColor =true;
-                            return;
-                        }
+//                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000){
+//                            if (!alreadyTransitionedToFixColor) {
+//                                out.startTransition(2000);
+//                            }
+//                            alreadyTransitionedToFixColor =true;
+//                            return;
+//                        }
                         alreadyTransitionedToFixColor = false;
                         out.startTransition(2000);
 
-                        handler.postDelayed(this, 16000);
+                        if (firstRunOnBackgroundGradient){
+                            // there is some weird sharp change on first time initialization
+                            // try to avoid it this way
+                            // FIXME: Didn't work
+                            handler.postDelayed(this, 100);
+                            firstRunOnBackgroundGradient=false;
+
+                        } else {
+                            handler.postDelayed(this, 16000);
+                        }
 
                     }
                 });
@@ -836,6 +850,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 return super.drawChild(canvas, child, drawingTime);
             }
         };
+
+
         frameLayout.setClipToPadding(false);
         frameLayout.setClipChildren(false);
         frameLayout.setBackgroundColor(0xff000000);
@@ -1178,7 +1194,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         RelativeLayout relativeLayout = new RelativeLayout(context);
         relativeLayout.setGravity(Gravity.CENTER);
-        relativeLayout.addView(roundedIcon, LayoutHelper.createRelative(135, 135, 0, 80, 0, 0, RelativeLayout.CENTER_IN_PARENT));
+        relativeLayout.addView(roundedIcon, LayoutHelper.createRelative(AndroidUtilities.dp(135/2), AndroidUtilities.dp(135/2), 0, 80, 0, 0, RelativeLayout.CENTER_IN_PARENT));
         relativeLayout.addView(expandedEmojiLayout, LayoutHelper.createRelative(310, 160, 0, 0, 0, 0, RelativeLayout.CENTER_IN_PARENT));
 
         relativeLayout.setPadding(10, 10, 10, 10);
