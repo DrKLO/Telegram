@@ -659,29 +659,23 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                         * We wrap-around the array by taking position % number of transitions we can have
                         * */
                         TransitionDrawable out = transitions[position % transitions.length];
+                        position+=1;
                         out.setCrossFadeEnabled(false);
                         backgroundView.setImageDrawable(out);
 
-//                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000){
-//                            if (!alreadyTransitionedToFixColor) {
-//                                out.startTransition(2000);
-//                            }
-//                            alreadyTransitionedToFixColor =true;
-//                            return;
-//                        }
+                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000){
+                            if (!alreadyTransitionedToFixColor) {
+                                out.startTransition(2000);
+                            }
+                            alreadyTransitionedToFixColor =true;
+                            // recheck after 4.2 seconds
+                            handler.postDelayed(this, 4200);
+                            return;
+                        }
                         alreadyTransitionedToFixColor = false;
                         out.startTransition(2000);
 
-                        if (firstRunOnBackgroundGradient){
-                            // there is some weird sharp change on first time initialization
-                            // try to avoid it this way
-                            // FIXME: Didn't work
-                            handler.postDelayed(this, 100);
-                            firstRunOnBackgroundGradient=false;
-
-                        } else {
-                            handler.postDelayed(this, 16000);
-                        }
+                        handler.postDelayed(this, 4200L * transitions.length);
 
                     }
                 });
@@ -691,6 +685,14 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
 
+    private void  updateRoundedIcon(){
+        if (roundedIcon != null){
+            tinyWaveDrawable.update(56,3f);
+            bigWaveDrawable.update(45,2);
+
+            roundedIcon.invalidate();
+        }
+    }
     public View createView(Context context) {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         accessibilityManager = ContextCompat.getSystemService(context, AccessibilityManager.class);
@@ -1125,7 +1127,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
             @Override
             protected void onDraw(Canvas canvas) {
-                int center = AndroidUtilities.dp(135) / 2;
+                int center = AndroidUtilities.dp(130/2);
                 // draw canvas behind the picture
                 // this has to be in this order so that the paint isn't on top
                 // of the picture
@@ -1147,7 +1149,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             roundedIcon.setVisibility(View.VISIBLE);
 
         }
-        roundedIcon.setRoundRadius(AndroidUtilities.dp(135) / 2);
+        roundedIcon.setRoundRadius(AndroidUtilities.dp(140/2) );
 
         scaleDown = ObjectAnimator.ofPropertyValuesHolder(
                 roundedIcon,
@@ -1194,7 +1196,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         RelativeLayout relativeLayout = new RelativeLayout(context);
         relativeLayout.setGravity(Gravity.CENTER);
-        relativeLayout.addView(roundedIcon, LayoutHelper.createRelative(AndroidUtilities.dp(135/2), AndroidUtilities.dp(135/2), 0, 80, 0, 0, RelativeLayout.CENTER_IN_PARENT));
+        relativeLayout.addView(roundedIcon, LayoutHelper.createRelative(AndroidUtilities.dp(140/2), AndroidUtilities.dp(140/2), 0, 80, 0, 0, RelativeLayout.CENTER_IN_PARENT));
         relativeLayout.addView(expandedEmojiLayout, LayoutHelper.createRelative(310, 160, 0, 0, 0, 0, RelativeLayout.CENTER_IN_PARENT));
 
         relativeLayout.setPadding(10, 10, 10, 10);
@@ -1810,6 +1812,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 if (scaleDown != null && scaleDown.isRunning()) {
                     scaleDown.cancel();
                 }
+
+                updateRoundedIcon();
 
                 if (!showCallEstablishedGradient) {
                     // to check if device hasn't been on for 10 seconds.
