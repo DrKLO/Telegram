@@ -8,6 +8,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
@@ -18,6 +20,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,6 +56,7 @@ import org.telegram.ui.Components.JoinCallByUrlAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.GroupCallActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.VoIPFeedbackActivity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -66,7 +70,7 @@ public class VoIPHelper {
 
 	public static long lastCallTime = 0;
 
-	private static final int VOIP_SUPPORT_ID = 4244000;
+	public static final int VOIP_SUPPORT_ID = 4244000;
 
 	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance) {
 		if (userFull != null && userFull.phone_calls_private) {
@@ -395,6 +399,7 @@ public class VoIPHelper {
 	}
 
 	public static void showRateAlert(Context context, TLRPC.TL_messageActionPhoneCall call) {
+
 		SharedPreferences prefs = MessagesController.getNotificationsSettings(UserConfig.selectedAccount); // always called from chat UI
 		Set<String> hashes = prefs.getStringSet("calls_access_hashes", (Set<String>) Collections.EMPTY_SET);
 		for (String hash : hashes) {
@@ -403,8 +408,18 @@ public class VoIPHelper {
 				continue;
 			if (d[0].equals(call.call_id + "")) {
 				try {
+
 					long accessHash = Long.parseLong(d[1]);
-					showRateAlert(context, null, call.video, call.call_id, accessHash, UserConfig.selectedAccount, true);
+					Intent intent = new Intent(context, VoIPFeedbackActivity.class);
+					intent.putExtra("call_video",call.video);
+					intent.putExtra("call_duration",call.duration);
+					intent.putExtra("call_id",call.call_id);
+					intent.putExtra("call_access_hash",accessHash);
+					intent.putExtra("account",UserConfig.selectedAccount);
+					intent.putExtra("user_initiative",true);
+					context.startActivity(intent);
+
+
 				} catch (Exception ignore) {
 				}
 				return;
@@ -582,6 +597,7 @@ public class VoIPHelper {
 				req.peer.access_hash = accessHash;
 				req.peer.id = callID;
 				req.user_initiative = userInitiative;
+
 				ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
 					if (response instanceof TLRPC.TL_updates) {
 						TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
