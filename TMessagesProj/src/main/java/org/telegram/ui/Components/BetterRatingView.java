@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,6 +15,8 @@ import org.telegram.ui.ActionBar.Theme;
 
 /**
  * Created by grishka on 10.02.17.
+ * Modified by CAE
+ * Only used in VOIPHelper
  */
 
 public class BetterRatingView extends View {
@@ -37,7 +40,8 @@ public class BetterRatingView extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		for (int i = 0; i < numStars; i++) {
-			paint.setColor(Theme.getColor(i < selectedRating ? Theme.key_dialogTextBlue : Theme.key_dialogTextHint));
+			//paint.setColor(Theme.getColor(i < selectedRating ? Theme.key_actionBarWhiteSelector : Theme.key_dialogTextHint));
+			paint.setColor(Color.WHITE);
 			canvas.drawBitmap(i < selectedRating ? filledStar : hollowStar, i * AndroidUtilities.dp(32 + 16), 0, paint);
 		}
 	}
