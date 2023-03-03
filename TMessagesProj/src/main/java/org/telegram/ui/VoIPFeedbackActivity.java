@@ -122,6 +122,9 @@ public class VoIPFeedbackActivity extends Activity {
         Paint overlayPaint = new Paint();
         Paint overlayBottomPaint = new Paint();
 
+        public RLottieImageView[] images = new RLottieImageView[5];
+
+
 
         public VOIPFeedBackView(Context context, Runnable onDismiss, int duration, boolean isVideo, final long callID,final long chatID, final long accessHash, final int account, final boolean userInitiative) {
 
@@ -275,21 +278,19 @@ public class VoIPFeedbackActivity extends Activity {
             animation.setVisibility(View.GONE);
 
             bar.setOnRatingChangeListener(l->{
+
+
                 final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
                 req.rating = bar.getRating();
 
                 animation.setVisibility(View.VISIBLE);
-                Log.e("Telegram","Number of l "+l);
-                for (int i=0;i<l;i++){
-                    bar.images[i].playAnimation();
-                }
+
                 animation.playAnimation();
 
                 req.peer = new TLRPC.TL_inputPhoneCall();
                 req.peer.access_hash = accessHash;
                 req.peer.id = callID;
                 req.user_initiative = userInitiative;
-                req.rating = l;
 
                 ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
                     if (response instanceof TLRPC.TL_updates) {
@@ -404,11 +405,11 @@ public class VoIPFeedbackActivity extends Activity {
 
         private String formatTime(int duration) {
             String formattedTime = "";
-            if (duration > 3600) {
+            if (duration >= 3600) {
                 // get number of hours
                 formattedTime += String.format("%02d",duration / 3600) + ":";
             }
-            if (duration > 60) {
+            if (duration >= 60) {
                 // minutes
                 formattedTime += String.format("%02d",(duration % 3600) / 60) + ":";
             } else {
