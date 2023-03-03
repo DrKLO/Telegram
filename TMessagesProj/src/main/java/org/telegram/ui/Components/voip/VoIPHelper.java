@@ -25,6 +25,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -398,7 +400,9 @@ public class VoIPHelper {
 		return false;
 	}
 
-	public static void showRateAlert(Context context, TLRPC.TL_messageActionPhoneCall call) {
+	public static void showRateAlert(Context context, TLRPC.TL_messageActionPhoneCall call,TLRPC.User currentUser) {
+		//call.photo.
+
 
 		SharedPreferences prefs = MessagesController.getNotificationsSettings(UserConfig.selectedAccount); // always called from chat UI
 		Set<String> hashes = prefs.getStringSet("calls_access_hashes", (Set<String>) Collections.EMPTY_SET);
@@ -410,13 +414,20 @@ public class VoIPHelper {
 				try {
 
 					long accessHash = Long.parseLong(d[1]);
+					Log.e("Telegram","Call id:VOIPHELPER : "+currentUser.id);
+					Log.e("Telegram","CD: "+currentUser.username);
+					Log.e("Telegram","CD: "+currentUser.first_name
+
+					);
 					Intent intent = new Intent(context, VoIPFeedbackActivity.class);
 					intent.putExtra("call_video",call.video);
 					intent.putExtra("call_duration",call.duration);
+					intent.putExtra("chat_id",currentUser.id);
 					intent.putExtra("call_id",call.call_id);
 					intent.putExtra("call_access_hash",accessHash);
 					intent.putExtra("account",UserConfig.selectedAccount);
 					intent.putExtra("user_initiative",true);
+
 					context.startActivity(intent);
 
 

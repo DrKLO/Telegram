@@ -6,9 +6,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -23,9 +28,12 @@ import org.telegram.ui.ActionBar.Theme;
 public class BetterRatingView extends View {
 	private Bitmap filledStar, hollowStar;
 	private Paint paint = new Paint();
-	RLottieDrawable animation = new RLottieDrawable(R.raw.star,""+R.raw.star,AndroidUtilities.dp(10),AndroidUtilities.dp(20),true,null);
 
+	private LinearLayout layout;
 	private int numStars = 5;
+
+
+	public RLottieImageView[] images = new RLottieImageView[numStars];
 	private int selectedRating = 0;
 	private OnRatingChangeListener listener;
 
@@ -33,6 +41,22 @@ public class BetterRatingView extends View {
 		super(context);
 		filledStar = BitmapFactory.decodeResource(getResources(), R.drawable.ic_rating_star_filled).extractAlpha();
 		hollowStar = BitmapFactory.decodeResource(getResources(), R.drawable.ic_rating_star).extractAlpha();
+
+		layout = new LinearLayout(context);
+		layout.setOrientation(LinearLayout.HORIZONTAL);
+		setWillNotDraw(false);
+
+		layout.setWillNotDraw(false);
+
+		for (int i=0;i<numStars;i++){
+			images[i] = new RLottieImageView(context);
+			images[i].setVisibility(VISIBLE);
+
+			images[i].setAnimation(R.raw.star,AndroidUtilities.dp(20),AndroidUtilities.dp(20));
+			layout.addView(images[i],LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT,LayoutHelper.WRAP_CONTENT));
+		}
+		layout.setGravity(Gravity.CENTER);
+
 	}
 
 	@Override
@@ -40,15 +64,15 @@ public class BetterRatingView extends View {
 		setMeasuredDimension(numStars * AndroidUtilities.dp(32) + (numStars - 1) * AndroidUtilities.dp(16), AndroidUtilities.dp(32));
 	}
 
+
 	@Override
 	protected void onDraw(Canvas canvas) {
-		for (int i = 0; i < numStars; i++) {
-			//paint.setColor(Theme.getColor(i < selectedRating ? Theme.key_actionBarWhiteSelector : Theme.key_dialogTextHint));
-			paint.setColor(Color.WHITE);
-			animation.invalidateSelf();
-			animation.draw(canvas);
-			canvas.drawBitmap(i < selectedRating ? filledStar : hollowStar, i * AndroidUtilities.dp(32 + 16), 0, paint);
-		}
+
+		layout.measure(getWidth(), getHeight());
+		layout.layout(0, 0, getWidth(), getHeight());
+
+		layout.draw(canvas);
+
 	}
 
 	@Override

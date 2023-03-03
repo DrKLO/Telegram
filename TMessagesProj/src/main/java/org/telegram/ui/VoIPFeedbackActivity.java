@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -21,11 +22,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.graphics.ColorUtils;
 
 import com.google.android.exoplayer2.util.Log;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
@@ -41,6 +44,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -50,12 +54,7 @@ import org.telegram.ui.Components.BetterRatingView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.Components.voip.VoIPTextureView;
-
-import java.io.File;
-import java.time.Duration;
-import java.util.ArrayList;
+import org.telegram.ui.Components.RLottieImageView;
 
 public class VoIPFeedbackActivity extends Activity {
     Runnable onDismiss;
@@ -65,6 +64,7 @@ public class VoIPFeedbackActivity extends Activity {
     long accessHash;
     int account;
     boolean userInitiative;
+    long chatID;
 
     boolean initializedParams = false;
 
@@ -81,6 +81,7 @@ public class VoIPFeedbackActivity extends Activity {
         account = getIntent().getIntExtra("account", 0);
         duration = getIntent().getIntExtra("call_duration", 0);
         userInitiative = getIntent().getBooleanExtra("user_initiative", false);
+        chatID = getIntent().getLongExtra("chat_id",0);
         initializedParams = true;
 
     }
@@ -92,7 +93,7 @@ public class VoIPFeedbackActivity extends Activity {
         overridePendingTransition(0, 0);
         initParams();
 
-        VOIPFeedBackView responseView = new VOIPFeedBackView(this, onDismiss, duration, isVideo, callID, accessHash, account, userInitiative);
+        VOIPFeedBackView responseView = new VOIPFeedBackView(this, onDismiss, duration, isVideo, callID,chatID, accessHash, account, userInitiative);
 
         setContentView(responseView.createView());
 
@@ -105,7 +106,7 @@ public class VoIPFeedbackActivity extends Activity {
     }
 
 
-    private class VOIPFeedBackView {
+    private class VOIPFeedBackView extends BaseFragment {
 
         Runnable onDismiss;
         boolean isVideo;
@@ -116,18 +117,19 @@ public class VoIPFeedbackActivity extends Activity {
         boolean userInitiative;
         int duration;
 
-        TLRPC.User callingUser;
-
+        long chatID;
 
         Paint overlayPaint = new Paint();
         Paint overlayBottomPaint = new Paint();
 
 
-        public VOIPFeedBackView(Context context, Runnable onDismiss, int duration, boolean isVideo, final long callID, final long accessHash, final int account, final boolean userInitiative) {
+        public VOIPFeedBackView(Context context, Runnable onDismiss, int duration, boolean isVideo, final long callID,final long chatID, final long accessHash, final int account, final boolean userInitiative) {
+
             this.context = context;
             this.onDismiss = onDismiss;
             this.isVideo = isVideo;
             this.callID = callID;
+            this.chatID = chatID;
             this.accessHash = accessHash;
             this.account = account;
             this.userInitiative = userInitiative;
@@ -151,6 +153,7 @@ public class VoIPFeedbackActivity extends Activity {
                     }
                 }
             };
+
             frameLayout.setClipToPadding(false);
             frameLayout.setClipChildren(false);
             frameLayout.setPadding(10, 10, 10, 10);
@@ -198,6 +201,24 @@ public class VoIPFeedbackActivity extends Activity {
             phoneView.setGravity(LinearLayout.HORIZONTAL);
 
 
+            Log.e("Telegram","Number: "+ chatID);
+
+
+            Log.e("Telegram","Number: "+ callID);
+
+            TLRPC.User calledUser = getMessagesController().getUser((chatID));
+
+
+            if (calledUser != null){
+                if (calledUser.photo == null) {
+                    AvatarDrawable userDp = new AvatarDrawable(calledUser);
+                    roundedIcon.setImageDrawable(userDp);
+                } else {
+                    roundedIcon.setImage(ImageLocation.getForUserOrChat(calledUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), calledUser);
+                }
+            }
+
+
             phoneView.addView(phoneIcon,LayoutHelper.createLinear(50,30,Gravity.RIGHT,0,0,0,0,0));
             phoneView.addView(timerView,LayoutHelper.createLinear(50,30,Gravity.RIGHT,0,0,0,0,0));
 
@@ -243,6 +264,34 @@ public class VoIPFeedbackActivity extends Activity {
                 check.setChecked(!check.isChecked(), true);
             };
 
+            RLottieImageView animation = new RLottieImageView(context);
+            animation.setAnimation(R.raw.animated_sticker, 300, 400);
+            animation.setAutoRepeat(true);
+            animation.setVisibility(View.GONE);
+
+            bar.setOnRatingChangeListener(l->{
+                final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+                req.rating = bar.getRating();
+
+                animation.setVisibility(View.VISIBLE);
+                Log.e("Telegram","Number of l "+l);
+                for (int i=0;i<l;i++){
+                    bar.images[i].playAnimation();
+                }
+                animation.playAnimation();
+
+                req.peer = new TLRPC.TL_inputPhoneCall();
+                req.peer.access_hash = accessHash;
+                req.peer.id = callID;
+                req.user_initiative = userInitiative;
+
+                ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+                    if (response instanceof TLRPC.TL_updates) {
+                        TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+                        MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                    }
+                });
+            });
             final String[] problems = {isVideo ? "distorted_video" : null, isVideo ? "pixelated_video" : null, "echo", "noise", "interruptions", "distorted_speech", "silent_local", "silent_remote", "dropped"};
             for (int i = 0; i < problems.length; i++) {
                 if (problems[i] == null) {
@@ -333,12 +382,15 @@ public class VoIPFeedbackActivity extends Activity {
                 finish();
             });
 
+
            centerView.addView(alertView, LayoutHelper.createLinear(270, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 0));
 
            // centerView.setVisibility(View.VISIBLE);
             frameLayout.addView(centerView,LayoutHelper.createFrame(270,LayoutHelper.WRAP_CONTENT,Gravity.CENTER,0,0,0,AndroidUtilities.dp(30)));
 
             frameLayout.addView(closeBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 30, 0, 30, AndroidUtilities.dp(30)));
+
+            frameLayout.addView(animation,LayoutHelper.createFrame(200,200,Gravity.CENTER));
 
             return frameLayout;
 

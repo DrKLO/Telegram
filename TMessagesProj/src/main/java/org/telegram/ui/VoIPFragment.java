@@ -44,7 +44,9 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
+import android.view.animation.Transformation;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -79,6 +81,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.DarkAlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlobDrawable;
@@ -331,8 +334,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private int position = 0;
     private boolean goForward = false;
     private final Handler handler = new Handler();
-    private boolean alreadyTransitionedToFixColor =false;
-    private boolean firstRunOnBackgroundGradient= true;
+    private boolean alreadyTransitionedToFixColor = false;
+    private boolean firstRunOnBackgroundGradient = true;
 
     public static void show(Activity activity, int account) {
         show(activity, false, account);
@@ -462,7 +465,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             }
         }
     }
-    public void updateAmplitude(){
+
+    public void updateAmplitude() {
         //tinyWaveDrawable.update();
 
     }
@@ -631,6 +635,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     public void runGradientForEstablishedCall() {
 
+
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -639,43 +644,44 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     public void run() {
 
                         /* (cae)
-                        *
-                        *  How it works.
-                        *
-                        * An annoying thing about the call established background gradient is that
-                        * it is three transitions, i.e green->blue-green->violet
-                        *
-                        * TransitionDrawable supports only two layers, so we have to implement the
-                        * poor mans transition, and here it is
-                        *
-                        * The transition works as follows, we previously filled transitions variable
-                        * with a gradient like the following
-                        * [a,b] ,[b,c], [c,a], where the letters represent the gradients as they flow
-                        *
-                        * we then move from each transition as specified above, due to the nature of
-                        * how they were laid out, the end of one is the beginning of the other,
-                        * so they blend
-                        *
-                        * We wrap-around the array by taking position % number of transitions we can have
-                        * */
+                         *
+                         *  How it works.
+                         *
+                         * An annoying thing about the call established background gradient is that
+                         * it is three transitions, i.e green->blue-green->violet
+                         *
+                         * TransitionDrawable supports only two layers, so we have to implement the
+                         * poor mans transition, and here it is
+                         *
+                         * The transition works as follows, we previously filled transitions variable
+                         * with a gradient like the following
+                         * [a,b] ,[b,c], [c,a], where the letters represent the gradients as they flow
+                         *
+                         * we then move from each transition as specified above, due to the nature of
+                         * how they were laid out, the end of one is the beginning of the other,
+                         * so they blend
+                         *
+                         * We wrap-around the array by taking position % number of transitions we can have
+                         * */
                         TransitionDrawable out = transitions[position % transitions.length];
-                        position+=1;
+                        position += 1;
                         out.setCrossFadeEnabled(false);
-                        backgroundView.setImageDrawable(out);
 
-                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000){
+                        if (System.currentTimeMillis() - lastContentTapTime > 10 * 1000) {
                             if (!alreadyTransitionedToFixColor) {
-                                out.startTransition(2000);
+                                backgroundView.setImageDrawable(out);
                             }
-                            alreadyTransitionedToFixColor =true;
+                            alreadyTransitionedToFixColor = true;
                             // recheck after 4.2 seconds
-                            handler.postDelayed(this, 4200);
+                            handler.postDelayed(this, 2000*transitions.length);
                             return;
                         }
+                        backgroundView.setImageDrawable(out);
+
                         alreadyTransitionedToFixColor = false;
                         out.startTransition(2000);
 
-                        handler.postDelayed(this, 4200L * transitions.length);
+                        handler.postDelayed(this, 2000 * transitions.length);
 
                     }
                 });
@@ -685,14 +691,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
 
-    private void  updateRoundedIcon(){
-        if (roundedIcon != null){
-            tinyWaveDrawable.update(56,3f);
-            bigWaveDrawable.update(45,2);
+    private void updateRoundedIcon() {
+        if (roundedIcon != null) {
+            tinyWaveDrawable.update(56, 3f);
+            bigWaveDrawable.update(45, 2);
 
             roundedIcon.invalidate();
         }
     }
+
     public View createView(Context context) {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         accessibilityManager = ContextCompat.getSystemService(context, AccessibilityManager.class);
@@ -1127,7 +1134,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
             @Override
             protected void onDraw(Canvas canvas) {
-                int center = AndroidUtilities.dp(130/2);
+                int center = AndroidUtilities.dp(130 / 2);
                 // draw canvas behind the picture
                 // this has to be in this order so that the paint isn't on top
                 // of the picture
@@ -1149,7 +1156,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             roundedIcon.setVisibility(View.VISIBLE);
 
         }
-        roundedIcon.setRoundRadius(AndroidUtilities.dp(140/2) );
+        roundedIcon.setRoundRadius(AndroidUtilities.dp(140 / 2));
 
         scaleDown = ObjectAnimator.ofPropertyValuesHolder(
                 roundedIcon,
@@ -1196,7 +1203,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         RelativeLayout relativeLayout = new RelativeLayout(context);
         relativeLayout.setGravity(Gravity.CENTER);
-        relativeLayout.addView(roundedIcon, LayoutHelper.createRelative(AndroidUtilities.dp(140/2), AndroidUtilities.dp(140/2), 0, 80, 0, 0, RelativeLayout.CENTER_IN_PARENT));
+        relativeLayout.addView(roundedIcon, LayoutHelper.createRelative(AndroidUtilities.dp(140 / 2), AndroidUtilities.dp(140 / 2), 0, 80, 0, 0, RelativeLayout.CENTER_IN_PARENT));
         relativeLayout.addView(expandedEmojiLayout, LayoutHelper.createRelative(310, 160, 0, 0, 0, 0, RelativeLayout.CENTER_IN_PARENT));
 
         relativeLayout.setPadding(10, 10, 10, 10);
@@ -1817,7 +1824,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
                 if (!showCallEstablishedGradient) {
                     // to check if device hasn't been on for 10 seconds.
-                    lastContentTapTime=System.currentTimeMillis();
+                    lastContentTapTime = System.currentTimeMillis();
                     patternAlphaAnimator.cancel();
                     shouldStartPatternAnimator = true;
                     gradientState = GradientState.BLUE_GREEN;
@@ -2009,6 +2016,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         if (currentState != VoIPService.STATE_HANGING_UP && currentState != VoIPService.STATE_ENDED) {
             updateButtons(animated);
         }
+
 
         if (showTimer) {
             statusTextView.showTimer(animated);
@@ -2468,12 +2476,14 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
+        lastContentTapTime=System.currentTimeMillis();
         if (service.isMicMute()) {
             if (lowerToolTip != null) {
                 lowerToolTip.setText(LocaleController.getString("MicrophoneOff", R.string.MicrophoneOff), false, animated);
                 lowerToolTip.setAlpha(1.0f);
                 lowerToolTip.setVisibility(View.VISIBLE);
             }
+
             bottomButton.setData(R.drawable.calls_unmute, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), true, animated);
         } else {
             if (lowerToolTip != null) {
