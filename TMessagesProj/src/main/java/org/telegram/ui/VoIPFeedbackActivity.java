@@ -182,12 +182,22 @@ public class VoIPFeedbackActivity extends Activity {
             phoneIcon.setAdjustViewBounds(true);
             phoneIcon.setMaxHeight(30);
             phoneIcon.setMaxWidth(30);
-            phoneIcon.setPadding(0,0,AndroidUtilities.dp(5),0);
+            phoneIcon.setPadding(0,0,AndroidUtilities.dp(1),0);
+
+            TextView callEnded = new TextView(context);
+            callEnded.setTextSize(AndroidUtilities.dp(17));
+            callEnded.setText("Call ended");
+            callEnded.setTextColor(Color.WHITE);
 
             LinearLayout centerView = new LinearLayout(context);
 
             centerView.setOrientation(LinearLayout.VERTICAL);
+
+
             centerView.addView(roundedIcon,LayoutHelper.createLinear(AndroidUtilities.dp(140/2), AndroidUtilities.dp(140/2),Gravity.CENTER,0,0,0,AndroidUtilities.dp(5)));
+
+            centerView.addView(callEnded,LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT,LayoutHelper.WRAP_CONTENT,Gravity.TOP|Gravity.CENTER,10,10,10,10));
+
             ///centerView.addView(roundedIcon);
 
             TextView timerView = new TextView(context);
@@ -200,11 +210,6 @@ public class VoIPFeedbackActivity extends Activity {
             phoneView.setOrientation(LinearLayout.HORIZONTAL);
             phoneView.setGravity(LinearLayout.HORIZONTAL);
 
-
-            Log.e("Telegram","Number: "+ chatID);
-
-
-            Log.e("Telegram","Number: "+ callID);
 
             TLRPC.User calledUser = getMessagesController().getUser((chatID));
 
@@ -265,7 +270,7 @@ public class VoIPFeedbackActivity extends Activity {
             };
 
             RLottieImageView animation = new RLottieImageView(context);
-            animation.setAnimation(R.raw.animated_sticker, 300, 400);
+            animation.setAnimation(R.raw.animated_sticker, 350, 500);
             animation.setAutoRepeat(true);
             animation.setVisibility(View.GONE);
 
@@ -284,6 +289,7 @@ public class VoIPFeedbackActivity extends Activity {
                 req.peer.access_hash = accessHash;
                 req.peer.id = callID;
                 req.user_initiative = userInitiative;
+                req.rating = l;
 
                 ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
                     if (response instanceof TLRPC.TL_updates) {
@@ -383,14 +389,14 @@ public class VoIPFeedbackActivity extends Activity {
             });
 
 
-           centerView.addView(alertView, LayoutHelper.createLinear(270, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 0));
+           centerView.addView(alertView, LayoutHelper.createLinear(300, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 0));
 
            // centerView.setVisibility(View.VISIBLE);
-            frameLayout.addView(centerView,LayoutHelper.createFrame(270,LayoutHelper.WRAP_CONTENT,Gravity.CENTER,0,0,0,AndroidUtilities.dp(30)));
+            frameLayout.addView(centerView,LayoutHelper.createFrame(300,LayoutHelper.WRAP_CONTENT,Gravity.CENTER,0,0,0,AndroidUtilities.dp(40)));
 
             frameLayout.addView(closeBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 30, 0, 30, AndroidUtilities.dp(30)));
 
-            frameLayout.addView(animation,LayoutHelper.createFrame(200,200,Gravity.CENTER));
+            frameLayout.addView(animation,LayoutHelper.createFrame(200,300,Gravity.CENTER,0,AndroidUtilities.dp(30),0,0));
 
             return frameLayout;
 
