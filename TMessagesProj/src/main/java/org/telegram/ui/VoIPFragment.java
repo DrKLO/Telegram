@@ -309,6 +309,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private VoIPStatusTextView myMicrophoneMuteStatus;
     private VoIPStatusTextView callingUserMicrophoneMuteStatus;
     private VoIPStatusTextView bluetoothDevice;
+    private boolean alreadyShowedBlueToothInfo;
 
     // background gradient
     private final MotionBackgroundDrawable blueVioletBackgroundGradient = new MotionBackgroundDrawable(GRADIENT_BLUE_VIOLET[0][0], GRADIENT_BLUE_VIOLET[0][2], GRADIENT_BLUE_VIOLET[0][1], GRADIENT_BLUE_VIOLET[0][3], false);
@@ -721,18 +722,28 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                                         backgroundView.setImageDrawable(blueVioletBackgroundGradient);
                                         break;
                                 }
-                            }
 
-                            // recheck after 4.2 seconds
-                            handler.postDelayed(this, 2000 * transitions.length);
+                                // remove all other callbacks
+                                handler.removeCallbacksAndMessages(null);
+                            }
+                            // recheck after 1 seconds
+                            handler.postDelayed(this, 1000);
                             return;
                         }
                         position += 1;
                         out.setCrossFadeEnabled(false);
 
                         backgroundView.setImageDrawable(out);
+                        if (alreadyTransitionedToFixColor){
+                            lastContentTapTime = System.currentTimeMillis();
+                            greenBackgroundGradient.setIndeterminateAnimation(true);
+                            blueGreenBackgroundGradient.setIndeterminateAnimation(true);
+                            blueVioletBackgroundGradient.setIndeterminateAnimation(true);
 
+
+                        }
                         alreadyTransitionedToFixColor = false;
+
                         out.startTransition(2000);
 
                         handler.postDelayed(this, 2000 * transitions.length);
@@ -1206,6 +1217,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         } else {
             roundedIcon.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(145), 0x7F_FF_FF_FF), callingUser);
         }
+        roundedIcon.setOnClickListener(l->{
+            lastContentTapTime = System.currentTimeMillis();
+        });
 
         if (callingUserIsVideo || currentUserIsVideo) {
             roundedIcon.setVisibility(View.GONE);
@@ -1442,6 +1456,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             initRenderers();
         }
 
+        frameLayout.setOnClickListener(l->{
+            lastContentTapTime = System.currentTimeMillis();
+        });
         return frameLayout;
     }
 
@@ -2643,9 +2660,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         if (service == null) {
             return;
         }
-        if (service.isBluetoothHeadsetConnected()) {
-            bluetoothDevice.setVisibility(View.VISIBLE);
-            bluetoothDevice.animate().setDuration(3000).withEndAction(() -> bluetoothDevice.setVisibility(View.GONE));
+        if (service.isBluetoothOn()) {
+            if (!alreadyShowedBlueToothInfo) {
+                bluetoothDevice.setVisibility(View.VISIBLE);
+                bluetoothDevice.animate().setDuration(3000).withEndAction(() -> bluetoothDevice.setVisibility(View.GONE)).start();
+                alreadyShowedBlueToothInfo=true;
+            }
 
 
             speakerPhoneIcon.setImageResource(R.drawable.calls_bluetooth);
@@ -2661,9 +2681,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     private void setSpeakerPhoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
-        if (service.isBluetoothHeadsetConnected()) {
-            bluetoothDevice.animate().setDuration(3000).withEndAction(() -> bluetoothDevice.setVisibility(View.GONE));
-
+        if (service.isBluetoothOn()) {
+            if (!alreadyShowedBlueToothInfo) {
+                bluetoothDevice.setVisibility(View.VISIBLE);
+                bluetoothDevice.animate().setDuration(3000).withEndAction(() -> bluetoothDevice.setVisibility(View.GONE)).start();
+                alreadyShowedBlueToothInfo=true;
+            }
             bottomButton.setData(R.drawable.calls_bluetooth, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth), false, animated);
             bottomButton.setChecked(false, animated);
         } else if (service.isSpeakerphoneOn()) {
