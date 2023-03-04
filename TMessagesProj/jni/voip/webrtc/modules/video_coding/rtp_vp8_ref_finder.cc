@@ -18,14 +18,24 @@ namespace webrtc {
 
 RtpFrameReferenceFinder::ReturnVector RtpVp8RefFinder::ManageFrame(
     std::unique_ptr<RtpFrameObject> frame) {
-  FrameDecision decision = ManageFrameInternal(frame.get());
+  const RTPVideoHeaderVP8& codec_header = absl::get<RTPVideoHeaderVP8>(
+      frame->GetRtpVideoHeader().video_type_header);
+
+  if (codec_header.temporalIdx != kNoTemporalIdx)
+    frame->SetTemporalIndex(codec_header.temporalIdx);
+
+  int64_t unwrapped_tl0 = tl0_unwrapper_.Unwrap(codec_header.tl0PicIdx & 0xFF);
+  FrameDecision decision =
+      ManageFrameInternal(frame.get(), codec_header, unwrapped_tl0);
 
   RtpFrameReferenceFinder::ReturnVector res;
   switch (decision) {
     case kStash:
-      if (stashed_frames_.size() > kMaxStashedFrames)
+      if (stashed_frames_.size() > kMaxStashedFrames) {
         stashed_frames_.pop_back();
-      stashed_frames_.push_front(std::move(frame));
+      }
+      stashed_frames_.push_front(
+          {.unwrapped_tl0 = unwrapped_tl0, .frame = std::move(frame)});
       return res;
     case kHandOff:
       res.push_back(std::move(frame));
@@ -39,11 +49,9 @@ RtpFrameReferenceFinder::ReturnVector RtpVp8RefFinder::ManageFrame(
 }
 
 RtpVp8RefFinder::FrameDecision RtpVp8RefFinder::ManageFrameInternal(
-    RtpFrameObject* frame) {
-  const RTPVideoHeader& video_header = frame->GetRtpVideoHeader();
-  const RTPVideoHeaderVP8& codec_header =
-      absl::get<RTPVideoHeaderVP8>(video_header.video_type_header);
-
+    RtpFrameObject* frame,
+    const RTPVideoHeaderVP8& codec_header,
+    int64_t unwrapped_tl0) {
   // Protect against corrupted packets with arbitrary large temporal idx.
   if (codec_header.temporalIdx >= kMaxTemporalLayers)
     return kDrop;
@@ -72,8 +80,6 @@ RtpVp8RefFinder::FrameDecision RtpVp8RefFinder::ManageFrameInternal(
       not_yet_received_frames_.insert(last_picture_id_);
     } while (last_picture_id_ != frame->Id());
   }
-
-  int64_t unwrapped_tl0 = tl0_unwrapper_.Unwrap(codec_header.tl0PicIdx & 0xFF);
 
   // Clean up info for base layers that are too old.
   int64_t old_tl0_pic_idx = unwrapped_tl0 - kMaxLayerInfo;
@@ -207,20 +213,22 @@ void RtpVp8RefFinder::RetryStashedFrames(
   bool complete_frame = false;
   do {
     complete_frame = false;
-    for (auto frame_it = stashed_frames_.begin();
-         frame_it != stashed_frames_.end();) {
-      FrameDecision decision = ManageFrameInternal(frame_it->get());
+    for (auto it = stashed_frames_.begin(); it != stashed_frames_.end();) {
+      const RTPVideoHeaderVP8& codec_header = absl::get<RTPVideoHeaderVP8>(
+          it->frame->GetRtpVideoHeader().video_type_header);
+      FrameDecision decision =
+          ManageFrameInternal(it->frame.get(), codec_header, it->unwrapped_tl0);
 
       switch (decision) {
         case kStash:
-          ++frame_it;
+          ++it;
           break;
         case kHandOff:
           complete_frame = true;
-          res.push_back(std::move(*frame_it));
-          ABSL_FALLTHROUGH_INTENDED;
+          res.push_back(std::move(it->frame));
+          [[fallthrough]];
         case kDrop:
-          frame_it = stashed_frames_.erase(frame_it);
+          it = stashed_frames_.erase(it);
       }
     }
   } while (complete_frame);
@@ -235,7 +243,7 @@ void RtpVp8RefFinder::UnwrapPictureIds(RtpFrameObject* frame) {
 void RtpVp8RefFinder::ClearTo(uint16_t seq_num) {
   auto it = stashed_frames_.begin();
   while (it != stashed_frames_.end()) {
-    if (AheadOf<uint16_t>(seq_num, (*it)->first_seq_num())) {
+    if (AheadOf<uint16_t>(seq_num, it->frame->first_seq_num())) {
       it = stashed_frames_.erase(it);
     } else {
       ++it;

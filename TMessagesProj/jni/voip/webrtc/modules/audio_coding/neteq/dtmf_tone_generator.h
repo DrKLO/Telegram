@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,6 +28,10 @@ class DtmfToneGenerator {
 
   DtmfToneGenerator();
   virtual ~DtmfToneGenerator() {}
+
+  DtmfToneGenerator(const DtmfToneGenerator&) = delete;
+  DtmfToneGenerator& operator=(const DtmfToneGenerator&) = delete;
+
   virtual int Init(int fs, int event, int attenuation);
   virtual void Reset();
   virtual int Generate(size_t num_samples, AudioMultiVector* output);
@@ -48,8 +51,6 @@ class DtmfToneGenerator {
   int amplitude_;               // Amplitude for this event.
   int16_t sample_history1_[2];  // Last 2 samples for the 1st oscillator.
   int16_t sample_history2_[2];  // Last 2 samples for the 2nd oscillator.
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DtmfToneGenerator);
 };
 
 }  // namespace webrtc

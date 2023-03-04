@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include "modules/audio_coding/codecs/isac/fix/source/settings.h"
+
 /* indices of KLT coefficients used */
 extern const uint16_t WebRtcIsacfix_kSelIndGain[12];
 

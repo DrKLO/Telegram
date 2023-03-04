@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/make_ref_counted.h"
 #include "api/ref_counted_base.h"
 #include "api/rtp_packet_info.h"
 #include "api/scoped_refptr.h"
@@ -79,7 +80,7 @@ class RTC_EXPORT RtpPacketInfos {
   size_type size() const { return entries().size(); }
 
  private:
-  class Data : public rtc::RefCountedBase {
+  class Data final : public rtc::RefCountedNonVirtual<Data> {
    public:
     static rtc::scoped_refptr<Data> Create(const vector_type& entries) {
       // Performance optimization for the empty case.
@@ -87,7 +88,7 @@ class RTC_EXPORT RtpPacketInfos {
         return nullptr;
       }
 
-      return new Data(entries);
+      return rtc::make_ref_counted<Data>(entries);
     }
 
     static rtc::scoped_refptr<Data> Create(vector_type&& entries) {
@@ -96,16 +97,16 @@ class RTC_EXPORT RtpPacketInfos {
         return nullptr;
       }
 
-      return new Data(std::move(entries));
+      return rtc::make_ref_counted<Data>(std::move(entries));
     }
 
     const vector_type& entries() const { return entries_; }
 
-   private:
     explicit Data(const vector_type& entries) : entries_(entries) {}
     explicit Data(vector_type&& entries) : entries_(std::move(entries)) {}
-    ~Data() override {}
+    ~Data() = default;
 
+   private:
     const vector_type entries_;
   };
 

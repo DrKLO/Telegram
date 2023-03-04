@@ -391,7 +391,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                     } else if (newItemPosition >= recentFilesStartRow && newItemPosition < recentFilesEndRow) {
                         newItem = recentLoadingFiles.get(newItemPosition - recentFilesStartRow);
                     }
-                    if (newItem != null && oldItem != null) {
+                    if (newItem != null && oldItem != null && newItem.getDocument() != null && oldItem.getDocument() != null) {
                         return newItem.getDocument().id == oldItem.getDocument().id;
                     }
                     return false;

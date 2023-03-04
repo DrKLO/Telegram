@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/jsep.h"
 #include "api/peer_connection_interface.h"
 #include "api/sequence_checker.h"
 #include "pc/jsep_transport.h"
@@ -117,6 +118,8 @@ class JsepTransportCollection {
   cricket::JsepTransport* GetTransportForMid(const std::string& mid);
   const cricket::JsepTransport* GetTransportForMid(
       const std::string& mid) const;
+  cricket::JsepTransport* GetTransportForMid(absl::string_view mid);
+  const cricket::JsepTransport* GetTransportForMid(absl::string_view mid) const;
   // Set transport for a MID. This may destroy a transport if it is no
   // longer in use.
   bool SetTransportForMid(const std::string& mid,

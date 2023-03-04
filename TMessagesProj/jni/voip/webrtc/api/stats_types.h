@@ -22,7 +22,6 @@
 
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -236,7 +235,6 @@ class RTC_EXPORT StatsReport {
     kStatsValueNameTrackId,
     kStatsValueNameTransmitBitrate,
     kStatsValueNameTransportType,
-    kStatsValueNameTypingNoiseState,
     kStatsValueNameWritable,
     kStatsValueNameAudioDeviceUnderrunCounter,
     kStatsValueNameLocalCandidateRelayProtocol,
@@ -287,6 +285,9 @@ class RTC_EXPORT StatsReport {
     Value(StatsValueName name, const Id& value);
 
     ~Value();
+
+    Value(const Value&) = delete;
+    Value& operator=(const Value&) = delete;
 
     // Support ref counting. Note that for performance reasons, we
     // don't use thread safe operations. Therefore, all operations
@@ -358,8 +359,6 @@ class RTC_EXPORT StatsReport {
       const char* static_string_;
       Id* id_;
     } value_;
-
-    RTC_DISALLOW_COPY_AND_ASSIGN(Value);
   };
 
   typedef rtc::scoped_refptr<Value> ValuePtr;
@@ -368,6 +367,9 @@ class RTC_EXPORT StatsReport {
   // Ownership of `id` is passed to `this`.
   explicit StatsReport(const Id& id);
   ~StatsReport();
+
+  StatsReport(const StatsReport&) = delete;
+  StatsReport& operator=(const StatsReport&) = delete;
 
   // Factory functions for various types of stats IDs.
   static Id NewBandwidthEstimationId();
@@ -408,8 +410,6 @@ class RTC_EXPORT StatsReport {
   const Id id_;
   double timestamp_;  // Time since 1970-01-01T00:00:00Z in milliseconds.
   Values values_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(StatsReport);
 };
 
 // Typedef for an array of const StatsReport pointers.

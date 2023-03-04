@@ -85,7 +85,6 @@ public class LongPressListenerWithMovingGesture implements View.OnTouchListener 
         gestureDetector2.setIsLongpressEnabled(true);
     }
 
-
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         view = v;
@@ -124,9 +123,13 @@ public class LongPressListenerWithMovingGesture implements View.OnTouchListener 
                 }
             }
         }
-        if (event.getAction() == MotionEvent.ACTION_UP && !subItemClicked && selectedMenuView != null) {
-            selectedMenuView.callOnClick();
-            subItemClicked = true;
+        if (event.getAction() == MotionEvent.ACTION_UP && !subItemClicked) {
+            if (selectedMenuView != null) {
+                selectedMenuView.callOnClick();
+                subItemClicked = true;
+            } else if (submenu == null && view != null) {
+                view.callOnClick();
+            }
         }
         return true;
     }

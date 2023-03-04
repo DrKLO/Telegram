@@ -44,6 +44,7 @@ import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -651,7 +652,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                         thumbDrawable = (Drawable) thumb;
                     }
                     if (sticker instanceof TLRPC.Document) {
-                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), SharedConfig.getLiteMode().enabled() ? "36_36_firstframe" : "36_36_nolimit", (Drawable) null, null);
+                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD) ? "36_36_firstframe" : "36_36_nolimit", (Drawable) null, null);
                     } else {
                         tabView.imageView.setImageDrawable(thumbDrawable);
                     }
@@ -687,9 +688,10 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     tabView.inited = true;
                     SvgHelper.SvgDrawable svgThumb = tabView.svgThumb;
                     BackupImageView imageView = tabView.imageView;
-                    String imageFilter = SharedConfig.getLiteMode().enabled() ? "40_40_firstframe" : "40_40";
+                    final boolean lite = !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD);
+                    String imageFilter = lite ? "40_40_firstframe" : "40_40";
                     if (MessageObject.isVideoSticker(sticker) && sticker.thumbs != null && sticker.thumbs.size() > 0) {
-                        if (SharedConfig.getLiteMode().enabled()) {
+                        if (lite) {
                             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
                             imageView.setImage(ImageLocation.getForDocument(thumb, sticker), "40_40", svgThumb, 0, parentObject);
                         } else if (svgThumb != null) {

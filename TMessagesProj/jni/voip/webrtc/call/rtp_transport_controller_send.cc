@@ -14,7 +14,9 @@
 #include <vector>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/transport/goog_cc_factory.h"
 #include "api/transport/network_types.h"
 #include "api/units/data_rate.h"
@@ -59,29 +61,25 @@ TargetRateConstraints ConvertConstraints(const BitrateConstraints& contraints,
                             contraints.start_bitrate_bps, clock);
 }
 
-bool IsEnabled(const WebRtcKeyValueConfig* trials, absl::string_view key) {
-  RTC_DCHECK(trials != nullptr);
-  return absl::StartsWith(trials->Lookup(key), "Enabled");
+bool IsEnabled(const FieldTrialsView& trials, absl::string_view key) {
+  return absl::StartsWith(trials.Lookup(key), "Enabled");
 }
 
-bool IsDisabled(const WebRtcKeyValueConfig* trials, absl::string_view key) {
-  RTC_DCHECK(trials != nullptr);
-  return absl::StartsWith(trials->Lookup(key), "Disabled");
+bool IsDisabled(const FieldTrialsView& trials, absl::string_view key) {
+  return absl::StartsWith(trials.Lookup(key), "Disabled");
 }
 
 bool IsRelayed(const rtc::NetworkRoute& route) {
   return route.local.uses_turn() || route.remote.uses_turn();
 }
-
 }  // namespace
 
 RtpTransportControllerSend::PacerSettings::PacerSettings(
-    const WebRtcKeyValueConfig* trials)
-    : tq_disabled("Disabled"),
-      holdback_window("holdback_window", PacingController::kMinSleepTime),
-      holdback_packets("holdback_packets", -1) {
-  ParseFieldTrial({&tq_disabled, &holdback_window, &holdback_packets},
-                  trials->Lookup("WebRTC-TaskQueuePacer"));
+    const FieldTrialsView& trials)
+    : holdback_window("holdback_window", TimeDelta::Millis(5)),
+      holdback_packets("holdback_packets", 3) {
+  ParseFieldTrial({&holdback_window, &holdback_packets},
+                  trials.Lookup("WebRTC-TaskQueuePacer"));
 }
 
 RtpTransportControllerSend::RtpTransportControllerSend(
@@ -90,32 +88,20 @@ RtpTransportControllerSend::RtpTransportControllerSend(
     NetworkStatePredictorFactoryInterface* predictor_factory,
     NetworkControllerFactoryInterface* controller_factory,
     const BitrateConstraints& bitrate_config,
-    std::unique_ptr<ProcessThread> process_thread,
     TaskQueueFactory* task_queue_factory,
-    const WebRtcKeyValueConfig* trials)
+    const FieldTrialsView& trials)
     : clock_(clock),
       event_log_(event_log),
+      task_queue_factory_(task_queue_factory),
       bitrate_configurator_(bitrate_config),
       pacer_started_(false),
-      process_thread_(std::move(process_thread)),
       pacer_settings_(trials),
-      process_thread_pacer_(pacer_settings_.use_task_queue_pacer()
-                                ? nullptr
-                                : new PacedSender(clock,
-                                                  &packet_router_,
-                                                  event_log,
-                                                  trials,
-                                                  process_thread_.get())),
-      task_queue_pacer_(
-          pacer_settings_.use_task_queue_pacer()
-              ? new TaskQueuePacedSender(clock,
-                                         &packet_router_,
-                                         event_log,
-                                         trials,
-                                         task_queue_factory,
-                                         pacer_settings_.holdback_window.Get(),
-                                         pacer_settings_.holdback_packets.Get())
-              : nullptr),
+      pacer_(clock,
+             &packet_router_,
+             trials,
+             task_queue_factory,
+             pacer_settings_.holdback_window.Get(),
+             pacer_settings_.holdback_packets.Get()),
       observer_(nullptr),
       controller_factory_override_(controller_factory),
       controller_factory_fallback_(
@@ -131,28 +117,32 @@ RtpTransportControllerSend::RtpTransportControllerSend(
       relay_bandwidth_cap_("relay_cap", DataRate::PlusInfinity()),
       transport_overhead_bytes_per_packet_(0),
       network_available_(false),
+      congestion_window_size_(DataSize::PlusInfinity()),
+      is_congested_(false),
       retransmission_rate_limiter_(clock, kRetransmitWindowSizeMs),
-      task_queue_(task_queue_factory->CreateTaskQueue(
-          "rtp_send_controller",
-          TaskQueueFactory::Priority::NORMAL)) {
+      task_queue_(trials, "rtp_send_controller", task_queue_factory),
+      field_trials_(trials) {
   ParseFieldTrial({&relay_bandwidth_cap_},
-                  trials->Lookup("WebRTC-Bwe-NetworkRouteConstraints"));
+                  trials.Lookup("WebRTC-Bwe-NetworkRouteConstraints"));
   initial_config_.constraints = ConvertConstraints(bitrate_config, clock_);
   initial_config_.event_log = event_log;
-  initial_config_.key_value_config = trials;
+  initial_config_.key_value_config = &trials;
   RTC_DCHECK(bitrate_config.start_bitrate_bps > 0);
 
-  pacer()->SetPacingRates(
-      DataRate::BitsPerSec(bitrate_config.start_bitrate_bps), DataRate::Zero());
-
-  if (absl::StartsWith(trials->Lookup("WebRTC-LazyPacerStart"), "Disabled")) {
-    EnsureStarted();
-  }
+  pacer_.SetPacingRates(DataRate::BitsPerSec(bitrate_config.start_bitrate_bps),
+                        DataRate::Zero());
 }
 
 RtpTransportControllerSend::~RtpTransportControllerSend() {
+  RTC_DCHECK_RUN_ON(&main_thread_);
   RTC_DCHECK(video_rtp_senders_.empty());
-  process_thread_->Stop();
+  if (task_queue_.IsCurrent()) {
+    // If these repeated tasks run on a task queue owned by
+    // `task_queue_`, they are stopped when the task queue is deleted.
+    // Otherwise, stop them here.
+    pacer_queue_update_task_.Stop();
+    controller_task_.Stop();
+  }
 }
 
 RtpVideoSenderInterface* RtpTransportControllerSend::CreateRtpVideoSender(
@@ -174,7 +164,8 @@ RtpVideoSenderInterface* RtpTransportControllerSend::CreateRtpVideoSender(
       // the parts of RtpTransportControllerSendInterface that are really used.
       this, event_log, &retransmission_rate_limiter_, std::move(fec_controller),
       frame_encryption_config.frame_encryptor,
-      frame_encryption_config.crypto_options, std::move(frame_transformer)));
+      frame_encryption_config.crypto_options, std::move(frame_transformer),
+      field_trials_, task_queue_factory_));
   return video_rtp_senders_.back().get();
 }
 
@@ -202,21 +193,16 @@ void RtpTransportControllerSend::UpdateControlState() {
   observer_->OnTargetTransferRate(*update);
 }
 
-RtpPacketPacer* RtpTransportControllerSend::pacer() {
-  if (pacer_settings_.use_task_queue_pacer()) {
-    return task_queue_pacer_.get();
+void RtpTransportControllerSend::UpdateCongestedState() {
+  bool congested = transport_feedback_adapter_.GetOutstandingData() >=
+                   congestion_window_size_;
+  if (congested != is_congested_) {
+    is_congested_ = congested;
+    pacer_.SetCongested(congested);
   }
-  return process_thread_pacer_.get();
 }
 
-const RtpPacketPacer* RtpTransportControllerSend::pacer() const {
-  if (pacer_settings_.use_task_queue_pacer()) {
-    return task_queue_pacer_.get();
-  }
-  return process_thread_pacer_.get();
-}
-
-rtc::TaskQueue* RtpTransportControllerSend::GetWorkerQueue() {
+MaybeWorkerThread* RtpTransportControllerSend::GetWorkerQueue() {
   return &task_queue_;
 }
 
@@ -235,10 +221,7 @@ RtpTransportControllerSend::transport_feedback_observer() {
 }
 
 RtpPacketSender* RtpTransportControllerSend::packet_sender() {
-  if (pacer_settings_.use_task_queue_pacer()) {
-    return task_queue_pacer_.get();
-  }
-  return process_thread_pacer_.get();
+  return &pacer_;
 }
 
 void RtpTransportControllerSend::SetAllocatedSendBitrateLimits(
@@ -255,7 +238,7 @@ void RtpTransportControllerSend::SetPacingFactor(float pacing_factor) {
   UpdateStreamsConfig();
 }
 void RtpTransportControllerSend::SetQueueTimeLimit(int limit_ms) {
-  pacer()->SetQueueTimeLimit(TimeDelta::Millis(limit_ms));
+  pacer_.SetQueueTimeLimit(TimeDelta::Millis(limit_ms));
 }
 StreamFeedbackProvider*
 RtpTransportControllerSend::GetStreamFeedbackProvider() {
@@ -264,7 +247,7 @@ RtpTransportControllerSend::GetStreamFeedbackProvider() {
 
 void RtpTransportControllerSend::RegisterTargetTransferRateObserver(
     TargetTransferRateObserver* observer) {
-  task_queue_.PostTask([this, observer] {
+  task_queue_.RunOrPost([this, observer] {
     RTC_DCHECK_RUN_ON(&task_queue_);
     RTC_DCHECK(observer_ == nullptr);
     observer_ = observer;
@@ -291,7 +274,7 @@ bool RtpTransportControllerSend::IsRelevantRouteChange(
 }
 
 void RtpTransportControllerSend::OnNetworkRouteChanged(
-    const std::string& transport_name,
+    absl::string_view transport_name,
     const rtc::NetworkRoute& network_route) {
   // Check if the network route is connected.
 
@@ -305,8 +288,11 @@ void RtpTransportControllerSend::OnNetworkRouteChanged(
       ApplyOrLiftRelayCap(IsRelayed(network_route));
 
   // Check whether the network route has changed on each transport.
-  auto result =
-      network_routes_.insert(std::make_pair(transport_name, network_route));
+  auto result = network_routes_.insert(
+      // Explicit conversion of transport_name to std::string here is necessary
+      // to support some platforms that cannot yet deal with implicit
+      // conversion in these types of situations.
+      std::make_pair(std::string(transport_name), network_route));
   auto kv = result.first;
   bool inserted = result.second;
   if (inserted || !(kv->second == network_route)) {
@@ -321,7 +307,7 @@ void RtpTransportControllerSend::OnNetworkRouteChanged(
     if (relay_constraint_update.has_value()) {
       UpdateBitrateConstraints(*relay_constraint_update);
     }
-    task_queue_.PostTask([this, network_route] {
+    task_queue_.RunOrPost([this, network_route] {
       RTC_DCHECK_RUN_ON(&task_queue_);
       transport_overhead_bytes_per_packet_ = network_route.packet_overhead;
     });
@@ -350,7 +336,7 @@ void RtpTransportControllerSend::OnNetworkRouteChanged(
     NetworkRouteChange msg;
     msg.at_time = Timestamp::Millis(clock_->TimeInMilliseconds());
     msg.constraints = ConvertConstraints(bitrate_config, clock_);
-    task_queue_.PostTask([this, msg, network_route] {
+    task_queue_.RunOrPost([this, msg, network_route] {
       RTC_DCHECK_RUN_ON(&task_queue_);
       transport_overhead_bytes_per_packet_ = network_route.packet_overhead;
       if (reset_feedback_on_route_change_) {
@@ -361,7 +347,8 @@ void RtpTransportControllerSend::OnNetworkRouteChanged(
       } else {
         UpdateInitialConstraints(msg.constraints);
       }
-      pacer()->UpdateOutstandingData(DataSize::Zero());
+      is_congested_ = false;
+      pacer_.SetCongested(false);
     });
   }
 }
@@ -372,17 +359,18 @@ void RtpTransportControllerSend::OnNetworkAvailability(bool network_available) {
   NetworkAvailability msg;
   msg.at_time = Timestamp::Millis(clock_->TimeInMilliseconds());
   msg.network_available = network_available;
-  task_queue_.PostTask([this, msg]() {
+  task_queue_.RunOrPost([this, msg]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     if (network_available_ == msg.network_available)
       return;
     network_available_ = msg.network_available;
     if (network_available_) {
-      pacer()->Resume();
+      pacer_.Resume();
     } else {
-      pacer()->Pause();
+      pacer_.Pause();
     }
-    pacer()->UpdateOutstandingData(DataSize::Zero());
+    is_congested_ = false;
+    pacer_.SetCongested(false);
 
     if (controller_) {
       control_handler_->SetNetworkAvailability(network_available_);
@@ -401,14 +389,14 @@ RtcpBandwidthObserver* RtpTransportControllerSend::GetBandwidthObserver() {
   return this;
 }
 int64_t RtpTransportControllerSend::GetPacerQueuingDelayMs() const {
-  return pacer()->OldestPacketWaitTime().ms();
+  return pacer_.OldestPacketWaitTime().ms();
 }
 absl::optional<Timestamp> RtpTransportControllerSend::GetFirstPacketTime()
     const {
-  return pacer()->FirstSentPacketTime();
+  return pacer_.FirstSentPacketTime();
 }
 void RtpTransportControllerSend::EnablePeriodicAlrProbing(bool enable) {
-  task_queue_.PostTask([this, enable]() {
+  task_queue_.RunOrPost([this, enable]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     streams_config_.requests_alr_probing = enable;
     UpdateStreamsConfig();
@@ -416,26 +404,33 @@ void RtpTransportControllerSend::EnablePeriodicAlrProbing(bool enable) {
 }
 void RtpTransportControllerSend::OnSentPacket(
     const rtc::SentPacket& sent_packet) {
-  task_queue_.PostTask([this, sent_packet]() {
-    RTC_DCHECK_RUN_ON(&task_queue_);
-    absl::optional<SentPacket> packet_msg =
-        transport_feedback_adapter_.ProcessSentPacket(sent_packet);
-    if (packet_msg) {
-      // Only update outstanding data in pacer if:
-      // 1. Packet feadback is used.
-      // 2. The packet has not yet received an acknowledgement.
-      // 3. It is not a retransmission of an earlier packet.
-      pacer()->UpdateOutstandingData(
-          transport_feedback_adapter_.GetOutstandingData());
-      if (controller_)
-        PostUpdates(controller_->OnSentPacket(*packet_msg));
-    }
-  });
+  // Normally called on the network thread !
+
+  // We can not use SafeTask here if we are using an owned task queue, because
+  // the safety flag will be destroyed when RtpTransportControllerSend is
+  // destroyed on the worker thread. But we must use SafeTask if we are using
+  // the worker thread, since the worker thread outlive
+  // RtpTransportControllerSend.
+  task_queue_.TaskQueueForPost()->PostTask(
+      task_queue_.MaybeSafeTask(safety_.flag(), [this, sent_packet]() {
+        RTC_DCHECK_RUN_ON(&task_queue_);
+        absl::optional<SentPacket> packet_msg =
+            transport_feedback_adapter_.ProcessSentPacket(sent_packet);
+        if (packet_msg) {
+          // Only update outstanding data if:
+          // 1. Packet feedback is used.
+          // 2. The packet has not yet received an acknowledgement.
+          // 3. It is not a retransmission of an earlier packet.
+          UpdateCongestedState();
+          if (controller_)
+            PostUpdates(controller_->OnSentPacket(*packet_msg));
+        }
+      }));
 }
 
 void RtpTransportControllerSend::OnReceivedPacket(
     const ReceivedPacket& packet_msg) {
-  task_queue_.PostTask([this, packet_msg]() {
+  task_queue_.RunOrPost([this, packet_msg]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     if (controller_)
       PostUpdates(controller_->OnReceivedPacket(packet_msg));
@@ -445,7 +440,7 @@ void RtpTransportControllerSend::OnReceivedPacket(
 void RtpTransportControllerSend::UpdateBitrateConstraints(
     const BitrateConstraints& updated) {
   TargetRateConstraints msg = ConvertConstraints(updated, clock_);
-  task_queue_.PostTask([this, msg]() {
+  task_queue_.RunOrPost([this, msg]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     if (controller_) {
       PostUpdates(controller_->OnTargetRateConstraints(msg));
@@ -495,7 +490,7 @@ void RtpTransportControllerSend::OnTransportOverheadChanged(
     return;
   }
 
-  pacer()->SetTransportOverhead(
+  pacer_.SetTransportOverhead(
       DataSize::Bytes(transport_overhead_bytes_per_packet));
 
   // TODO(holmer): Call AudioRtpSenders when they have been moved to
@@ -508,21 +503,17 @@ void RtpTransportControllerSend::OnTransportOverheadChanged(
 
 void RtpTransportControllerSend::AccountForAudioPacketsInPacedSender(
     bool account_for_audio) {
-  pacer()->SetAccountForAudioPackets(account_for_audio);
+  pacer_.SetAccountForAudioPackets(account_for_audio);
 }
 
 void RtpTransportControllerSend::IncludeOverheadInPacedSender() {
-  pacer()->SetIncludeOverhead();
+  pacer_.SetIncludeOverhead();
 }
 
 void RtpTransportControllerSend::EnsureStarted() {
   if (!pacer_started_) {
     pacer_started_ = true;
-    if (pacer_settings_.use_task_queue_pacer()) {
-      task_queue_pacer_->EnsureStarted();
-    } else {
-      process_thread_->Start();
-    }
+    pacer_.EnsureStarted();
   }
 }
 
@@ -530,7 +521,7 @@ void RtpTransportControllerSend::OnReceivedEstimatedBitrate(uint32_t bitrate) {
   RemoteBitrateReport msg;
   msg.receive_time = Timestamp::Millis(clock_->TimeInMilliseconds());
   msg.bandwidth = DataRate::BitsPerSec(bitrate);
-  task_queue_.PostTask([this, msg]() {
+  task_queue_.RunOrPost([this, msg]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     if (controller_)
       PostUpdates(controller_->OnRemoteBitrateReport(msg));
@@ -541,13 +532,9 @@ void RtpTransportControllerSend::OnReceivedRtcpReceiverReport(
     const ReportBlockList& report_blocks,
     int64_t rtt_ms,
     int64_t now_ms) {
-  task_queue_.PostTask([this, report_blocks, now_ms]() {
+  task_queue_.RunOrPost([this, report_blocks, now_ms, rtt_ms]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     OnReceivedRtcpReceiverReportBlocks(report_blocks, now_ms);
-  });
-
-  task_queue_.PostTask([this, now_ms, rtt_ms]() {
-    RTC_DCHECK_RUN_ON(&task_queue_);
     RoundTripTimeUpdate report;
     report.receive_time = Timestamp::Millis(now_ms);
     report.round_trip_time = TimeDelta::Millis(rtt_ms);
@@ -559,11 +546,11 @@ void RtpTransportControllerSend::OnReceivedRtcpReceiverReport(
 
 void RtpTransportControllerSend::OnAddPacket(
     const RtpPacketSendInfo& packet_info) {
-  feedback_demuxer_.AddPacket(packet_info);
-
   Timestamp creation_time = Timestamp::Millis(clock_->TimeInMilliseconds());
-  task_queue_.PostTask([this, packet_info, creation_time]() {
+
+  task_queue_.RunOrPost([this, packet_info, creation_time]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
+    feedback_demuxer_.AddPacket(packet_info);
     transport_feedback_adapter_.AddPacket(
         packet_info,
         send_side_bwe_with_overhead_ ? transport_overhead_bytes_per_packet_ : 0,
@@ -573,10 +560,10 @@ void RtpTransportControllerSend::OnAddPacket(
 
 void RtpTransportControllerSend::OnTransportFeedback(
     const rtcp::TransportFeedback& feedback) {
-  feedback_demuxer_.OnTransportFeedback(feedback);
   auto feedback_time = Timestamp::Millis(clock_->TimeInMilliseconds());
-  task_queue_.PostTask([this, feedback, feedback_time]() {
+  task_queue_.RunOrPost([this, feedback, feedback_time]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
+    feedback_demuxer_.OnTransportFeedback(feedback);
     absl::optional<TransportPacketsFeedback> feedback_msg =
         transport_feedback_adapter_.ProcessTransportFeedback(feedback,
                                                              feedback_time);
@@ -584,10 +571,8 @@ void RtpTransportControllerSend::OnTransportFeedback(
       if (controller_)
         PostUpdates(controller_->OnTransportPacketsFeedback(*feedback_msg));
 
-      // Only update outstanding data in pacer if any packet is first time
-      // acked.
-      pacer()->UpdateOutstandingData(
-          transport_feedback_adapter_.GetOutstandingData());
+      // Only update outstanding data if any packet is first time acked.
+      UpdateCongestedState();
     }
   });
 }
@@ -599,7 +584,7 @@ void RtpTransportControllerSend::OnRemoteNetworkEstimate(
         estimate.link_capacity_lower, estimate.link_capacity_upper));
   }
   estimate.update_time = Timestamp::Millis(clock_->TimeInMilliseconds());
-  task_queue_.PostTask([this, estimate] {
+  task_queue_.RunOrPost([this, estimate] {
     RTC_DCHECK_RUN_ON(&task_queue_);
     if (controller_)
       PostUpdates(controller_->OnNetworkStateEstimate(estimate));
@@ -641,11 +626,13 @@ void RtpTransportControllerSend::UpdateInitialConstraints(
 }
 
 void RtpTransportControllerSend::StartProcessPeriodicTasks() {
+  RTC_DCHECK_RUN_ON(&task_queue_);
   if (!pacer_queue_update_task_.Running()) {
     pacer_queue_update_task_ = RepeatingTaskHandle::DelayedStart(
-        task_queue_.Get(), kPacerQueueUpdateInterval, [this]() {
+        task_queue_.TaskQueueForDelayedTasks(), kPacerQueueUpdateInterval,
+        [this]() {
           RTC_DCHECK_RUN_ON(&task_queue_);
-          TimeDelta expected_queue_time = pacer()->ExpectedQueueTime();
+          TimeDelta expected_queue_time = pacer_.ExpectedQueueTime();
           control_handler_->SetPacerQueue(expected_queue_time);
           UpdateControlState();
           return kPacerQueueUpdateInterval;
@@ -654,7 +641,7 @@ void RtpTransportControllerSend::StartProcessPeriodicTasks() {
   controller_task_.Stop();
   if (process_interval_.IsFinite()) {
     controller_task_ = RepeatingTaskHandle::DelayedStart(
-        task_queue_.Get(), process_interval_, [this]() {
+        task_queue_.TaskQueueForDelayedTasks(), process_interval_, [this]() {
           RTC_DCHECK_RUN_ON(&task_queue_);
           UpdateControllerWithTimeInterval();
           return process_interval_;
@@ -667,7 +654,7 @@ void RtpTransportControllerSend::UpdateControllerWithTimeInterval() {
   ProcessInterval msg;
   msg.at_time = Timestamp::Millis(clock_->TimeInMilliseconds());
   if (add_pacing_to_cwin_)
-    msg.pacer_queue = pacer()->QueueSizeData();
+    msg.pacer_queue = pacer_.QueueSizeData();
   PostUpdates(controller_->OnProcessInterval(msg));
 }
 
@@ -679,14 +666,15 @@ void RtpTransportControllerSend::UpdateStreamsConfig() {
 
 void RtpTransportControllerSend::PostUpdates(NetworkControlUpdate update) {
   if (update.congestion_window) {
-    pacer()->SetCongestionWindow(*update.congestion_window);
+    congestion_window_size_ = *update.congestion_window;
+    UpdateCongestedState();
   }
   if (update.pacer_config) {
-    pacer()->SetPacingRates(update.pacer_config->data_rate(),
-                            update.pacer_config->pad_rate());
+    pacer_.SetPacingRates(update.pacer_config->data_rate(),
+                          update.pacer_config->pad_rate());
   }
-  for (const auto& probe : update.probe_cluster_configs) {
-    pacer()->CreateProbeCluster(probe.target_data_rate, probe.id);
+  if (!update.probe_cluster_configs.empty()) {
+    pacer_.CreateProbeClusters(std::move(update.probe_cluster_configs));
   }
   if (update.target_rate) {
     control_handler_->SetTargetRate(*update.target_rate);

@@ -19,6 +19,10 @@
 namespace webrtc {
 
 SamplesStatsCounter::SamplesStatsCounter() = default;
+SamplesStatsCounter::SamplesStatsCounter(size_t expected_samples_count) {
+  samples_.reserve(expected_samples_count);
+}
+
 SamplesStatsCounter::~SamplesStatsCounter() = default;
 SamplesStatsCounter::SamplesStatsCounter(const SamplesStatsCounter&) = default;
 SamplesStatsCounter& SamplesStatsCounter::operator=(

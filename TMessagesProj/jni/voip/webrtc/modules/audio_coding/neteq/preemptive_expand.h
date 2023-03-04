@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include "modules/audio_coding/neteq/time_stretch.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -35,6 +34,9 @@ class PreemptiveExpand : public TimeStretch {
       : TimeStretch(sample_rate_hz, num_channels, background_noise),
         old_data_length_per_channel_(0),
         overlap_samples_(overlap_samples) {}
+
+  PreemptiveExpand(const PreemptiveExpand&) = delete;
+  PreemptiveExpand& operator=(const PreemptiveExpand&) = delete;
 
   // This method performs the actual PreemptiveExpand operation. The samples are
   // read from `input`, of length `input_length` elements, and are written to
@@ -67,8 +69,6 @@ class PreemptiveExpand : public TimeStretch {
  private:
   size_t old_data_length_per_channel_;
   size_t overlap_samples_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(PreemptiveExpand);
 };
 
 struct PreemptiveExpandFactory {

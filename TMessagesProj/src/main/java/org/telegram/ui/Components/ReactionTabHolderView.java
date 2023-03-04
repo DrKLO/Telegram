@@ -150,7 +150,7 @@ public class ReactionTabHolderView extends FrameLayout {
         if (reaction != null) {
             info.setText(LocaleController.formatPluralString("AccDescrNumberOfPeopleReactions", count, reaction));
         } else {
-            info.setText(LocaleController.formatPluralString("AccDescrNumberOfReactions", count));
+            info.setText(LocaleController.formatPluralString("ReactionsCount", count));
         }
     }
 }

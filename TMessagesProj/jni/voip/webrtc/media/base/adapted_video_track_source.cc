@@ -61,6 +61,10 @@ void AdaptedVideoTrackSource::OnFrame(const webrtc::VideoFrame& frame) {
   }
 }
 
+void AdaptedVideoTrackSource::OnFrameDropped() {
+  broadcaster_.OnDiscardedFrame();
+}
+
 void AdaptedVideoTrackSource::AddOrUpdateSink(
     rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
     const rtc::VideoSinkWants& wants) {

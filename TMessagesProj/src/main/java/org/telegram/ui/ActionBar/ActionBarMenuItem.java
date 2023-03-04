@@ -72,6 +72,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ActionBarMenuItem extends FrameLayout {
 
@@ -152,6 +153,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private AnimatorSet clearButtonAnimator;
     private View searchAdditionalButton;
     protected RLottieImageView iconView;
+    private int iconViewResId;
     protected TextView textView;
     private FrameLayout searchContainer;
     private boolean isSearchField;
@@ -645,7 +647,7 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public boolean hasSubMenu() {
-        return popupLayout != null;
+        return popupLayout != null || lazyList != null && !lazyList.isEmpty();
     }
 
     public ActionBarPopupWindow.ActionBarPopupWindowLayout getPopupLayout() {
@@ -660,6 +662,9 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void toggleSubMenu(View topView, View fromView) {
+        if (popupWindow == null || !popupWindow.isShowing()) {
+            layoutLazyItems();
+        }
         if (popupLayout == null || parentMenu != null && parentMenu.isActionMode && parentMenu.parentActionBar != null && !parentMenu.parentActionBar.isActionModeShowed()) {
             return;
         }
@@ -698,12 +703,16 @@ public class ActionBarMenuItem extends FrameLayout {
             FrameLayout frameLayout = new FrameLayout(getContext());
             frameLayout.setAlpha(0f);
             frameLayout.animate().alpha(1f).setDuration(100).start();
-            Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert2).mutate();
-            drawable.setColorFilter(new PorterDuffColorFilter(popupLayout.getBackgroundColor(), PorterDuff.Mode.MULTIPLY));
-
-            frameLayout.setBackground(drawable);
-            frameLayout.addView(topView);
-            linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            if (topView.getParent() instanceof ViewGroup) {
+                ((ViewGroup) topView.getParent()).removeView(topView);
+            }
+            if (topView instanceof ActionBarMenuSubItem || topView instanceof LinearLayout) {
+                Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert2).mutate();
+                drawable.setColorFilter(new PorterDuffColorFilter(popupLayout.getBackgroundColor(), PorterDuff.Mode.MULTIPLY));
+                frameLayout.setBackground(drawable);
+            }
+            frameLayout.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             linearLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, -AndroidUtilities.dp(4), 0, 0));
             container = linearLayout;
             popupLayout.setTopView(frameLayout);
@@ -1067,6 +1076,7 @@ public class ActionBarMenuItem extends FrameLayout {
         } else {
             iconView.setImageDrawable(drawable);
         }
+        iconViewResId = 0;
     }
 
     public RLottieImageView getIconView() {
@@ -1081,7 +1091,18 @@ public class ActionBarMenuItem extends FrameLayout {
         if (iconView == null) {
             return;
         }
-        iconView.setImageResource(resId);
+        iconView.setImageResource(iconViewResId = resId);
+    }
+
+    public void setIcon(int resId, boolean animated) {
+        if (iconView == null || iconViewResId == resId) {
+            return;
+        }
+        if (animated) {
+            AndroidUtilities.updateImageViewImageAnimated(iconView, iconViewResId = resId);
+        } else {
+            iconView.setImageResource(iconViewResId = resId);
+        }
     }
 
     public void setText(CharSequence text) {
@@ -1770,6 +1791,10 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void hideSubItem(int id) {
+        Item lazyItem = findLazyItem(id);
+        if (lazyItem != null) {
+            lazyItem.setVisibility(GONE);
+        }
         if (popupLayout == null) {
             return;
         }
@@ -1821,6 +1846,10 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void showSubItem(int id, boolean animated) {
+        Item lazyItem = findLazyItem(id);
+        if (lazyItem != null) {
+            lazyItem.setVisibility(VISIBLE);
+        }
         if (popupLayout == null) {
             return;
         }
@@ -2071,6 +2100,237 @@ public class ActionBarMenuItem extends FrameLayout {
         gap.setTag(R.id.fit_width_tag, 1);
         popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
         return gap;
+    }
+
+    // lazy layout to create menu only when needed
+    // planned to at some point to override the current logic above
+    public static final int VIEW_TYPE_SUBITEM = 0;
+    public static final int VIEW_TYPE_COLORED_GAP = 1;
+    public static final int VIEW_TYPE_SWIPEBACKITEM = 2;
+
+    private ArrayList<Item> lazyList;
+    private HashMap<Integer, Item> lazyMap;
+
+    public static class Item {
+        public int viewType;
+
+        public int id;
+        public int icon;
+        public Drawable iconDrawable;
+        public CharSequence text;
+        public boolean dismiss, needCheck;
+        public View viewToSwipeBack;
+
+        private View view;
+        private View.OnClickListener overrideClickListener;
+        private int visibility = VISIBLE, rightIconVisibility = VISIBLE;
+
+        private Integer textColor, iconColor;
+
+        private Item(int viewType) {
+            this.viewType = viewType;
+        }
+
+        private static Item asSubItem(int id, int icon, Drawable iconDrawable, CharSequence text, boolean dismiss, boolean needCheck) {
+            Item item = new Item(VIEW_TYPE_SUBITEM);
+            item.id = id;
+            item.icon = icon;
+            item.iconDrawable = iconDrawable;
+            item.text = text;
+            item.dismiss = dismiss;
+            item.needCheck = needCheck;
+            return item;
+        }
+        private static Item asColoredGap() {
+            return new Item(VIEW_TYPE_COLORED_GAP);
+        }
+        private static Item asSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
+            Item item = new Item(VIEW_TYPE_SWIPEBACKITEM);
+            item.icon = icon;
+            item.iconDrawable = iconDrawable;
+            item.text = text;
+            item.viewToSwipeBack = viewToSwipeBack;
+            return item;
+        }
+
+        private View add(ActionBarMenuItem parent) {
+            parent.createPopupLayout();
+            if (view != null) {
+                parent.popupLayout.addView(view);
+            } else if (viewType == VIEW_TYPE_SUBITEM) {
+                ActionBarMenuSubItem cell = new ActionBarMenuSubItem(parent.getContext(), needCheck, false, false, parent.resourcesProvider);
+                cell.setTextAndIcon(text, icon, iconDrawable);
+                cell.setMinimumWidth(AndroidUtilities.dp(196));
+                cell.setTag(id);
+                parent.popupLayout.addView(cell);
+                LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+                if (LocaleController.isRTL) {
+                    layoutParams.gravity = Gravity.RIGHT;
+                }
+                layoutParams.width = LayoutHelper.MATCH_PARENT;
+                layoutParams.height = AndroidUtilities.dp(48);
+                cell.setLayoutParams(layoutParams);
+                cell.setOnClickListener(view -> {
+                    if (parent.popupWindow != null && parent.popupWindow.isShowing()) {
+                        if (dismiss) {
+                            if (parent.processedPopupClick) {
+                                return;
+                            }
+                            parent.processedPopupClick = true;
+                            parent.popupWindow.dismiss(parent.allowCloseAnimation);
+                        }
+                    }
+                    if (parent.parentMenu != null) {
+                        parent.parentMenu.onItemClick((Integer) view.getTag());
+                    } else if (parent.delegate != null) {
+                        parent.delegate.onItemClick((Integer) view.getTag());
+                    }
+                });
+                if (textColor != null && iconColor != null) {
+                    cell.setColors(textColor, iconColor);
+                }
+                view = cell;
+            } else if (viewType == VIEW_TYPE_COLORED_GAP) {
+                ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(parent.getContext(), parent.resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
+                gap.setTag(R.id.fit_width_tag, 1);
+                parent.popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+                view = gap;
+            } else if (viewType == VIEW_TYPE_SWIPEBACKITEM) {
+                ActionBarMenuSubItem cell = new ActionBarMenuSubItem(parent.getContext(), false, false, false, parent.resourcesProvider);
+                cell.setTextAndIcon(text, icon, iconDrawable);
+                cell.setMinimumWidth(AndroidUtilities.dp(196));
+                cell.setRightIcon(R.drawable.msg_arrowright);
+                cell.getRightIcon().setVisibility(rightIconVisibility);
+                parent.popupLayout.addView(cell);
+                LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+                if (LocaleController.isRTL) {
+                    layoutParams.gravity = Gravity.RIGHT;
+                }
+                layoutParams.width = LayoutHelper.MATCH_PARENT;
+                layoutParams.height = AndroidUtilities.dp(48);
+                cell.setLayoutParams(layoutParams);
+                int swipeBackIndex = parent.popupLayout.addViewToSwipeBack(viewToSwipeBack);
+                cell.openSwipeBackLayout = () -> {
+                    if (parent.popupLayout.getSwipeBack() != null) {
+                        parent.popupLayout.getSwipeBack().openForeground(swipeBackIndex);
+                    }
+                };
+                cell.setOnClickListener(view -> {
+                    cell.openSwipeBack();
+                });
+                parent.popupLayout.swipeBackGravityRight = true;
+                if (textColor != null && iconColor != null) {
+                    cell.setColors(textColor, iconColor);
+                }
+                view = cell;
+            }
+            if (view != null) {
+                view.setVisibility(visibility);
+                if (overrideClickListener != null) {
+                    view.setOnClickListener(overrideClickListener);
+                }
+            }
+            return view;
+        }
+
+        public void setVisibility(int visibility) {
+            this.visibility = visibility;
+            if (view != null) {
+                view.setVisibility(visibility);
+            }
+        }
+
+        public void setOnClickListener(View.OnClickListener onClickListener) {
+            overrideClickListener = onClickListener;
+            if (view != null) {
+                view.setOnClickListener(overrideClickListener);
+            }
+        }
+
+        public void openSwipeBack() {
+            if (view instanceof ActionBarMenuSubItem) {
+                ((ActionBarMenuSubItem) view).openSwipeBack();
+            }
+        }
+
+        public void setText(CharSequence text) {
+            this.text = text;
+            if (view instanceof ActionBarMenuSubItem) {
+                ((ActionBarMenuSubItem) view).setText(text);
+            }
+        }
+
+        public void setIcon(int icon) {
+            if (icon != this.icon) {
+                this.icon = icon;
+                if (view instanceof ActionBarMenuSubItem) {
+                    ((ActionBarMenuSubItem) view).setIcon(icon);
+                }
+            }
+        }
+
+        public void setRightIconVisibility(int visibility) {
+            if (rightIconVisibility != visibility) {
+                rightIconVisibility = visibility;
+                if (view instanceof ActionBarMenuSubItem) {
+                    ((ActionBarMenuSubItem) view).getRightIcon().setVisibility(rightIconVisibility);
+                }
+            }
+        }
+
+        public void setColors(int textColor, int iconColor) {
+            if (this.textColor == null || this.iconColor == null || this.textColor != textColor || this.iconColor != iconColor) {
+                this.textColor = textColor;
+                this.iconColor = iconColor;
+                if (view instanceof ActionBarMenuSubItem) {
+                    ((ActionBarMenuSubItem) view).setColors(textColor, iconColor);
+                }
+            }
+        }
+    }
+    public Item lazilyAddSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
+        return putLazyItem(Item.asSwipeBackItem(icon, iconDrawable, text, viewToSwipeBack));
+    }
+    public Item lazilyAddSubItem(int id, int icon, CharSequence text) {
+        return lazilyAddSubItem(id, icon, null, text, true, false);
+    }
+    public Item lazilyAddSubItem(int id, int icon, Drawable iconDrawable, CharSequence text, boolean dismiss, boolean needCheck) {
+        return putLazyItem(Item.asSubItem(id, icon, iconDrawable, text, dismiss, needCheck));
+    }
+    public Item lazilyAddColoredGap() {
+        return putLazyItem(Item.asColoredGap());
+    }
+
+    private Item putLazyItem(Item item) {
+        if (item == null) {
+            return item;
+        }
+        if (lazyList == null) {
+            lazyList = new ArrayList<>();
+        }
+        lazyList.add(item);
+        if (lazyMap == null) {
+            lazyMap = new HashMap<>();
+        }
+        lazyMap.put(item.id, item);
+        return item;
+    }
+
+    private Item findLazyItem(int id) {
+        if (lazyMap == null) {
+            return null;
+        }
+        return lazyMap.get(id);
+    }
+
+    private void layoutLazyItems() {
+        if (lazyList == null) {
+            return;
+        }
+        for (int i = 0; i < lazyList.size(); ++i) {
+            lazyList.get(i).add(this);
+        }
+        lazyList.clear();
     }
 
     public static ActionBarMenuSubItem addItem(ActionBarPopupWindow.ActionBarPopupWindowLayout windowLayout, int icon, CharSequence text, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {

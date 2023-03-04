@@ -10,11 +10,13 @@
 
 #include "modules/audio_coding/codecs/opus/audio_coder_opus_common.h"
 
+#include "absl/strings/string_view.h"
+
 namespace webrtc {
 
 absl::optional<std::string> GetFormatParameter(const SdpAudioFormat& format,
-                                               const std::string& param) {
-  auto it = format.parameters.find(param);
+                                               absl::string_view param) {
+  auto it = format.parameters.find(std::string(param));
   if (it == format.parameters.end())
     return absl::nullopt;
 
@@ -25,7 +27,7 @@ absl::optional<std::string> GetFormatParameter(const SdpAudioFormat& format,
 template <>
 absl::optional<std::vector<unsigned char>> GetFormatParameter(
     const SdpAudioFormat& format,
-    const std::string& param) {
+    absl::string_view param) {
   std::vector<unsigned char> result;
   const std::string comma_separated_list =
       GetFormatParameter(format, param).value_or("");

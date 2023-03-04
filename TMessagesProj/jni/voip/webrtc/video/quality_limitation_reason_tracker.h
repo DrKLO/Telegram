@@ -24,6 +24,8 @@ namespace webrtc {
 // duration of time spent in each reason. See qualityLimitationReason[1],
 // qualityLimitationDurations[2], and qualityLimitationResolutionChanges[3] in
 // the webrtc-stats spec.
+// Note that the specification defines the durations in seconds while the
+// internal data structures defines it in milliseconds.
 // [1]
 // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qualitylimitationreason
 // [2]

@@ -93,5 +93,87 @@ std::string EncodeDeltasV3(FixedLengthEncodingParametersV3 params,
                            uint64_t base,
                            rtc::ArrayView<const uint64_t> values);
 
+// Given a batch of RtcEvents and a member pointer, extract that
+// member from each event in the batch. Signed integer members are
+// encoded as unsigned, and the bitsize increased so the result can
+// represented as a std::vector<uint64_t>.
+// This is intended to be used in conjuction with
+// EventEncoder::EncodeField to encode a batch of events as follows:
+// auto values = ExtractRtcEventMember(batch, RtcEventFoo::timestamp_ms);
+// encoder.EncodeField(timestamp_params, values)
+template <typename T,
+          typename E,
+          std::enable_if_t<std::is_integral<T>::value, bool> = true>
+std::vector<uint64_t> ExtractRtcEventMember(
+    rtc::ArrayView<const RtcEvent*> batch,
+    const T E::*member) {
+  std::vector<uint64_t> values;
+  values.reserve(batch.size());
+  for (const RtcEvent* event : batch) {
+    RTC_CHECK_EQ(event->GetType(), E::kType);
+    T value = static_cast<const E*>(event)->*member;
+    values.push_back(EncodeAsUnsigned(value));
+  }
+  return values;
+}
+
+// Extract an optional field from a batch of RtcEvents.
+// The function returns a vector of positions in addition to the vector of
+// values. The vector `positions` has the same length as the batch where
+// `positions[i] == true` iff the batch[i]->member has a value.
+// The values vector only contains the values that exists, so it
+// may be shorter than the batch.
+template <typename T,
+          typename E,
+          std::enable_if_t<std::is_integral<T>::value, bool> = true>
+ValuesWithPositions ExtractRtcEventMember(rtc::ArrayView<const RtcEvent*> batch,
+                                          const absl::optional<T> E::*member) {
+  ValuesWithPositions result;
+  result.position_mask.reserve(batch.size());
+  result.values.reserve(batch.size());
+  for (const RtcEvent* event : batch) {
+    RTC_CHECK_EQ(event->GetType(), E::kType);
+    absl::optional<T> field = static_cast<const E*>(event)->*member;
+    result.position_mask.push_back(field.has_value());
+    if (field.has_value()) {
+      result.values.push_back(EncodeAsUnsigned(field.value()));
+    }
+  }
+  return result;
+}
+
+// Extract an enum field from a batch of RtcEvents.
+// Requires specializing RtcEventLogEnum<T> for the enum type T.
+template <typename T,
+          typename E,
+          std::enable_if_t<std::is_enum<T>::value, bool> = true>
+std::vector<uint64_t> ExtractRtcEventMember(
+    rtc::ArrayView<const RtcEvent*> batch,
+    const T E::*member) {
+  std::vector<uint64_t> values;
+  values.reserve(batch.size());
+  for (const RtcEvent* event : batch) {
+    RTC_CHECK_EQ(event->GetType(), E::kType);
+    T value = static_cast<const E*>(event)->*member;
+    values.push_back(RtcEventLogEnum<T>::Encode(value));
+  }
+  return values;
+}
+
+// Extract a string field from a batch of RtcEvents.
+template <typename E>
+std::vector<absl::string_view> ExtractRtcEventMember(
+    rtc::ArrayView<const RtcEvent*> batch,
+    const std::string E::*member) {
+  std::vector<absl::string_view> values;
+  values.reserve(batch.size());
+  for (const RtcEvent* event : batch) {
+    RTC_CHECK_EQ(event->GetType(), E::kType);
+    absl::string_view str = static_cast<const E*>(event)->*member;
+    values.push_back(str);
+  }
+  return values;
+}
+
 }  // namespace webrtc
 #endif  // LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_FIELD_ENCODING_H_

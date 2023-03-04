@@ -17,7 +17,6 @@
 #include "api/neteq/neteq.h"
 #include "modules/audio_coding/neteq/statistics_calculator.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
@@ -49,6 +48,9 @@ class Normal {
 
   virtual ~Normal() {}
 
+  Normal(const Normal&) = delete;
+  Normal& operator=(const Normal&) = delete;
+
   // Performs the "Normal" operation. The decoder data is supplied in `input`,
   // having `length` samples in total for all channels (interleaved). The
   // result is written to `output`. The number of channels allocated in
@@ -68,8 +70,6 @@ class Normal {
   const size_t samples_per_ms_;
   const int16_t default_win_slope_Q14_;
   StatisticsCalculator* const statistics_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Normal);
 };
 
 }  // namespace webrtc

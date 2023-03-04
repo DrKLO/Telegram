@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "rtc_base/constructor_magic.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/system/file_wrapper.h"
 
 namespace rtc {
@@ -30,12 +30,15 @@ class FileRotatingStream {
  public:
   // Use this constructor for writing to a directory. Files in the directory
   // matching the prefix will be deleted on open.
-  FileRotatingStream(const std::string& dir_path,
-                     const std::string& file_prefix,
+  FileRotatingStream(absl::string_view dir_path,
+                     absl::string_view file_prefix,
                      size_t max_file_size,
                      size_t num_files);
 
   virtual ~FileRotatingStream();
+
+  FileRotatingStream(const FileRotatingStream&) = delete;
+  FileRotatingStream& operator=(const FileRotatingStream&) = delete;
 
   bool IsOpen() const;
 
@@ -100,8 +103,6 @@ class FileRotatingStream {
   // buffering the file size read from disk might not be accurate.
   size_t current_bytes_written_;
   bool disable_buffering_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(FileRotatingStream);
 };
 
 // CallSessionFileRotatingStream is meant to be used in situations where we will
@@ -126,9 +127,13 @@ class CallSessionFileRotatingStream : public FileRotatingStream {
   // Use this constructor for writing to a directory. Files in the directory
   // matching what's used by the stream will be deleted. `max_total_log_size`
   // must be at least 4.
-  CallSessionFileRotatingStream(const std::string& dir_path,
+  CallSessionFileRotatingStream(absl::string_view dir_path,
                                 size_t max_total_log_size);
   ~CallSessionFileRotatingStream() override {}
+
+  CallSessionFileRotatingStream(const CallSessionFileRotatingStream&) = delete;
+  CallSessionFileRotatingStream& operator=(
+      const CallSessionFileRotatingStream&) = delete;
 
  protected:
   void OnRotation() override;
@@ -140,8 +145,6 @@ class CallSessionFileRotatingStream : public FileRotatingStream {
 
   const size_t max_total_log_size_;
   size_t num_rotations_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(CallSessionFileRotatingStream);
 };
 
 // This is a convenience class, to read all files produced by a
@@ -150,8 +153,8 @@ class CallSessionFileRotatingStream : public FileRotatingStream {
 // directory at construction time.
 class FileRotatingStreamReader {
  public:
-  FileRotatingStreamReader(const std::string& dir_path,
-                           const std::string& file_prefix);
+  FileRotatingStreamReader(absl::string_view dir_path,
+                           absl::string_view file_prefix);
   ~FileRotatingStreamReader();
   size_t GetSize() const;
   size_t ReadAll(void* buffer, size_t size) const;
@@ -162,7 +165,7 @@ class FileRotatingStreamReader {
 
 class CallSessionFileRotatingStreamReader : public FileRotatingStreamReader {
  public:
-  CallSessionFileRotatingStreamReader(const std::string& dir_path);
+  CallSessionFileRotatingStreamReader(absl::string_view dir_path);
 };
 
 }  // namespace rtc

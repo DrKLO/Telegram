@@ -15,22 +15,25 @@
 #include <map>
 #include <set>
 #include <string>
-#include <utility>  // pair
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/strings/string_view.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "call/video_receive_stream.h"
 #include "call/video_send_stream.h"
+#include "logging/rtc_event_log/events/logged_rtp_rtcp.h"
 #include "logging/rtc_event_log/events/rtc_event_alr_state.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_network_adaptation.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_playout.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_receive_stream_config.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_send_stream_config.h"
+#include "logging/rtc_event_log/events/rtc_event_begin_log.h"
 #include "logging/rtc_event_log/events/rtc_event_bwe_update_delay_based.h"
 #include "logging/rtc_event_log/events/rtc_event_bwe_update_loss_based.h"
 #include "logging/rtc_event_log/events/rtc_event_dtls_transport_state.h"
 #include "logging/rtc_event_log/events/rtc_event_dtls_writable_state.h"
+#include "logging/rtc_event_log/events/rtc_event_end_log.h"
 #include "logging/rtc_event_log/events/rtc_event_frame_decoded.h"
 #include "logging/rtc_event_log/events/rtc_event_generic_ack_received.h"
 #include "logging/rtc_event_log/events/rtc_event_generic_packet_received.h"
@@ -42,9 +45,12 @@
 #include "logging/rtc_event_log/events/rtc_event_probe_result_success.h"
 #include "logging/rtc_event_log/events/rtc_event_remote_estimate.h"
 #include "logging/rtc_event_log/events/rtc_event_route_change.h"
+#include "logging/rtc_event_log/events/rtc_event_rtcp_packet_incoming.h"
+#include "logging/rtc_event_log/events/rtc_event_rtcp_packet_outgoing.h"
+#include "logging/rtc_event_log/events/rtc_event_rtp_packet_incoming.h"
+#include "logging/rtc_event_log/events/rtc_event_rtp_packet_outgoing.h"
 #include "logging/rtc_event_log/events/rtc_event_video_receive_stream_config.h"
 #include "logging/rtc_event_log/events/rtc_event_video_send_stream_config.h"
-#include "logging/rtc_event_log/logged_events.h"
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/common_header.h"
 #include "rtc_base/ignore_wundef.h"
@@ -63,6 +69,80 @@ RTC_POP_IGNORING_WUNDEF()
 namespace webrtc {
 
 enum PacketDirection { kIncomingPacket = 0, kOutgoingPacket };
+
+enum class LoggedMediaType : uint8_t { kUnknown, kAudio, kVideo };
+
+struct LoggedPacketInfo {
+  LoggedPacketInfo(const LoggedRtpPacket& rtp,
+                   LoggedMediaType media_type,
+                   bool rtx,
+                   Timestamp capture_time);
+  LoggedPacketInfo(const LoggedPacketInfo&);
+  ~LoggedPacketInfo();
+  int64_t log_time_ms() const { return log_packet_time.ms(); }
+  int64_t log_time_us() const { return log_packet_time.us(); }
+  uint32_t ssrc;
+  uint16_t stream_seq_no;
+  uint16_t size;
+  uint16_t payload_size;
+  uint16_t padding_size;
+  uint16_t overhead = 0;
+  uint8_t payload_type;
+  LoggedMediaType media_type = LoggedMediaType::kUnknown;
+  bool rtx = false;
+  bool marker_bit = false;
+  bool has_transport_seq_no = false;
+  bool last_in_feedback = false;
+  uint16_t transport_seq_no = 0;
+  // The RTP header timestamp unwrapped and converted from tick count to seconds
+  // based timestamp.
+  Timestamp capture_time;
+  // The time the packet was logged. This is the receive time for incoming
+  // packets and send time for outgoing.
+  Timestamp log_packet_time;
+  // Send time as reported by abs-send-time extension, For outgoing packets this
+  // corresponds to log_packet_time, but might be measured using another clock.
+  Timestamp reported_send_time;
+  // The receive time that was reported in feedback. For incoming packets this
+  // corresponds to log_packet_time, but might be measured using another clock.
+  // PlusInfinity indicates that the packet was lost.
+  Timestamp reported_recv_time = Timestamp::MinusInfinity();
+  // The time feedback message was logged. This is the feedback send time for
+  // incoming packets and feedback receive time for outgoing.
+  // PlusInfinity indicates that feedback was expected but not received.
+  Timestamp log_feedback_time = Timestamp::MinusInfinity();
+  // The delay betweeen receiving an RTP packet and sending feedback for
+  // incoming packets. For outgoing packets we don't know the feedback send
+  // time, and this is instead calculated as the difference in reported receive
+  // time between this packet and the last packet in the same feedback message.
+  TimeDelta feedback_hold_duration = TimeDelta::MinusInfinity();
+};
+
+struct InferredRouteChangeEvent {
+  int64_t log_time_ms() const { return log_time.ms(); }
+  int64_t log_time_us() const { return log_time.us(); }
+  uint32_t route_id;
+  Timestamp log_time = Timestamp::MinusInfinity();
+  uint16_t send_overhead;
+  uint16_t return_overhead;
+};
+
+enum class LoggedIceEventType {
+  kAdded,
+  kUpdated,
+  kDestroyed,
+  kSelected,
+  kCheckSent,
+  kCheckReceived,
+  kCheckResponseSent,
+  kCheckResponseReceived,
+};
+
+struct LoggedIceEvent {
+  uint32_t candidate_pair_id;
+  Timestamp log_time;
+  LoggedIceEventType event_type;
+};
 
 // This class is used to process lists of LoggedRtpPacketIncoming
 // and LoggedRtpPacketOutgoing without duplicating the code.
@@ -240,48 +320,11 @@ class ParsedRtcEventLog {
     kDontParse,
     kAttemptWebrtcDefaultConfig
   };
-  class ParseStatus {
-   public:
-    static ParseStatus Success() { return ParseStatus(); }
-    static ParseStatus Error(std::string error, std::string file, int line) {
-      return ParseStatus(error, file, line);
-    }
 
-    bool ok() const { return error_.empty() && file_.empty() && line_ == 0; }
-    std::string message() const {
-      return error_ + " failed at " + file_ + " line " + std::to_string(line_);
-    }
-
-    ABSL_DEPRECATED("Use ok() instead") operator bool() const { return ok(); }
-
-   private:
-    ParseStatus() : error_(), file_(), line_(0) {}
-    ParseStatus(std::string error, std::string file, int line)
-        : error_(error), file_(file), line_(line) {}
-    std::string error_;
-    std::string file_;
-    int line_;
-  };
+  using ParseStatus = RtcEventLogParseStatus;
 
   template <typename T>
-  class ParseStatusOr {
-   public:
-    ParseStatusOr(const ParseStatus& error)  // NOLINT
-        : status_(error), value_() {}
-    ParseStatusOr(const T& value)  // NOLINT
-        : status_(ParseStatus::Success()), value_(value) {}
-    bool ok() const { return status_.ok(); }
-    const T& value() const& {
-      RTC_DCHECK(status_.ok());
-      return value_;
-    }
-    std::string message() const { return status_.message(); }
-    const ParseStatus& status() const { return status_; }
-
-   private:
-    ParseStatus status_;
-    T value_;
-  };
+  using ParseStatusOr = RtcEventLogParseStatusOr<T>;
 
   struct LoggedRtpStreamIncoming {
     LoggedRtpStreamIncoming();
@@ -337,13 +380,13 @@ class ParsedRtcEventLog {
   void Clear();
 
   // Reads an RtcEventLog file and returns success if parsing was successful.
-  ParseStatus ParseFile(const std::string& file_name);
+  ParseStatus ParseFile(absl::string_view file_name);
 
   // Reads an RtcEventLog from a string and returns success if successful.
-  ParseStatus ParseString(const std::string& s);
+  ParseStatus ParseString(absl::string_view s);
 
   // Reads an RtcEventLog from an string and returns success if successful.
-  ParseStatus ParseStream(const std::string& s);
+  ParseStatus ParseStream(absl::string_view s);
 
   MediaType GetMediaType(uint32_t ssrc, PacketDirection direction) const;
 
@@ -601,8 +644,8 @@ class ParsedRtcEventLog {
     return decoded_frames_;
   }
 
-  int64_t first_timestamp() const { return first_timestamp_; }
-  int64_t last_timestamp() const { return last_timestamp_; }
+  Timestamp first_timestamp() const { return first_timestamp_; }
+  Timestamp last_timestamp() const { return last_timestamp_; }
 
   const LogSegment& first_log_segment() const { return first_log_segment_; }
 
@@ -620,6 +663,7 @@ class ParsedRtcEventLog {
 
  private:
   ABSL_MUST_USE_RESULT ParseStatus ParseStreamInternal(absl::string_view s);
+  ABSL_MUST_USE_RESULT ParseStatus ParseStreamInternalV3(absl::string_view s);
 
   ABSL_MUST_USE_RESULT ParseStatus
   StoreParsedLegacyEvent(const rtclog::Event& event);
@@ -680,6 +724,9 @@ class ParsedRtcEventLog {
 
   ParsedRtcEventLog::ParseStatusOr<LoggedIceCandidatePairEvent>
   GetIceCandidatePairEvent(const rtclog::Event& event) const;
+
+  ParsedRtcEventLog::ParseStatusOr<LoggedRemoteEstimateEvent>
+  GetRemoteEstimateEvent(const rtclog::Event& event) const;
 
   // Parsing functions for new format.
   ParseStatus StoreAlrStateEvent(const rtclog2::AlrState& proto);
@@ -846,8 +893,8 @@ class ParsedRtcEventLog {
 
   std::vector<uint8_t> last_incoming_rtcp_packet_;
 
-  int64_t first_timestamp_;
-  int64_t last_timestamp_;
+  Timestamp first_timestamp_ = Timestamp::PlusInfinity();
+  Timestamp last_timestamp_ = Timestamp::MinusInfinity();
 
   LogSegment first_log_segment_ =
       LogSegment(0, std::numeric_limits<int64_t>::max());

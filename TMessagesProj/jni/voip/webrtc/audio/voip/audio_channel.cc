@@ -17,7 +17,6 @@
 #include "api/task_queue/task_queue_factory.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
-#include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {

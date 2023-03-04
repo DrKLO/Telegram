@@ -16,11 +16,14 @@
 package com.google.android.exoplayer2.drm;
 
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.decoder.CryptoConfig;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.Map;
+import java.util.UUID;
 
 /** A {@link DrmSession} that's in a terminal error state. */
-public final class ErrorStateDrmSession<T extends ExoMediaCrypto> implements DrmSession<T> {
+public final class ErrorStateDrmSession implements DrmSession {
 
   private final DrmSessionException error;
 
@@ -45,8 +48,13 @@ public final class ErrorStateDrmSession<T extends ExoMediaCrypto> implements Drm
   }
 
   @Override
+  public final UUID getSchemeUuid() {
+    return C.UUID_NIL;
+  }
+
+  @Override
   @Nullable
-  public T getMediaCrypto() {
+  public CryptoConfig getCryptoConfig() {
     return null;
   }
 
@@ -63,12 +71,17 @@ public final class ErrorStateDrmSession<T extends ExoMediaCrypto> implements Drm
   }
 
   @Override
-  public void acquire() {
+  public boolean requiresSecureDecoder(String mimeType) {
+    return false;
+  }
+
+  @Override
+  public void acquire(@Nullable DrmSessionEventListener.EventDispatcher eventDispatcher) {
     // Do nothing.
   }
 
   @Override
-  public void release() {
+  public void release(@Nullable DrmSessionEventListener.EventDispatcher eventDispatcher) {
     // Do nothing.
   }
 }

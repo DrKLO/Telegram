@@ -36,6 +36,11 @@ enum class DtlsTransportState {
   kNumValues
 };
 
+enum class DtlsTransportTlsRole {
+  kServer,  // Other end sends CLIENT_HELLO
+  kClient   // This end sends CLIENT_HELLO
+};
+
 // This object gives snapshot information about the changeable state of a
 // DTLSTransport.
 class RTC_EXPORT DtlsTransportInformation {
@@ -44,10 +49,19 @@ class RTC_EXPORT DtlsTransportInformation {
   explicit DtlsTransportInformation(DtlsTransportState state);
   DtlsTransportInformation(
       DtlsTransportState state,
+      absl::optional<DtlsTransportTlsRole> role,
       absl::optional<int> tls_version,
       absl::optional<int> ssl_cipher_suite,
       absl::optional<int> srtp_cipher_suite,
       std::unique_ptr<rtc::SSLCertChain> remote_ssl_certificates);
+  ABSL_DEPRECATED("Use version with role parameter")
+  DtlsTransportInformation(
+      DtlsTransportState state,
+      absl::optional<int> tls_version,
+      absl::optional<int> ssl_cipher_suite,
+      absl::optional<int> srtp_cipher_suite,
+      std::unique_ptr<rtc::SSLCertChain> remote_ssl_certificates);
+
   // Copy and assign
   DtlsTransportInformation(const DtlsTransportInformation& c);
   DtlsTransportInformation& operator=(const DtlsTransportInformation& c);
@@ -57,6 +71,7 @@ class RTC_EXPORT DtlsTransportInformation {
       default;
 
   DtlsTransportState state() const { return state_; }
+  absl::optional<DtlsTransportTlsRole> role() const { return role_; }
   absl::optional<int> tls_version() const { return tls_version_; }
   absl::optional<int> ssl_cipher_suite() const { return ssl_cipher_suite_; }
   absl::optional<int> srtp_cipher_suite() const { return srtp_cipher_suite_; }
@@ -67,6 +82,7 @@ class RTC_EXPORT DtlsTransportInformation {
 
  private:
   DtlsTransportState state_;
+  absl::optional<DtlsTransportTlsRole> role_;
   absl::optional<int> tls_version_;
   absl::optional<int> ssl_cipher_suite_;
   absl::optional<int> srtp_cipher_suite_;

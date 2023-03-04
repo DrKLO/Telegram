@@ -63,11 +63,12 @@ static RtlCaptureStackBackTrace_Function* const RtlCaptureStackBackTrace_fn =
 template <bool IS_STACK_FRAMES, bool IS_WITH_CONTEXT>
 static int UnwindImpl(void** result, int* sizes, int max_depth, int skip_count,
                       const void*, int* min_dropped_frames) {
-  int n = 0;
-  if (!RtlCaptureStackBackTrace_fn) {
-    // can't find a stacktrace with no function to call
+  USHORT n = 0;
+  if (!RtlCaptureStackBackTrace_fn || skip_count < 0 || max_depth < 0) {
+    // can't get a stacktrace with no function/invalid args
   } else {
-    n = (int)RtlCaptureStackBackTrace_fn(skip_count + 2, max_depth, result, 0);
+    n = RtlCaptureStackBackTrace_fn(static_cast<ULONG>(skip_count) + 2,
+                                    static_cast<ULONG>(max_depth), result, 0);
   }
   if (IS_STACK_FRAMES) {
     // No implementation for finding out the stack frame sizes yet.

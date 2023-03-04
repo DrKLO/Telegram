@@ -157,6 +157,7 @@ public class VectorAvatarThumbDrawable extends Drawable implements AnimatedEmoji
         this.roundRadius = roundRadius;
     }
 
+    static int attachedToWindowCount = 0;
     @Override
     public void onAttachedToWindow(ImageReceiver parent) {
         if (parent == null) {
@@ -193,10 +194,9 @@ public class VectorAvatarThumbDrawable extends Drawable implements AnimatedEmoji
             if (stickerPreloadImageReceiver != null) {
                 stickerPreloadImageReceiver.onDetachedFromWindow();
             }
-
         }
         if (sizeStickerMarkup != null) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
         }
     }
 

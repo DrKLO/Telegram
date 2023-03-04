@@ -16,48 +16,57 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/optional.h"
+#include "api/field_trials_view.h"
+#include "api/rtp_headers.h"
 #include "api/transport/network_control.h"
-#include "api/transport/webrtc_key_value_config.h"
-#include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
+#include "api/units/data_size.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/remote_bitrate_estimator/packet_arrival_map.h"
+#include "modules/rtp_rtcp/source/rtcp_packet.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/numerics/sequence_number_util.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
 
-class Clock;
-namespace rtcp {
-class TransportFeedback;
-}
-
 // Class used when send-side BWE is enabled: This proxy is instantiated on the
 // receive side. It buffers a number of receive timestamps and then sends
 // transport feedback messages back too the send side.
-class RemoteEstimatorProxy : public RemoteBitrateEstimator {
+class RemoteEstimatorProxy {
  public:
   // Used for sending transport feedback messages when send side
   // BWE is used.
   using TransportFeedbackSender = std::function<void(
       std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets)>;
-  RemoteEstimatorProxy(Clock* clock,
-                       TransportFeedbackSender feedback_sender,
-                       const WebRtcKeyValueConfig* key_value_config,
+  RemoteEstimatorProxy(TransportFeedbackSender feedback_sender,
+                       const FieldTrialsView* key_value_config,
                        NetworkStateEstimator* network_state_estimator);
-  ~RemoteEstimatorProxy() override;
+  ~RemoteEstimatorProxy();
+
+  struct Packet {
+    Timestamp arrival_time;
+    DataSize size;
+    uint32_t ssrc;
+    absl::optional<uint32_t> absolute_send_time_24bits;
+    absl::optional<uint16_t> transport_sequence_number;
+    absl::optional<FeedbackRequest> feedback_request;
+  };
+  void IncomingPacket(Packet packet);
 
   void IncomingPacket(int64_t arrival_time_ms,
                       size_t payload_size,
-                      const RTPHeader& header) override;
-  void RemoveStream(uint32_t ssrc) override {}
-  bool LatestEstimate(std::vector<unsigned int>* ssrcs,
-                      unsigned int* bitrate_bps) const override;
-  void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) override {}
-  void SetMinBitrate(int min_bitrate_bps) override {}
-  int64_t TimeUntilNextProcess() override;
-  void Process() override;
+                      const RTPHeader& header);
+
+  // Sends periodic feedback if it is time to send it.
+  // Returns time until next call to Process should be made.
+  TimeDelta Process(Timestamp now);
+
   void OnBitrateChanged(int bitrate);
   void SetSendPeriodicFeedback(bool send_periodic_feedback);
+  void SetTransportOverhead(DataSize overhead_per_packet);
 
  private:
   struct TransportWideFeedbackConfig {
@@ -68,7 +77,7 @@ class RemoteEstimatorProxy : public RemoteBitrateEstimator {
                                                     TimeDelta::Millis(100)};
     FieldTrialParameter<double> bandwidth_fraction{"frac", 0.05};
     explicit TransportWideFeedbackConfig(
-        const WebRtcKeyValueConfig* key_value_config) {
+        const FieldTrialsView* key_value_config) {
       ParseFieldTrial({&back_window, &min_interval, &max_interval,
                        &default_interval, &bandwidth_fraction},
                       key_value_config->Lookup(
@@ -76,7 +85,7 @@ class RemoteEstimatorProxy : public RemoteBitrateEstimator {
     }
   };
 
-  void MaybeCullOldPackets(int64_t sequence_number, int64_t arrival_time_ms)
+  void MaybeCullOldPackets(int64_t sequence_number, Timestamp arrival_time)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(&lock_);
   void SendPeriodicFeedbacks() RTC_EXCLUSIVE_LOCKS_REQUIRED(&lock_);
   void SendFeedbackOnRequest(int64_t sequence_number,
@@ -101,10 +110,9 @@ class RemoteEstimatorProxy : public RemoteBitrateEstimator {
       int64_t end_sequence_number_exclusive,
       bool is_periodic_update) RTC_EXCLUSIVE_LOCKS_REQUIRED(&lock_);
 
-  Clock* const clock_;
   const TransportFeedbackSender feedback_sender_;
   const TransportWideFeedbackConfig send_config_;
-  int64_t last_process_time_ms_;
+  Timestamp last_process_time_;
 
   Mutex lock_;
   //  `network_state_estimator_` may be null.
@@ -113,6 +121,7 @@ class RemoteEstimatorProxy : public RemoteBitrateEstimator {
   uint32_t media_ssrc_ RTC_GUARDED_BY(&lock_);
   uint8_t feedback_packet_count_ RTC_GUARDED_BY(&lock_);
   SeqNumUnwrapper<uint16_t> unwrapper_ RTC_GUARDED_BY(&lock_);
+  DataSize packet_overhead_ RTC_GUARDED_BY(&lock_);
 
   // The next sequence number that should be the start sequence number during
   // periodic reporting. Will be absl::nullopt before the first seen packet.
@@ -121,7 +130,7 @@ class RemoteEstimatorProxy : public RemoteBitrateEstimator {
   // Packet arrival times, by sequence number.
   PacketArrivalTimeMap packet_arrival_times_ RTC_GUARDED_BY(&lock_);
 
-  int64_t send_interval_ms_ RTC_GUARDED_BY(&lock_);
+  TimeDelta send_interval_ RTC_GUARDED_BY(&lock_);
   bool send_periodic_feedback_ RTC_GUARDED_BY(&lock_);
 
   // Unwraps absolute send times.

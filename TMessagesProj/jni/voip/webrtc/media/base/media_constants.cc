@@ -124,6 +124,8 @@ const char kH265FmtpTierFlag[] = "tier-flag";
 const char kH265FmtpLevelId[] = "level-id";
 #endif
 
+const char kVP9ProfileId[] = "profile-id";
+
 const int kDefaultVideoMaxFramerate = 60;
 
 const size_t kConferenceMaxNumSpatialLayers = 3;

@@ -14,20 +14,16 @@
 
 #ifdef RTC_ENABLE_VP9
 
-#include "api/transport/webrtc_key_value_config.h"
 #include "api/video_codecs/video_decoder.h"
-#include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.h"
-#include "libvpx/vp8cx.h"
+#include <libvpx/vp8cx.h>
 
 namespace webrtc {
 
 class LibvpxVp9Decoder : public VP9Decoder {
  public:
   LibvpxVp9Decoder();
-  explicit LibvpxVp9Decoder(const WebRtcKeyValueConfig& trials);
-
   virtual ~LibvpxVp9Decoder();
 
   bool Configure(const Settings& settings) override;
@@ -51,16 +47,11 @@ class LibvpxVp9Decoder : public VP9Decoder {
 
   // Memory pool used to share buffers between libvpx and webrtc.
   Vp9FrameBufferPool libvpx_buffer_pool_;
-  // Buffer pool used to allocate additionally needed NV12 buffers.
-  VideoFrameBufferPool output_buffer_pool_;
   DecodedImageCallback* decode_complete_callback_;
   bool inited_;
   vpx_codec_ctx_t* decoder_;
   bool key_frame_required_;
   Settings current_settings_;
-
-  // Decoder should produce this format if possible.
-  const VideoFrameBuffer::Type preferred_output_format_;
 };
 }  // namespace webrtc
 

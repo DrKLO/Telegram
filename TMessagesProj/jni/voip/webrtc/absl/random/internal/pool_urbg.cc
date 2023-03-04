@@ -131,7 +131,7 @@ void RandenPoolEntry::Fill(uint8_t* out, size_t bytes) {
 }
 
 // Number of pooled urbg entries.
-static constexpr int kPoolSize = 8;
+static constexpr size_t kPoolSize = 8;
 
 // Shared pool entries.
 static absl::once_flag pool_once;
@@ -147,15 +147,15 @@ ABSL_CACHELINE_ALIGNED static RandenPoolEntry* shared_pools[kPoolSize];
 // on subsequent runs the order within the same program may be significantly
 // different. However, as other thread IDs are not assigned sequentially,
 // this is not expected to matter.
-int GetPoolID() {
+size_t GetPoolID() {
   static_assert(kPoolSize >= 1,
                 "At least one urbg instance is required for PoolURBG");
 
-  ABSL_CONST_INIT static std::atomic<int64_t> sequence{0};
+  ABSL_CONST_INIT static std::atomic<uint64_t> sequence{0};
 
 #ifdef ABSL_HAVE_THREAD_LOCAL
-  static thread_local int my_pool_id = -1;
-  if (ABSL_PREDICT_FALSE(my_pool_id < 0)) {
+  static thread_local size_t my_pool_id = kPoolSize;
+  if (ABSL_PREDICT_FALSE(my_pool_id == kPoolSize)) {
     my_pool_id = (sequence++ % kPoolSize);
   }
   return my_pool_id;
@@ -171,8 +171,8 @@ int GetPoolID() {
 
   // Store the value in the pthread_{get/set}specific. However an uninitialized
   // value is 0, so add +1 to distinguish from the null value.
-  intptr_t my_pool_id =
-      reinterpret_cast<intptr_t>(pthread_getspecific(tid_key));
+  uintptr_t my_pool_id =
+      reinterpret_cast<uintptr_t>(pthread_getspecific(tid_key));
   if (ABSL_PREDICT_FALSE(my_pool_id == 0)) {
     // No allocated ID, allocate the next value, cache it, and return.
     my_pool_id = (sequence++ % kPoolSize) + 1;
@@ -194,7 +194,7 @@ RandenPoolEntry* PoolAlignedAlloc() {
   // Not all the platforms that we build for have std::aligned_alloc, however
   // since we never free these objects, we can over allocate and munge the
   // pointers to the correct alignment.
-  intptr_t x = reinterpret_cast<intptr_t>(
+  uintptr_t x = reinterpret_cast<uintptr_t>(
       new char[sizeof(RandenPoolEntry) + kAlignment]);
   auto y = x % kAlignment;
   void* aligned = reinterpret_cast<void*>(y == 0 ? x : (x + kAlignment - y));
@@ -215,7 +215,7 @@ void InitPoolURBG() {
           absl::MakeSpan(seed_material))) {
     random_internal::ThrowSeedGenException();
   }
-  for (int i = 0; i < kPoolSize; i++) {
+  for (size_t i = 0; i < kPoolSize; i++) {
     shared_pools[i] = PoolAlignedAlloc();
     shared_pools[i]->Init(
         absl::MakeSpan(&seed_material[i * kSeedSize], kSeedSize));

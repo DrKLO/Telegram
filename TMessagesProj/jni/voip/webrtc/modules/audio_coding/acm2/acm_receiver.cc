@@ -287,6 +287,8 @@ void AcmReceiver::GetNetworkStatistics(
   acm_stat->jitterBufferDelayMs = neteq_lifetime_stat.jitter_buffer_delay_ms;
   acm_stat->jitterBufferTargetDelayMs =
       neteq_lifetime_stat.jitter_buffer_target_delay_ms;
+  acm_stat->jitterBufferMinimumDelayMs =
+      neteq_lifetime_stat.jitter_buffer_minimum_delay_ms;
   acm_stat->jitterBufferEmittedCount =
       neteq_lifetime_stat.jitter_buffer_emitted_count;
   acm_stat->delayedPacketOutageSamples =
@@ -302,13 +304,12 @@ void AcmReceiver::GetNetworkStatistics(
       neteq_lifetime_stat.removed_samples_for_acceleration;
   acm_stat->fecPacketsReceived = neteq_lifetime_stat.fec_packets_received;
   acm_stat->fecPacketsDiscarded = neteq_lifetime_stat.fec_packets_discarded;
+  acm_stat->packetsDiscarded = neteq_lifetime_stat.packets_discarded;
 
   NetEqOperationsAndState neteq_operations_and_state =
       neteq_->GetOperationsAndState();
   acm_stat->packetBufferFlushes =
       neteq_operations_and_state.packet_buffer_flushes;
-  acm_stat->packetsDiscarded =
-      neteq_operations_and_state.discarded_primary_packets;
 }
 
 int AcmReceiver::EnableNack(size_t max_nack_list_size) {

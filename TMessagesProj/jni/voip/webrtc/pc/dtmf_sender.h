@@ -17,13 +17,12 @@
 
 #include "api/dtmf_sender_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
 #include "pc/proxy.h"
-#include "rtc_base/constructor_magic.h"
-#include "rtc_base/location.h"
 #include "rtc_base/ref_count.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
-#include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 
 // DtmfSender is the native implementation of the RTCDTMFSender defined by
 // the WebRTC W3C Editor's Draft.
@@ -42,18 +41,17 @@ class DtmfProviderInterface {
   // The `duration` indicates the length of the DTMF tone in ms.
   // Returns true on success and false on failure.
   virtual bool InsertDtmf(int code, int duration) = 0;
-  // Returns a `sigslot::signal0<>` signal. The signal should fire before
-  // the provider is destroyed.
-  virtual sigslot::signal0<>* GetOnDestroyedSignal() = 0;
 
  protected:
   virtual ~DtmfProviderInterface() {}
 };
 
-class DtmfSender : public DtmfSenderInterface, public sigslot::has_slots<> {
+class DtmfSender : public DtmfSenderInterface {
  public:
-  static rtc::scoped_refptr<DtmfSender> Create(rtc::Thread* signaling_thread,
+  static rtc::scoped_refptr<DtmfSender> Create(TaskQueueBase* signaling_thread,
                                                DtmfProviderInterface* provider);
+
+  void OnDtmfProviderDestroyed();
 
   // Implements DtmfSenderInterface.
   void RegisterObserver(DtmfSenderObserverInterface* observer) override;
@@ -69,24 +67,24 @@ class DtmfSender : public DtmfSenderInterface, public sigslot::has_slots<> {
   int comma_delay() const override;
 
  protected:
-  DtmfSender(rtc::Thread* signaling_thread, DtmfProviderInterface* provider);
+  DtmfSender(TaskQueueBase* signaling_thread, DtmfProviderInterface* provider);
   virtual ~DtmfSender();
+
+  DtmfSender(const DtmfSender&) = delete;
+  DtmfSender& operator=(const DtmfSender&) = delete;
 
  private:
   DtmfSender();
 
-  void QueueInsertDtmf(const rtc::Location& posted_from, uint32_t delay_ms)
-      RTC_RUN_ON(signaling_thread_);
+  void QueueInsertDtmf(uint32_t delay_ms) RTC_RUN_ON(signaling_thread_);
 
   // The DTMF sending task.
   void DoInsertDtmf() RTC_RUN_ON(signaling_thread_);
 
-  void OnProviderDestroyed();
-
   void StopSending() RTC_RUN_ON(signaling_thread_);
 
   DtmfSenderObserverInterface* observer_ RTC_GUARDED_BY(signaling_thread_);
-  rtc::Thread* signaling_thread_;
+  TaskQueueBase* const signaling_thread_;
   DtmfProviderInterface* provider_ RTC_GUARDED_BY(signaling_thread_);
   std::string tones_ RTC_GUARDED_BY(signaling_thread_);
   int duration_ RTC_GUARDED_BY(signaling_thread_);
@@ -96,12 +94,11 @@ class DtmfSender : public DtmfSenderInterface, public sigslot::has_slots<> {
   // For cancelling the tasks which feed the DTMF provider one tone at a time.
   rtc::scoped_refptr<PendingTaskSafetyFlag> safety_flag_ RTC_GUARDED_BY(
       signaling_thread_) RTC_PT_GUARDED_BY(signaling_thread_) = nullptr;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DtmfSender);
 };
 
 // Define proxy for DtmfSenderInterface.
 BEGIN_PRIMARY_PROXY_MAP(DtmfSender)
+
 PROXY_PRIMARY_THREAD_DESTRUCTOR()
 PROXY_METHOD1(void, RegisterObserver, DtmfSenderObserverInterface*)
 PROXY_METHOD0(void, UnregisterObserver)

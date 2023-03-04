@@ -21,7 +21,7 @@
 #include "modules/audio_mixer/default_output_rate_calculator.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
+#include "rtc_base/trace_event.h"
 
 namespace webrtc {
 
@@ -157,6 +157,7 @@ rtc::scoped_refptr<AudioMixerImpl> AudioMixerImpl::Create(
 
 void AudioMixerImpl::Mix(size_t number_of_channels,
                          AudioFrame* audio_frame_for_mixing) {
+  TRACE_EVENT0("webrtc", "AudioMixerImpl::Mix");
   RTC_DCHECK(number_of_channels >= 1);
   MutexLock lock(&mutex_);
 

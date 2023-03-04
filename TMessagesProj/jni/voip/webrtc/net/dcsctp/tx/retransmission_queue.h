@@ -28,6 +28,7 @@
 #include "net/dcsctp/packet/data.h"
 #include "net/dcsctp/public/dcsctp_handover_state.h"
 #include "net/dcsctp/public/dcsctp_options.h"
+#include "net/dcsctp/public/dcsctp_socket.h"
 #include "net/dcsctp/timer/timer.h"
 #include "net/dcsctp/tx/outstanding_data.h"
 #include "net/dcsctp/tx/retransmission_timeout.h"
@@ -54,18 +55,17 @@ class RetransmissionQueue {
   // outstanding chunk has been ACKed, it will call
   // `on_clear_retransmission_counter` and will also use `t3_rtx`, which is the
   // SCTP retransmission timer to manage retransmissions.
-  RetransmissionQueue(
-      absl::string_view log_prefix,
-      TSN my_initial_tsn,
-      size_t a_rwnd,
-      SendQueue& send_queue,
-      std::function<void(DurationMs rtt)> on_new_rtt,
-      std::function<void()> on_clear_retransmission_counter,
-      Timer& t3_rtx,
-      const DcSctpOptions& options,
-      bool supports_partial_reliability = true,
-      bool use_message_interleaving = false,
-      const DcSctpSocketHandoverState* handover_state = nullptr);
+  RetransmissionQueue(absl::string_view log_prefix,
+                      DcSctpSocketCallbacks* callbacks,
+                      TSN my_initial_tsn,
+                      size_t a_rwnd,
+                      SendQueue& send_queue,
+                      std::function<void(DurationMs rtt)> on_new_rtt,
+                      std::function<void()> on_clear_retransmission_counter,
+                      Timer& t3_rtx,
+                      const DcSctpOptions& options,
+                      bool supports_partial_reliability = true,
+                      bool use_message_interleaving = false);
 
   // Handles a received SACK. Returns true if the `sack` was processed and
   // false if it was discarded due to received out-of-order and not relevant.
@@ -73,6 +73,16 @@ class RetransmissionQueue {
 
   // Handles an expired retransmission timer.
   void HandleT3RtxTimerExpiry();
+
+  bool has_data_to_be_fast_retransmitted() const {
+    return outstanding_data_.has_data_to_be_fast_retransmitted();
+  }
+
+  // Returns a list of chunks to "fast retransmit" that would fit in one SCTP
+  // packet with `bytes_in_packet` bytes available. The current value
+  // of `cwnd` is ignored.
+  std::vector<std::pair<TSN, Data>> GetChunksForFastRetransmit(
+      size_t bytes_in_packet);
 
   // Returns a list of chunks to send that would fit in one SCTP packet with
   // `bytes_remaining_in_packet` bytes available. This may be further limited by
@@ -133,14 +143,18 @@ class RetransmissionQueue {
 
   // See the SendQueue for a longer description of these methods related
   // to stream resetting.
-  void PrepareResetStreams(rtc::ArrayView<const StreamID> streams);
-  bool CanResetStreams() const;
+  void PrepareResetStream(StreamID stream_id);
+  bool HasStreamsReadyToBeReset() const;
+  std::vector<StreamID> GetStreamsReadyToBeReset() const {
+    return send_queue_.GetStreamsReadyToBeReset();
+  }
   void CommitResetStreams();
   void RollbackResetStreams();
 
   HandoverReadinessStatus GetHandoverReadiness() const;
 
   void AddHandoverState(DcSctpSocketHandoverState& state);
+  void RestoreFromState(const DcSctpSocketHandoverState& state);
 
  private:
   enum class CongestionAlgorithmPhase {
@@ -200,6 +214,7 @@ class RetransmissionQueue {
   // to the congestion control algorithm.
   size_t max_bytes_to_send() const;
 
+  DcSctpSocketCallbacks& callbacks_;
   const DcSctpOptions options_;
   // The minimum bytes required to be available in the congestion window to
   // allow packets to be sent - to avoid sending too small packets.
@@ -229,8 +244,6 @@ class RetransmissionQueue {
   // If set, fast recovery is enabled until this TSN has been cumulative
   // acked.
   absl::optional<UnwrappedTSN> fast_recovery_exit_tsn_ = absl::nullopt;
-  // Indicates if the congestion algorithm is in fast retransmit.
-  bool is_in_fast_retransmit_ = false;
 
   // The send queue.
   SendQueue& send_queue_;

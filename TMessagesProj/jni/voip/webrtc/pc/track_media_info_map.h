@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/array_view.h"
 #include "api/media_stream_interface.h"
 #include "api/scoped_refptr.h"
 #include "media/base/media_channel.h"
@@ -38,20 +39,34 @@ namespace webrtc {
 // |[Voice/Video][Sender/Receiver]Info| has statistical information for a set of
 // SSRCs. Looking at the RTP senders and receivers uncovers the track <-> info
 // relationships, which this class does.
+//
+// In the spec, "track" attachment stats have been made obsolete, and in Unified
+// Plan there is just one sender and one receiver per transceiver, so we may be
+// able to simplify/delete this class.
+// TODO(https://crbug.com/webrtc/14175): Simplify or delete this class when
+// "track" stats have been deleted.
+// TODO(https://crbug.com/webrtc/13528): Simplify or delete this class when
+// Plan B is gone from the native library (already gone for Chrome).
 class TrackMediaInfoMap {
  public:
-  TrackMediaInfoMap(
-      std::unique_ptr<cricket::VoiceMediaInfo> voice_media_info,
-      std::unique_ptr<cricket::VideoMediaInfo> video_media_info,
-      const std::vector<rtc::scoped_refptr<RtpSenderInternal>>& rtp_senders,
-      const std::vector<rtc::scoped_refptr<RtpReceiverInternal>>&
-          rtp_receivers);
+  TrackMediaInfoMap();
 
-  const cricket::VoiceMediaInfo* voice_media_info() const {
-    return voice_media_info_.get();
+  // Takes ownership of the "infos". Does not affect the lifetime of the senders
+  // or receivers, but TrackMediaInfoMap will keep their associated tracks alive
+  // through reference counting until the map is destroyed.
+  void Initialize(
+      absl::optional<cricket::VoiceMediaInfo> voice_media_info,
+      absl::optional<cricket::VideoMediaInfo> video_media_info,
+      rtc::ArrayView<rtc::scoped_refptr<RtpSenderInternal>> rtp_senders,
+      rtc::ArrayView<rtc::scoped_refptr<RtpReceiverInternal>> rtp_receivers);
+
+  const absl::optional<cricket::VoiceMediaInfo>& voice_media_info() const {
+    RTC_DCHECK(is_initialized_);
+    return voice_media_info_;
   }
-  const cricket::VideoMediaInfo* video_media_info() const {
-    return video_media_info_.get();
+  const absl::optional<cricket::VideoMediaInfo>& video_media_info() const {
+    RTC_DCHECK(is_initialized_);
+    return video_media_info_;
   }
 
   const std::vector<cricket::VoiceSenderInfo*>* GetVoiceSenderInfos(
@@ -87,12 +102,13 @@ class TrackMediaInfoMap {
       const MediaStreamTrackInterface* track) const;
 
  private:
-  absl::optional<std::string> voice_mid_;
-  absl::optional<std::string> video_mid_;
-  std::unique_ptr<cricket::VoiceMediaInfo> voice_media_info_;
-  std::unique_ptr<cricket::VideoMediaInfo> video_media_info_;
+  bool is_initialized_ = false;
+  absl::optional<cricket::VoiceMediaInfo> voice_media_info_;
+  absl::optional<cricket::VideoMediaInfo> video_media_info_;
   // These maps map tracks (identified by a pointer) to their corresponding info
   // object of the correct kind. One track can map to multiple info objects.
+  // Known tracks are guaranteed to be alive because they are also stored as
+  // entries in the reverse maps below.
   std::map<const AudioTrackInterface*, std::vector<cricket::VoiceSenderInfo*>>
       voice_infos_by_local_track_;
   std::map<const AudioTrackInterface*, cricket::VoiceReceiverInfo*>
@@ -103,7 +119,8 @@ class TrackMediaInfoMap {
       video_info_by_remote_track_;
   // These maps map info objects to their corresponding tracks. They are always
   // the inverse of the maps above. One info object always maps to only one
-  // track.
+  // track. The use of scoped_refptr<> here ensures the tracks outlive
+  // TrackMediaInfoMap.
   std::map<const cricket::VoiceSenderInfo*,
            rtc::scoped_refptr<AudioTrackInterface>>
       audio_track_by_sender_info_;

@@ -15,11 +15,12 @@
  */
 package com.google.android.exoplayer2.text.ttml;
 
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.AbsoluteSizeSpan;
-import android.text.style.AlignmentSpan;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
@@ -27,48 +28,70 @@ import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
+import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.text.Cue;
+import com.google.android.exoplayer2.text.span.HorizontalTextInVerticalContextSpan;
+import com.google.android.exoplayer2.text.span.RubySpan;
+import com.google.android.exoplayer2.text.span.SpanUtil;
+import com.google.android.exoplayer2.text.span.TextAnnotation;
+import com.google.android.exoplayer2.text.span.TextEmphasisSpan;
+import com.google.android.exoplayer2.util.Log;
+import com.google.android.exoplayer2.util.Util;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 
-/**
- * Package internal utility class to render styled <code>TtmlNode</code>s.
- */
+/** Package internal utility class to render styled <code>TtmlNode</code>s. */
 /* package */ final class TtmlRenderUtil {
 
-  public static TtmlStyle resolveStyle(TtmlStyle style, String[] styleIds,
-      Map<String, TtmlStyle> globalStyles) {
-    if (style == null && styleIds == null) {
-      // No styles at all.
-      return null;
-    } else if (style == null && styleIds.length == 1) {
-      // Only one single referential style present.
-      return globalStyles.get(styleIds[0]);
-    } else if (style == null && styleIds.length > 1) {
-      // Only multiple referential styles present.
-      TtmlStyle chainedStyle = new TtmlStyle();
-      for (String id : styleIds) {
-        chainedStyle.chain(globalStyles.get(id));
+  private static final String TAG = "TtmlRenderUtil";
+
+  @Nullable
+  public static TtmlStyle resolveStyle(
+      @Nullable TtmlStyle style, @Nullable String[] styleIds, Map<String, TtmlStyle> globalStyles) {
+    if (style == null) {
+      if (styleIds == null) {
+        // No styles at all.
+        return null;
+      } else if (styleIds.length == 1) {
+        // Only one single referential style present.
+        return globalStyles.get(styleIds[0]);
+      } else if (styleIds.length > 1) {
+        // Only multiple referential styles present.
+        TtmlStyle chainedStyle = new TtmlStyle();
+        for (String id : styleIds) {
+          chainedStyle.chain(globalStyles.get(id));
+        }
+        return chainedStyle;
       }
-      return chainedStyle;
-    } else if (style != null && styleIds != null && styleIds.length == 1) {
-      // Merge a single referential style into inline style.
-      return style.chain(globalStyles.get(styleIds[0]));
-    } else if (style != null && styleIds != null && styleIds.length > 1) {
-      // Merge multiple referential styles into inline style.
-      for (String id : styleIds) {
-        style.chain(globalStyles.get(id));
+    } else /* style != null */ {
+      if (styleIds != null && styleIds.length == 1) {
+        // Merge a single referential style into inline style.
+        return style.chain(globalStyles.get(styleIds[0]));
+      } else if (styleIds != null && styleIds.length > 1) {
+        // Merge multiple referential styles into inline style.
+        for (String id : styleIds) {
+          style.chain(globalStyles.get(id));
+        }
+        return style;
       }
-      return style;
     }
     // Only inline styles available.
     return style;
   }
 
-  public static void applyStylesToSpan(SpannableStringBuilder builder,
-      int start, int end, TtmlStyle style) {
+  public static void applyStylesToSpan(
+      Spannable builder,
+      int start,
+      int end,
+      TtmlStyle style,
+      @Nullable TtmlNode parent,
+      Map<String, TtmlStyle> globalStyles,
+      @Cue.VerticalType int verticalType) {
 
     if (style.getStyle() != TtmlStyle.UNSPECIFIED) {
-      builder.setSpan(new StyleSpan(style.getStyle()), start, end,
-          Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      builder.setSpan(
+          new StyleSpan(style.getStyle()), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     if (style.isLinethrough()) {
       builder.setSpan(new StrikethroughSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -77,38 +100,189 @@ import java.util.Map;
       builder.setSpan(new UnderlineSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     if (style.hasFontColor()) {
-      builder.setSpan(new ForegroundColorSpan(style.getFontColor()), start, end,
-          Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-    if (style.hasBackgroundColor()) {
-      builder.setSpan(new BackgroundColorSpan(style.getBackgroundColor()), start, end,
-          Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-    if (style.getFontFamily() != null) {
-      builder.setSpan(new TypefaceSpan(style.getFontFamily()), start, end,
+      SpanUtil.addOrReplaceSpan(
+          builder,
+          new ForegroundColorSpan(style.getFontColor()),
+          start,
+          end,
           Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
-    if (style.getTextAlign() != null) {
-      builder.setSpan(new AlignmentSpan.Standard(style.getTextAlign()), start, end,
+    if (style.hasBackgroundColor()) {
+      SpanUtil.addOrReplaceSpan(
+          builder,
+          new BackgroundColorSpan(style.getBackgroundColor()),
+          start,
+          end,
+          Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+    if (style.getFontFamily() != null) {
+      SpanUtil.addOrReplaceSpan(
+          builder,
+          new TypefaceSpan(style.getFontFamily()),
+          start,
+          end,
+          Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+    if (style.getTextEmphasis() != null) {
+      TextEmphasis textEmphasis = checkNotNull(style.getTextEmphasis());
+      @TextEmphasisSpan.MarkShape int markShape;
+      @TextEmphasisSpan.MarkFill int markFill;
+      if (textEmphasis.markShape == TextEmphasis.MARK_SHAPE_AUTO) {
+        // If a vertical writing mode applies, then 'auto' is equivalent to 'filled sesame';
+        // otherwise, it's equivalent to 'filled circle':
+        // https://www.w3.org/TR/ttml2/#style-value-emphasis-style
+        markShape =
+            (verticalType == Cue.VERTICAL_TYPE_LR || verticalType == Cue.VERTICAL_TYPE_RL)
+                ? TextEmphasisSpan.MARK_SHAPE_SESAME
+                : TextEmphasisSpan.MARK_SHAPE_CIRCLE;
+        markFill = TextEmphasisSpan.MARK_FILL_FILLED;
+      } else {
+        markShape = textEmphasis.markShape;
+        markFill = textEmphasis.markFill;
+      }
+
+      @TextEmphasis.Position int position;
+      if (textEmphasis.position == TextEmphasis.POSITION_OUTSIDE) {
+        // 'outside' is not supported by TextEmphasisSpan, so treat it as 'before':
+        // https://www.w3.org/TR/ttml2/#style-value-annotation-position
+        position = TextAnnotation.POSITION_BEFORE;
+      } else {
+        position = textEmphasis.position;
+      }
+
+      SpanUtil.addOrReplaceSpan(
+          builder,
+          new TextEmphasisSpan(markShape, markFill, position),
+          start,
+          end,
+          Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+    switch (style.getRubyType()) {
+      case TtmlStyle.RUBY_TYPE_BASE:
+        // look for the sibling RUBY_TEXT and add it as span between start & end.
+        @Nullable TtmlNode containerNode = findRubyContainerNode(parent, globalStyles);
+        if (containerNode == null) {
+          // No matching container node
+          break;
+        }
+        @Nullable TtmlNode textNode = findRubyTextNode(containerNode, globalStyles);
+        if (textNode == null) {
+          // no matching text node
+          break;
+        }
+        String rubyText;
+        if (textNode.getChildCount() == 1 && textNode.getChild(0).text != null) {
+          rubyText = Util.castNonNull(textNode.getChild(0).text);
+        } else {
+          Log.i(TAG, "Skipping rubyText node without exactly one text child.");
+          break;
+        }
+
+        @Nullable
+        TtmlStyle textStyle = resolveStyle(textNode.style, textNode.getStyleIds(), globalStyles);
+
+        // Use position from ruby text node if defined.
+        @TextAnnotation.Position
+        int rubyPosition =
+            textStyle != null ? textStyle.getRubyPosition() : TextAnnotation.POSITION_UNKNOWN;
+
+        if (rubyPosition == TextAnnotation.POSITION_UNKNOWN) {
+          // If ruby position is not defined, use position info from container node.
+          @Nullable
+          TtmlStyle containerStyle =
+              resolveStyle(containerNode.style, containerNode.getStyleIds(), globalStyles);
+          rubyPosition = containerStyle != null ? containerStyle.getRubyPosition() : rubyPosition;
+        }
+
+        builder.setSpan(
+            new RubySpan(rubyText, rubyPosition), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        break;
+      case TtmlStyle.RUBY_TYPE_DELIMITER:
+        // TODO: Add support for this when RubySpan supports parenthetical text. For now, just
+        // fall through and delete the text.
+      case TtmlStyle.RUBY_TYPE_TEXT:
+        // We can't just remove the text directly from `builder` here because TtmlNode has fixed
+        // ideas of where every node starts and ends (nodeStartsByRegion and nodeEndsByRegion) so
+        // all these indices become invalid if we mutate the underlying string at this point.
+        // Instead we add a special span that's then handled in TtmlNode#cleanUpText.
+        builder.setSpan(new DeleteTextSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        break;
+      case TtmlStyle.RUBY_TYPE_CONTAINER:
+      case TtmlStyle.UNSPECIFIED:
+      default:
+        // Do nothing
+        break;
+    }
+    if (style.getTextCombine()) {
+      SpanUtil.addOrReplaceSpan(
+          builder,
+          new HorizontalTextInVerticalContextSpan(),
+          start,
+          end,
           Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     switch (style.getFontSizeUnit()) {
       case TtmlStyle.FONT_SIZE_UNIT_PIXEL:
-        builder.setSpan(new AbsoluteSizeSpan((int) style.getFontSize(), true), start, end,
+        SpanUtil.addOrReplaceSpan(
+            builder,
+            new AbsoluteSizeSpan((int) style.getFontSize(), true),
+            start,
+            end,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         break;
       case TtmlStyle.FONT_SIZE_UNIT_EM:
-        builder.setSpan(new RelativeSizeSpan(style.getFontSize()), start, end,
+        SpanUtil.addOrReplaceSpan(
+            builder,
+            new RelativeSizeSpan(style.getFontSize()),
+            start,
+            end,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         break;
       case TtmlStyle.FONT_SIZE_UNIT_PERCENT:
-        builder.setSpan(new RelativeSizeSpan(style.getFontSize() / 100), start, end,
+        SpanUtil.addOrReplaceSpan(
+            builder,
+            new RelativeSizeSpan(style.getFontSize() / 100),
+            start,
+            end,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         break;
       case TtmlStyle.UNSPECIFIED:
         // Do nothing.
         break;
     }
+  }
+
+  @Nullable
+  private static TtmlNode findRubyTextNode(
+      TtmlNode rubyContainerNode, Map<String, TtmlStyle> globalStyles) {
+    Deque<TtmlNode> childNodesStack = new ArrayDeque<>();
+    childNodesStack.push(rubyContainerNode);
+    while (!childNodesStack.isEmpty()) {
+      TtmlNode childNode = childNodesStack.pop();
+      @Nullable
+      TtmlStyle style = resolveStyle(childNode.style, childNode.getStyleIds(), globalStyles);
+      if (style != null && style.getRubyType() == TtmlStyle.RUBY_TYPE_TEXT) {
+        return childNode;
+      }
+      for (int i = childNode.getChildCount() - 1; i >= 0; i--) {
+        childNodesStack.push(childNode.getChild(i));
+      }
+    }
+
+    return null;
+  }
+
+  @Nullable
+  private static TtmlNode findRubyContainerNode(
+      @Nullable TtmlNode node, Map<String, TtmlStyle> globalStyles) {
+    while (node != null) {
+      @Nullable TtmlStyle style = resolveStyle(node.style, node.getStyleIds(), globalStyles);
+      if (style != null && style.getRubyType() == TtmlStyle.RUBY_TYPE_CONTAINER) {
+        return node;
+      }
+      node = node.parent;
+    }
+    return null;
   }
 
   /**
@@ -147,5 +321,4 @@ import java.util.Map;
   }
 
   private TtmlRenderUtil() {}
-
 }

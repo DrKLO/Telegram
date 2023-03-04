@@ -16,6 +16,7 @@
 #include <memory>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/rtp_headers.h"
@@ -354,13 +355,10 @@ void RTCPSender::SetRemoteSSRC(uint32_t ssrc) {
   remote_ssrc_ = ssrc;
 }
 
-int32_t RTCPSender::SetCNAME(const char* c_name) {
-  if (!c_name)
-    return -1;
-
-  RTC_DCHECK_LT(strlen(c_name), RTCP_CNAME_SIZE);
+int32_t RTCPSender::SetCNAME(absl::string_view c_name) {
+  RTC_DCHECK_LT(c_name.size(), RTCP_CNAME_SIZE);
   MutexLock lock(&mutex_rtcp_sender_);
-  cname_ = c_name;
+  cname_ = std::string(c_name);
   return 0;
 }
 
@@ -484,7 +482,9 @@ void RTCPSender::BuildRR(const RtcpContext& ctx, PacketSender& sender) {
   rtcp::ReceiverReport report;
   report.SetSenderSsrc(ssrc_);
   report.SetReportBlocks(CreateReportBlocks(ctx.feedback_state_));
-  sender.AppendPacket(report);
+  if (method_ == RtcpMode::kCompound || !report.report_blocks().empty()) {
+    sender.AppendPacket(report);
+  }
 }
 
 void RTCPSender::BuildPLI(const RtcpContext& ctx, PacketSender& sender) {
@@ -712,9 +712,6 @@ absl::optional<int32_t> RTCPSender::ComputeCompoundRTCPPacket(
       return -1;
     }
   }
-
-  if (packet_type_counter_.first_packet_time_ms == -1)
-    packet_type_counter_.first_packet_time_ms = clock_->TimeInMilliseconds();
 
   // We need to send our NTP even if we haven't received any reports.
   RtcpContext context(feedback_state, nack_size, nack_list,

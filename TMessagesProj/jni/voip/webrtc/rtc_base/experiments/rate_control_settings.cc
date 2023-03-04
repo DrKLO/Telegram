@@ -34,25 +34,9 @@ const char kCongestionWindowDefaultFieldTrialString[] =
 const char kUseBaseHeavyVp8Tl3RateAllocationFieldTrialName[] =
     "WebRTC-UseBaseHeavyVP8TL3RateAllocation";
 
-const char* kVideoHysteresisFieldTrialname =
-    "WebRTC-SimulcastUpswitchHysteresisPercent";
-const char* kScreenshareHysteresisFieldTrialname =
-    "WebRTC-SimulcastScreenshareUpswitchHysteresisPercent";
-
-bool IsEnabled(const WebRtcKeyValueConfig* const key_value_config,
+bool IsEnabled(const FieldTrialsView* const key_value_config,
                absl::string_view key) {
   return absl::StartsWith(key_value_config->Lookup(key), "Enabled");
-}
-
-void ParseHysteresisFactor(const WebRtcKeyValueConfig* const key_value_config,
-                           absl::string_view key,
-                           double* output_value) {
-  std::string group_name = key_value_config->Lookup(key);
-  int percent = 0;
-  if (!group_name.empty() && sscanf(group_name.c_str(), "%d", &percent) == 1 &&
-      percent >= 0) {
-    *output_value = 1.0 + (percent / 100.0);
-  }
 }
 
 }  // namespace
@@ -78,23 +62,21 @@ constexpr char VideoRateControlConfig::kKey[];
 std::unique_ptr<StructParametersParser> VideoRateControlConfig::Parser() {
   // The empty comments ensures that each pair is on a separate line.
   return StructParametersParser::Create(
-      "pacing_factor", &pacing_factor,                    //
-      "alr_probing", &alr_probing,                        //
-      "vp8_qp_max", &vp8_qp_max,                          //
-      "vp8_min_pixels", &vp8_min_pixels,                  //
-      "trust_vp8", &trust_vp8,                            //
-      "trust_vp9", &trust_vp9,                            //
-      "video_hysteresis", &video_hysteresis,              //
-      "screenshare_hysteresis", &screenshare_hysteresis,  //
-      "probe_max_allocation", &probe_max_allocation,      //
-      "bitrate_adjuster", &bitrate_adjuster,              //
-      "adjuster_use_headroom", &adjuster_use_headroom,    //
-      "vp8_s0_boost", &vp8_s0_boost,                      //
+      "pacing_factor", &pacing_factor,                  //
+      "alr_probing", &alr_probing,                      //
+      "vp8_qp_max", &vp8_qp_max,                        //
+      "vp8_min_pixels", &vp8_min_pixels,                //
+      "trust_vp8", &trust_vp8,                          //
+      "trust_vp9", &trust_vp9,                          //
+      "probe_max_allocation", &probe_max_allocation,    //
+      "bitrate_adjuster", &bitrate_adjuster,            //
+      "adjuster_use_headroom", &adjuster_use_headroom,  //
+      "vp8_s0_boost", &vp8_s0_boost,                    //
       "vp8_base_heavy_tl3_alloc", &vp8_base_heavy_tl3_alloc);
 }
 
 RateControlSettings::RateControlSettings(
-    const WebRtcKeyValueConfig* const key_value_config) {
+    const FieldTrialsView* const key_value_config) {
   std::string congestion_window_config =
       key_value_config->Lookup(CongestionWindowConfig::kKey).empty()
           ? kCongestionWindowDefaultFieldTrialString
@@ -103,10 +85,6 @@ RateControlSettings::RateControlSettings(
       CongestionWindowConfig::Parse(congestion_window_config);
   video_config_.vp8_base_heavy_tl3_alloc = IsEnabled(
       key_value_config, kUseBaseHeavyVp8Tl3RateAllocationFieldTrialName);
-  ParseHysteresisFactor(key_value_config, kVideoHysteresisFieldTrialname,
-                        &video_config_.video_hysteresis);
-  ParseHysteresisFactor(key_value_config, kScreenshareHysteresisFieldTrialname,
-                        &video_config_.screenshare_hysteresis);
   video_config_.Parser()->Parse(
       key_value_config->Lookup(VideoRateControlConfig::kKey));
 }
@@ -120,7 +98,7 @@ RateControlSettings RateControlSettings::ParseFromFieldTrials() {
 }
 
 RateControlSettings RateControlSettings::ParseFromKeyValueConfig(
-    const WebRtcKeyValueConfig* const key_value_config) {
+    const FieldTrialsView* const key_value_config) {
   FieldTrialBasedConfig field_trial_config;
   return RateControlSettings(key_value_config ? key_value_config
                                               : &field_trial_config);
@@ -189,22 +167,6 @@ bool RateControlSettings::Vp8BoostBaseLayerQuality() const {
 
 bool RateControlSettings::LibvpxVp9TrustedRateController() const {
   return video_config_.trust_vp9;
-}
-
-double RateControlSettings::GetSimulcastHysteresisFactor(
-    VideoCodecMode mode) const {
-  if (mode == VideoCodecMode::kScreensharing) {
-    return video_config_.screenshare_hysteresis;
-  }
-  return video_config_.video_hysteresis;
-}
-
-double RateControlSettings::GetSimulcastHysteresisFactor(
-    VideoEncoderConfig::ContentType content_type) const {
-  if (content_type == VideoEncoderConfig::ContentType::kScreen) {
-    return video_config_.screenshare_hysteresis;
-  }
-  return video_config_.video_hysteresis;
 }
 
 bool RateControlSettings::Vp8BaseHeavyTl3RateAllocation() const {

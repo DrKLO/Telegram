@@ -12,11 +12,13 @@
 
 #include <memory>
 
+#include "api/field_trials_view.h"
 #include "api/task_queue/task_queue_factory.h"
 
 namespace webrtc {
 
-std::unique_ptr<TaskQueueFactory> CreateDefaultTaskQueueFactory();
+std::unique_ptr<TaskQueueFactory> CreateDefaultTaskQueueFactory(
+    const FieldTrialsView* field_trials = nullptr);
 
 }  // namespace webrtc
 

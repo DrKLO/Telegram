@@ -34,8 +34,9 @@ ABSL_NAMESPACE_BEGIN
 
 // ConsumePrefix()
 //
-// Strips the `expected` prefix from the start of the given string, returning
-// `true` if the strip operation succeeded or false otherwise.
+// Strips the `expected` prefix, if found, from the start of `str`.
+// If the operation succeeded, `true` is returned.  If not, `false`
+// is returned and `str` is not modified.
 //
 // Example:
 //
@@ -49,8 +50,9 @@ inline bool ConsumePrefix(absl::string_view* str, absl::string_view expected) {
 }
 // ConsumeSuffix()
 //
-// Strips the `expected` suffix from the end of the given string, returning
-// `true` if the strip operation succeeded or false otherwise.
+// Strips the `expected` suffix, if found, from the end of `str`.
+// If the operation succeeded, `true` is returned.  If not, `false`
+// is returned and `str` is not modified.
 //
 // Example:
 //
@@ -65,7 +67,7 @@ inline bool ConsumeSuffix(absl::string_view* str, absl::string_view expected) {
 
 // StripPrefix()
 //
-// Returns a view into the input string 'str' with the given 'prefix' removed,
+// Returns a view into the input string `str` with the given `prefix` removed,
 // but leaving the original string intact. If the prefix does not match at the
 // start of the string, returns the original string instead.
 ABSL_MUST_USE_RESULT inline absl::string_view StripPrefix(
@@ -76,7 +78,7 @@ ABSL_MUST_USE_RESULT inline absl::string_view StripPrefix(
 
 // StripSuffix()
 //
-// Returns a view into the input string 'str' with the given 'suffix' removed,
+// Returns a view into the input string `str` with the given `suffix` removed,
 // but leaving the original string intact. If the suffix does not match at the
 // end of the string, returns the original string instead.
 ABSL_MUST_USE_RESULT inline absl::string_view StripSuffix(

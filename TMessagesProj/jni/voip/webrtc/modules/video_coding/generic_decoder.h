@@ -11,27 +11,48 @@
 #ifndef MODULES_VIDEO_CODING_GENERIC_DECODER_H_
 #define MODULES_VIDEO_CODING_GENERIC_DECODER_H_
 
+#include <cstdint>
+#include <deque>
 #include <string>
+#include <utility>
 
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
-#include "api/units/time_delta.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/encoded_frame.h"
-#include "modules/video_coding/include/video_codec_interface.h"
-#include "modules/video_coding/timestamp_map.h"
-#include "modules/video_coding/timing.h"
-#include "rtc_base/experiments/field_trial_parser.h"
+#include "modules/video_coding/timing/timing.h"
 #include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
 
 class VCMReceiveCallback;
 
-enum { kDecoderFrameMemoryLength = 10 };
+struct FrameInfo {
+  FrameInfo() = default;
+  FrameInfo(const FrameInfo&) = delete;
+  FrameInfo& operator=(const FrameInfo&) = delete;
+  FrameInfo(FrameInfo&&) = default;
+  FrameInfo& operator=(FrameInfo&&) = default;
+
+  uint32_t rtp_timestamp;
+  // This is likely not optional, but some inputs seem to sometimes be negative.
+  // TODO(bugs.webrtc.org/13756): See if this can be replaced with Timestamp
+  // once all inputs to this field use Timestamp instead of an integer.
+  absl::optional<Timestamp> render_time;
+  absl::optional<Timestamp> decode_start;
+  VideoRotation rotation;
+  VideoContentType content_type;
+  EncodedImage::Timing timing;
+  int64_t ntp_time_ms;
+  RtpPacketInfos packet_infos;
+  // ColorSpace is not stored here, as it might be modified by decoders.
+};
 
 class VCMDecodedFrameCallback : public DecodedImageCallback {
  public:
-  VCMDecodedFrameCallback(VCMTiming* timing, Clock* clock);
+  VCMDecodedFrameCallback(VCMTiming* timing,
+                          Clock* clock,
+                          const FieldTrialsView& field_trials);
   ~VCMDecodedFrameCallback() override;
   void SetUserReceiveCallback(VCMReceiveCallback* receiveCallback);
   VCMReceiveCallback* UserReceiveCallback();
@@ -42,14 +63,16 @@ class VCMDecodedFrameCallback : public DecodedImageCallback {
                absl::optional<int32_t> decode_time_ms,
                absl::optional<uint8_t> qp) override;
 
-  void OnDecoderImplementationName(const char* implementation_name);
+  void OnDecoderInfoChanged(const VideoDecoder::DecoderInfo& decoder_info);
 
-  void Map(uint32_t timestamp, const VCMFrameInformation& frameInfo);
+  void Map(FrameInfo frameInfo);
   void ClearTimestampMap();
 
  private:
+  std::pair<absl::optional<FrameInfo>, size_t> FindFrameInfo(
+      uint32_t rtp_timestamp) RTC_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
   SequenceChecker construction_thread_;
-  // Protect `_timestampMap`.
   Clock* const _clock;
   // This callback must be set before the decoder thread starts running
   // and must only be unset when external threads (e.g decoder thread)
@@ -59,20 +82,8 @@ class VCMDecodedFrameCallback : public DecodedImageCallback {
   VCMReceiveCallback* _receiveCallback = nullptr;
   VCMTiming* _timing;
   Mutex lock_;
-  VCMTimestampMap _timestampMap RTC_GUARDED_BY(lock_);
+  std::deque<FrameInfo> frame_infos_ RTC_GUARDED_BY(lock_);
   int64_t ntp_offset_;
-  // Set by the field trial WebRTC-SlowDownDecoder to simulate a slow decoder.
-  FieldTrialOptional<TimeDelta> _extra_decode_time;
-
-  // Set by the field trial WebRTC-LowLatencyRenderer. The parameter `enabled`
-  // determines if the low-latency renderer algorithm should be used for the
-  // case min playout delay=0 and max playout delay>0.
-  FieldTrialParameter<bool> low_latency_renderer_enabled_;
-  // Set by the field trial WebRTC-LowLatencyRenderer. The parameter
-  // `include_predecode_buffer` determines if the predecode buffer should be
-  // taken into account when calculating maximum number of frames in composition
-  // queue.
-  FieldTrialParameter<bool> low_latency_renderer_include_predecode_buffer_;
 };
 
 class VCMGenericDecoder {

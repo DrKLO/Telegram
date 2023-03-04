@@ -282,15 +282,16 @@ class optional : private optional_internal::optional_data<T>,
   optional& operator=(optional&& src) = default;
 
   // Value assignment operators
-  template <
-      typename U = T,
-      typename = typename std::enable_if<absl::conjunction<
-          absl::negation<
-              std::is_same<optional<T>, typename std::decay<U>::type>>,
-          absl::negation<
-              absl::conjunction<std::is_scalar<T>,
-                                std::is_same<T, typename std::decay<U>::type>>>,
-          std::is_constructible<T, U>, std::is_assignable<T&, U>>::value>::type>
+  template <typename U = T,
+            int&...,  // Workaround an internal compiler error in GCC 5 to 10.
+            typename = typename std::enable_if<absl::conjunction<
+                absl::negation<
+                    std::is_same<optional<T>, typename std::decay<U>::type> >,
+                absl::negation<absl::conjunction<
+                    std::is_scalar<T>,
+                    std::is_same<T, typename std::decay<U>::type> > >,
+                std::is_constructible<T, U>,
+                std::is_assignable<T&, U> >::value>::type>
   optional& operator=(U&& v) {
     this->assign(std::forward<U>(v));
     return *this;
@@ -298,13 +299,14 @@ class optional : private optional_internal::optional_data<T>,
 
   template <
       typename U,
+      int&...,  // Workaround an internal compiler error in GCC 5 to 10.
       typename = typename std::enable_if<absl::conjunction<
-          absl::negation<std::is_same<T, U>>,
+          absl::negation<std::is_same<T, U> >,
           std::is_constructible<T, const U&>, std::is_assignable<T&, const U&>,
           absl::negation<
               optional_internal::
                   is_constructible_convertible_assignable_from_optional<
-                      T, U>>>::value>::type>
+                      T, U> > >::value>::type>
   optional& operator=(const optional<U>& rhs) {
     if (rhs) {
       this->assign(*rhs);
@@ -315,13 +317,14 @@ class optional : private optional_internal::optional_data<T>,
   }
 
   template <typename U,
+            int&...,  // Workaround an internal compiler error in GCC 5 to 10.
             typename = typename std::enable_if<absl::conjunction<
-                absl::negation<std::is_same<T, U>>, std::is_constructible<T, U>,
-                std::is_assignable<T&, U>,
+                absl::negation<std::is_same<T, U> >,
+                std::is_constructible<T, U>, std::is_assignable<T&, U>,
                 absl::negation<
                     optional_internal::
                         is_constructible_convertible_assignable_from_optional<
-                            T, U>>>::value>::type>
+                            T, U> > >::value>::type>
   optional& operator=(optional<U>&& rhs) {
     if (rhs) {
       this->assign(std::move(*rhs));

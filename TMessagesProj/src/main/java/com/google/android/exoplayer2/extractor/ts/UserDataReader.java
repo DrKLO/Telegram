@@ -15,11 +15,12 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.extractor.CeaUtil;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
-import com.google.android.exoplayer2.text.cea.CeaUtil;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
@@ -44,23 +45,20 @@ import java.util.List;
       idGenerator.generateNewId();
       TrackOutput output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_TEXT);
       Format channelFormat = closedCaptionFormats.get(i);
-      String channelMimeType = channelFormat.sampleMimeType;
+      @Nullable String channelMimeType = channelFormat.sampleMimeType;
       Assertions.checkArgument(
           MimeTypes.APPLICATION_CEA608.equals(channelMimeType)
               || MimeTypes.APPLICATION_CEA708.equals(channelMimeType),
           "Invalid closed caption mime type provided: " + channelMimeType);
       output.format(
-          Format.createTextSampleFormat(
-              idGenerator.getFormatId(),
-              channelMimeType,
-              /* codecs= */ null,
-              /* bitrate= */ Format.NO_VALUE,
-              channelFormat.selectionFlags,
-              channelFormat.language,
-              channelFormat.accessibilityChannel,
-              /* drmInitData= */ null,
-              Format.OFFSET_SAMPLE_RELATIVE,
-              channelFormat.initializationData));
+          new Format.Builder()
+              .setId(idGenerator.getFormatId())
+              .setSampleMimeType(channelMimeType)
+              .setSelectionFlags(channelFormat.selectionFlags)
+              .setLanguage(channelFormat.language)
+              .setAccessibilityChannel(channelFormat.accessibilityChannel)
+              .setInitializationData(channelFormat.initializationData)
+              .build());
       outputs[i] = output;
     }
   }

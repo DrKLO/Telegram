@@ -15,6 +15,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.ProfileActivity;
@@ -96,7 +97,7 @@ public class PhotoUtilities {
                             if (onDone != null) {
                                 onDone.run();
                             }
-                            CharSequence title = AndroidUtilities.replaceTags(LocaleController.getString("ApplyAvatarHint", R.string.ApplyAvatarHintTitle));
+                            CharSequence title = AndroidUtilities.replaceTags(LocaleController.getString("ApplyAvatarHintTitle", R.string.ApplyAvatarHintTitle));
                             CharSequence subtitle = AndroidUtilities.replaceSingleTag(LocaleController.getString("ApplyAvatarHint", R.string.ApplyAvatarHint), () -> {
                                 Bundle args = new Bundle();
                                 args.putLong("user_id", UserConfig.getInstance(currentAccount).clientUserId);
@@ -148,5 +149,88 @@ public class PhotoUtilities {
         if (bigSize != null) {
             user.photo.photo_big = bigSize.location;
         }
+    }
+
+    public static void showAvatartConstructorForUpdateUserPhoto(ChatActivity chatActivity, TLRPC.VideoSize emojiMarkup) {
+        ImageUpdater imageUpdater = new ImageUpdater(true, ImageUpdater.FOR_TYPE_USER, true);
+        imageUpdater.parentFragment = chatActivity;
+        imageUpdater.showAvatarConstructor(emojiMarkup);
+        final TLRPC.FileLocation[] avatar = new TLRPC.FileLocation[1];
+        final TLRPC.FileLocation[] avatarBig = new TLRPC.FileLocation[1];
+        long userId = chatActivity.getUserConfig().getClientUserId();
+        imageUpdater.setDelegate((photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo, emojiMarkup1) -> {
+            if (photo != null || video != null || emojiMarkup1 != null) {
+                TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
+                if (photo != null) {
+                    req.file = photo;
+                    req.flags |= 1;
+                }
+                if (video != null) {
+                    req.video = video;
+                    req.flags |= 2;
+                    req.video_start_ts = videoStartTimestamp;
+                    req.flags |= 4;
+                }
+                if (emojiMarkup1 != null) {
+                    req.video_emoji_markup = emojiMarkup1;
+                    req.flags |= 16;
+                }
+                chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (error == null) {
+                        TLRPC.User user = chatActivity.getMessagesController().getUser(chatActivity.getUserConfig().getClientUserId());
+
+                        TLRPC.TL_photos_photo photos_photo = (TLRPC.TL_photos_photo) response;
+                        ArrayList<TLRPC.PhotoSize> sizes = photos_photo.photo.sizes;
+                        TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
+                        TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
+                        TLRPC.VideoSize videoSize = photos_photo.photo.video_sizes.isEmpty() ? null : FileLoader.getClosestVideoSizeWithSize(photos_photo.photo.video_sizes, 1000);
+                        user.photo = new TLRPC.TL_userProfilePhoto();
+                        user.photo.photo_id = photos_photo.photo.id;
+                        if (small != null) {
+                            user.photo.photo_small = small.location;
+                        }
+                        if (big != null) {
+                            user.photo.photo_big = big.location;
+                        }
+
+                        if (small != null && avatar[0] != null) {
+                            File destFile = FileLoader.getInstance(chatActivity.getCurrentAccount()).getPathToAttach(small, true);
+                            File src = FileLoader.getInstance(chatActivity.getCurrentAccount()).getPathToAttach(avatar[0], true);
+                            src.renameTo(destFile);
+                            String oldKey = avatar[0].volume_id + "_" + avatar[0].local_id + "@50_50";
+                            String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
+                            ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), false);
+                        }
+
+                        if (videoSize != null && videoPath != null) {
+                            File destFile = FileLoader.getInstance(chatActivity.getCurrentAccount()).getPathToAttach(videoSize, "mp4", true);
+                            File src = new File(videoPath);
+                            src.renameTo(destFile);
+                        } else if (big != null && avatarBig[0] != null) {
+                            File destFile = FileLoader.getInstance(chatActivity.getCurrentAccount()).getPathToAttach(big, true);
+                            File src = FileLoader.getInstance(chatActivity.getCurrentAccount()).getPathToAttach(avatarBig[0], true);
+                            src.renameTo(destFile);
+                        }
+                        chatActivity.getMessagesStorage().addDialogPhoto(user.id, ((TLRPC.TL_photos_photo) response).photo);
+                        ArrayList<TLRPC.User> users = new ArrayList<>();
+                        users.add(user);
+                        chatActivity.getMessagesStorage().putUsersAndChats(users, null, false, true);
+                        TLRPC.UserFull userFull = chatActivity.getMessagesController().getUserFull(userId);
+                        userFull.profile_photo = photos_photo.photo;
+                        chatActivity.getMessagesStorage().updateUserInfo(userFull, false);
+                        CharSequence title = AndroidUtilities.replaceTags(LocaleController.getString("ApplyAvatarHintTitle", R.string.ApplyAvatarHintTitle));
+                        CharSequence subtitle = AndroidUtilities.replaceSingleTag(LocaleController.getString("ApplyAvatarHint", R.string.ApplyAvatarHint), () -> {
+                            Bundle args = new Bundle();
+                            args.putLong("user_id", userId);
+                            chatActivity.presentFragment(new ProfileActivity(args));
+                        });
+                        BulletinFactory.of(chatActivity).createUsersBulletin(Collections.singletonList(user), title, subtitle).show();
+                    }
+                }));
+            } else {
+                avatar[0] = smallSize.location;
+                avatarBig[0] = bigSize.location;
+            }
+        });
     }
 }

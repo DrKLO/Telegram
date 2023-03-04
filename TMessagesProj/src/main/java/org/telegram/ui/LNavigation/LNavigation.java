@@ -980,7 +980,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
             rebuildFragments(REBUILD_FLAG_REBUILD_LAST);
         }
         fragment.setParentLayout(this);
-        if (position == -1 || position >= fragmentStack.size()) {
+        if (position < 0 || position >= fragmentStack.size()) {
             BaseFragment lastFragment = getLastFragment();
             if (lastFragment != null) {
                 lastFragment.setPaused(true);
@@ -2306,7 +2306,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
 
             removeAllViews();
 
-            if (fragment == null) {
+            if (fragment == null || getContext() == null) {
                 invalidateBackgroundColor();
                 return;
             }

@@ -12,12 +12,25 @@
 #define LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_DTLS_TRANSPORT_STATE_H_
 
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/dtls_transport_interface.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/units/timestamp.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
 
 namespace webrtc {
+
+struct LoggedDtlsTransportState {
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
+  Timestamp log_time() const { return timestamp; }
+
+  Timestamp timestamp = Timestamp::MinusInfinity();
+  DtlsTransportState dtls_transport_state;
+};
 
 class RtcEventDtlsTransportState : public RtcEvent {
  public:
@@ -35,18 +48,23 @@ class RtcEventDtlsTransportState : public RtcEvent {
     return dtls_transport_state_;
   }
 
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    // TODO(terelius): Implement
+    return "";
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::vector<LoggedDtlsTransportState>& output) {
+    // TODO(terelius): Implement
+    return RtcEventLogParseStatus::Error("Not Implemented", __FILE__, __LINE__);
+  }
+
  private:
   RtcEventDtlsTransportState(const RtcEventDtlsTransportState& other);
 
   const DtlsTransportState dtls_transport_state_;
-};
-
-struct LoggedDtlsTransportState {
-  int64_t log_time_us() const { return timestamp.us(); }
-  int64_t log_time_ms() const { return timestamp.ms(); }
-
-  Timestamp timestamp = Timestamp::MinusInfinity();
-  DtlsTransportState dtls_transport_state;
 };
 
 }  // namespace webrtc

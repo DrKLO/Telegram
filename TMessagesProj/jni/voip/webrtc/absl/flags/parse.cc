@@ -159,14 +159,14 @@ class ArgsList {
   // Returns success status: true if parsing successful, false otherwise.
   bool ReadFromFlagfile(const std::string& flag_file_name);
 
-  int Size() const { return args_.size() - next_arg_; }
-  int FrontIndex() const { return next_arg_; }
+  size_t Size() const { return args_.size() - next_arg_; }
+  size_t FrontIndex() const { return next_arg_; }
   absl::string_view Front() const { return args_[next_arg_]; }
   void PopFront() { next_arg_++; }
 
  private:
   std::vector<std::string> args_;
-  int next_arg_;
+  size_t next_arg_;
 };
 
 bool ArgsList::ReadFromFlagfile(const std::string& flag_file_name) {
@@ -626,7 +626,7 @@ std::vector<char*> ParseCommandLineImpl(int argc, char* argv[],
 
   std::vector<char*> output_args;
   std::vector<char*> positional_args;
-  output_args.reserve(argc);
+  output_args.reserve(static_cast<size_t>(argc));
 
   // This is the list of undefined flags. The element of the list is the pair
   // consisting of boolean indicating if flag came from command line (vs from
@@ -795,8 +795,8 @@ std::vector<char*> ParseCommandLineImpl(int argc, char* argv[],
 
   // All the remaining arguments are positional.
   if (!input_args.empty()) {
-    for (int arg_index = input_args.back().FrontIndex(); arg_index < argc;
-         ++arg_index) {
+    for (size_t arg_index = input_args.back().FrontIndex();
+         arg_index < static_cast<size_t>(argc); ++arg_index) {
       output_args.push_back(argv[arg_index]);
     }
   }

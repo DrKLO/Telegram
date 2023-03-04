@@ -31,6 +31,7 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -118,129 +119,134 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         setWillNotDraw(false);
         parentLayout = layout;
         adjustPanLayoutHelper = createAdjustPanLayoutHelper();
-        backgroundView = new View(context) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                if (backgroundDrawable == null || skipBackgroundDrawing) {
-                    return;
+        addView(backgroundView = new BackgroundView(context), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        checkLayerType();
+    }
+
+    private class BackgroundView extends View {
+        public BackgroundView(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (backgroundDrawable == null || skipBackgroundDrawing) {
+                return;
+            }
+            Drawable newDrawable = getNewDrawable();
+            if (newDrawable != backgroundDrawable && newDrawable != null) {
+                if (Theme.isAnimatingColor()) {
+                    oldBackgroundDrawable = backgroundDrawable;
                 }
-                Drawable newDrawable = getNewDrawable();
-                if (newDrawable != backgroundDrawable && newDrawable != null) {
-                    if (Theme.isAnimatingColor()) {
-                        oldBackgroundDrawable = backgroundDrawable;
-                    }
-                    if (newDrawable instanceof MotionBackgroundDrawable) {
-                        MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) newDrawable;
-                        motionBackgroundDrawable.setParentView(backgroundView);
-                    }
-                    backgroundDrawable = newDrawable;
+                if (newDrawable instanceof MotionBackgroundDrawable) {
+                    MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) newDrawable;
+                    motionBackgroundDrawable.setParentView(backgroundView);
                 }
-                float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1.0f;
-                for (int a = 0; a < 2; a++) {
-                    Drawable drawable = a == 0 ? oldBackgroundDrawable : backgroundDrawable;
-                    if (drawable == null) {
-                        continue;
-                    }
-                    if (a == 1 && oldBackgroundDrawable != null && parentLayout != null) {
-                        drawable.setAlpha((int) (255 * themeAnimationValue));
-                    } else {
-                        drawable.setAlpha(255);
-                    }
-                    if (drawable instanceof MotionBackgroundDrawable) {
-                        MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) drawable;
-                        if (motionBackgroundDrawable.hasPattern()) {
-                            int actionBarHeight = (isActionBarVisible() ? ActionBar.getCurrentActionBarHeight() : 0) + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
-                            int viewHeight = getRootView().getMeasuredHeight() - actionBarHeight;
-                            float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
-                            float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
-                            float scale = Math.max(scaleX, scaleY);
-                            int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale * parallaxScale);
-                            int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale * parallaxScale);
-                            int x = (getMeasuredWidth() - width) / 2 + (int) translationX;
-                            int y = backgroundTranslationY + (viewHeight - height) / 2 + actionBarHeight + (int) translationY;
-                            canvas.save();
-                            canvas.clipRect(0, actionBarHeight, width, getMeasuredHeight() - bottomClip);
-                            drawable.setBounds(x, y, x + width, y + height);
-                            drawable.draw(canvas);
-                            checkSnowflake(canvas);
-                            canvas.restore();
-                        } else {
-                            if (bottomClip != 0) {
-                                canvas.save();
-                                canvas.clipRect(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight() - bottomClip);
-                            }
-                            motionBackgroundDrawable.setTranslationY(backgroundTranslationY);
-                            int bottom = (int) (getRootView().getMeasuredHeight() - backgroundTranslationY + translationY);
-                            if (animationInProgress) {
-                                bottom -= emojiOffset;
-                            } else if (emojiHeight != 0) {
-                                bottom -= emojiHeight;
-                            }
-                            drawable.setBounds(0, 0, getMeasuredWidth(), bottom);
-                            drawable.draw(canvas);
-                            if (bottomClip != 0) {
-                                canvas.restore();
-                            }
-                        }
-                    } else if (drawable instanceof ColorDrawable) {
-                        if (bottomClip != 0) {
-                            canvas.save();
-                            canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - bottomClip);
-                        }
-                        drawable.setBounds(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight());
+                backgroundDrawable = newDrawable;
+            }
+            float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1.0f;
+            for (int a = 0; a < 2; a++) {
+                Drawable drawable = a == 0 ? oldBackgroundDrawable : backgroundDrawable;
+                if (drawable == null) {
+                    continue;
+                }
+                if (a == 1 && oldBackgroundDrawable != null && parentLayout != null) {
+                    drawable.setAlpha((int) (255 * themeAnimationValue));
+                } else {
+                    drawable.setAlpha(255);
+                }
+                if (drawable instanceof MotionBackgroundDrawable) {
+                    MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) drawable;
+                    if (motionBackgroundDrawable.hasPattern()) {
+                        int actionBarHeight = (isActionBarVisible() ? ActionBar.getCurrentActionBarHeight() : 0) + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
+                        int viewHeight = getRootView().getMeasuredHeight() - actionBarHeight;
+                        float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
+                        float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
+                        float scale = Math.max(scaleX, scaleY);
+                        int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale * parallaxScale);
+                        int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale * parallaxScale);
+                        int x = (getMeasuredWidth() - width) / 2 + (int) translationX;
+                        int y = backgroundTranslationY + (viewHeight - height) / 2 + actionBarHeight + (int) translationY;
+                        canvas.save();
+                        canvas.clipRect(0, actionBarHeight, width, getMeasuredHeight() - bottomClip);
+                        drawable.setBounds(x, y, x + width, y + height);
                         drawable.draw(canvas);
                         checkSnowflake(canvas);
-                        if (bottomClip != 0) {
-                            canvas.restore();
-                        }
-                    } else if (drawable instanceof GradientDrawable) {
+                        canvas.restore();
+                    } else {
                         if (bottomClip != 0) {
                             canvas.save();
                             canvas.clipRect(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight() - bottomClip);
                         }
-                        drawable.setBounds(0, backgroundTranslationY, getMeasuredWidth(), backgroundTranslationY + getRootView().getMeasuredHeight());
+                        motionBackgroundDrawable.setTranslationY(backgroundTranslationY);
+                        int bottom = (int) (getRootView().getMeasuredHeight() - backgroundTranslationY + translationY);
+                        if (animationInProgress) {
+                            bottom -= emojiOffset;
+                        } else if (emojiHeight != 0) {
+                            bottom -= emojiHeight;
+                        }
+                        drawable.setBounds(0, 0, getMeasuredWidth(), bottom);
                         drawable.draw(canvas);
-                        checkSnowflake(canvas);
                         if (bottomClip != 0) {
                             canvas.restore();
                         }
-                    } else if (drawable instanceof BitmapDrawable) {
-                        BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-                        if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
-                            canvas.save();
-                            float scale = 2.0f / AndroidUtilities.density;
-                            canvas.scale(scale, scale);
-                            drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getRootView().getMeasuredHeight() / scale));
-                            drawable.draw(canvas);
-                            checkSnowflake(canvas);
-                            canvas.restore();
-                        } else {
-                            int actionBarHeight = (isActionBarVisible() ? ActionBar.getCurrentActionBarHeight() : 0) + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
-                            int viewHeight = getRootView().getMeasuredHeight() - actionBarHeight;
-                            float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
-                            float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
-                            float scale = Math.max(scaleX, scaleY);
-                            int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale * parallaxScale);
-                            int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale * parallaxScale);
-                            int x = (getMeasuredWidth() - width) / 2 + (int) translationX;
-                            int y = backgroundTranslationY + (viewHeight - height) / 2 + actionBarHeight + (int) translationY;
-                            canvas.save();
-                            canvas.clipRect(0, actionBarHeight, width, getMeasuredHeight() - bottomClip);
-                            drawable.setBounds(x, y, x + width, y + height);
-                            drawable.draw(canvas);
-                            checkSnowflake(canvas);
-                            canvas.restore();
-                        }
                     }
-                    if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
-                        oldBackgroundDrawable = null;
-                        backgroundView.invalidate();
+                } else if (drawable instanceof ColorDrawable) {
+                    if (bottomClip != 0) {
+                        canvas.save();
+                        canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - bottomClip);
+                    }
+                    drawable.setBounds(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight());
+                    drawable.draw(canvas);
+                    checkSnowflake(canvas);
+                    if (bottomClip != 0) {
+                        canvas.restore();
+                    }
+                } else if (drawable instanceof GradientDrawable) {
+                    if (bottomClip != 0) {
+                        canvas.save();
+                        canvas.clipRect(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight() - bottomClip);
+                    }
+                    drawable.setBounds(0, backgroundTranslationY, getMeasuredWidth(), backgroundTranslationY + getRootView().getMeasuredHeight());
+                    drawable.draw(canvas);
+                    checkSnowflake(canvas);
+                    if (bottomClip != 0) {
+                        canvas.restore();
+                    }
+                } else if (drawable instanceof BitmapDrawable) {
+                    BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                    if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
+                        canvas.save();
+                        float scale = 2.0f / AndroidUtilities.density;
+                        canvas.scale(scale, scale);
+                        drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getRootView().getMeasuredHeight() / scale));
+                        drawable.draw(canvas);
+                        checkSnowflake(canvas);
+                        canvas.restore();
+                    } else {
+                        int actionBarHeight = (isActionBarVisible() ? ActionBar.getCurrentActionBarHeight() : 0) + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
+                        int viewHeight = getRootView().getMeasuredHeight() - actionBarHeight;
+                        float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
+                        float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
+                        float scale = Math.max(scaleX, scaleY);
+                        int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale * parallaxScale);
+                        int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale * parallaxScale);
+                        int x = (getMeasuredWidth() - width) / 2 + (int) translationX;
+                        int y = backgroundTranslationY + (viewHeight - height) / 2 + actionBarHeight + (int) translationY;
+                        canvas.save();
+                        canvas.clipRect(0, actionBarHeight, width, getMeasuredHeight() - bottomClip);
+                        drawable.setBounds(x, y, x + width, y + height);
+                        drawable.draw(canvas);
+                        checkSnowflake(canvas);
+                        canvas.restore();
                     }
                 }
+                if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
+                    oldBackgroundDrawable = null;
+                    backgroundView.invalidate();
+                }
             }
-        };
-        addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        checkLayerType();
+        }
     }
 
     public void setBackgroundImage(Drawable bitmap, boolean motion) {
@@ -413,7 +419,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     }
 
     private void checkSnowflake(Canvas canvas) {
-        if (Theme.canStartHolidayAnimation() && !SharedConfig.getLiteMode().enabled()) {
+        if (Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             if (snowflakesEffect == null) {
                 snowflakesEffect = new SnowflakesEffect(1);
             }

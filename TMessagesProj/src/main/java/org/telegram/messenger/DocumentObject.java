@@ -58,7 +58,7 @@ public class DocumentObject {
                 h = photoSize.h;
             }
             if (photoPathSize != null && w != 0 && h != 0) {
-                SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawableByPath(SvgHelper.decompress(photoPathSize.bytes), w, h);
+                SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawableByPath(photoPathSize.svgPath, w, h);
                 if (pathThumb != null) {
                     pathThumb.setupGradient(colorKey, alpha, false);
                 }
@@ -126,7 +126,7 @@ public class DocumentObject {
                     }
                 }
                 if (w != 0 && h != 0) {
-                    pathThumb = SvgHelper.getDrawableByPath(SvgHelper.decompress(size.bytes), (int) (w * zoom), (int) (h * zoom));
+                    pathThumb = SvgHelper.getDrawableByPath(((TLRPC.TL_photoPathSize) size).svgPath, (int) (w * zoom), (int) (h * zoom));
                     if (pathThumb != null) {
                         pathThumb.setupGradient(colorKey, alpha, false);
                     }

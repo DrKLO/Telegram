@@ -16,13 +16,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/units/time_delta.h"
 #include "logging/rtc_event_log/encoder/rtc_event_log_encoder_legacy.h"
 #include "logging/rtc_event_log/encoder/rtc_event_log_encoder_new_format.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
@@ -40,10 +40,10 @@ std::unique_ptr<RtcEventLogEncoder> CreateEncoder(
     RtcEventLog::EncodingType type) {
   switch (type) {
     case RtcEventLog::EncodingType::Legacy:
-      RTC_LOG(LS_INFO) << "Creating legacy encoder for RTC event log.";
+      RTC_DLOG(LS_INFO) << "Creating legacy encoder for RTC event log.";
       return std::make_unique<RtcEventLogEncoderLegacy>();
     case RtcEventLog::EncodingType::NewFormat:
-      RTC_LOG(LS_INFO) << "Creating new format encoder for RTC event log.";
+      RTC_DLOG(LS_INFO) << "Creating new format encoder for RTC event log.";
       return std::make_unique<RtcEventLogEncoderNewFormat>();
     default:
       RTC_LOG(LS_ERROR) << "Unknown RtcEventLog encoder type (" << int(type)
@@ -92,8 +92,7 @@ bool RtcEventLogImpl::StartLogging(std::unique_ptr<RtcEventLogOutput> output,
 
   const int64_t timestamp_us = rtc::TimeMillis() * 1000;
   const int64_t utc_time_us = rtc::TimeUTCMillis() * 1000;
-  RTC_LOG(LS_INFO) << "Starting WebRTC event log. (Timestamp, UTC) = "
-                      "("
+  RTC_LOG(LS_INFO) << "Starting WebRTC event log. (Timestamp, UTC) = ("
                    << timestamp_us << ", " << utc_time_us << ").";
 
   RTC_DCHECK_RUN_ON(&logging_state_checker_);
@@ -114,7 +113,7 @@ bool RtcEventLogImpl::StartLogging(std::unique_ptr<RtcEventLogOutput> output,
 }
 
 void RtcEventLogImpl::StopLogging() {
-  RTC_LOG(LS_INFO) << "Stopping WebRTC event log.";
+  RTC_DLOG(LS_INFO) << "Stopping WebRTC event log.";
   // TODO(danilchap): Do not block current thread waiting on the task queue.
   // It might work for now, for current callers, but disallows caller to share
   // threads with the `task_queue_`.
@@ -122,7 +121,7 @@ void RtcEventLogImpl::StopLogging() {
   StopLogging([&output_stopped]() { output_stopped.Set(); });
   output_stopped.Wait(rtc::Event::kForever);
 
-  RTC_LOG(LS_INFO) << "WebRTC event log successfully stopped.";
+  RTC_DLOG(LS_INFO) << "WebRTC event log successfully stopped.";
 }
 
 void RtcEventLogImpl::StopLogging(std::function<void()> callback) {
@@ -183,7 +182,8 @@ void RtcEventLogImpl::ScheduleOutput() {
     const int64_t time_since_output_ms = now_ms - last_output_ms_;
     const uint32_t delay = rtc::SafeClamp(
         *output_period_ms_ - time_since_output_ms, 0, *output_period_ms_);
-    task_queue_->PostDelayedTask(output_task, delay);
+    task_queue_->PostDelayedTask(std::move(output_task),
+                                 TimeDelta::Millis(delay));
   }
 }
 
@@ -232,8 +232,8 @@ void RtcEventLogImpl::LogEventsFromMemoryToOutput() {
 }
 
 void RtcEventLogImpl::WriteConfigsAndHistoryToOutput(
-    const std::string& encoded_configs,
-    const std::string& encoded_history) {
+    absl::string_view encoded_configs,
+    absl::string_view encoded_history) {
   // This function is used to merge the strings instead of calling the output
   // object twice with small strings. The function also avoids copying any
   // strings in the typical case where there are no config events.
@@ -242,7 +242,11 @@ void RtcEventLogImpl::WriteConfigsAndHistoryToOutput(
   } else if (encoded_history.empty()) {
     WriteToOutput(encoded_configs);  // Very unusual case.
   } else {
-    WriteToOutput(encoded_configs + encoded_history);
+    std::string s;
+    s.reserve(encoded_configs.size() + encoded_history.size());
+    s.append(encoded_configs.data(), encoded_configs.size());
+    s.append(encoded_history.data(), encoded_history.size());
+    WriteToOutput(s);
   }
 }
 
@@ -259,7 +263,7 @@ void RtcEventLogImpl::StopLoggingInternal() {
   StopOutput();
 }
 
-void RtcEventLogImpl::WriteToOutput(const std::string& output_string) {
+void RtcEventLogImpl::WriteToOutput(absl::string_view output_string) {
   RTC_DCHECK(event_output_ && event_output_->IsActive());
   if (!event_output_->Write(output_string)) {
     RTC_LOG(LS_ERROR) << "Failed to write RTC event to output.";

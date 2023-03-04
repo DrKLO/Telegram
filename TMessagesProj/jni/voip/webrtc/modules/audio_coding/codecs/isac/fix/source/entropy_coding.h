@@ -101,19 +101,19 @@ void WebRtcIsacfix_TranscodeLpcCoef(int32_t* tmpcoeffs_gQ6, int16_t* index_gQQ);
 typedef void (*MatrixProduct1)(const int16_t matrix0[],
                                const int32_t matrix1[],
                                int32_t matrix_product[],
-                               const int matrix1_index_factor1,
-                               const int matrix0_index_factor1,
-                               const int matrix1_index_init_case,
-                               const int matrix1_index_step,
-                               const int matrix0_index_step,
-                               const int inner_loop_count,
-                               const int mid_loop_count,
-                               const int shift);
+                               int matrix1_index_factor1,
+                               int matrix0_index_factor1,
+                               int matrix1_index_init_case,
+                               int matrix1_index_step,
+                               int matrix0_index_step,
+                               int inner_loop_count,
+                               int mid_loop_count,
+                               int shift);
 typedef void (*MatrixProduct2)(const int16_t matrix0[],
                                const int32_t matrix1[],
                                int32_t matrix_product[],
-                               const int matrix0_index_factor,
-                               const int matrix0_index_step);
+                               int matrix0_index_factor,
+                               int matrix0_index_step);
 
 extern MatrixProduct1 WebRtcIsacfix_MatrixProduct1;
 extern MatrixProduct2 WebRtcIsacfix_MatrixProduct2;
@@ -121,57 +121,57 @@ extern MatrixProduct2 WebRtcIsacfix_MatrixProduct2;
 void WebRtcIsacfix_MatrixProduct1C(const int16_t matrix0[],
                                    const int32_t matrix1[],
                                    int32_t matrix_product[],
-                                   const int matrix1_index_factor1,
-                                   const int matrix0_index_factor1,
-                                   const int matrix1_index_init_case,
-                                   const int matrix1_index_step,
-                                   const int matrix0_index_step,
-                                   const int inner_loop_count,
-                                   const int mid_loop_count,
-                                   const int shift);
+                                   int matrix1_index_factor1,
+                                   int matrix0_index_factor1,
+                                   int matrix1_index_init_case,
+                                   int matrix1_index_step,
+                                   int matrix0_index_step,
+                                   int inner_loop_count,
+                                   int mid_loop_count,
+                                   int shift);
 void WebRtcIsacfix_MatrixProduct2C(const int16_t matrix0[],
                                    const int32_t matrix1[],
                                    int32_t matrix_product[],
-                                   const int matrix0_index_factor,
-                                   const int matrix0_index_step);
+                                   int matrix0_index_factor,
+                                   int matrix0_index_step);
 
 #if defined(WEBRTC_HAS_NEON)
 void WebRtcIsacfix_MatrixProduct1Neon(const int16_t matrix0[],
                                       const int32_t matrix1[],
                                       int32_t matrix_product[],
-                                      const int matrix1_index_factor1,
-                                      const int matrix0_index_factor1,
-                                      const int matrix1_index_init_case,
-                                      const int matrix1_index_step,
-                                      const int matrix0_index_step,
-                                      const int inner_loop_count,
-                                      const int mid_loop_count,
-                                      const int shift);
+                                      int matrix1_index_factor1,
+                                      int matrix0_index_factor1,
+                                      int matrix1_index_init_case,
+                                      int matrix1_index_step,
+                                      int matrix0_index_step,
+                                      int inner_loop_count,
+                                      int mid_loop_count,
+                                      int shift);
 void WebRtcIsacfix_MatrixProduct2Neon(const int16_t matrix0[],
                                       const int32_t matrix1[],
                                       int32_t matrix_product[],
-                                      const int matrix0_index_factor,
-                                      const int matrix0_index_step);
+                                      int matrix0_index_factor,
+                                      int matrix0_index_step);
 #endif
 
 #if defined(MIPS32_LE)
 void WebRtcIsacfix_MatrixProduct1MIPS(const int16_t matrix0[],
                                       const int32_t matrix1[],
                                       int32_t matrix_product[],
-                                      const int matrix1_index_factor1,
-                                      const int matrix0_index_factor1,
-                                      const int matrix1_index_init_case,
-                                      const int matrix1_index_step,
-                                      const int matrix0_index_step,
-                                      const int inner_loop_count,
-                                      const int mid_loop_count,
-                                      const int shift);
+                                      int matrix1_index_factor1,
+                                      int matrix0_index_factor1,
+                                      int matrix1_index_init_case,
+                                      int matrix1_index_step,
+                                      int matrix0_index_step,
+                                      int inner_loop_count,
+                                      int mid_loop_count,
+                                      int shift);
 
 void WebRtcIsacfix_MatrixProduct2MIPS(const int16_t matrix0[],
                                       const int32_t matrix1[],
                                       int32_t matrix_product[],
-                                      const int matrix0_index_factor,
-                                      const int matrix0_index_step);
+                                      int matrix0_index_factor,
+                                      int matrix0_index_step);
 #endif
 
 #endif  // MODULES_AUDIO_CODING_CODECS_ISAC_FIX_SOURCE_ENTROPY_CODING_H_

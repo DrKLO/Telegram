@@ -12,13 +12,13 @@
 
 #if BWE_TEST_LOGGING_COMPILE_TIME_ENABLE
 
+#include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 
 #include <algorithm>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/format_macros.h"
 #include "rtc_base/platform_thread.h"
 #include "rtc_base/strings/string_builder.h"
 

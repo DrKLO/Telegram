@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/audio_codecs/audio_decoder.h"
 #include "api/audio_codecs/audio_format.h"
@@ -23,18 +24,18 @@
 namespace webrtc {
 
 absl::optional<std::string> GetFormatParameter(const SdpAudioFormat& format,
-                                               const std::string& param);
+                                               absl::string_view param);
 
 template <typename T>
 absl::optional<T> GetFormatParameter(const SdpAudioFormat& format,
-                                     const std::string& param) {
+                                     absl::string_view param) {
   return rtc::StringToNumber<T>(GetFormatParameter(format, param).value_or(""));
 }
 
 template <>
 absl::optional<std::vector<unsigned char>> GetFormatParameter(
     const SdpAudioFormat& format,
-    const std::string& param);
+    absl::string_view param);
 
 class OpusFrame : public AudioDecoder::EncodedAudioFrame {
  public:

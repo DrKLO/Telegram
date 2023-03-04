@@ -66,7 +66,6 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
-import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersArchiveAlert;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -720,53 +719,30 @@ public class MediaDataController extends BaseController {
     }
 
     public void preloadDefaultReactions() {
-        if (reactionsList == null || reactionsCacheGenerated || SharedConfig.getLiteMode().enabled()) {
+        if (reactionsList == null || reactionsCacheGenerated || !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)) {
             return;
         }
         reactionsCacheGenerated = true;
         ArrayList<TLRPC.TL_availableReaction> arrayList = new ArrayList<>(reactionsList);
-        for (int i = 0; i < arrayList.size(); i++) {
+        int N = Math.min(arrayList.size(), 10);
+        for (int i = 0; i < N; i++) {
             TLRPC.TL_availableReaction reaction = arrayList.get(i);
-            preloadImage(ImageLocation.getForDocument(reaction.activate_animation), null);
-            preloadImage(ImageLocation.getForDocument(reaction.appear_animation), null);
+            preloadImage(ImageLocation.getForDocument(reaction.activate_animation));
+            preloadImage(ImageLocation.getForDocument(reaction.appear_animation));
         }
 
-        for (int i = 0; i < arrayList.size(); i++) {
+        for (int i = 0; i < N; i++) {
             TLRPC.TL_availableReaction reaction = arrayList.get(i);
-            preloadImage(ImageLocation.getForDocument(reaction.effect_animation), null);
+            preloadImage(ImageLocation.getForDocument(reaction.effect_animation));
         }
     }
 
-    private void preloadImage(ImageLocation location, String filter) {
-        preloadImage(location, filter, false);
-    }
-
-    private void preloadImage(ImageLocation location, String filter, boolean log) {
-        ImageReceiver imageReceiver = new ImageReceiver();
-        imageReceiver.setAllowStartAnimation(false);
-        imageReceiver.setAllowStartLottieAnimation(false);
-        imageReceiver.setAllowDecodeSingleFrame(false);
-        imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
-            if (set) {
-                RLottieDrawable rLottieDrawable = imageReceiver.getLottieAnimation();
-                if (rLottieDrawable != null) {
-                    rLottieDrawable.checkCache(() -> {
-                        imageReceiver.clearImage();
-                        imageReceiver.setDelegate(null);
-                    });
-                } else {
-                    imageReceiver.clearImage();
-                    imageReceiver.setDelegate(null);
-                }
-            }
-        });
-        imageReceiver.setFileLoadingPriority(FileLoader.PRIORITY_LOW);
-        imageReceiver.setUniqKeyPrefix("preload");
-        imageReceiver.setImage(location, filter, null, null, 0, FileLoader.PRELOAD_CACHE_TYPE);
+    private void preloadImage(ImageLocation location) {
+        getFileLoader().loadFile(location, null, null, FileLoader.PRIORITY_LOW, FileLoader.PRELOAD_CACHE_TYPE);
     }
 
     public void preloadImage(ImageReceiver imageReceiver, ImageLocation location, String filter) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)) {
             return;
         }
         imageReceiver.setUniqKeyPrefix("preload");
@@ -1637,7 +1613,7 @@ public class MediaDataController extends BaseController {
                         loadRecents(type, gif, false, false);
                     });
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    getMessagesStorage().checkSQLException(e);
                 }
             });
         } else {
@@ -2379,7 +2355,7 @@ public class MediaDataController extends BaseController {
 
                 processLoadedDiceStickers(getUserConfig().genericAnimationsStickerPack, false, stickerSet, false, (int) (System.currentTimeMillis() / 1000));
                 for (int i = 0; i < stickerSet.documents.size(); i++) {
-                    preloadImage(ImageLocation.getForDocument(stickerSet.documents.get(i)), null);
+                    preloadImage(ImageLocation.getForDocument(stickerSet.documents.get(i)));
                 }
             }
         }));
@@ -2411,9 +2387,6 @@ public class MediaDataController extends BaseController {
                 getUserConfig().saveConfig(false);
 
                 processLoadedDiceStickers(getUserConfig().defaultTopicIcons, false, stickerSet, false, (int) (System.currentTimeMillis() / 1000));
-                for (int i = 0; i < stickerSet.documents.size(); i++) {
-                    preloadImage(ImageLocation.getForDocument(stickerSet.documents.get(i)), null);
-                }
             }
         }));
     }
@@ -3845,7 +3818,7 @@ public class MediaDataController extends BaseController {
             }
             FileLog.d("process load media messagesCount " + messagesCount + " did " + dialogId + " topicId " + topicId + " count = " + count + " max_id=" + max_id + " min_id=" + min_id + " type = " + type + " cache = " + fromCache + " classGuid = " + classGuid);
         }
-        if (fromCache != 0 && ((res.messages.isEmpty() && min_id == 0) || (res.messages.size() <= 1 && min_id != 0)) && !DialogObject.isEncryptedDialog(dialogId)) {
+        if (fromCache != 0 && res != null && res.messages != null && ((res.messages.isEmpty() && min_id == 0) || (res.messages.size() <= 1 && min_id != 0)) && !DialogObject.isEncryptedDialog(dialogId)) {
             if (fromCache == 2) {
                 return;
             }

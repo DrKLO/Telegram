@@ -10,22 +10,105 @@
 
 #include "pc/srtp_session.h"
 
+#include <string.h>
+
 #include <iomanip>
+#include <string>
 
 #include "absl/base/attributes.h"
+#include "absl/base/const_init.h"
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
+#include "api/field_trials_view.h"
 #include "modules/rtp_rtcp/source/rtp_util.h"
 #include "pc/external_hmac.h"
+#include "rtc_base/byte_order.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/string_encode.h"
+#include "rtc_base/thread_annotations.h"
 #include "rtc_base/time_utils.h"
-#include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 #include "third_party/libsrtp/include/srtp.h"
 #include "third_party/libsrtp/include/srtp_priv.h"
 
 namespace cricket {
+
+namespace {
+class LibSrtpInitializer {
+ public:
+  // Returns singleton instance of this class. Instance created on first use,
+  // and never destroyed.
+  static LibSrtpInitializer& Get() {
+    static LibSrtpInitializer* const instance = new LibSrtpInitializer();
+    return *instance;
+  }
+  void ProhibitLibsrtpInitialization();
+
+  // These methods are responsible for initializing libsrtp (if the usage count
+  // is incremented from 0 to 1) or deinitializing it (when decremented from 1
+  // to 0).
+  //
+  // Returns true if successful (will always be successful if already inited).
+  bool IncrementLibsrtpUsageCountAndMaybeInit(
+      srtp_event_handler_func_t* handler);
+  void DecrementLibsrtpUsageCountAndMaybeDeinit();
+
+ private:
+  LibSrtpInitializer() = default;
+
+  webrtc::Mutex mutex_;
+  int usage_count_ RTC_GUARDED_BY(mutex_) = 0;
+};
+
+void LibSrtpInitializer::ProhibitLibsrtpInitialization() {
+  webrtc::MutexLock lock(&mutex_);
+  ++usage_count_;
+}
+
+bool LibSrtpInitializer::IncrementLibsrtpUsageCountAndMaybeInit(
+    srtp_event_handler_func_t* handler) {
+  webrtc::MutexLock lock(&mutex_);
+
+  RTC_DCHECK_GE(usage_count_, 0);
+  if (usage_count_ == 0) {
+    int err;
+    err = srtp_init();
+    if (err != srtp_err_status_ok) {
+      RTC_LOG(LS_ERROR) << "Failed to init SRTP, err=" << err;
+      return false;
+    }
+
+    err = srtp_install_event_handler(handler);
+    if (err != srtp_err_status_ok) {
+      RTC_LOG(LS_ERROR) << "Failed to install SRTP event handler, err=" << err;
+      return false;
+    }
+
+    err = external_crypto_init();
+    if (err != srtp_err_status_ok) {
+      RTC_LOG(LS_ERROR) << "Failed to initialize fake auth, err=" << err;
+      return false;
+    }
+  }
+  ++usage_count_;
+  return true;
+}
+
+void LibSrtpInitializer::DecrementLibsrtpUsageCountAndMaybeDeinit() {
+  webrtc::MutexLock lock(&mutex_);
+
+  RTC_DCHECK_GE(usage_count_, 1);
+  if (--usage_count_ == 0) {
+    int err = srtp_shutdown();
+    if (err) {
+      RTC_LOG(LS_ERROR) << "srtp_shutdown failed. err=" << err;
+    }
+  }
+}
+
+}  // namespace
 
 using ::webrtc::ParseRtpSequenceNumber;
 
@@ -34,8 +117,10 @@ using ::webrtc::ParseRtpSequenceNumber;
 // in srtp.h.
 constexpr int kSrtpErrorCodeBoundary = 28;
 
-SrtpSession::SrtpSession() {
-  dump_plain_rtp_ = webrtc::field_trial::IsEnabled("WebRTC-Debugging-RtpDump");
+SrtpSession::SrtpSession() {}
+
+SrtpSession::SrtpSession(const webrtc::FieldTrialsView& field_trials) {
+  dump_plain_rtp_ = field_trials.IsEnabled("WebRTC-Debugging-RtpDump");
 }
 
 SrtpSession::~SrtpSession() {
@@ -44,7 +129,7 @@ SrtpSession::~SrtpSession() {
     srtp_dealloc(session_);
   }
   if (inited_) {
-    DecrementLibsrtpUsageCountAndMaybeDeinit();
+    LibSrtpInitializer::Get().DecrementLibsrtpUsageCountAndMaybeDeinit();
   }
 }
 
@@ -345,7 +430,8 @@ bool SrtpSession::SetKey(int type,
 
   // This is the first time we need to actually interact with libsrtp, so
   // initialize it if needed.
-  if (IncrementLibsrtpUsageCountAndMaybeInit()) {
+  if (LibSrtpInitializer::Get().IncrementLibsrtpUsageCountAndMaybeInit(
+          &SrtpSession::HandleEventThunk)) {
     inited_ = true;
   } else {
     return false;
@@ -368,54 +454,8 @@ bool SrtpSession::UpdateKey(int type,
   return DoSetKey(type, cs, key, len, extension_ids);
 }
 
-ABSL_CONST_INIT int g_libsrtp_usage_count = 0;
-ABSL_CONST_INIT webrtc::GlobalMutex g_libsrtp_lock(absl::kConstInit);
-
 void ProhibitLibsrtpInitialization() {
-  webrtc::GlobalMutexLock ls(&g_libsrtp_lock);
-  ++g_libsrtp_usage_count;
-}
-
-// static
-bool SrtpSession::IncrementLibsrtpUsageCountAndMaybeInit() {
-  webrtc::GlobalMutexLock ls(&g_libsrtp_lock);
-
-  RTC_DCHECK_GE(g_libsrtp_usage_count, 0);
-  if (g_libsrtp_usage_count == 0) {
-    int err;
-    err = srtp_init();
-    if (err != srtp_err_status_ok) {
-      RTC_LOG(LS_ERROR) << "Failed to init SRTP, err=" << err;
-      return false;
-    }
-
-    err = srtp_install_event_handler(&SrtpSession::HandleEventThunk);
-    if (err != srtp_err_status_ok) {
-      RTC_LOG(LS_ERROR) << "Failed to install SRTP event handler, err=" << err;
-      return false;
-    }
-
-    err = external_crypto_init();
-    if (err != srtp_err_status_ok) {
-      RTC_LOG(LS_ERROR) << "Failed to initialize fake auth, err=" << err;
-      return false;
-    }
-  }
-  ++g_libsrtp_usage_count;
-  return true;
-}
-
-// static
-void SrtpSession::DecrementLibsrtpUsageCountAndMaybeDeinit() {
-  webrtc::GlobalMutexLock ls(&g_libsrtp_lock);
-
-  RTC_DCHECK_GE(g_libsrtp_usage_count, 1);
-  if (--g_libsrtp_usage_count == 0) {
-    int err = srtp_shutdown();
-    if (err) {
-      RTC_LOG(LS_ERROR) << "srtp_shutdown failed. err=" << err;
-    }
-  }
+  LibSrtpInitializer::Get().ProhibitLibsrtpInitialization();
 }
 
 void SrtpSession::HandleEvent(const srtp_event_data_t* ev) {
@@ -463,13 +503,16 @@ void SrtpSession::DumpPacket(const void* buf, int len, bool outbound) {
   int64_t minutes = (time_of_day / (60 * 1000)) % 60;
   int64_t seconds = (time_of_day / 1000) % 60;
   int64_t millis = time_of_day % 1000;
-  RTC_LOG(LS_VERBOSE) << "\n" << (outbound ? "O" : "I") << " "
-    << std::setfill('0') << std::setw(2) << hours << ":"
-    << std::setfill('0') << std::setw(2) << minutes << ":"
-    << std::setfill('0') << std::setw(2) << seconds << "."
-    << std::setfill('0') << std::setw(3) << millis << " "
-    << "000000 " << rtc::hex_encode_with_delimiter((const char *)buf, len, ' ')
-    << " # RTP_DUMP";
+  RTC_LOG(LS_VERBOSE) << "\n"
+                      << (outbound ? "O" : "I") << " " << std::setfill('0')
+                      << std::setw(2) << hours << ":" << std::setfill('0')
+                      << std::setw(2) << minutes << ":" << std::setfill('0')
+                      << std::setw(2) << seconds << "." << std::setfill('0')
+                      << std::setw(3) << millis << " "
+                      << "000000 "
+                      << rtc::hex_encode_with_delimiter(
+                             absl::string_view((const char*)buf, len), ' ')
+                      << " # RTP_DUMP";
 }
 
 }  // namespace cricket

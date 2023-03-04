@@ -277,11 +277,12 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
             if (msg.getGroupId() != 0) {
                 MessageObject.GroupedMessages groupedMessages = parentFragment.getGroup(msg.getGroupId());
-
-                for (MessageObject obj : groupedMessages.messages) {
-                    if (obj.messageOwner != null && obj.messageOwner.reactions != null && obj.messageOwner.reactions.results != null &&
-                            !obj.messageOwner.reactions.results.isEmpty()) {
-                        return obj;
+                if (groupedMessages != null && groupedMessages.messages != null) {
+                    for (MessageObject obj : groupedMessages.messages) {
+                        if (obj.messageOwner != null && obj.messageOwner.reactions != null && obj.messageOwner.reactions.results != null &&
+                                !obj.messageOwner.reactions.results.isEmpty()) {
+                            return obj;
+                        }
                     }
                 }
             }
@@ -292,7 +293,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
     }
 
     private boolean isMessageTypeAllowed(MessageObject obj) {
-        return MessageObject.isPhoto(obj.messageOwner) || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
+        return MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
     }
 
     public void setSelectedMessages(List<MessageObject> messages) {

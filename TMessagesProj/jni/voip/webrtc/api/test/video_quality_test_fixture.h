@@ -24,8 +24,8 @@
 #include "api/transport/network_control.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder_factory.h"
-#include "api/video_codecs/video_encoder_config.h"
 #include "api/video_codecs/video_encoder_factory.h"
+#include "video/config/video_encoder_config.h"
 
 namespace webrtc {
 

@@ -190,32 +190,32 @@ char* numbers_internal::FastIntToBuffer(uint32_t i, char* buffer) {
     if (i >= 1000) goto lt10_000;
     digits = i / 100;
     i -= digits * 100;
-    *buffer++ = '0' + digits;
+    *buffer++ = '0' + static_cast<char>(digits);
     goto lt100;
   }
   if (i < 1000000) {  //    1,000,000
     if (i >= 100000) goto lt1_000_000;
     digits = i / 10000;  //    10,000
     i -= digits * 10000;
-    *buffer++ = '0' + digits;
+    *buffer++ = '0' + static_cast<char>(digits);
     goto lt10_000;
   }
   if (i < 100000000) {  //    100,000,000
     if (i >= 10000000) goto lt100_000_000;
     digits = i / 1000000;  //   1,000,000
     i -= digits * 1000000;
-    *buffer++ = '0' + digits;
+    *buffer++ = '0' + static_cast<char>(digits);
     goto lt1_000_000;
   }
   // we already know that i < 1,000,000,000
   digits = i / 100000000;  //   100,000,000
   i -= digits * 100000000;
-  *buffer++ = '0' + digits;
+  *buffer++ = '0' + static_cast<char>(digits);
   goto lt100_000_000;
 }
 
 char* numbers_internal::FastIntToBuffer(int32_t i, char* buffer) {
-  uint32_t u = i;
+  uint32_t u = static_cast<uint32_t>(i);
   if (i < 0) {
     *buffer++ = '-';
     // We need to do the negation in modular (i.e., "unsigned")
@@ -268,7 +268,7 @@ char* numbers_internal::FastIntToBuffer(uint64_t i, char* buffer) {
 }
 
 char* numbers_internal::FastIntToBuffer(int64_t i, char* buffer) {
-  uint64_t u = i;
+  uint64_t u = static_cast<uint64_t>(i);
   if (i < 0) {
     *buffer++ = '-';
     u = 0 - u;
@@ -329,7 +329,7 @@ static std::pair<uint64_t, uint64_t> PowFive(uint64_t num, int expfive) {
     result = Mul32(result, 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5);
     expfive -= 13;
   }
-  constexpr int powers_of_five[13] = {
+  constexpr uint32_t powers_of_five[13] = {
       1,
       5,
       5 * 5,
@@ -404,14 +404,14 @@ static ExpDigits SplitToSix(const double value) {
   // we multiply it by 65536 and see if the fractional part is close to 32768.
   // (The number doesn't have to be a power of two,but powers of two are faster)
   uint64_t d64k = d * 65536;
-  int dddddd;  // A 6-digit decimal integer.
+  uint32_t dddddd;  // A 6-digit decimal integer.
   if ((d64k % 65536) == 32767 || (d64k % 65536) == 32768) {
     // OK, it's fairly likely that precision was lost above, which is
     // not a surprise given only 52 mantissa bits are available.  Therefore
     // redo the calculation using 128-bit numbers.  (64 bits are not enough).
 
     // Start out with digits rounded down; maybe add one below.
-    dddddd = static_cast<int>(d64k / 65536);
+    dddddd = static_cast<uint32_t>(d64k / 65536);
 
     // mantissa is a 64-bit integer representing M.mmm... * 2^63.  The actual
     // value we're representing, of course, is M.mmm... * 2^exp2.
@@ -461,7 +461,7 @@ static ExpDigits SplitToSix(const double value) {
     }
   } else {
     // Here, we are not close to the edge.
-    dddddd = static_cast<int>((d64k + 32768) / 65536);
+    dddddd = static_cast<uint32_t>((d64k + 32768) / 65536);
   }
   if (dddddd == 1000000) {
     dddddd = 100000;
@@ -469,7 +469,7 @@ static ExpDigits SplitToSix(const double value) {
   }
   exp_dig.exponent = exp;
 
-  int two_digits = dddddd / 10000;
+  uint32_t two_digits = dddddd / 10000;
   dddddd -= two_digits * 10000;
   numbers_internal::PutTwoDigits(two_digits, &exp_dig.digits[0]);
 
@@ -499,7 +499,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
     if (std::signbit(d)) *out++ = '-';
     *out++ = '0';
     *out = 0;
-    return out - buffer;
+    return static_cast<size_t>(out - buffer);
   }
   if (d < 0) {
     *out++ = '-';
@@ -507,7 +507,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
   }
   if (d > std::numeric_limits<double>::max()) {
     strcpy(out, "inf");  // NOLINT(runtime/printf)
-    return out + 3 - buffer;
+    return static_cast<size_t>(out + 3 - buffer);
   }
 
   auto exp_dig = SplitToSix(d);
@@ -519,7 +519,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
     case 5:
       memcpy(out, &digits[0], 6), out += 6;
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
     case 4:
       memcpy(out, &digits[0], 5), out += 5;
       if (digits[5] != '0') {
@@ -527,7 +527,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
         *out++ = digits[5];
       }
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
     case 3:
       memcpy(out, &digits[0], 4), out += 4;
       if ((digits[5] | digits[4]) != '0') {
@@ -536,7 +536,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
         if (digits[5] != '0') *out++ = digits[5];
       }
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
     case 2:
       memcpy(out, &digits[0], 3), out += 3;
       *out++ = '.';
@@ -545,7 +545,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
       while (out[-1] == '0') --out;
       if (out[-1] == '.') --out;
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
     case 1:
       memcpy(out, &digits[0], 2), out += 2;
       *out++ = '.';
@@ -554,7 +554,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
       while (out[-1] == '0') --out;
       if (out[-1] == '.') --out;
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
     case 0:
       memcpy(out, &digits[0], 1), out += 1;
       *out++ = '.';
@@ -563,7 +563,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
       while (out[-1] == '0') --out;
       if (out[-1] == '.') --out;
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
     case -4:
       out[2] = '0';
       ++out;
@@ -582,7 +582,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
       out += 6;
       while (out[-1] == '0') --out;
       *out = 0;
-      return out - buffer;
+      return static_cast<size_t>(out - buffer);
   }
   assert(exp < -4 || exp >= 6);
   out[0] = digits[0];
@@ -601,12 +601,12 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
   if (exp > 99) {
     int dig1 = exp / 100;
     exp -= dig1 * 100;
-    *out++ = '0' + dig1;
+    *out++ = '0' + static_cast<char>(dig1);
   }
-  PutTwoDigits(exp, out);
+  PutTwoDigits(static_cast<uint32_t>(exp), out);
   out += 2;
   *out = 0;
-  return out - buffer;
+  return static_cast<size_t>(out - buffer);
 }
 
 namespace {
@@ -642,10 +642,12 @@ inline bool safe_parse_sign_and_base(absl::string_view* text /*inout*/,
   int base = *base_ptr;
 
   // Consume whitespace.
-  while (start < end && absl::ascii_isspace(start[0])) {
+  while (start < end &&
+         absl::ascii_isspace(static_cast<unsigned char>(start[0]))) {
     ++start;
   }
-  while (start < end && absl::ascii_isspace(end[-1])) {
+  while (start < end &&
+         absl::ascii_isspace(static_cast<unsigned char>(end[-1]))) {
     --end;
   }
   if (start >= end) {
@@ -694,7 +696,7 @@ inline bool safe_parse_sign_and_base(absl::string_view* text /*inout*/,
   } else {
     return false;
   }
-  *text = absl::string_view(start, end - start);
+  *text = absl::string_view(start, static_cast<size_t>(end - start));
   *base_ptr = base;
   return true;
 }
@@ -757,8 +759,8 @@ struct LookupTables {
 //
 // uint128& operator/=(uint128) is not constexpr, so hardcode the resulting
 // array to avoid a static initializer.
-template<>
-const uint128 LookupTables<uint128>::kVmaxOverBase[] = {
+template <>
+ABSL_CONST_INIT const uint128 LookupTables<uint128>::kVmaxOverBase[] = {
     0,
     0,
     MakeUint128(9223372036854775807u, 18446744073709551615u),
@@ -809,8 +811,8 @@ const uint128 LookupTables<uint128>::kVmaxOverBase[] = {
 //
 // int128& operator/=(int128) is not constexpr, so hardcode the resulting array
 // to avoid a static initializer.
-template<>
-const int128 LookupTables<int128>::kVmaxOverBase[] = {
+template <>
+ABSL_CONST_INIT const int128 LookupTables<int128>::kVmaxOverBase[] = {
     0,
     0,
     MakeInt128(4611686018427387903, 18446744073709551615u),
@@ -862,8 +864,8 @@ const int128 LookupTables<int128>::kVmaxOverBase[] = {
 //
 // int128& operator/=(int128) is not constexpr, so hardcode the resulting array
 // to avoid a static initializer.
-template<>
-const int128 LookupTables<int128>::kVminOverBase[] = {
+template <>
+ABSL_CONST_INIT const int128 LookupTables<int128>::kVminOverBase[] = {
     0,
     0,
     MakeInt128(-4611686018427387904, 0u),
@@ -904,11 +906,11 @@ const int128 LookupTables<int128>::kVminOverBase[] = {
 };
 
 template <typename IntType>
-const IntType LookupTables<IntType>::kVmaxOverBase[] =
+ABSL_CONST_INIT const IntType LookupTables<IntType>::kVmaxOverBase[] =
     X_OVER_BASE_INITIALIZER(std::numeric_limits<IntType>::max());
 
 template <typename IntType>
-const IntType LookupTables<IntType>::kVminOverBase[] =
+ABSL_CONST_INIT const IntType LookupTables<IntType>::kVminOverBase[] =
     X_OVER_BASE_INITIALIZER(std::numeric_limits<IntType>::min());
 
 #undef X_OVER_BASE_INITIALIZER
@@ -920,17 +922,18 @@ inline bool safe_parse_positive_int(absl::string_view text, int base,
   const IntType vmax = std::numeric_limits<IntType>::max();
   assert(vmax > 0);
   assert(base >= 0);
-  assert(vmax >= static_cast<IntType>(base));
+  const IntType base_inttype = static_cast<IntType>(base);
+  assert(vmax >= base_inttype);
   const IntType vmax_over_base = LookupTables<IntType>::kVmaxOverBase[base];
   assert(base < 2 ||
-         std::numeric_limits<IntType>::max() / base == vmax_over_base);
+         std::numeric_limits<IntType>::max() / base_inttype == vmax_over_base);
   const char* start = text.data();
   const char* end = start + text.size();
   // loop over digits
   for (; start < end; ++start) {
     unsigned char c = static_cast<unsigned char>(start[0]);
-    int digit = kAsciiToInt[c];
-    if (digit >= base) {
+    IntType digit = static_cast<IntType>(kAsciiToInt[c]);
+    if (digit >= base_inttype) {
       *value_p = value;
       return false;
     }
@@ -938,7 +941,7 @@ inline bool safe_parse_positive_int(absl::string_view text, int base,
       *value_p = vmax;
       return false;
     }
-    value *= base;
+    value *= base_inttype;
     if (value > vmax - digit) {
       *value_p = vmax;
       return false;

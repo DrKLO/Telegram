@@ -31,7 +31,7 @@
 #if defined(__Fuchsia__)
 #include <fuchsia/intl/cpp/fidl.h>
 #include <lib/async-loop/cpp/loop.h>
-#include <lib/sys/cpp/component_context.h>
+#include <lib/fdio/directory.h>
 #include <zircon/types.h>
 #endif
 
@@ -140,8 +140,9 @@ time_zone local_time_zone() {
   if (CFStringRef tz_name = CFTimeZoneGetName(tz_default)) {
     CFStringEncoding encoding = kCFStringEncodingUTF8;
     CFIndex length = CFStringGetLength(tz_name);
-    buffer.resize(CFStringGetMaximumSizeForEncoding(length, encoding) + 1);
-    if (CFStringGetCString(tz_name, &buffer[0], buffer.size(), encoding)) {
+    CFIndex max_size = CFStringGetMaximumSizeForEncoding(length, encoding) + 1;
+    buffer.resize(static_cast<size_t>(max_size));
+    if (CFStringGetCString(tz_name, &buffer[0], max_size, encoding)) {
       zone = &buffer[0];
     }
   }
@@ -160,11 +161,11 @@ time_zone local_time_zone() {
     // would be set to null when the loop is destroyed, causing any other FIDL
     // code running on the same thread to crash.
     async::Loop loop(&kAsyncLoopConfigNeverAttachToThread);
-    std::unique_ptr<sys::ComponentContext> context =
-        sys::ComponentContext::Create();
 
     fuchsia::intl::PropertyProviderHandle handle;
-    zx_status_t status = context->svc()->Connect(handle.NewRequest());
+    zx_status_t status = fdio_service_connect_by_name(
+        fuchsia::intl::PropertyProvider::Name_,
+        handle.NewRequest().TakeChannel().release());
     if (status != ZX_OK) {
       return;
     }

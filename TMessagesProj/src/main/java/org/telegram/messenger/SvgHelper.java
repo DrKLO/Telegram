@@ -166,7 +166,7 @@ public class SvgHelper {
             }
 
             float scale = getScale((int) w, (int) h);
-            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && !SharedConfig.getLiteMode().enabled()) {
+            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
                 if (drawInBackground) {
                     long dt = time - lastUpdateTime;
                     if (dt > 64) {
@@ -326,7 +326,7 @@ public class SvgHelper {
                 currentColorKey = colorKey;
                 currentColor[index] = color;
                 gradientWidth = AndroidUtilities.displaySize.x * 2;
-                if (SharedConfig.getLiteMode().enabled()) {
+                if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
                     int color2 = ColorUtils.setAlphaComponent(currentColor[index], 70);
                     if (drawInBackground) {
                         if (backgroundPaint == null) {
@@ -488,6 +488,20 @@ public class SvgHelper {
     public static SvgDrawable getDrawableByPath(String pathString, int w, int h) {
         try {
             Path path = doPath(pathString);
+            SvgDrawable drawable = new SvgDrawable();
+            drawable.commands.add(path);
+            drawable.paints.put(path, new Paint(Paint.ANTI_ALIAS_FLAG));
+            drawable.width = w;
+            drawable.height = h;
+            return drawable;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    public static SvgDrawable getDrawableByPath(Path path, int w, int h) {
+        try {
             SvgDrawable drawable = new SvgDrawable();
             drawable.commands.add(path);
             drawable.paints.put(path, new Paint(Paint.ANTI_ALIAS_FLAG));
@@ -666,7 +680,7 @@ public class SvgHelper {
         return null;
     }
 
-    private static Path doPath(String s) {
+    public static Path doPath(String s) {
         int n = s.length();
         ParserHelper ph = new ParserHelper(s, 0);
         ph.skipWhitespace();

@@ -438,7 +438,7 @@ public class ReactedUsersListView extends FrameLayout {
                     reactView.setAnimatedEmojiDrawable(drawable);
                     hasReactImage = true;
                 }
-                setContentDescription(LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, UserObject.getUserName(u), reaction.reaction));
+                setContentDescription(LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, UserObject.getUserName(u), visibleReaction.emojicon != null ? visibleReaction.emojicon : reaction.reaction));
             } else {
                 reactView.setImageDrawable(null);
                 setContentDescription(LocaleController.formatString("AccDescrPersonHasSeen", R.string.AccDescrPersonHasSeen, UserObject.getUserName(u)));

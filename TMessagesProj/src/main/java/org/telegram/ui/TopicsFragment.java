@@ -284,6 +284,9 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     }
 
     public static void prepareToSwitchAnimation(ChatActivity chatActivity) {
+        if (chatActivity.getParentLayout() == null) {
+            return;
+        }
         boolean needCreateTopicsFragment = false;
         if (chatActivity.getParentLayout().getFragmentStack().size() <= 1) {
             needCreateTopicsFragment = true;
@@ -1205,6 +1208,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             getMessagesController().hidePeerSettingsBar(-chatId, null, getCurrentChat());
             updateChatInfo();
         });
+        closeReportSpam.setVisibility(View.GONE);
 
         updateChatInfo();
 

@@ -18,7 +18,6 @@ import static org.webrtc.MediaCodecUtils.QCOM_PREFIX;
 
 import android.media.MediaCodecInfo;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -162,20 +161,24 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   private @Nullable MediaCodecInfo findCodecForType(VideoCodecMimeType type) {
     ArrayList<MediaCodecInfo> infos = MediaCodecUtils.getSortedCodecsList();
     int count = infos.size();
+    MediaCodecInfo info2 = null;
     for (int i = 0; i < count; ++i) {
       MediaCodecInfo info = infos.get(i);
       if (info == null || !info.isEncoder()) {
         continue;
       }
-      if (isSupportedCodec(info, type)) {
+      if (isSupportedCodec(info, type, true)) {
         return info;
       }
+      if (isSupportedCodec(info, type, false)) {
+        info2 = info;
+      }
     }
-    return null; // No support for this type.
+    return info2; // No support for this type.
   }
 
   // Returns true if the given MediaCodecInfo indicates a supported encoder for the given type.
-  private boolean isSupportedCodec(MediaCodecInfo info, VideoCodecMimeType type) {
+  private boolean isSupportedCodec(MediaCodecInfo info, VideoCodecMimeType type, boolean isHardwareSupportedInSdk) {
     if (!MediaCodecUtils.codecSupportsType(info, type)) {
       return false;
     }
@@ -185,7 +188,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
         == null) {
       return false;
     }
-    return isHardwareSupportedInCurrentSdk(info, type) && isMediaCodecAllowed(info);
+    return (!isHardwareSupportedInSdk || isHardwareSupportedInCurrentSdk(info, type)) && isMediaCodecAllowed(info);
   }
 
   // Returns true if the given MediaCodecInfo indicates a hardware module that is supported on the

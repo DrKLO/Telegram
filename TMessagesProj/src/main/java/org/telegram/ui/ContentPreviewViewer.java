@@ -278,6 +278,9 @@ public class ContentPreviewViewer {
                             Object parent = parentObject;
                             String query = currentQuery;
                             ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
+                            if (stickerPreviewViewerDelegate == null) {
+                                return;
+                            }
                             AlertsCreator.createScheduleDatePickerDialog(parentActivity, stickerPreviewViewerDelegate.getDialogId(), (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendSticker(sticker, query, parent, notify, scheduleDate));
                         } else if (actions.get(which) == 4) {
                             MediaDataController.getInstance(currentAccount).addRecentSticker(MediaDataController.TYPE_IMAGE, parentObject, currentDocument, (int) (System.currentTimeMillis() / 1000), true);

@@ -17,13 +17,15 @@
 #include <set>
 #include <vector>
 
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
 #include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/include/module_common_types.h"
 #include "modules/video_coding/histogram.h"
 #include "rtc_base/numerics/sequence_number_util.h"
-#include "rtc_base/task_queue.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "rtc_base/thread_annotations.h"
 #include "system_wrappers/include/clock.h"
@@ -70,7 +72,8 @@ class NackRequester final : public NackRequesterBase {
                 NackPeriodicProcessor* periodic_processor,
                 Clock* clock,
                 NackSender* nack_sender,
-                KeyFrameRequestSender* keyframe_request_sender);
+                KeyFrameRequestSender* keyframe_request_sender,
+                const FieldTrialsView& field_trials);
   ~NackRequester();
 
   void ProcessNacks() override;
@@ -93,25 +96,13 @@ class NackRequester final : public NackRequesterBase {
     NackInfo();
     NackInfo(uint16_t seq_num,
              uint16_t send_at_seq_num,
-             int64_t created_at_time);
+             Timestamp created_at_time);
 
     uint16_t seq_num;
     uint16_t send_at_seq_num;
-    int64_t created_at_time;
-    int64_t sent_at_time;
+    Timestamp created_at_time;
+    Timestamp sent_at_time;
     int retries;
-  };
-
-  struct BackoffSettings {
-    BackoffSettings(TimeDelta min_retry, TimeDelta max_rtt, double base);
-    static absl::optional<BackoffSettings> ParseFromFieldTrials();
-
-    // Min time between nacks.
-    const TimeDelta min_retry_interval;
-    // Upper bound on link-delay considered for exponential backoff.
-    const TimeDelta max_rtt;
-    // Base for the exponential backoff.
-    const double base;
   };
 
   void AddPacketsToNack(uint16_t seq_num_start, uint16_t seq_num_end)
@@ -149,13 +140,11 @@ class NackRequester final : public NackRequesterBase {
       RTC_GUARDED_BY(worker_thread_);
   video_coding::Histogram reordering_histogram_ RTC_GUARDED_BY(worker_thread_);
   bool initialized_ RTC_GUARDED_BY(worker_thread_);
-  int64_t rtt_ms_ RTC_GUARDED_BY(worker_thread_);
+  TimeDelta rtt_ RTC_GUARDED_BY(worker_thread_);
   uint16_t newest_seq_num_ RTC_GUARDED_BY(worker_thread_);
 
   // Adds a delay before send nack on packet received.
-  const int64_t send_nack_delay_ms_;
-
-  const absl::optional<BackoffSettings> backoff_settings_;
+  const TimeDelta send_nack_delay_;
 
   ScopedNackPeriodicProcessorRegistration processor_registration_;
 

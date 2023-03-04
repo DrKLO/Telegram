@@ -190,11 +190,11 @@ bool IsDigit<16>(char ch) {
 
 template <>
 unsigned ToDigit<10>(char ch) {
-  return ch - '0';
+  return static_cast<unsigned>(ch - '0');
 }
 template <>
 unsigned ToDigit<16>(char ch) {
-  return kAsciiToInt[static_cast<unsigned char>(ch)];
+  return static_cast<unsigned>(kAsciiToInt[static_cast<unsigned char>(ch)]);
 }
 
 template <>

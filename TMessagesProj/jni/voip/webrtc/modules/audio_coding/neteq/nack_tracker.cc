@@ -225,8 +225,12 @@ int64_t NackTracker::TimeToPlay(uint32_t timestamp) const {
 std::vector<uint16_t> NackTracker::GetNackList(int64_t round_trip_time_ms) {
   RTC_DCHECK_GE(round_trip_time_ms, 0);
   std::vector<uint16_t> sequence_numbers;
-  if (config_.require_valid_rtt && round_trip_time_ms == 0) {
-    return sequence_numbers;
+  if (round_trip_time_ms == 0) {
+    if (config_.require_valid_rtt) {
+      return sequence_numbers;
+    } else {
+      round_trip_time_ms = config_.default_rtt_ms;
+    }
   }
   if (packet_loss_rate_ >
       static_cast<uint32_t>(config_.max_loss_rate * (1 << 30))) {

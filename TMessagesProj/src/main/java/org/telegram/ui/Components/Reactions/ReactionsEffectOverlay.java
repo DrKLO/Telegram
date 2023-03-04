@@ -16,6 +16,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -206,9 +207,9 @@ public class ReactionsEffectOverlay {
             fromHeight = holderView.loopImageView.getWidth() * holderView.getScaleX();
         } else if (reactionButton != null) {
             cell.getLocationInWindow(loc);
-            fromX = loc[0] + cell.reactionsLayoutInBubble.x + reactionButton.x + reactionButton.imageReceiver.getImageX();
-            fromY = loc[1] + cell.reactionsLayoutInBubble.y + reactionButton.y + reactionButton.imageReceiver.getImageY();
-            fromHeight = reactionButton.imageReceiver.getImageHeight();
+            fromX = loc[0] + cell.reactionsLayoutInBubble.x + reactionButton.x + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageX());
+            fromY = loc[1] + cell.reactionsLayoutInBubble.y + reactionButton.y + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageY());
+            fromHeight = reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageHeight();
         } else {
             ((View) cell.getParent()).getLocationInWindow(loc);
             fromX = loc[0] + x;
@@ -303,7 +304,7 @@ public class ReactionsEffectOverlay {
                     toY = lastDrawnToY;
                 }
 
-                if (fragment.getParentActivity() != null && fragment.getFragmentView().getParent() != null && fragment.getFragmentView().getVisibility() == View.VISIBLE && fragment.getFragmentView() != null) {
+                if (fragment.getParentActivity() != null && fragment.getFragmentView() != null && fragment.getFragmentView().getParent() != null && fragment.getFragmentView().getVisibility() == View.VISIBLE && fragment.getFragmentView() != null) {
                     fragment.getFragmentView().getLocationOnScreen(loc);
                     setAlpha(((View) fragment.getFragmentView().getParent()).getAlpha());
                 } else {
@@ -521,7 +522,7 @@ public class ReactionsEffectOverlay {
         if (availableReaction != null || visibleReaction.documentId != 0) {
             if (availableReaction != null) {
                 if (animationType != ONLY_MOVE_ANIMATION) {
-                    if ((animationType == SHORT_ANIMATION && !SharedConfig.getLiteMode().enabled()) || animationType == LONG_ANIMATION)  {
+                    if ((animationType == SHORT_ANIMATION && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_CHAT)) || animationType == LONG_ANIMATION)  {
                         TLRPC.Document document = animationType == SHORT_ANIMATION ? availableReaction.around_animation : availableReaction.effect_animation;
                         String filer = animationType == SHORT_ANIMATION ? getFilterForAroundAnimation() : sizeForFilter + "_" + sizeForFilter;
                         effectImageView.getImageReceiver().setUniqKeyPrefix((uniqPrefix++) + "_" + cell.getMessageObject().getId() + "_");

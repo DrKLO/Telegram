@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.text.cea;
 
+import static java.lang.Math.min;
+
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.Layout.Alignment;
@@ -24,22 +26,34 @@ import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.Subtitle;
 import com.google.android.exoplayer2.text.SubtitleDecoder;
+import com.google.android.exoplayer2.text.SubtitleDecoderException;
 import com.google.android.exoplayer2.text.SubtitleInputBuffer;
+import com.google.android.exoplayer2.text.SubtitleOutputBuffer;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import com.google.android.exoplayer2.util.Util;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
 
-/**
- * A {@link SubtitleDecoder} for CEA-608 (also known as "line 21 captions" and "EIA-608").
- */
+/** A {@link SubtitleDecoder} for CEA-608 (also known as "line 21 captions" and "EIA-608"). */
 public final class Cea608Decoder extends CeaDecoder {
+
+  /**
+   * The minimum value for the {@code validDataChannelTimeoutMs} constructor parameter permitted by
+   * ANSI/CTA-608-E R-2014 Annex C.9.
+   */
+  public static final long MIN_DATA_CHANNEL_TIMEOUT_MS = 16_000;
 
   private static final String TAG = "Cea608Decoder";
 
@@ -127,72 +141,148 @@ public final class Cea608Decoder extends CeaDecoder {
   private static final byte CTRL_END_OF_CAPTION = 0x2F;
 
   // Basic North American 608 CC char set, mostly ASCII. Indexed by (char-0x20).
-  private static final int[] BASIC_CHARACTER_SET = new int[] {
-    0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,     //   ! " # $ % & '
-    0x28, 0x29,                                         // ( )
-    0xE1,       // 2A: 225 'á' "Latin small letter A with acute"
-    0x2B, 0x2C, 0x2D, 0x2E, 0x2F,                       //       + , - . /
-    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,     // 0 1 2 3 4 5 6 7
-    0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,     // 8 9 : ; < = > ?
-    0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,     // @ A B C D E F G
-    0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,     // H I J K L M N O
-    0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57,     // P Q R S T U V W
-    0x58, 0x59, 0x5A, 0x5B,                             // X Y Z [
-    0xE9,       // 5C: 233 'é' "Latin small letter E with acute"
-    0x5D,                                               //           ]
-    0xED,       // 5E: 237 'í' "Latin small letter I with acute"
-    0xF3,       // 5F: 243 'ó' "Latin small letter O with acute"
-    0xFA,       // 60: 250 'ú' "Latin small letter U with acute"
-    0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,           //   a b c d e f g
-    0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F,     // h i j k l m n o
-    0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,     // p q r s t u v w
-    0x78, 0x79, 0x7A,                                   // x y z
-    0xE7,       // 7B: 231 'ç' "Latin small letter C with cedilla"
-    0xF7,       // 7C: 247 '÷' "Division sign"
-    0xD1,       // 7D: 209 'Ñ' "Latin capital letter N with tilde"
-    0xF1,       // 7E: 241 'ñ' "Latin small letter N with tilde"
-    0x25A0      // 7F:         "Black Square" (NB: 2588 = Full Block)
-  };
+  private static final int[] BASIC_CHARACTER_SET =
+      new int[] {
+        0x20,
+        0x21,
+        0x22,
+        0x23,
+        0x24,
+        0x25,
+        0x26,
+        0x27, //   ! " # $ % & '
+        0x28,
+        0x29, // ( )
+        0xE1, // 2A: 225 'á' "Latin small letter A with acute"
+        0x2B,
+        0x2C,
+        0x2D,
+        0x2E,
+        0x2F, //       + , - . /
+        0x30,
+        0x31,
+        0x32,
+        0x33,
+        0x34,
+        0x35,
+        0x36,
+        0x37, // 0 1 2 3 4 5 6 7
+        0x38,
+        0x39,
+        0x3A,
+        0x3B,
+        0x3C,
+        0x3D,
+        0x3E,
+        0x3F, // 8 9 : ; < = > ?
+        0x40,
+        0x41,
+        0x42,
+        0x43,
+        0x44,
+        0x45,
+        0x46,
+        0x47, // @ A B C D E F G
+        0x48,
+        0x49,
+        0x4A,
+        0x4B,
+        0x4C,
+        0x4D,
+        0x4E,
+        0x4F, // H I J K L M N O
+        0x50,
+        0x51,
+        0x52,
+        0x53,
+        0x54,
+        0x55,
+        0x56,
+        0x57, // P Q R S T U V W
+        0x58,
+        0x59,
+        0x5A,
+        0x5B, // X Y Z [
+        0xE9, // 5C: 233 'é' "Latin small letter E with acute"
+        0x5D, //           ]
+        0xED, // 5E: 237 'í' "Latin small letter I with acute"
+        0xF3, // 5F: 243 'ó' "Latin small letter O with acute"
+        0xFA, // 60: 250 'ú' "Latin small letter U with acute"
+        0x61,
+        0x62,
+        0x63,
+        0x64,
+        0x65,
+        0x66,
+        0x67, //   a b c d e f g
+        0x68,
+        0x69,
+        0x6A,
+        0x6B,
+        0x6C,
+        0x6D,
+        0x6E,
+        0x6F, // h i j k l m n o
+        0x70,
+        0x71,
+        0x72,
+        0x73,
+        0x74,
+        0x75,
+        0x76,
+        0x77, // p q r s t u v w
+        0x78,
+        0x79,
+        0x7A, // x y z
+        0xE7, // 7B: 231 'ç' "Latin small letter C with cedilla"
+        0xF7, // 7C: 247 '÷' "Division sign"
+        0xD1, // 7D: 209 'Ñ' "Latin capital letter N with tilde"
+        0xF1, // 7E: 241 'ñ' "Latin small letter N with tilde"
+        0x25A0 // 7F:         "Black Square" (NB: 2588 = Full Block)
+      };
 
   // Special North American 608 CC char set.
-  private static final int[] SPECIAL_CHARACTER_SET = new int[] {
-    0xAE,    // 30: 174 '®' "Registered Sign" - registered trademark symbol
-    0xB0,    // 31: 176 '°' "Degree Sign"
-    0xBD,    // 32: 189 '½' "Vulgar Fraction One Half" (1/2 symbol)
-    0xBF,    // 33: 191 '¿' "Inverted Question Mark"
-    0x2122,  // 34:         "Trade Mark Sign" (tm superscript)
-    0xA2,    // 35: 162 '¢' "Cent Sign"
-    0xA3,    // 36: 163 '£' "Pound Sign" - pounds sterling
-    0x266A,  // 37:         "Eighth Note" - music note
-    0xE0,    // 38: 224 'à' "Latin small letter A with grave"
-    0x20,    // 39:         TRANSPARENT SPACE - for now use ordinary space
-    0xE8,    // 3A: 232 'è' "Latin small letter E with grave"
-    0xE2,    // 3B: 226 'â' "Latin small letter A with circumflex"
-    0xEA,    // 3C: 234 'ê' "Latin small letter E with circumflex"
-    0xEE,    // 3D: 238 'î' "Latin small letter I with circumflex"
-    0xF4,    // 3E: 244 'ô' "Latin small letter O with circumflex"
-    0xFB     // 3F: 251 'û' "Latin small letter U with circumflex"
-  };
+  private static final int[] SPECIAL_CHARACTER_SET =
+      new int[] {
+        0xAE, // 30: 174 '®' "Registered Sign" - registered trademark symbol
+        0xB0, // 31: 176 '°' "Degree Sign"
+        0xBD, // 32: 189 '½' "Vulgar Fraction One Half" (1/2 symbol)
+        0xBF, // 33: 191 '¿' "Inverted Question Mark"
+        0x2122, // 34:         "Trade Mark Sign" (tm superscript)
+        0xA2, // 35: 162 '¢' "Cent Sign"
+        0xA3, // 36: 163 '£' "Pound Sign" - pounds sterling
+        0x266A, // 37:         "Eighth Note" - music note
+        0xE0, // 38: 224 'à' "Latin small letter A with grave"
+        0x20, // 39:         TRANSPARENT SPACE - for now use ordinary space
+        0xE8, // 3A: 232 'è' "Latin small letter E with grave"
+        0xE2, // 3B: 226 'â' "Latin small letter A with circumflex"
+        0xEA, // 3C: 234 'ê' "Latin small letter E with circumflex"
+        0xEE, // 3D: 238 'î' "Latin small letter I with circumflex"
+        0xF4, // 3E: 244 'ô' "Latin small letter O with circumflex"
+        0xFB // 3F: 251 'û' "Latin small letter U with circumflex"
+      };
 
   // Extended Spanish/Miscellaneous and French char set.
-  private static final int[] SPECIAL_ES_FR_CHARACTER_SET = new int[] {
-    // Spanish and misc.
-    0xC1, 0xC9, 0xD3, 0xDA, 0xDC, 0xFC, 0x2018, 0xA1,
-    0x2A, 0x27, 0x2014, 0xA9, 0x2120, 0x2022, 0x201C, 0x201D,
-    // French.
-    0xC0, 0xC2, 0xC7, 0xC8, 0xCA, 0xCB, 0xEB, 0xCE,
-    0xCF, 0xEF, 0xD4, 0xD9, 0xF9, 0xDB, 0xAB, 0xBB
-  };
+  private static final int[] SPECIAL_ES_FR_CHARACTER_SET =
+      new int[] {
+        // Spanish and misc.
+        0xC1, 0xC9, 0xD3, 0xDA, 0xDC, 0xFC, 0x2018, 0xA1,
+        0x2A, 0x27, 0x2014, 0xA9, 0x2120, 0x2022, 0x201C, 0x201D,
+        // French.
+        0xC0, 0xC2, 0xC7, 0xC8, 0xCA, 0xCB, 0xEB, 0xCE,
+        0xCF, 0xEF, 0xD4, 0xD9, 0xF9, 0xDB, 0xAB, 0xBB
+      };
 
-  //Extended Portuguese and German/Danish char set.
-  private static final int[] SPECIAL_PT_DE_CHARACTER_SET = new int[] {
-    // Portuguese.
-    0xC3, 0xE3, 0xCD, 0xCC, 0xEC, 0xD2, 0xF2, 0xD5,
-    0xF5, 0x7B, 0x7D, 0x5C, 0x5E, 0x5F, 0x7C, 0x7E,
-    // German/Danish.
-    0xC4, 0xE4, 0xD6, 0xF6, 0xDF, 0xA5, 0xA4, 0x2502,
-    0xC5, 0xE5, 0xD8, 0xF8, 0x250C, 0x2510, 0x2514, 0x2518
-  };
+  // Extended Portuguese and German/Danish char set.
+  private static final int[] SPECIAL_PT_DE_CHARACTER_SET =
+      new int[] {
+        // Portuguese.
+        0xC3, 0xE3, 0xCD, 0xCC, 0xEC, 0xD2, 0xF2, 0xD5,
+        0xF5, 0x7B, 0x7D, 0x5C, 0x5E, 0x5F, 0x7C, 0x7E,
+        // German/Danish.
+        0xC4, 0xE4, 0xD6, 0xF6, 0xDF, 0xA5, 0xA4, 0x2502,
+        0xC5, 0xE5, 0xD8, 0xF8, 0x250C, 0x2510, 0x2514, 0x2518
+      };
 
   private static final boolean[] ODD_PARITY_BYTE_TABLE = {
     false, true, true, false, true, false, false, true, // 0
@@ -233,11 +323,12 @@ public final class Cea608Decoder extends CeaDecoder {
   private final int packetLength;
   private final int selectedField;
   private final int selectedChannel;
+  private final long validDataChannelTimeoutUs;
   private final ArrayList<CueBuilder> cueBuilders;
 
   private CueBuilder currentCueBuilder;
-  private List<Cue> cues;
-  private List<Cue> lastCues;
+  @Nullable private List<Cue> cues;
+  @Nullable private List<Cue> lastCues;
 
   private int captionMode;
   private int captionRowCount;
@@ -253,11 +344,25 @@ public final class Cea608Decoder extends CeaDecoder {
   // service bytes and drops the rest.
   private boolean isInCaptionService;
 
-  public Cea608Decoder(String mimeType, int accessibilityChannel) {
+  private long lastCueUpdateUs;
+
+  /**
+   * Constructs an instance.
+   *
+   * @param mimeType The MIME type of the CEA-608 data.
+   * @param accessibilityChannel The Accessibility channel, or {@link Format#NO_VALUE} if unknown.
+   * @param validDataChannelTimeoutMs The timeout (in milliseconds) permitted by ANSI/CTA-608-E
+   *     R-2014 Annex C.9 to clear "stuck" captions where no removal control code is received. The
+   *     timeout should be at least {@link #MIN_DATA_CHANNEL_TIMEOUT_MS} or {@link C#TIME_UNSET} for
+   *     no timeout.
+   */
+  public Cea608Decoder(String mimeType, int accessibilityChannel, long validDataChannelTimeoutMs) {
     ccData = new ParsableByteArray();
     cueBuilders = new ArrayList<>();
     currentCueBuilder = new CueBuilder(CC_MODE_UNKNOWN, DEFAULT_CAPTIONS_ROW_COUNT);
     currentChannel = NTSC_CC_CHANNEL_1;
+    this.validDataChannelTimeoutUs =
+        validDataChannelTimeoutMs > 0 ? validDataChannelTimeoutMs * 1000 : C.TIME_UNSET;
     packetLength = MimeTypes.APPLICATION_MP4CEA608.equals(mimeType) ? 2 : 3;
     switch (accessibilityChannel) {
       case 1:
@@ -285,6 +390,7 @@ public final class Cea608Decoder extends CeaDecoder {
     setCaptionMode(CC_MODE_UNKNOWN);
     resetCueBuilders();
     isInCaptionService = true;
+    lastCueUpdateUs = C.TIME_UNSET;
   }
 
   @Override
@@ -306,11 +412,32 @@ public final class Cea608Decoder extends CeaDecoder {
     repeatableControlCc2 = 0;
     currentChannel = NTSC_CC_CHANNEL_1;
     isInCaptionService = true;
+    lastCueUpdateUs = C.TIME_UNSET;
   }
 
   @Override
   public void release() {
     // Do nothing
+  }
+
+  @Nullable
+  @Override
+  public SubtitleOutputBuffer dequeueOutputBuffer() throws SubtitleDecoderException {
+    SubtitleOutputBuffer outputBuffer = super.dequeueOutputBuffer();
+    if (outputBuffer != null) {
+      return outputBuffer;
+    }
+    if (shouldClearStuckCaptions()) {
+      outputBuffer = getAvailableOutputBuffer();
+      if (outputBuffer != null) {
+        cues = Collections.emptyList();
+        lastCueUpdateUs = C.TIME_UNSET;
+        Subtitle subtitle = createSubtitle();
+        outputBuffer.setContent(getPositionUs(), subtitle, Format.OFFSET_SAMPLE_RELATIVE);
+        return outputBuffer;
+      }
+    }
+    return null;
   }
 
   @Override
@@ -321,17 +448,18 @@ public final class Cea608Decoder extends CeaDecoder {
   @Override
   protected Subtitle createSubtitle() {
     lastCues = cues;
-    return new CeaSubtitle(cues);
+    return new CeaSubtitle(Assertions.checkNotNull(cues));
   }
 
   @SuppressWarnings("ByteBufferBackingArray")
   @Override
   protected void decode(SubtitleInputBuffer inputBuffer) {
-    ccData.reset(inputBuffer.data.array(), inputBuffer.data.limit());
+    ByteBuffer subtitleData = Assertions.checkNotNull(inputBuffer.data);
+    ccData.reset(subtitleData.array(), subtitleData.limit());
     boolean captionDataProcessed = false;
     while (ccData.bytesLeft() >= packetLength) {
-      byte ccHeader = packetLength == 2 ? CC_IMPLICIT_DATA_HEADER
-          : (byte) ccData.readUnsignedByte();
+      int ccHeader = packetLength == 2 ? CC_IMPLICIT_DATA_HEADER : ccData.readUnsignedByte();
+
       int ccByte1 = ccData.readUnsignedByte();
       int ccByte2 = ccData.readUnsignedByte();
 
@@ -418,6 +546,7 @@ public final class Cea608Decoder extends CeaDecoder {
     if (captionDataProcessed) {
       if (captionMode == CC_MODE_ROLL_UP || captionMode == CC_MODE_PAINT_ON) {
         cues = getDisplayCues();
+        lastCueUpdateUs = getPositionUs();
       }
     }
   }
@@ -572,22 +701,23 @@ public final class Cea608Decoder extends CeaDecoder {
     // preference, then middle alignment, then end alignment.
     @Cue.AnchorType int positionAnchor = Cue.ANCHOR_TYPE_END;
     int cueBuilderCount = cueBuilders.size();
-    List<Cue> cueBuilderCues = new ArrayList<>(cueBuilderCount);
+    List<@NullableType Cue> cueBuilderCues = new ArrayList<>(cueBuilderCount);
     for (int i = 0; i < cueBuilderCount; i++) {
-      Cue cue = cueBuilders.get(i).build(/* forcedPositionAnchor= */ Cue.TYPE_UNSET);
+      @Nullable Cue cue = cueBuilders.get(i).build(/* forcedPositionAnchor= */ Cue.TYPE_UNSET);
       cueBuilderCues.add(cue);
       if (cue != null) {
-        positionAnchor = Math.min(positionAnchor, cue.positionAnchor);
+        positionAnchor = min(positionAnchor, cue.positionAnchor);
       }
     }
 
     // Skip null cues and rebuild any that don't have the preferred alignment.
     List<Cue> displayCues = new ArrayList<>(cueBuilderCount);
     for (int i = 0; i < cueBuilderCount; i++) {
-      Cue cue = cueBuilderCues.get(i);
+      @Nullable Cue cue = cueBuilderCues.get(i);
       if (cue != null) {
         if (cue.positionAnchor != positionAnchor) {
-          cue = cueBuilders.get(i).build(positionAnchor);
+          // The last time we built this cue it was non-null, it will be non-null this time too.
+          cue = Assertions.checkNotNull(cueBuilders.get(i).build(positionAnchor));
         }
         displayCues.add(cue);
       }
@@ -614,7 +744,8 @@ public final class Cea608Decoder extends CeaDecoder {
 
     // Clear the working memory.
     resetCueBuilders();
-    if (oldCaptionMode == CC_MODE_PAINT_ON || captionMode == CC_MODE_ROLL_UP
+    if (oldCaptionMode == CC_MODE_PAINT_ON
+        || captionMode == CC_MODE_ROLL_UP
         || captionMode == CC_MODE_UNKNOWN) {
       // When switching from paint-on or to roll-up or unknown, we also need to clear the caption.
       cues = Collections.emptyList();
@@ -741,11 +872,11 @@ public final class Cea608Decoder extends CeaDecoder {
   }
 
   private static boolean isServiceSwitchCommand(byte cc1) {
-    // cc1 - 0|0|0|1|C|1|0|0
-    return (cc1 & 0xF7) == 0x14;
+    // cc1 - 0|0|0|1|C|1|0|F
+    return (cc1 & 0xF6) == 0x14;
   }
 
-  private static class CueBuilder {
+  private static final class CueBuilder {
 
     // 608 captions define a 15 row by 32 column screen grid. These constants convert from 608
     // positions to normalized screen position.
@@ -767,7 +898,7 @@ public final class Cea608Decoder extends CeaDecoder {
       rolledUpCaptions = new ArrayList<>();
       captionStringBuilder = new StringBuilder();
       reset(captionMode);
-      setCaptionRowCount(captionRowCount);
+      this.captionRowCount = captionRowCount;
     }
 
     public void reset(int captionMode) {
@@ -816,28 +947,36 @@ public final class Cea608Decoder extends CeaDecoder {
     }
 
     public void append(char text) {
-      captionStringBuilder.append(text);
+      // Don't accept more than 32 chars. We'll trim further, considering indent & tabOffset, in
+      // build().
+      if (captionStringBuilder.length() < SCREEN_CHARWIDTH) {
+        captionStringBuilder.append(text);
+      }
     }
 
     public void rollUp() {
       rolledUpCaptions.add(buildCurrentLine());
       captionStringBuilder.setLength(0);
       cueStyles.clear();
-      int numRows = Math.min(captionRowCount, row);
+      int numRows = min(captionRowCount, row);
       while (rolledUpCaptions.size() >= numRows) {
         rolledUpCaptions.remove(0);
       }
     }
 
+    @Nullable
     public Cue build(@Cue.AnchorType int forcedPositionAnchor) {
+      // The number of empty columns before the start of the text, in the range [0-31].
+      int startPadding = indent + tabOffset;
+      int maxTextLength = SCREEN_CHARWIDTH - startPadding;
       SpannableStringBuilder cueString = new SpannableStringBuilder();
       // Add any rolled up captions, separated by new lines.
       for (int i = 0; i < rolledUpCaptions.size(); i++) {
-        cueString.append(rolledUpCaptions.get(i));
+        cueString.append(Util.truncateAscii(rolledUpCaptions.get(i), maxTextLength));
         cueString.append('\n');
       }
       // Add the current line.
-      cueString.append(buildCurrentLine());
+      cueString.append(Util.truncateAscii(buildCurrentLine(), maxTextLength));
 
       if (cueString.length() == 0) {
         // The cue is empty.
@@ -845,8 +984,6 @@ public final class Cea608Decoder extends CeaDecoder {
       }
 
       int positionAnchor;
-      // The number of empty columns before the start of the text, in the range [0-31].
-      int startPadding = indent + tabOffset;
       // The number of empty columns after the end of the text, in the same range.
       int endPadding = SCREEN_CHARWIDTH - startPadding - cueString.length();
       int startEndPaddingDelta = startPadding - endPadding;
@@ -884,31 +1021,29 @@ public final class Cea608Decoder extends CeaDecoder {
           break;
       }
 
-      int lineAnchor;
       int line;
-      // Note: Row indices are in the range [1-15].
-      if (captionMode == CC_MODE_ROLL_UP || row > (BASE_ROW / 2)) {
-        lineAnchor = Cue.ANCHOR_TYPE_END;
+      // Note: Row indices are in the range [1-15], Cue.line counts from 0 (top) and -1 (bottom).
+      if (row > (BASE_ROW / 2)) {
         line = row - BASE_ROW;
         // Two line adjustments. The first is because line indices from the bottom of the window
         // start from -1 rather than 0. The second is a blank row to act as the safe area.
         line -= 2;
       } else {
-        lineAnchor = Cue.ANCHOR_TYPE_START;
-        // Line indices from the top of the window start from 0, but we want a blank row to act as
-        // the safe area. As a result no adjustment is necessary.
-        line = row;
+        // The `row` of roll-up cues positions the bottom line (even for cues shown in the top
+        // half of the screen), so we need to consider the number of rows in this cue. In
+        // non-roll-up, we don't need any further adjustments because we leave the first line
+        // (cue.line=0) blank to act as the safe area, so positioning row=1 at Cue.line=1 is
+        // correct.
+        line = captionMode == CC_MODE_ROLL_UP ? row - (captionRowCount - 1) : row;
       }
 
-      return new Cue(
-          cueString,
-          Alignment.ALIGN_NORMAL,
-          line,
-          Cue.LINE_TYPE_NUMBER,
-          lineAnchor,
-          position,
-          positionAnchor,
-          Cue.DIMEN_UNSET);
+      return new Cue.Builder()
+          .setText(cueString)
+          .setTextAlignment(Alignment.ALIGN_NORMAL)
+          .setLine(line, Cue.LINE_TYPE_NUMBER)
+          .setPosition(position)
+          .setPositionAnchor(positionAnchor)
+          .build();
     }
 
     private SpannableString buildCurrentLine() {
@@ -1006,9 +1141,15 @@ public final class Cea608Decoder extends CeaDecoder {
         this.underline = underline;
         this.start = start;
       }
-
     }
-
   }
 
+  /** See ANSI/CTA-608-E R-2014 Annex C.9 for Caption Erase Logic. */
+  private boolean shouldClearStuckCaptions() {
+    if (validDataChannelTimeoutUs == C.TIME_UNSET || lastCueUpdateUs == C.TIME_UNSET) {
+      return false;
+    }
+    long elapsedUs = getPositionUs() - lastCueUpdateUs;
+    return elapsedUs >= validDataChannelTimeoutUs;
+  }
 }

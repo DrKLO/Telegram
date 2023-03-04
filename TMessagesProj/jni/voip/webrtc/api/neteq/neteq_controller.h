@@ -163,6 +163,12 @@ class NetEqController {
   // Returns the target buffer level in ms.
   virtual int TargetLevelMs() const = 0;
 
+  // Returns the target buffer level in ms as it would be if no minimum or
+  // maximum delay was set.
+  // TODO(bugs.webrtc.org/14270): Make pure virtual once all implementations are
+  // updated.
+  virtual int UnlimitedTargetLevelMs() const { return 0; }
+
   // Notify the NetEqController that a packet has arrived. Returns the relative
   // arrival delay, if it can be computed.
   virtual absl::optional<int> PacketArrived(int fs_hz,
@@ -170,7 +176,7 @@ class NetEqController {
                                             const PacketArrivedInfo& info) = 0;
 
   // Notify the NetEqController that we are currently in muted state.
-  // TODO(ivoc): Make pure virtual when downstream is updated.
+  // TODO(bugs.webrtc.org/14270): Make pure virtual when downstream is updated.
   virtual void NotifyMutedState() {}
 
   // Returns true if a peak was found.

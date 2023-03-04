@@ -474,7 +474,7 @@ public class SeekBarView extends FrameLayout {
 
     private ArrayList<Pair<Float, CharSequence>> timestamps;
     private CharSequence lastCaption;
-    private long lastVideoDuration;
+    private long lastDuration;
 
     private float timestampsAppearing = 0;
     private long lastTimestampsAppearingUpdate;
@@ -500,18 +500,18 @@ public class SeekBarView extends FrameLayout {
             timestampLabel[0] = timestampLabel[1] = null;
         }
         lastCaption = null;
-        lastVideoDuration = -1;
+        lastDuration = -1;
     }
 
-    public void updateTimestamps(MessageObject messageObject, Long videoDuration) {
+    public void updateTimestamps(MessageObject messageObject, Long duration) {
         if (messageObject == null) {
             clearTimestamps();
             return;
         }
-        if (videoDuration == null) {
-            videoDuration = (long) messageObject.getDuration() * 1000L;
+        if (duration == null) {
+            duration = (long) messageObject.getDuration() * 1000L;
         }
-        if (videoDuration == null || videoDuration < 0) {
+        if (duration == null || duration < 0) {
             clearTimestamps();
             return;
         }
@@ -519,15 +519,15 @@ public class SeekBarView extends FrameLayout {
         if (messageObject.isYouTubeVideo()) {
             if (messageObject.youtubeDescription == null && messageObject.messageOwner.media.webpage.description != null) {
                 messageObject.youtubeDescription = SpannableString.valueOf(messageObject.messageOwner.media.webpage.description);
-                MessageObject.addUrlsByPattern(messageObject.isOut(), messageObject.youtubeDescription, false, 3, (int) (long) videoDuration, false);
+                MessageObject.addUrlsByPattern(messageObject.isOut(), messageObject.youtubeDescription, false, 3, (int) (long) duration, false);
             }
             text = messageObject.youtubeDescription;
         }
-        if (text == lastCaption && lastVideoDuration == videoDuration) {
+        if (text == lastCaption && lastDuration == duration) {
             return;
         }
         lastCaption = text;
-        lastVideoDuration = videoDuration;
+        lastDuration = duration;
         if (!(text instanceof Spanned)) {
             timestamps = null;
             currentTimestamp = -1;
@@ -563,7 +563,7 @@ public class SeekBarView extends FrameLayout {
             if (link != null && link.getURL() != null && link.label != null && link.getURL().startsWith("audio?")) {
                 Integer seconds = Utilities.parseInt(link.getURL().substring(6));
                 if (seconds != null && seconds >= 0) {
-                    float position = seconds * 1000L / (float) videoDuration;
+                    float position = seconds * 1000L / (float) duration;
                     String label = link.label;
                     SpannableStringBuilder builder = new SpannableStringBuilder(label);
                     Emoji.replaceEmoji(builder, timestampLabelPaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
@@ -683,7 +683,7 @@ public class SeekBarView extends FrameLayout {
 
         float left = selectorWidth / 2f;
         float right = getMeasuredWidth() - selectorWidth / 2f;
-        float rightPadded = right;
+        float rightPadded = right - (lastDuration > 1000L * 60 * 10 ? AndroidUtilities.dp(36) : 0);
         float width = Math.abs(left - rightPadded) - AndroidUtilities.dp(16 + 50);
 
         if (lastWidth > 0 && Math.abs(lastWidth - width) > 0.01f) {
@@ -742,7 +742,7 @@ public class SeekBarView extends FrameLayout {
         float changeT = CubicBezierInterpolator.DEFAULT.getInterpolation(timestampChangeT);
 
         canvas.save();
-        float bottom = getMeasuredHeight() / 2f + AndroidUtilities.dp(13);
+        float bottom = getMeasuredHeight() / 2f + AndroidUtilities.dp(14);
         canvas.translate(left + AndroidUtilities.dp(25), bottom);
         timestampLabelPaint.setColor(getThemedColor(Theme.key_player_time));
         if (timestampLabel[1] != null) {

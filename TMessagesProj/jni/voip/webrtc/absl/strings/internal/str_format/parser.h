@@ -155,10 +155,11 @@ bool ParseFormatString(string_view src, Consumer consumer) {
         static_cast<const char*>(memchr(p, '%', static_cast<size_t>(end - p)));
     if (!percent) {
       // We found the last substring.
-      return consumer.Append(string_view(p, end - p));
+      return consumer.Append(string_view(p, static_cast<size_t>(end - p)));
     }
     // We found a percent, so push the text run then process the percent.
-    if (ABSL_PREDICT_FALSE(!consumer.Append(string_view(p, percent - p)))) {
+    if (ABSL_PREDICT_FALSE(!consumer.Append(
+            string_view(p, static_cast<size_t>(percent - p))))) {
       return false;
     }
     if (ABSL_PREDICT_FALSE(percent + 1 >= end)) return false;
@@ -189,7 +190,8 @@ bool ParseFormatString(string_view src, Consumer consumer) {
       p = ConsumeUnboundConversion(percent + 1, end, &conv, &next_arg);
       if (ABSL_PREDICT_FALSE(p == nullptr)) return false;
       if (ABSL_PREDICT_FALSE(!consumer.ConvertOne(
-          conv, string_view(percent + 1, p - (percent + 1))))) {
+              conv, string_view(percent + 1,
+                                static_cast<size_t>(p - (percent + 1)))))) {
         return false;
       }
     } else {

@@ -63,27 +63,22 @@ class SequenceCheckerDoNothing {
   void Detach() {}
 };
 
-// Helper class used by RTC_DCHECK_RUN_ON (see example usage below).
-class RTC_SCOPED_LOCKABLE SequenceCheckerScope {
- public:
-  template <typename ThreadLikeObject>
-  explicit SequenceCheckerScope(const ThreadLikeObject* thread_like_object)
-      RTC_EXCLUSIVE_LOCK_FUNCTION(thread_like_object) {}
-  SequenceCheckerScope(const SequenceCheckerScope&) = delete;
-  SequenceCheckerScope& operator=(const SequenceCheckerScope&) = delete;
-  ~SequenceCheckerScope() RTC_UNLOCK_FUNCTION() {}
-
-  template <typename ThreadLikeObject>
-  static bool IsCurrent(const ThreadLikeObject* thread_like_object) {
-    return thread_like_object->IsCurrent();
-  }
-};
-
-std::string ExpectationToString(const SequenceCheckerImpl* checker);
+template <typename ThreadLikeObject>
+std::enable_if_t<std::is_base_of_v<SequenceCheckerImpl, ThreadLikeObject>,
+                 std::string>
+ExpectationToString(const ThreadLikeObject* checker) {
+#if RTC_DCHECK_IS_ON
+  return checker->ExpectationToString();
+#else
+  return std::string();
+#endif
+}
 
 // Catch-all implementation for types other than explicitly supported above.
 template <typename ThreadLikeObject>
-std::string ExpectationToString(const ThreadLikeObject*) {
+std::enable_if_t<!std::is_base_of_v<SequenceCheckerImpl, ThreadLikeObject>,
+                 std::string>
+ExpectationToString(const ThreadLikeObject*) {
   return std::string();
 }
 

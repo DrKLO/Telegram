@@ -19,12 +19,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 
 /**
- * Provides {@link SQLiteDatabase} instances to ExoPlayer components, which may read and write
+ * Provides {@link SQLiteDatabase} instances to media library components, which may read and write
  * tables prefixed with {@link #TABLE_PREFIX}.
  */
 public interface DatabaseProvider {
 
-  /** Prefix for tables that can be read and written by ExoPlayer components. */
+  /** Prefix for tables that can be read and written by media library components. */
   String TABLE_PREFIX = "ExoPlayer";
 
   /**

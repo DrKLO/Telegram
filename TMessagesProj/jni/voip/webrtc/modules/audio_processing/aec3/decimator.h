@@ -17,7 +17,6 @@
 #include "api/array_view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/utility/cascaded_biquad_filter.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -26,6 +25,9 @@ class Decimator {
  public:
   explicit Decimator(size_t down_sampling_factor);
 
+  Decimator(const Decimator&) = delete;
+  Decimator& operator=(const Decimator&) = delete;
+
   // Downsamples the signal.
   void Decimate(rtc::ArrayView<const float> in, rtc::ArrayView<float> out);
 
@@ -33,8 +35,6 @@ class Decimator {
   const size_t down_sampling_factor_;
   CascadedBiQuadFilter anti_aliasing_filter_;
   CascadedBiQuadFilter noise_reduction_filter_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Decimator);
 };
 }  // namespace webrtc
 

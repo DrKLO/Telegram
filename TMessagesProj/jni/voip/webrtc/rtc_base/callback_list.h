@@ -18,12 +18,13 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/system/assume.h"
 #include "rtc_base/system/inline.h"
+#include "rtc_base/system/rtc_export.h"
 #include "rtc_base/untyped_function.h"
 
 namespace webrtc {
 namespace callback_list_impl {
 
-class CallbackListReceivers {
+class RTC_EXPORT CallbackListReceivers {
  public:
   CallbackListReceivers();
   CallbackListReceivers(const CallbackListReceivers&) = delete;
@@ -51,10 +52,18 @@ class CallbackListReceivers {
   void Foreach(rtc::FunctionView<void(UntypedFunction&)> fv);
 
  private:
+  // Special protected pointer value that's used as a removal_tag for
+  // receivers that want to unsubscribe from within a callback.
+  // Note we could use `&receivers_` too, but since it's the first member
+  // variable of the class, its address will be the same as the instance
+  // CallbackList instance, so we take an extra step to avoid collision.
+  const void* pending_removal_tag() const { return &send_in_progress_; }
+
   struct Callback {
     const void* removal_tag;
     UntypedFunction function;
   };
+
   std::vector<Callback> receivers_;
   bool send_in_progress_ = false;
 };

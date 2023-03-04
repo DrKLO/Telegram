@@ -71,6 +71,7 @@ import android.telephony.TelephonyManager;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.LruCache;
 import android.view.KeyEvent;
 import android.view.View;
@@ -1224,8 +1225,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void setSinks(VideoSink local, boolean screencast, VideoSink remote) {
-		localSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA].setTarget(local);
-		remoteSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA].setTarget(remote);
+		ProxyVideoSink localSink = this.localSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA];
+		ProxyVideoSink remoteSink = this.remoteSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA];
+		if (localSink != null) {
+			localSink.setTarget(local);
+		}
+		if (remoteSink != null) {
+			remoteSink.setTarget(remote);
+		}
 	}
 
 	public void setLocalSink(VideoSink local, boolean screencast) {
@@ -2393,6 +2400,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					return;
 				}
 				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webRtcMicAmplitudeEvent, levels[0]);
+				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webRtcSpeakerAmplitudeEvent, levels[1]);
 			});
 			tgVoip[CAPTURE_DEVICE_CAMERA].setOnStateUpdatedListener(this::onConnectionStateChanged);
 			tgVoip[CAPTURE_DEVICE_CAMERA].setOnSignalBarsUpdatedListener(this::onSignalBarCountChanged);

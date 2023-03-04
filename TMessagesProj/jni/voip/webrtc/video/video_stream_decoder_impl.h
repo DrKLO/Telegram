@@ -16,10 +16,13 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
+#include "api/transport/field_trial_based_config.h"
 #include "api/video/video_stream_decoder.h"
 #include "modules/video_coding/frame_buffer2.h"
-#include "modules/video_coding/timing.h"
+#include "modules/video_coding/timing/timing.h"
+#include "rtc_base/memory/always_valid_pointer.h"
 #include "rtc_base/platform_thread.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/task_queue.h"
@@ -33,7 +36,8 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
       VideoStreamDecoderInterface::Callbacks* callbacks,
       VideoDecoderFactory* decoder_factory,
       TaskQueueFactory* task_queue_factory,
-      std::map<int, std::pair<SdpVideoFormat, int>> decoder_settings);
+      std::map<int, std::pair<SdpVideoFormat, int>> decoder_settings,
+      const FieldTrialsView* field_trials);
 
   ~VideoStreamDecoderImpl() override;
 
@@ -82,6 +86,8 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
   VideoStreamDecoderImpl::DecodeResult DecodeFrame(
       std::unique_ptr<EncodedFrame> frame) RTC_RUN_ON(decode_queue_);
 
+  AlwaysValidPointer<const FieldTrialsView, FieldTrialBasedConfig>
+      field_trials_;
   VCMTiming timing_;
   DecodeCallbacks decode_callbacks_;
 

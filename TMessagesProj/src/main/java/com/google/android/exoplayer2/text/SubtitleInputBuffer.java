@@ -22,13 +22,12 @@ import com.google.android.exoplayer2.decoder.DecoderInputBuffer;
 public class SubtitleInputBuffer extends DecoderInputBuffer {
 
   /**
-   * An offset that must be added to the subtitle's event times after it's been decoded, or
-   * {@link Format#OFFSET_SAMPLE_RELATIVE} if {@link #timeUs} should be added.
+   * An offset that must be added to the subtitle's event times after it's been decoded, or {@link
+   * Format#OFFSET_SAMPLE_RELATIVE} if {@link #timeUs} should be added.
    */
   public long subsampleOffsetUs;
 
   public SubtitleInputBuffer() {
     super(DecoderInputBuffer.BUFFER_REPLACEMENT_MODE_NORMAL);
   }
-
 }

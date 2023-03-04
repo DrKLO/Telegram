@@ -36,6 +36,9 @@
 #include <algorithm>
 #include <atomic>
 #include <cinttypes>
+#include <cstddef>
+#include <cstring>
+#include <iterator>
 #include <thread>  // NOLINT(build/c++11)
 
 #include "absl/base/attributes.h"
@@ -134,25 +137,42 @@ enum DelayMode { AGGRESSIVE, GENTLE };
 struct ABSL_CACHELINE_ALIGNED MutexGlobals {
   absl::once_flag once;
   int spinloop_iterations = 0;
-  int32_t mutex_sleep_limit[2] = {};
+  int32_t mutex_sleep_spins[2] = {};
+  absl::Duration mutex_sleep_time;
 };
+
+absl::Duration MeasureTimeToYield() {
+  absl::Time before = absl::Now();
+  ABSL_INTERNAL_C_SYMBOL(AbslInternalMutexYield)();
+  return absl::Now() - before;
+}
 
 const MutexGlobals &GetMutexGlobals() {
   ABSL_CONST_INIT static MutexGlobals data;
   absl::base_internal::LowLevelCallOnce(&data.once, [&]() {
     const int num_cpus = absl::base_internal::NumCPUs();
     data.spinloop_iterations = num_cpus > 1 ? 1500 : 0;
-    // If this a uniprocessor, only yield/sleep.  Otherwise, if the mode is
+    // If this a uniprocessor, only yield/sleep.
+    // Real-time threads are often unable to yield, so the sleep time needs
+    // to be long enough to keep the calling thread asleep until scheduling
+    // happens.
+    // If this is multiprocessor, allow spinning. If the mode is
     // aggressive then spin many times before yielding.  If the mode is
     // gentle then spin only a few times before yielding.  Aggressive spinning
     // is used to ensure that an Unlock() call, which must get the spin lock
     // for any thread to make progress gets it without undue delay.
     if (num_cpus > 1) {
-      data.mutex_sleep_limit[AGGRESSIVE] = 5000;
-      data.mutex_sleep_limit[GENTLE] = 250;
+      data.mutex_sleep_spins[AGGRESSIVE] = 5000;
+      data.mutex_sleep_spins[GENTLE] = 250;
+      data.mutex_sleep_time = absl::Microseconds(10);
     } else {
-      data.mutex_sleep_limit[AGGRESSIVE] = 0;
-      data.mutex_sleep_limit[GENTLE] = 0;
+      data.mutex_sleep_spins[AGGRESSIVE] = 0;
+      data.mutex_sleep_spins[GENTLE] = 0;
+      data.mutex_sleep_time = MeasureTimeToYield() * 5;
+      data.mutex_sleep_time =
+          std::min(data.mutex_sleep_time, absl::Milliseconds(1));
+      data.mutex_sleep_time =
+          std::max(data.mutex_sleep_time, absl::Microseconds(10));
     }
   });
   return data;
@@ -163,7 +183,8 @@ namespace synchronization_internal {
 // Returns the Mutex delay on iteration `c` depending on the given `mode`.
 // The returned value should be used as `c` for the next call to `MutexDelay`.
 int MutexDelay(int32_t c, int mode) {
-  const int32_t limit = GetMutexGlobals().mutex_sleep_limit[mode];
+  const int32_t limit = GetMutexGlobals().mutex_sleep_spins[mode];
+  const absl::Duration sleep_time = GetMutexGlobals().mutex_sleep_time;
   if (c < limit) {
     // Spin.
     c++;
@@ -176,7 +197,7 @@ int MutexDelay(int32_t c, int mode) {
       c++;
     } else {
       // Then wait.
-      absl::SleepFor(absl::Microseconds(10));
+      absl::SleepFor(sleep_time);
       c = 0;
     }
     ABSL_TSAN_MUTEX_POST_DIVERT(nullptr, 0);
@@ -325,7 +346,7 @@ static struct SynchEvent {     // this is a trivial hash table for the events
 static SynchEvent *EnsureSynchEvent(std::atomic<intptr_t> *addr,
                                     const char *name, intptr_t bits,
                                     intptr_t lockbit) {
-  uint32_t h = reinterpret_cast<intptr_t>(addr) % kNSynchEvent;
+  uint32_t h = reinterpret_cast<uintptr_t>(addr) % kNSynchEvent;
   SynchEvent *e;
   // first look for existing SynchEvent struct..
   synch_event_mu.Lock();
@@ -378,7 +399,7 @@ static void UnrefSynchEvent(SynchEvent *e) {
 // is clear before doing so).
 static void ForgetSynchEvent(std::atomic<intptr_t> *addr, intptr_t bits,
                              intptr_t lockbit) {
-  uint32_t h = reinterpret_cast<intptr_t>(addr) % kNSynchEvent;
+  uint32_t h = reinterpret_cast<uintptr_t>(addr) % kNSynchEvent;
   SynchEvent **pe;
   SynchEvent *e;
   synch_event_mu.Lock();
@@ -402,7 +423,7 @@ static void ForgetSynchEvent(std::atomic<intptr_t> *addr, intptr_t bits,
 // "addr", if any.  The pointer returned is valid until the UnrefSynchEvent() is
 // called.
 static SynchEvent *GetSynchEvent(const void *addr) {
-  uint32_t h = reinterpret_cast<intptr_t>(addr) % kNSynchEvent;
+  uint32_t h = reinterpret_cast<uintptr_t>(addr) % kNSynchEvent;
   SynchEvent *e;
   synch_event_mu.Lock();
   for (e = synch_event[h];
@@ -430,7 +451,13 @@ static void PostSynchEvent(void *obj, int ev) {
     char buffer[ABSL_ARRAYSIZE(pcs) * 24];
     int pos = snprintf(buffer, sizeof (buffer), " @");
     for (int i = 0; i != n; i++) {
-      pos += snprintf(&buffer[pos], sizeof (buffer) - pos, " %p", pcs[i]);
+      int b = snprintf(&buffer[pos], sizeof(buffer) - static_cast<size_t>(pos),
+                       " %p", pcs[i]);
+      if (b < 0 ||
+          static_cast<size_t>(b) >= sizeof(buffer) - static_cast<size_t>(pos)) {
+        break;
+      }
+      pos += b;
     }
     ABSL_RAW_LOG(INFO, "%s%p %s %s", event_properties[ev].msg, obj,
                  (e == nullptr ? "" : e->name), buffer);
@@ -486,7 +513,8 @@ struct SynchWaitParams {
         cvmu(cvmu_arg),
         thread(thread_arg),
         cv_word(cv_word_arg),
-        contention_start_cycles(base_internal::CycleClock::Now()) {}
+        contention_start_cycles(base_internal::CycleClock::Now()),
+        should_submit_contention_data(false) {}
 
   const Mutex::MuHow how;  // How this thread needs to wait.
   const Condition *cond;  // The condition that this thread is waiting for.
@@ -504,6 +532,7 @@ struct SynchWaitParams {
 
   int64_t contention_start_cycles;  // Time (in cycles) when this thread started
                                     // to contend for the mutex.
+  bool should_submit_contention_data;
 };
 
 struct SynchLocksHeld {
@@ -1273,15 +1302,17 @@ static char *StackString(void **pcs, int n, char *buf, int maxlen,
   char sym[kSymLen];
   int len = 0;
   for (int i = 0; i != n; i++) {
+    if (len >= maxlen)
+      return buf;
+    size_t count = static_cast<size_t>(maxlen - len);
     if (symbolize) {
       if (!symbolizer(pcs[i], sym, kSymLen)) {
         sym[0] = '\0';
       }
-      snprintf(buf + len, maxlen - len, "%s\t@ %p %s\n",
-               (i == 0 ? "\n" : ""),
-               pcs[i], sym);
+      snprintf(buf + len, count, "%s\t@ %p %s\n", (i == 0 ? "\n" : ""), pcs[i],
+               sym);
     } else {
-      snprintf(buf + len, maxlen - len, " %p", pcs[i]);
+      snprintf(buf + len, count, " %p", pcs[i]);
     }
     len += strlen(&buf[len]);
   }
@@ -1366,12 +1397,12 @@ static GraphId DeadlockCheck(Mutex *mu) {
       bool symbolize = number_of_reported_deadlocks <= 2;
       ABSL_RAW_LOG(ERROR, "Potential Mutex deadlock: %s",
                    CurrentStackString(b->buf, sizeof (b->buf), symbolize));
-      int len = 0;
+      size_t len = 0;
       for (int j = 0; j != all_locks->n; j++) {
         void* pr = deadlock_graph->Ptr(all_locks->locks[j].id);
         if (pr != nullptr) {
           snprintf(b->buf + len, sizeof (b->buf) - len, " %p", pr);
-          len += static_cast<int>(strlen(&b->buf[len]));
+          len += strlen(&b->buf[len]);
         }
       }
       ABSL_RAW_LOG(ERROR,
@@ -1790,8 +1821,8 @@ static inline bool EvalConditionAnnotated(const Condition *cond, Mutex *mu,
   // operation tsan considers that we've already released the mutex.
   bool res = false;
 #ifdef ABSL_INTERNAL_HAVE_TSAN_INTERFACE
-  const int flags = read_lock ? __tsan_mutex_read_lock : 0;
-  const int tryflags = flags | (trylock ? __tsan_mutex_try_lock : 0);
+  const uint32_t flags = read_lock ? __tsan_mutex_read_lock : 0;
+  const uint32_t tryflags = flags | (trylock ? __tsan_mutex_try_lock : 0);
 #endif
   if (locking) {
     // For lock we pretend that we have finished the operation,
@@ -1904,7 +1935,7 @@ static void CheckForMutexCorruption(intptr_t v, const char* label) {
   // Test for either of two situations that should not occur in v:
   //   kMuWriter and kMuReader
   //   kMuWrWait and !kMuWait
-  const uintptr_t w = v ^ kMuWait;
+  const uintptr_t w = static_cast<uintptr_t>(v ^ kMuWait);
   // By flipping that bit, we can now test for:
   //   kMuWriter and kMuReader in w
   //   kMuWrWait and kMuWait in w
@@ -2331,21 +2362,26 @@ ABSL_ATTRIBUTE_NOINLINE void Mutex::UnlockSlow(SynchWaitParams *waitp) {
   }                            // end of for(;;)-loop
 
   if (wake_list != kPerThreadSynchNull) {
-    int64_t wait_cycles = 0;
+    int64_t total_wait_cycles = 0;
+    int64_t max_wait_cycles = 0;
     int64_t now = base_internal::CycleClock::Now();
     do {
-      // Sample lock contention events only if the waiter was trying to acquire
+      // Profile lock contention events only if the waiter was trying to acquire
       // the lock, not waiting on a condition variable or Condition.
       if (!wake_list->cond_waiter) {
-        wait_cycles += (now - wake_list->waitp->contention_start_cycles);
+        int64_t cycles_waited =
+            (now - wake_list->waitp->contention_start_cycles);
+        total_wait_cycles += cycles_waited;
+        if (max_wait_cycles == 0) max_wait_cycles = cycles_waited;
         wake_list->waitp->contention_start_cycles = now;
+        wake_list->waitp->should_submit_contention_data = true;
       }
       wake_list = Wakeup(wake_list);              // wake waiters
     } while (wake_list != kPerThreadSynchNull);
-    if (wait_cycles > 0) {
-      mutex_tracer("slow release", this, wait_cycles);
+    if (total_wait_cycles > 0) {
+      mutex_tracer("slow release", this, total_wait_cycles);
       ABSL_TSAN_MUTEX_PRE_DIVERT(this, 0);
-      submit_profile_data(wait_cycles);
+      submit_profile_data(total_wait_cycles);
       ABSL_TSAN_MUTEX_POST_DIVERT(this, 0);
     }
   }
@@ -2510,9 +2546,9 @@ void CondVar::Remove(PerThreadSynch *s) {
 // before calling Mutex::UnlockSlow(), the Mutex code might be re-entered (via
 // the logging code, or via a Condition function) and might potentially attempt
 // to block this thread.  That would be a problem if the thread were already on
-// a the condition variable waiter queue.  Thus, we use the waitp->cv_word
-// to tell the unlock code to call CondVarEnqueue() to queue the thread on the
-// condition variable queue just before the mutex is to be unlocked, and (most
+// a condition variable waiter queue.  Thus, we use the waitp->cv_word to tell
+// the unlock code to call CondVarEnqueue() to queue the thread on the condition
+// variable queue just before the mutex is to be unlocked, and (most
 // importantly) after any call to an external routine that might re-enter the
 // mutex code.
 static void CondVarEnqueue(SynchWaitParams *waitp) {
@@ -2575,6 +2611,23 @@ bool CondVar::WaitCommon(Mutex *mutex, KernelTimeout t) {
   while (waitp.thread->state.load(std::memory_order_acquire) ==
          PerThreadSynch::kQueued) {
     if (!Mutex::DecrementSynchSem(mutex, waitp.thread, t)) {
+      // DecrementSynchSem returned due to timeout.
+      // Now we will either (1) remove ourselves from the wait list in Remove
+      // below, in which case Remove will set thread.state = kAvailable and
+      // we will not call DecrementSynchSem again; or (2) Signal/SignalAll
+      // has removed us concurrently and is calling Wakeup, which will set
+      // thread.state = kAvailable and post to the semaphore.
+      // It's important to reset the timeout for the case (2) because otherwise
+      // we can live-lock in this loop since DecrementSynchSem will always
+      // return immediately due to timeout, but Signal/SignalAll is not
+      // necessary set thread.state = kAvailable yet (and is not scheduled
+      // due to thread priorities or other scheduler artifacts).
+      // Note this could also be resolved if Signal/SignalAll would set
+      // thread.state = kAvailable while holding the wait list spin lock.
+      // But this can't be easily done for SignalAll since it grabs the whole
+      // wait list with a single compare-exchange and does not really grab
+      // the spin lock.
+      t = KernelTimeout::Never();
       this->Remove(waitp.thread);
       rc = true;
     }
@@ -2729,25 +2782,32 @@ static bool Dereference(void *arg) {
   return *(static_cast<bool *>(arg));
 }
 
-Condition::Condition() {}   // null constructor, used for kTrue only
+Condition::Condition() = default;  // null constructor, used for kTrue only
 const Condition Condition::kTrue;
 
 Condition::Condition(bool (*func)(void *), void *arg)
     : eval_(&CallVoidPtrFunction),
-      function_(func),
-      method_(nullptr),
-      arg_(arg) {}
+      arg_(arg) {
+  static_assert(sizeof(&func) <= sizeof(callback_),
+                "An overlarge function pointer passed to Condition.");
+  StoreCallback(func);
+}
 
 bool Condition::CallVoidPtrFunction(const Condition *c) {
-  return (*c->function_)(c->arg_);
+  using FunctionPointer = bool (*)(void *);
+  FunctionPointer function_pointer;
+  std::memcpy(&function_pointer, c->callback_, sizeof(function_pointer));
+  return (*function_pointer)(c->arg_);
 }
 
 Condition::Condition(const bool *cond)
     : eval_(CallVoidPtrFunction),
-      function_(Dereference),
-      method_(nullptr),
       // const_cast is safe since Dereference does not modify arg
-      arg_(const_cast<bool *>(cond)) {}
+      arg_(const_cast<bool *>(cond)) {
+  using FunctionPointer = bool (*)(void *);
+  const FunctionPointer dereference = Dereference;
+  StoreCallback(dereference);
+}
 
 bool Condition::Eval() const {
   // eval_ == null for kTrue
@@ -2755,14 +2815,15 @@ bool Condition::Eval() const {
 }
 
 bool Condition::GuaranteedEqual(const Condition *a, const Condition *b) {
-  if (a == nullptr) {
+  // kTrue logic.
+  if (a == nullptr || a->eval_ == nullptr) {
     return b == nullptr || b->eval_ == nullptr;
+  }else  if (b == nullptr || b->eval_ == nullptr) {
+    return false;
   }
-  if (b == nullptr || b->eval_ == nullptr) {
-    return a->eval_ == nullptr;
-  }
-  return a->eval_ == b->eval_ && a->function_ == b->function_ &&
-         a->arg_ == b->arg_ && a->method_ == b->method_;
+  // Check equality of the representative fields.
+  return a->eval_ == b->eval_ && a->arg_ == b->arg_ &&
+         !memcmp(a->callback_, b->callback_, sizeof(a->callback_));
 }
 
 ABSL_NAMESPACE_END

@@ -20,10 +20,10 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.util.Assertions;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-/**
- * A base implementation of {@link MediaChunk} that outputs to a {@link BaseMediaChunkOutput}.
- */
+/** A base implementation of {@link MediaChunk} that outputs to a {@link BaseMediaChunkOutput}. */
 public abstract class BaseMediaChunk extends MediaChunk {
 
   /**
@@ -37,8 +37,8 @@ public abstract class BaseMediaChunk extends MediaChunk {
    */
   public final long clippedEndTimeUs;
 
-  private BaseMediaChunkOutput output;
-  private int[] firstSampleIndices;
+  private @MonotonicNonNull BaseMediaChunkOutput output;
+  private int @MonotonicNonNull [] firstSampleIndices;
 
   /**
    * @param dataSource The source from which the data should be loaded.
@@ -58,15 +58,22 @@ public abstract class BaseMediaChunk extends MediaChunk {
       DataSource dataSource,
       DataSpec dataSpec,
       Format trackFormat,
-      int trackSelectionReason,
+      @C.SelectionReason int trackSelectionReason,
       @Nullable Object trackSelectionData,
       long startTimeUs,
       long endTimeUs,
       long clippedStartTimeUs,
       long clippedEndTimeUs,
       long chunkIndex) {
-    super(dataSource, dataSpec, trackFormat, trackSelectionReason, trackSelectionData, startTimeUs,
-        endTimeUs, chunkIndex);
+    super(
+        dataSource,
+        dataSpec,
+        trackFormat,
+        trackSelectionReason,
+        trackSelectionData,
+        startTimeUs,
+        endTimeUs,
+        chunkIndex);
     this.clippedStartTimeUs = clippedStartTimeUs;
     this.clippedEndTimeUs = clippedEndTimeUs;
   }
@@ -87,14 +94,11 @@ public abstract class BaseMediaChunk extends MediaChunk {
    * from this chunk.
    */
   public final int getFirstSampleIndex(int trackIndex) {
-    return firstSampleIndices[trackIndex];
+    return Assertions.checkStateNotNull(firstSampleIndices)[trackIndex];
   }
 
-  /**
-   * Returns the output most recently passed to {@link #init(BaseMediaChunkOutput)}.
-   */
+  /** Returns the output most recently passed to {@link #init(BaseMediaChunkOutput)}. */
   protected final BaseMediaChunkOutput getOutput() {
-    return output;
+    return Assertions.checkStateNotNull(output);
   }
-
 }

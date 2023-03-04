@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "api/dtls_transport_interface.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "logging/rtc_event_log/events/rtc_event_dtls_transport_state.h"
@@ -226,7 +227,35 @@ bool DtlsTransport::GetSslCipherSuite(int* cipher) {
   return dtls_->GetSslCipherSuite(cipher);
 }
 
-bool DtlsTransport::SetRemoteFingerprint(const std::string& digest_alg,
+webrtc::RTCError DtlsTransport::SetRemoteParameters(
+    absl::string_view digest_alg,
+    const uint8_t* digest,
+    size_t digest_len,
+    absl::optional<rtc::SSLRole> role) {
+  rtc::Buffer remote_fingerprint_value(digest, digest_len);
+  bool is_dtls_restart =
+      dtls_active_ && remote_fingerprint_value_ != remote_fingerprint_value;
+  // Set SSL role. Role must be set before fingerprint is applied, which
+  // initiates DTLS setup.
+  if (role) {
+    if (is_dtls_restart) {
+      dtls_role_ = *role;
+    } else {
+      if (!SetDtlsRole(*role)) {
+        return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER,
+                                "Failed to set SSL role for the transport.");
+      }
+    }
+  }
+  // Apply remote fingerprint.
+  if (!SetRemoteFingerprint(digest_alg, digest, digest_len)) {
+    return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER,
+                            "Failed to apply remote fingerprint.");
+  }
+  return webrtc::RTCError::OK();
+}
+
+bool DtlsTransport::SetRemoteFingerprint(absl::string_view digest_alg,
                                          const uint8_t* digest,
                                          size_t digest_len) {
   rtc::Buffer remote_fingerprint_value(digest, digest_len);
@@ -264,7 +293,7 @@ bool DtlsTransport::SetRemoteFingerprint(const std::string& digest_alg,
   // At this point we know we are doing DTLS
   bool fingerprint_changing = remote_fingerprint_value_.size() > 0u;
   remote_fingerprint_value_ = std::move(remote_fingerprint_value);
-  remote_fingerprint_algorithm_ = digest_alg;
+  remote_fingerprint_algorithm_ = std::string(digest_alg);
 
   if (dtls_ && !fingerprint_changing) {
     // This can occur if DTLS is set up before a remote fingerprint is
@@ -312,7 +341,7 @@ std::unique_ptr<rtc::SSLCertChain> DtlsTransport::GetRemoteSSLCertChain()
   return dtls_->GetPeerSSLCertChain();
 }
 
-bool DtlsTransport::ExportKeyingMaterial(const std::string& label,
+bool DtlsTransport::ExportKeyingMaterial(absl::string_view label,
                                          const uint8_t* context,
                                          size_t context_len,
                                          bool use_context,

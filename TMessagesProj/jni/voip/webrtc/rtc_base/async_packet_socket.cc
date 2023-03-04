@@ -24,9 +24,23 @@ PacketOptions::PacketOptions(DiffServCodePoint dscp) : dscp(dscp) {}
 PacketOptions::PacketOptions(const PacketOptions& other) = default;
 PacketOptions::~PacketOptions() = default;
 
-AsyncPacketSocket::AsyncPacketSocket() = default;
+AsyncPacketSocket::AsyncPacketSocket() {
+  network_checker_.Detach();
+}
 
 AsyncPacketSocket::~AsyncPacketSocket() = default;
+
+void AsyncPacketSocket::SubscribeClose(
+    const void* removal_tag,
+    std::function<void(AsyncPacketSocket*, int)> callback) {
+  RTC_DCHECK_RUN_ON(&network_checker_);
+  on_close_.AddReceiver(removal_tag, std::move(callback));
+}
+
+void AsyncPacketSocket::UnsubscribeClose(const void* removal_tag) {
+  RTC_DCHECK_RUN_ON(&network_checker_);
+  on_close_.RemoveReceivers(removal_tag);
+}
 
 void CopySocketInformationToPacketInfo(size_t packet_size_bytes,
                                        const AsyncPacketSocket& socket_from,

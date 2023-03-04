@@ -16,7 +16,6 @@
 package com.google.android.exoplayer2.upstream.cache;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.cache.Cache.CacheException;
 import java.util.TreeSet;
 
 /** Evicts least recently used cache files first. */
@@ -70,11 +69,7 @@ public final class LeastRecentlyUsedCacheEvictor implements CacheEvictor {
 
   private void evictCache(Cache cache, long requiredSpace) {
     while (currentSize + requiredSpace > maxBytes && !leastRecentlyUsed.isEmpty()) {
-      try {
-        cache.removeSpan(leastRecentlyUsed.first());
-      } catch (CacheException e) {
-        // do nothing.
-      }
+      cache.removeSpan(leastRecentlyUsed.first());
     }
   }
 

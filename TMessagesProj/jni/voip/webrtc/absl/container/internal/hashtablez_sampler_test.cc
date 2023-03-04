@@ -21,7 +21,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/base/attributes.h"
-#include "absl/container/internal/have_sse.h"
+#include "absl/base/config.h"
 #include "absl/profiling/internal/sample_recorder.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "absl/synchronization/internal/thread_pool.h"
@@ -30,7 +30,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 
-#if ABSL_INTERNAL_RAW_HASH_SET_HAVE_SSE2
+#ifdef ABSL_INTERNAL_HAVE_SSE2
 constexpr int kProbeLength = 16;
 #else
 constexpr int kProbeLength = 8;

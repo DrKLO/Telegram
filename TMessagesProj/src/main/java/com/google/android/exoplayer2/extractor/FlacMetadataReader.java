@@ -16,20 +16,17 @@
 package com.google.android.exoplayer2.extractor;
 
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.VorbisUtil.CommentHeader;
+import com.google.android.exoplayer2.extractor.flac.FlacConstants;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.flac.PictureFrame;
 import com.google.android.exoplayer2.metadata.id3.Id3Decoder;
-import com.google.android.exoplayer2.util.FlacConstants;
-import com.google.android.exoplayer2.util.FlacStreamMetadata;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -61,12 +58,10 @@ public final class FlacMetadataReader {
    *     is {@code false}.
    * @throws IOException If peeking from the input fails. In this case, there is no guarantee on the
    *     peek position.
-   * @throws InterruptedException If interrupted while peeking from input. In this case, there is no
-   *     guarantee on the peek position.
    */
   @Nullable
   public static Metadata peekId3Metadata(ExtractorInput input, boolean parseData)
-      throws IOException, InterruptedException {
+      throws IOException {
     @Nullable
     Id3Decoder.FramePredicate id3FramePredicate = parseData ? null : Id3Decoder.NO_FRAMES_PREDICATE;
     @Nullable Metadata id3Metadata = new Id3Peeker().peekId3Data(input, id3FramePredicate);
@@ -80,13 +75,10 @@ public final class FlacMetadataReader {
    * @return Whether the data peeked is the FLAC stream marker.
    * @throws IOException If peeking from the input fails. In this case, the peek position is left
    *     unchanged.
-   * @throws InterruptedException If interrupted while peeking from input. In this case, the peek
-   *     position is left unchanged.
    */
-  public static boolean checkAndPeekStreamMarker(ExtractorInput input)
-      throws IOException, InterruptedException {
+  public static boolean checkAndPeekStreamMarker(ExtractorInput input) throws IOException {
     ParsableByteArray scratch = new ParsableByteArray(FlacConstants.STREAM_MARKER_SIZE);
-    input.peekFully(scratch.data, 0, FlacConstants.STREAM_MARKER_SIZE);
+    input.peekFully(scratch.getData(), 0, FlacConstants.STREAM_MARKER_SIZE);
     return scratch.readUnsignedInt() == STREAM_MARKER;
   }
 
@@ -102,12 +94,10 @@ public final class FlacMetadataReader {
    *     is {@code false}.
    * @throws IOException If reading from the input fails. In this case, the read position is left
    *     unchanged and there is no guarantee on the peek position.
-   * @throws InterruptedException If interrupted while reading from input. In this case, the read
-   *     position is left unchanged and there is no guarantee on the peek position.
    */
   @Nullable
   public static Metadata readId3Metadata(ExtractorInput input, boolean parseData)
-      throws IOException, InterruptedException {
+      throws IOException {
     input.resetPeekPosition();
     long startingPeekPosition = input.getPeekPosition();
     @Nullable Metadata id3Metadata = peekId3Metadata(input, parseData);
@@ -124,15 +114,13 @@ public final class FlacMetadataReader {
    *     position of {@code input} is advanced by {@link FlacConstants#STREAM_MARKER_SIZE} bytes.
    * @throws IOException If reading from the input fails. In this case, the position is left
    *     unchanged.
-   * @throws InterruptedException If interrupted while reading from input. In this case, the
-   *     position is left unchanged.
    */
-  public static void readStreamMarker(ExtractorInput input)
-      throws IOException, InterruptedException {
+  public static void readStreamMarker(ExtractorInput input) throws IOException {
     ParsableByteArray scratch = new ParsableByteArray(FlacConstants.STREAM_MARKER_SIZE);
-    input.readFully(scratch.data, 0, FlacConstants.STREAM_MARKER_SIZE);
+    input.readFully(scratch.getData(), 0, FlacConstants.STREAM_MARKER_SIZE);
     if (scratch.readUnsignedInt() != STREAM_MARKER) {
-      throw new ParserException("Failed to read FLAC stream marker.");
+      throw ParserException.createForMalformedContainer(
+          "Failed to read FLAC stream marker.", /* cause= */ null);
     }
   }
 
@@ -154,13 +142,9 @@ public final class FlacMetadataReader {
    *     start of a metadata block and there is no guarantee on the peek position.
    * @throws IOException If reading from the input fails. In this case, the read position will be at
    *     the start of a metadata block and there is no guarantee on the peek position.
-   * @throws InterruptedException If interrupted while reading from input. In this case, the read
-   *     position will be at the start of a metadata block and there is no guarantee on the peek
-   *     position.
    */
   public static boolean readMetadataBlock(
-      ExtractorInput input, FlacStreamMetadataHolder metadataHolder)
-      throws IOException, InterruptedException {
+      ExtractorInput input, FlacStreamMetadataHolder metadataHolder) throws IOException {
     input.resetPeekPosition();
     ParsableBitArray scratch = new ParsableBitArray(new byte[4]);
     input.peekFully(scratch.data, 0, FlacConstants.METADATA_BLOCK_HEADER_SIZE);
@@ -171,7 +155,7 @@ public final class FlacMetadataReader {
     if (type == FlacConstants.METADATA_TYPE_STREAM_INFO) {
       metadataHolder.flacStreamMetadata = readStreamInfoBlock(input);
     } else {
-      FlacStreamMetadata flacStreamMetadata = metadataHolder.flacStreamMetadata;
+      @Nullable FlacStreamMetadata flacStreamMetadata = metadataHolder.flacStreamMetadata;
       if (flacStreamMetadata == null) {
         throw new IllegalArgumentException();
       }
@@ -183,9 +167,12 @@ public final class FlacMetadataReader {
         metadataHolder.flacStreamMetadata =
             flacStreamMetadata.copyWithVorbisComments(vorbisComments);
       } else if (type == FlacConstants.METADATA_TYPE_PICTURE) {
-        PictureFrame pictureFrame = readPictureMetadataBlock(input, length);
+        ParsableByteArray pictureBlock = new ParsableByteArray(length);
+        input.readFully(pictureBlock.getData(), 0, length);
+        pictureBlock.skipBytes(FlacConstants.METADATA_BLOCK_HEADER_SIZE);
+        PictureFrame pictureFrame = PictureFrame.fromPictureBlock(pictureBlock);
         metadataHolder.flacStreamMetadata =
-            flacStreamMetadata.copyWithPictureFrames(Collections.singletonList(pictureFrame));
+            flacStreamMetadata.copyWithPictureFrames(ImmutableList.of(pictureFrame));
       } else {
         input.skipFully(length);
       }
@@ -208,7 +195,7 @@ public final class FlacMetadataReader {
     data.skipBytes(1);
     int length = data.readUnsignedInt24();
 
-    long seekTableEndPosition = data.getPosition() + length;
+    long seekTableEndPosition = (long) data.getPosition() + length;
     int seekPointCount = length / SEEK_POINT_SIZE;
     long[] pointSampleNumbers = new long[seekPointCount];
     long[] pointOffsets = new long[seekPointCount];
@@ -240,27 +227,25 @@ public final class FlacMetadataReader {
    * @return The frame start marker (which must be the same for all the frames in the stream).
    * @throws ParserException If an error occurs parsing the frame start marker.
    * @throws IOException If peeking from the input fails.
-   * @throws InterruptedException If interrupted while peeking from input.
    */
-  public static int getFrameStartMarker(ExtractorInput input)
-      throws IOException, InterruptedException {
+  public static int getFrameStartMarker(ExtractorInput input) throws IOException {
     input.resetPeekPosition();
     ParsableByteArray scratch = new ParsableByteArray(2);
-    input.peekFully(scratch.data, 0, 2);
+    input.peekFully(scratch.getData(), 0, 2);
 
     int frameStartMarker = scratch.readUnsignedShort();
     int syncCode = frameStartMarker >> 2;
     if (syncCode != SYNC_CODE) {
       input.resetPeekPosition();
-      throw new ParserException("First frame does not start with sync code.");
+      throw ParserException.createForMalformedContainer(
+          "First frame does not start with sync code.", /* cause= */ null);
     }
 
     input.resetPeekPosition();
     return frameStartMarker;
   }
 
-  private static FlacStreamMetadata readStreamInfoBlock(ExtractorInput input)
-      throws IOException, InterruptedException {
+  private static FlacStreamMetadata readStreamInfoBlock(ExtractorInput input) throws IOException {
     byte[] scratchData = new byte[FlacConstants.STREAM_INFO_BLOCK_SIZE];
     input.readFully(scratchData, 0, FlacConstants.STREAM_INFO_BLOCK_SIZE);
     return new FlacStreamMetadata(
@@ -268,44 +253,21 @@ public final class FlacMetadataReader {
   }
 
   private static FlacStreamMetadata.SeekTable readSeekTableMetadataBlock(
-      ExtractorInput input, int length) throws IOException, InterruptedException {
+      ExtractorInput input, int length) throws IOException {
     ParsableByteArray scratch = new ParsableByteArray(length);
-    input.readFully(scratch.data, 0, length);
+    input.readFully(scratch.getData(), 0, length);
     return readSeekTableMetadataBlock(scratch);
   }
 
   private static List<String> readVorbisCommentMetadataBlock(ExtractorInput input, int length)
-      throws IOException, InterruptedException {
+      throws IOException {
     ParsableByteArray scratch = new ParsableByteArray(length);
-    input.readFully(scratch.data, 0, length);
+    input.readFully(scratch.getData(), 0, length);
     scratch.skipBytes(FlacConstants.METADATA_BLOCK_HEADER_SIZE);
     CommentHeader commentHeader =
         VorbisUtil.readVorbisCommentHeader(
             scratch, /* hasMetadataHeader= */ false, /* hasFramingBit= */ false);
     return Arrays.asList(commentHeader.comments);
-  }
-
-  private static PictureFrame readPictureMetadataBlock(ExtractorInput input, int length)
-      throws IOException, InterruptedException {
-    ParsableByteArray scratch = new ParsableByteArray(length);
-    input.readFully(scratch.data, 0, length);
-    scratch.skipBytes(FlacConstants.METADATA_BLOCK_HEADER_SIZE);
-
-    int pictureType = scratch.readInt();
-    int mimeTypeLength = scratch.readInt();
-    String mimeType = scratch.readString(mimeTypeLength, Charset.forName(C.ASCII_NAME));
-    int descriptionLength = scratch.readInt();
-    String description = scratch.readString(descriptionLength);
-    int width = scratch.readInt();
-    int height = scratch.readInt();
-    int depth = scratch.readInt();
-    int colors = scratch.readInt();
-    int pictureDataLength = scratch.readInt();
-    byte[] pictureData = new byte[pictureDataLength];
-    scratch.readBytes(pictureData, 0, pictureDataLength);
-
-    return new PictureFrame(
-        pictureType, mimeType, description, width, height, depth, colors, pictureData);
   }
 
   private FlacMetadataReader() {}

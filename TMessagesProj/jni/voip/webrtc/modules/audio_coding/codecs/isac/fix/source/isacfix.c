@@ -381,7 +381,7 @@ int WebRtcIsacfix_Encode(ISACFIX_MainStruct *ISAC_main_inst,
 /****************************************************************************
  * WebRtcIsacfix_GetNewBitStream(...)
  *
- * This function returns encoded data, with the recieved bwe-index in the
+ * This function returns encoded data, with the received bwe-index in the
  * stream. It should always return a complete packet, i.e. only called once
  * even for 60 msec frames
  *

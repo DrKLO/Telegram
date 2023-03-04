@@ -968,10 +968,20 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
     }
 
     public static String capitalFirst(String text) {
-        if (text == null) {
+        if (text == null || text.length() <= 0) {
             return null;
         }
         return text.substring(0, 1).toUpperCase() + text.substring(1);
+    }
+
+    public static CharSequence capitalFirst(CharSequence text) {
+        if (text == null || text.length() <= 0) {
+            return null;
+        }
+        SpannableStringBuilder builder = text instanceof SpannableStringBuilder ? (SpannableStringBuilder) text : SpannableStringBuilder.valueOf(text);
+        String string = builder.toString();
+        builder.replace(0, 1, string.substring(0, 1).toUpperCase());
+        return builder;
     }
 
     public static String languageName(String locale) {
@@ -997,19 +1007,13 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
 
         // getting language name from system
-        try {
-            Locale[] allLocales = Locale.getAvailableLocales();
-            Locale found = null;
-            for (int i = 0; i < allLocales.length; ++i) {
-                if (TextUtils.equals(simplifiedLocale, allLocales[i].getLanguage())) {
-                    found = allLocales[i];
-                    break;
-                }
-            }
-            if (found != null) {
-                return found.getDisplayLanguage(Locale.getDefault());
-            }
-        } catch (Exception ignore) {}
+        String systemLangName = systemLanguageName(locale);
+        if (systemLangName == null) {
+            systemLangName = systemLanguageName(simplifiedLocale);
+        }
+        if (systemLangName != null) {
+            return systemLangName;
+        }
 
         // getting language name from lang packs
         if ("no".equals(locale)) {
@@ -1027,6 +1031,46 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             return thisLanguageInfo.name;
         }
     }
+
+    public static String systemLanguageName(String langCode) {
+        return systemLanguageName(langCode, false);
+    }
+
+    private static HashMap<String, Locale> localesByCode;
+    public static String systemLanguageName(String langCode, boolean inItsOwnLocale) {
+        if (langCode == null) {
+            return null;
+        }
+        if (localesByCode == null) {
+            localesByCode = new HashMap<>();
+            try {
+                Locale[] allLocales = Locale.getAvailableLocales();
+                for (int i = 0; i < allLocales.length; ++i) {
+                    localesByCode.put(allLocales[i].getLanguage(), allLocales[i]);
+                    String region = allLocales[i].getCountry();
+                    if (region != null && region.length() > 0) {
+                        localesByCode.put(allLocales[i].getLanguage() + "-" + region.toLowerCase(), allLocales[i]);
+                    }
+                }
+            } catch (Exception ignore) {}
+        }
+        langCode = langCode.replace("_", "-").toLowerCase();
+        try {
+            Locale locale = localesByCode.get(langCode);
+            if (locale != null) {
+                String name = locale.getDisplayLanguage(inItsOwnLocale ? locale : Locale.getDefault());
+                if (langCode.contains("-")) {
+                    String region = locale.getDisplayCountry(inItsOwnLocale ? locale : Locale.getDefault());
+                    if (!TextUtils.isEmpty(region)) {
+                        name += " (" + region + ")";
+                    }
+                }
+                return name;
+            }
+        } catch (Exception ignore) {}
+        return null;
+    }
+
 
     @Override
     public void show() {

@@ -10,6 +10,7 @@ import android.graphics.Path;
 import android.graphics.Shader;
 import android.widget.ImageView;
 
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -63,7 +64,8 @@ public class PremiumLockIconView extends ImageView {
     boolean waitingImage;
     boolean wasDrawn;
 
-    CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable();
+    @Nullable
+    CellFlickerDrawable cellFlickerDrawable;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -113,6 +115,9 @@ public class PremiumLockIconView extends ImageView {
             } else {
                 PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -AndroidUtilities.dp(24), 0);
                 canvas.drawPath(path, PremiumGradient.getInstance().getMainGradientPaint());
+            }
+            if (cellFlickerDrawable == null) {
+                cellFlickerDrawable = new CellFlickerDrawable();
             }
             cellFlickerDrawable.setParentWidth(getMeasuredWidth() / 2);
             cellFlickerDrawable.drawFrame = false;
@@ -226,8 +231,10 @@ public class PremiumLockIconView extends ImageView {
 
     public void play(int delay) {
         isEnter = true;
-        cellFlickerDrawable.progress = 0;
-        cellFlickerDrawable.repeatEnabled = false;
+        if (cellFlickerDrawable != null) {
+            cellFlickerDrawable.progress = 0;
+            cellFlickerDrawable.repeatEnabled = false;
+        }
         invalidate();
         animate().scaleX(1.1f).scaleY(1.1f).setStartDelay(delay).setInterpolator(AndroidUtilities.overshootInterpolator).setDuration(300);
     }

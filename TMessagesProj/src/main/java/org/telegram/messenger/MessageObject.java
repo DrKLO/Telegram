@@ -87,8 +87,10 @@ public class MessageObject {
     public static final int TYPE_VIDEO = 3;
     public static final int TYPE_GEO = 4; // TL_messageMediaGeo, TL_messageMediaVenue, TL_messageMediaGeoLive
     public static final int TYPE_ROUND_VIDEO = 5;
+    public static final int TYPE_LOADING = 6;
     public static final int TYPE_GIF = 8;
     public static final int TYPE_FILE = 9;
+    public static final int TYPE_DATE = 10;
     public static final int TYPE_ACTION_PHOTO = 11;
     public static final int TYPE_CONTACT = 12;
     public static final int TYPE_STICKER = 13;
@@ -146,7 +148,7 @@ public class MessageObject {
     public float bufferedProgress;
     public float gifState;
     public int audioProgressSec;
-    public int audioPlayerDuration;
+    public int audioPlayerDuration, attributeDuration;
     public boolean isDateObject;
     public TLObject photoThumbsObject;
     public TLObject photoThumbsObject2;
@@ -1300,7 +1302,7 @@ public class MessageObject {
             dateMsg.id = 0;
             dateMsg.date = event.date;
             MessageObject dateObj = new MessageObject(accountNum, dateMsg, false, false);
-            dateObj.type = 10;
+            dateObj.type = TYPE_DATE;
             dateObj.contentType = 1;
             dateObj.isDateObject = true;
             if (addToEnd) {
@@ -2358,6 +2360,7 @@ public class MessageObject {
         messageOwner.peer_id.channel_id = chat.id;
         messageOwner.unread = false;
         MediaController mediaController = MediaController.getInstance();
+        isOutOwnerCached = null;
 
         if (message instanceof TLRPC.TL_messageEmpty) {
             message = null;
@@ -2514,7 +2517,7 @@ public class MessageObject {
     }
 
     public boolean updateTranslation() {
-        return updateTranslation(true);
+        return updateTranslation(false);
     }
 
     public boolean translated = false;
@@ -3904,7 +3907,7 @@ public class MessageObject {
                 type = TYPE_EXTENDED_MEDIA_PREVIEW;
             } else if (getMedia(messageOwner).ttl_seconds != 0 && (getMedia(messageOwner).photo instanceof TLRPC.TL_photoEmpty || getDocument() instanceof TLRPC.TL_documentEmpty)) {
                 contentType = 1;
-                type = 10;
+                type = TYPE_DATE;
             } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDice) {
                 type = TYPE_ANIMATED_STICKER;
                 if (getMedia(messageOwner).document == null) {
@@ -3975,7 +3978,7 @@ public class MessageObject {
             } else if (messageOwner.action instanceof TLRPC.TL_messageEncryptedAction) {
                 if (messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages || messageOwner.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
                     contentType = 1;
-                    type = 10;
+                    type = TYPE_DATE;
                 } else {
                     contentType = -1;
                     type = -1;
@@ -3987,7 +3990,7 @@ public class MessageObject {
                 type = TYPE_PHONE_CALL;
             } else {
                 contentType = 1;
-                type = 10;
+                type = TYPE_DATE;
             }
         }
         if (oldType != 1000 && oldType != type && type != TYPE_EMOJIS) {
@@ -4441,7 +4444,7 @@ public class MessageObject {
                     return FileLoader.getAttachFileName(sizeFull);
                 }
             }
-        } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage) {
+        } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && getMedia(messageOwner).webpage != null) {
             return FileLoader.getAttachFileName(getMedia(messageOwner).webpage.document);
         }
         return "";
@@ -5538,15 +5541,13 @@ public class MessageObject {
                 for (int n = 0; n < currentBlockLinesCount; n++) {
                     try {
                         lineWidth = block.textLayout.getLineWidth(n);
-                    } catch (Exception e) {
-                        FileLog.e(e);
+                    } catch (Exception ignore) {
                         lineWidth = 0;
                     }
 
                     try {
                         lineLeft = block.textLayout.getLineLeft(n);
-                    } catch (Exception e) {
-                        FileLog.e(e);
+                    } catch (Exception ignore) {
                         lineLeft = 0;
                     }
 
@@ -5608,7 +5609,7 @@ public class MessageObject {
         return messageOwner.out;
     }
 
-    Boolean isOutOwnerCached;
+    public Boolean isOutOwnerCached;
     public boolean isOutOwner() {
         if (preview) {
             return true;
@@ -6087,7 +6088,7 @@ public class MessageObject {
     }
 
     public static boolean canAutoplayAnimatedSticker(TLRPC.Document document) {
-        return (isAnimatedStickerDocument(document, true) || isVideoStickerDocument(document)) && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && !SharedConfig.getLiteMode().enabled();
+        return (isAnimatedStickerDocument(document, true) || isVideoStickerDocument(document)) && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_CHAT);
     }
 
     public static boolean isMaskDocument(TLRPC.Document document) {
@@ -6795,6 +6796,9 @@ public class MessageObject {
     }
 
     public int getDuration() {
+        if (attributeDuration > 0) {
+            return attributeDuration;
+        }
         TLRPC.Document document = getDocument();
         if (document == null) {
             return 0;
@@ -6805,9 +6809,9 @@ public class MessageObject {
         for (int a = 0; a < document.attributes.size(); a++) {
             TLRPC.DocumentAttribute attribute = document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
-                return attribute.duration;
+                return attributeDuration = attribute.duration;
             } else if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
-                return attribute.duration;
+                return attributeDuration = attribute.duration;
             }
         }
         return audioPlayerDuration;

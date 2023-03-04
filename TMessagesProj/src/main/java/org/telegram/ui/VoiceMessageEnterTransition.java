@@ -10,10 +10,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
-import android.transition.Transition;
-import android.view.View;
 import android.view.animation.LinearInterpolator;
-import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -47,13 +44,15 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         this.messageView = messageView;
         this.container = container;
         this.listView = listView;
-        fromRadius = chatActivityEnterView.getRecordCicle().drawingCircleRadius;
 
         messageView.setEnterTransitionInProgress(true);
 
-        recordCircle = chatActivityEnterView.getRecordCicle();
-        recordCircle.voiceEnterTransitionInProgress = true;
-        recordCircle.skipDraw = true;
+        recordCircle = chatActivityEnterView.getRecordCircle();
+        if (recordCircle != null) {
+            fromRadius = recordCircle.drawingCircleRadius;
+            recordCircle.voiceEnterTransitionInProgress = true;
+            recordCircle.skipDraw = true;
+        }
 
         gradientMatrix = new Matrix();
         gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -79,7 +78,9 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
             public void onAnimationEnd(Animator animation) {
                 messageView.setEnterTransitionInProgress(false);
                 container.removeTransition(VoiceMessageEnterTransition.this);
-                recordCircle.skipDraw = false;
+                if (recordCircle != null) {
+                    recordCircle.skipDraw = false;
+                }
             }
         });
 
@@ -101,8 +102,8 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         float moveProgress = progress;
         float hideWavesProgress = progress > step1Time ? 1f : progress / step1Time;
 
-        float fromCx = recordCircle.drawingCx + recordCircle.getX() - container.getX();
-        float fromCy = recordCircle.drawingCy + recordCircle.getY() - container.getY();
+        float fromCx = recordCircle == null ? 0 : recordCircle.drawingCx + recordCircle.getX() - container.getX();
+        float fromCy = recordCircle == null ? 0 : recordCircle.drawingCy + recordCircle.getY() - container.getY();
 
         float toCy;
         float toCx;
@@ -139,7 +140,9 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
 
         circlePaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), getThemedColor(messageView.getRadialProgress().getCircleColorKey()), progress));
 
-        recordCircle.drawWaves(canvas, cx, cy, 1f - hideWavesProgress);
+        if (recordCircle != null) {
+            recordCircle.drawWaves(canvas, cx, cy, 1f - hideWavesProgress);
+        }
 
         canvas.drawCircle(cx, cy, radius, circlePaint);
 
@@ -165,7 +168,9 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         //restore clipRect
 //        canvas.restore();
 
-        recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
+        if (recordCircle != null) {
+            recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
+        }
     }
 
     private int getThemedColor(String key) {

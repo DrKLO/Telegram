@@ -29,10 +29,10 @@ bool UpdateMeasurements(StreamSynchronization::Measurements* stream,
                         const Syncable::Info& info) {
   stream->latest_timestamp = info.latest_received_capture_timestamp;
   stream->latest_receive_time_ms = info.latest_receive_time_ms;
-  bool new_rtcp_sr = false;
   return stream->rtp_to_ntp.UpdateMeasurements(
-      info.capture_time_ntp_secs, info.capture_time_ntp_frac,
-      info.capture_time_source_clock, &new_rtcp_sr);
+             NtpTime(info.capture_time_ntp_secs, info.capture_time_ntp_frac),
+             info.capture_time_source_clock) !=
+         RtpToNtpEstimator::kInvalidMeasurement;
 }
 
 }  // namespace
@@ -183,32 +183,35 @@ bool RtpStreamsSynchronizer::GetStreamSyncOffsetInMs(
     return false;
   }
 
-  int64_t latest_audio_ntp;
-  if (!audio_measurement_.rtp_to_ntp.Estimate(audio_rtp_timestamp,
-                                              &latest_audio_ntp)) {
+  NtpTime latest_audio_ntp =
+      audio_measurement_.rtp_to_ntp.Estimate(audio_rtp_timestamp);
+  if (!latest_audio_ntp.Valid()) {
     return false;
   }
+  int64_t latest_audio_ntp_ms = latest_audio_ntp.ToMs();
 
-  syncable_audio_->SetEstimatedPlayoutNtpTimestampMs(latest_audio_ntp, time_ms);
+  syncable_audio_->SetEstimatedPlayoutNtpTimestampMs(latest_audio_ntp_ms,
+                                                     time_ms);
 
-  int64_t latest_video_ntp;
-  if (!video_measurement_.rtp_to_ntp.Estimate(rtp_timestamp,
-                                              &latest_video_ntp)) {
+  NtpTime latest_video_ntp =
+      video_measurement_.rtp_to_ntp.Estimate(rtp_timestamp);
+  if (!latest_video_ntp.Valid()) {
     return false;
   }
+  int64_t latest_video_ntp_ms = latest_video_ntp.ToMs();
 
   // Current audio ntp.
   int64_t now_ms = rtc::TimeMillis();
-  latest_audio_ntp += (now_ms - time_ms);
+  latest_audio_ntp_ms += (now_ms - time_ms);
 
   // Remove video playout delay.
   int64_t time_to_render_ms = render_time_ms - now_ms;
   if (time_to_render_ms > 0)
-    latest_video_ntp -= time_to_render_ms;
+    latest_video_ntp_ms -= time_to_render_ms;
 
-  *video_playout_ntp_ms = latest_video_ntp;
-  *stream_offset_ms = latest_audio_ntp - latest_video_ntp;
-  *estimated_freq_khz = video_measurement_.rtp_to_ntp.params()->frequency_khz;
+  *video_playout_ntp_ms = latest_video_ntp_ms;
+  *stream_offset_ms = latest_audio_ntp_ms - latest_video_ntp_ms;
+  *estimated_freq_khz = video_measurement_.rtp_to_ntp.EstimatedFrequencyKhz();
   return true;
 }
 

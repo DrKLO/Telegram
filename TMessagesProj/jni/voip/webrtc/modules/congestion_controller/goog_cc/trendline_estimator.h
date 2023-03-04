@@ -17,10 +17,9 @@
 #include <memory>
 #include <utility>
 
+#include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "modules/congestion_controller/goog_cc/delay_increase_detector_interface.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/experiments/struct_parameters_parser.h"
 
 namespace webrtc {
@@ -30,8 +29,7 @@ struct TrendlineEstimatorSettings {
   static constexpr unsigned kDefaultTrendlineWindowSize = 20;
 
   TrendlineEstimatorSettings() = delete;
-  explicit TrendlineEstimatorSettings(
-      const WebRtcKeyValueConfig* key_value_config);
+  explicit TrendlineEstimatorSettings(const FieldTrialsView* key_value_config);
 
   // Sort the packets in the window. Should be redundant,
   // but then almost no cost.
@@ -52,10 +50,13 @@ struct TrendlineEstimatorSettings {
 
 class TrendlineEstimator : public DelayIncreaseDetectorInterface {
  public:
-  TrendlineEstimator(const WebRtcKeyValueConfig* key_value_config,
+  TrendlineEstimator(const FieldTrialsView* key_value_config,
                      NetworkStatePredictor* network_state_predictor);
 
   ~TrendlineEstimator() override;
+
+  TrendlineEstimator(const TrendlineEstimator&) = delete;
+  TrendlineEstimator& operator=(const TrendlineEstimator&) = delete;
 
   // Update the estimator with a new sample. The deltas should represent deltas
   // between timestamp groups as defined by the InterArrival class.
@@ -118,8 +119,6 @@ class TrendlineEstimator : public DelayIncreaseDetectorInterface {
   BandwidthUsage hypothesis_;
   BandwidthUsage hypothesis_predicted_;
   NetworkStatePredictor* network_state_predictor_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(TrendlineEstimator);
 };
 }  // namespace webrtc
 

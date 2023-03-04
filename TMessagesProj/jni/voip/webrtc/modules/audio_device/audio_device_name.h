@@ -14,6 +14,8 @@
 #include <deque>
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace webrtc {
 
 struct AudioDeviceName {
@@ -25,7 +27,7 @@ struct AudioDeviceName {
   static const char kDefaultDeviceId[];
 
   AudioDeviceName() = default;
-  AudioDeviceName(std::string device_name, std::string unique_id);
+  AudioDeviceName(absl::string_view device_name, absl::string_view unique_id);
 
   ~AudioDeviceName() = default;
 

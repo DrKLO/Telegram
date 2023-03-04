@@ -16,6 +16,8 @@
 #include <string>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "p2p/base/connection.h"
 #include "p2p/base/port.h"
 #include "rtc_base/async_packet_socket.h"
@@ -33,18 +35,20 @@ class TCPConnection;
 // call this TCPPort::OnReadPacket (3 arg) to dispatch to a connection.
 class TCPPort : public Port {
  public:
-  static std::unique_ptr<TCPPort> Create(rtc::Thread* thread,
-                                         rtc::PacketSocketFactory* factory,
-                                         rtc::Network* network,
-                                         uint16_t min_port,
-                                         uint16_t max_port,
-                                         const std::string& username,
-                                         const std::string& password,
-                                         bool allow_listen) {
+  static std::unique_ptr<TCPPort> Create(
+      rtc::Thread* thread,
+      rtc::PacketSocketFactory* factory,
+      const rtc::Network* network,
+      uint16_t min_port,
+      uint16_t max_port,
+      absl::string_view username,
+      absl::string_view password,
+      bool allow_listen,
+      const webrtc::FieldTrialsView* field_trials = nullptr) {
     // Using `new` to access a non-public constructor.
     return absl::WrapUnique(new TCPPort(thread, factory, network, min_port,
                                         max_port, username, password,
-                                        allow_listen));
+                                        allow_listen, field_trials));
   }
   ~TCPPort() override;
 
@@ -59,18 +63,19 @@ class TCPPort : public Port {
   int GetOption(rtc::Socket::Option opt, int* value) override;
   int SetOption(rtc::Socket::Option opt, int value) override;
   int GetError() override;
-  bool SupportsProtocol(const std::string& protocol) const override;
+  bool SupportsProtocol(absl::string_view protocol) const override;
   ProtocolType GetProtocol() const override;
 
  protected:
   TCPPort(rtc::Thread* thread,
           rtc::PacketSocketFactory* factory,
-          rtc::Network* network,
+          const rtc::Network* network,
           uint16_t min_port,
           uint16_t max_port,
-          const std::string& username,
-          const std::string& password,
-          bool allow_listen);
+          absl::string_view username,
+          absl::string_view password,
+          bool allow_listen,
+          const webrtc::FieldTrialsView* field_trials);
 
   // Handles sending using the local TCP socket.
   int SendTo(const void* data,
@@ -120,12 +125,12 @@ class TCPPort : public Port {
   friend class TCPConnection;
 };
 
-class TCPConnection : public Connection {
+class TCPConnection : public Connection, public sigslot::has_slots<> {
  public:
   // Connection is outgoing unless socket is specified
-  TCPConnection(TCPPort* port,
+  TCPConnection(rtc::WeakPtr<Port> tcp_port,
                 const Candidate& candidate,
-                rtc::AsyncPacketSocket* socket = 0);
+                rtc::AsyncPacketSocket* socket = nullptr);
   ~TCPConnection() override;
 
   int Send(const void* data,
@@ -135,8 +140,6 @@ class TCPConnection : public Connection {
 
   rtc::AsyncPacketSocket* socket() { return socket_.get(); }
 
-  void OnMessage(rtc::Message* pmsg) override;
-
   // Allow test cases to overwrite the default timeout period.
   int reconnection_timeout() const { return reconnection_timeout_; }
   void set_reconnection_timeout(int timeout_in_ms) {
@@ -144,14 +147,9 @@ class TCPConnection : public Connection {
   }
 
  protected:
-  enum {
-    MSG_TCPCONNECTION_DELAYED_ONCLOSE = Connection::MSG_FIRST_AVAILABLE,
-    MSG_TCPCONNECTION_FAILED_CREATE_SOCKET,
-  };
-
   // Set waiting_for_stun_binding_complete_ to false to allow data packets in
   // addition to what Port::OnConnectionRequestResponse does.
-  void OnConnectionRequestResponse(ConnectionRequest* req,
+  void OnConnectionRequestResponse(StunRequest* req,
                                    StunMessage* response) override;
 
  private:
@@ -172,6 +170,11 @@ class TCPConnection : public Connection {
                     const int64_t& packet_time_us);
   void OnReadyToSend(rtc::AsyncPacketSocket* socket);
 
+  TCPPort* tcp_port() {
+    RTC_DCHECK_EQ(port()->GetProtocol(), PROTO_TCP);
+    return static_cast<TCPPort*>(port());
+  }
+
   std::unique_ptr<rtc::AsyncPacketSocket> socket_;
   int error_;
   bool outgoing_;
@@ -189,6 +192,8 @@ class TCPConnection : public Connection {
 
   // Allow test case to overwrite the default timeout period.
   int reconnection_timeout_;
+
+  webrtc::ScopedTaskSafety network_safety_;
 
   friend class TCPPort;
 };

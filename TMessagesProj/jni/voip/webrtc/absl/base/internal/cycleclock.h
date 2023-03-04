@@ -42,13 +42,19 @@
 #ifndef ABSL_BASE_INTERNAL_CYCLECLOCK_H_
 #define ABSL_BASE_INTERNAL_CYCLECLOCK_H_
 
+#include <atomic>
 #include <cstdint>
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
+#include "absl/base/internal/cycleclock_config.h"
+#include "absl/base/internal/unscaledcycleclock.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace base_internal {
+
+using CycleClockSourceFunc = int64_t (*)();
 
 // -----------------------------------------------------------------------------
 // CycleClock
@@ -68,12 +74,21 @@ class CycleClock {
   static double Frequency();
 
  private:
+#if ABSL_USE_UNSCALED_CYCLECLOCK
+  static CycleClockSourceFunc LoadCycleClockSource();
+
+  static constexpr int32_t kShift = kCycleClockShift;
+  static constexpr double kFrequencyScale = kCycleClockFrequencyScale;
+
+  ABSL_CONST_INIT static std::atomic<CycleClockSourceFunc> cycle_clock_source_;
+#endif  //  ABSL_USE_UNSCALED_CYCLECLOC
+
   CycleClock() = delete;  // no instances
   CycleClock(const CycleClock&) = delete;
   CycleClock& operator=(const CycleClock&) = delete;
-};
 
-using CycleClockSourceFunc = int64_t (*)();
+  friend class CycleClockSource;
+};
 
 class CycleClockSource {
  private:
@@ -86,6 +101,41 @@ class CycleClockSource {
   // the default source.
   static void Register(CycleClockSourceFunc source);
 };
+
+#if ABSL_USE_UNSCALED_CYCLECLOCK
+
+inline CycleClockSourceFunc CycleClock::LoadCycleClockSource() {
+#if !defined(__x86_64__)
+  // Optimize for the common case (no callback) by first doing a relaxed load;
+  // this is significantly faster on non-x86 platforms.
+  if (cycle_clock_source_.load(std::memory_order_relaxed) == nullptr) {
+    return nullptr;
+  }
+#endif  // !defined(__x86_64__)
+
+  // This corresponds to the store(std::memory_order_release) in
+  // CycleClockSource::Register, and makes sure that any updates made prior to
+  // registering the callback are visible to this thread before the callback
+  // is invoked.
+  return cycle_clock_source_.load(std::memory_order_acquire);
+}
+
+// Accessing globals in inlined code in Window DLLs is problematic.
+#ifndef _WIN32
+inline int64_t CycleClock::Now() {
+  auto fn = LoadCycleClockSource();
+  if (fn == nullptr) {
+    return base_internal::UnscaledCycleClock::Now() >> kShift;
+  }
+  return fn() >> kShift;
+}
+#endif
+
+inline double CycleClock::Frequency() {
+  return kFrequencyScale * base_internal::UnscaledCycleClock::Frequency();
+}
+
+#endif  // ABSL_USE_UNSCALED_CYCLECLOCK
 
 }  // namespace base_internal
 ABSL_NAMESPACE_END

@@ -23,8 +23,12 @@
 #ifndef ABSL_STRINGS_NUMBERS_H_
 #define ABSL_STRINGS_NUMBERS_H_
 
-#ifdef __SSE4_2__
-#include <x86intrin.h>
+#ifdef __SSSE3__
+#include <tmmintrin.h>
+#endif
+
+#ifdef _MSC_VER
+#include <intrin.h>
 #endif
 
 #include <cstddef>
@@ -36,14 +40,7 @@
 #include <type_traits>
 
 #include "absl/base/config.h"
-#ifdef __SSE4_2__
-// TODO(jorg): Remove this when we figure out the right way
-// to swap bytes on SSE 4.2 that works with the compilers
-// we claim to support.  Also, add tests for the compiler
-// that doesn't support the Intel _bswap64 intrinsic but
-// does support all the SSE 4.2 intrinsics
 #include "absl/base/internal/endian.h"
-#endif
 #include "absl/base/macros.h"
 #include "absl/base/port.h"
 #include "absl/numeric/bits.h"
@@ -246,7 +243,7 @@ ABSL_MUST_USE_RESULT bool safe_strtoi_base(absl::string_view s, int_type* out,
 // Returns the number of non-pad digits of the output (it can never be zero
 // since 0 has one digit).
 inline size_t FastHexToBufferZeroPad16(uint64_t val, char* out) {
-#ifdef __SSE4_2__
+#ifdef ABSL_INTERNAL_HAVE_SSSE3
   uint64_t be = absl::big_endian::FromHost64(val);
   const auto kNibbleMask = _mm_set1_epi8(0xf);
   const auto kHexDigits = _mm_setr_epi8('0', '1', '2', '3', '4', '5', '6', '7',

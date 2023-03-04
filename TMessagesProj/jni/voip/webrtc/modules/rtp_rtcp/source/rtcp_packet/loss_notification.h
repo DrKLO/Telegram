@@ -42,8 +42,8 @@ class LossNotification : public Psfb {
   // Set all of the values transmitted by the loss notification message.
   // If the values may not be represented by a loss notification message,
   // false is returned, and no change is made to the object; this happens
-  // when `last_recieved` is ahead of `last_decoded` by more than 0x7fff.
-  // This is because `last_recieved` is represented on the wire as a delta,
+  // when `last_received` is ahead of `last_decoded` by more than 0x7fff.
+  // This is because `last_received` is represented on the wire as a delta,
   // and only 15 bits are available for that delta.
   ABSL_MUST_USE_RESULT
   bool Set(uint16_t last_decoded,

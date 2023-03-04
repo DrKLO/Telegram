@@ -74,8 +74,9 @@ class scoped_refptr {
   typedef T element_type;
 
   scoped_refptr() : ptr_(nullptr) {}
+  scoped_refptr(std::nullptr_t) : ptr_(nullptr) {}  // NOLINT(runtime/explicit)
 
-  scoped_refptr(T* p) : ptr_(p) {  // NOLINT(runtime/explicit)
+  explicit scoped_refptr(T* p) : ptr_(p) {
     if (ptr_)
       ptr_->AddRef();
   }
@@ -103,7 +104,7 @@ class scoped_refptr {
   }
 
   T* get() const { return ptr_; }
-  operator T*() const { return ptr_; }
+  explicit operator bool() const { return ptr_ != nullptr; }
   T& operator*() const { return *ptr_; }
   T* operator->() const { return ptr_; }
 
@@ -159,6 +160,62 @@ class scoped_refptr {
  protected:
   T* ptr_;
 };
+
+template <typename T, typename U>
+bool operator==(const rtc::scoped_refptr<T>& a,
+                const rtc::scoped_refptr<U>& b) {
+  return a.get() == b.get();
+}
+template <typename T, typename U>
+bool operator!=(const rtc::scoped_refptr<T>& a,
+                const rtc::scoped_refptr<U>& b) {
+  return !(a == b);
+}
+
+template <typename T>
+bool operator==(const rtc::scoped_refptr<T>& a, std::nullptr_t) {
+  return a.get() == nullptr;
+}
+
+template <typename T>
+bool operator!=(const rtc::scoped_refptr<T>& a, std::nullptr_t) {
+  return !(a == nullptr);
+}
+
+template <typename T>
+bool operator==(std::nullptr_t, const rtc::scoped_refptr<T>& a) {
+  return a.get() == nullptr;
+}
+
+template <typename T>
+bool operator!=(std::nullptr_t, const rtc::scoped_refptr<T>& a) {
+  return !(a == nullptr);
+}
+
+// Comparison with raw pointer.
+template <typename T, typename U>
+bool operator==(const rtc::scoped_refptr<T>& a, const U* b) {
+  return a.get() == b;
+}
+template <typename T, typename U>
+bool operator!=(const rtc::scoped_refptr<T>& a, const U* b) {
+  return !(a == b);
+}
+
+template <typename T, typename U>
+bool operator==(const T* a, const rtc::scoped_refptr<U>& b) {
+  return a == b.get();
+}
+template <typename T, typename U>
+bool operator!=(const T* a, const rtc::scoped_refptr<U>& b) {
+  return !(a == b);
+}
+
+// Ordered comparison, needed for use as a std::map key.
+template <typename T, typename U>
+bool operator<(const rtc::scoped_refptr<T>& a, const rtc::scoped_refptr<U>& b) {
+  return a.get() < b.get();
+}
 
 }  // namespace rtc
 

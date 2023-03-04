@@ -87,6 +87,8 @@ struct NetworkStatistics {
   uint64_t silentConcealedSamples;
   uint64_t concealmentEvents;
   uint64_t jitterBufferDelayMs;
+  uint64_t jitterBufferTargetDelayMs;
+  uint64_t jitterBufferMinimumDelayMs;
   uint64_t jitterBufferEmittedCount;
   uint64_t insertedSamplesForDeceleration;
   uint64_t removedSamplesForAcceleration;
@@ -95,8 +97,6 @@ struct NetworkStatistics {
   // Stats below correspond to similarly-named fields in the WebRTC stats spec.
   // https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats
   uint64_t packetsDiscarded;
-  // Non standard stats propagated to spec complaint GetStats API.
-  uint64_t jitterBufferTargetDelayMs;
   // Stats below DO NOT correspond directly to anything in the WebRTC stats
   // fraction (of original stream) of synthesized audio inserted through
   // expansion (in Q14)

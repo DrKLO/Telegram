@@ -14,7 +14,6 @@
 #include "api/units/time_delta.h"
 #include "call/adaptation/video_stream_adapter.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
 
@@ -84,11 +83,11 @@ void PixelLimitResource::SetResourceListener(ResourceListener* listener) {
       int target_pixels_lower_bounds =
           GetLowerResolutionThan(target_pixel_upper_bounds);
       if (current_pixels > target_pixel_upper_bounds) {
-        listener_->OnResourceUsageStateMeasured(this,
-                                                ResourceUsageState::kOveruse);
+        listener_->OnResourceUsageStateMeasured(
+            rtc::scoped_refptr<Resource>(this), ResourceUsageState::kOveruse);
       } else if (current_pixels < target_pixels_lower_bounds) {
-        listener_->OnResourceUsageStateMeasured(this,
-                                                ResourceUsageState::kUnderuse);
+        listener_->OnResourceUsageStateMeasured(
+            rtc::scoped_refptr<Resource>(this), ResourceUsageState::kUnderuse);
       }
       return kResourceUsageCheckIntervalMs;
     });

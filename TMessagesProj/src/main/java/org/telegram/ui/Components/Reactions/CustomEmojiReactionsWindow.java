@@ -26,9 +26,11 @@ import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -267,7 +269,7 @@ public class CustomEmojiReactionsWindow {
         reactionsContainerLayout.setCustomEmojiEnterProgress(enterTransitionProgress);
 
         if (enter) {
-            cascadeAnimation = false;//SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH;
+            cascadeAnimation = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
             enterTransitionFinished = false;
         } else {
             cascadeAnimation = false;
@@ -319,7 +321,7 @@ public class CustomEmojiReactionsWindow {
         valueAnimator.setStartDelay(30);
         if (cascadeAnimation) {
             valueAnimator.setDuration(450);
-            valueAnimator.setInterpolator(new OvershootInterpolator(1f));
+            valueAnimator.setInterpolator(new OvershootInterpolator(0.5f));
         } else {
             valueAnimator.setDuration(350);
             valueAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -493,7 +495,6 @@ public class CustomEmojiReactionsWindow {
         Drawable shadow;
         Rect shadowPad = new Rect();
         Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private Paint dimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         int[] radiusTmp = new int[4];
 
 
@@ -527,8 +528,6 @@ public class CustomEmojiReactionsWindow {
                 return;
             }
             float progressClpamped = Utilities.clamp(enterTransitionProgress,1f, 0f);
-            dimPaint.setAlpha((int) (0.2f * progressClpamped * 255));
-            canvas.drawPaint(dimPaint);
             AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
             AndroidUtilities.lerp(fromRect, AndroidUtilities.rectTmp, enterTransitionProgress, drawingRect);
             float radius = AndroidUtilities.lerp(fromRadius, AndroidUtilities.dp(8), enterTransitionProgress);

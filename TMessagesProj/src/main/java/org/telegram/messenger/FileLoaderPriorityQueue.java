@@ -1,6 +1,9 @@
 package org.telegram.messenger;
 
+import org.telegram.tgnet.ConnectionsManager;
+
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class FileLoaderPriorityQueue {
 
@@ -24,7 +27,12 @@ public class FileLoaderPriorityQueue {
             return;
         }
         int index = -1;
-        allOperations.remove(operation);
+        for (int i = 0; i < allOperations.size(); i++) {
+            if (allOperations.get(i) == operation || Objects.equals(allOperations.get(i).getFileName(), (operation.getFileName()))) {
+                allOperations.remove(i);
+                i--;
+            }
+        }
         for (int i = 0; i < allOperations.size(); i++) {
             if (operation.getPriority() > allOperations.get(i).getPriority()) {
                 index = i;
@@ -73,14 +81,11 @@ public class FileLoaderPriorityQueue {
         if (operation == null) {
             return;
         }
-        allOperations.remove(operation);
-    }
-
-    private FileLoadOperation remove() {
-        if (allOperations.isEmpty()) {
-            return null;
+        ConnectionsManager connectionsManager = ConnectionsManager.getInstance(operation.currentAccount);
+        if (connectionsManager != null && connectionsManager.getConnectionState() == ConnectionsManager.ConnectionStateWaitingForNetwork) {
+            operation.cancel();
         }
-        return allOperations.remove(0);
+        allOperations.remove(operation);
     }
 
 }

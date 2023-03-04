@@ -46,6 +46,14 @@ class Rrtr {
   NtpTime ntp_;
 };
 
+inline bool operator==(const Rrtr& rrtr1, const Rrtr& rrtr2) {
+  return rrtr1.ntp() == rrtr2.ntp();
+}
+
+inline bool operator!=(const Rrtr& rrtr1, const Rrtr& rrtr2) {
+  return !(rrtr1 == rrtr2);
+}
+
 }  // namespace rtcp
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_RRTR_H_

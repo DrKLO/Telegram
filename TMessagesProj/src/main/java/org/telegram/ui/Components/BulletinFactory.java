@@ -504,19 +504,21 @@ public final class BulletinFactory {
         String str = LocaleController.getString(R.string.PrivacyVoiceMessagesPremiumOnly);
         SpannableStringBuilder spannable = new SpannableStringBuilder(str);
         int indexStart = str.indexOf('*'), indexEnd = str.lastIndexOf('*');
-        spannable.replace(indexStart, indexEnd + 1, str.substring(indexStart + 1, indexEnd));
-        spannable.setSpan(new ClickableSpan() {
-            @Override
-            public void onClick(@NonNull View widget) {
-                fragment.presentFragment(new PremiumPreviewFragment("settings"));
-            }
+        if (indexStart >= 0) {
+            spannable.replace(indexStart, indexEnd + 1, str.substring(indexStart + 1, indexEnd));
+            spannable.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    fragment.presentFragment(new PremiumPreviewFragment("settings"));
+                }
 
-            @Override
-            public void updateDrawState(@NonNull TextPaint ds) {
-                super.updateDrawState(ds);
-                ds.setUnderlineText(false);
-            }
-        }, indexStart, indexEnd - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(false);
+                }
+            }, indexStart, indexEnd - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         layout.textView.setText(spannable);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);

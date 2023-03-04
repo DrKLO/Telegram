@@ -23,6 +23,8 @@ RtpFrameReferenceFinder::ReturnVector RtpGenericFrameRefFinder::ManageFrame(
   // them here.
   frame->SetId(descriptor.frame_id);
   frame->SetSpatialIndex(descriptor.spatial_index);
+  if (descriptor.temporal_index != kNoTemporalIdx)
+    frame->SetTemporalIndex(descriptor.temporal_index);
 
   RtpFrameReferenceFinder::ReturnVector res;
   if (EncodedFrame::kMaxFrameReferences < descriptor.dependencies.size()) {

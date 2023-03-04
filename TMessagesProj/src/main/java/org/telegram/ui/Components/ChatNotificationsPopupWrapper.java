@@ -119,14 +119,12 @@ public class ChatNotificationsPopupWrapper {
             callback.showCustomize();
         });
 
-
         muteUnmuteButton = ActionBarMenuItem.addItem(windowLayout, 0, "", false, resourcesProvider);
         muteUnmuteButton.setOnClickListener(view -> {
             dismiss();
             AndroidUtilities.runOnUIThread(() -> {
                 callback.toggleMute();
             });
-
         });
 
         gap = new FrameLayout(context);
@@ -280,6 +278,9 @@ public class ChatNotificationsPopupWrapper {
         float x = touchedX, y = touchedY;
         View view = anchorView;
         while (view != parentFragment.getFragmentView()) {
+            if (view.getParent() == null) {
+                return;
+            }
             x += view.getX();
             y += view.getY();
             view = (View) view.getParent();

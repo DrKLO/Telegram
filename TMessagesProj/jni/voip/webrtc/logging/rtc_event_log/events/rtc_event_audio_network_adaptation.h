@@ -12,12 +12,30 @@
 #define LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_AUDIO_NETWORK_ADAPTATION_H_
 
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/units/timestamp.h"
+#include "logging/rtc_event_log/events/rtc_event_field_encoding_parser.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
 
 namespace webrtc {
+
+struct LoggedAudioNetworkAdaptationEvent {
+  LoggedAudioNetworkAdaptationEvent() = default;
+  LoggedAudioNetworkAdaptationEvent(Timestamp timestamp,
+                                    const AudioEncoderRuntimeConfig& config)
+      : timestamp(timestamp), config(config) {}
+
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
+  Timestamp log_time() const { return timestamp; }
+
+  Timestamp timestamp = Timestamp::MinusInfinity();
+  AudioEncoderRuntimeConfig config;
+};
 
 struct AudioEncoderRuntimeConfig;
 
@@ -36,23 +54,23 @@ class RtcEventAudioNetworkAdaptation final : public RtcEvent {
 
   const AudioEncoderRuntimeConfig& config() const { return *config_; }
 
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    // TODO(terelius): Implement
+    return "";
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::vector<LoggedAudioNetworkAdaptationEvent>& output) {
+    // TODO(terelius): Implement
+    return RtcEventLogParseStatus::Error("Not Implemented", __FILE__, __LINE__);
+  }
+
  private:
   RtcEventAudioNetworkAdaptation(const RtcEventAudioNetworkAdaptation& other);
 
   const std::unique_ptr<const AudioEncoderRuntimeConfig> config_;
-};
-
-struct LoggedAudioNetworkAdaptationEvent {
-  LoggedAudioNetworkAdaptationEvent() = default;
-  LoggedAudioNetworkAdaptationEvent(Timestamp timestamp,
-                                    const AudioEncoderRuntimeConfig& config)
-      : timestamp(timestamp), config(config) {}
-
-  int64_t log_time_us() const { return timestamp.us(); }
-  int64_t log_time_ms() const { return timestamp.ms(); }
-
-  Timestamp timestamp = Timestamp::MinusInfinity();
-  AudioEncoderRuntimeConfig config;
 };
 
 }  // namespace webrtc

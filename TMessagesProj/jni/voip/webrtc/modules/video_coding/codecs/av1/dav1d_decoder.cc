@@ -14,12 +14,13 @@
 
 #include "api/scoped_refptr.h"
 #include "api/video/encoded_image.h"
-#include "api/video/i420_buffer.h"
-#include "common_video/include/video_frame_buffer_pool.h"
+#include "api/video/video_frame_buffer.h"
+#include "common_video/include/video_frame_buffer.h"
 #include "modules/video_coding/include/video_error_codes.h"
 #include "rtc_base/logging.h"
 #include "third_party/dav1d/libdav1d/include/dav1d/dav1d.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
+#include "third_party/libyuv/include/libyuv/planar_functions.h"
 
 namespace webrtc {
 namespace {
@@ -43,7 +44,6 @@ class Dav1dDecoder : public VideoDecoder {
   const char* ImplementationName() const override;
 
  private:
-  VideoFrameBufferPool buffer_pool_;
   Dav1dContext* context_ = nullptr;
   DecodedImageCallback* decode_complete_callback_ = nullptr;
 };
@@ -58,11 +58,13 @@ class ScopedDav1dData {
   Dav1dData data_ = {};
 };
 
-class ScopedDav1dPicture {
+class ScopedDav1dPicture
+    : public rtc::RefCountedNonVirtual<ScopedDav1dPicture> {
  public:
   ~ScopedDav1dPicture() { dav1d_picture_unref(&picture_); }
 
   Dav1dPicture& Picture() { return picture_; }
+  using rtc::RefCountedNonVirtual<ScopedDav1dPicture>::HasOneRef;
 
  private:
   Dav1dPicture picture_ = {};
@@ -73,8 +75,7 @@ constexpr char kDav1dName[] = "dav1d";
 // Calling `dav1d_data_wrap` requires a `free_callback` to be registered.
 void NullFreeCallback(const uint8_t* buffer, void* opaque) {}
 
-Dav1dDecoder::Dav1dDecoder()
-    : buffer_pool_(/*zero_initialize=*/false, /*max_number_of_buffers=*/150) {}
+Dav1dDecoder::Dav1dDecoder() = default;
 
 Dav1dDecoder::~Dav1dDecoder() {
   Release();
@@ -103,7 +104,6 @@ int32_t Dav1dDecoder::Release() {
   if (context_ != nullptr) {
     return WEBRTC_VIDEO_CODEC_MEMORY;
   }
-  buffer_pool_.Release();
   return WEBRTC_VIDEO_CODEC_OK;
 }
 
@@ -138,8 +138,9 @@ int32_t Dav1dDecoder::Decode(const EncodedImage& encoded_image,
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  ScopedDav1dPicture scoped_dav1d_picture;
-  Dav1dPicture& dav1d_picture = scoped_dav1d_picture.Picture();
+  rtc::scoped_refptr<ScopedDav1dPicture> scoped_dav1d_picture(
+      new ScopedDav1dPicture{});
+  Dav1dPicture& dav1d_picture = scoped_dav1d_picture->Picture();
   if (int get_picture_res = dav1d_get_picture(context_, &dav1d_picture)) {
     RTC_LOG(LS_WARNING)
         << "Dav1dDecoder::Decode getting picture failed with error code "
@@ -147,36 +148,43 @@ int32_t Dav1dDecoder::Decode(const EncodedImage& encoded_image,
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  // Only accept I420 pixel format and 8 bit depth.
-  if (dav1d_picture.p.layout != DAV1D_PIXEL_LAYOUT_I420 ||
-      dav1d_picture.p.bpc != 8) {
+  if (dav1d_picture.p.bpc != 8) {
+    // Only accept 8 bit depth.
+    RTC_LOG(LS_ERROR) << "Dav1dDecoder::Decode unhandled bit depth: "
+                      << dav1d_picture.p.bpc;
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  rtc::scoped_refptr<I420Buffer> buffer =
-      buffer_pool_.CreateI420Buffer(dav1d_picture.p.w, dav1d_picture.p.h);
-  if (!buffer.get()) {
-    RTC_LOG(LS_WARNING)
-        << "Dav1dDecoder::Decode failed to get frame from the buffer pool.";
+  rtc::scoped_refptr<VideoFrameBuffer> wrapped_buffer;
+  if (dav1d_picture.p.layout == DAV1D_PIXEL_LAYOUT_I420) {
+    wrapped_buffer = WrapI420Buffer(
+        dav1d_picture.p.w, dav1d_picture.p.h,
+        static_cast<uint8_t*>(dav1d_picture.data[0]), dav1d_picture.stride[0],
+        static_cast<uint8_t*>(dav1d_picture.data[1]), dav1d_picture.stride[1],
+        static_cast<uint8_t*>(dav1d_picture.data[2]), dav1d_picture.stride[1],
+        // To keep |scoped_dav1d_picture.Picture()| alive
+        [scoped_dav1d_picture] {});
+  } else if (dav1d_picture.p.layout == DAV1D_PIXEL_LAYOUT_I444) {
+    wrapped_buffer = WrapI444Buffer(
+        dav1d_picture.p.w, dav1d_picture.p.h,
+        static_cast<uint8_t*>(dav1d_picture.data[0]), dav1d_picture.stride[0],
+        static_cast<uint8_t*>(dav1d_picture.data[1]), dav1d_picture.stride[1],
+        static_cast<uint8_t*>(dav1d_picture.data[2]), dav1d_picture.stride[1],
+        // To keep |scoped_dav1d_picture.Picture()| alive
+        [scoped_dav1d_picture] {});
+  } else {
+    // Only accept I420 or I444 pixel format.
+    RTC_LOG(LS_ERROR) << "Dav1dDecoder::Decode unhandled pixel layout: "
+                      << dav1d_picture.p.layout;
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  uint8_t* y_data = static_cast<uint8_t*>(dav1d_picture.data[0]);
-  uint8_t* u_data = static_cast<uint8_t*>(dav1d_picture.data[1]);
-  uint8_t* v_data = static_cast<uint8_t*>(dav1d_picture.data[2]);
-  int y_stride = dav1d_picture.stride[0];
-  int uv_stride = dav1d_picture.stride[1];
-  libyuv::I420Copy(y_data, y_stride,                           //
-                   u_data, uv_stride,                          //
-                   v_data, uv_stride,                          //
-                   buffer->MutableDataY(), buffer->StrideY(),  //
-                   buffer->MutableDataU(), buffer->StrideU(),  //
-                   buffer->MutableDataV(), buffer->StrideV(),  //
-                   dav1d_picture.p.w,                          //
-                   dav1d_picture.p.h);                         //
+  if (!wrapped_buffer.get()) {
+    return WEBRTC_VIDEO_CODEC_ERROR;
+  }
 
   VideoFrame decoded_frame = VideoFrame::Builder()
-                                 .set_video_frame_buffer(buffer)
+                                 .set_video_frame_buffer(wrapped_buffer)
                                  .set_timestamp_rtp(encoded_image.Timestamp())
                                  .set_ntp_time_ms(encoded_image.ntp_time_ms_)
                                  .set_color_space(encoded_image.ColorSpace())

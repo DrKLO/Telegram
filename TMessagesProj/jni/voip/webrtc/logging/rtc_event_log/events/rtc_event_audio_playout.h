@@ -13,12 +13,30 @@
 
 #include <stdint.h>
 
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/units/timestamp.h"
+#include "logging/rtc_event_log/events/rtc_event_definition.h"
 
 namespace webrtc {
+
+struct LoggedAudioPlayoutEvent {
+  LoggedAudioPlayoutEvent() = default;
+  LoggedAudioPlayoutEvent(Timestamp timestamp, uint32_t ssrc)
+      : timestamp(timestamp), ssrc(ssrc) {}
+
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
+  Timestamp log_time() const { return timestamp; }
+
+  Timestamp timestamp = Timestamp::MinusInfinity();
+  uint32_t ssrc;
+};
 
 class RtcEventAudioPlayout final : public RtcEvent {
  public:
@@ -34,22 +52,35 @@ class RtcEventAudioPlayout final : public RtcEvent {
 
   uint32_t ssrc() const { return ssrc_; }
 
+  static std::string Encode(rtc::ArrayView<const RtcEvent*> batch) {
+    return RtcEventAudioPlayout::definition_.EncodeBatch(batch);
+  }
+
+  static RtcEventLogParseStatus Parse(
+      absl::string_view encoded_bytes,
+      bool batched,
+      std::map<uint32_t, std::vector<LoggedAudioPlayoutEvent>>& output) {
+    std::vector<LoggedAudioPlayoutEvent> temp_output;
+    auto status = RtcEventAudioPlayout::definition_.ParseBatch(
+        encoded_bytes, batched, temp_output);
+    for (const LoggedAudioPlayoutEvent& event : temp_output) {
+      output[event.ssrc].push_back(event);
+    }
+    return status;
+  }
+
  private:
   RtcEventAudioPlayout(const RtcEventAudioPlayout& other);
 
   const uint32_t ssrc_;
-};
 
-struct LoggedAudioPlayoutEvent {
-  LoggedAudioPlayoutEvent() = default;
-  LoggedAudioPlayoutEvent(Timestamp timestamp, uint32_t ssrc)
-      : timestamp(timestamp), ssrc(ssrc) {}
-
-  int64_t log_time_us() const { return timestamp.us(); }
-  int64_t log_time_ms() const { return timestamp.ms(); }
-
-  Timestamp timestamp = Timestamp::MinusInfinity();
-  uint32_t ssrc;
+  static constexpr RtcEventDefinition<RtcEventAudioPlayout,
+                                      LoggedAudioPlayoutEvent,
+                                      uint32_t>
+      definition_{{"AudioPlayout", RtcEventAudioPlayout::kType},
+                  {&RtcEventAudioPlayout::ssrc_,
+                   &LoggedAudioPlayoutEvent::ssrc,
+                   {"ssrc", /*id=*/1, FieldType::kFixed32, /*width=*/32}}};
 };
 
 }  // namespace webrtc

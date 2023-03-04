@@ -19,6 +19,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/type_traits.h"
@@ -105,7 +106,10 @@ class BufferT {
                 internal::BufferCompat<T, U>::value>::type* = nullptr>
   BufferT(U* data, size_t size, size_t capacity) : BufferT(size, capacity) {
     static_assert(sizeof(T) == sizeof(U), "");
-    std::memcpy(data_.get(), data, size * sizeof(U));
+    if (size > 0) {
+      RTC_DCHECK(data);
+      std::memcpy(data_.get(), data, size * sizeof(U));
+    }
   }
 
   // Construct a buffer from the contents of an array.
@@ -116,6 +120,13 @@ class BufferT {
   BufferT(U (&array)[N]) : BufferT(array, N) {}
 
   ~BufferT() { MaybeZeroCompleteBuffer(); }
+
+  // Implicit conversion to absl::string_view if T is compatible with char.
+  template <typename U = T>
+  operator typename std::enable_if<internal::BufferCompat<U, char>::value,
+                                   absl::string_view>::type() const {
+    return absl::string_view(data<char>(), size());
+  }
 
   // Get a pointer to the data. Just .data() will give you a (const) T*, but if
   // T is a byte-sized integer, you may also use .data<U>() for any other
@@ -259,6 +270,10 @@ class BufferT {
             typename std::enable_if<
                 internal::BufferCompat<T, U>::value>::type* = nullptr>
   void AppendData(const U* data, size_t size) {
+    if (size == 0) {
+      return;
+    }
+    RTC_DCHECK(data);
     RTC_DCHECK(IsConsistent());
     const size_t new_size = size_ + size;
     EnsureCapacityWithHeadroom(new_size, true);

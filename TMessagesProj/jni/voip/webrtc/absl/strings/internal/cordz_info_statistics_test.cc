@@ -62,7 +62,7 @@ CordRepFlat* Flat(size_t size) {
 }
 
 // Creates an external of the specified length
-CordRepExternal* External(int length = 512) {
+CordRepExternal* External(size_t length = 512) {
   return static_cast<CordRepExternal*>(
       NewExternalRep(absl::string_view("", length), [](absl::string_view) {}));
 }
@@ -352,7 +352,7 @@ TEST(CordzInfoStatisticsTest, SharedSubstringRing) {
 }
 
 TEST(CordzInfoStatisticsTest, BtreeLeaf) {
-  ASSERT_THAT(CordRepBtree::kMaxCapacity, Ge(3));
+  ASSERT_THAT(CordRepBtree::kMaxCapacity, Ge(3u));
   RefHelper ref;
   auto* flat1 = Flat(2000);
   auto* flat2 = Flat(200);
@@ -392,7 +392,7 @@ TEST(CordzInfoStatisticsTest, BtreeNodeShared) {
   RefHelper ref;
   static constexpr int leaf_count = 3;
   const size_t flat3_count = CordRepBtree::kMaxCapacity - 3;
-  ASSERT_THAT(flat3_count, Ge(0));
+  ASSERT_THAT(flat3_count, Ge(0u));
 
   CordRepBtree* tree = nullptr;
   size_t mem_size = 0;

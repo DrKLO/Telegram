@@ -70,8 +70,10 @@
 #ifndef ABSL_TIME_CIVIL_TIME_H_
 #define ABSL_TIME_CIVIL_TIME_H_
 
+#include <iosfwd>
 #include <string>
 
+#include "absl/base/config.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/internal/cctz/include/cctz/civil_time.h"
 
@@ -529,6 +531,29 @@ std::ostream& operator<<(std::ostream& os, CivilDay d);
 std::ostream& operator<<(std::ostream& os, CivilHour h);
 std::ostream& operator<<(std::ostream& os, CivilMinute m);
 std::ostream& operator<<(std::ostream& os, CivilSecond s);
+
+// AbslParseFlag()
+//
+// Parses the command-line flag string representation `s` into a civil-time
+// value. Flags must be specified in a format that is valid for
+// `absl::ParseLenientCivilTime()`.
+bool AbslParseFlag(absl::string_view s, CivilSecond* c, std::string* error);
+bool AbslParseFlag(absl::string_view s, CivilMinute* c, std::string* error);
+bool AbslParseFlag(absl::string_view s, CivilHour* c, std::string* error);
+bool AbslParseFlag(absl::string_view s, CivilDay* c, std::string* error);
+bool AbslParseFlag(absl::string_view s, CivilMonth* c, std::string* error);
+bool AbslParseFlag(absl::string_view s, CivilYear* c, std::string* error);
+
+// AbslUnparseFlag()
+//
+// Unparses a civil-time value into a command-line string representation using
+// the format specified by `absl::ParseCivilTime()`.
+std::string AbslUnparseFlag(CivilSecond c);
+std::string AbslUnparseFlag(CivilMinute c);
+std::string AbslUnparseFlag(CivilHour c);
+std::string AbslUnparseFlag(CivilDay c);
+std::string AbslUnparseFlag(CivilMonth c);
+std::string AbslUnparseFlag(CivilYear c);
 
 }  // namespace time_internal
 

@@ -21,8 +21,6 @@
 #include "rtc_base/experiments/bandwidth_quality_scaler_settings.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/exp_filter.h"
-#include "rtc_base/task_queue.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/time_utils.h"
 #include "rtc_base/weak_ptr.h"
 
@@ -58,7 +56,7 @@ BandwidthQualityScaler::~BandwidthQualityScaler() {
 void BandwidthQualityScaler::StartCheckForBitrate() {
   RTC_DCHECK_RUN_ON(&task_checker_);
   TaskQueueBase::Current()->PostDelayedTask(
-      ToQueuedTask([this_weak_ptr = weak_ptr_factory_.GetWeakPtr(), this] {
+      [this_weak_ptr = weak_ptr_factory_.GetWeakPtr(), this] {
         if (!this_weak_ptr) {
           // The caller BandwidthQualityScaler has been deleted.
           return;
@@ -84,8 +82,8 @@ void BandwidthQualityScaler::StartCheckForBitrate() {
           }
         }
         StartCheckForBitrate();
-      }),
-      kBitrateStateUpdateInterval.ms());
+      },
+      kBitrateStateUpdateInterval);
 }
 
 void BandwidthQualityScaler::ReportEncodeInfo(int frame_size_bytes,

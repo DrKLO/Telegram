@@ -37,7 +37,7 @@ class RtcEventLogOutputFile final : public RtcEventLogOutput {
 
   bool IsActive() const override;
 
-  bool Write(const std::string& output) override;
+  bool Write(absl::string_view output) override;
 
  private:
   RtcEventLogOutputFile(FileWrapper file, size_t max_size_bytes);

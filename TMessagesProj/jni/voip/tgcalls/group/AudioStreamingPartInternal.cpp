@@ -291,10 +291,12 @@ void AudioStreamingPartInternal::fillPcmBuffer(AudioStreamingPartPersistentDecod
       }
         
       if (_packet.stream_index != _streamId) {
+        av_packet_unref(&_packet);
         continue;
       }
         
       ret = persistentDecoder.decode(_audioCodecParameters, _inputFormatContext->streams[_streamId]->time_base, _packet, _frame);
+      av_packet_unref(&_packet);
 
       if (ret == AVERROR(EAGAIN)) {
         continue;

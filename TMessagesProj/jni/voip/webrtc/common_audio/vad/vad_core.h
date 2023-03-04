@@ -17,10 +17,19 @@
 
 #include "common_audio/signal_processing/include/signal_processing_library.h"
 
-enum { kNumChannels = 6 };   // Number of frequency bands (named channels).
-enum { kNumGaussians = 2 };  // Number of Gaussians per channel in the GMM.
-enum { kTableSize = kNumChannels * kNumGaussians };
-enum { kMinEnergy = 10 };  // Minimum energy required to trigger audio signal.
+// TODO(https://bugs.webrtc.org/14476): When converted to C++, remove the macro.
+#if defined(__cplusplus)
+#define CONSTEXPR_INT(x) constexpr int x
+#else
+#define CONSTEXPR_INT(x) enum { x }
+#endif
+
+CONSTEXPR_INT(kNumChannels = 6);  // Number of frequency bands (named channels).
+CONSTEXPR_INT(
+    kNumGaussians = 2);  // Number of Gaussians per channel in the GMM.
+CONSTEXPR_INT(kTableSize = kNumChannels * kNumGaussians);
+CONSTEXPR_INT(
+    kMinEnergy = 10);  // Minimum energy required to trigger audio signal.
 
 typedef struct VadInstT_ {
   int vad;

@@ -25,6 +25,7 @@
 #include "api/audio_codecs/audio_format.h"
 #include "api/rtp_headers.h"
 #include "api/transport/network_types.h"
+#include "api/units/time_delta.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/remote_estimate.h"
 #include "system_wrappers/include/clock.h"
 
@@ -101,6 +102,12 @@ enum RTCPPacketType : uint32_t {
   kRtcpXrDlrrReportBlock = 0x80000,
   kRtcpTransportFeedback = 0x100000,
   kRtcpXrTargetBitrate = 0x200000
+};
+
+enum class KeyFrameReqMethod : uint8_t {
+  kNone,     // Don't request keyframes.
+  kPliRtcp,  // Request keyframes through Picture Loss Indication.
+  kFirRtcp   // Request keyframes through Full Intra-frame Request.
 };
 
 enum RtxMode {
@@ -305,12 +312,14 @@ struct RtpPacketCounter {
       : header_bytes(0), payload_bytes(0), padding_bytes(0), packets(0) {}
 
   explicit RtpPacketCounter(const RtpPacket& packet);
+  explicit RtpPacketCounter(const RtpPacketToSend& packet_to_send);
 
   void Add(const RtpPacketCounter& other) {
     header_bytes += other.header_bytes;
     payload_bytes += other.payload_bytes;
     padding_bytes += other.padding_bytes;
     packets += other.packets;
+    total_packet_delay += other.total_packet_delay;
   }
 
   void Subtract(const RtpPacketCounter& other) {
@@ -322,16 +331,20 @@ struct RtpPacketCounter {
     padding_bytes -= other.padding_bytes;
     RTC_DCHECK_GE(packets, other.packets);
     packets -= other.packets;
+    RTC_DCHECK_GE(total_packet_delay, other.total_packet_delay);
+    total_packet_delay -= other.total_packet_delay;
   }
 
   bool operator==(const RtpPacketCounter& other) const {
     return header_bytes == other.header_bytes &&
            payload_bytes == other.payload_bytes &&
-           padding_bytes == other.padding_bytes && packets == other.packets;
+           padding_bytes == other.padding_bytes && packets == other.packets &&
+           total_packet_delay == other.total_packet_delay;
   }
 
   // Not inlined, since use of RtpPacket would result in circular includes.
   void AddPacket(const RtpPacket& packet);
+  void AddPacket(const RtpPacketToSend& packet_to_send);
 
   size_t TotalBytes() const {
     return header_bytes + payload_bytes + padding_bytes;
@@ -341,6 +354,9 @@ struct RtpPacketCounter {
   size_t payload_bytes;  // Payload bytes, excluding RTP headers and padding.
   size_t padding_bytes;  // Number of padding bytes.
   uint32_t packets;      // Number of packets.
+  // The total delay of all `packets`. For RtpPacketToSend packets, this is
+  // `time_in_send_queue()`. For receive packets, this is zero.
+  webrtc::TimeDelta total_packet_delay = webrtc::TimeDelta::Zero();
 };
 
 // Data usage statistics for a (rtp) stream.
@@ -436,7 +452,10 @@ struct RtpReceiveStats {
   // RTCReceivedRtpStreamStats dictionary, see
   // https://w3c.github.io/webrtc-stats/#receivedrtpstats-dict*
   int32_t packets_lost = 0;
+  // Interarrival jitter in samples.
   uint32_t jitter = 0;
+  // Interarrival jitter in time.
+  webrtc::TimeDelta interarrival_jitter = webrtc::TimeDelta::Zero();
 
   // Timestamp and counters exposed in RTCInboundRtpStreamStats, see
   // https://w3c.github.io/webrtc-stats/#inboundrtpstats-dict*
@@ -460,7 +479,6 @@ class SendSideDelayObserver {
   virtual ~SendSideDelayObserver() {}
   virtual void SendSideDelayUpdated(int avg_delay_ms,
                                     int max_delay_ms,
-                                    uint64_t total_delay_ms,
                                     uint32_t ssrc) = 0;
 };
 

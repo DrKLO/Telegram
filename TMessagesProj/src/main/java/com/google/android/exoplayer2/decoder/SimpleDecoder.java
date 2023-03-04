@@ -21,10 +21,13 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.ArrayDeque;
 
-/** Base class for {@link Decoder}s that use their own decode thread. */
+/**
+ * Base class for {@link Decoder}s that use their own decode thread and decode each input buffer
+ * immediately into a corresponding output buffer.
+ */
 @SuppressWarnings("UngroupedOverloads")
 public abstract class SimpleDecoder<
-        I extends DecoderInputBuffer, O extends OutputBuffer, E extends Exception>
+        I extends DecoderInputBuffer, O extends DecoderOutputBuffer, E extends DecoderException>
     implements Decoder<I, O, E> {
 
   private final Thread decodeThread;
@@ -37,9 +40,9 @@ public abstract class SimpleDecoder<
 
   private int availableInputBufferCount;
   private int availableOutputBufferCount;
-  private I dequeuedInputBuffer;
+  @Nullable private I dequeuedInputBuffer;
 
-  private E exception;
+  @Nullable private E exception;
   private boolean flushed;
   private boolean released;
   private int skippedOutputBufferCount;
@@ -48,6 +51,7 @@ public abstract class SimpleDecoder<
    * @param inputBuffers An array of nulls that will be used to store references to input buffers.
    * @param outputBuffers An array of nulls that will be used to store references to output buffers.
    */
+  @SuppressWarnings("nullness:method.invocation")
   protected SimpleDecoder(I[] inputBuffers, O[] outputBuffers) {
     lock = new Object();
     queuedInputBuffers = new ArrayDeque<>();
@@ -62,19 +66,20 @@ public abstract class SimpleDecoder<
     for (int i = 0; i < availableOutputBufferCount; i++) {
       availableOutputBuffers[i] = createOutputBuffer();
     }
-    decodeThread = new Thread() {
-      @Override
-      public void run() {
-        SimpleDecoder.this.run();
-      }
-    };
+    decodeThread =
+        new Thread("ExoPlayer:SimpleDecoder") {
+          @Override
+          public void run() {
+            SimpleDecoder.this.run();
+          }
+        };
     decodeThread.start();
   }
 
   /**
    * Sets the initial size of each input buffer.
-   * <p>
-   * This method should only be called before the decoder is used (i.e. before the first call to
+   *
+   * <p>This method should only be called before the decoder is used (i.e. before the first call to
    * {@link #dequeueInputBuffer()}.
    *
    * @param size The required input buffer size.
@@ -92,8 +97,10 @@ public abstract class SimpleDecoder<
     synchronized (lock) {
       maybeThrowException();
       Assertions.checkState(dequeuedInputBuffer == null);
-      dequeuedInputBuffer = availableInputBufferCount == 0 ? null
-          : availableInputBuffers[--availableInputBufferCount];
+      dequeuedInputBuffer =
+          availableInputBufferCount == 0
+              ? null
+              : availableInputBuffers[--availableInputBufferCount];
       return dequeuedInputBuffer;
     }
   }
@@ -149,7 +156,6 @@ public abstract class SimpleDecoder<
       while (!queuedOutputBuffers.isEmpty()) {
         queuedOutputBuffers.removeFirst().release();
       }
-      exception = null;
     }
   }
 
@@ -173,6 +179,7 @@ public abstract class SimpleDecoder<
    * @throws E The decode exception.
    */
   private void maybeThrowException() throws E {
+    @Nullable E exception = this.exception;
     if (exception != null) {
       throw exception;
     }
@@ -181,8 +188,8 @@ public abstract class SimpleDecoder<
   /**
    * Notifies the decode loop if there exists a queued input buffer and an available output buffer
    * to decode into.
-   * <p>
-   * Should only be called whilst synchronized on the lock object.
+   *
+   * <p>Should only be called whilst synchronized on the lock object.
    */
   private void maybeNotifyDecodeLoop() {
     if (canDecodeBuffer()) {
@@ -225,6 +232,9 @@ public abstract class SimpleDecoder<
     } else {
       if (inputBuffer.isDecodeOnly()) {
         outputBuffer.addFlag(C.BUFFER_FLAG_DECODE_ONLY);
+      }
+      if (inputBuffer.isFirstSample()) {
+        outputBuffer.addFlag(C.BUFFER_FLAG_FIRST_SAMPLE);
       }
       @Nullable E exception;
       try {
@@ -279,14 +289,10 @@ public abstract class SimpleDecoder<
     availableOutputBuffers[availableOutputBufferCount++] = outputBuffer;
   }
 
-  /**
-   * Creates a new input buffer.
-   */
+  /** Creates a new input buffer. */
   protected abstract I createInputBuffer();
 
-  /**
-   * Creates a new output buffer.
-   */
+  /** Creates a new output buffer. */
   protected abstract O createOutputBuffer();
 
   /**

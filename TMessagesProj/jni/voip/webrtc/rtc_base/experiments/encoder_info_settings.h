@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/video_codecs/video_encoder.h"
 #include "rtc_base/experiments/field_trial_parser.h"
@@ -58,7 +59,7 @@ class EncoderInfoSettings {
           resolution_bitrate_limits);
 
  protected:
-  explicit EncoderInfoSettings(std::string name);
+  explicit EncoderInfoSettings(absl::string_view name);
 
  private:
   FieldTrialOptional<int> requested_resolution_alignment_;

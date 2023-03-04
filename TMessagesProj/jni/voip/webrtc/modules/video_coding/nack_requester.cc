@@ -19,29 +19,26 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/task_queue.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 
 namespace {
-const int kMaxPacketAge = 10000;
-const int kMaxNackPackets = 1000;
-const int kDefaultRttMs = 100;
-const int kMaxNackRetries = 10;
-const int kMaxReorderedPackets = 128;
-const int kNumReorderingBuckets = 10;
-const int kDefaultSendNackDelayMs = 0;
+constexpr int kMaxPacketAge = 10'000;
+constexpr int kMaxNackPackets = 1000;
+constexpr TimeDelta kDefaultRtt = TimeDelta::Millis(100);
+constexpr int kMaxNackRetries = 10;
+constexpr int kMaxReorderedPackets = 128;
+constexpr int kNumReorderingBuckets = 10;
+constexpr TimeDelta kDefaultSendNackDelay = TimeDelta::Zero();
 
-int64_t GetSendNackDelay() {
+TimeDelta GetSendNackDelay(const FieldTrialsView& field_trials) {
   int64_t delay_ms = strtol(
-      webrtc::field_trial::FindFullName("WebRTC-SendNackDelayMs").c_str(),
-      nullptr, 10);
+      field_trials.Lookup("WebRTC-SendNackDelayMs").c_str(), nullptr, 10);
   if (delay_ms > 0 && delay_ms <= 20) {
     RTC_LOG(LS_INFO) << "SendNackDelay is set to " << delay_ms;
-    return delay_ms;
+    return TimeDelta::Millis(delay_ms);
   }
-  return kDefaultSendNackDelayMs;
+  return kDefaultSendNackDelay;
 }
 }  // namespace
 
@@ -74,8 +71,8 @@ void NackPeriodicProcessor::UnregisterNackModule(NackRequesterBase* module) {
     repeating_task_.Stop();
 }
 
-// RTC_RUN_ON(sequence_)
 void NackPeriodicProcessor::ProcessNackModules() {
+  RTC_DCHECK_RUN_ON(&sequence_);
   for (NackRequesterBase* module : modules_)
     module->ProcessNacks();
 }
@@ -93,63 +90,36 @@ ScopedNackPeriodicProcessorRegistration::
 }
 
 NackRequester::NackInfo::NackInfo()
-    : seq_num(0), send_at_seq_num(0), sent_at_time(-1), retries(0) {}
+    : seq_num(0),
+      send_at_seq_num(0),
+      created_at_time(Timestamp::MinusInfinity()),
+      sent_at_time(Timestamp::MinusInfinity()),
+      retries(0) {}
 
 NackRequester::NackInfo::NackInfo(uint16_t seq_num,
                                   uint16_t send_at_seq_num,
-                                  int64_t created_at_time)
+                                  Timestamp created_at_time)
     : seq_num(seq_num),
       send_at_seq_num(send_at_seq_num),
       created_at_time(created_at_time),
-      sent_at_time(-1),
+      sent_at_time(Timestamp::MinusInfinity()),
       retries(0) {}
-
-NackRequester::BackoffSettings::BackoffSettings(TimeDelta min_retry,
-                                                TimeDelta max_rtt,
-                                                double base)
-    : min_retry_interval(min_retry), max_rtt(max_rtt), base(base) {}
-
-absl::optional<NackRequester::BackoffSettings>
-NackRequester::BackoffSettings::ParseFromFieldTrials() {
-  // Matches magic number in RTPSender::OnReceivedNack().
-  const TimeDelta kDefaultMinRetryInterval = TimeDelta::Millis(5);
-  // Upper bound on link-delay considered for exponential backoff.
-  // Selected so that cumulative delay with 1.25 base and 10 retries ends up
-  // below 3s, since above that there will be a FIR generated instead.
-  const TimeDelta kDefaultMaxRtt = TimeDelta::Millis(160);
-  // Default base for exponential backoff, adds 25% RTT delay for each retry.
-  const double kDefaultBase = 1.25;
-
-  FieldTrialParameter<bool> enabled("enabled", false);
-  FieldTrialParameter<TimeDelta> min_retry("min_retry",
-                                           kDefaultMinRetryInterval);
-  FieldTrialParameter<TimeDelta> max_rtt("max_rtt", kDefaultMaxRtt);
-  FieldTrialParameter<double> base("base", kDefaultBase);
-  ParseFieldTrial({&enabled, &min_retry, &max_rtt, &base},
-                  field_trial::FindFullName("WebRTC-ExponentialNackBackoff"));
-
-  if (enabled) {
-    return NackRequester::BackoffSettings(min_retry.Get(), max_rtt.Get(),
-                                          base.Get());
-  }
-  return absl::nullopt;
-}
 
 NackRequester::NackRequester(TaskQueueBase* current_queue,
                              NackPeriodicProcessor* periodic_processor,
                              Clock* clock,
                              NackSender* nack_sender,
-                             KeyFrameRequestSender* keyframe_request_sender)
+                             KeyFrameRequestSender* keyframe_request_sender,
+                             const FieldTrialsView& field_trials)
     : worker_thread_(current_queue),
       clock_(clock),
       nack_sender_(nack_sender),
       keyframe_request_sender_(keyframe_request_sender),
       reordering_histogram_(kNumReorderingBuckets, kMaxReorderedPackets),
       initialized_(false),
-      rtt_ms_(kDefaultRttMs),
+      rtt_(kDefaultRtt),
       newest_seq_num_(0),
-      send_nack_delay_ms_(GetSendNackDelay()),
-      backoff_settings_(BackoffSettings::ParseFromFieldTrials()),
+      send_nack_delay_(GetSendNackDelay(field_trials)),
       processor_registration_(this, periodic_processor) {
   RTC_DCHECK(clock_);
   RTC_DCHECK(nack_sender_);
@@ -250,7 +220,7 @@ int NackRequester::OnReceivedPacket(uint16_t seq_num,
 
 void NackRequester::ClearUpTo(uint16_t seq_num) {
   // Called via RtpVideoStreamReceiver2::FrameContinuous on the network thread.
-  worker_thread_->PostTask(ToQueuedTask(task_safety_, [seq_num, this]() {
+  worker_thread_->PostTask(SafeTask(task_safety_.flag(), [seq_num, this]() {
     RTC_DCHECK_RUN_ON(worker_thread_);
     nack_list_.erase(nack_list_.begin(), nack_list_.lower_bound(seq_num));
     keyframe_list_.erase(keyframe_list_.begin(),
@@ -262,7 +232,7 @@ void NackRequester::ClearUpTo(uint16_t seq_num) {
 
 void NackRequester::UpdateRtt(int64_t rtt_ms) {
   RTC_DCHECK_RUN_ON(worker_thread_);
-  rtt_ms_ = rtt_ms;
+  rtt_ = TimeDelta::Millis(rtt_ms);
 }
 
 bool NackRequester::RemovePacketsUntilKeyFrame() {
@@ -314,7 +284,7 @@ void NackRequester::AddPacketsToNack(uint16_t seq_num_start,
     if (recovered_list_.find(seq_num) != recovered_list_.end())
       continue;
     NackInfo nack_info(seq_num, seq_num + WaitNumberOfPackets(0.5),
-                       clock_->TimeInMilliseconds());
+                       clock_->CurrentTime());
     RTC_DCHECK(nack_list_.find(seq_num) == nack_list_.end());
     nack_list_[seq_num] = nack_info;
   }
@@ -329,30 +299,16 @@ std::vector<uint16_t> NackRequester::GetNackBatch(NackFilterOptions options) {
   std::vector<uint16_t> nack_batch;
   auto it = nack_list_.begin();
   while (it != nack_list_.end()) {
-    TimeDelta resend_delay = TimeDelta::Millis(rtt_ms_);
-    if (backoff_settings_) {
-      resend_delay =
-          std::max(resend_delay, backoff_settings_->min_retry_interval);
-      if (it->second.retries > 1) {
-        TimeDelta exponential_backoff =
-            std::min(TimeDelta::Millis(rtt_ms_), backoff_settings_->max_rtt) *
-            std::pow(backoff_settings_->base, it->second.retries - 1);
-        resend_delay = std::max(resend_delay, exponential_backoff);
-      }
-    }
-
-    bool delay_timed_out =
-        now.ms() - it->second.created_at_time >= send_nack_delay_ms_;
-    bool nack_on_rtt_passed =
-        now.ms() - it->second.sent_at_time >= resend_delay.ms();
+    bool delay_timed_out = now - it->second.created_at_time >= send_nack_delay_;
+    bool nack_on_rtt_passed = now - it->second.sent_at_time >= rtt_;
     bool nack_on_seq_num_passed =
-        it->second.sent_at_time == -1 &&
+        it->second.sent_at_time.IsInfinite() &&
         AheadOrAt(newest_seq_num_, it->second.send_at_seq_num);
     if (delay_timed_out && ((consider_seq_num && nack_on_seq_num_passed) ||
                             (consider_timestamp && nack_on_rtt_passed))) {
       nack_batch.emplace_back(it->second.seq_num);
       ++it->second.retries;
-      it->second.sent_at_time = now.ms();
+      it->second.sent_at_time = now;
       if (it->second.retries >= kMaxNackRetries) {
         RTC_LOG(LS_WARNING) << "Sequence number " << it->second.seq_num
                             << " removed from NACK list due to max retries.";

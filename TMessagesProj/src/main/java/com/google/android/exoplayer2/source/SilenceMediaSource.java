@@ -15,18 +15,25 @@
  */
 package com.google.android.exoplayer2.source;
 
+import static java.lang.Math.min;
+
+import android.net.Uri;
+import androidx.annotation.IntRange;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.FormatHolder;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.SeekParameters;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.decoder.DecoderInputBuffer;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.ExoTrackSelection;
 import com.google.android.exoplayer2.upstream.Allocator;
 import com.google.android.exoplayer2.upstream.TransferListener;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayList;
 import org.checkerframework.checker.nullness.compatqual.NullableType;
 
@@ -40,57 +47,65 @@ public final class SilenceMediaSource extends BaseMediaSource {
     @Nullable private Object tag;
 
     /**
-     * Sets the duration of the silent audio.
+     * Sets the duration of the silent audio. The value needs to be a positive value.
      *
      * @param durationUs The duration of silent audio to output, in microseconds.
      * @return This factory, for convenience.
      */
-    public Factory setDurationUs(long durationUs) {
+    @CanIgnoreReturnValue
+    public Factory setDurationUs(@IntRange(from = 1) long durationUs) {
       this.durationUs = durationUs;
       return this;
     }
 
     /**
-     * Sets a tag for the media source which will be published in the {@link
-     * com.google.android.exoplayer2.Timeline} of the source as {@link
-     * com.google.android.exoplayer2.Timeline.Window#tag}.
+     * Sets a tag for the media source which will be published in the {@link Timeline} of the source
+     * as {@link MediaItem.LocalConfiguration#tag Window#mediaItem.localConfiguration.tag}.
      *
      * @param tag A tag for the media source.
      * @return This factory, for convenience.
      */
+    @CanIgnoreReturnValue
     public Factory setTag(@Nullable Object tag) {
       this.tag = tag;
       return this;
     }
 
-    /** Creates a new {@link SilenceMediaSource}. */
+    /**
+     * Creates a new {@link SilenceMediaSource}.
+     *
+     * @throws IllegalStateException if the duration is a non-positive value.
+     */
     public SilenceMediaSource createMediaSource() {
-      return new SilenceMediaSource(durationUs, tag);
+      Assertions.checkState(durationUs > 0);
+      return new SilenceMediaSource(durationUs, MEDIA_ITEM.buildUpon().setTag(tag).build());
     }
   }
 
+  /** The media id used by any media item of silence media sources. */
+  public static final String MEDIA_ID = "SilenceMediaSource";
+
   private static final int SAMPLE_RATE_HZ = 44100;
-  @C.PcmEncoding private static final int ENCODING = C.ENCODING_PCM_16BIT;
+  private static final @C.PcmEncoding int PCM_ENCODING = C.ENCODING_PCM_16BIT;
   private static final int CHANNEL_COUNT = 2;
   private static final Format FORMAT =
-      Format.createAudioSampleFormat(
-          /* id=*/ null,
-          MimeTypes.AUDIO_RAW,
-          /* codecs= */ null,
-          /* bitrate= */ Format.NO_VALUE,
-          /* maxInputSize= */ Format.NO_VALUE,
-          CHANNEL_COUNT,
-          SAMPLE_RATE_HZ,
-          ENCODING,
-          /* initializationData= */ null,
-          /* drmInitData= */ null,
-          /* selectionFlags= */ 0,
-          /* language= */ null);
+      new Format.Builder()
+          .setSampleMimeType(MimeTypes.AUDIO_RAW)
+          .setChannelCount(CHANNEL_COUNT)
+          .setSampleRate(SAMPLE_RATE_HZ)
+          .setPcmEncoding(PCM_ENCODING)
+          .build();
+  private static final MediaItem MEDIA_ITEM =
+      new MediaItem.Builder()
+          .setMediaId(MEDIA_ID)
+          .setUri(Uri.EMPTY)
+          .setMimeType(FORMAT.sampleMimeType)
+          .build();
   private static final byte[] SILENCE_SAMPLE =
-      new byte[Util.getPcmFrameSize(ENCODING, CHANNEL_COUNT) * 1024];
+      new byte[Util.getPcmFrameSize(PCM_ENCODING, CHANNEL_COUNT) * 1024];
 
   private final long durationUs;
-  @Nullable private final Object tag;
+  private final MediaItem mediaItem;
 
   /**
    * Creates a new media source providing silent audio of the given duration.
@@ -98,13 +113,19 @@ public final class SilenceMediaSource extends BaseMediaSource {
    * @param durationUs The duration of silent audio to output, in microseconds.
    */
   public SilenceMediaSource(long durationUs) {
-    this(durationUs, /* tag= */ null);
+    this(durationUs, MEDIA_ITEM);
   }
 
-  private SilenceMediaSource(long durationUs, @Nullable Object tag) {
+  /**
+   * Creates a new media source providing silent audio of the given duration.
+   *
+   * @param durationUs The duration of silent audio to output, in microseconds.
+   * @param mediaItem The media item associated with this media source.
+   */
+  private SilenceMediaSource(long durationUs, MediaItem mediaItem) {
     Assertions.checkArgument(durationUs >= 0);
     this.durationUs = durationUs;
-    this.tag = tag;
+    this.mediaItem = mediaItem;
   }
 
   @Override
@@ -114,9 +135,9 @@ public final class SilenceMediaSource extends BaseMediaSource {
             durationUs,
             /* isSeekable= */ true,
             /* isDynamic= */ false,
-            /* isLive= */ false,
+            /* useLiveConfiguration= */ false,
             /* manifest= */ null,
-            tag));
+            mediaItem));
   }
 
   @Override
@@ -129,6 +150,11 @@ public final class SilenceMediaSource extends BaseMediaSource {
 
   @Override
   public void releasePeriod(MediaPeriod mediaPeriod) {}
+
+  @Override
+  public MediaItem getMediaItem() {
+    return mediaItem;
+  }
 
   @Override
   protected void releaseSourceInternal() {}
@@ -160,7 +186,7 @@ public final class SilenceMediaSource extends BaseMediaSource {
 
     @Override
     public long selectTracks(
-        @NullableType TrackSelection[] selections,
+        @NullableType ExoTrackSelection[] selections,
         boolean[] mayRetainStreamFlags,
         @NullableType SampleStream[] streams,
         boolean[] streamResetFlags,
@@ -258,8 +284,8 @@ public final class SilenceMediaSource extends BaseMediaSource {
 
     @Override
     public int readData(
-        FormatHolder formatHolder, DecoderInputBuffer buffer, boolean formatRequired) {
-      if (!sentFormat || formatRequired) {
+        FormatHolder formatHolder, DecoderInputBuffer buffer, @ReadFlags int readFlags) {
+      if (!sentFormat || (readFlags & FLAG_REQUIRE_FORMAT) != 0) {
         formatHolder.format = FORMAT;
         sentFormat = true;
         return C.RESULT_FORMAT_READ;
@@ -271,12 +297,16 @@ public final class SilenceMediaSource extends BaseMediaSource {
         return C.RESULT_BUFFER_READ;
       }
 
-      int bytesToWrite = (int) Math.min(SILENCE_SAMPLE.length, bytesRemaining);
-      buffer.ensureSpaceForWrite(bytesToWrite);
-      buffer.data.put(SILENCE_SAMPLE, /* offset= */ 0, bytesToWrite);
       buffer.timeUs = getAudioPositionUs(positionBytes);
       buffer.addFlag(C.BUFFER_FLAG_KEY_FRAME);
-      positionBytes += bytesToWrite;
+      int bytesToWrite = (int) min(SILENCE_SAMPLE.length, bytesRemaining);
+      if ((readFlags & FLAG_OMIT_SAMPLE_DATA) == 0) {
+        buffer.ensureSpaceForWrite(bytesToWrite);
+        buffer.data.put(SILENCE_SAMPLE, /* offset= */ 0, bytesToWrite);
+      }
+      if ((readFlags & FLAG_PEEK) == 0) {
+        positionBytes += bytesToWrite;
+      }
       return C.RESULT_BUFFER_READ;
     }
 
@@ -290,11 +320,11 @@ public final class SilenceMediaSource extends BaseMediaSource {
 
   private static long getAudioByteCount(long durationUs) {
     long audioSampleCount = durationUs * SAMPLE_RATE_HZ / C.MICROS_PER_SECOND;
-    return Util.getPcmFrameSize(ENCODING, CHANNEL_COUNT) * audioSampleCount;
+    return Util.getPcmFrameSize(PCM_ENCODING, CHANNEL_COUNT) * audioSampleCount;
   }
 
   private static long getAudioPositionUs(long bytes) {
-    long audioSampleCount = bytes / Util.getPcmFrameSize(ENCODING, CHANNEL_COUNT);
+    long audioSampleCount = bytes / Util.getPcmFrameSize(PCM_ENCODING, CHANNEL_COUNT);
     return audioSampleCount * C.MICROS_PER_SECOND / SAMPLE_RATE_HZ;
   }
 }

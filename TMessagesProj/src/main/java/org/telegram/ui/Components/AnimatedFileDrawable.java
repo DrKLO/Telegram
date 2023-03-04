@@ -94,6 +94,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     private boolean forceDecodeAfterNextFrame;
     private File path;
     private long streamFileSize;
+    private int streamLoadingPriority;
     private int currentAccount;
     private boolean recycleWithSecond;
     private volatile long pendingSeekTo = -1;
@@ -420,13 +421,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         }
     };
 
-    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, BitmapsCache.CacheOptions cacheOptions) {
-        this(file, createDecoder, streamSize, document, location, parentObject, seekTo, account, preview, 0, 0, cacheOptions);
+    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, BitmapsCache.CacheOptions cacheOptions) {
+        this(file, createDecoder, streamSize, streamLoadingPriority, document, location, parentObject, seekTo, account, preview, 0, 0, cacheOptions);
     }
 
-    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions) {
+    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions) {
         path = file;
         streamFileSize = streamSize;
+        this.streamLoadingPriority = streamLoadingPriority;
         currentAccount = account;
         renderingHeight = h;
         renderingWidth = w;
@@ -434,7 +436,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         this.document = document;
         getPaint().setFlags(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         if (streamSize != 0 && (document != null || location != null)) {
-            stream = new AnimatedFileDrawableStream(document, location, parentObject, account, preview);
+            stream = new AnimatedFileDrawableStream(document, location, parentObject, account, preview, streamLoadingPriority);
         }
         if (createDecoder && !this.precache) {
             nativePtr = createDecoder(file.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream, preview);
@@ -631,6 +633,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         }
         if (stream != null) {
             stream.cancel(true);
+            stream = null;
         }
         invalidateInternal();
     }
@@ -970,9 +973,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     public AnimatedFileDrawable makeCopy() {
         AnimatedFileDrawable drawable;
         if (stream != null) {
-            drawable = new AnimatedFileDrawable(path, false, streamFileSize, stream.getDocument(), stream.getLocation(), stream.getParentObject(), pendingSeekToUI, currentAccount, stream != null && stream.isPreview(), null);
+            drawable = new AnimatedFileDrawable(path, false, streamFileSize, streamLoadingPriority, stream.getDocument(), stream.getLocation(), stream.getParentObject(), pendingSeekToUI, currentAccount, stream != null && stream.isPreview(), null);
         } else {
-            drawable = new AnimatedFileDrawable(path, false, streamFileSize, document, null, null, pendingSeekToUI, currentAccount, stream != null && stream.isPreview(), null);
+            drawable = new AnimatedFileDrawable(path, false, streamFileSize, streamLoadingPriority, document, null, null, pendingSeekToUI, currentAccount, stream != null && stream.isPreview(), null);
         }
         drawable.metaData[0] = metaData[0];
         drawable.metaData[1] = metaData[1];

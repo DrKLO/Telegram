@@ -36,17 +36,22 @@ public class LanguageDetector {
         } catch (IllegalStateException e) {
             if (!initializeFirst) {
                 detectLanguage(text, onSuccess, onFail, true);
-            } else if (onFail != null) {
-                onFail.run(e);
+            } else {
+                if (onFail != null) {
+                    onFail.run(e);
+                }
+                FileLog.e(e, false);
             }
         } catch (Exception e) {
             if (onFail != null) {
                 onFail.run(e);
             }
+            FileLog.e(e);
         } catch (Throwable t) {
             if (onFail != null) {
                 onFail.run(null);
             }
+            FileLog.e(t, false);
         }
     }
 }

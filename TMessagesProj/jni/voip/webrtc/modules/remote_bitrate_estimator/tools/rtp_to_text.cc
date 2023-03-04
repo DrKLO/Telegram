@@ -16,7 +16,6 @@
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
-#include "rtc_base/format_macros.h"
 #include "rtc_base/strings/string_builder.h"
 #include "test/rtp_file_reader.h"
 
@@ -52,10 +51,10 @@ int main(int argc, char* argv[]) {
       ss << static_cast<int64_t>(packet.time_ms) * 1000000;
       fprintf(stdout, "%s\n", ss.str().c_str());
     } else {
-      fprintf(stdout, "%u %u %d %u %u %d %u %" RTC_PRIuS " %" RTC_PRIuS "\n",
-              header.SequenceNumber(), header.Timestamp(), toffset,
-              abs_send_time, packet.time_ms, header.Marker(), header.Ssrc(),
-              packet.length, packet.original_length);
+      fprintf(stdout, "%u %u %d %u %u %d %u %zu %zu\n", header.SequenceNumber(),
+              header.Timestamp(), toffset, abs_send_time, packet.time_ms,
+              header.Marker(), header.Ssrc(), packet.length,
+              packet.original_length);
     }
     ++packet_counter;
   }

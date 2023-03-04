@@ -662,7 +662,9 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
                 boundParticipant = participant;
             }
         } else if (boundParticipant != null) {
-            VoIPService.getSharedInstance().removeRemoteSink(boundParticipant, false);
+            if (VoIPService.getSharedInstance() != null) {
+                VoIPService.getSharedInstance().removeRemoteSink(boundParticipant, false);
+            }
             boundParticipant = null;
         }
         boolean showPlaceholder = !firstFrameRendered || boundParticipant == null || boundParticipant.video == null && boundParticipant.presentation == null ||

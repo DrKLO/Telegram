@@ -1374,6 +1374,7 @@
     <string name="ImportFileTooLarge">Importing file is too large.</string>
     <string name="ImportFailedToUpload">Failed to upload file.</string>
     <string name="AudioSpeedNormal">Audio will play at normal speed.</string>
+    <string name="AudioSpeedMedium">Audio will play at 1.5x speed.</string>
     <string name="AudioSpeedFast">Audio will play two times faster.</string>
     <string name="MessageCopied">Message copied to clipboard.</string>
     <string name="HintSent">Delivered</string>
@@ -3013,6 +3014,9 @@
     <string name="SpeedFast">Fast</string>
     <string name="SpeedVeryFast">Very fast</string>
     <string name="SpeedNormal">Normal</string>
+    <string name="SpeedMedium">Medium</string>
+    <string name="SpeedSuperFast">Super Fast</string>
+    <string name="SpeedHint">Long tap for more speed values.</string>
     <string name="ShowAsList">Show as list</string>
     <string name="ShowAsGrid">Show as grid</string>
     <string name="ShowAllMedia">Show all media</string>
@@ -6260,4 +6264,29 @@
     <string name="VOIPCallEncryptionKey">Encryption key of this call</string>
     <string name="EndToEndEncryptionText">This call is end-to-end encrypted</string>
     <string name="HideEmoji">Hide Emoji</string>
+    <string name="AccDescrDocumentType">%s file, </string>
+    <string name="AccDescrArchivedChatsShown">Archived chats shown</string>
+    <string name="AccDescrArchivedChatsHidden">Archived chats hidden</string>
+    <string name="AccDescrNotificationsMuted">Muted</string>
+    <string name="AccDescrUserOnline">Online</string>
+    <string name="LitePresetTitle">Power usage</string>
+    <string name="LitePresetInfo">You can switch to low power mode to increase battery life. Recommended for weak devices.</string>
+    <string name="LiteOptionsTitle">Power saving options</string>
+    <string name="LiteOptionsAutoplayKeyboard">Autoplay in keyboard</string>
+    <string name="LiteOptionsAutoplayChat">Autoplay in chat</string>
+    <string name="LiteOptionsAutoplayReactions">Autoplay in reactions menu</string>
+    <string name="LiteOptionsChat">Animations in Chats</string>
+    <string name="LiteOptionsBackground">Background rotation</string>
+    <string name="LiteOptionsTopics">Side menu in topics</string>
+    <string name="LiteOptionsSpoiler">Animated spoiler effect</string>
+    <string name="LiteOptionsBlur">Night theme blur</string>
+    <string name="LiteOptionsCalls">Animations in Calls</string>
+    <string name="LiteOptionsAutoplayVideo">Autoplay Videos</string>
+    <string name="LiteOptionsAutoplayGifs">Autoplay GIFs</string>
+    <string name="LiteSmoothTransitions">Enable Smooth Transitions</string>
+    <string name="LiteSmoothTransitionsInfo">You can disable animated transitions between different sections of the apps.</string>
+    <string name="LitePowerSaver">Save Power on Low Battery</string>
+    <string name="LitePowerSaverInfo">Automatically switch to low power usage when your devices is in Battery Saving Mode.</string>
+    <string name="DynamicPackOrder">Dynamic Pack Order</string>
+    <string name="DynamicPackOrderInfo">Automatically place recently used sticker packs at the front of the panel.</string>
 </resources>

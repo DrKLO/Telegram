@@ -27,7 +27,7 @@ public:
     void setOnFatalError(std::function<void()> error);
     void setOnPause(std::function<void(bool)> pause);
     void setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated);
-	webrtc::VideoTrackSourceInterface *source();
+    rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source();
     int getRotation();
     bool isScreenCapture();
 

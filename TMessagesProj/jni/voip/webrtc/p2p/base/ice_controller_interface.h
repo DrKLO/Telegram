@@ -15,36 +15,23 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "p2p/base/connection.h"
+#include "p2p/base/ice_switch_reason.h"
 #include "p2p/base/ice_transport_internal.h"
 
 namespace cricket {
 
 struct IceFieldTrials;  // Forward declaration to avoid circular dependency.
 
-struct IceControllerEvent {
-  enum Type {
-    REMOTE_CANDIDATE_GENERATION_CHANGE,
-    NETWORK_PREFERENCE_CHANGE,
-    NEW_CONNECTION_FROM_LOCAL_CANDIDATE,
-    NEW_CONNECTION_FROM_REMOTE_CANDIDATE,
-    NEW_CONNECTION_FROM_UNKNOWN_REMOTE_ADDRESS,
-    NOMINATION_ON_CONTROLLED_SIDE,
-    DATA_RECEIVED,
-    CONNECT_STATE_CHANGE,
-    SELECTED_CONNECTION_DESTROYED,
-    // The ICE_CONTROLLER_RECHECK enum value lets an IceController request
-    // P2PTransportChannel to recheck a switch periodically without an event
-    // taking place.
-    ICE_CONTROLLER_RECHECK,
-  };
+struct IceRecheckEvent {
+  IceRecheckEvent(IceSwitchReason _reason, int _recheck_delay_ms)
+      : reason(_reason), recheck_delay_ms(_recheck_delay_ms) {}
 
-  IceControllerEvent(const Type& _type)  // NOLINT: runtime/explicit
-      : type(_type) {}
   std::string ToString() const;
 
-  Type type;
-  int recheck_delay_ms = 0;
+  IceSwitchReason reason;
+  int recheck_delay_ms;
 };
 
 // Defines the interface for a module that control
@@ -78,7 +65,7 @@ class IceControllerInterface {
     absl::optional<const Connection*> connection;
 
     // An optional recheck event for when a Switch() should be attempted again.
-    absl::optional<IceControllerEvent> recheck_event;
+    absl::optional<IceRecheckEvent> recheck_event;
 
     // A vector with connection to run ForgetLearnedState on.
     std::vector<const Connection*> connections_to_forget_state_on;
@@ -134,13 +121,13 @@ class IceControllerInterface {
   virtual void MarkConnectionPinged(const Connection* con) = 0;
 
   // Check if we should switch to `connection`.
-  // This method is called for IceControllerEvent's that can switch directly
+  // This method is called for IceSwitchReasons that can switch directly
   // i.e without resorting.
-  virtual SwitchResult ShouldSwitchConnection(IceControllerEvent reason,
+  virtual SwitchResult ShouldSwitchConnection(IceSwitchReason reason,
                                               const Connection* connection) = 0;
 
   // Sort connections and check if we should switch.
-  virtual SwitchResult SortAndSwitchConnection(IceControllerEvent reason) = 0;
+  virtual SwitchResult SortAndSwitchConnection(IceSwitchReason reason) = 0;
 
   // Prune connections.
   virtual std::vector<const Connection*> PruneConnections() = 0;

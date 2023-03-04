@@ -15,13 +15,14 @@
 #include <stdint.h>
 
 #include <algorithm>
-#include <iosfwd>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "api/crypto_params.h"
 #include "api/media_types.h"
 #include "api/rtp_parameters.h"
@@ -95,8 +96,8 @@ class MediaContentDescription {
   // `protocol` is the expected media transport protocol, such as RTP/AVPF,
   // RTP/SAVPF or SCTP/DTLS.
   virtual std::string protocol() const { return protocol_; }
-  virtual void set_protocol(const std::string& protocol) {
-    protocol_ = protocol;
+  virtual void set_protocol(absl::string_view protocol) {
+    protocol_ = std::string(protocol);
   }
 
   virtual webrtc::RtpTransceiverDirection direction() const {
@@ -182,14 +183,6 @@ class MediaContentDescription {
     AddStream(sp);
   }
 
-  // Sets the CNAME of all StreamParams if it have not been set.
-  virtual void SetCnameIfEmpty(const std::string& cname) {
-    for (cricket::StreamParamsVec::iterator it = send_streams_.begin();
-         it != send_streams_.end(); ++it) {
-      if (it->cname.empty())
-        it->cname = cname;
-    }
-  }
   virtual uint32_t first_ssrc() const {
     if (send_streams_.empty()) {
       return 0;
@@ -282,9 +275,9 @@ class MediaContentDescription {
 template <class C>
 class MediaContentDescriptionImpl : public MediaContentDescription {
  public:
-  void set_protocol(const std::string& protocol) override {
+  void set_protocol(absl::string_view protocol) override {
     RTC_DCHECK(IsRtpProtocol(protocol));
-    protocol_ = protocol;
+    protocol_ = std::string(protocol);
   }
 
   typedef C CodecType;
@@ -365,9 +358,9 @@ class SctpDataContentDescription : public MediaContentDescription {
   const SctpDataContentDescription* as_sctp() const override { return this; }
 
   bool has_codecs() const override { return false; }
-  void set_protocol(const std::string& protocol) override {
+  void set_protocol(absl::string_view protocol) override {
     RTC_DCHECK(IsSctpProtocol(protocol));
-    protocol_ = protocol;
+    protocol_ = std::string(protocol);
   }
 
   bool use_sctpmap() const { return use_sctpmap_; }
@@ -392,7 +385,7 @@ class SctpDataContentDescription : public MediaContentDescription {
 
 class UnsupportedContentDescription : public MediaContentDescription {
  public:
-  explicit UnsupportedContentDescription(const std::string& media_type)
+  explicit UnsupportedContentDescription(absl::string_view media_type)
       : media_type_(media_type) {}
   MediaType type() const override { return MEDIA_TYPE_UNSUPPORTED; }
 
@@ -478,9 +471,9 @@ class ContentGroup {
   const ContentNames& content_names() const { return content_names_; }
 
   const std::string* FirstContentName() const;
-  bool HasContentName(const std::string& content_name) const;
-  void AddContentName(const std::string& content_name);
-  bool RemoveContentName(const std::string& content_name);
+  bool HasContentName(absl::string_view content_name) const;
+  void AddContentName(absl::string_view content_name);
+  bool RemoveContentName(absl::string_view content_name);
   // for debugging
   std::string ToString() const;
 

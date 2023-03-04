@@ -18,27 +18,18 @@
 #include "api/peer_connection_interface.h"
 #include "api/rtc_error.h"
 #include "api/stats_types.h"
-#include "pc/stats_collector_interface.h"
-#include "rtc_base/message_handler.h"
-#include "rtc_base/thread.h"
-#include "rtc_base/thread_message.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
+#include "pc/legacy_stats_collector_interface.h"
 
 namespace webrtc {
 
-class CreateSessionDescriptionObserver;
-class SetSessionDescriptionObserver;
-class StatsCollectorInterface;
-class StatsObserver;
-class MediaStreamTrackInterface;
-
-class PeerConnectionMessageHandler : public rtc::MessageHandler {
+class PeerConnectionMessageHandler {
  public:
   explicit PeerConnectionMessageHandler(rtc::Thread* signaling_thread)
       : signaling_thread_(signaling_thread) {}
-  ~PeerConnectionMessageHandler();
+  ~PeerConnectionMessageHandler() = default;
 
-  // Implements MessageHandler.
-  void OnMessage(rtc::Message* msg) override;
   void PostSetSessionDescriptionSuccess(
       SetSessionDescriptionObserver* observer);
   void PostSetSessionDescriptionFailure(SetSessionDescriptionObserver* observer,
@@ -47,14 +38,13 @@ class PeerConnectionMessageHandler : public rtc::MessageHandler {
       CreateSessionDescriptionObserver* observer,
       RTCError error);
   void PostGetStats(StatsObserver* observer,
-                    StatsCollectorInterface* stats,
+                    LegacyStatsCollectorInterface* legacy_stats,
                     MediaStreamTrackInterface* track);
   void RequestUsagePatternReport(std::function<void()>, int delay_ms);
 
  private:
-  rtc::Thread* signaling_thread() const { return signaling_thread_; }
-
-  rtc::Thread* const signaling_thread_;
+  ScopedTaskSafety safety_;
+  TaskQueueBase* const signaling_thread_;
 };
 
 }  // namespace webrtc

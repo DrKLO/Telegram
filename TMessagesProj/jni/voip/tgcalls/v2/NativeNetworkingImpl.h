@@ -13,6 +13,7 @@
 #include "rtc_base/ssl_fingerprint.h"
 #include "pc/sctp_data_channel.h"
 #include "p2p/base/port.h"
+#include "api/transport/field_trial_based_config.h"
 
 #include <functional>
 #include <memory>
@@ -33,6 +34,7 @@ class BasicPortAllocator;
 class P2PTransportChannel;
 class IceTransportInternal;
 class DtlsTransport;
+class RelayPortFactoryInterface;
 } // namespace cricket
 
 namespace webrtc {
@@ -200,6 +202,7 @@ private:
     std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;
     std::unique_ptr<rtc::BasicNetworkManager> _networkManager;
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;
+    std::unique_ptr<cricket::RelayPortFactoryInterface> _relayPortFactory;
     std::unique_ptr<cricket::BasicPortAllocator> _portAllocator;
     std::unique_ptr<webrtc::AsyncDnsResolverFactoryInterface> _asyncResolverFactory;
     std::unique_ptr<cricket::P2PTransportChannel> _transportChannel;

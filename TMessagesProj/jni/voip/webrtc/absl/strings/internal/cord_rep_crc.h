@@ -40,7 +40,7 @@ struct CordRepCrc : public CordRep {
   // If the specified `child` is itself a CordRepCrc node, then this method
   // either replaces the existing node, or directly updates the crc value in it
   // depending on the node being shared or not, i.e.: refcount.IsOne().
-  // `child` must not be null. Never returns null.
+  // `child` must only be null if the Cord is empty. Never returns null.
   static CordRepCrc* New(CordRep* child, uint32_t crc);
 
   // Destroys (deletes) the provided node. `node` must not be null.

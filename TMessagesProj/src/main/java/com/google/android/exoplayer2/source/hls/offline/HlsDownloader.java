@@ -16,22 +16,23 @@
 package com.google.android.exoplayer2.source.hls.offline;
 
 import android.net.Uri;
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.offline.DownloaderConstructorHelper;
+import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.offline.SegmentDownloader;
-import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist;
+import com.google.android.exoplayer2.source.hls.playlist.HlsMultivariantPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylistParser;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.ParsingLoadable;
+import com.google.android.exoplayer2.upstream.ParsingLoadable.Parser;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.util.UriUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * A downloader for HLS streams.
@@ -40,50 +41,84 @@ import java.util.List;
  *
  * <pre>{@code
  * SimpleCache cache = new SimpleCache(downloadFolder, new NoOpCacheEvictor(), databaseProvider);
- * DefaultHttpDataSourceFactory factory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
- * DownloaderConstructorHelper constructorHelper =
- *     new DownloaderConstructorHelper(cache, factory);
- * // Create a downloader for the first variant in a master playlist.
+ * CacheDataSource.Factory cacheDataSourceFactory =
+ *     new CacheDataSource.Factory()
+ *         .setCache(cache)
+ *         .setUpstreamDataSourceFactory(new DefaultHttpDataSource.Factory());
+ * // Create a downloader for the first variant in a multivariant playlist.
  * HlsDownloader hlsDownloader =
  *     new HlsDownloader(
- *         playlistUri,
- *         Collections.singletonList(new StreamKey(HlsMasterPlaylist.GROUP_INDEX_VARIANT, 0)),
- *         constructorHelper);
+ *         new MediaItem.Builder()
+ *             .setUri(playlistUri)
+ *             .setStreamKeys(
+ *                 Collections.singletonList(
+ *                     new StreamKey(HlsMultivariantPlaylist.GROUP_INDEX_VARIANT, 0)))
+ *             .build(),
+ *         Collections.singletonList();
  * // Perform the download.
  * hlsDownloader.download(progressListener);
- * // Access downloaded data using CacheDataSource
- * CacheDataSource cacheDataSource =
- *     new CacheDataSource(cache, factory.createDataSource(), CacheDataSource.FLAG_BLOCK_ON_CACHE);
+ * // Use the downloaded data for playback.
+ * HlsMediaSource mediaSource =
+ *     new HlsMediaSource.Factory(cacheDataSourceFactory).createMediaSource(mediaItem);
  * }</pre>
  */
 public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
 
   /**
-   * @param playlistUri The {@link Uri} of the playlist to be downloaded.
-   * @param streamKeys Keys defining which renditions in the playlist should be selected for
-   *     download. If empty, all renditions are downloaded.
-   * @param constructorHelper A {@link DownloaderConstructorHelper} instance.
+   * Creates a new instance.
+   *
+   * @param mediaItem The {@link MediaItem} to be downloaded.
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which the
+   *     download will be written.
+   */
+  public HlsDownloader(MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory) {
+    this(mediaItem, cacheDataSourceFactory, Runnable::run);
+  }
+
+  /**
+   * Creates a new instance.
+   *
+   * @param mediaItem The {@link MediaItem} to be downloaded.
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which the
+   *     download will be written.
+   * @param executor An {@link Executor} used to make requests for the media being downloaded.
+   *     Providing an {@link Executor} that uses multiple threads will speed up the download by
+   *     allowing parts of it to be executed in parallel.
    */
   public HlsDownloader(
-      Uri playlistUri, List<StreamKey> streamKeys, DownloaderConstructorHelper constructorHelper) {
-    super(playlistUri, streamKeys, constructorHelper);
+      MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory, Executor executor) {
+    this(mediaItem, new HlsPlaylistParser(), cacheDataSourceFactory, executor);
+  }
+
+  /**
+   * Creates a new instance.
+   *
+   * @param mediaItem The {@link MediaItem} to be downloaded.
+   * @param manifestParser A parser for HLS playlists.
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which the
+   *     download will be written.
+   * @param executor An {@link Executor} used to make requests for the media being downloaded.
+   *     Providing an {@link Executor} that uses multiple threads will speed up the download by
+   *     allowing parts of it to be executed in parallel.
+   */
+  public HlsDownloader(
+      MediaItem mediaItem,
+      Parser<HlsPlaylist> manifestParser,
+      CacheDataSource.Factory cacheDataSourceFactory,
+      Executor executor) {
+    super(mediaItem, manifestParser, cacheDataSourceFactory, executor);
   }
 
   @Override
-  protected HlsPlaylist getManifest(DataSource dataSource, DataSpec dataSpec) throws IOException {
-    return loadManifest(dataSource, dataSpec);
-  }
-
-  @Override
-  protected List<Segment> getSegments(
-      DataSource dataSource, HlsPlaylist playlist, boolean allowIncompleteList) throws IOException {
+  protected List<Segment> getSegments(DataSource dataSource, HlsPlaylist manifest, boolean removing)
+      throws IOException, InterruptedException {
     ArrayList<DataSpec> mediaPlaylistDataSpecs = new ArrayList<>();
-    if (playlist instanceof HlsMasterPlaylist) {
-      HlsMasterPlaylist masterPlaylist = (HlsMasterPlaylist) playlist;
-      addMediaPlaylistDataSpecs(masterPlaylist.mediaPlaylistUrls, mediaPlaylistDataSpecs);
+    if (manifest instanceof HlsMultivariantPlaylist) {
+      HlsMultivariantPlaylist multivariantPlaylist = (HlsMultivariantPlaylist) manifest;
+      addMediaPlaylistDataSpecs(multivariantPlaylist.mediaPlaylistUrls, mediaPlaylistDataSpecs);
     } else {
       mediaPlaylistDataSpecs.add(
-          SegmentDownloader.getCompressibleDataSpec(Uri.parse(playlist.baseUri)));
+          SegmentDownloader.getCompressibleDataSpec(Uri.parse(manifest.baseUri)));
     }
 
     ArrayList<Segment> segments = new ArrayList<>();
@@ -92,15 +127,15 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
       segments.add(new Segment(/* startTimeUs= */ 0, mediaPlaylistDataSpec));
       HlsMediaPlaylist mediaPlaylist;
       try {
-        mediaPlaylist = (HlsMediaPlaylist) loadManifest(dataSource, mediaPlaylistDataSpec);
+        mediaPlaylist = (HlsMediaPlaylist) getManifest(dataSource, mediaPlaylistDataSpec, removing);
       } catch (IOException e) {
-        if (!allowIncompleteList) {
+        if (!removing) {
           throw e;
         }
         // Generating an incomplete segment list is allowed. Advance to the next media playlist.
         continue;
       }
-      HlsMediaPlaylist.Segment lastInitSegment = null;
+      @Nullable HlsMediaPlaylist.Segment lastInitSegment = null;
       List<HlsMediaPlaylist.Segment> hlsSegments = mediaPlaylist.segments;
       for (int i = 0; i < hlsSegments.size(); i++) {
         HlsMediaPlaylist.Segment segment = hlsSegments.get(i);
@@ -121,12 +156,6 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
     }
   }
 
-  private static HlsPlaylist loadManifest(DataSource dataSource, DataSpec dataSpec)
-      throws IOException {
-    return ParsingLoadable.load(
-        dataSource, new HlsPlaylistParser(), dataSpec, C.DATA_TYPE_MANIFEST);
-  }
-
   private void addSegment(
       HlsMediaPlaylist mediaPlaylist,
       HlsMediaPlaylist.Segment segment,
@@ -141,8 +170,7 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
       }
     }
     Uri segmentUri = UriUtil.resolveToUri(baseUri, segment.url);
-    DataSpec dataSpec =
-        new DataSpec(segmentUri, segment.byterangeOffset, segment.byterangeLength, /* key= */ null);
+    DataSpec dataSpec = new DataSpec(segmentUri, segment.byteRangeOffset, segment.byteRangeLength);
     out.add(new Segment(startTimeUs, dataSpec));
   }
 }

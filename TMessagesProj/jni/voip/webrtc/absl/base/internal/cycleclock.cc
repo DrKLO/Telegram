@@ -25,6 +25,8 @@
 #include <atomic>
 #include <chrono>  // NOLINT(build/c++11)
 
+#include "absl/base/attributes.h"
+#include "absl/base/config.h"
 #include "absl/base/internal/unscaledcycleclock.h"
 
 namespace absl {
@@ -33,44 +35,20 @@ namespace base_internal {
 
 #if ABSL_USE_UNSCALED_CYCLECLOCK
 
-namespace {
-
-#ifdef NDEBUG
-#ifdef ABSL_INTERNAL_UNSCALED_CYCLECLOCK_FREQUENCY_IS_CPU_FREQUENCY
-// Not debug mode and the UnscaledCycleClock frequency is the CPU
-// frequency.  Scale the CycleClock to prevent overflow if someone
-// tries to represent the time as cycles since the Unix epoch.
-static constexpr int32_t kShift = 1;
-#else
-// Not debug mode and the UnscaledCycleClock isn't operating at the
-// raw CPU frequency. There is no need to do any scaling, so don't
-// needlessly sacrifice precision.
-static constexpr int32_t kShift = 0;
-#endif
-#else
-// In debug mode use a different shift to discourage depending on a
-// particular shift value.
-static constexpr int32_t kShift = 2;
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
+constexpr int32_t CycleClock::kShift;
+constexpr double CycleClock::kFrequencyScale;
 #endif
 
-static constexpr double kFrequencyScale = 1.0 / (1 << kShift);
-static std::atomic<CycleClockSourceFunc> cycle_clock_source;
+ABSL_CONST_INIT std::atomic<CycleClockSourceFunc>
+    CycleClock::cycle_clock_source_{nullptr};
 
-CycleClockSourceFunc LoadCycleClockSource() {
-  // Optimize for the common case (no callback) by first doing a relaxed load;
-  // this is significantly faster on non-x86 platforms.
-  if (cycle_clock_source.load(std::memory_order_relaxed) == nullptr) {
-    return nullptr;
-  }
-  // This corresponds to the store(std::memory_order_release) in
-  // CycleClockSource::Register, and makes sure that any updates made prior to
-  // registering the callback are visible to this thread before the callback is
-  // invoked.
-  return cycle_clock_source.load(std::memory_order_acquire);
+void CycleClockSource::Register(CycleClockSourceFunc source) {
+  // Corresponds to the load(std::memory_order_acquire) in LoadCycleClockSource.
+  CycleClock::cycle_clock_source_.store(source, std::memory_order_release);
 }
 
-}  // namespace
-
+#ifdef _WIN32
 int64_t CycleClock::Now() {
   auto fn = LoadCycleClockSource();
   if (fn == nullptr) {
@@ -78,15 +56,7 @@ int64_t CycleClock::Now() {
   }
   return fn() >> kShift;
 }
-
-double CycleClock::Frequency() {
-  return kFrequencyScale * base_internal::UnscaledCycleClock::Frequency();
-}
-
-void CycleClockSource::Register(CycleClockSourceFunc source) {
-  // Corresponds to the load(std::memory_order_acquire) in LoadCycleClockSource.
-  cycle_clock_source.store(source, std::memory_order_release);
-}
+#endif
 
 #else
 

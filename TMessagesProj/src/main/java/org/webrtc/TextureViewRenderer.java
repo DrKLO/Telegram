@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.voip.VoIPService;
 
@@ -55,7 +56,7 @@ public class TextureViewRenderer extends TextureView
     Runnable updateScreenRunnable;
 
     public void setBackgroundRenderer(@Nullable TextureView backgroundRenderer) {
-        if (SharedConfig.getLiteMode().enabled()) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
             return;
         }
         this.backgroundRenderer = backgroundRenderer;

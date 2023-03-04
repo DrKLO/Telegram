@@ -37,6 +37,78 @@
 
 namespace dcsctp {
 
+TransmissionControlBlock::TransmissionControlBlock(
+    TimerManager& timer_manager,
+    absl::string_view log_prefix,
+    const DcSctpOptions& options,
+    const Capabilities& capabilities,
+    DcSctpSocketCallbacks& callbacks,
+    SendQueue& send_queue,
+    VerificationTag my_verification_tag,
+    TSN my_initial_tsn,
+    VerificationTag peer_verification_tag,
+    TSN peer_initial_tsn,
+    size_t a_rwnd,
+    TieTag tie_tag,
+    PacketSender& packet_sender,
+    std::function<bool()> is_connection_established)
+    : log_prefix_(log_prefix),
+      options_(options),
+      timer_manager_(timer_manager),
+      capabilities_(capabilities),
+      callbacks_(callbacks),
+      t3_rtx_(timer_manager_.CreateTimer(
+          "t3-rtx",
+          absl::bind_front(&TransmissionControlBlock::OnRtxTimerExpiry, this),
+          TimerOptions(options.rto_initial,
+                       TimerBackoffAlgorithm::kExponential,
+                       /*max_restarts=*/absl::nullopt,
+                       options.max_timer_backoff_duration))),
+      delayed_ack_timer_(timer_manager_.CreateTimer(
+          "delayed-ack",
+          absl::bind_front(&TransmissionControlBlock::OnDelayedAckTimerExpiry,
+                           this),
+          TimerOptions(options.delayed_ack_max_timeout,
+                       TimerBackoffAlgorithm::kExponential,
+                       /*max_restarts=*/0,
+                       /*max_backoff_duration=*/absl::nullopt,
+                       webrtc::TaskQueueBase::DelayPrecision::kHigh))),
+      my_verification_tag_(my_verification_tag),
+      my_initial_tsn_(my_initial_tsn),
+      peer_verification_tag_(peer_verification_tag),
+      peer_initial_tsn_(peer_initial_tsn),
+      tie_tag_(tie_tag),
+      is_connection_established_(std::move(is_connection_established)),
+      packet_sender_(packet_sender),
+      rto_(options),
+      tx_error_counter_(log_prefix, options),
+      data_tracker_(log_prefix, delayed_ack_timer_.get(), peer_initial_tsn),
+      reassembly_queue_(log_prefix,
+                        peer_initial_tsn,
+                        options.max_receiver_window_buffer_size,
+                        capabilities.message_interleaving),
+      retransmission_queue_(
+          log_prefix,
+          &callbacks_,
+          my_initial_tsn,
+          a_rwnd,
+          send_queue,
+          absl::bind_front(&TransmissionControlBlock::ObserveRTT, this),
+          [this]() { tx_error_counter_.Clear(); },
+          *t3_rtx_,
+          options,
+          capabilities.partial_reliability,
+          capabilities.message_interleaving),
+      stream_reset_handler_(log_prefix,
+                            this,
+                            &timer_manager,
+                            &data_tracker_,
+                            &reassembly_queue_,
+                            &retransmission_queue_),
+      heartbeat_handler_(log_prefix, options, this, &timer_manager_) {
+  send_queue.EnableMessageInterleaving(capabilities.message_interleaving);
+}
+
 void TransmissionControlBlock::ObserveRTT(DurationMs rtt) {
   DurationMs prev_rto = rto_.rto();
   rto_.ObserveRTT(rtt);
@@ -102,11 +174,35 @@ void TransmissionControlBlock::MaybeSendForwardTsn(SctpPacket::Builder& builder,
   }
 }
 
+void TransmissionControlBlock::MaybeSendFastRetransmit() {
+  if (!retransmission_queue_.has_data_to_be_fast_retransmitted()) {
+    return;
+  }
+
+  // https://datatracker.ietf.org/doc/html/rfc4960#section-7.2.4
+  // "Determine how many of the earliest (i.e., lowest TSN) DATA chunks marked
+  // for retransmission will fit into a single packet, subject to constraint of
+  // the path MTU of the destination transport address to which the packet is
+  // being sent.  Call this value K. Retransmit those K DATA chunks in a single
+  // packet.  When a Fast Retransmit is being performed, the sender SHOULD
+  // ignore the value of cwnd and SHOULD NOT delay retransmission for this
+  // single packet."
+
+  SctpPacket::Builder builder(peer_verification_tag_, options_);
+  auto chunks = retransmission_queue_.GetChunksForFastRetransmit(
+      builder.bytes_remaining());
+  for (auto& [tsn, data] : chunks) {
+    if (capabilities_.message_interleaving) {
+      builder.Add(IDataChunk(tsn, std::move(data), false));
+    } else {
+      builder.Add(DataChunk(tsn, std::move(data), false));
+    }
+  }
+  packet_sender_.Send(builder);
+}
+
 void TransmissionControlBlock::SendBufferedPackets(SctpPacket::Builder& builder,
                                                    TimeMs now) {
-  // FORWARD-TSNs are sent as separate packets to avoid bugs.webrtc.org/12961.
-  MaybeSendForwardTsn(builder, now);
-
   for (int packet_idx = 0;
        packet_idx < options_.max_burst && retransmission_queue_.can_send_data();
        ++packet_idx) {
@@ -131,6 +227,7 @@ void TransmissionControlBlock::SendBufferedPackets(SctpPacket::Builder& builder,
         builder.Add(data_tracker_.CreateSelectiveAck(
             reassembly_queue_.remaining_bytes()));
       }
+      MaybeSendForwardTsn(builder, now);
       absl::optional<ReConfigChunk> reconfig =
           stream_reset_handler_.MakeStreamResetRequest();
       if (reconfig.has_value()) {
@@ -140,9 +237,7 @@ void TransmissionControlBlock::SendBufferedPackets(SctpPacket::Builder& builder,
 
     auto chunks =
         retransmission_queue_.GetChunksToSend(now, builder.bytes_remaining());
-    for (auto& elem : chunks) {
-      TSN tsn = elem.first;
-      Data data = std::move(elem.second);
+    for (auto& [tsn, data] : chunks) {
       if (capabilities_.message_interleaving) {
         builder.Add(IDataChunk(tsn, std::move(data), false));
       } else {
@@ -179,6 +274,8 @@ std::string TransmissionControlBlock::ToString() const {
   if (capabilities_.reconfig) {
     sb << "Reconfig,";
   }
+  sb << " max_in=" << capabilities_.negotiated_maximum_incoming_streams;
+  sb << " max_out=" << capabilities_.negotiated_maximum_outgoing_streams;
 
   return sb.Release();
 }
@@ -197,6 +294,10 @@ void TransmissionControlBlock::AddHandoverState(
   state.capabilities.partial_reliability = capabilities_.partial_reliability;
   state.capabilities.message_interleaving = capabilities_.message_interleaving;
   state.capabilities.reconfig = capabilities_.reconfig;
+  state.capabilities.negotiated_maximum_incoming_streams =
+      capabilities_.negotiated_maximum_incoming_streams;
+  state.capabilities.negotiated_maximum_outgoing_streams =
+      capabilities_.negotiated_maximum_outgoing_streams;
 
   state.my_verification_tag = my_verification_tag().value();
   state.peer_verification_tag = peer_verification_tag().value();
@@ -208,5 +309,12 @@ void TransmissionControlBlock::AddHandoverState(
   stream_reset_handler_.AddHandoverState(state);
   reassembly_queue_.AddHandoverState(state);
   retransmission_queue_.AddHandoverState(state);
+}
+
+void TransmissionControlBlock::RestoreFromState(
+    const DcSctpSocketHandoverState& state) {
+  data_tracker_.RestoreFromState(state);
+  retransmission_queue_.RestoreFromState(state);
+  reassembly_queue_.RestoreFromState(state);
 }
 }  // namespace dcsctp

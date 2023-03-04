@@ -211,9 +211,21 @@ Version MajorMinorBuildToVersion(int major, int minor, int build) {
       return VERSION_WIN10_19H1;
     } else if (build < 19041) {
       return VERSION_WIN10_19H2;
-    } else {
+    } else if (build < 19042) {
       return VERSION_WIN10_20H1;
+    } else if (build < 19043) {
+      return VERSION_WIN10_20H2;
+    } else if (build < 19044) {
+      return VERSION_WIN10_21H1;
+    } else if (build < 20348) {
+      return VERSION_WIN10_21H2;
+    } else if (build < 22000) {
+      return VERSION_SERVER_2022;
+    } else {
+      return VERSION_WIN11;
     }
+  } else if (major == 11) {
+    return VERSION_WIN11;
   } else if (major > 6) {
     RTC_DCHECK_NOTREACHED();
     return VERSION_WIN_LAST;

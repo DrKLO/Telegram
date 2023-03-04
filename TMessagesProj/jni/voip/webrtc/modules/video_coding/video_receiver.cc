@@ -17,7 +17,6 @@
 #include "api/sequence_checker.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_decoder.h"
-#include "modules/utility/include/process_thread.h"
 #include "modules/video_coding/decoder_database.h"
 #include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/generic_decoder.h"
@@ -28,10 +27,9 @@
 #include "modules/video_coding/media_opt_util.h"
 #include "modules/video_coding/packet.h"
 #include "modules/video_coding/receiver.h"
-#include "modules/video_coding/timing.h"
+#include "modules/video_coding/timing/timing.h"
 #include "modules/video_coding/video_coding_impl.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/one_time_event.h"
 #include "rtc_base/trace_event.h"
@@ -40,11 +38,13 @@
 namespace webrtc {
 namespace vcm {
 
-VideoReceiver::VideoReceiver(Clock* clock, VCMTiming* timing)
+VideoReceiver::VideoReceiver(Clock* clock,
+                             VCMTiming* timing,
+                             const FieldTrialsView& field_trials)
     : clock_(clock),
       _timing(timing),
-      _receiver(_timing, clock_),
-      _decodedFrameCallback(_timing, clock_),
+      _receiver(_timing, clock_, field_trials),
+      _decodedFrameCallback(_timing, clock_, field_trials),
       _frameTypeCallback(nullptr),
       _packetRequestCallback(nullptr),
       _scheduleKeyRequest(false),
@@ -101,27 +101,6 @@ void VideoReceiver::Process() {
   }
 }
 
-void VideoReceiver::ProcessThreadAttached(ProcessThread* process_thread) {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
-  if (process_thread) {
-    is_attached_to_process_thread_ = true;
-    RTC_DCHECK(!process_thread_ || process_thread_ == process_thread);
-    process_thread_ = process_thread;
-  } else {
-    is_attached_to_process_thread_ = false;
-  }
-}
-
-int64_t VideoReceiver::TimeUntilNextProcess() {
-  RTC_DCHECK_RUN_ON(&module_thread_checker_);
-  int64_t timeUntilNextProcess = _retransmissionTimer.TimeUntilProcess();
-
-  timeUntilNextProcess =
-      VCM_MIN(timeUntilNextProcess, _keyRequestTimer.TimeUntilProcess());
-
-  return timeUntilNextProcess;
-}
-
 // Register a receive callback. Will be called whenever there is a new frame
 // ready for rendering.
 int32_t VideoReceiver::RegisterReceiveCallback(
@@ -148,7 +127,6 @@ void VideoReceiver::RegisterExternalDecoder(VideoDecoder* externalDecoder,
 int32_t VideoReceiver::RegisterFrameTypeCallback(
     VCMFrameTypeCallback* frameTypeCallback) {
   RTC_DCHECK_RUN_ON(&construction_thread_checker_);
-  RTC_DCHECK(!is_attached_to_process_thread_);
   // This callback is used on the module thread, but since we don't get
   // callbacks on the module thread while the decoder thread isn't running
   // (and this function must not be called when the decoder is running),
@@ -160,7 +138,6 @@ int32_t VideoReceiver::RegisterFrameTypeCallback(
 int32_t VideoReceiver::RegisterPacketRequestCallback(
     VCMPacketRequestCallback* callback) {
   RTC_DCHECK_RUN_ON(&construction_thread_checker_);
-  RTC_DCHECK(!is_attached_to_process_thread_);
   // This callback is used on the module thread, but since we don't get
   // callbacks on the module thread while the decoder thread isn't running
   // (and this function must not be called when the decoder is running),
@@ -187,10 +164,6 @@ int32_t VideoReceiver::Decode(uint16_t maxWaitTimeMs) {
       if (frame->FrameType() != VideoFrameType::kVideoFrameKey) {
         drop_frame = true;
         _scheduleKeyRequest = true;
-        // TODO(tommi): Consider if we could instead post a task to the module
-        // thread and call RequestKeyFrame directly. Here we call WakeUp so that
-        // TimeUntilNextProcess() gets called straight away.
-        process_thread_->WakeUp(this);
       } else {
         drop_frames_until_keyframe_ = false;
       }
@@ -203,8 +176,9 @@ int32_t VideoReceiver::Decode(uint16_t maxWaitTimeMs) {
   }
 
   // If this frame was too late, we should adjust the delay accordingly
-  _timing->UpdateCurrentDelay(frame->RenderTimeMs(),
-                              clock_->TimeInMilliseconds());
+  if (frame->RenderTimeMs() > 0)
+    _timing->UpdateCurrentDelay(Timestamp::Millis(frame->RenderTimeMs()),
+                                clock_->CurrentTime());
 
   if (first_frame_received_()) {
     RTC_LOG(LS_INFO) << "Received first complete decodable video frame";

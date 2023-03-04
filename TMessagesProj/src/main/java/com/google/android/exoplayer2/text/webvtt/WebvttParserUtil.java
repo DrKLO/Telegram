@@ -22,9 +22,7 @@ import com.google.android.exoplayer2.util.Util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Utility methods for parsing WebVTT data.
- */
+/** Utility methods for parsing WebVTT data. */
 public final class WebvttParserUtil {
 
   private static final Pattern COMMENT = Pattern.compile("^NOTE([ \t].*)?$");
@@ -42,7 +40,8 @@ public final class WebvttParserUtil {
     int startPosition = input.getPosition();
     if (!isWebvttHeaderLine(input)) {
       input.setPosition(startPosition);
-      throw new ParserException("Expected WEBVTT. Got " + input.readLine());
+      throw ParserException.createForMalformedContainer(
+          "Expected WEBVTT. Got " + input.readLine(), /* cause= */ null);
     }
   }
 
@@ -115,5 +114,4 @@ public final class WebvttParserUtil {
     }
     return null;
   }
-
 }
