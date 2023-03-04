@@ -210,8 +210,10 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         positiveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         positiveButton.setText(LocaleController.getString("VoipShareVideo", R.string.VoipShareVideo));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            positiveButton.setForeground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_nameText), (int) (255 * 0.3f))));
+            //positiveButton.setForeground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_nameText), (int) (255 * 0.3f))));
         }
+        positiveButton.setBackground(new MotionBackgroundDrawable(0xFFA9CC66, 0xFF5AB147, 0xFF07BA63, 0xFF07A9AC,false));
+
         positiveButton.setPadding(0, AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12));
         positiveButton.setOnClickListener(view -> {
             if (isDismissed) {

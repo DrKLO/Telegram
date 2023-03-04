@@ -81,8 +81,6 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.json.JSONObject;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
