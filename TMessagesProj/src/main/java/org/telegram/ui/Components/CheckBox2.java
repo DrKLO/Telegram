@@ -18,8 +18,10 @@ import org.telegram.ui.ActionBar.Theme;
 public class CheckBox2 extends View {
 
     private CheckBoxBase checkBoxBase;
-    Drawable iconDrawable;
-    int currentIcon;
+    private Drawable iconDrawable;
+    private int currentIcon;
+
+    private final Paint paint = new Paint();
 
     public CheckBox2(Context context, int sz) {
         this(context, sz, null);
@@ -28,6 +30,10 @@ public class CheckBox2 extends View {
     public CheckBox2(Context context, int sz, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         checkBoxBase = new CheckBoxBase(this, sz, resourcesProvider);
+
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(AndroidUtilities.dp(1.2f));
+        paint.setColor(Theme.getColor(Theme.key_switch2Track));
     }
 
     public void setCirclePaintProvider(GenericProvider<Void, Paint> circlePaintProvider) {
@@ -105,10 +111,6 @@ public class CheckBox2 extends View {
             int cy = getMeasuredHeight() >> 1;
             iconDrawable.setBounds(cx - iconDrawable.getIntrinsicWidth() / 2, cy - iconDrawable.getIntrinsicHeight() / 2, cx + iconDrawable.getIntrinsicWidth() / 2, cy + iconDrawable.getIntrinsicHeight() / 2);
             iconDrawable.draw(canvas);
-            Paint paint = new Paint();
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(AndroidUtilities.dp(1.2f));
-            paint.setColor(Theme.getColor(Theme.key_switch2Track));
             canvas.drawCircle(cx, cy, cx - AndroidUtilities.dp(1.5f), paint);
         } else {
             checkBoxBase.draw(canvas);

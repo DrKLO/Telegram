@@ -66,6 +66,10 @@ public class VoIPHelper {
 
 	public static long lastCallTime = 0;
 
+	public static long callID;
+	public static long accessHash;
+	public static int account;
+
 	private static final int VOIP_SUPPORT_ID = 4244000;
 
 	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance) {
@@ -609,6 +613,25 @@ public class VoIPHelper {
 				((TextView) btn).setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
 			}
 		});
+	}
+
+	public static void sendRating(int rating, boolean userInitiative) {
+		if (rating >= 4) {
+			final int currentAccount = UserConfig.selectedAccount;
+			final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+			req.rating = rating;
+			req.comment = "";
+			req.peer = new TLRPC.TL_inputPhoneCall();
+			req.peer.access_hash = accessHash;
+			req.peer.id = callID;
+			req.user_initiative = userInitiative;
+			ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+				if (response instanceof TLRPC.TL_updates) {
+					TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+					MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+				}
+			});
+		}
 	}
 
 	private static File getLogFile(long callID) {

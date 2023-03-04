@@ -80,7 +80,7 @@ public class VoIPToggleButton extends FrameLayout {
     private RLottieImageView lottieImageView;
 
     public VoIPToggleButton(@NonNull Context context) {
-        this(context, 52f);
+        this(context, 62f);
     }
     public VoIPToggleButton(@NonNull Context context, float radius) {
         super(context);

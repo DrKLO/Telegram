@@ -23,7 +23,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -193,7 +192,7 @@ public class VoIPNotificationsLayout extends LinearLayout {
             setFocusableInTouchMode(true);
 
             iconView = new ImageView(context);
-            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f))));
+            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), Color.parseColor("#3F575757")));
             addView(iconView, LayoutHelper.createFrame(24, 24, 0, 10, 4, 10, 4));
 
             textView = new TextView(context);

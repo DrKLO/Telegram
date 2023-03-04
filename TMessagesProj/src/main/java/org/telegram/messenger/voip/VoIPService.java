@@ -71,7 +71,6 @@ import android.telephony.TelephonyManager;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 import android.util.LruCache;
 import android.view.KeyEvent;
 import android.view.View;
@@ -431,7 +430,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						am.setBluetoothScoOn(true);
 					}
 				}
-				for (VoIPService.StateListener l : stateListeners) {
+				for (StateListener l : stateListeners) {
 					l.onAudioSettingsChanged();
 				}
 			} else if (TelephonyManager.ACTION_PHONE_STATE_CHANGED.equals(intent.getAction())) {
@@ -1461,6 +1460,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (phoneCall instanceof TLRPC.TL_phoneCallDiscarded) {
 			needSendDebugLog = phoneCall.need_debug;
 			needRateCall = phoneCall.need_rating;
+
+			VoIPHelper.callID = privateCall.id;
+			VoIPHelper.accessHash = privateCall.access_hash;
+			VoIPHelper.account = currentAccount;
+
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("call discarded, stopping service");
 			}
@@ -3399,6 +3403,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return ret;
 	}
 
+	public boolean isNeedRateCall() {
+		return needRateCall;
+	}
+
 	private void onTgVoipStop(Instance.FinalState finalState) {
 		if (user == null) {
 			return;
@@ -3412,7 +3420,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		
 		if (needRateCall || forceRating || finalState.isRatingSuggested) {
-			startRatingActivity();
 			needRateCall = false;
 		}
 		if (needSendDebugLog && finalState.debugLog != null) {

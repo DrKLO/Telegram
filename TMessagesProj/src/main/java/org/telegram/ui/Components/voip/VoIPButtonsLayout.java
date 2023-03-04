@@ -63,7 +63,7 @@ public class VoIPButtonsLayout extends FrameLayout {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
                 if (child.getVisibility() != View.GONE) {
-                    child.layout(startFrom + childPadding, 0, startFrom + childPadding + child.getMeasuredWidth(), child.getMeasuredHeight());
+                    child.layout(startFrom + childPadding, 0, startFrom + childPadding + child.getMeasuredWidth(), child.getMeasuredHeight()*2);
                     startFrom += childPadding * 2 + child.getMeasuredWidth();
                 }
             }
@@ -73,7 +73,7 @@ public class VoIPButtonsLayout extends FrameLayout {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
                 if (child.getVisibility() != View.GONE) {
-                    child.layout(k * padding, 0, k * padding + child.getMeasuredWidth(), child.getMeasuredHeight());
+                    child.layout(k * padding, 0, k * padding + child.getMeasuredWidth(), child.getMeasuredHeight()*2);
                     k++;
                 }
             }

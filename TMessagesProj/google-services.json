@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "327769983950",
+    "project_id": "tg-calls-ui-contest-2023",
+    "storage_bucket": "tg-calls-ui-contest-2023.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:327769983950:android:0271fb9096cc5ab96ef99f",
+        "android_client_info": {
+          "package_name": "andyshon.tg.calls.ui.contest2023"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "327769983950-piclinpl5k1hf6el99p15usgti2ufdnd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFdUZR6-k3z4wdLLUI-0n-8Eq2r6umVsc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "327769983950-piclinpl5k1hf6el99p15usgti2ufdnd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:327769983950:android:d65e9051cf8e3cec6ef99f",
+        "android_client_info": {
+          "package_name": "andyshon.tg.calls.ui.contest2023.beta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "327769983950-piclinpl5k1hf6el99p15usgti2ufdnd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFdUZR6-k3z4wdLLUI-0n-8Eq2r6umVsc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "327769983950-piclinpl5k1hf6el99p15usgti2ufdnd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
