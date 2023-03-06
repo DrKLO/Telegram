@@ -50,7 +50,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Components.WaveDrawable;
 
 import java.util.ArrayList;
 
@@ -953,8 +952,8 @@ public class GroupCallUserCell extends FrameLayout {
             blobDrawable2.maxRadius = maxRadius;
             blobDrawable.generateBlob();
             blobDrawable2.generateBlob();
-            blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
-            blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+            blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), 76));
+            blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), 76));
         }
 
         public void update() {
@@ -1012,7 +1011,7 @@ public class GroupCallUserCell extends FrameLayout {
 
                     if (invalidateColor) {
                         int color = ColorUtils.blendARGB(Theme.getColor(Theme.key_voipgroup_speakingText), isMuted == 2 ? Theme.getColor(Theme.key_voipgroup_mutedByAdminIcon) : Theme.getColor(Theme.key_voipgroup_listeningText), progressToMuted);
-                        blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(color, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+                        blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(color, 76));
                     }
                 }
 
