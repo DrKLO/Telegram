@@ -7761,9 +7761,7 @@ public class Theme {
                 lastBrightnessValue = 1.0f;
                 sensorManager.unregisterListener(ambientSensorListener, lightSensor);
                 lightSensorRegistered = false;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("light sensor unregistered");
-                }
+                FileLog.d("light sensor unregistered");
             }
         }
     }
@@ -7811,9 +7809,7 @@ public class Theme {
             if (!lightSensorRegistered && lightSensor != null && ambientSensorListener != null) {
                 sensorManager.registerListener(ambientSensorListener, lightSensor, 500000);
                 lightSensorRegistered = true;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("light sensor registered");
-                }
+                FileLog.d("light sensor registered");
             }
             if (lastBrightnessValue <= autoNightBrighnessThreshold) {
                 if (!switchNightRunnableScheduled) {

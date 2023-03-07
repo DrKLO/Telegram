@@ -1562,7 +1562,7 @@ public class ImageLoader {
                     }
                 }
                 Thread.interrupted();
-                if (BuildVars.LOGS_ENABLED && inEncryptedFile) {
+                if (inEncryptedFile) {
                     FileLog.e("Image Loader image is empty = " + (image == null) + " " + cacheFileFinal);
                 }
                 if (needInvert || orientation != 0) {
@@ -2115,9 +2115,7 @@ public class ImageLoader {
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent intent) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("file system changed");
-                }
+                FileLog.d("file system changed");
                 Runnable r = () -> checkMediaPaths();
                 if (Intent.ACTION_MEDIA_UNMOUNTED.equals(intent.getAction())) {
                     AndroidUtilities.runOnUIThread(r, 1000);
@@ -2204,9 +2202,7 @@ public class ImageLoader {
         AndroidUtilities.createEmptyFile(new File(cachePath, ".nomedia"));
 
         mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, cachePath);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("cache path = " + cachePath);
-        }
+        FileLog.d("cache path = " + cachePath);
 
         try {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
@@ -2265,9 +2261,7 @@ public class ImageLoader {
                         imagePath.mkdir();
                         if (imagePath.isDirectory() && canMoveFiles(cachePath, imagePath, FileLoader.MEDIA_DIR_IMAGE)) {
                             mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("image path = " + imagePath);
-                            }
+                            FileLog.d("image path = " + imagePath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2278,9 +2272,7 @@ public class ImageLoader {
                         videoPath.mkdir();
                         if (videoPath.isDirectory() && canMoveFiles(cachePath, videoPath, FileLoader.MEDIA_DIR_VIDEO)) {
                             mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("video path = " + videoPath);
-                            }
+                            FileLog.d("video path = " + videoPath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2292,9 +2284,7 @@ public class ImageLoader {
                         if (audioPath.isDirectory() && canMoveFiles(cachePath, audioPath, FileLoader.MEDIA_DIR_AUDIO)) {
                             AndroidUtilities.createEmptyFile(new File(audioPath, ".nomedia"));
                             mediaDirs.put(FileLoader.MEDIA_DIR_AUDIO, audioPath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("audio path = " + audioPath);
-                            }
+                            FileLog.d("audio path = " + audioPath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2306,9 +2296,7 @@ public class ImageLoader {
                         if (documentPath.isDirectory() && canMoveFiles(cachePath, documentPath, FileLoader.MEDIA_DIR_DOCUMENT)) {
                             AndroidUtilities.createEmptyFile(new File(documentPath, ".nomedia"));
                             mediaDirs.put(FileLoader.MEDIA_DIR_DOCUMENT, documentPath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("documents path = " + documentPath);
-                            }
+                            FileLog.d("documents path = " + documentPath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2320,9 +2308,7 @@ public class ImageLoader {
                         if (normalNamesPath.isDirectory() && canMoveFiles(cachePath, normalNamesPath, FileLoader.MEDIA_DIR_FILES)) {
                             AndroidUtilities.createEmptyFile(new File(normalNamesPath, ".nomedia"));
                             mediaDirs.put(FileLoader.MEDIA_DIR_FILES, normalNamesPath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("files path = " + normalNamesPath);
-                            }
+                            FileLog.d("files path = " + normalNamesPath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2334,9 +2320,7 @@ public class ImageLoader {
                         imagePath.mkdir();
                         if (imagePath.isDirectory() && canMoveFiles(cachePath, imagePath, FileLoader.MEDIA_DIR_IMAGE)) {
                             mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE_PUBLIC, imagePath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("image path = " + imagePath);
-                            }
+                            FileLog.d("image path = " + imagePath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2347,18 +2331,14 @@ public class ImageLoader {
                         videoPath.mkdir();
                         if (videoPath.isDirectory() && canMoveFiles(cachePath, videoPath, FileLoader.MEDIA_DIR_VIDEO)) {
                             mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO_PUBLIC, videoPath);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("video path = " + videoPath);
-                            }
+                            FileLog.d("video path = " + videoPath);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
                 }
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("this Android can't rename files");
-                }
+                FileLog.d("this Android can't rename files");
             }
             SharedConfig.checkSaveToGalleryFiles();
         } catch (Exception e) {

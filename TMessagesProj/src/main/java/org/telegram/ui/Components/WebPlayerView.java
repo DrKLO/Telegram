@@ -828,9 +828,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         @Override
         protected void onPostExecute(String[] result) {
             if (result[0] != null) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("start play youtube video " + result[1] + " " + result[0]);
-                }
+                FileLog.d("start play youtube video " + result[1] + " " + result[0]);
                 initied = true;
                 playVideoUrl = result[0];
                 playVideoType = result[1];

@@ -123,9 +123,7 @@ public class FileRefController extends BaseController {
     public void requestReference(Object parentObject, Object... args) {
         String locationKey;
         TLRPC.InputFileLocation location;
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start loading request reference for parent = " + parentObject + " args = " + args[0]);
-        }
+        FileLog.d("start loading request reference for parent = " + parentObject + " args = " + args[0]);
         if (args[0] instanceof TLRPC.TL_inputSingleMedia) {
             TLRPC.TL_inputSingleMedia req = (TLRPC.TL_inputSingleMedia) args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {

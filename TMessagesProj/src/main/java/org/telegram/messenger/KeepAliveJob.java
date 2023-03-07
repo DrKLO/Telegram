@@ -26,9 +26,7 @@ public class KeepAliveJob extends JobIntentService {
                 return;
             }
             try {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("starting keep-alive job");
-                }
+                FileLog.d("starting keep-alive job");
                 synchronized (sync) {
                     startingJob = true;
                 }
@@ -42,15 +40,11 @@ public class KeepAliveJob extends JobIntentService {
     private static void finishJobInternal() {
         synchronized (sync) {
             if (countDownLatch != null) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("finish keep-alive job");
-                }
+                FileLog.d("finish keep-alive job");
                 countDownLatch.countDown();
             }
             if (startingJob) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("finish queued keep-alive job");
-                }
+                FileLog.d("finish queued keep-alive job");
                 startingJob = false;
             }
         }
@@ -70,9 +64,7 @@ public class KeepAliveJob extends JobIntentService {
             }
             countDownLatch = new CountDownLatch(1);
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("started keep-alive job");
-        }
+        FileLog.d("started keep-alive job");
         Utilities.globalQueue.postRunnable(finishJobByTimeoutRunnable, 60 * 1000);
         try {
             countDownLatch.await();
@@ -83,8 +75,6 @@ public class KeepAliveJob extends JobIntentService {
         synchronized (sync) {
             countDownLatch = null;
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("ended keep-alive job");
-        }
+        FileLog.d("ended keep-alive job");
     }
 }

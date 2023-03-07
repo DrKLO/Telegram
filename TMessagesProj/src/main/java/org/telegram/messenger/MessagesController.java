@@ -99,6 +99,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private ArrayList<Long> joiningToChannels = new ArrayList<>();
 
     private LongSparseArray<TLRPC.TL_chatInviteExported> exportedChats = new LongSparseArray<>();
+    private boolean gettingAppChangelog;
 
     public ArrayList<TLRPC.RecentMeUrl> hintDialogs = new ArrayList<>();
     public SparseArray<ArrayList<TLRPC.Dialog>> dialogsByFolder = new SparseArray<>();
@@ -4799,9 +4800,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         SharedPreferences.Editor editor = notificationsPreferences.edit();
         boolean bar_hidden = !settings.report_spam && !settings.add_contact && !settings.block_contact && !settings.share_contact && !settings.report_geo && !settings.invite_members;
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("peer settings loaded for " + dialogId + " add = " + settings.add_contact + " block = " + settings.block_contact + " spam = " + settings.report_spam + " share = " + settings.share_contact + " geo = " + settings.report_geo + " hide = " + bar_hidden + " distance = " + settings.geo_distance + " invite = " + settings.invite_members);
-        }
+        FileLog.d("peer settings loaded for " + dialogId + " add = " + settings.add_contact + " block = " + settings.block_contact + " spam = " + settings.report_spam + " share = " + settings.share_contact + " geo = " + settings.report_geo + " hide = " + bar_hidden + " distance = " + settings.geo_distance + " invite = " + settings.invite_members);
         editor.putInt("dialog_bar_vis3" + dialogId, bar_hidden ? 1 : 2);
         editor.putBoolean("dialog_bar_share" + dialogId, settings.share_contact);
         editor.putBoolean("dialog_bar_report" + dialogId, settings.report_spam);
@@ -4839,14 +4838,10 @@ public class MessagesController extends BaseController implements NotificationCe
             return;
         }
         loadingPeerSettings.put(dialogId, true);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("request spam button for " + dialogId);
-        }
+        FileLog.d("request spam button for " + dialogId);
         int vis = notificationsPreferences.getInt("dialog_bar_vis3" + dialogId, 0);
         if (vis == 1 || vis == 3) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("dialog bar already hidden for " + dialogId);
-            }
+            FileLog.d("dialog bar already hidden for " + dialogId);
             return;
         }
         TLRPC.TL_messages_getPeerSettings req = new TLRPC.TL_messages_getPeerSettings();
@@ -4869,9 +4864,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     protected void processNewChannelDifferenceParams(int pts, int pts_count, long channelId) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("processNewChannelDifferenceParams pts = " + pts + " pts_count = " + pts_count + " channeldId = " + channelId);
-        }
+        FileLog.d("processNewChannelDifferenceParams pts = " + pts + " pts_count = " + pts_count + " channeldId = " + channelId);
         int channelPts = channelsPts.get(channelId);
         if (channelPts == 0) {
             channelPts = getMessagesStorage().getChannelPtsSync(channelId);
@@ -4881,18 +4874,14 @@ public class MessagesController extends BaseController implements NotificationCe
             channelsPts.put(channelId, channelPts);
         }
         if (channelPts + pts_count == pts) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("APPLY CHANNEL PTS");
-            }
+            FileLog.d("APPLY CHANNEL PTS");
             channelsPts.put(channelId, pts);
             getMessagesStorage().saveChannelPts(channelId, pts);
         } else if (channelPts != pts) {
             long updatesStartWaitTime = updatesStartWaitTimeChannels.get(channelId);
             boolean gettingDifferenceChannel = gettingDifferenceChannels.get(channelId, false);
             if (gettingDifferenceChannel || updatesStartWaitTime == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTime) <= 1500) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("ADD CHANNEL UPDATE TO QUEUE pts = " + pts + " pts_count = " + pts_count);
-                }
+                FileLog.d("ADD CHANNEL UPDATE TO QUEUE pts = " + pts + " pts_count = " + pts_count);
                 if (updatesStartWaitTime == 0) {
                     updatesStartWaitTimeChannels.put(channelId, System.currentTimeMillis());
                 }
@@ -4913,21 +4902,15 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void processNewDifferenceParams(int seq, int pts, int date, int pts_count) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("processNewDifferenceParams seq = " + seq + " pts = " + pts + " date = " + date + " pts_count = " + pts_count);
-        }
+        FileLog.d("processNewDifferenceParams seq = " + seq + " pts = " + pts + " date = " + date + " pts_count = " + pts_count);
         if (pts != -1) {
             if (getMessagesStorage().getLastPtsValue() + pts_count == pts) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("APPLY PTS");
-                }
+                FileLog.d("APPLY PTS");
                 getMessagesStorage().setLastPtsValue(pts);
                 getMessagesStorage().saveDiffParams(getMessagesStorage().getLastSeqValue(), getMessagesStorage().getLastPtsValue(), getMessagesStorage().getLastDateValue(), getMessagesStorage().getLastQtsValue());
             } else if (getMessagesStorage().getLastPtsValue() != pts) {
                 if (gettingDifference || updatesStartWaitTimePts == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTimePts) <= 1500) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("ADD UPDATE TO QUEUE pts = " + pts + " pts_count = " + pts_count);
-                    }
+                    FileLog.d("ADD UPDATE TO QUEUE pts = " + pts + " pts_count = " + pts_count);
                     if (updatesStartWaitTimePts == 0) {
                         updatesStartWaitTimePts = System.currentTimeMillis();
                     }
@@ -4942,9 +4925,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (seq != -1) {
             if (getMessagesStorage().getLastSeqValue() + 1 == seq) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("APPLY SEQ");
-                }
+                FileLog.d("APPLY SEQ");
                 getMessagesStorage().setLastSeqValue(seq);
                 if (date != -1) {
                     getMessagesStorage().setLastDateValue(date);
@@ -4952,9 +4933,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 getMessagesStorage().saveDiffParams(getMessagesStorage().getLastSeqValue(), getMessagesStorage().getLastPtsValue(), getMessagesStorage().getLastDateValue(), getMessagesStorage().getLastQtsValue());
             } else if (getMessagesStorage().getLastSeqValue() != seq) {
                 if (gettingDifference || updatesStartWaitTimeSeq == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTimeSeq) <= 1500) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("ADD UPDATE TO QUEUE seq = " + seq);
-                    }
+                    FileLog.d("ADD UPDATE TO QUEUE seq = " + seq);
                     if (updatesStartWaitTimeSeq == 0) {
                         updatesStartWaitTimeSeq = System.currentTimeMillis();
                     }
@@ -6118,9 +6097,7 @@ public class MessagesController extends BaseController implements NotificationCe
         int max_id_delete = max_id;
 
         if (first != 0) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("delete dialog with id " + did);
-            }
+            FileLog.d("delete dialog with id " + did);
             boolean isPromoDialog = false;
             getMessagesStorage().deleteDialog(did, onlyHistory);
             TLRPC.Dialog dialog = dialogs_dict.get(did);
@@ -6529,9 +6506,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     long key = updatesQueueChannels.keyAt(a);
                     long updatesStartWaitTime = updatesStartWaitTimeChannels.valueAt(a);
                     if (Math.abs(currentTime - updatesStartWaitTime) >= 1500) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("QUEUE CHANNEL " + key + " UPDATES WAIT TIMEOUT - CHECK QUEUE");
-                        }
+                        FileLog.d("QUEUE CHANNEL " + key + " UPDATES WAIT TIMEOUT - CHECK QUEUE");
                         processChannelsUpdatesQueue(key, 0);
                     }
                 }
@@ -6539,9 +6514,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
             for (int a = 0; a < 3; a++) {
                 if (getUpdatesStartTime(a) != 0 && Math.abs(currentTime - getUpdatesStartTime(a)) >= 1500) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d(a + " QUEUE UPDATES WAIT TIMEOUT - CHECK QUEUE");
-                    }
+                    FileLog.d(a + " QUEUE UPDATES WAIT TIMEOUT - CHECK QUEUE");
                     processUpdatesQueue(a, 0);
                 }
             }
@@ -7433,9 +7406,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void loadMessagesInternal(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, boolean fromCache, int minDate, int classGuid, int load_type, int last_message_id, int mode, int threadMessageId, int loadIndex, int first_unread, int unread_count, int last_date, boolean queryFromServer, int mentionsCount, boolean loadDialog, boolean processMessages, boolean isTopic) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("load messages in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + fromCache + " mindate = " + minDate + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " mode " + mode + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic " + isTopic);
-        }
+        FileLog.d("load messages in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + fromCache + " mindate = " + minDate + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " mode " + mode + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic " + isTopic);
         if ((threadMessageId == 0 || isTopic) && mode != 2 && (fromCache || DialogObject.isEncryptedDialog(dialogId))) {
             getMessagesStorage().getMessages(dialogId, mergeDialogId, loadInfo, count, max_id, offset_date, minDate, classGuid, load_type, mode == 1, threadMessageId, loadIndex, processMessages, isTopic);
         } else {
@@ -7664,9 +7635,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void processLoadedMessages(TLRPC.messages_Messages messagesRes, int resCount, long dialogId, long mergeDialogId, int count, int max_id, int offset_date, boolean isCache, int classGuid,
                                       int first_unread, int last_message_id, int unread_count, int last_date, int load_type, boolean isEnd, int mode, int threadMessageId, int loadIndex, boolean queryFromServer, int mentionsCount, boolean needProcess, boolean isTopic) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("processLoadedMessages size " + messagesRes.messages.size() + " in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + isCache + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic" + isTopic);
-        }
+        FileLog.d("processLoadedMessages size " + messagesRes.messages.size() + " in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + isCache + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic" + isTopic);
 
         long startProcessTime = SystemClock.elapsedRealtime();
         boolean createDialog = false;
@@ -7823,9 +7792,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         getFileLoader().checkMediaExistance(objects);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("process time = " + (SystemClock.elapsedRealtime() - startProcessTime) + " file time = " + fileProcessTime + " for dialog = " + dialogId);
-        }
+        FileLog.d("process time = " + (SystemClock.elapsedRealtime() - startProcessTime) + " file time = " + fileProcessTime + " for dialog = " + dialogId);
 
         Runnable uiThread = () -> {
             putUsers(messagesRes.users, isCache);
@@ -8081,9 +8048,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         loadingDialogs.put(folderId, true);
         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("folderId = " + folderId + " load cacheOffset = " + offset + " count = " + count + " cache = " + fromCache);
-        }
+        FileLog.d("folderId = " + folderId + " load cacheOffset = " + offset + " count = " + count + " cache = " + fromCache);
         if (fromCache) {
             getMessagesStorage().getDialogs(folderId, offset == 0 ? 0 : nextDialogsCacheOffset.get(folderId, 0), count, folderId == 0 && offset == 0);
         } else {
@@ -8303,9 +8268,7 @@ public class MessagesController extends BaseController implements NotificationCe
             return;
         }
         gettingUnknownDialogs.put(dialogId, true);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("load unknown dialog " + dialogId);
-        }
+        FileLog.d("load unknown dialog " + dialogId);
 
         TLRPC.TL_messages_getPeerDialogs req = new TLRPC.TL_messages_getPeerDialogs();
         TLRPC.TL_inputDialogPeer inputDialogPeer = new TLRPC.TL_inputDialogPeer();
@@ -8661,9 +8624,7 @@ public class MessagesController extends BaseController implements NotificationCe
         req.limit = 100;
         req.offset_id = offset;
         req.offset_date = offsetDate;
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start migrate with id " + offset + " date " + LocaleController.getInstance().formatterStats.format((long) offsetDate * 1000));
-        }
+        FileLog.d("start migrate with id " + offset + " date " + LocaleController.getInstance().formatterStats.format((long) offsetDate * 1000));
         if (offset == 0) {
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         } else {
@@ -8690,22 +8651,16 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.Message lastMessage = null;
                         for (int a = 0; a < dialogsRes.messages.size(); a++) {
                             TLRPC.Message message = dialogsRes.messages.get(a);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("search migrate id " + message.id + " date " + LocaleController.getInstance().formatterStats.format((long) message.date * 1000));
-                            }
+                            FileLog.d("search migrate id " + message.id + " date " + LocaleController.getInstance().formatterStats.format((long) message.date * 1000));
                             if (lastMessage == null || message.date < lastMessage.date) {
                                 lastMessage = message;
                             }
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("migrate step with id " + lastMessage.id + " date " + LocaleController.getInstance().formatterStats.format((long) lastMessage.date * 1000));
-                        }
+                        FileLog.d("migrate step with id " + lastMessage.id + " date " + LocaleController.getInstance().formatterStats.format((long) lastMessage.date * 1000));
                         if (dialogsRes.dialogs.size() >= 100) {
                             offsetId = lastMessage.id;
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("migrate stop due to not 100 dialogs");
-                            }
+                            FileLog.d("migrate stop due to not 100 dialogs");
                             for (int i = 0; i < 2; i++) {
                                 getUserConfig().setDialogsLoadOffset(i,
                                         Integer.MAX_VALUE,
@@ -8755,9 +8710,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             dialogHashMap.remove(did);
                         }
                         cursor.dispose();
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("migrate found missing dialogs " + dialogsRes.dialogs.size());
-                        }
+                        FileLog.d("migrate found missing dialogs " + dialogsRes.dialogs.size());
                         cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT min(date) FROM dialogs WHERE date != 0 AND did >> 32 NOT IN (536870912, 1073741824)");
                         if (cursor.next()) {
                             int date = Math.max(1441062000, cursor.intValue(0));
@@ -8775,9 +8728,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                                     getUserConfig().migrateOffsetAccess);
                                         }
                                         offsetId = -1;
-                                        if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().formatterStats.format((long) date * 1000));
-                                        }
+                                        FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().formatterStats.format((long) date * 1000));
                                     }
                                     dialogsRes.messages.remove(a);
                                     a--;
@@ -8800,9 +8751,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                             getUserConfig().migrateOffsetAccess);
                                 }
                                 offsetId = -1;
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().formatterStats.format((long) date * 1000));
-                                }
+                                FileLog.d("migrate stop due to reached loaded dialogs " + LocaleController.getInstance().formatterStats.format((long) date * 1000));
                             }
                         }
                         cursor.dispose();
@@ -8866,9 +8815,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 firstGettingTask = true;
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("loaded folderId " + folderId + " loadType " + loadType + " count " + dialogsRes.dialogs.size());
-            }
+            FileLog.d("loaded folderId " + folderId + " loadType " + loadType + " count " + dialogsRes.dialogs.size());
             long[] dialogsLoadOffset = getUserConfig().getDialogLoadOffsets(folderId);
             if (loadType == DIALOGS_LOAD_TYPE_CACHE && dialogsRes.dialogs.size() == 0) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -9495,9 +9442,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         req.limit = 1;
         checkingLastMessagesDialogs.put(dialog.id, true);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("checkLastDialogMessage for " + dialog.id);
-        }
+        FileLog.d("checkLastDialogMessage for " + dialog.id);
 
         long newTaskId;
         if (taskId == 0) {
@@ -9532,9 +9477,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                 removeDeletedMessagesFromArray(dialog.id, res.messages);
                 if (!res.messages.isEmpty()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("checkLastDialogMessage for " + dialog.id + " has message");
-                    }
+                    FileLog.d("checkLastDialogMessage for " + dialog.id + " has message");
                     TLRPC.TL_messages_dialogs dialogs = new TLRPC.TL_messages_dialogs();
                     TLRPC.Message newMessage = res.messages.get(0);
                     TLRPC.Dialog newDialog = new TLRPC.TL_dialog();
@@ -9562,20 +9505,14 @@ public class MessagesController extends BaseController implements NotificationCe
                     getMessagesStorage().putMessages(res.messages, true, true, false, getDownloadController().getAutodownloadMask(), true, false, 0);
                 } else {
                     AndroidUtilities.runOnUIThread(() -> {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("checkLastDialogMessage for " + dialog.id + " has not message");
-                        }
+                        FileLog.d("checkLastDialogMessage for " + dialog.id + " has not message");
                         if (getMediaDataController().getDraft(dialog.id, 0) == null) {
                             TLRPC.Dialog currentDialog = dialogs_dict.get(dialog.id);
                             if (currentDialog == null) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("checkLastDialogMessage for " + dialog.id + " current dialog not found");
-                                }
+                                FileLog.d("checkLastDialogMessage for " + dialog.id + " current dialog not found");
                                 getMessagesStorage().isDialogHasTopMessage(dialog.id, () -> deleteDialog(dialog.id, 3));
                             } else {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("checkLastDialogMessage for " + dialog.id + " current dialog top message " + currentDialog.top_message);
-                                }
+                                FileLog.d("checkLastDialogMessage for " + dialog.id + " current dialog top message " + currentDialog.top_message);
                                 if (currentDialog.top_message == 0) {
                                     deleteDialog(dialog.id, 3);
                                 }
@@ -9695,16 +9632,12 @@ public class MessagesController extends BaseController implements NotificationCe
 
                 for (int a = 0; a < new_dialogs_dict.size(); a++) {
                     long key = new_dialogs_dict.keyAt(a);
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("processDialogsUpdate " + key);
-                    }
+                    FileLog.d("processDialogsUpdate " + key);
                     TLRPC.Dialog value = new_dialogs_dict.valueAt(a);
                     TLRPC.Dialog currentDialog = dialogs_dict.get(key);
                     ArrayList<MessageObject> newMsgs = new_dialogMessage.get(value.id);
                     if (currentDialog == null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("processDialogsUpdate dialog null");
-                        }
+                        FileLog.d("processDialogsUpdate dialog null");
                         int offset = nextDialogsCacheOffset.get(value.folder_id, 0) + 1;
                         nextDialogsCacheOffset.put(value.folder_id, offset);
                         dialogs_dict.put(key, value);
@@ -9713,9 +9646,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             if (fromCache) {
                                 checkLastDialogMessage(value, null, 0);
                             }
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("processDialogsUpdate new message is null");
-                            }
+                            FileLog.d("processDialogsUpdate new message is null");
                         } else {
                             for (int i = 0; i < newMsgs.size(); ++i) {
                                 MessageObject newMsg = newMsgs.get(i);
@@ -9727,15 +9658,11 @@ public class MessagesController extends BaseController implements NotificationCe
                                     }
                                 }
                             }
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("processDialogsUpdate new message not null");
-                            }
+                            FileLog.d("processDialogsUpdate new message not null");
                         }
                         getTranslateController().checkDialogMessages(key);
                     } else {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("processDialogsUpdate dialog not null");
-                        }
+                        FileLog.d("processDialogsUpdate dialog not null");
                         currentDialog.unread_count = value.unread_count;
                         if (currentDialog.unread_mentions_count != value.unread_mentions_count) {
                             currentDialog.unread_mentions_count = value.unread_mentions_count;
@@ -9755,10 +9682,8 @@ public class MessagesController extends BaseController implements NotificationCe
                                 break;
                             }
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("processDialogsUpdate oldMsgs (count = " + (oldMsgs == null ? "null" : oldMsgs.size()) + ") old top_message = " + currentDialog.top_message + " new top_message = " + value.top_message + "  unread_count =" + currentDialog.unread_count + " fromCache=" + fromCache);
-                            FileLog.d("processDialogsUpdate oldMsgDeleted " + oldMsgsDeleted);
-                        }
+                        FileLog.d("processDialogsUpdate oldMsgs (count = " + (oldMsgs == null ? "null" : oldMsgs.size()) + ") old top_message = " + currentDialog.top_message + " new top_message = " + value.top_message + "  unread_count =" + currentDialog.unread_count + " fromCache=" + fromCache);
+                        FileLog.d("processDialogsUpdate oldMsgDeleted " + oldMsgsDeleted);
                         if (oldMsgs == null || currentDialog.top_message > 0) {
                             if (oldMsgsDeleted || value.top_message > currentDialog.top_message || (oldMsgs == null) != (newMsgs == null) || oldMsgs != null && newMsgs != null && oldMsgs.size() != newMsgs.size()) {
                                 dialogs_dict.put(key, value);
@@ -9795,9 +9720,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             if (fromCache && newMsgs == null) {
                                 checkLastDialogMessage(value, null, 0);
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("processDialogsUpdate new messages are null");
-                                }
+                                FileLog.d("processDialogsUpdate new messages are null");
                             }
                         } else {
                             if (oldMsgsDeleted || messagesMaxDate(newMsgs) > messagesMaxDate(oldMsgs)) {
@@ -11187,7 +11110,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
 
-    private boolean gettingAppChangelog;
 
     public void generateUpdateMessage() {
         if (gettingAppChangelog || BuildVars.DEBUG_VERSION || SharedConfig.lastUpdateVersion == null || SharedConfig.lastUpdateVersion.equals(BuildVars.BUILD_VERSION_STRING)) {
@@ -11231,16 +11153,12 @@ public class MessagesController extends BaseController implements NotificationCe
             if (a != currentAccount && userConfig.isClientActivated()) {
                 long uid = userConfig.getClientUserId();
                 req.other_uids.add(uid);
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("add other uid = " + uid + " for account " + currentAccount);
-                }
+                FileLog.d("add other uid = " + uid + " for account " + currentAccount);
             }
         }
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response instanceof TLRPC.TL_boolTrue) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("account " + currentAccount + " registered for push, push type: " + pushType);
-                }
+                FileLog.d("account " + currentAccount + " registered for push, push type: " + pushType);
                 getUserConfig().registeredForPush = true;
                 SharedConfig.pushString = regid;
                 SharedConfig.pushType = pushType;
@@ -11368,16 +11286,12 @@ public class MessagesController extends BaseController implements NotificationCe
             } else if (updateState == 1) {
                 long updatesStartWaitTime = updatesStartWaitTimeChannels.get(channelId);
                 if (updatesStartWaitTime != 0 && (anyProceed || Math.abs(System.currentTimeMillis() - updatesStartWaitTime) <= 1500)) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("HOLE IN CHANNEL " + channelId + " UPDATES QUEUE - will wait more time");
-                    }
+                    FileLog.d("HOLE IN CHANNEL " + channelId + " UPDATES QUEUE - will wait more time");
                     if (anyProceed) {
                         updatesStartWaitTimeChannels.put(channelId, System.currentTimeMillis());
                     }
                 } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("HOLE IN CHANNEL " + channelId + " UPDATES QUEUE - getChannelDifference ");
-                    }
+                    FileLog.d("HOLE IN CHANNEL " + channelId + " UPDATES QUEUE - getChannelDifference ");
                     updatesStartWaitTimeChannels.delete(channelId);
                     updatesQueueChannels.remove(channelId);
                     getChannelDifference(channelId);
@@ -11390,9 +11304,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         updatesQueueChannels.remove(channelId);
         updatesStartWaitTimeChannels.delete(channelId);
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("UPDATES CHANNEL " + channelId + " QUEUE PROCEED - OK");
-        }
+        FileLog.d("UPDATES CHANNEL " + channelId + " QUEUE PROCEED - OK");
     }
 
     private void processUpdatesQueue(int type, int state) {
@@ -11429,16 +11341,12 @@ public class MessagesController extends BaseController implements NotificationCe
                     a--;
                 } else if (updateState == 1) {
                     if (getUpdatesStartTime(type) != 0 && (anyProceed || Math.abs(System.currentTimeMillis() - getUpdatesStartTime(type)) <= 1500)) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("HOLE IN UPDATES QUEUE - will wait more time");
-                        }
+                        FileLog.d("HOLE IN UPDATES QUEUE - will wait more time");
                         if (anyProceed) {
                             setUpdatesStartTime(type, System.currentTimeMillis());
                         }
                     } else {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("HOLE IN UPDATES QUEUE - getDifference");
-                        }
+                        FileLog.d("HOLE IN UPDATES QUEUE - getDifference");
                         setUpdatesStartTime(type, 0);
                         updatesQueue.clear();
                         getDifference();
@@ -11450,9 +11358,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
             updatesQueue.clear();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("UPDATES QUEUE PROCEED - OK");
-            }
+            FileLog.d("UPDATES QUEUE PROCEED - OK");
         }
         setUpdatesStartTime(type, 0);
     }
@@ -11648,9 +11554,7 @@ public class MessagesController extends BaseController implements NotificationCe
         req.pts = channelPts;
         req.limit = limit;
         req.force = newDialogType != 3;
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start getChannelDifference with pts = " + channelPts + " channelId = " + channelId);
-        }
+        FileLog.d("start getChannelDifference with pts = " + channelPts + " channelId = " + channelId);
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response != null) {
                 TLRPC.updates_ChannelDifference res = (TLRPC.updates_ChannelDifference) response;
@@ -11804,10 +11708,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (!res.isFinal) {
                             getChannelDifference(channelId);
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("received channel difference with pts = " + res.pts + " channelId = " + channelId);
-                            FileLog.d("new_messages = " + res.new_messages.size() + " messages = " + res.messages.size() + " users = " + res.users.size() + " chats = " + res.chats.size() + " other updates = " + res.other_updates.size());
-                        }
+                        FileLog.d("received channel difference with pts = " + res.pts + " channelId = " + channelId);
+                        FileLog.d("new_messages = " + res.new_messages.size() + " messages = " + res.messages.size() + " users = " + res.users.size() + " chats = " + res.chats.size() + " other updates = " + res.other_updates.size());
 
                         if (newTaskId != 0) {
                             getMessagesStorage().removePendingTask(newTaskId);
@@ -11868,9 +11770,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (req.date == 0) {
             req.date = getConnectionsManager().getCurrentTime();
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start getDifference with date = " + date + " pts = " + pts + " qts = " + qts);
-        }
+        FileLog.d("start getDifference with date = " + date + " pts = " + pts + " qts = " + qts);
         getConnectionsManager().setIsUpdating(true);
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
@@ -12066,9 +11966,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                             }
                             getMessagesStorage().saveDiffParams(getMessagesStorage().getLastSeqValue(), getMessagesStorage().getLastPtsValue(), getMessagesStorage().getLastDateValue(), getMessagesStorage().getLastQtsValue());
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("received difference with date = " + getMessagesStorage().getLastDateValue() + " pts = " + getMessagesStorage().getLastPtsValue() + " seq = " + getMessagesStorage().getLastSeqValue() + " messages = " + res.new_messages.size() + " users = " + res.users.size() + " chats = " + res.chats.size() + " other updates = " + res.other_updates.size());
-                            }
+                            FileLog.d("received difference with date = " + getMessagesStorage().getLastDateValue() + " pts = " + getMessagesStorage().getLastPtsValue() + " seq = " + getMessagesStorage().getLastSeqValue() + " messages = " + res.new_messages.size() + " users = " + res.users.size() + " chats = " + res.chats.size() + " other updates = " + res.other_updates.size());
                         });
                     });
                 }
@@ -12789,9 +12687,7 @@ public class MessagesController extends BaseController implements NotificationCe
         } else if (update instanceof TLRPC.TL_updatePinnedChannelMessages) {
             return ((TLRPC.TL_updatePinnedChannelMessages) update).channel_id;
         } else {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("trying to get unknown update channel_id for " + update);
-            }
+            FileLog.e("trying to get unknown update channel_id for " + update);
             return 0;
         }
     }
@@ -12984,16 +12880,12 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     getMessagesStorage().putMessages(arr, false, true, false, 0, false, 0);
                 } else if (getMessagesStorage().getLastPtsValue() != updates.pts) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("need get diff short message, pts: " + getMessagesStorage().getLastPtsValue() + " " + updates.pts + " count = " + updates.pts_count);
-                    }
+                    FileLog.d("need get diff short message, pts: " + getMessagesStorage().getLastPtsValue() + " " + updates.pts + " count = " + updates.pts_count);
                     if (gettingDifference || updatesStartWaitTimePts == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTimePts) <= 1500) {
                         if (updatesStartWaitTimePts == 0) {
                             updatesStartWaitTimePts = System.currentTimeMillis();
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("add to queue");
-                        }
+                        FileLog.d("add to queue");
                         updatesQueuePts.add(updates);
                     } else {
                         needGetDiff = true;
@@ -13028,18 +12920,14 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.Message message = ((TLRPC.TL_updateNewChannelMessage) update).message;
                         long channelId = message.peer_id.channel_id;
                         if (minChannels.indexOfKey(channelId) >= 0) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("need get diff because of min channel " + channelId);
-                            }
+                            FileLog.d("need get diff because of min channel " + channelId);
                             needGetDiff = true;
                             break;
                         }
                         /*if (message.fwd_from != null && message.fwd_from.channel_id != 0) {
                             channelId = message.fwd_from.channel_id;
                             if (minChannels.containsKey(channelId)) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.e("need get diff because of min forward channel " + channelId);
-                                }
+                                   FileLog.e("need get diff because of min forward channel " + channelId);
                                 needGetDiff = true;
                                 break;
                             }
@@ -13073,24 +12961,18 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                         if (getMessagesStorage().getLastPtsValue() + updatesNew.pts_count == updatesNew.pts) {
                             if (!processUpdateArray(updatesNew.updates, updates.users, updates.chats, false, updates.date)) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("need get diff inner TL_updates, pts: " + getMessagesStorage().getLastPtsValue() + " " + updates.seq);
-                                }
+                                FileLog.d("need get diff inner TL_updates, pts: " + getMessagesStorage().getLastPtsValue() + " " + updates.seq);
                                 needGetDiff = true;
                             } else {
                                 getMessagesStorage().setLastPtsValue(updatesNew.pts);
                             }
                         } else if (getMessagesStorage().getLastPtsValue() != updatesNew.pts) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d(update + " need get diff, pts: " + getMessagesStorage().getLastPtsValue() + " " + updatesNew.pts + " count = " + updatesNew.pts_count);
-                            }
+                            FileLog.d(update + " need get diff, pts: " + getMessagesStorage().getLastPtsValue() + " " + updatesNew.pts + " count = " + updatesNew.pts_count);
                             if (gettingDifference || updatesStartWaitTimePts == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTimePts) <= 1500) {
                                 if (updatesStartWaitTimePts == 0) {
                                     updatesStartWaitTimePts = System.currentTimeMillis();
                                 }
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("add to queue");
-                                }
+                                FileLog.d("add to queue");
                                 updatesQueuePts.add(updatesNew);
                             } else {
                                 needGetDiff = true;
@@ -13117,16 +12999,12 @@ public class MessagesController extends BaseController implements NotificationCe
                             getMessagesStorage().setLastQtsValue(updatesNew.pts);
                             needReceivedQueue = true;
                         } else if (getMessagesStorage().getLastPtsValue() != updatesNew.pts) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d(update + " need get diff, qts: " + getMessagesStorage().getLastQtsValue() + " " + updatesNew.pts);
-                            }
+                            FileLog.d(update + " need get diff, qts: " + getMessagesStorage().getLastQtsValue() + " " + updatesNew.pts);
                             if (gettingDifference || updatesStartWaitTimeQts == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTimeQts) <= 1500) {
                                 if (updatesStartWaitTimeQts == 0) {
                                     updatesStartWaitTimeQts = System.currentTimeMillis();
                                 }
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("add to queue");
-                                }
+                                FileLog.d("add to queue");
                                 updatesQueueQts.add(updatesNew);
                             } else {
                                 needGetDiff = true;
@@ -13172,9 +13050,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (!skipUpdate) {
                             if (channelPts + updatesNew.pts_count == updatesNew.pts) {
                                 if (!processUpdateArray(updatesNew.updates, updates.users, updates.chats, false, updates.date)) {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("need get channel diff inner TL_updates, channel_id = " + channelId);
-                                    }
+                                    FileLog.d("need get channel diff inner TL_updates, channel_id = " + channelId);
                                     if (needGetChannelsDiff == null) {
                                         needGetChannelsDiff = new ArrayList<>();
                                     } else if (!needGetChannelsDiff.contains(channelId)) {
@@ -13185,18 +13061,14 @@ public class MessagesController extends BaseController implements NotificationCe
                                     getMessagesStorage().saveChannelPts(channelId, updatesNew.pts);
                                 }
                             } else if (channelPts != updatesNew.pts) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d(update + " need get channel diff, pts: " + channelPts + " " + updatesNew.pts + " count = " + updatesNew.pts_count + " channelId = " + channelId);
-                                }
+                                FileLog.d(update + " need get channel diff, pts: " + channelPts + " " + updatesNew.pts + " count = " + updatesNew.pts_count + " channelId = " + channelId);
                                 long updatesStartWaitTime = updatesStartWaitTimeChannels.get(channelId);
                                 boolean gettingDifferenceChannel = gettingDifferenceChannels.get(channelId, false);
                                 if (gettingDifferenceChannel || updatesStartWaitTime == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTime) <= 1500) {
                                     if (updatesStartWaitTime == 0) {
                                         updatesStartWaitTimeChannels.put(channelId, System.currentTimeMillis());
                                     }
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("add to queue");
-                                    }
+                                    FileLog.d("add to queue");
                                     ArrayList<TLRPC.Updates> arrayList = updatesQueueChannels.get(channelId);
                                     if (arrayList == null) {
                                         arrayList = new ArrayList<>();
@@ -13212,9 +13084,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                             }
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("need load unknown channel = " + channelId);
-                            }
+                            FileLog.d("need load unknown channel = " + channelId);
                         }
                     } else {
                         break;
@@ -13238,21 +13108,17 @@ public class MessagesController extends BaseController implements NotificationCe
                         getMessagesStorage().setLastSeqValue(updates.seq);
                     }
                 } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        if (updates instanceof TLRPC.TL_updatesCombined) {
-                            FileLog.d("need get diff TL_updatesCombined, seq: " + getMessagesStorage().getLastSeqValue() + " " + updates.seq_start);
-                        } else {
-                            FileLog.d("need get diff TL_updates, seq: " + getMessagesStorage().getLastSeqValue() + " " + updates.seq);
-                        }
+                    if (updates instanceof TLRPC.TL_updatesCombined) {
+                        FileLog.d("need get diff TL_updatesCombined, seq: " + getMessagesStorage().getLastSeqValue() + " " + updates.seq_start);
+                    } else {
+                        FileLog.d("need get diff TL_updates, seq: " + getMessagesStorage().getLastSeqValue() + " " + updates.seq);
                     }
 
                     if (gettingDifference || updatesStartWaitTimeSeq == 0 || Math.abs(System.currentTimeMillis() - updatesStartWaitTimeSeq) <= 1500) {
                         if (updatesStartWaitTimeSeq == 0) {
                             updatesStartWaitTimeSeq = System.currentTimeMillis();
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("add TL_updates/Combined to queue");
-                        }
+                        FileLog.d("add TL_updates/Combined to queue");
                         updatesQueueSeq.add(updates);
                     } else {
                         needGetDiff = true;
@@ -13260,9 +13126,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
         } else if (updates instanceof TLRPC.TL_updatesTooLong) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("need get diff TL_updatesTooLong");
-            }
+            FileLog.d("need get diff TL_updatesTooLong");
             needGetDiff = true;
         } else if (updates instanceof UserActionUpdatesSeq) {
             getMessagesStorage().setLastSeqValue(updates.seq);
@@ -13408,9 +13272,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
         for (int c = 0, size3 = updates.size(); c < size3; c++) {
             TLRPC.Update baseUpdate = updates.get(c);
-            if (BuildVars.LOGS_ENABLED && baseUpdate != null) {
-                FileLog.d("process update " + baseUpdate.getClass().getSimpleName());
-            }
+            FileLog.d("process update " + baseUpdate.getClass().getSimpleName());
             if (baseUpdate instanceof TLRPC.TL_updateNewMessage || baseUpdate instanceof TLRPC.TL_updateNewChannelMessage || baseUpdate instanceof TLRPC.TL_updateNewScheduledMessage) {
                 TLRPC.Message message;
                 if (baseUpdate instanceof TLRPC.TL_updateNewMessage) {
@@ -13419,9 +13281,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     message = ((TLRPC.TL_updateNewScheduledMessage) baseUpdate).message;
                 } else {
                     message = ((TLRPC.TL_updateNewChannelMessage) baseUpdate).message;
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d(baseUpdate + " channelId = " + message.peer_id.channel_id + " message_id = " + message.id);
-                    }
+                    FileLog.d(baseUpdate + " channelId = " + message.peer_id.channel_id + " message_id = " + message.id);
                     if (!message.out && message.from_id instanceof TLRPC.TL_peerUser && message.from_id.user_id == getUserConfig().getClientUserId()) {
                         message.out = true;
                     }
@@ -13455,9 +13315,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (!fromGetDifference) {
                     if (chatId != 0) {
                         if (chat == null) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("not found chat " + chatId);
-                            }
+                            FileLog.d("not found chat " + chatId);
                             return false;
                         }
                     }
@@ -13491,9 +13349,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 putUser(user, true);
                             }
                             if (user == null) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("not found user " + userId);
-                                }
+                                FileLog.d("not found user " + userId);
                                 return false;
                             }
                             if (!message.out && a == 1 && user.status != null && user.status.expires <= 0 && Math.abs(getConnectionsManager().getCurrentTime() - message.date) < 30) {
@@ -14090,9 +13946,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 webPages.put(update.webpage.id, update.webpage);
             } else if (baseUpdate instanceof TLRPC.TL_updateChannelTooLong) {
                 TLRPC.TL_updateChannelTooLong update = (TLRPC.TL_updateChannelTooLong) baseUpdate;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 int channelPts = channelsPts.get(update.channel_id, 0);
                 if (channelPts == 0) {
                     channelPts = getMessagesStorage().getChannelPtsSync(update.channel_id);
@@ -14150,9 +14004,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateReadChannelOutbox) {
                 TLRPC.TL_updateReadChannelOutbox update = (TLRPC.TL_updateReadChannelOutbox) baseUpdate;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 if (markAsReadMessagesOutbox == null) {
                     markAsReadMessagesOutbox = new LongSparseIntArray();
                 }
@@ -14165,9 +14017,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogs_read_outbox_max.put(dialogId, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TLRPC.TL_updateDeleteChannelMessages) {
                 TLRPC.TL_updateDeleteChannelMessages update = (TLRPC.TL_updateDeleteChannelMessages) baseUpdate;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 if (deletedMessages == null) {
                     deletedMessages = new LongSparseArray<>();
                 }
@@ -14179,10 +14029,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
                 arrayList.addAll(update.messages);
             } else if (baseUpdate instanceof TLRPC.TL_updateChannel) {
-                if (BuildVars.LOGS_ENABLED) {
-                    TLRPC.TL_updateChannel update = (TLRPC.TL_updateChannel) baseUpdate;
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                TLRPC.TL_updateChannel update = (TLRPC.TL_updateChannel) baseUpdate;
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
                 }
@@ -14194,9 +14042,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateChannelMessageViews) {
                 TLRPC.TL_updateChannelMessageViews update = (TLRPC.TL_updateChannelMessageViews) baseUpdate;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 if (channelViews == null) {
                     channelViews = new LongSparseArray<>();
                 }
@@ -14209,9 +14055,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 array.put(update.id, update.views);
             } else if (baseUpdate instanceof TLRPC.TL_updateChannelMessageForwards) {
                 TLRPC.TL_updateChannelMessageForwards update = (TLRPC.TL_updateChannelMessageForwards) baseUpdate;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 if (channelForwards == null) {
                     channelForwards = new LongSparseArray<>();
                 }
@@ -14353,9 +14197,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 arr.add(obj);
             } else if (baseUpdate instanceof TLRPC.TL_updatePinnedChannelMessages) {
                 TLRPC.TL_updatePinnedChannelMessages update = (TLRPC.TL_updatePinnedChannelMessages) baseUpdate;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
-                }
+                FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 getMessagesStorage().updatePinnedMessages(-update.channel_id, update.messages, update.pinned, -1, 0, false, null);
             } else if (baseUpdate instanceof TLRPC.TL_updatePinnedMessages) {
                 TLRPC.TL_updatePinnedMessages update = (TLRPC.TL_updatePinnedMessages) baseUpdate;
@@ -15114,24 +14956,18 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_updatePhoneCall upd = (TLRPC.TL_updatePhoneCall) baseUpdate;
                         TLRPC.PhoneCall call = upd.phone_call;
                         VoIPService svc = VoIPService.getSharedInstance();
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("Received call in update: " + call);
-                            FileLog.d("call id " + call.id);
-                        }
+                        FileLog.d("Received call in update: " + call);
+                        FileLog.d("call id " + call.id);
                         if (call instanceof TLRPC.TL_phoneCallRequested) {
                             if (call.date + callRingTimeout / 1000 < getConnectionsManager().getCurrentTime()) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("ignoring too old call");
-                                }
+                                FileLog.d("ignoring too old call");
                                 continue;
                             }
                             boolean notificationsDisabled = false;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !NotificationManagerCompat.from(ApplicationLoader.applicationContext).areNotificationsEnabled()) {
                                 notificationsDisabled = true;
                                 if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("Ignoring incoming call because notifications are disabled in system");
-                                    }
+                                    FileLog.d("Ignoring incoming call because notifications are disabled in system");
                                     continue;
                                 }
                             }
@@ -15146,9 +14982,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 callStateIsIdle = tm.getCallState() == TelephonyManager.CALL_STATE_IDLE;
                             }
                             if (svc != null || VoIPService.callIShouldHavePutIntoIntent != null || !callStateIsIdle) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("Auto-declining call " + call.id + " because there's already active one");
-                                }
+                                FileLog.d("Auto-declining call " + call.id + " because there's already active one");
                                 TLRPC.TL_phone_discardCall req = new TLRPC.TL_phone_discardCall();
                                 req.peer = new TLRPC.TL_inputPhoneCall();
                                 req.peer.access_hash = call.access_hash;
@@ -15162,9 +14996,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 });
                                 continue;
                             }
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("Starting service for call " + call.id);
-                            }
+                            FileLog.d("Starting service for call " + call.id);
                             VoIPService.callIShouldHavePutIntoIntent = call;
                             Intent intent = new Intent(ApplicationLoader.applicationContext, VoIPService.class);
                             intent.putExtra("is_outgoing", false);
@@ -15187,9 +15019,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             if (svc != null && call != null) {
                                 svc.onCallUpdated(call);
                             } else if (VoIPService.callIShouldHavePutIntoIntent != null) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("Updated the call while the service is starting");
-                                }
+                                FileLog.d("Updated the call while the service is starting");
                                 if (call.id == VoIPService.callIShouldHavePutIntoIntent.id) {
                                     VoIPService.callIShouldHavePutIntoIntent = call;
                                 }
@@ -15334,9 +15164,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         FileLog.e("Received legacy TL_updateTranscribeAudio update");
                     } else if (baseUpdate instanceof TLRPC.TL_updateTranscribedAudio) {
                         TLRPC.TL_updateTranscribedAudio update = (TLRPC.TL_updateTranscribedAudio) baseUpdate;
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("Transcription update received, pending=" + update.pending + " id=" + update.transcription_id + " text=" + update.text);
-                        }
+                        FileLog.d("Transcription update received, pending=" + update.pending + " id=" + update.transcription_id + " text=" + update.text);
 
                         if (!(update.pending && TextUtils.isEmpty(update.text))) {
                             if (update.pending || !TranscribeButton.finishTranscription(null, update.transcription_id, update.text)) {
@@ -15618,9 +15446,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             Integer id = arrayList.get(b);
                             MessageObject obj = dialogMessagesByIds.get(id);
                             if (obj != null) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("mark messages " + obj.getId() + " deleted");
-                                }
+                                FileLog.d("mark messages " + obj.getId() + " deleted");
                                 obj.deleted = true;
                             }
                         }
@@ -16268,9 +16094,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (channelId != 0 && chat == null || chat != null && (ChatObject.isNotInChat(chat) || chat.min)) {
                 return false;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("not found dialog with id " + dialogId + " dictCount = " + dialogs_dict.size() + " allCount = " + allDialogs.size());
-            }
+            FileLog.d("not found dialog with id " + dialogId + " dictCount = " + dialogs_dict.size() + " allCount = " + allDialogs.size());
             boolean filterDialogsChanged = false;
             dialog = new TLRPC.TL_dialog();
             dialog.id = dialogId;

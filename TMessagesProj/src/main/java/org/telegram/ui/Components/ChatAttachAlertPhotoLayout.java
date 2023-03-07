@@ -2336,9 +2336,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             openPhotoViewer(photoEntry, false, true);
         } else if (requestCode == 2) {
             String videoPath = null;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("pic path " + currentPicturePath);
-            }
+            FileLog.d("pic path " + currentPicturePath);
             if (data != null && currentPicturePath != null) {
                 if (new File(currentPicturePath).exists()) {
                     data = null;
@@ -2347,13 +2345,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             if (data != null) {
                 Uri uri = data.getData();
                 if (uri != null) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("video record uri " + uri.toString());
-                    }
+                    FileLog.d("video record uri " + uri.toString());
                     videoPath = AndroidUtilities.getPath(uri);
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("resolved path = " + videoPath);
-                    }
+                    FileLog.d("resolved path = " + videoPath);
                     if (videoPath == null || !(new File(videoPath).exists())) {
                         videoPath = currentPicturePath;
                     }

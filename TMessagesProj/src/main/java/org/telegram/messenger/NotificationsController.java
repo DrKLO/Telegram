@@ -208,9 +208,7 @@ public class NotificationsController extends BaseController {
         }
 
         notificationDelayRunnable = () -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("delay reached");
-            }
+            FileLog.d("delay reached");
             if (!delayedPushMessages.isEmpty()) {
                 showOrUpdateNotification(true);
                 delayedPushMessages.clear();
@@ -360,9 +358,7 @@ public class NotificationsController extends BaseController {
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("delete channel cleanup " + id);
-                            }
+                            FileLog.d("delete channel cleanup " + id);
                         }
                     }
                 } catch (Throwable e) {
@@ -395,9 +391,7 @@ public class NotificationsController extends BaseController {
 
     public void setLastOnlineFromOtherDevice(int time) {
         notificationsQueue.postRunnable(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("set last online from other device = " + time);
-            }
+            FileLog.d("set last online from other device = " + time);
             lastOnlineFromOtherDevice = time;
         });
     }
@@ -890,9 +884,6 @@ public class NotificationsController extends BaseController {
                     int notifyOverride = getNotifyOverride(preferences, dialogId, topicId);
                     if (notifyOverride == -1) {
                         value = isGlobalNotificationsEnabled(dialogId, isChannel);
-                        /*if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
-                            FileLog.d("global notify settings for " + dialog_id + " = " + value);
-                        }*/
                     } else {
                         value = notifyOverride != 2;
                     }
@@ -2688,9 +2679,7 @@ public class NotificationsController extends BaseController {
                 notifyOverride = 2;
             }
         }
-        /*if (BuildVars.LOGS_ENABLED && BuildVars.DEBUG_VERSION) {
-            FileLog.d("notify override for " + dialog_id + " = " + notifyOverride);
-        }*/
+        FileLog.d("notify override for " + dialog_id + " = " + notifyOverride);
         return notifyOverride;
     }
 
@@ -2786,9 +2775,7 @@ public class NotificationsController extends BaseController {
 
     private void scheduleNotificationDelay(boolean onlineReason) {
         try {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("delay notification start, onlineReason = " + onlineReason);
-            }
+            FileLog.d("delay notification start, onlineReason = " + onlineReason);
             notificationDelayWakelock.acquire(10000);
             notificationsQueue.cancelRunnable(notificationDelayRunnable);
             notificationsQueue.postRunnable(notificationDelayRunnable, (onlineReason ? 3 * 1000 : 1000));
@@ -2846,9 +2833,7 @@ public class NotificationsController extends BaseController {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("delete channel internal " + channelId);
-                    }
+                    FileLog.d("delete channel internal " + channelId);
                 }
             }
             if (what == 1 || what == -1) {
@@ -2861,9 +2846,7 @@ public class NotificationsController extends BaseController {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("delete channel internal " + channelId);
-                    }
+                    FileLog.d("delete channel internal " + channelId);
                 }
             }
             editor.commit();
@@ -2907,9 +2890,7 @@ public class NotificationsController extends BaseController {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("delete channel global internal " + channelId);
-                    }
+                    FileLog.d("delete channel global internal " + channelId);
                 }
             }
 
@@ -2930,9 +2911,7 @@ public class NotificationsController extends BaseController {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("delete channel global internal " + channelId);
-                    }
+                    FileLog.d("delete channel global internal " + channelId);
                 }
             }
             String overwriteKey;
@@ -2972,9 +2951,7 @@ public class NotificationsController extends BaseController {
                         if (!key.endsWith("_s")) {
                             String id = (String) entry.getValue();
                             systemNotificationManager.deleteNotificationChannel(id);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("delete all channel " + id);
-                            }
+                            FileLog.d("delete all channel " + id);
                         }
                         editor.remove(key);
                     }
@@ -3230,9 +3207,7 @@ public class NotificationsController extends BaseController {
 
         if (channelId != null) {
             NotificationChannel existingChannel = systemNotificationManager.getNotificationChannel(channelId);
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("current channel for " + channelId + " = " + existingChannel);
-            }
+            FileLog.d("current channel for " + channelId + " = " + existingChannel);
             if (existingChannel != null) {
                 if (!isSilent && !shouldOverwrite) {
                     int channelImportance = existingChannel.getImportance();
@@ -3256,9 +3231,7 @@ public class NotificationsController extends BaseController {
                     if (!isDefault && secretChat) {
                         newSettings.append("secret");
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("current channel settings for " + channelId + " = " + newSettings + " old = " + settings);
-                    }
+                    FileLog.d("current channel settings for " + channelId + " = " + newSettings + " old = " + settings);
                     newSettingsHash = Utilities.MD5(newSettings.toString());
                     newSettings.setLength(0);
                     if (!newSettingsHash.equals(settings)) {
@@ -3359,9 +3332,7 @@ public class NotificationsController extends BaseController {
 
         if (edited && newSettingsHash != null) {
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("change edited channel " + channelId);
-            }
+            FileLog.d("change edited channel " + channelId);
         } else if (shouldOverwrite || newSettingsHash == null || !isInApp || !isDefault) {
             for (int a = 0; a < vibrationPattern.length; a++) {
                 newSettings.append(vibrationPattern[a]);
@@ -3382,9 +3353,7 @@ public class NotificationsController extends BaseController {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("delete channel by settings change " + channelId);
-                }
+                FileLog.d("delete channel by settings change " + channelId);
                 channelId = null;
             }
         }
@@ -3418,9 +3387,7 @@ public class NotificationsController extends BaseController {
             } else {
                 notificationChannel.setSound(null, null);
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("create new channel " + channelId);
-            }
+            FileLog.d("create new channel " + channelId);
             lastNotificationChannelCreateTime = SystemClock.elapsedRealtime();
             systemNotificationManager.createNotificationChannel(notificationChannel);
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();
@@ -4024,9 +3991,7 @@ public class NotificationsController extends BaseController {
         Notification mainNotification = notificationBuilder.build();
         if (Build.VERSION.SDK_INT < 18) {
             notificationManager.notify(notificationId, mainNotification);
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("show summary notification by SDK check");
-            }
+            FileLog.d("show summary notification by SDK check");
             return;
         }
 
@@ -4078,9 +4043,7 @@ public class NotificationsController extends BaseController {
             }
 
             void call() {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.w("show dialog notification with id " + id + " " + dialogId +  " user=" + user + " chat=" + chat);
-                }
+                FileLog.w("show dialog notification with id " + id + " " + dialogId +  " user=" + user + " chat=" + chat);
                 try {
                     notificationManager.notify(id, notification.build());
                 } catch (SecurityException e) {
@@ -4145,9 +4108,7 @@ public class NotificationsController extends BaseController {
                         if (lastMessageObject.isFcmMessage()) {
                             name = lastMessageObject.localName;
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.w("not found user to show dialog notification " + dialogId);
-                            }
+                            FileLog.w("not found user to show dialog notification " + dialogId);
                             continue;
                         }
                     } else {
@@ -4170,9 +4131,7 @@ public class NotificationsController extends BaseController {
                             name = lastMessageObject.localName;
                             isChannel = lastMessageObject.localChannel;
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.w("not found chat to show dialog notification " + dialogId);
-                            }
+                            FileLog.w("not found chat to show dialog notification " + dialogId);
                             continue;
                         }
                     } else {
@@ -4200,16 +4159,12 @@ public class NotificationsController extends BaseController {
                     int encryptedChatId = DialogObject.getEncryptedChatId(dialogId);
                     TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(encryptedChatId);
                     if (encryptedChat == null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.w("not found secret chat to show dialog notification " + encryptedChatId);
-                        }
+                        FileLog.w("not found secret chat to show dialog notification " + encryptedChatId);
                         continue;
                     }
                     user = getMessagesController().getUser(encryptedChat.user_id);
                     if (user == null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.w("not found secret chat user to show dialog notification " + encryptedChat.user_id);
-                        }
+                        FileLog.w("not found secret chat user to show dialog notification " + encryptedChat.user_id);
                         continue;
                     }
                 }
@@ -4341,9 +4296,7 @@ public class NotificationsController extends BaseController {
                     senderName[0] = LocaleController.getString("NotificationMessageScheduledName", R.string.NotificationMessageScheduledName);
                 }
                 if (message == null) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.w("message text is null for " + messageObject.getId() + " did = " + messageObject.getDialogId());
-                    }
+                    FileLog.w("message text is null for " + messageObject.getId() + " did = " + messageObject.getDialogId());
                     continue;
                 }
                 if (text.length() > 0) {
@@ -4666,9 +4619,7 @@ public class NotificationsController extends BaseController {
         }
 
         if (useSummaryNotification) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("show summary with id " + notificationId);
-            }
+            FileLog.d("show summary with id " + notificationId);
             try {
                 notificationManager.notify(notificationId, mainNotification);
             } catch (SecurityException e) {
@@ -4687,9 +4638,7 @@ public class NotificationsController extends BaseController {
                 continue;
             }
             Integer id = oldIdsWear.valueAt(a);
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("cancel notification id " + id);
-            }
+            FileLog.d("cancel notification id " + id);
             notificationManager.cancel(id);
         }
 

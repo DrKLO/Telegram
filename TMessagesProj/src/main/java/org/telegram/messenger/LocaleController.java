@@ -880,9 +880,7 @@ public class LocaleController {
         }
         boolean isLoadingRemote = false;
         if ((localeInfo.isRemote() || localeInfo.isUnofficial()) && (force || !pathToFile.exists() || hasBase && !pathToBaseFile.exists())) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("reload locale because one of file doesn't exist" + pathToFile + " " + pathToBaseFile);
-            }
+            FileLog.d("reload locale because one of file doesn't exist" + pathToFile + " " + pathToBaseFile);
             isLoadingRemote = true;
             if (init) {
                 AndroidUtilities.runOnUIThread(() -> applyRemoteLanguage(localeInfo, null, true, forceFullDifference, currentAccount, onDone));
@@ -2113,9 +2111,7 @@ public class LocaleController {
                     values.remove(string.key);
                 }
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("save locale file to " + finalFile);
-            }
+            FileLog.d("save locale file to " + finalFile);
             BufferedWriter writer = new BufferedWriter(new FileWriter(finalFile));
             writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
             writer.write("<resources>\n");
@@ -2213,9 +2209,7 @@ public class LocaleController {
                     }
                     for (int a = 0, size = res.objects.size(); a < size; a++) {
                         TLRPC.TL_langPackLanguage language = (TLRPC.TL_langPackLanguage) res.objects.get(a);
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("loaded lang " + language.name);
-                        }
+                        FileLog.d("loaded lang " + language.name);
                         LocaleInfo localeInfo = new LocaleInfo();
                         localeInfo.nameEnglish = language.name;
                         localeInfo.name = language.native_name;
@@ -2253,9 +2247,7 @@ public class LocaleController {
                         if (info.serverIndex != Integer.MAX_VALUE || info == currentLocaleInfo) {
                             continue;
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("remove lang " + info.getKey());
-                        }
+                        FileLog.d("remove lang " + info.getKey());
                         remoteLanguages.remove(a);
                         remoteLanguagesDict.remove(info.getKey());
                         languages.remove(info);

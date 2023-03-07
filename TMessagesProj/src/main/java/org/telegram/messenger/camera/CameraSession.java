@@ -219,11 +219,11 @@ public class CameraSession {
                 updateRotation();
 
                 if (params != null) {
-                    if (initial && BuildVars.LOGS_ENABLED) {
+                    if (initial) {
                         FileLog.d("set preview size = " + previewSize.getWidth() + " " + previewSize.getHeight());
                     }
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
-                    if (initial && BuildVars.LOGS_ENABLED) {
+                    if (initial) {
                         FileLog.d("set picture size = " + pictureSize.getWidth() + " " + pictureSize.getHeight());
                     }
                     params.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());

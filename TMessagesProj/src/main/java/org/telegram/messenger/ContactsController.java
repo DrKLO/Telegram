@@ -398,9 +398,7 @@ public class ContactsController extends BaseController {
     public void checkContacts() {
         Utilities.globalQueue.postRunnable(() -> {
             if (checkContactsInternal()) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("detected contacts change");
-                }
+                FileLog.d("detected contacts change");
                 performSyncPhoneBook(getContactsCopy(contactsBook), true, false, true, false, true, false);
             }
         });
@@ -408,18 +406,14 @@ public class ContactsController extends BaseController {
 
     public void forceImportContacts() {
         Utilities.globalQueue.postRunnable(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("force import contacts");
-            }
+            FileLog.d("force import contacts");
             performSyncPhoneBook(new HashMap<>(), true, true, true, true, false, false);
         });
     }
 
     public void syncPhoneBookByAlert(final HashMap<String, Contact> contacts, final boolean first, final boolean schedule, final boolean cancel) {
         Utilities.globalQueue.postRunnable(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("sync contacts by alert");
-            }
+            FileLog.d("sync contacts by alert");
             performSyncPhoneBook(contacts, true, first, schedule, false, false, cancel);
         });
     }
@@ -562,15 +556,11 @@ public class ContactsController extends BaseController {
 
     public HashMap<String, Contact> readContactsFromPhoneBook() {
         if (!getUserConfig().syncContacts) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("contacts sync disabled");
-            }
+            FileLog.d("contacts sync disabled");
             return new HashMap<>();
         }
         if (!hasContactsPermission()) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("app has no contacts permissions");
-            }
+            FileLog.d("app has no contacts permissions");
             return new HashMap<>();
         }
         Cursor pCur = null;
@@ -829,23 +819,6 @@ public class ContactsController extends BaseController {
                 FileLog.e(e);
             }
         }
-        /*if (BuildVars.LOGS_ENABLED && contactsMap != null) {
-            for (HashMap.Entry<String, Contact> entry : contactsMap.entrySet()) {
-                Contact contact = entry.getValue();
-                FileLog.e("contact = " + contact.first_name + " " + contact.last_name);
-                if (contact.first_name.length() == 0 && contact.last_name.length() == 0 && contact.phones.size() > 0) {
-                    FileLog.e("warning, empty name for contact = " + contact.key);
-                }
-                FileLog.e("phones:");
-                for (String s : contact.phones) {
-                    FileLog.e("phone = " + s);
-                }
-                FileLog.e("short phones:");
-                for (String s : contact.shortPhones) {
-                    FileLog.e("short phone = " + s);
-                }
-            }
-        }*/
         return contactsMap != null ? contactsMap : new HashMap<>();
     }
 
@@ -894,9 +867,7 @@ public class ContactsController extends BaseController {
                     }
                 }
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("migrated contacts " + migratedMap.size() + " of " + contactHashMap.size());
-            }
+            FileLog.d("migrated contacts " + migratedMap.size() + " of " + contactHashMap.size());
             getMessagesStorage().putCachedPhoneBook(migratedMap, true, false);
         });
     }
@@ -940,9 +911,7 @@ public class ContactsController extends BaseController {
                 }
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("start read contacts from phone");
-            }
+            FileLog.d("start read contacts from phone");
             if (!schedule) {
                 checkContactsInternal();
             }
@@ -1093,9 +1062,7 @@ public class ContactsController extends BaseController {
                     }
                 }
                 if (!first && contactHashMap.isEmpty() && toImport.isEmpty() && alreadyImportedContacts == contactsMap.size()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("contacts not changed!");
-                    }
+                    FileLog.d("contacts not changed!");
                     return;
                 }
                 if (request && !contactHashMap.isEmpty() && !contactsMap.isEmpty()) {
@@ -1191,18 +1158,11 @@ public class ContactsController extends BaseController {
                 }
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("done processing contacts");
-            }
+            FileLog.d("done processing contacts");
 
             if (request) {
                 if (!toImport.isEmpty()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("start import contacts");
-                        /*for (TLRPC.TL_inputPhoneContact contact : toImport) {
-                            FileLog.e("add contact " + contact.first_name + " " + contact.last_name + " " + contact.phone);
-                        }*/
-                    }
+                    FileLog.e("start import contacts");
 
                     final int checkType;
                     if (checkCount && newPhonebookContacts != 0) {
@@ -1216,9 +1176,7 @@ public class ContactsController extends BaseController {
                     } else {
                         checkType = 0;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("new phone book contacts " + newPhonebookContacts + " serverContactsInPhonebook " + serverContactsInPhonebook + " totalContacts " + contactsByPhone.size());
-                    }
+                    FileLog.d("new phone book contacts " + newPhonebookContacts + " serverContactsInPhonebook " + serverContactsInPhonebook + " totalContacts " + contactsByPhone.size());
                     if (checkType != 0) {
                         AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.hasNewContactsToImport, checkType, contactHashMap, first, schedule));
                         return;
@@ -1263,9 +1221,7 @@ public class ContactsController extends BaseController {
                         getConnectionsManager().sendRequest(req, (response, error) -> {
                             completedRequestsCount++;
                             if (error == null) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("contacts imported");
-                                }
+                                FileLog.d("contacts imported");
                                 final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts) response;
                                 if (!res.retry_contacts.isEmpty()) {
                                     for (int a1 = 0; a1 < res.retry_contacts.size(); a1++) {
@@ -1273,9 +1229,7 @@ public class ContactsController extends BaseController {
                                         contactsMapToSave.remove(contactIdToKey.get((int) id));
                                     }
                                     hasErrors[0] = true;
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("result has retry contacts");
-                                    }
+                                    FileLog.d("result has retry contacts");
                                 }
                                 for (int a1 = 0; a1 < res.popular_invites.size(); a1++) {
                                     TLRPC.TL_popularContact popularContact = res.popular_invites.get(a1);
@@ -1285,11 +1239,6 @@ public class ContactsController extends BaseController {
                                     }
                                 }
 
-                                /*if (BuildVars.LOGS_ENABLED) {
-                                    for (TLRPC.User user : res.users) {
-                                        FileLog.e("received user " + user.first_name + " " + user.last_name + " " + user.phone);
-                                    }
-                                }*/
                                 getMessagesStorage().putUsersAndChats(res.users, null, true, true);
                                 ArrayList<TLRPC.TL_contact> cArr = new ArrayList<>();
                                 for (int a1 = 0; a1 < res.imported.size(); a1++) {
@@ -1304,9 +1253,7 @@ public class ContactsController extends BaseController {
                                     contactsMapToSave.remove(contactIdToKey.get((int) contact.client_id));
                                 }
                                 hasErrors[0] = true;
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("import contacts error " + error.text);
-                                }
+                                FileLog.d("import contacts error " + error.text);
                             }
                             if (completedRequestsCount == count) {
                                 if (!contactsMapToSave.isEmpty()) {
@@ -1412,14 +1359,10 @@ public class ContactsController extends BaseController {
             loadingContacts = true;
         }
         if (fromCache) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("load contacts from cache");
-            }
+            FileLog.d("load contacts from cache");
             getMessagesStorage().getContacts();
         } else {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("load contacts from server");
-            }
+            FileLog.d("load contacts from server");
 
             TLRPC.TL_contacts_getContacts req = new TLRPC.TL_contacts_getContacts();
             req.hash = hash;
@@ -1440,9 +1383,7 @@ public class ContactsController extends BaseController {
                             }
                             getNotificationCenter().postNotificationName(NotificationCenter.contactsDidLoad);
                         });
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("load contacts don't change");
-                        }
+                        FileLog.d("load contacts don't change");
                         return;
                     } else {
                         getUserConfig().contactsSavedCount = res.saved_count;
@@ -1485,9 +1426,7 @@ public class ContactsController extends BaseController {
             }
 
             Utilities.stageQueue.postRunnable(() -> {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("done loading contacts");
-                }
+                FileLog.d("done loading contacts");
                 if (from == 1 && (contactsArr.isEmpty() || Math.abs(System.currentTimeMillis() / 1000 - getUserConfig().lastContactsSyncTime) >= 24 * 60 * 60)) {
                     loadContacts(false, getContactsHash(contactsArr));
                     if (contactsArr.isEmpty()) {
@@ -1507,9 +1446,7 @@ public class ContactsController extends BaseController {
                     TLRPC.TL_contact contact = contactsArr.get(a);
                     if (usersDict.get(contact.user_id) == null && contact.user_id != getUserConfig().getClientUserId()) {
                         loadContacts(false, 0);
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("contacts are broken, load from server");
-                        }
+                        FileLog.d("contacts are broken, load from server");
                         AndroidUtilities.runOnUIThread(() -> {
                             doneLoadingContacts = true;
                             getNotificationCenter().postNotificationName(NotificationCenter.contactsDidLoad);
@@ -1951,9 +1888,7 @@ public class ContactsController extends BaseController {
                 }
             }
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("process update - contacts add = " + newC.size() + " delete = " + contactsTD.size());
-        }
+        FileLog.d("process update - contacts add = " + newC.size() + " delete = " + contactsTD.size());
 
         StringBuilder toAdd = new StringBuilder();
         StringBuilder toDelete = new StringBuilder();
@@ -2089,9 +2024,7 @@ public class ContactsController extends BaseController {
         }
         if (!contactsLoaded || !contactsBookLoaded) {
             delayedContactsUpdate.addAll(ids);
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("delay update - contacts add = " + newContacts.size() + " delete = " + contactsToDelete.size());
-            }
+            FileLog.d("delay update - contacts add = " + newContacts.size() + " delete = " + contactsToDelete.size());
         } else {
             applyContactsUpdates(ids, userDict, newContacts, contactsToDelete);
         }

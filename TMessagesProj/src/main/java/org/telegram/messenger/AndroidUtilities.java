@@ -1691,9 +1691,7 @@ public class AndroidUtilities {
                     }
                     typefaceCache.put(assetPath, t);
                 } catch (Exception e) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
-                    }
+                    FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
                     return null;
                 }
             }
@@ -2057,12 +2055,10 @@ public class AndroidUtilities {
                 }
                 roundMessageInset = dp(2);
             }
-            if (BuildVars.LOGS_ENABLED) {
-                if (statusBarHeight == 0) {
-                    fillStatusBarHeight(context);
-                }
-                FileLog.e("density = " + density + " display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi + ", screen layout: " + configuration.screenLayout + ", statusbar height: " + statusBarHeight + ", navbar height: " + navigationBarHeight);
+            if (statusBarHeight == 0) {
+                fillStatusBarHeight(context);
             }
+            FileLog.e("density = " + density + " display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi + ", screen layout: " + configuration.screenLayout + ", statusbar height: " + statusBarHeight + ", navbar height: " + navigationBarHeight);
             ViewConfiguration vc = ViewConfiguration.get(context);
             touchSlop = vc.getScaledTouchSlop();
         } catch (Exception e) {
@@ -2322,9 +2318,7 @@ public class AndroidUtilities {
             while (cursor.moveToNext()) {
                 String number = cursor.getString(0);
                 long date = cursor.getLong(1);
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("number = " + number);
-                }
+                FileLog.e("number = " + number);
                 if (Math.abs(System.currentTimeMillis() - date) >= 60 * 60 * 1000) {
                     continue;
                 }
@@ -2645,9 +2639,7 @@ public class AndroidUtilities {
             ForegroundDetector.getInstance().resetBackgroundVar();
         }
         int uptime = (int) (SystemClock.elapsedRealtime() / 1000);
-        if (BuildVars.LOGS_ENABLED && reset && SharedConfig.passcodeHash.length() > 0) {
-            FileLog.d("wasInBackground = " + wasInBackground + " appLocked = " + SharedConfig.appLocked + " autoLockIn = " + SharedConfig.autoLockIn + " lastPauseTime = " + SharedConfig.lastPauseTime + " uptime = " + uptime);
-        }
+        FileLog.d("wasInBackground = " + wasInBackground + " appLocked = " + SharedConfig.appLocked + " autoLockIn = " + SharedConfig.autoLockIn + " lastPauseTime = " + SharedConfig.lastPauseTime + " uptime = " + uptime);
         return SharedConfig.passcodeHash.length() > 0 && wasInBackground &&
                 (SharedConfig.appLocked ||
                         SharedConfig.autoLockIn != 0 && SharedConfig.lastPauseTime != 0 && !SharedConfig.appLocked && (SharedConfig.lastPauseTime + SharedConfig.autoLockIn) <= uptime ||
@@ -2824,16 +2816,12 @@ public class AndroidUtilities {
             storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");
             if (!storageDir.mkdirs()) {
                 if (!storageDir.exists()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("failed to create directory");
-                    }
+                    FileLog.d("failed to create directory");
                     return null;
                 }
             }
         } else {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("External storage is not mounted READ/WRITE.");
-            }
+            FileLog.d("External storage is not mounted READ/WRITE.");
         }
 
         return storageDir;

@@ -405,9 +405,7 @@ public class ChatObject {
             if (TextUtils.isEmpty(reqOffset)) {
                 call.version = version;
                 call.participants_count = participantCount;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("new participants count " + call.participants_count);
-                }
+                FileLog.d("new participants count " + call.participants_count);
             }
             long time = SystemClock.elapsedRealtime();
             currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.applyGroupCallVisibleParticipants, time);
@@ -848,16 +846,12 @@ public class ChatObject {
                         a--;
                     } else if (updateState == 1) {
                         if (updatesStartWaitTime != 0 && (anyProceed || Math.abs(System.currentTimeMillis() - updatesStartWaitTime) <= 1500)) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("HOLE IN GROUP CALL UPDATES QUEUE - will wait more time");
-                            }
+                            FileLog.d("HOLE IN GROUP CALL UPDATES QUEUE - will wait more time");
                             if (anyProceed) {
                                 updatesStartWaitTime = System.currentTimeMillis();
                             }
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("HOLE IN GROUP CALL UPDATES QUEUE - reload participants");
-                            }
+                            FileLog.d("HOLE IN GROUP CALL UPDATES QUEUE - reload participants");
                             updatesStartWaitTime = 0;
                             updatesQueue.clear();
                             nextLoadOffset = null;
@@ -870,9 +864,7 @@ public class ChatObject {
                     }
                 }
                 updatesQueue.clear();
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("GROUP CALL UPDATES QUEUE PROCEED - OK");
-                }
+                FileLog.d("GROUP CALL UPDATES QUEUE PROCEED - OK");
             }
             updatesStartWaitTime = 0;
         }
@@ -880,9 +872,7 @@ public class ChatObject {
         private void checkQueue() {
             checkQueueRunnable = null;
             if (updatesStartWaitTime != 0 && (System.currentTimeMillis() - updatesStartWaitTime) >= 1500) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("QUEUE GROUP CALL UPDATES WAIT TIMEOUT - CHECK QUEUE");
-                }
+                FileLog.d("QUEUE GROUP CALL UPDATES WAIT TIMEOUT - CHECK QUEUE");
                 processUpdatesQueue();
             }
             if (!updatesQueue.isEmpty()) {
@@ -923,9 +913,7 @@ public class ChatObject {
                     currentAccount.getMessagesController().putChats(res.chats, false);
                     if (call.participants_count != res.count) {
                         call.participants_count = res.count;
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("new participants reload count " + call.participants_count);
-                        }
+                        FileLog.d("new participants reload count " + call.participants_count);
                         currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
                     }
                 }
@@ -947,9 +935,7 @@ public class ChatObject {
                         if (updatesStartWaitTime == 0) {
                             updatesStartWaitTime = System.currentTimeMillis();
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("add TL_updateGroupCallParticipants to queue " + update.version);
-                        }
+                        FileLog.d("add TL_updateGroupCallParticipants to queue " + update.version);
                         updatesQueue.add(update);
                         if (checkQueueRunnable == null) {
                             AndroidUtilities.runOnUIThread(checkQueueRunnable = this::checkQueue, 1500);
@@ -961,9 +947,7 @@ public class ChatObject {
                     return;
                 }
                 if (versioned && update.version < call.version) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("ignore processParticipantsUpdate because of version");
-                    }
+                    FileLog.d("ignore processParticipantsUpdate because of version");
                     return;
                 }
             }
@@ -986,15 +970,11 @@ public class ChatObject {
             for (int a = 0, N = update.participants.size(); a < N; a++) {
                 TLRPC.TL_groupCallParticipant participant = update.participants.get(a);
                 long pid = MessageObject.getPeerId(participant.peer);
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("process participant " + pid + " left = " + participant.left + " versioned " + participant.versioned + " flags = " + participant.flags + " self = " + selfId + " volume = " + participant.volume);
-                }
+                FileLog.d("process participant " + pid + " left = " + participant.left + " versioned " + participant.versioned + " flags = " + participant.flags + " self = " + selfId + " volume = " + participant.volume);
                 TLRPC.TL_groupCallParticipant oldParticipant = participants.get(pid);
                 if (participant.left) {
                     if (oldParticipant == null && update.version == call.version) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("unknowd participant left, reload call");
-                        }
+                        FileLog.d("unknowd participant left, reload call");
                         reloadCall = true;
                     }
                     if (oldParticipant != null) {
@@ -1033,9 +1013,7 @@ public class ChatObject {
                         invitedUsers.remove(id);
                     }
                     if (oldParticipant != null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("new participant, update old");
-                        }
+                        FileLog.d("new participant, update old");
                         oldParticipant.muted = participant.muted;
                         if (participant.muted && currentSpeakingPeers.get(pid, null) != null) {
                             currentSpeakingPeers.remove(pid);
@@ -1091,13 +1069,9 @@ public class ChatObject {
                             call.participants_count++;
                             if (update.version == call.version) {
                                 reloadCall = true;
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("new participant, just joined, reload call");
-                                }
+                                FileLog.d("new participant, just joined, reload call");
                             } else {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("new participant, just joined");
-                                }
+                                FileLog.d("new participant, just joined");
                             }
                         }
                         if (participant.raise_hand_rating != 0) {
@@ -1128,9 +1102,7 @@ public class ChatObject {
             if (call.participants_count < participants.size()) {
                 call.participants_count = participants.size();
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("new participants count after update " + call.participants_count);
-            }
+            FileLog.d("new participants count after update " + call.participants_count);
             if (reloadCall) {
                 loadGroupCall();
             }

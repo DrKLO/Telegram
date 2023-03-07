@@ -171,9 +171,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                                 }
                                 if (size.height < 2160 && size.width < 2160) {
                                     cameraInfo.previewSizes.add(new Size(size.width, size.height));
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("preview size = " + size.width + " " + size.height);
-                                    }
+                                    FileLog.d("preview size = " + size.width + " " + size.height);
                                 }
                             }
 
@@ -185,9 +183,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                                 }
                                 if (!"samsung".equals(Build.MANUFACTURER) || !"jflteuc".equals(Build.PRODUCT) || size.width < 2048) {
                                     cameraInfo.pictureSizes.add(new Size(size.width, size.height));
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("picture size = " + size.width + " " + size.height);
-                                    }
+                                    FileLog.d("picture size = " + size.width + " " + size.height);
                                 }
                             }
 
@@ -507,17 +503,13 @@ public class CameraController implements MediaRecorder.OnInfoListener {
 
     public void openRound(final CameraSession session, final SurfaceTexture texture, final Runnable callback, final Runnable configureCallback) {
         if (session == null || texture == null) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("failed to open round " + session + " tex = " + texture);
-            }
+            FileLog.d("failed to open round " + session + " tex = " + texture);
             return;
         }
         threadPool.execute(() -> {
             Camera camera = session.cameraInfo.camera;
             try {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("start creating round camera session");
-                }
+                FileLog.d("start creating round camera session");
                 if (camera == null) {
                     camera = session.cameraInfo.camera = Camera.open(session.cameraInfo.cameraId);
                 }
@@ -532,9 +524,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 if (callback != null) {
                     AndroidUtilities.runOnUIThread(callback);
                 }
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("round camera session created");
-                }
+                FileLog.d("round camera session created");
             } catch (Exception e) {
                 session.cameraInfo.camera = null;
                 if (camera != null) {

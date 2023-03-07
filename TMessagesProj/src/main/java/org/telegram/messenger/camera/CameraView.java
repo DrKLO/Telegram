@@ -381,9 +381,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         surfaceWidth = width;
 
         if (cameraThread == null && surface != null) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("CameraView " + "start create thread");
-            }
+            FileLog.d("CameraView " + "start create thread");
             cameraThread = new CameraGLThread(surface);
             checkPreviewMatrix();
         }
@@ -727,16 +725,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         }
 
         private boolean initGL() {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("CameraView " + "start init gl");
-            }
+            FileLog.d("CameraView " + "start init gl");
             egl10 = (EGL10) EGLContext.getEGL();
 
             eglDisplay = egl10.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
             if (eglDisplay == EGL10.EGL_NO_DISPLAY) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                }
+                FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 eglDisplay = null;
                 finish();
                 return false;
@@ -744,9 +738,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             int[] version = new int[2];
             if (!egl10.eglInitialize(eglDisplay, version)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                }
+                FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 finish();
                 return false;
             }
@@ -764,17 +756,13 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     EGL10.EGL_NONE
             };
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                }
+                FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 finish();
                 return false;
             } else if (configsCount[0] > 0) {
                 eglConfig = configs[0];
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglConfig not initialized");
-                }
+                FileLog.e("eglConfig not initialized");
                 finish();
                 return false;
             }
@@ -782,9 +770,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null || eglContext == EGL10.EGL_NO_CONTEXT) {
                 eglContext = null;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                }
+                FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 finish();
                 return false;
             }
@@ -797,16 +783,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             }
 
             if (eglSurface == null || eglSurface == EGL10.EGL_NO_SURFACE) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                }
+                FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 finish();
                 return false;
             }
             if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                }
+                FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                 finish();
                 return false;
             }
@@ -824,9 +806,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 int[] linkStatus = new int[1];
                 GLES20.glGetProgramiv(drawProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
                 if (linkStatus[0] == 0) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("failed link shader");
-                    }
+                    FileLog.e("failed link shader");
                     GLES20.glDeleteProgram(drawProgram);
                     drawProgram = 0;
                 } else {
@@ -836,9 +816,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     textureMatrixHandle = GLES20.glGetUniformLocation(drawProgram, "uSTMatrix");
                 }
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("failed creating shader");
-                }
+                FileLog.e("failed creating shader");
                 finish();
                 return false;
             }
@@ -852,9 +830,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("gl initied");
-            }
+            FileLog.e("gl initied");
 
 
             float tX = 1.0f / 2.0f;
@@ -924,9 +900,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             if (!eglContext.equals(egl10.eglGetCurrentContext()) || !eglSurface.equals(egl10.eglGetCurrentSurface(EGL10.EGL_DRAW))) {
                 if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                    }
+                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                     return;
                 }
             }
@@ -1034,9 +1008,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     break;
                 case DO_REINIT_MESSAGE: {
                     if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("CameraView " + "eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
-                        }
+                        FileLog.d("CameraView " + "eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
                         return;
                     }
 
@@ -1060,9 +1032,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     break;
                 }
                 case DO_SETSESSION_MESSAGE: {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("CameraView " + "set gl renderer session");
-                    }
+                    FileLog.d("CameraView " + "set gl renderer session");
                     CameraSession newSession = (CameraSession) inputMessage.obj;
                     if (currentSession != newSession) {
                         currentSession = newSession;
@@ -1147,9 +1117,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         int[] compileStatus = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
         if (compileStatus[0] == 0) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e(GLES20.glGetShaderInfoLog(shader));
-            }
+            FileLog.e(GLES20.glGetShaderInfoLog(shader));
             GLES20.glDeleteShader(shader);
             shader = 0;
         }
@@ -1162,9 +1130,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             if (cameraThread == null) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("CameraView " + "create camera session");
-            }
+            FileLog.d("CameraView " + "create camera session");
             if (previewSize == null) {
                 updateCameraInfoSize();
             }
@@ -1179,9 +1145,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             CameraController.getInstance().open(cameraSession, surfaceTexture, () -> {
                 if (cameraSession != null) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("CameraView " + "camera initied");
-                    }
+                    FileLog.d("CameraView " + "camera initied");
                     cameraSession.setInitied();
                     requestLayout();
                 }
@@ -1402,9 +1366,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             if (timestamp == 0) {
                 zeroTimeStamps++;
                 if (zeroTimeStamps > 1) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("CameraView " + "fix timestamp enabled");
-                    }
+                    FileLog.d("CameraView " + "fix timestamp enabled");
                     timestamp = timestampInternal;
                 } else {
                     return;
@@ -1438,9 +1400,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             buffersToWrite.add(input);
             if (audioFirst == -1) {
                 if (videoFirst == -1) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("CameraView " + "video record not yet started");
-                    }
+                    FileLog.d("CameraView " + "video record not yet started");
                     return;
                 }
                 while (true) {
@@ -1450,29 +1410,21 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                             desyncTime = videoFirst - input.offset[a];
                             audioFirst = input.offset[a];
                             ok = true;
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("CameraView " + "detected desync between audio and video " + desyncTime);
-                            }
+                            FileLog.d("CameraView " + "detected desync between audio and video " + desyncTime);
                             break;
                         }
                         if (input.offset[a] >= videoFirst) {
                             input.lastWroteBuffer = a;
                             audioFirst = input.offset[a];
                             ok = true;
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("CameraView " + "found first audio frame at " + a + " timestamp = " + input.offset[a]);
-                            }
+                            FileLog.d("CameraView " + "found first audio frame at " + a + " timestamp = " + input.offset[a]);
                             break;
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("CameraView " + "ignore first audio frame at " + a + " timestamp = " + input.offset[a]);
-                            }
+                            FileLog.d("CameraView " + "ignore first audio frame at " + a + " timestamp = " + input.offset[a]);
                         }
                     }
                     if (!ok) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("CameraView " + "first audio frame not found, removing buffers " + input.results);
-                        }
+                        FileLog.d("CameraView " + "first audio frame not found, removing buffers " + input.results);
                         buffersToWrite.remove(input);
                     } else {
                         break;
@@ -1513,9 +1465,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         for (int a = input.lastWroteBuffer; a <= input.results; a++) {
                             if (a < input.results) {
                                 if (!running && input.offset[a] >= videoLast - desyncTime) {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("CameraView " + "stop audio encoding because of stoped video recording at " + input.offset[a] + " last video " + videoLast);
-                                    }
+                                    FileLog.d("CameraView " + "stop audio encoding because of stoped video recording at " + input.offset[a] + " last video " + videoLast);
                                     audioStopedByTime = true;
                                     isLast = true;
                                     input = null;
@@ -1584,9 +1534,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             currentTimestamp += dt;
             if (videoFirst == -1) {
                 videoFirst = timestampNanos / 1000;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("CameraView " + "first video frame was at " + videoFirst);
-                }
+                FileLog.d("CameraView " + "first video frame was at " + videoFirst);
             }
             videoLast = timestampNanos;
 
@@ -1696,9 +1644,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 }
                 audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
                 audioRecorder.startRecording();
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("CameraView " + "initied audio record with channels " + audioRecorder.getChannelCount() + " sample rate = " + audioRecorder.getSampleRate() + " bufferSize = " + bufferSize);
-                }
+                FileLog.d("CameraView " + "initied audio record with channels " + audioRecorder.getChannelCount() + " sample rate = " + audioRecorder.getSampleRate() + " bufferSize = " + bufferSize);
                 Thread thread = new Thread(recorderRunnable);
                 thread.setPriority(Thread.MAX_PRIORITY);
                 thread.start();
@@ -1797,9 +1743,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             }
 
             if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(EGL14.eglGetError()));
-                }
+                FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(EGL14.eglGetError()));
                 throw new RuntimeException("eglMakeCurrent failed");
             }
             GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
@@ -2029,9 +1973,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             switch (what) {
                 case MSG_START_RECORDING: {
                     try {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("start encoder");
-                        }
+                        FileLog.e("start encoder");
                         encoder.prepareEncoder();
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -2041,9 +1983,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                     break;
                 }
                 case MSG_STOP_RECORDING: {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("stop encoder");
-                    }
+                    FileLog.e("stop encoder");
                     encoder.handleStopRecording(inputMessage.arg1);
                     break;
                 }

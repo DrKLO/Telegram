@@ -68,17 +68,13 @@ public class TopicsController extends BaseController {
             return;
         }
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("load topics " + chatId + " fromCache=" + fromCache + " loadType=" + loadType);
-        }
+        FileLog.d("load topics " + chatId + " fromCache=" + fromCache + " loadType=" + loadType);
         topicsIsLoading.put(chatId, 1);
 
         if (fromCache) {
             getMessagesStorage().loadTopics(-chatId, topics -> {
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("loaded from cache " + chatId + " topics_count=" + (topics == null ? 0 : topics.size()));
-                    }
+                    FileLog.d("loaded from cache " + chatId + " topics_count=" + (topics == null ? 0 : topics.size()));
 
                     topicsIsLoading.put(chatId, 0);
                     processTopics(chatId, topics, null, fromCache, loadType, -1);
@@ -99,9 +95,7 @@ public class TopicsController extends BaseController {
             getForumTopics.offset_id = loadOffsets.lastMessageId;
             getForumTopics.offset_topic = loadOffsets.lastTopicId;
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("offset_date=" + loadOffsets.lastMessageDate + " offset_id=" + loadOffsets.lastMessageId + " offset_topic=" + loadOffsets.lastTopicId);
-            }
+            FileLog.d("offset_date=" + loadOffsets.lastMessageDate + " offset_id=" + loadOffsets.lastMessageId + " offset_topic=" + loadOffsets.lastTopicId);
         }
 
         getConnectionsManager().sendRequest(getForumTopics, (response, error) -> {
@@ -142,9 +136,7 @@ public class TopicsController extends BaseController {
     }
 
     public void processTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> newTopics, SparseArray<TLRPC.Message> messagesMap, boolean fromCache, int loadType, int totalCount) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("processTopics=" + "new_topics_size=" + (newTopics == null ? 0 : newTopics.size()) + " fromCache=" + fromCache + " load_type=" + loadType + " totalCount=" + totalCount);
-        }
+        FileLog.d("processTopics=" + "new_topics_size=" + (newTopics == null ? 0 : newTopics.size()) + " fromCache=" + fromCache + " load_type=" + loadType + " totalCount=" + totalCount);
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         ArrayList<TLRPC.TL_forumTopic> topicsToReload = null;
         LongSparseArray<TLRPC.TL_forumTopic> topicsMap = topicsMapByChatId.get(chatId);
@@ -977,9 +969,7 @@ public class TopicsController extends BaseController {
     public void loadTopic(long chatId, int topicId, Runnable runnable) {
         getMessagesStorage().loadTopics(-chatId, topics -> {
             AndroidUtilities.runOnUIThread(() -> {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("loaded from cache " + chatId + " topics_count=" + (topics == null ? 0 : topics.size()));
-                }
+                FileLog.d("loaded from cache " + chatId + " topics_count=" + (topics == null ? 0 : topics.size()));
 
                 processTopics(chatId, topics, null, true, LOAD_TYPE_PRELOAD, -1);
                 sortTopics(chatId);

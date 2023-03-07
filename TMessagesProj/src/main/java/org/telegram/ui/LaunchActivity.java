@@ -838,9 +838,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             } else {
                 os2 = "";
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("OS name " + os1 + " " + os2);
-            }
+            FileLog.d("OS name " + os1 + " " + os2);
             if ((os1.contains("flyme") || os2.contains("flyme")) && Build.VERSION.SDK_INT <= 24) {
                 AndroidUtilities.incorrectDisplaySizeFix = true;
                 final View view = getWindow().getDecorView().getRootView();
@@ -852,9 +850,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     if (height > AndroidUtilities.dp(100) && height < AndroidUtilities.displaySize.y && height + AndroidUtilities.dp(100) > AndroidUtilities.displaySize.y) {
                         AndroidUtilities.displaySize.y = height;
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("fix display size y to " + AndroidUtilities.displaySize.y);
-                        }
+                        FileLog.d("fix display size y to " + AndroidUtilities.displaySize.y);
                     }
                 });
             }
@@ -1752,9 +1748,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 } else {
                                     String originalPath = uri.toString();
                                     if (dialogId == 0 && originalPath != null) {
-                                        if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.d("export path = " + originalPath);
-                                        }
+                                        FileLog.d("export path = " + originalPath);
                                         Set<String> exportUris = MessagesController.getInstance(intentAccount[0]).exportUri;
                                         String fileName = FileLoader.fixFileName(MediaController.getFileName(uri));
                                         for (String u : exportUris) {
@@ -1873,9 +1867,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         originalPath = path;
                                     }
 
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("export path = " + originalPath);
-                                    }
+                                    FileLog.d("export path = " + originalPath);
                                     if (dialogId == 0 && originalPath != null && exportingChatUri == null) {
                                         boolean ok = false;
                                         String fileName = FileLoader.fixFileName(MediaController.getFileName(uri));
@@ -5218,9 +5210,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (SharedConfig.passcodeHash.length() != 0 && SharedConfig.lastPauseTime != 0) {
             SharedConfig.lastPauseTime = 0;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("reset lastPauseTime onActivityResult");
-            }
+            FileLog.d("reset lastPauseTime onActivityResult");
             UserConfig.getInstance(currentAccount).saveConfig(false);
         }
         if (requestCode == 105) {
@@ -5619,9 +5609,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (id == NotificationCenter.didUpdateConnectionState) {
             int state = ConnectionsManager.getInstance(account).getConnectionState();
             if (currentConnectionState != state) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("switch to state " + state);
-                }
+                FileLog.d("switch to state " + state);
                 currentConnectionState = state;
                 updateCurrentConnectionState(account);
             }
@@ -6422,9 +6410,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             String showedLang = preferences.getString("language_showed2", "");
             final String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
             if (!force && showedLang.equals(systemLang)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("alert already showed for " + showedLang);
-                }
+                FileLog.d("alert already showed for " + showedLang);
                 return;
             }
 
@@ -6455,9 +6441,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (infos[0] == null || infos[1] == null || infos[0] == infos[1]) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("show lang alert for " + infos[0].getKey() + " and " + infos[1].getKey());
-            }
+            FileLog.d("show lang alert for " + infos[0].getKey() + " and " + infos[1].getKey());
 
             systemLocaleStrings = null;
             englishLocaleStrings = null;
@@ -6515,9 +6499,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private void onPasscodePause() {
         if (lockRunnable != null) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("cancel lockRunnable onPasscodePause");
-            }
+            FileLog.d("cancel lockRunnable onPasscodePause");
             AndroidUtilities.cancelRunOnUIThread(lockRunnable);
             lockRunnable = null;
         }
@@ -6528,9 +6510,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 public void run() {
                     if (lockRunnable == this) {
                         if (AndroidUtilities.needShowPasscode(true)) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("lock app");
-                            }
+                            FileLog.d("lock app");
                             showPasscodeActivity(true, false, -1, -1, null, null);
                             try {
                                 NotificationsController.getInstance(UserConfig.selectedAccount).showNotifications();
@@ -6538,9 +6518,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 FileLog.e(e);
                             }
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("didn't pass lock check");
-                            }
+                            FileLog.d("didn't pass lock check");
                         }
                         lockRunnable = null;
                     }
@@ -6548,13 +6526,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             };
             if (SharedConfig.appLocked) {
                 AndroidUtilities.runOnUIThread(lockRunnable, 1000);
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("schedule app lock in " + 1000);
-                }
+                FileLog.d("schedule app lock in " + 1000);
             } else if (SharedConfig.autoLockIn != 0) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("schedule app lock in " + (((long) SharedConfig.autoLockIn) * 1000 + 1000));
-                }
+                FileLog.d("schedule app lock in " + (((long) SharedConfig.autoLockIn) * 1000 + 1000));
                 AndroidUtilities.runOnUIThread(lockRunnable, ((long) SharedConfig.autoLockIn) * 1000 + 1000);
             }
         } else {
@@ -6573,9 +6547,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private void onPasscodeResume() {
         if (lockRunnable != null) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("cancel lockRunnable onPasscodeResume");
-            }
+            FileLog.d("cancel lockRunnable onPasscodeResume");
             AndroidUtilities.cancelRunOnUIThread(lockRunnable);
             lockRunnable = null;
         }
@@ -6585,9 +6557,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (SharedConfig.lastPauseTime != 0) {
             SharedConfig.lastPauseTime = 0;
             SharedConfig.saveConfig();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("reset lastPauseTime onPasscodeResume");
-            }
+            FileLog.d("reset lastPauseTime onPasscodeResume");
         }
     }
 

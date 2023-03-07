@@ -2602,9 +2602,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 }
             }
             if (audioToSendPath != null) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("delete file " + audioToSendPath);
-                }
+                FileLog.d("delete file " + audioToSendPath);
                 new File(audioToSendPath).delete();
             }
             hideRecordedAudioPanel(false);

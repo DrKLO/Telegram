@@ -634,9 +634,7 @@ public class SecretChatHelper extends BaseController {
                     layer.in_seq_no = newMsgObj.seq_in;
                     layer.out_seq_no = newMsgObj.seq_out;
                 }
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(req + " send message with in_seq = " + layer.in_seq_no + " out_seq = " + layer.out_seq_no);
-                }
+                FileLog.d(req + " send message with in_seq = " + layer.in_seq_no + " out_seq = " + layer.out_seq_no);
 
                 int len = toEncryptObject.getObjectSize();
                 NativeByteBuffer toEncrypt = new NativeByteBuffer(4 + len);
@@ -1173,9 +1171,7 @@ public class SecretChatHelper extends BaseController {
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionRequestKey) {
                     if (chat.exchange_id != 0) {
                         if (chat.exchange_id > serviceMessage.action.exchange_id) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("we already have request key with higher exchange_id");
-                            }
+                            FileLog.d("we already have request key with higher exchange_id");
                             return null;
                         } else {
                             sendAbortKeyMessage(chat, null, chat.exchange_id); //TODO don't send?
@@ -1326,14 +1322,10 @@ public class SecretChatHelper extends BaseController {
                     return null;
                 }
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("unknown message " + object);
-                }
+                FileLog.e("unknown message " + object);
             }
         } else {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("unknown TLObject");
-            }
+            FileLog.e("unknown TLObject");
         }
         return null;
     }
@@ -1619,15 +1611,11 @@ public class SecretChatHelper extends BaseController {
                         }
                     }
                     if (layer.random_bytes.length < 15) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("got random bytes less than needed");
-                        }
+                        FileLog.e("got random bytes less than needed");
                         return null;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("current chat in_seq = " + chat.seq_in + " out_seq = " + chat.seq_out);
-                        FileLog.d("got message with in_seq = " + layer.in_seq_no + " out_seq = " + layer.out_seq_no);
-                    }
+                    FileLog.d("current chat in_seq = " + chat.seq_in + " out_seq = " + chat.seq_out);
+                    FileLog.d("got message with in_seq = " + layer.in_seq_no + " out_seq = " + layer.out_seq_no);
                     if (layer.out_seq_no <= chat.seq_in) {
                         return null;
                     }
@@ -1635,9 +1623,7 @@ public class SecretChatHelper extends BaseController {
                         return null;
                     }
                     if (chat.seq_in != layer.out_seq_no - 2) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("got hole");
-                        }
+                        FileLog.e("got hole");
                         sendResendMessage(chat, chat.seq_in + 2, layer.out_seq_no - 2, null);
                         ArrayList<TL_decryptedMessageHolder> arr = secretHolesQueue.get(chat.id);
                         if (arr == null) {
@@ -1693,9 +1679,7 @@ public class SecretChatHelper extends BaseController {
                 return messages;
             } else {
                 is.reuse();
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e(String.format("fingerprint mismatch %x", fingerprint));
-                }
+                FileLog.e(String.format("fingerprint mismatch %x", fingerprint));
             }
         } catch (Exception e) {
             FileLog.e(e);

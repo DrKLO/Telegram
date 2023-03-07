@@ -544,9 +544,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 if (location == null || locationQueryCancelRunnable == null) {
                     return;
                 }
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("found location " + location);
-                }
+                FileLog.d("found location " + location);
                 lastKnownLocation = location;
                 if (location.getAccuracy() < 100) {
                     if (delegate != null) {
@@ -1158,9 +1156,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                         performSendDelayedMessage(message);
                                     }
                                 } else {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.e("can't load image " + path + " to file " + cacheFile.toString());
-                                    }
+                                    FileLog.e("can't load image " + path + " to file " + cacheFile.toString());
                                     message.markAsError();
                                 }
                             });
@@ -2032,9 +2028,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 putToSendingMessages(newMsg, scheduleDate != 0);
                 boolean differentDialog = false;
 
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("forward message user_id = " + inputPeer.user_id + " chat_id = " + inputPeer.chat_id + " channel_id = " + inputPeer.channel_id + " access_hash = " + inputPeer.access_hash);
-                }
+                FileLog.d("forward message user_id = " + inputPeer.user_id + " chat_id = " + inputPeer.chat_id + " channel_id = " + inputPeer.channel_id + " access_hash = " + inputPeer.access_hash);
 
                 if (replyToTopMsg != null) {
                     newMsg.reply_to = new TLRPC.TL_messageReplyHeader();
@@ -3894,10 +3888,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                if (sendToPeer != null) {
-                    FileLog.d("send message user_id = " + sendToPeer.user_id + " chat_id = " + sendToPeer.chat_id + " channel_id = " + sendToPeer.channel_id + " access_hash = " + sendToPeer.access_hash + " notify = " + notify + " silent = " + MessagesController.getNotificationsSettings(currentAccount).getBoolean("silent_" + peer, false));
-                }
+            if (sendToPeer != null) {
+                FileLog.d("send message user_id = " + sendToPeer.user_id + " chat_id = " + sendToPeer.chat_id + " channel_id = " + sendToPeer.channel_id + " access_hash = " + sendToPeer.access_hash + " notify = " + notify + " silent = " + MessagesController.getNotificationsSettings(currentAccount).getBoolean("silent_" + peer, false));
             }
 
             boolean performMediaUpload = false;
@@ -8037,9 +8029,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     handleError(error, accountInstance);
                 }
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("total send time = " + (System.currentTimeMillis() - beginTime));
-            }
+            FileLog.d("total send time = " + (System.currentTimeMillis() - beginTime));
         });
     }
 
@@ -8167,9 +8157,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         AnimatedFileDrawable.getVideoInfo(videoPath, params);
 
         if (params[AnimatedFileDrawable.PARAM_NUM_SUPPORTED_VIDEO_CODEC] == 0) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("video hasn't avc1 atom");
-            }
+            FileLog.d("video hasn't avc1 atom");
             return null;
         }
 
@@ -8188,9 +8176,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             try {
                 MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.VIDEO_MIME_TYPE);
                 if (codecInfo == null) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("no codec info for " + MediaController.VIDEO_MIME_TYPE);
-                    }
+                    FileLog.d("no codec info for " + MediaController.VIDEO_MIME_TYPE);
                     return null;
                 } else {
                     String name = codecInfo.getName();
@@ -8201,15 +8187,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             name.equals("OMX.MARVELL.VIDEO.H264ENCODER") ||
                             name.equals("OMX.k3.video.encoder.avc") ||
                             name.equals("OMX.TI.DUCATI1.VIDEO.H264E")) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("unsupported encoder = " + name);
-                        }
+                        FileLog.d("unsupported encoder = " + name);
                         return null;
                     } else {
                         if (MediaController.selectColorFormat(codecInfo, MediaController.VIDEO_MIME_TYPE) == 0) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("no color format for " + MediaController.VIDEO_MIME_TYPE);
-                            }
+                            FileLog.d("no color format for " + MediaController.VIDEO_MIME_TYPE);
                             return null;
                         }
                     }

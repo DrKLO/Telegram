@@ -119,9 +119,7 @@ public class NativeLoader {
             try {
                 System.loadLibrary(LIB_NAME);
                 nativeLoaded = true;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("loaded normal lib");
-                }
+                FileLog.d("loaded normal lib");
                 return;
             } catch (Error e) {
                 FileLog.e(e);
@@ -144,9 +142,7 @@ public class NativeLoader {
                     folder = "mips";
                 } else {
                     folder = "armeabi";
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Unsupported arch: " + Build.CPU_ABI);
-                    }
+                    FileLog.e("Unsupported arch: " + Build.CPU_ABI);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -178,9 +174,7 @@ public class NativeLoader {
             File destLocalFile = new File(destDir, LOCALE_LIB_SO_NAME);
             if (destLocalFile.exists()) {
                 try {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("Load local lib");
-                    }
+                    FileLog.d("Load local lib");
                     System.load(destLocalFile.getAbsolutePath());
                     nativeLoaded = true;
                     return;
@@ -190,9 +184,7 @@ public class NativeLoader {
                 destLocalFile.delete();
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("Library not found, arch = " + folder);
-            }
+            FileLog.e("Library not found, arch = " + folder);
 
             if (loadFromZip(context, destDir, destLocalFile, folder)) {
                 return;

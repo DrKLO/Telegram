@@ -986,16 +986,12 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 if (bitmap != null) {
                     File path = FileLoader.getInstance(currentAccount).getPathToAttach(smallPhoto, true);
                     if (path != null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("delete file " + path);
-                        }
+                        FileLog.e("delete file " + path);
                         path.delete();
                     }
                     path = FileLoader.getInstance(currentAccount).getPathToAttach(bigPhoto, true);
                     if (path != null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("delete file " + path);
-                        }
+                        FileLog.e("delete file " + path);
                         path.delete();
                     }
                     bigPhoto = ImageLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false, 320, 320);

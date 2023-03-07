@@ -83,9 +83,7 @@ public final class Instance {
                 instance.setGlobalServerConfig(serverConfigJson);
             }
         } catch (JSONException e) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("failed to parse tgvoip server config", e);
-            }
+            FileLog.e("failed to parse tgvoip server config", e);
         }
     }
 

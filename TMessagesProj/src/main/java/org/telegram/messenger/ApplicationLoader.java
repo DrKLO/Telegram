@@ -195,9 +195,7 @@ public class ApplicationLoader extends Application {
         try {
             PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
             isScreenOn = pm.isScreenOn();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("screen state = " + isScreenOn);
-            }
+            FileLog.d("screen state = " + isScreenOn);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -221,9 +219,7 @@ public class ApplicationLoader extends Application {
 
         ApplicationLoader app = (ApplicationLoader) ApplicationLoader.applicationContext;
         app.initPushServices();
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("app initied");
-        }
+        FileLog.d("app initied");
 
         MediaController.getInstance();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
@@ -249,10 +245,8 @@ public class ApplicationLoader extends Application {
 
         super.onCreate();
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("app start time = " + (startTime = SystemClock.elapsedRealtime()));
-            FileLog.d("buildVersion = " + BuildVars.BUILD_VERSION);
-        }
+        FileLog.d("app start time = " + (startTime = SystemClock.elapsedRealtime()));
+        FileLog.d("buildVersion = " + BuildVars.BUILD_VERSION);
         if (applicationContext == null) {
             applicationContext = getApplicationContext();
         }
@@ -269,9 +263,7 @@ public class ApplicationLoader extends Application {
                 }
             }
         };
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("load libs time = " + (SystemClock.elapsedRealtime() - startTime));
-        }
+        FileLog.d("load libs time = " + (SystemClock.elapsedRealtime() - startTime));
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
@@ -322,9 +314,7 @@ public class ApplicationLoader extends Application {
             if (getPushProvider().hasServices()) {
                 getPushProvider().onRequestPushToken();
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("No valid " + getPushProvider().getLogTitle() + " APK found.");
-                }
+                FileLog.d("No valid " + getPushProvider().getLogTitle() + " APK found.");
                 SharedConfig.pushStringStatus = "__NO_GOOGLE_PLAY_SERVICES__";
                 PushListenerController.sendRegistrationToServer(getPushProvider().getPushType(), null);
             }

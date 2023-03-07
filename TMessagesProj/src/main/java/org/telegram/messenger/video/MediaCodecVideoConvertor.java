@@ -121,21 +121,15 @@ public class MediaCodecVideoConvertor {
                     }
 
                     if (resultWidth % 16 != 0) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("changing width from " + resultWidth + " to " + Math.round(resultWidth / 16.0f) * 16);
-                        }
+                        FileLog.d("changing width from " + resultWidth + " to " + Math.round(resultWidth / 16.0f) * 16);
                         resultWidth = Math.round(resultWidth / 16.0f) * 16;
                     }
                     if (resultHeight % 16 != 0) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("changing height from " + resultHeight + " to " + Math.round(resultHeight / 16.0f) * 16);
-                        }
+                        FileLog.d("changing height from " + resultHeight + " to " + Math.round(resultHeight / 16.0f) * 16);
                         resultHeight = Math.round(resultHeight / 16.0f) * 16;
                     }
 
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("create photo encoder " + resultWidth + " " + resultHeight + " duration = " + duration);
-                    }
+                    FileLog.d("create photo encoder " + resultWidth + " " + resultHeight + " duration = " + duration);
 
                     MediaFormat outputFormat = MediaFormat.createVideoFormat(MediaController.VIDEO_MIME_TYPE, resultWidth, resultHeight);
                     outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -177,9 +171,7 @@ public class MediaCodecVideoConvertor {
                                 }
                             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                                 MediaFormat newFormat = encoder.getOutputFormat();
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("photo encoder new format " + newFormat);
-                                }
+                                FileLog.d("photo encoder new format " + newFormat);
                                 if (videoTrackIndex == -5 && newFormat != null) {
                                     videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
                                     if (newFormat.containsKey(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) && newFormat.getInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) == 1) {
@@ -392,9 +384,7 @@ public class MediaCodecVideoConvertor {
                                 w = resultWidth;
                                 h = resultHeight;
                             }
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("create encoder with w = " + w + " h = " + h + " bitrate = " + bitrate);
-                            }
+                            FileLog.d("create encoder with w = " + w + " h = " + h + " bitrate = " + bitrate);
                             MediaFormat outputFormat = MediaFormat.createVideoFormat(MediaController.VIDEO_MIME_TYPE, w, h);
                             outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
                             outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
@@ -676,9 +666,7 @@ public class MediaCodecVideoConvertor {
 
                                         } else if (decoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                                             MediaFormat newFormat = decoder.getOutputFormat();
-                                            if (BuildVars.LOGS_ENABLED) {
-                                                FileLog.d("newFormat = " + newFormat);
-                                            }
+                                            FileLog.d("newFormat = " + newFormat);
                                         } else if (decoderStatus < 0) {
                                             throw new RuntimeException("unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
                                         } else {
@@ -714,9 +702,7 @@ public class MediaCodecVideoConvertor {
                                             if (trueStartTime > 0 && videoTime == -1) {
                                                 if (originalPresentationTime < trueStartTime) {
                                                     doRender = false;
-                                                    if (BuildVars.LOGS_ENABLED) {
-                                                        FileLog.d("drop frame startTime = " + trueStartTime + " present time = " + info.presentationTimeUs);
-                                                    }
+                                                    FileLog.d("drop frame startTime = " + trueStartTime + " present time = " + info.presentationTimeUs);
                                                 } else {
                                                     videoTime = info.presentationTimeUs;
                                                     if (minPresentationTime != Integer.MIN_VALUE) {
@@ -752,9 +738,7 @@ public class MediaCodecVideoConvertor {
                                             }
                                             if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                                                 decoderOutputAvailable = false;
-                                                if (BuildVars.LOGS_ENABLED) {
-                                                    FileLog.d("decoder stream end");
-                                                }
+                                                FileLog.d("decoder stream end");
                                                 encoder.signalEndOfInputStream();
                                             }
                                         }
@@ -824,9 +808,7 @@ public class MediaCodecVideoConvertor {
         }
 
         long timeLeft = System.currentTimeMillis() - time;
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("compression completed time=" + timeLeft + " needCompress=" + needCompress + " w=" + resultWidth + " h=" + resultHeight + " bitrate=" + bitrate + " file size=" + cacheFile.length());
-        }
+        FileLog.d("compression completed time=" + timeLeft + " needCompress=" + needCompress + " w=" + resultWidth + " h=" + resultHeight + " bitrate=" + bitrate + " file size=" + cacheFile.length());
 
         return error;
     }

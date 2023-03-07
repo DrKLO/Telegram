@@ -41,13 +41,9 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
         if (account < 0 || account >= UserConfig.MAX_ACCOUNT_COUNT) {
             return;
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("received disabled notification channel event for " + channelId + " state = " + state);
-        }
+        FileLog.d("received disabled notification channel event for " + channelId + " state = " + state);
         if (SystemClock.elapsedRealtime() - AccountInstance.getInstance(account).getNotificationsController().lastNotificationChannelCreateTime <= 1000) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("received disable notification event right after creating notification channel, ignoring");
-            }
+            FileLog.d("received disable notification event right after creating notification channel, ignoring");
             return;
         }
         SharedPreferences preferences = AccountInstance.getInstance(account).getNotificationsSettings();
@@ -56,9 +52,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (!channelId.equals(currentChannel)) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
-            }
+            FileLog.d("apply channel " + channelId + " state");
             preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_CHANNEL), state ? Integer.MAX_VALUE : 0).commit();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_CHANNEL);
         } else if (args[1].startsWith("groups")) {
@@ -66,9 +60,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (!channelId.equals(currentChannel)) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
-            }
+            FileLog.d("apply channel " + channelId + " state");
             preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_GROUP), state ? Integer.MAX_VALUE : 0).commit();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_GROUP);
         } else if (args[1].startsWith("private")) {
@@ -76,9 +68,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (!channelId.equals(currentChannel)) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
-            }
+            FileLog.d("apply channel " + channelId + " state");
             preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_PRIVATE), state ? Integer.MAX_VALUE : 0).commit();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_PRIVATE);
         } else {
@@ -92,9 +82,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (!channelId.equals(currentChannel)) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
-            }
+            FileLog.d("apply channel " + channelId + " state");
             SharedPreferences.Editor editor = preferences.edit();
             editor.putInt("notify2_" + key, state ? 2 : 0);
             if (!state) {

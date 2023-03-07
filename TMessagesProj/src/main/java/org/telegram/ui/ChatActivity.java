@@ -5060,9 +5060,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         AndroidUtilities.cancelRunOnUIThread(finishRunnable);
                         finishRunnable = null;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("chatItemAnimator disable notifications");
-                    }
+                    FileLog.d("chatItemAnimator disable notifications");
                     chatActivityEnterView.getAdjustPanLayoutHelper().runDelayedAnimation();
                     chatActivityEnterView.runEmojiPanelAnimation();
                 }
@@ -5080,9 +5078,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             getNotificationCenter().onAnimationFinish(scrollAnimationIndex);
                             scrollAnimationIndex = -1;
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("chatItemAnimator enable notifications");
-                        }
+                        FileLog.d("chatItemAnimator enable notifications");
                     });
                 }
 
@@ -5099,9 +5095,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             getNotificationCenter().onAnimationFinish(scrollAnimationIndex);
                             scrollAnimationIndex = -1;
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("chatItemAnimator enable notifications");
-                        }
+                        FileLog.d("chatItemAnimator enable notifications");
                     });
                 }
             };
@@ -18660,9 +18654,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void clearHistory(boolean overwrite, TLRPC.TL_updates_channelDifferenceTooLong differenceTooLong) {
         if (overwrite) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("clear history by overwrite firstLoading=" + firstLoading + " minMessage=" + minMessageId[0] + " topMessage=" + differenceTooLong.dialog.top_message);
-            }
+            FileLog.d("clear history by overwrite firstLoading=" + firstLoading + " minMessage=" + minMessageId[0] + " topMessage=" + differenceTooLong.dialog.top_message);
 
             if (differenceTooLong.dialog.top_message > minMessageId[0]) {
                 createUnreadMessageAfterId = Math.max(minMessageId[0] + 1, differenceTooLong.dialog.read_inbox_max_id);
@@ -19118,9 +19110,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         } else {
             LongSparseArray<MessageObject.GroupedMessages> newGroups = null;
             HashMap<String, ArrayList<MessageObject>> webpagesToReload = null;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("received new messages " + arr.size() + " in dialog " + dialog_id);
-            }
+            FileLog.d("received new messages " + arr.size() + " in dialog " + dialog_id);
 
             MessageObject lastActionSetChatThemeMessageObject = null;
             int lastAdIndex = -1;
@@ -22120,9 +22110,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return;
             }
             if (topChatPanelView.getTag() != null) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("show spam button");
-                }
+                FileLog.d("show spam button");
                 topChatPanelView.setTag(null);
                 topChatPanelView.setVisibility(View.VISIBLE);
                 if (reportSpamViewAnimator != null) {
@@ -22163,9 +22151,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else if (topChatPanelView != null) {
             if (topChatPanelView.getTag() == null) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("hide spam button");
-                }
+                FileLog.d("hide spam button");
                 topChatPanelView.setTag(1);
 
                 if (reportSpamViewAnimator != null) {
@@ -22600,9 +22586,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 }
                                 if (messageId > 0 && currentEncryptedChat == null || messageId < 0 && currentEncryptedChat != null) {
                                     offset = holder.itemView.getBottom() - chatListView.getMeasuredHeight();
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("save offset = " + offset + " for mid " + messageId);
-                                    }
+                                    FileLog.d("save offset = " + offset + " for mid " + messageId);
                                 } else {
                                     messageId = 0;
                                 }
@@ -26431,9 +26415,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     history = null;
                 }
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("processLoadedDiscussionMessage reset history");
-            }
+            FileLog.d("processLoadedDiscussionMessage reset history");
         }
 
         ArrayList<MessageObject> arrayList = new ArrayList<>();
@@ -26535,9 +26517,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         req.peer = MessagesController.getInputPeer(chat);
         req.msg_id = messageId;
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("getDiscussionMessage chat = " + chat.id + " msg_id = " + messageId);
-        }
+        FileLog.d("getDiscussionMessage chat = " + chat.id + " msg_id = " + messageId);
 
         commentLoadingMessageId = 0;
         savedDiscussionMessage = null;
@@ -28286,9 +28266,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         public void notifyDataSetChanged(boolean animated) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify data set changed fragmentOpened=" + fragmentOpened);
-            }
+            FileLog.d("notify data set changed fragmentOpened=" + fragmentOpened);
             if (animated && fragmentOpened) {
                 if (chatListView.getItemAnimator() != chatListItemAnimator) {
                     chatListView.setItemAnimator(chatListItemAnimator);
@@ -28341,9 +28319,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemRangeChanged(int positionStart, int itemCount) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify item range changed " + positionStart + ":" + itemCount);
-            }
+            FileLog.d("notify item range changed " + positionStart + ":" + itemCount);
             if (!fragmentBeginToShow) {
                 chatListView.setItemAnimator(null);
             } else if (chatListView.getItemAnimator() != chatListItemAnimator) {
@@ -28359,9 +28335,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemInserted(int position) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify item inserted " + position);
-            }
+            FileLog.d("notify item inserted " + position);
             if (!fragmentBeginToShow) {
                 chatListView.setItemAnimator(null);
             } else if (chatListView.getItemAnimator() != chatListItemAnimator) {
@@ -28377,9 +28351,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemMoved(int fromPosition, int toPosition) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify item moved" + fromPosition + ":"  + toPosition);
-            }
+            FileLog.d("notify item moved" + fromPosition + ":"  + toPosition);
             if (!fragmentBeginToShow) {
                 chatListView.setItemAnimator(null);
             } else if (chatListView.getItemAnimator() != chatListItemAnimator) {
@@ -28395,9 +28367,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemRangeInserted(int positionStart, int itemCount) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify item range inserted" + positionStart + ":" + itemCount);
-            }
+            FileLog.d("notify item range inserted" + positionStart + ":" + itemCount);
             if (!fragmentBeginToShow) {
                 chatListView.setItemAnimator(null);
             } else if (chatListView.getItemAnimator() != chatListItemAnimator) {
@@ -28423,9 +28393,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemRemoved(int position) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify item removed " + position);
-            }
+            FileLog.d("notify item removed " + position);
             if (!fragmentBeginToShow) {
                 chatListView.setItemAnimator(null);
             } else if (chatListView.getItemAnimator() != chatListItemAnimator) {
@@ -28441,9 +28409,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void notifyItemRangeRemoved(int positionStart, int itemCount) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("notify item range removed" + positionStart + ":" + itemCount);
-            }
+            FileLog.d("notify item range removed" + positionStart + ":" + itemCount);
             if (!fragmentBeginToShow) {
                 chatListView.setItemAnimator(null);
             } else if (chatListView.getItemAnimator() != chatListItemAnimator) {

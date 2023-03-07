@@ -283,15 +283,11 @@ public class MessagesStorage extends BaseController {
             database.executeFast("PRAGMA journal_size_limit = 10485760").stepThis().dispose();
 
             if (createTable) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("create new database");
-                }
+                FileLog.d("create new database");
                 createTables(database);
             } else {
                 int version = database.executeInt("PRAGMA user_version");
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("current db version = " + version);
-                }
+                FileLog.d("current db version = " + version);
                 if (version == 0) {
                     throw new Exception("malformed");
                 }
@@ -6987,9 +6983,7 @@ public class MessagesStorage extends BaseController {
             SQLitePreparedStatement state = null;
             SQLitePreparedStatement state2 = null;
             try {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(currentAccount + " save contacts to db " + contactHashMap.size());
-                }
+                FileLog.d(currentAccount + " save contacts to db " + contactHashMap.size());
                 database.executeFast("DELETE FROM user_contacts_v7 WHERE 1").stepThis().dispose();
                 database.executeFast("DELETE FROM user_phones_v7 WHERE 1").stepThis().dispose();
 
@@ -7121,9 +7115,7 @@ public class MessagesStorage extends BaseController {
                     if (currentContactsCount > 5000) {
                         start = currentContactsCount - 5000;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d(currentAccount + " current cached contacts count = " + currentContactsCount);
-                    }
+                    FileLog.d(currentAccount + " current cached contacts count = " + currentContactsCount);
                 }
             } catch (Throwable e) {
                 checkSQLException(e);
@@ -8329,9 +8321,7 @@ public class MessagesStorage extends BaseController {
                 cursor.dispose();
             }
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("messages load time = " + (SystemClock.elapsedRealtime() - startLoadTime) + " for dialog = " + dialogId);
-        }
+        FileLog.d("messages load time = " + (SystemClock.elapsedRealtime() - startLoadTime) + " for dialog = " + dialogId);
         if (dialogId == 777000 && serviceUnreadCount != 0) {
             count_unread = serviceUnreadCount;
         }

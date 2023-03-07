@@ -659,9 +659,7 @@ public class FileLoader extends BaseController {
 
         FileLoadOperation operation = loadOperationPaths.get(fileName);
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation + " priority=" + priority);
-        }
+        FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation + " priority=" + priority);
         priority = getPriorityValue(priority);
 
         if (operation != null) {
@@ -856,9 +854,7 @@ public class FileLoader extends BaseController {
         operation.setPriority(priority);
         operation.setStream(stream, streamPriority, streamOffset);
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("loadFileInternal fileName=" + fileName + " documentName=" + getDocumentFileName(document));
-        }
+        FileLog.d("loadFileInternal fileName=" + fileName + " documentName=" + getDocumentFileName(document));
 
         loaderQueue.add(operation);
         loaderQueue.checkLoadingOperations();

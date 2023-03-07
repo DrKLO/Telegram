@@ -309,9 +309,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connetionType, boolean immediate, int requestToken) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("send request " + object + " with token = " + requestToken);
-        }
+        FileLog.d("send request " + object + " with token = " + requestToken);
         try {
             NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
             object.serializeToStream(buffer);
@@ -343,14 +341,10 @@ public class ConnectionsManager extends BaseController {
                         error = new TLRPC.TL_error();
                         error.code = errorCode;
                         error.text = errorText;
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e(object + " got error " + error.code + " " + error.text);
-                        }
+                        FileLog.e(object + " got error " + error.code + " " + error.text);
                     }
                     if (BuildVars.DEBUG_PRIVATE_VERSION && !getUserConfig().isClientActivated() && error != null && error.code == 400 && Objects.equals(error.text, "CONNECTION_NOT_INITED")) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
-                        }
+                        FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
                         cleanup(true);
                         sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
                         return;
@@ -358,9 +352,7 @@ public class ConnectionsManager extends BaseController {
                     if (resp != null) {
                         resp.networkType = networkType;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("java received " + resp + " error = " + error);
-                    }
+                    FileLog.d("java received " + resp + " error = " + error);
                     FileLog.dumpResponseAndRequest(object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
                     final TLObject finalResponse = resp;
                     final TLRPC.TL_error finalError = error;
@@ -536,17 +528,13 @@ public class ConnectionsManager extends BaseController {
     public void setAppPaused(final boolean value, final boolean byScreenState) {
         if (!byScreenState) {
             appPaused = value;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("app paused = " + value);
-            }
+            FileLog.d("app paused = " + value);
             if (value) {
                 appResumeCount--;
             } else {
                 appResumeCount++;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("app resume count " + appResumeCount);
-            }
+            FileLog.d("app resume count " + appResumeCount);
             if (appResumeCount < 0) {
                 appResumeCount = 0;
             }
@@ -560,9 +548,7 @@ public class ConnectionsManager extends BaseController {
             if (appPaused) {
                 return;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("reset app pause time");
-            }
+            FileLog.d("reset app pause time");
             if (lastPauseTime != 0 && System.currentTimeMillis() - lastPauseTime > 5000) {
                 getContactsController().checkContacts();
             }
@@ -579,15 +565,11 @@ public class ConnectionsManager extends BaseController {
             final TLObject message = TLClassStore.Instance().TLdeserialize(buff, constructor, true);
             FileLog.dumpUnparsedMessage(message, messageId);
             if (message instanceof TLRPC.Updates) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("java received " + message);
-                }
+                FileLog.d("java received " + message);
                 KeepAliveJob.finishJob();
                 Utilities.stageQueue.postRunnable(() -> AccountInstance.getInstance(currentAccount).getMessagesController().processUpdates((TLRPC.Updates) message, false));
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(String.format("java received unknown constructor 0x%x", constructor));
-                }
+                FileLog.d(String.format("java received unknown constructor 0x%x", constructor));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -623,9 +605,7 @@ public class ConnectionsManager extends BaseController {
         int flags = 0;
         EmuDetector detector = EmuDetector.with(ApplicationLoader.applicationContext);
         if (detector.detect()) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("detected emu");
-            }
+            FileLog.d("detected emu");
             flags |= 1024;
         }
         return flags;
@@ -644,37 +624,27 @@ public class ConnectionsManager extends BaseController {
             boolean networkOnline = ApplicationLoader.isNetworkOnline();
             Utilities.stageQueue.postRunnable(() -> {
                 if (currentTask != null || second == 0 && Math.abs(lastDnsRequestTime - System.currentTimeMillis()) < 10000 || !networkOnline) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("don't start task, current task = " + currentTask + " next task = " + second + " time diff = " + Math.abs(lastDnsRequestTime - System.currentTimeMillis()) + " network = " + ApplicationLoader.isNetworkOnline());
-                    }
+                    FileLog.d("don't start task, current task = " + currentTask + " next task = " + second + " time diff = " + Math.abs(lastDnsRequestTime - System.currentTimeMillis()) + " network = " + ApplicationLoader.isNetworkOnline());
                     return;
                 }
                 lastDnsRequestTime = System.currentTimeMillis();
                 if (second == 3) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("start mozilla txt task");
-                    }
+                    FileLog.d("start mozilla txt task");
                     MozillaDnsLoadTask task = new MozillaDnsLoadTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
                 } else if (second == 2) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("start google txt task");
-                    }
+                    FileLog.d("start google txt task");
                     GoogleDnsLoadTask task = new GoogleDnsLoadTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
                 } else if (second == 1) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("start dns txt task");
-                    }
+                    FileLog.d("start dns txt task");
                     DnsTxtLoadTask task = new DnsTxtLoadTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
                 } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("start firebase task");
-                    }
+                    FileLog.d("start firebase task");
                     FirebaseTask task = new FirebaseTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
@@ -814,7 +784,7 @@ public class ConnectionsManager extends BaseController {
         if (Build.VERSION.SDK_INT < 19) {
             return USE_IPV4_ONLY;
         }
-        if (BuildVars.LOGS_ENABLED) {
+        if (BuildVars.isBetaApp()) { //A
             try {
                 NetworkInterface networkInterface;
                 Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
@@ -823,22 +793,16 @@ public class ConnectionsManager extends BaseController {
                     if (!networkInterface.isUp() || networkInterface.isLoopback() || networkInterface.getInterfaceAddresses().isEmpty()) {
                         continue;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("valid interface: " + networkInterface);
-                    }
+                    FileLog.d("valid interface: " + networkInterface);
                     List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
                     for (int a = 0; a < interfaceAddresses.size(); a++) {
                         InterfaceAddress address = interfaceAddresses.get(a);
                         InetAddress inetAddress = address.getAddress();
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("address: " + inetAddress.getHostAddress());
-                        }
+                        FileLog.d("address: " + inetAddress.getHostAddress());
                         if (inetAddress.isLinkLocalAddress() || inetAddress.isLoopbackAddress() || inetAddress.isMulticastAddress()) {
                             continue;
                         }
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("address is good");
-                        }
+                        FileLog.d("address is good");
                     }
                 }
             } catch (Throwable e) {
@@ -1115,10 +1079,8 @@ public class ConnectionsManager extends BaseController {
                 if (result != null) {
                     native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone(), responseDate);
                 } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("failed to get dns txt result");
-                        FileLog.d("start google task");
-                    }
+                    FileLog.d("failed to get dns txt result");
+                    FileLog.d("start google task");
                     GoogleDnsLoadTask task = new GoogleDnsLoadTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
@@ -1233,10 +1195,8 @@ public class ConnectionsManager extends BaseController {
                 if (result != null) {
                     native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone(), responseDate);
                 } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("failed to get google result");
-                        FileLog.d("start mozilla task");
-                    }
+                    FileLog.d("failed to get google result");
+                    FileLog.d("start mozilla task");
                     MozillaDnsLoadTask task = new MozillaDnsLoadTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;
@@ -1352,9 +1312,7 @@ public class ConnectionsManager extends BaseController {
                 if (result != null) {
                     native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone(), responseDate);
                 } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("failed to get mozilla txt result");
-                    }
+                    FileLog.d("failed to get mozilla txt result");
                 }
             });
         }
@@ -1377,9 +1335,7 @@ public class ConnectionsManager extends BaseController {
                 }
                 firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
                 String currentValue = firebaseRemoteConfig.getString("ipconfigv3");
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("current firebase value = " + currentValue);
-                }
+                FileLog.d("current firebase value = " + currentValue);
 
                 firebaseRemoteConfig.fetch(0).addOnCompleteListener(finishedTask -> {
                     final boolean success = finishedTask.isSuccessful();
@@ -1399,10 +1355,8 @@ public class ConnectionsManager extends BaseController {
                                         FileLog.e(e);
                                     }
                                 } else {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("failed to get firebase result");
-                                        FileLog.d("start dns txt task");
-                                    }
+                                    FileLog.d("failed to get firebase result");
+                                    FileLog.d("start dns txt task");
                                     DnsTxtLoadTask task = new DnsTxtLoadTask(currentAccount);
                                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                                     currentTask = task;
@@ -1413,10 +1367,8 @@ public class ConnectionsManager extends BaseController {
                 });
             } catch (Throwable e) {
                 Utilities.stageQueue.postRunnable(() -> {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("failed to get firebase result");
-                        FileLog.d("start dns txt task");
-                    }
+                    FileLog.d("failed to get firebase result");
+                    FileLog.d("start dns txt task");
                     DnsTxtLoadTask task = new DnsTxtLoadTask(currentAccount);
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
                     currentTask = task;

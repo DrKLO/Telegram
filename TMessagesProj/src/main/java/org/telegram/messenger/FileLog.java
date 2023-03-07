@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 
 public class FileLog {
@@ -405,6 +406,43 @@ public class FileLog {
                     }
                 }
             });
+        }
+    }
+
+    public static void d(final List<?> list, int argPosition, String... additionalArgs) {
+        if (!BuildVars.LOGS_ENABLED && !list.isEmpty()) {
+            return;
+        }
+        ensureInitied();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i <= additionalArgs.length; i++) {
+            sb.append(" ");
+            if(i == argPosition) {
+                sb.append("[arg]");
+                sb.append(" ");
+            }
+            if (i < additionalArgs.length) {
+                sb.append(additionalArgs[i]);
+            }
+        }
+        String formattedMessage = sb.toString().trim();
+
+        for (int i = 0; i < list.size(); i++) {
+            String message = formattedMessage.replace("[arg]", list.get(i).toString());
+            Log.d(tag, message);
+            if (getInstance().streamWriter != null) {
+                getInstance().logQueue.postRunnable(() -> {
+                    try {
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " D/tmessages: " + message + "\n");
+                        getInstance().streamWriter.flush();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        if (AndroidUtilities.isENOSPC(e)) {
+                            LaunchActivity.checkFreeDiscSpaceStatic(1);
+                        }
+                    }
+                });
+            }
         }
     }
 

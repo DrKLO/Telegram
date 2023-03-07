@@ -891,9 +891,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     AndroidUtilities.cancelRunOnUIThread(finishRunnable);
                     finishRunnable = null;
                 }
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("admin logs chatItemAnimator disable notifications");
-                }
+                FileLog.d("admin logs chatItemAnimator disable notifications");
             }
 
             @Override
@@ -907,9 +905,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         getNotificationCenter().onAnimationFinish(scrollAnimationIndex);
                         scrollAnimationIndex = -1;
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("admin logs chatItemAnimator enable notifications");
-                    }
+                    FileLog.d("admin logs chatItemAnimator enable notifications");
                 });
             }
         });

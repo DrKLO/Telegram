@@ -3524,9 +3524,7 @@ public class MediaDataController extends BaseController {
     public void loadMedia(long dialogId, int count, int max_id, int min_id, int type, int topicId, int fromCache, int classGuid, int requestIndex) {
         boolean isChannel = DialogObject.isChatDialog(dialogId) && ChatObject.isChannel(-dialogId, currentAccount);
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("load media did " + dialogId + " count = " + count + " max_id " + max_id + " type = " + type + " cache = " + fromCache + " classGuid = " + classGuid);
-        }
+        FileLog.d("load media did " + dialogId + " count = " + count + " max_id " + max_id + " type = " + type + " cache = " + fromCache + " classGuid = " + classGuid);
         if (fromCache != 0 || DialogObject.isEncryptedDialog(dialogId)) {
             loadMediaDatabase(dialogId, count, max_id, min_id, type, topicId, classGuid, isChannel, fromCache, requestIndex);
         } else {
@@ -3811,13 +3809,12 @@ public class MediaDataController extends BaseController {
     }
 
     private void processLoadedMedia(TLRPC.messages_Messages res, long dialogId, int count, int max_id, int min_id, int type, int topicId, int fromCache, int classGuid, boolean isChannel, boolean topReached, int requestIndex) {
-        if (BuildVars.LOGS_ENABLED) {
-            int messagesCount = 0;
-            if (res != null && res.messages != null) {
-                messagesCount = res.messages.size();
-            }
-            FileLog.d("process load media messagesCount " + messagesCount + " did " + dialogId + " topicId " + topicId + " count = " + count + " max_id=" + max_id + " min_id=" + min_id + " type = " + type + " cache = " + fromCache + " classGuid = " + classGuid);
+        int messagesCount = 0;
+        if (res != null && res.messages != null) {
+            messagesCount = res.messages.size();
         }
+        FileLog.d("process load media messagesCount " + messagesCount + " did " + dialogId + " topicId " + topicId + " count = " + count + " max_id=" + max_id + " min_id=" + min_id + " type = " + type + " cache = " + fromCache + " classGuid = " + classGuid);
+
         if (fromCache != 0 && res != null && res.messages != null && ((res.messages.isEmpty() && min_id == 0) || (res.messages.size() <= 1 && min_id != 0)) && !DialogObject.isEncryptedDialog(dialogId)) {
             if (fromCache == 2) {
                 return;

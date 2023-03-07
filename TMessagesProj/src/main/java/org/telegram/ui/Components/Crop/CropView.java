@@ -1159,9 +1159,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         float sc = state.minimumScale * scale;
 
         editState.cropState.transformRotation = state.getOrientationOnly();
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("set transformRotation = " + editState.cropState.transformRotation);
-        }
+        FileLog.d("set transformRotation = " + editState.cropState.transformRotation);
         while (editState.cropState.transformRotation < 0) {
             editState.cropState.transformRotation += 360;
         }

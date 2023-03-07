@@ -63,9 +63,7 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
             if (SystemClock.elapsedRealtime() - enterBackgroundTime < 200) {
                 wasInBackground = false;
             }
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("switch to foreground");
-            }
+            FileLog.d("switch to foreground");
             for (Listener listener : listeners) {
                 try {
                     listener.onBecameForeground();
@@ -92,9 +90,7 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
         if (--refs == 0) {
             enterBackgroundTime = SystemClock.elapsedRealtime();
             wasInBackground = true;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("switch to background");
-            }
+            FileLog.d("switch to background");
             for (Listener listener : listeners) {
                 try {
                     listener.onBecameBackground();

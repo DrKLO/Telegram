@@ -1260,9 +1260,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     if (line.contains("vfat") || line.contains("/mnt")) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d(line);
-                        }
+                        FileLog.d(line);
                         StringTokenizer tokens = new StringTokenizer(line, " ");
                         String unused = tokens.nextToken();
                         String path = tokens.nextToken();

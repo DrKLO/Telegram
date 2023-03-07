@@ -37,6 +37,8 @@ import android.view.inputmethod.EditorInfo;
 import androidx.annotation.RequiresApi;
 import androidx.exifinterface.media.ExifInterface;
 
+import com.google.common.primitives.Floats;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
@@ -161,14 +163,12 @@ public class TextureRenderer {
                 1.f, 1.f,
         };
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start textureRenderer w = " + w + " h = " + h + " r = " + rotation + " fps = " + fps);
-            if (cropState != null) {
-                FileLog.d("cropState px = " + cropState.cropPx + " py = " + cropState.cropPy + " cScale = " + cropState.cropScale +
-                        " cropRotate = " + cropState.cropRotate + " pw = " + cropState.cropPw + " ph = " + cropState.cropPh +
-                        " tw = " + cropState.transformWidth + " th = " + cropState.transformHeight + " tr = " + cropState.transformRotation +
-                        " mirror = " + cropState.mirrored);
-            }
+        FileLog.d("start textureRenderer w = " + w + " h = " + h + " r = " + rotation + " fps = " + fps);
+        if (cropState != null) {
+            FileLog.d("cropState px = " + cropState.cropPx + " py = " + cropState.cropPy + " cScale = " + cropState.cropScale +
+                " cropRotate = " + cropState.cropRotate + " pw = " + cropState.cropPw + " ph = " + cropState.cropPh +
+                " tw = " + cropState.transformWidth + " th = " + cropState.transformHeight + " tr = " + cropState.transformRotation +
+                " mirror = " + cropState.mirrored);
         }
 
         textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -335,12 +335,8 @@ public class TextureRenderer {
             GLES20.glEnableVertexAttribArray(simplePositionHandle);
         } else {
             st.getTransformMatrix(mSTMatrix);
-            if (BuildVars.LOGS_ENABLED && firstFrame) {
-                StringBuilder builder = new StringBuilder();
-                for (int a = 0; a < mSTMatrix.length; a++) {
-                    builder.append(mSTMatrix[a]).append(", ");
-                }
-                FileLog.d("stMatrix = " + builder);
+            if (firstFrame) {
+                FileLog.d(Floats.asList(mSTMatrix), 1, "stMatrix =");
                 firstFrame = false;
             }
 

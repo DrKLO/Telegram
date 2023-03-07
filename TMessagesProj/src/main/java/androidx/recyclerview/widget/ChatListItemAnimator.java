@@ -338,9 +338,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public boolean animateRemove(RecyclerView.ViewHolder holder, ItemHolderInfo info) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate remove");
-        }
+        FileLog.d("animate remove");
         boolean rez = super.animateRemove(holder, info);
         if (rez) {
             if (info != null) {
@@ -1067,9 +1065,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public void endAnimations() {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("end animations");
-        }
+        FileLog.d("end animations");
         for (MessageObject.GroupedMessages groupedMessages : willChangedGroups) {
             groupedMessages.transitionParams.isNewGroup = false;
         }
@@ -1162,9 +1158,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     protected boolean endChangeAnimationIfNecessary(ChangeInfo changeInfo, RecyclerView.ViewHolder item) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("end change if necessary");
-        }
+        FileLog.d("end change if necessary");
         Animator a = animators.remove(item);
         if (a != null) {
             a.cancel();
@@ -1223,9 +1217,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public void animateAddImpl(RecyclerView.ViewHolder holder) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate add impl");
-        }
+        FileLog.d("animate add impl");
         final View view = holder.itemView;
         mAddAnimations.add(holder);
         if (holder == greetingsSticker) {
@@ -1372,9 +1364,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     protected void animateRemoveImpl(final RecyclerView.ViewHolder holder) {
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("animate remove impl");
-        }
+        FileLog.d("animate remove impl");
         final View view = holder.itemView;
         mRemoveAnimations.add(holder);
         ObjectAnimator animator = ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f);

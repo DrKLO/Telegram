@@ -340,9 +340,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				try {
 					am.setMode(AudioManager.MODE_NORMAL);
 				} catch (SecurityException x) {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.e("Error setting audio more to normal", x);
-					}
+					FileLog.e("Error setting audio more to normal", x);
 				}
 			});
 		}
@@ -405,15 +403,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			} else if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
 				updateNetworkType();
 			} else if (BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED.equals(intent.getAction())) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("bt headset state = " + intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0));
-				}
+				FileLog.e("bt headset state = " + intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0));
 				updateBluetoothHeadsetState(intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED) == BluetoothProfile.STATE_CONNECTED);
 			} else if (AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED.equals(intent.getAction())) {
 				int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_DISCONNECTED);
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("Bluetooth SCO state updated: " + state);
-				}
+				FileLog.e("Bluetooth SCO state updated: " + state);
 				if (state == AudioManager.SCO_AUDIO_STATE_DISCONNECTED && isBtHeadsetConnected) {
 					if (!btAdapter.isEnabled() || btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) != BluetoothProfile.STATE_CONNECTED) {
 						updateBluetoothHeadsetState(false);
@@ -666,9 +660,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		if (sharedInstance != null) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("Tried to start the VoIP service when it's already started");
-			}
+			FileLog.e("Tried to start the VoIP service when it's already started");
 			return START_NOT_STICKY;
 		}
 
@@ -750,9 +742,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 
 		if (user == null && chat == null) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.w("VoIPService: user == null AND chat == null");
-			}
+			FileLog.w("VoIPService: user == null AND chat == null");
 			stopSelf();
 			return START_NOT_STICKY;
 		}
@@ -978,12 +968,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							req1.peer.id = privateCall.id;
 							req1.reason = new TLRPC.TL_phoneCallDiscardReasonMissed();
 							ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response1, error1) -> {
-								if (BuildVars.LOGS_ENABLED) {
-									if (error1 != null) {
-										FileLog.e("error on phone.discardCall: " + error1);
-									} else {
-										FileLog.d("phone.discardCall " + response1);
-									}
+								if (error1 != null) {
+									FileLog.e("error on phone.discardCall: " + error1);
+								} else {
+									FileLog.d("phone.discardCall " + response1);
 								}
 								AndroidUtilities.runOnUIThread(VoIPService.this::callFailed);
 							}, ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -997,17 +985,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						} else if (error12.code == 406) {
 							callFailed(Instance.ERROR_LOCALIZED);
 						} else {
-							if (BuildVars.LOGS_ENABLED) {
-								FileLog.e("Error on phone.requestCall: " + error12);
-							}
+							FileLog.e("Error on phone.requestCall: " + error12);
 							callFailed();
 						}
 					}
 				}), ConnectionsManager.RequestFlagFailOnServerErrors);
 			} else {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("Error on getDhConfig " + error);
-				}
+				FileLog.e("Error on getDhConfig " + error);
 				callFailed();
 			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -1015,17 +999,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private void acknowledgeCall(final boolean startRinging) {
 		if (privateCall instanceof TLRPC.TL_phoneCallDiscarded) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.w("Call " + privateCall.id + " was discarded before the service started, stopping");
-			}
+			FileLog.w("Call " + privateCall.id + " was discarded before the service started, stopping");
 			stopSelf();
 			return;
 		}
 		if (Build.VERSION.SDK_INT >= 19 && XiaomiUtilities.isMIUI() && !XiaomiUtilities.isCustomPermissionGranted(XiaomiUtilities.OP_SHOW_WHEN_LOCKED)) {
 			if (((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode()) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("MIUI: no permission to show when locked but the screen is locked. ¯\\_(ツ)_/¯");
-				}
+				FileLog.e("MIUI: no permission to show when locked but the screen is locked. ¯\\_(ツ)_/¯");
 				stopSelf();
 				return;
 			}
@@ -1038,13 +1018,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (sharedInstance == null) {
 				return;
 			}
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.w("receivedCall response = " + response);
-			}
+			FileLog.w("receivedCall response = " + response);
 			if (error != null) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("error on receivedCall: " + error);
-				}
+				FileLog.e("error on receivedCall: " + error);
 				stopSelf();
 			} else {
 				if (USE_CONNECTION_SERVICE) {
@@ -1380,9 +1356,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			} else if (MessageObject.getPeerId(participant.peer) == selfId) {
 				if (participant.source != mySource[CAPTURE_DEVICE_CAMERA] && mySource[CAPTURE_DEVICE_CAMERA] != 0 && participant.source != 0) {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.d("source mismatch my = " + mySource[CAPTURE_DEVICE_CAMERA] + " psrc = " + participant.source);
-					}
+					FileLog.d("source mismatch my = " + mySource[CAPTURE_DEVICE_CAMERA] + " psrc = " + participant.source);
 					hangUp(2);
 					return;
 				} else if (ChatObject.isChannel(chat) && currentGroupModeStreaming && participant.can_self_unmute) {
@@ -1446,24 +1420,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			return;
 		}
 		if (phoneCall.id != privateCall.id) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.w("onCallUpdated called with wrong call id (got " + phoneCall.id + ", expected " + this.privateCall.id + ")");
-			}
+			FileLog.w("onCallUpdated called with wrong call id (got " + phoneCall.id + ", expected " + this.privateCall.id + ")");
 			return;
 		}
 		if (phoneCall.access_hash == 0) {
 			phoneCall.access_hash = this.privateCall.access_hash;
 		}
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("Call updated: " + phoneCall);
-		}
+		FileLog.d("Call updated: " + phoneCall);
 		privateCall = phoneCall;
 		if (phoneCall instanceof TLRPC.TL_phoneCallDiscarded) {
 			needSendDebugLog = phoneCall.need_debug;
 			needRateCall = phoneCall.need_rating;
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("call discarded, stopping service");
-			}
+			FileLog.d("call discarded, stopping service");
 			if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) {
 				dispatchStateChanged(STATE_BUSY);
 				playingSound = true;
@@ -1476,16 +1444,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		} else if (phoneCall instanceof TLRPC.TL_phoneCall && authKey == null) {
 			if (phoneCall.g_a_or_b == null) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.w("stopping VoIP service, Ga == null");
-				}
+				FileLog.w("stopping VoIP service, Ga == null");
 				callFailed();
 				return;
 			}
 			if (!Arrays.equals(g_a_hash, Utilities.computeSHA256(phoneCall.g_a_or_b, 0, phoneCall.g_a_or_b.length))) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.w("stopping VoIP service, Ga hash doesn't match");
-				}
+				FileLog.w("stopping VoIP service, Ga hash doesn't match");
 				callFailed();
 				return;
 			}
@@ -1494,9 +1458,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			BigInteger p = new BigInteger(1, MessagesStorage.getInstance(currentAccount).getSecretPBytes());
 
 			if (!Utilities.isGoodGaAndGb(g_a, p)) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.w("stopping VoIP service, bad Ga and Gb (accepting)");
-				}
+				FileLog.w("stopping VoIP service, bad Ga and Gb (accepting)");
 				callFailed();
 				return;
 			}
@@ -1522,9 +1484,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			keyFingerprint = Utilities.bytesToLong(authKeyId);
 
 			if (keyFingerprint != phoneCall.key_fingerprint) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.w("key fingerprints don't match");
-				}
+				FileLog.w("key fingerprints don't match");
 				callFailed();
 				return;
 			}
@@ -1535,9 +1495,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		} else {
 			if (currentState == STATE_WAITING && phoneCall.receive_date != 0) {
 				dispatchStateChanged(STATE_RINGING);
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("!!!!!! CALL RECEIVED");
-				}
+				FileLog.d("!!!!!! CALL RECEIVED");
 				if (connectingSoundRunnable != null) {
 					AndroidUtilities.cancelRunOnUIThread(connectingSoundRunnable);
 					connectingSoundRunnable = null;
@@ -1570,9 +1528,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					.putExtra("account", currentAccount)
 					.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_MUTABLE).send();
 		} catch (Exception x) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("Error starting incall activity", x);
-			}
+			FileLog.e("Error starting incall activity", x);
 		}
 	}
 
@@ -1586,9 +1542,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		BigInteger i_authKey = new BigInteger(1, privateCall.g_b);
 
 		if (!Utilities.isGoodGaAndGb(i_authKey, p)) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.w("stopping VoIP service, bad Ga and Gb");
-			}
+			FileLog.w("stopping VoIP service, bad Ga and Gb");
 			callFailed();
 			return;
 		}
@@ -1746,9 +1700,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				return;
 			}
 			dispatchStateChanged(STATE_WAIT_INIT);
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("initital source = " + ssrc);
-			}
+			FileLog.d("initital source = " + ssrc);
 			TLRPC.TL_phone_joinGroupCall req = new TLRPC.TL_phone_joinGroupCall();
 			req.muted = true;
 			req.video_stopped = videoState[CAPTURE_DEVICE_CAMERA] != Instance.VIDEO_STATE_ACTIVE;
@@ -1778,9 +1730,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 								TLRPC.TL_groupCallParticipant participant = updateGroupCallParticipants.participants.get(b);
 								if (MessageObject.getPeerId(participant.peer) == selfId) {
 									AndroidUtilities.runOnUIThread(() -> mySource[CAPTURE_DEVICE_CAMERA] = participant.source);
-									if (BuildVars.LOGS_ENABLED) {
-										FileLog.d("join source = " + participant.source);
-									}
+									FileLog.d("join source = " + participant.source);
 									break;
 								}
 							}
@@ -2283,9 +2233,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			timeoutRunnable = null;
 		}
 		try {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("InitCall: keyID=" + keyFingerprint);
-			}
+			FileLog.d("InitCall: keyID=" + keyFingerprint);
 			SharedPreferences nprefs = MessagesController.getNotificationsSettings(currentAccount);
 			Set<String> set = nprefs.getStringSet("calls_access_hashes", null);
 			HashSet<String> hashes;
@@ -2432,9 +2380,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			}, 5000);
 		} catch (Exception x) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("error starting call", x);
-			}
+			FileLog.e("error starting call", x);
 			callFailed();
 		}
 	}
@@ -2553,9 +2499,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				mHasEarpiece = Boolean.FALSE;
 			}
 		} catch (Throwable error) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("Error while checking earpiece! ", error);
-			}
+			FileLog.e("Error while checking earpiece! ", error);
 			mHasEarpiece = Boolean.TRUE;
 		}
 
@@ -2619,16 +2563,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				req.participant = groupCallPeer;
 			} else {
 				req.participant = MessagesController.getInputPeer(user);
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("edit group call part id = " + req.participant.user_id + " access_hash = " + req.participant.user_id);
-				}
+				FileLog.d("edit group call part id = " + req.participant.user_id + " access_hash = " + req.participant.user_id);
 			}
 		} else if (object instanceof TLRPC.Chat) {
 			TLRPC.Chat chat = (TLRPC.Chat) object;
 			req.participant = MessagesController.getInputPeer(chat);
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("edit group call part id = " + (req.participant.chat_id != 0 ? req.participant.chat_id : req.participant.channel_id)  + " access_hash = " + req.participant.access_hash);
-			}
+			FileLog.d("edit group call part id = " + (req.participant.chat_id != 0 ? req.participant.chat_id : req.participant.channel_id)  + " access_hash = " + req.participant.access_hash);
 		}
 		if (mute != null) {
 			req.muted = mute;
@@ -2646,9 +2586,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			req.video_stopped = muteVideo;
 			req.flags |= 8;
 		}
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("edit group call flags = " + req.flags);
-		}
+		FileLog.d("edit group call flags = " + req.flags);
 		int account = currentAccount;
 		AccountInstance.getInstance(account).getConnectionsManager().sendRequest(req, (response, error) -> {
 			if (response != null) {
@@ -2719,9 +2657,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void setAudioOutput(int which) {
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("setAudioOutput " + which);
-		}
+		FileLog.d("setAudioOutput " + which);
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			switch (which) {
@@ -2967,9 +2903,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	@Override
 	public void onDestroy() {
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("=============== VoIPService STOPPING ===============");
-		}
+		FileLog.d("=============== VoIPService STOPPING ===============");
 		stopForeground(true);
 		stopRinging();
 		if (currentAccount >= 0) {
@@ -3006,7 +2940,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didEndCall));
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 			StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (getCallDuration() / 1000) % 5);
-			onTgVoipPreStop();
 			if (tgVoip[CAPTURE_DEVICE_CAMERA].isGroup()) {
 				NativeInstance instance = tgVoip[CAPTURE_DEVICE_CAMERA];
 				Utilities.globalQueue.postRunnable(instance::stopGroup);
@@ -3059,9 +2992,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						try {
 							am.setMode(AudioManager.MODE_NORMAL);
 						} catch (SecurityException x) {
-							if (BuildVars.LOGS_ENABLED) {
-								FileLog.e("Error setting audio more to normal", x);
-							}
+							FileLog.e("Error setting audio more to normal", x);
 						}
 					});
 				}
@@ -3134,9 +3065,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
 				if (response instanceof TLRPC.TL_messages_dhConfig) {
 					if (!Utilities.isGoodPrime(res.p, res.g)) {
-						if (BuildVars.LOGS_ENABLED) {
-							FileLog.e("stopping VoIP service, bad prime");
-						}
+						FileLog.e("stopping VoIP service, bad prime");
 						callFailed();
 						return;
 					}
@@ -3151,9 +3080,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					salt[a] = (byte) ((byte) (Utilities.random.nextDouble() * 256) ^ res.random[a]);
 				}
 				if (privateCall == null) {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.e("call is null");
-					}
+					FileLog.e("call is null");
 					callFailed();
 					return;
 				}
@@ -3182,17 +3109,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				req1.protocol.library_versions.addAll(Instance.AVAILABLE_VERSIONS);
 				ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
 					if (error1 == null) {
-						if (BuildVars.LOGS_ENABLED) {
-							FileLog.w("accept call ok! " + response1);
-						}
+						FileLog.w("accept call ok! " + response1);
 						privateCall = ((TLRPC.TL_phone_phoneCall) response1).phone_call;
 						if (privateCall instanceof TLRPC.TL_phoneCallDiscarded) {
 							onCallUpdated(privateCall);
 						}
 					} else {
-						if (BuildVars.LOGS_ENABLED) {
-							FileLog.e("Error on phone.acceptCall: " + error1);
-						}
+						FileLog.e("Error on phone.acceptCall: " + error1);
 						callFailed();
 					}
 				}), ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -3256,17 +3179,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 			if (error != null) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("error on phone.discardCall: " + error);
-				}
+				FileLog.e("error on phone.discardCall: " + error);
 			} else {
 				if (response instanceof TLRPC.TL_updates) {
 					TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
 					MessagesController.getInstance(currentAccount).processUpdates(updates, false);
 				}
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("phone.discardCall " + response);
-				}
+				FileLog.d("phone.discardCall " + response);
 			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
 		onDestroyRunnable = onDone;
@@ -3284,9 +3203,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	@TargetApi(Build.VERSION_CODES.O)
 	public CallConnection getConnectionAndStartCall() {
 		if (systemCallConnection == null) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("creating call connection");
-			}
+			FileLog.d("creating call connection");
 			systemCallConnection = new CallConnection();
 			systemCallConnection.setInitializing();
 			if (isOutgoing) {
@@ -3309,26 +3226,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			systemCallConnection.setRinging();
 		}
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("starting ringing for call " + privateCall.id);
-		}
+		FileLog.d("starting ringing for call " + privateCall.id);
 		dispatchStateChanged(STATE_WAITING_INCOMING);
 		if (!notificationsDisabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 			showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, privateCall.video, 0);
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("Showing incoming call notification");
-			}
+			FileLog.d("Showing incoming call notification");
 		} else {
 			startRingtoneAndVibration(user.id);
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("Starting incall activity for incoming call");
-			}
+			FileLog.d("Starting incall activity for incoming call");
 			try {
 				PendingIntent.getActivity(VoIPService.this, 12345, new Intent(VoIPService.this, LaunchActivity.class).setAction("voip"), PendingIntent.FLAG_MUTABLE).send();
 			} catch (Exception x) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("Error starting incall activity", x);
-				}
+				FileLog.e("Error starting incall activity", x);
 			}
 		}
 	}
@@ -3358,26 +3267,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		} else {
 			showNotification(chat.title, getRoundAvatarBitmap(chat));
 		}
-	}
-
-	private void onTgVoipPreStop() {
-		/*if(BuildConfig.DEBUG){
-			String debugLog=controller.getDebugLog();
-			TLRPC.TL_phone_saveCallDebug req=new TLRPC.TL_phone_saveCallDebug();
-			req.debug=new TLRPC.TL_dataJSON();
-			req.debug.data=debugLog;
-			req.peer=new TLRPC.TL_inputPhoneCall();
-			req.peer.access_hash=call.access_hash;
-			req.peer.id=call.id;
-			ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate(){
-				@Override
-				public void run(TLObject response, TLRPC.TL_error error){
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("Sent debug logs, response=" + response);
-                    }
-				}
-			});
-		}*/
 	}
 
 	public static String convertStreamToString(InputStream is) throws Exception {
@@ -3423,9 +3312,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			req.peer.access_hash = privateCall.access_hash;
 			req.peer.id = privateCall.id;
 			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("Sent debug logs, response = " + response);
-				}
+				FileLog.d("Sent debug logs, response = " + response);
 			});
 			needSendDebugLog = false;
 		}
@@ -3441,9 +3328,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("=============== VoIPService STARTING ===============");
-		}
+		FileLog.d("=============== VoIPService STARTING ===============");
 		try {
 			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER) != null) {
@@ -3501,9 +3386,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			}
 		} catch (Exception x) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("error initializing voip controller", x);
-			}
+			FileLog.e("error initializing voip controller", x);
 			callFailed();
 		}
 		if (callIShouldHavePutIntoIntent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -3540,9 +3423,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	private void dispatchStateChanged(int state) {
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("== Call " + getCallID() + " state changed to " + state + " ==");
-		}
+		FileLog.d("== Call " + getCallID() + " state changed to " + state + " ==");
 		currentState = state;
 		if (USE_CONNECTION_SERVICE && state == STATE_ESTABLISHED /*&& !wasEstablished*/ && systemCallConnection != null) {
 			systemCallConnection.setActive();
@@ -3578,9 +3459,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	@SuppressLint("InvalidWakeLockTag")
 	private void configureDeviceForCall() {
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("configureDeviceForCall, route to set = " + audioRouteToSet);
-		}
+		FileLog.d("configureDeviceForCall, route to set = " + audioRouteToSet);
 
 		if (Build.VERSION.SDK_INT >= 21) {
 			WebRtcAudioTrack.setAudioTrackUsageAttribute(hasRtmpStream() ? AudioAttributes.USAGE_MEDIA : AudioAttributes.USAGE_VOICE_COMMUNICATION);
@@ -3657,9 +3536,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_NORMAL);
 			}
 		} catch (Exception x) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("Error initializing proximity sensor", x);
-			}
+			FileLog.e("Error initializing proximity sensor", x);
 		}
 	}
 
@@ -3700,9 +3577,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private void checkIsNear(boolean newIsNear) {
 		if (newIsNear != isProximityNear) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("proximity " + newIsNear);
-			}
+			FileLog.d("proximity " + newIsNear);
 			isProximityNear = newIsNear;
 			try {
 				if (isProximityNear) {
@@ -3740,24 +3615,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (connected == isBtHeadsetConnected) {
 			return;
 		}
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("updateBluetoothHeadsetState: " + connected);
-		}
+		FileLog.d("updateBluetoothHeadsetState: " + connected);
 		isBtHeadsetConnected = connected;
 		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		if (connected && !isRinging() && currentState != 0) {
 			if (bluetoothScoActive) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("SCO already active, setting audio routing");
-				}
+				FileLog.d("SCO already active, setting audio routing");
 				if (!hasRtmpStream()) {
 					am.setSpeakerphoneOn(false);
 					am.setBluetoothScoOn(true);
 				}
 			} else {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.d("startBluetoothSco");
-				}
+				FileLog.d("startBluetoothSco");
 				if (!hasRtmpStream()) {
 					needSwitchToBluetoothAfterScoActivates = true;
 					AndroidUtilities.runOnUIThread(() -> {
@@ -3939,9 +3808,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			boolean needCreate = true;
 			if (existingChannel != null) {
 				if (existingChannel.getImportance() < NotificationManager.IMPORTANCE_HIGH || !soundProviderUri.equals(existingChannel.getSound()) || existingChannel.getVibrationPattern() != null || existingChannel.shouldVibrate()) {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.d("User messed up the notification channel; deleting it and creating a proper one");
-					}
+					FileLog.d("User messed up the notification channel; deleting it and creating a proper one");
 					nm.deleteNotificationChannel("incoming_calls3" + chanIndex);
 					chanIndex++;
 					nprefs.edit().putInt("calls_notification_channel", chanIndex).commit();
@@ -4052,9 +3919,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private void callFailed(String error) {
 		if (privateCall != null) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("Discarding failed call");
-			}
+			FileLog.d("Discarding failed call");
 			TLRPC.TL_phone_discardCall req = new TLRPC.TL_phone_discardCall();
 			req.peer = new TLRPC.TL_inputPhoneCall();
 			req.peer.access_hash = privateCall.access_hash;
@@ -4064,13 +3929,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			req.reason = new TLRPC.TL_phoneCallDiscardReasonDisconnect();
 			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error1) -> {
 				if (error1 != null) {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.e("error on phone.discardCall: " + error1);
-					}
+					FileLog.e("error on phone.discardCall: " + error1);
 				} else {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.d("phone.discardCall " + response);
-					}
+					FileLog.d("phone.discardCall " + response);
 				}
 			});
 		}
@@ -4195,9 +4056,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	private void callEnded() {
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("Call " + getCallID() + " ended");
-		}
+		FileLog.d("Call " + getCallID() + " ended");
 		if (groupCall != null && (!playedConnectedSound || onDestroyRunnable != null)) {
 			needPlayEndSound = false;
 		}
@@ -4288,9 +4147,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				//intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
 				PendingIntent.getActivity(VoIPService.this, 0, new Intent(VoIPService.this, VoIPPermissionActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_ONE_SHOT).send();
 			} catch (Exception x) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("Error starting permission activity", x);
-				}
+				FileLog.e("Error starting permission activity", x);
 			}
 			return;
 		}
@@ -4298,9 +4155,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		try {
 			PendingIntent.getActivity(VoIPService.this, 0, new Intent(VoIPService.this, getUIActivityClass()).setAction("voip"), PendingIntent.FLAG_MUTABLE).send();
 		} catch (Exception x) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("Error starting incall activity", x);
-			}
+			FileLog.e("Error starting incall activity", x);
 		}
 	}
 
@@ -4425,9 +4280,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 		@Override
 		public void onCallAudioStateChanged(CallAudioState state) {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("ConnectionService call audio state changed: " + state);
-			}
+			FileLog.d("ConnectionService call audio state changed: " + state);
 			for (StateListener l : stateListeners) {
 				l.onAudioSettingsChanged();
 			}
@@ -4435,9 +4288,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 		@Override
 		public void onDisconnect() {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("ConnectionService onDisconnect");
-			}
+			FileLog.d("ConnectionService onDisconnect");
 			setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
 			destroy();
 			systemCallConnection = null;
@@ -4463,9 +4314,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		@Override
 		public void onStateChanged(int state) {
 			super.onStateChanged(state);
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("ConnectionService onStateChanged " + stateToString(state));
-			}
+			FileLog.d("ConnectionService onStateChanged " + stateToString(state));
 			if (state == Connection.STATE_ACTIVE) {
 				ContactsController.getInstance(currentAccount).deleteConnectionServiceContact();
 				didDeleteConnectionServiceContact = true;
@@ -4475,15 +4324,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		@Override
 		public void onCallEvent(String event, Bundle extras) {
 			super.onCallEvent(event, extras);
-			if (BuildVars.LOGS_ENABLED)
-				FileLog.d("ConnectionService onCallEvent " + event);
+			FileLog.d("ConnectionService onCallEvent " + event);
 		}
 
 		//undocumented API
 		public void onSilence() {
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("onSlience");
-			}
+			FileLog.d("onSilence");
 			stopRinging();
 		}
 	}

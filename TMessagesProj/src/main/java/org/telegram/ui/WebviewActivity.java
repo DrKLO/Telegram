@@ -88,9 +88,7 @@ public class WebviewActivity extends BaseFragment {
                 if (getParentActivity() == null) {
                     return;
                 }
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(eventName);
-                }
+                FileLog.d(eventName);
                 switch (eventName) {
                     case "share_game":
                         currentMessageObject.messageOwner.with_my_score = false;

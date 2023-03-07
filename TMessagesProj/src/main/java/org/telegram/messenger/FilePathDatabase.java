@@ -69,9 +69,7 @@ public class FilePathDatabase {
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
                 int version = database.executeInt("PRAGMA user_version");
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("current files db version = " + version);
-                }
+                FileLog.d("current files db version = " + version);
                 if (version == 0) {
                     throw new Exception("malformed");
                 }

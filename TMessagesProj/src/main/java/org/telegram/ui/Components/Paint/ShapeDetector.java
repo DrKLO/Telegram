@@ -261,9 +261,7 @@ public class ShapeDetector {
         }
         final int A = a;
         final Shape shape = constructShape(bestShape, initialPoints);
-        if (BuildVars.LOGS_ENABLED) {
-            Log.i("shapedetector", "took " + (System.currentTimeMillis() - start) + "ms to " + (shape != null ? "" : "not ") + "detect a shape" + (shape != null ? " (template#" + A + " shape#" + bestShape + ")" : ""));
-        }
+        Log.i("shapedetector", "took " + (System.currentTimeMillis() - start) + "ms to " + (shape != null ? "" : "not ") + "detect a shape" + (shape != null ? " (template#" + A + " shape#" + bestShape + ")" : ""));
         AndroidUtilities.runOnUIThread(() -> {
             shapeDetected = shape != null;
 

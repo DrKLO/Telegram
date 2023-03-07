@@ -50,9 +50,7 @@ public class HuaweiPushListenerProvider implements PushListenerController.IPushL
 
                 SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
 
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("Failed to get regid");
-                }
+                FileLog.d("Failed to get regid");
                 SharedConfig.pushStringStatus = "__HUAWEI_FAILED__";
                 PushListenerController.sendRegistrationToServer(getPushType(), null);
             }

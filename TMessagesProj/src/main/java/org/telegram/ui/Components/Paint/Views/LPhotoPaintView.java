@@ -1488,9 +1488,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                         .setLandmarkType(FaceDetector.ALL_LANDMARKS)
                         .setTrackingEnabled(false).build();
                 if (!faceDetector.isOperational()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("face detection is not operational");
-                    }
+                    FileLog.e("face detection is not operational");
                     return;
                 }
 

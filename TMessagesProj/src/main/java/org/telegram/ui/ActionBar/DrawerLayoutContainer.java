@@ -579,13 +579,6 @@ public class DrawerLayoutContainer extends FrameLayout {
     @Override
     public void requestLayout() {
         if (!inLayout) {
-            /*
-            if (BuildVars.LOGS_ENABLED) {
-                StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-                for (int a = 0; a < elements.length; a++) {
-                    FileLog.d("on " + elements[a]);
-                }
-            }*/
             super.requestLayout();
         }
     }

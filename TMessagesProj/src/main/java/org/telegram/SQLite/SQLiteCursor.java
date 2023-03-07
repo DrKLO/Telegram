@@ -81,9 +81,7 @@ public class SQLiteCursor {
 			int repeatCount = 6;
 			while (repeatCount-- != 0) {
 				try {
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.d("sqlite busy, waiting...");
-					}
+					FileLog.d("sqlite busy, waiting...");
 					Thread.sleep(500);
 					res = preparedStatement.step();
 					if (res == 0) {

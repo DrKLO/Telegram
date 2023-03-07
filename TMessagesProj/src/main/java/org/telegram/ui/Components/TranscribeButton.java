@@ -593,9 +593,7 @@ public class TranscribeButton {
                     NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.voiceTranscriptionUpdate, messageObject, null, null, (Boolean) true, (Boolean) true);
                 });
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("sending Transcription request, msg_id=" + messageId + " dialog_id=" + dialogId);
-                }
+                FileLog.d("sending Transcription request, msg_id=" + messageId + " dialog_id=" + dialogId);
                 TLRPC.TL_messages_transcribeAudio req = new TLRPC.TL_messages_transcribeAudio();
                 req.peer = peer;
                 req.msg_id = messageId;
@@ -630,9 +628,7 @@ public class TranscribeButton {
                     TranscribeButton.openVideoTranscription(messageObject);
                     messageObject.messageOwner.voiceTranscriptionOpen = true;
                     messageObject.messageOwner.voiceTranscriptionFinal = isFinal;
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("Transcription request sent, received final=" + isFinal + " id=" + finalId + " text=" + finalText);
-                    }
+                    FileLog.d("Transcription request sent, received final=" + isFinal + " id=" + finalId + " text=" + finalText);
 
                     MessagesStorage.getInstance(account).updateMessageVoiceTranscription(dialogId, messageId, finalText, messageObject.messageOwner);
                     if (isFinal) {

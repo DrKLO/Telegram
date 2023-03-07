@@ -76,9 +76,7 @@ public class SQLiteDatabase {
                 commitTransaction();
 				closedb(sqliteHandle);
 			} catch (SQLiteException e) {
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e(e.getMessage(), e);
-				}
+				FileLog.e(e.getMessage(), e);
 			}
 			isOpen = false;
 		}

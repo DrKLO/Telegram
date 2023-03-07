@@ -13,9 +13,7 @@ public class HuaweiPushListenerService extends HmsMessageService {
             String data = remoteMessage.getData();
             long time = remoteMessage.getSentTime();
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("HCM received data: " + data + " from: " + from);
-            }
+            FileLog.d("HCM received data: " + data + " from: " + from);
 
             PushListenerController.processRemoteMessage(PushListenerController.PUSH_TYPE_HUAWEI, data, time);
         });
@@ -24,9 +22,7 @@ public class HuaweiPushListenerService extends HmsMessageService {
     @Override
     public void onNewToken(String token) {
         AndroidUtilities.runOnUIThread(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("Refreshed HCM token: " + token);
-            }
+            FileLog.d("Refreshed HCM token: " + token);
             ApplicationLoader.postInitApplication();
             PushListenerController.sendRegistrationToServer(PushListenerController.PUSH_TYPE_HUAWEI, token);
         });

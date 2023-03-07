@@ -1415,10 +1415,8 @@ public class FilterShaders {
         int[] compileStatus = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
         if (compileStatus[0] == 0) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e(GLES20.glGetShaderInfoLog(shader));
-                FileLog.e("shader code:\n " + shaderCode);
-            }
+            FileLog.e(GLES20.glGetShaderInfoLog(shader));
+            FileLog.e("shader code:\n " + shaderCode);
             GLES20.glDeleteShader(shader);
             shader = 0;
         }

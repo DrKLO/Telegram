@@ -22,9 +22,7 @@ public class AutoDeleteMediaTask {
 
         Utilities.cacheClearQueue.postRunnable(() -> {
             long startTime = System.currentTimeMillis();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("checkKeepMedia start task");
-            }
+            FileLog.d("checkKeepMedia start task");
             boolean hasExceptions = false;
             ArrayList<CacheByChatsController> cacheByChatsControllers = new ArrayList<>();
             for (int account = 0; account < UserConfig.MAX_ACCOUNT_COUNT; account++) {
@@ -195,9 +193,7 @@ public class AutoDeleteMediaTask {
                     .putInt("lastKeepMediaCheckTime", SharedConfig.lastKeepMediaCheckTime)
                     .apply();
 
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("checkKeepMedia task end time " + (System.currentTimeMillis() - startTime) + " auto deleted info: files " + autoDeletedFiles + " size " + AndroidUtilities.formatFileSize(autoDeletedFilesSize) + "   deleted by size limit info: files " + deletedFilesBySize + " size " + AndroidUtilities.formatFileSize(deletedFilesBySizeSize) + " unknownTimeFiles " + skippedFiles);
-            }
+            FileLog.d("checkKeepMedia task end time " + (System.currentTimeMillis() - startTime) + " auto deleted info: files " + autoDeletedFiles + " size " + AndroidUtilities.formatFileSize(autoDeletedFilesSize) + "   deleted by size limit info: files " + deletedFilesBySize + " size " + AndroidUtilities.formatFileSize(deletedFilesBySizeSize) + " unknownTimeFiles " + skippedFiles);
         });
     }
 

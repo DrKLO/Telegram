@@ -114,9 +114,7 @@ public class FileUploadOperation {
         Utilities.stageQueue.postRunnable(() -> {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
             slowNetwork = ApplicationLoader.isConnectionSlow();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("start upload on slow network = " + slowNetwork);
-            }
+            FileLog.d("start upload on slow network = " + slowNetwork);
             for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
                 startUploadRequest();
             }
@@ -130,9 +128,7 @@ public class FileUploadOperation {
         Utilities.stageQueue.postRunnable(() -> {
             if (slowNetwork != slow) {
                 slowNetwork = slow;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("network changed to slow = " + slowNetwork);
-                }
+                FileLog.d("network changed to slow = " + slowNetwork);
                 for (int a = 0; a < requestTokens.size(); a++) {
                     ConnectionsManager.getInstance(currentAccount).cancelRequest(requestTokens.valueAt(a), true);
                 }

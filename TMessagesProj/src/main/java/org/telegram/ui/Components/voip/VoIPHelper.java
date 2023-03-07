@@ -693,8 +693,7 @@ public class VoIPHelper {
 		} else if (low && medium && high) {
 			return Instance.DATA_SAVING_ALWAYS;
 		}
-		if (BuildVars.LOGS_ENABLED)
-			FileLog.w("Invalid call data saving preset configuration: " + low + "/" + medium + "/" + high);
+		FileLog.w("Invalid call data saving preset configuration: " + low + "/" + medium + "/" + high);
 		return Instance.DATA_SAVING_NEVER;
 	}
 

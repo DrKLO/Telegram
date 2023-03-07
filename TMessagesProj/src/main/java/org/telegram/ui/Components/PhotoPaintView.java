@@ -1592,9 +1592,7 @@ public class PhotoPaintView extends FrameLayout implements IPhotoPaintView, Enti
                         .setLandmarkType(FaceDetector.ALL_LANDMARKS)
                         .setTrackingEnabled(false).build();
                 if (!faceDetector.isOperational()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("face detection is not operational");
-                    }
+                    FileLog.e("face detection is not operational");
                     return;
                 }
 

@@ -279,14 +279,10 @@ public class BubbleActivity extends BasePermissionsActivity implements INavigati
                 public void run() {
                     if (lockRunnable == this) {
                         if (AndroidUtilities.needShowPasscode(true)) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("lock app");
-                            }
+                            FileLog.d("lock app");
                             showPasscodeActivity();
                         } else {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("didn't pass lock check");
-                            }
+                            FileLog.d("didn't pass lock check");
                         }
                         lockRunnable = null;
                     }

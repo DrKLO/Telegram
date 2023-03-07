@@ -139,9 +139,7 @@ public class Emoji {
             AndroidUtilities.cancelRunOnUIThread(invalidateUiRunnable);
             AndroidUtilities.runOnUIThread(invalidateUiRunnable);
         } catch (Throwable x) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("Error loading emoji", x);
-            }
+            FileLog.e("Error loading emoji", x);
         }
     }
 

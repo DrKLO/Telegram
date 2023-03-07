@@ -43,9 +43,7 @@ public class ImportingService extends Service implements NotificationCenter.Noti
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.historyImportProgressChanged);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.stickersImportProgressChanged);
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("destroy import service");
-        }
+        FileLog.d("destroy import service");
     }
 
     @Override
@@ -80,9 +78,7 @@ public class ImportingService extends Service implements NotificationCenter.Noti
             stopSelf();
             return Service.START_NOT_STICKY;
         }
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("start import service");
-        }
+        FileLog.d("start import service");
         if (builder == null) {
             NotificationsController.checkOtherNotificationsChannel();
             builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);

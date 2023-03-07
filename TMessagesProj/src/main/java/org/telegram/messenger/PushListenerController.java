@@ -92,22 +92,14 @@ public class PushListenerController {
 
     public static void processRemoteMessage(@PushType int pushType, String data, long time) {
         String tag = pushType == PUSH_TYPE_FIREBASE ? "FCM" : "HCM";
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d(tag + " PRE START PROCESSING");
-        }
+        FileLog.d(tag + " PRE START PROCESSING");
         long receiveTime = SystemClock.elapsedRealtime();
         AndroidUtilities.runOnUIThread(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d(tag + " PRE INIT APP");
-            }
+            FileLog.d(tag + " PRE INIT APP");
             ApplicationLoader.postInitApplication();
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d(tag + " POST INIT APP");
-            }
+            FileLog.d(tag + " POST INIT APP");
             Utilities.stageQueue.postRunnable(() -> {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d(tag + " START PROCESSING");
-                }
+                FileLog.d(tag + " START PROCESSING");
                 int currentAccount = -1;
                 String loc_key = null;
                 String jsonString = null;
@@ -126,9 +118,7 @@ public class PushListenerController {
                     buffer.readBytes(inAuthKeyId, true);
                     if (!Arrays.equals(SharedConfig.pushAuthKeyId, inAuthKeyId)) {
                         onDecryptError();
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d(String.format(Locale.US, tag + " DECRYPT ERROR 2 k1=%s k2=%s, key=%s", Utilities.bytesToHex(SharedConfig.pushAuthKeyId), Utilities.bytesToHex(inAuthKeyId), Utilities.bytesToHex(SharedConfig.pushAuthKey)));
-                        }
+                        FileLog.d(String.format(Locale.US, tag + " DECRYPT ERROR 2 k1=%s k2=%s, key=%s", Utilities.bytesToHex(SharedConfig.pushAuthKeyId), Utilities.bytesToHex(inAuthKeyId), Utilities.bytesToHex(SharedConfig.pushAuthKey)));
                         return;
                     }
 
@@ -141,9 +131,7 @@ public class PushListenerController {
                     byte[] messageKeyFull = Utilities.computeSHA256(SharedConfig.pushAuthKey, 88 + 8, 32, buffer.buffer, 24, buffer.buffer.limit());
                     if (!Utilities.arraysEquals(messageKey, 0, messageKeyFull, 8)) {
                         onDecryptError();
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d(String.format(tag + " DECRYPT ERROR 3, key = %s", Utilities.bytesToHex(SharedConfig.pushAuthKey)));
-                        }
+                        FileLog.d(String.format(tag + " DECRYPT ERROR 3, key = %s", Utilities.bytesToHex(SharedConfig.pushAuthKey)));
                         return;
                     }
 
@@ -199,17 +187,13 @@ public class PushListenerController {
                         }
                     }
                     if (!foundAccount) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d(tag + " ACCOUNT NOT FOUND");
-                        }
+                        FileLog.d(tag + " ACCOUNT NOT FOUND");
                         countDownLatch.countDown();
                         return;
                     }
                     final int accountFinal = currentAccount = account;
                     if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d(tag + " ACCOUNT NOT ACTIVATED");
-                        }
+                        FileLog.d(tag + " ACCOUNT NOT ACTIVATED");
                         countDownLatch.countDown();
                         return;
                     }
@@ -306,9 +290,7 @@ public class PushListenerController {
                         if ("READ_HISTORY".equals(loc_key)) {
                             int max_id = custom.getInt("max_id");
                             final ArrayList<TLRPC.Update> updates = new ArrayList<>();
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d(tag + " received read notification max_id = " + max_id + " for dialogId = " + dialogId);
-                            }
+                            FileLog.d(tag + " received read notification max_id = " + max_id + " for dialogId = " + dialogId);
                             if (channel_id != 0) {
                                 TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
                                 update.channel_id = channel_id;
@@ -340,9 +322,7 @@ public class PushListenerController {
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, false);
 
                             MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialogId, ids, channel_id);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
-                            }
+                            FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                         } else if ("READ_REACTION".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
@@ -358,9 +338,7 @@ public class PushListenerController {
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, true);
 
                             MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
-                            }
+                            FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                         } else if (!TextUtils.isEmpty(loc_key)) {
                             int msg_id;
                             if (custom.has("msg_id")) {
@@ -439,9 +417,7 @@ public class PushListenerController {
                                     channel = true;
                                 }
 
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d(tag + " received message notification " + loc_key + " for dialogId = " + dialogId + " mid = " + msg_id);
-                                }
+                                FileLog.d(tag + " received message notification " + loc_key + " for dialogId = " + dialogId + " mid = " + msg_id);
                                 if (loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_")) {
                                     messageText = getReactedText(loc_key, args);
                                 } else {
@@ -1106,9 +1082,7 @@ public class PushListenerController {
                                         }
 
                                         default: {
-                                            if (BuildVars.LOGS_ENABLED) {
-                                                FileLog.w("unhandled loc_key = " + loc_key);
-                                            }
+                                            FileLog.w("unhandled loc_key = " + loc_key);
                                             break;
                                         }
                                     }
@@ -1182,9 +1156,7 @@ public class PushListenerController {
                     } else {
                         onDecryptError();
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("error in loc_key = " + loc_key + " json " + jsonString);
-                    }
+                    FileLog.e("error in loc_key = " + loc_key + " json " + jsonString);
                     FileLog.e(e);
                 }
             });
@@ -1340,13 +1312,9 @@ public class PushListenerController {
         public void onRequestPushToken() {
             String currentPushString = SharedConfig.pushString;
             if (!TextUtils.isEmpty(currentPushString)) {
-                if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
-                    FileLog.d("FCM regId = " + currentPushString);
-                }
+                FileLog.d("FCM regId = " + currentPushString);
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("FCM Registration not found.");
-                }
+                FileLog.d("FCM Registration not found.");
             }
             Utilities.globalQueue.postRunnable(() -> {
                 try {
@@ -1355,9 +1323,7 @@ public class PushListenerController {
                             .addOnCompleteListener(task -> {
                                 SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
                                 if (!task.isSuccessful()) {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("Failed to get regid");
-                                    }
+                                    FileLog.d("Failed to get regid");
                                     SharedConfig.pushStringStatus = "__FIREBASE_FAILED__";
                                     PushListenerController.sendRegistrationToServer(getPushType(), null);
                                     return;

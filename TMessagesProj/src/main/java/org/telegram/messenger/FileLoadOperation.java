@@ -554,9 +554,7 @@ public class FileLoadOperation {
                 });
                 notifyStreamListeners();
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e(cacheFileFinal + " downloaded duplicate file part " + start + " - " + end);
-                }
+                FileLog.e(cacheFileFinal + " downloaded duplicate file part " + start + " - " + end);
             }
         }
     }
@@ -1019,12 +1017,10 @@ public class FileLoadOperation {
                 requestedBytesCount = downloadedBytes;
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                if (isPreloadVideoOperation) {
-                    FileLog.d("start preloading file to temp = " + cacheFileTemp);
-                } else {
-                    FileLog.d("start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal + " priority" + priority);
-                }
+            if (isPreloadVideoOperation) {
+                FileLog.d("start preloading file to temp = " + cacheFileTemp);
+            } else {
+                FileLog.d("start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal + " priority" + priority);
             }
 
             if (fileNameIv != null) {
@@ -1348,9 +1344,7 @@ public class FileLoadOperation {
                             ungzip = false;
                         } catch (Throwable e) {
                             FileLog.e(e, !AndroidUtilities.isFilNotFoundException(e));
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.e("unable to ungzip temp = " + cacheFileTempFinal + " to final = " + cacheFileFinal);
-                            }
+                            FileLog.e("unable to ungzip temp = " + cacheFileTempFinal + " to final = " + cacheFileFinal);
                         }
                     }
                     if (!ungzip) {
@@ -1388,9 +1382,7 @@ public class FileLoadOperation {
                             }
                         }
                         if (!renameResult) {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.e("unable to rename temp = " + cacheFileTempLocal + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
-                            }
+                            FileLog.e("unable to rename temp = " + cacheFileTempLocal + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
                             renameRetryCount++;
                             if (renameRetryCount < 3) {
                                 state = stateDownloading;
@@ -1417,9 +1409,7 @@ public class FileLoadOperation {
                     }
                 }
                 Utilities.stageQueue.postRunnable(() -> {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime));
-                    }
+                    FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime));
                     if (increment) {
                         if (currentType == ConnectionsManager.FileTypeAudio) {
                             StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_AUDIOS, 1);
@@ -1719,12 +1709,10 @@ public class FileLoadOperation {
 
                                 byte[] sha256 = Utilities.computeSHA256(cdnCheckBytes, 0, availableSize);
                                 if (!Arrays.equals(sha256, hash.hash)) {
-                                    if (BuildVars.LOGS_ENABLED) {
-                                        if (location != null) {
-                                            FileLog.e("invalid cdn hash " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
-                                        } else if (webLocation != null) {
-                                            FileLog.e("invalid cdn hash  " + webLocation + " id = " + fileName);
-                                        }
+                                    if (location != null) {
+                                        FileLog.e("invalid cdn hash " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
+                                    } else if (webLocation != null) {
+                                        FileLog.e("invalid cdn hash  " + webLocation + " id = " + fileName);
                                     }
                                     onFail(false, 0);
                                     cacheFileTemp.delete();
@@ -1817,12 +1805,10 @@ public class FileLoadOperation {
             } else if (error.text.contains("RETRY_LIMIT")) {
                 onFail(false, 2);
             } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    if (location != null) {
-                        FileLog.e(error.text + " " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
-                    } else if (webLocation != null) {
-                        FileLog.e(error.text + " " + webLocation + " id = " + fileName);
-                    }
+                if (location != null) {
+                    FileLog.e(error.text + " " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
+                } else if (webLocation != null) {
+                    FileLog.e(error.text + " " + webLocation + " id = " + fileName);
                 }
                 onFail(false, 0);
             }

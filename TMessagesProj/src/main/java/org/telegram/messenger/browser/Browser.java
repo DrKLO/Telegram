@@ -331,15 +331,8 @@ public class Browser {
                 try {
                     Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.google.com"));
                     List<ResolveInfo> list = context.getPackageManager().queryIntentActivities(browserIntent, 0);
-                    if (list != null && !list.isEmpty()) {
-                        browserPackageNames = new String[list.size()];
-                        for (int a = 0; a < list.size(); a++) {
-                            browserPackageNames[a] = list.get(a).activityInfo.packageName;
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("default browser name = " + browserPackageNames[a]);
-                            }
-                        }
-                    }
+                    //"default browser name = " + browserPackagesNames[i]
+                    FileLog.d(list, 1, "default browser name = ");
                 } catch (Exception ignore) {
 
                 }
@@ -366,11 +359,8 @@ public class Browser {
                             }
                         }
                     }
-                    if (BuildVars.LOGS_ENABLED) {
-                        for (int a = 0; a < allActivities.size(); a++) {
-                            FileLog.d("device has " + allActivities.get(a).activityInfo.packageName + " to open " + uri.toString());
-                        }
-                    }
+                    //device has " + allActivities.get(a).activityInfo.packageName + " to open " + uri.toString()
+                    FileLog.d(allActivities, 1, "device has","to open", uri.toString());
                 } catch (Exception ignore) {
 
                 }
