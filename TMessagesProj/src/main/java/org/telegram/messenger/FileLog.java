@@ -410,7 +410,7 @@ public class FileLog {
     }
 
     public static void d(final List<?> list, int argPosition, String... additionalArgs) {
-        if (!BuildVars.LOGS_ENABLED && !list.isEmpty()) {
+        if (!BuildVars.LOGS_ENABLED || list.isEmpty()) {
             return;
         }
         ensureInitied();
