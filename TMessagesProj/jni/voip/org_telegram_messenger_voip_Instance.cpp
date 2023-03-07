@@ -719,6 +719,7 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
             },
             .platformContext = platformContext,
     };
+    descriptor.version = v;
 
     for (int i = 0, size = env->GetArrayLength(endpoints); i < size; i++) {
         JavaObject endpointObject(env, env->GetObjectArrayElement(endpoints, i));
