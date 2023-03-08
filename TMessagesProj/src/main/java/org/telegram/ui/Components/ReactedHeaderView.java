@@ -5,6 +5,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -40,15 +41,15 @@ public class ReactedHeaderView extends FrameLayout {
 
     private int currentAccount;
     private boolean ignoreLayout;
-    private List<TLRPC.User> seenUsers = new ArrayList<>();
-    private List<TLRPC.User> users = new ArrayList<>();
+    private List<UserSeen> seenUsers = new ArrayList<>();
+    private List<UserSeen> users = new ArrayList<>();
     private long dialogId;
     private MessageObject message;
     private int fixedWidth;
 
     private boolean isLoaded;
 
-    private Consumer<List<TLRPC.User>> seenCallback;
+    private Consumer<List<UserSeen>> seenCallback;
 
     public ReactedHeaderView(@NonNull Context context, int currentAccount, MessageObject message, long dialogId) {
         super(context);
@@ -90,8 +91,21 @@ public class ReactedHeaderView extends FrameLayout {
         setBackground(Theme.getSelectorDrawable(false));
     }
 
-    public void setSeenCallback(Consumer<List<TLRPC.User>> seenCallback) {
+    public void setSeenCallback(Consumer<List<UserSeen>> seenCallback) {
         this.seenCallback = seenCallback;
+    }
+
+    public static class UserSeen {
+        public TLRPC.User user;
+        public int date = 0;
+
+        public UserSeen(TLRPC.User user) {
+            this.user = user;
+        }
+        public UserSeen(TLRPC.User user, int date) {
+            this.user = user;
+            this.date = date;
+        }
     }
 
     @Override
@@ -112,29 +126,43 @@ public class ReactedHeaderView extends FrameLayout {
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                     if (response instanceof TLRPC.Vector) {
                         List<Long> usersToRequest = new ArrayList<>();
+                        List<Integer> dates = new ArrayList<>();
                         TLRPC.Vector v = (TLRPC.Vector) response;
                         for (Object obj : v.objects) {
                             if (obj instanceof Long) {
                                 long l = (long) obj;
-                                if (fromId != l)
+                                if (fromId != l) {
                                     usersToRequest.add(l);
+                                    dates.add(0);
+                                }
+                            } else if (obj instanceof TLRPC.TL_readParticipantDate) {
+                                long userId = ((TLRPC.TL_readParticipantDate) obj).user_id;
+                                int date = ((TLRPC.TL_readParticipantDate) obj).date;
+                                if (fromId != userId) {
+                                    usersToRequest.add(userId);
+                                    dates.add(date);
+                                }
                             }
                         }
                         usersToRequest.add(fromId);
+                        dates.add(0);
 
-                        List<TLRPC.User> usersRes = new ArrayList<>();
+                        List<UserSeen> usersRes = new ArrayList<>();
                         Runnable callback = () -> {
                             seenUsers.addAll(usersRes);
-                            for (TLRPC.User u : usersRes) {
+                            for (UserSeen p : usersRes) {
                                 boolean hasSame = false;
                                 for (int i = 0; i < users.size(); i++) {
-                                    if (users.get(i).id == u.id) {
+                                    if (users.get(i).user.id == p.user.id) {
                                         hasSame = true;
+                                        if (p.date > 0) {
+                                            users.get(i).date = p.date;
+                                        }
                                         break;
                                     }
                                 }
                                 if (!hasSame) {
-                                    users.add(u);
+                                    users.add(p);
                                 }
                             }
                             if (seenCallback != null)
@@ -153,8 +181,10 @@ public class ReactedHeaderView extends FrameLayout {
                                     for (int i = 0; i < users.users.size(); i++) {
                                         TLRPC.User user = users.users.get(i);
                                         MessagesController.getInstance(currentAccount).putUser(user, false);
-                                        if (!user.self && usersToRequest.contains(user.id))
-                                            usersRes.add(user);
+                                        int index = usersToRequest.indexOf(user.id);
+                                        if (!user.self && index >= 0) {
+                                            usersRes.add(new UserSeen(user, dates.get(index)));
+                                        }
                                     }
                                 }
                                 callback.run();
@@ -168,8 +198,10 @@ public class ReactedHeaderView extends FrameLayout {
                                     for (int i = 0; i < chatFull.users.size(); i++) {
                                         TLRPC.User user = chatFull.users.get(i);
                                         MessagesController.getInstance(currentAccount).putUser(user, false);
-                                        if (!user.self && usersToRequest.contains(user.id))
-                                            usersRes.add(user);
+                                        int index = usersToRequest.indexOf(user.id);
+                                        if (!user.self && index >= 0) {
+                                            usersRes.add(new UserSeen(user, dates.get(index)));
+                                        }
                                     }
                                 }
                                 callback.run();
@@ -234,13 +266,13 @@ public class ReactedHeaderView extends FrameLayout {
                         if (message.messageOwner.from_id != null && u.id != message.messageOwner.from_id.user_id) {
                             boolean hasSame = false;
                             for (int i = 0; i < users.size(); i++) {
-                                if (users.get(i).id == u.id) {
+                                if (users.get(i).user.id == u.id) {
                                     hasSame = true;
                                     break;
                                 }
                             }
                             if (!hasSame) {
-                                users.add(u);
+                                users.add(new UserSeen(u, 0));
                             }
                         }
                     }
@@ -251,7 +283,7 @@ public class ReactedHeaderView extends FrameLayout {
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
 
-    public List<TLRPC.User> getSeenUsers() {
+    public List<UserSeen> getSeenUsers() {
         return seenUsers;
     }
 
@@ -259,7 +291,7 @@ public class ReactedHeaderView extends FrameLayout {
         setEnabled(users.size() > 0);
         for (int i = 0; i < 3; i++) {
             if (i < users.size()) {
-                avatarsImageView.setObject(i, currentAccount, users.get(i));
+                avatarsImageView.setObject(i, currentAccount, users.get(i).user);
             } else {
                 avatarsImageView.setObject(i, currentAccount, null);
             }

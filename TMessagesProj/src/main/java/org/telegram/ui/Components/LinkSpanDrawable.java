@@ -63,7 +63,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
     private final float selectionAlpha = 0.2f;
     private final float rippleAlpha = 0.8f;
 
-    private final boolean isLite = !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
+    private final boolean isLite = !LiteMode.isEnabled(LiteMode.FLAGS_CHAT);
 
     public LinkSpanDrawable(S span, Theme.ResourcesProvider resourcesProvider, float touchX, float touchY) {
         this(span, resourcesProvider, touchX, touchY, true);

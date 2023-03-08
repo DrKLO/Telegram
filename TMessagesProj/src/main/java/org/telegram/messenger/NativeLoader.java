@@ -210,5 +210,9 @@ public class NativeLoader {
     }
 
     private static native void init(String path, boolean enable);
+
+    public static boolean loaded() {
+        return nativeLoaded;
+    }
     //public static native void crash();
 }

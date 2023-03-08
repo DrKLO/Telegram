@@ -139,6 +139,7 @@ public class DrawerActionCell extends FrameLayout {
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
         info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
         info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
         info.setText(textView.getText());

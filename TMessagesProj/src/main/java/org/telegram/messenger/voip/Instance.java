@@ -1,5 +1,7 @@
 package org.telegram.messenger.voip;
 
+import com.google.android.exoplayer2.util.Util;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.ApplicationLoader;
@@ -203,6 +205,7 @@ public final class Instance {
         public final String username;
         public final String password;
         public final boolean tcp;
+        public int reflectorId;
 
         public Endpoint(boolean isRtc, long id, String ipv4, String ipv6, int port, int type, byte[] peerTag, boolean turn, boolean stun, String username, String password, boolean tcp) {
             this.isRtc = isRtc;
@@ -214,8 +217,16 @@ public final class Instance {
             this.peerTag = peerTag;
             this.turn = turn;
             this.stun = stun;
-            this.username = username;
-            this.password = password;
+            if (isRtc) {
+                this.username = username;
+                this.password = password;
+            } else if (peerTag != null) {
+                this.username = "reflector";
+                this.password = Util.toHexString(peerTag);
+            } else {
+                this.username = null;
+                this.password = null;
+            }
             this.tcp = tcp;
         }
 

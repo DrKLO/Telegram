@@ -43,6 +43,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.LanguageCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -84,10 +85,10 @@ public class DataSettingsActivity extends BaseFragment {
     private int enableAllStreamRow;
     private int enableMkvRow;
     private int enableAllStreamInfoRow;
-    private int autoplayHeaderRow;
-    private int autoplayGifsRow;
-    private int autoplayVideoRow;
-    private int autoplaySectionRow;
+    private int autoplayHeaderRow = -1;
+    private int autoplayGifsRow = -1;
+    private int autoplayVideoRow = -1;
+    private int autoplaySectionRow = -1;
     private int callsSectionRow;
     private int useLessDataForCallsRow;
     private int quickRepliesRow;
@@ -142,10 +143,10 @@ public class DataSettingsActivity extends BaseFragment {
         saveToGalleryChannelsRow = rowCount++;
         saveToGalleryDividerRow = rowCount++;
 
-        autoplayHeaderRow = rowCount++;
-        autoplayGifsRow = rowCount++;
-        autoplayVideoRow = rowCount++;
-        autoplaySectionRow = rowCount++;
+//        autoplayHeaderRow = rowCount++;
+//        autoplayGifsRow = rowCount++;
+//        autoplayVideoRow = rowCount++;
+//        autoplaySectionRow = rowCount++;
         streamSectionRow = rowCount++;
         enableStreamRow = rowCount++;
         if (BuildVars.DEBUG_VERSION) {
@@ -381,7 +382,7 @@ public class DataSettingsActivity extends BaseFragment {
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (position == storageUsageRow) {
                 presentFragment(new CacheControlActivity());
@@ -455,11 +456,11 @@ public class DataSettingsActivity extends BaseFragment {
 
                 for (int a = 0, N = storageDirs.size(); a < N; a++) {
                     String storageDir = storageDirs.get(a).getAbsolutePath();
-                    RadioColorCell cell = new RadioColorCell(context);
+                    LanguageCell cell = new LanguageCell(context);
                     cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
                     cell.setTag(a);
-                    cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
-                    cell.setTextAndValue(storageDir, storageDir.startsWith(dir));
+                    cell.setValue(storageDir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard), storageDir);
+                    cell.setLanguageSelected(storageDir.startsWith(dir), false);
                     linearLayout.addView(cell);
                     cell.setOnClickListener(v -> {
                         SharedConfig.storageCacheDir = storageDir;
@@ -514,7 +515,7 @@ public class DataSettingsActivity extends BaseFragment {
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             }
         });

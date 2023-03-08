@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 
 import java.util.Random;
 
@@ -60,6 +61,11 @@ public class LineBlobDrawable {
     }
 
     public void draw(float left, float top, float right, float bottom, Canvas canvas, Paint paint, float  pinnedTop, float progressToPinned) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+            canvas.drawRect(left, top, right, bottom, paint);
+            return;
+        }
+
         path.reset();
 
         path.moveTo(right, bottom);

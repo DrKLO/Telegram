@@ -1770,6 +1770,7 @@ int32_t ConnectionsManager::sendRequestInternal(TLObject *object, onCompleteFunc
     request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
     auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
     if (cancelledIterator != tokensToBeCancelled.end()) {
+        if (LOGS_ENABLED) DEBUG_D("(3) request is cancelled before sending, token %d", request->requestToken);
         tokensToBeCancelled.erase(cancelledIterator);
         delete request;
         return request->requestToken;
@@ -1801,6 +1802,7 @@ int32_t ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onCompl
         request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
         auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
         if (cancelledIterator != tokensToBeCancelled.end()) {
+            if (LOGS_ENABLED) DEBUG_D("(1) request is cancelled before sending, token %d", requestToken);
             tokensToBeCancelled.erase(cancelledIterator);
             delete request;
         }
@@ -1847,6 +1849,7 @@ void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete
         if (LOGS_ENABLED) DEBUG_D("send request wrapped %p - %s", request->rpcRequest.get(), typeid(*(request->rpcRequest.get())).name());
         auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
         if (cancelledIterator != tokensToBeCancelled.end()) {
+            if (LOGS_ENABLED) DEBUG_D("(2) request is cancelled before sending, token %d", requestToken);
             tokensToBeCancelled.erase(cancelledIterator);
             delete request;
             return;
@@ -1981,6 +1984,7 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
     }
 
     if (token != 0 && connectionState == ConnectionStateWaitingForNetwork) {
+        if (LOGS_ENABLED) DEBUG_D("request is tried to be cancelled, but it does not even exist, token %d", token);
         tokensToBeCancelled.insert(token);
     }
 

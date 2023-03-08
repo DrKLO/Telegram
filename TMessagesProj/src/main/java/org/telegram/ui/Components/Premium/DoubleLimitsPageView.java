@@ -44,7 +44,9 @@ public class DoubleLimitsPageView extends FrameLayout implements PagerHeaderView
     public void setOffset(float translationX) {
         float progress = Math.abs(translationX / getMeasuredWidth());
         if (progress == 1f) {
-            recyclerListView.scrollToPosition(0);
+            if (recyclerListView.findViewHolderForAdapterPosition(0) == null || recyclerListView.findViewHolderForAdapterPosition(0).itemView.getTop() != recyclerListView.getPaddingTop()) {
+                recyclerListView.scrollToPosition(0);
+            }
         }
 
     }

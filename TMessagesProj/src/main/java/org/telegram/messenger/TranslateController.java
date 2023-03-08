@@ -620,7 +620,7 @@ public class TranslateController extends BaseController {
 
         pendingLanguageChecks.add(hash);
 
-        Utilities.getStageQueue().postRunnable(() -> {
+        Utilities.stageQueue.postRunnable(() -> {
             LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
                 String detectedLanguage = lng;
                 if (detectedLanguage == null) {

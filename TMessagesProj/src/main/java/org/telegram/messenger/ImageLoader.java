@@ -30,6 +30,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import androidx.annotation.RequiresApi;
 import androidx.exifinterface.media.ExifInterface;
 
 import org.json.JSONArray;
@@ -1420,7 +1421,7 @@ public class ImageLoader {
                             }
                         }
                         if (image == null) {
-                            if (useNativeWebpLoader) {
+                            if (useNativeWebpLoader && secureDocumentKey == null) {
                                 RandomAccessFile file = new RandomAccessFile(cacheFileFinal, "r");
                                 ByteBuffer buffer = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, cacheFileFinal.length());
 
@@ -1432,8 +1433,11 @@ public class ImageLoader {
                                 Utilities.loadWebpImage(image, buffer, buffer.limit(), null, !opts.inPurgeable);
                                 file.close();
                             } else {
+                                String DEBUG_TAG = "secured_document_image";
                                 try {
-
+                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
+                                        FileLog.d( DEBUG_TAG + " try get image from secured document " + secureDocumentKey + " encryption path " + cacheImage.encryptionKeyPath);
+                                    }
                                     RandomAccessFile f = new RandomAccessFile(cacheFileFinal, "r");
                                     int len = (int) f.length();
                                     int offset = 0;
@@ -1457,16 +1461,27 @@ public class ImageLoader {
                                     } else if (inEncryptedFile) {
                                         EncryptedFileInputStream.decryptBytesWithKeyFile(data, 0, len, cacheImage.encryptionKeyPath);
                                     }
+                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
+                                        FileLog.d(DEBUG_TAG + " check error " + error);
+                                    }
                                     if (!error) {
                                         image = BitmapFactory.decodeByteArray(data, offset, len, opts);
+                                        if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
+                                            FileLog.d( DEBUG_TAG + " image " + image);
+                                        }
                                     }
                                 } catch (Throwable e) {
-
+                                    FileLog.e(e);
                                 }
 
                                 if (image == null) {
                                     FileInputStream is;
-                                    if (inEncryptedFile) {
+                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
+                                        FileLog.d(DEBUG_TAG + " try get image from stream ");
+                                    }
+                                    if (secureDocumentKey != null) {
+                                        is = new EncryptedFileInputStream(cacheFileFinal, secureDocumentKey);
+                                    } else if (inEncryptedFile) {
                                         is = new EncryptedFileInputStream(cacheFileFinal, cacheImage.encryptionKeyPath);
                                     } else {
                                         is = new FileInputStream(cacheFileFinal);
@@ -1489,10 +1504,23 @@ public class ImageLoader {
                                         } catch (Throwable ignore) {
 
                                         }
-                                        is.getChannel().position(0);
+                                        if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
+                                            is.close();
+                                            if (secureDocumentKey != null) {
+                                                is = new EncryptedFileInputStream(cacheFileFinal, secureDocumentKey);
+                                            } else if (inEncryptedFile) {
+                                                is = new EncryptedFileInputStream(cacheFileFinal, cacheImage.encryptionKeyPath);
+                                            }
+                                        } else {
+                                            is.getChannel().position(0);
+                                        }
                                     }
                                     image = BitmapFactory.decodeStream(is, null, opts);
                                     is.close();
+
+                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
+                                        FileLog.d(DEBUG_TAG + " image2 " + image);
+                                    }
                                 }
                             }
                         }
@@ -2229,7 +2257,7 @@ public class ImageLoader {
                     File newPath;
                     try {
                         if (ApplicationLoader.applicationContext.getExternalMediaDirs().length > 0) {
-                            publicMediaDir = ApplicationLoader.applicationContext.getExternalMediaDirs()[0];
+                            publicMediaDir = getPublicStorageDir();
                             publicMediaDir = new File(publicMediaDir, "Telegram");
                             publicMediaDir.mkdirs();
                         }
@@ -2366,6 +2394,20 @@ public class ImageLoader {
         }
 
         return mediaDirs;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private File getPublicStorageDir() {
+        File publicMediaDir = ApplicationLoader.applicationContext.getExternalMediaDirs()[0];
+        if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+            for (int i = 0; i < ApplicationLoader.applicationContext.getExternalMediaDirs().length; i++) {
+                File f = ApplicationLoader.applicationContext.getExternalMediaDirs()[i];
+                if (f != null && f.getPath().startsWith(SharedConfig.storageCacheDir)) {
+                    publicMediaDir = ApplicationLoader.applicationContext.getExternalMediaDirs()[i];
+                }
+            }
+        }
+        return publicMediaDir;
     }
 
     private boolean canMoveFiles(File from, File to, int type) {
@@ -2571,7 +2613,7 @@ public class ImageLoader {
                     }
                 }
             }
-        }, imageReceiver.getFileLoadingPriority() == FileLoader.PRIORITY_LOW ? 0 : 1);
+        });
     }
 
     public BitmapDrawable getImageFromMemory(TLObject fileLocation, String httpUrl, String filter) {

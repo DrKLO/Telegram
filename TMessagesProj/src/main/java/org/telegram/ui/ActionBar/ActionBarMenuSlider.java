@@ -11,29 +11,47 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Pair;
+import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.FloatSeekBarAccessibilityDelegate;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
+import org.telegram.ui.Components.SeekBarView;
+import org.telegram.ui.Components.SpeedIconDrawable;
 
 public class ActionBarMenuSlider extends FrameLayout {
 
@@ -42,6 +60,8 @@ public class ActionBarMenuSlider extends FrameLayout {
     private float value = .5f;
     private Utilities.Callback2<Float, Boolean> onValueChange;
 
+    private AnimatedTextView.AnimatedTextDrawable textDrawable;
+
     private AnimatedFloat blurBitmapAlpha = new AnimatedFloat(1, this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
     private Bitmap blurBitmap;
     private BitmapShader blurBitmapShader;
@@ -49,17 +69,19 @@ public class ActionBarMenuSlider extends FrameLayout {
 
     private int[] location = new int[2];
 
-    private float roundRadiusDp = 6f;
-    private boolean drawShadow;
+    private float roundRadiusDp = 0;
+    private boolean drawShadow, drawBlur;
 
-    private Theme.ResourcesProvider resourcesProvider;
+    protected Theme.ResourcesProvider resourcesProvider;
 
     private Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint blurPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint brightenBlurPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint darkenBlurPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint pseudoBlurPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private boolean backgroundDark;
 
     private boolean blurIsInChat = true;
 
@@ -72,22 +94,47 @@ public class ActionBarMenuSlider extends FrameLayout {
         this(context, null);
     }
 
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return false;
+    }
+
     public ActionBarMenuSlider(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
         setWillNotDraw(false);
 
+        textDrawable = new AnimatedTextView.AnimatedTextDrawable(false, true, true) {
+            @Override
+            public void invalidateSelf() {
+                ActionBarMenuSlider.this.invalidate();
+            }
+        };
+        textDrawable.setCallback(this);
+        textDrawable.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textDrawable.setAnimationProperties(.3f, 0, 165, CubicBezierInterpolator.EASE_OUT_QUINT);
+        textDrawable.setTextSize(AndroidUtilities.dpf2(14));
+        textDrawable.getPaint().setStyle(Paint.Style.FILL_AND_STROKE);
+        textDrawable.getPaint().setStrokeWidth(AndroidUtilities.dpf2(.3f));
+        textDrawable.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+
         shadowPaint.setColor(Color.TRANSPARENT);
         shadowPaint.setShadowLayer(dpf2(1.33f), 0, dpf2(.33f), 0x3f000000);
-        setDrawShadow(true);
 
         ColorMatrix colorMatrix = new ColorMatrix();
         AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, -0.4f);
         AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, .1f);
         pseudoBlurPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
 
+        backgroundPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+        backgroundDark = AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= 0.721f;
+        textDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
         darkenBlurPaint.setColor(Theme.multAlpha(0xff000000, .025f));
         brightenBlurPaint.setColor(Theme.multAlpha(0xffffffff, .35f));
+    }
+
+    public float getValue() {
+        return value;
     }
 
     private ValueAnimator valueAnimator;
@@ -98,11 +145,13 @@ public class ActionBarMenuSlider extends FrameLayout {
             valueAnimator = null;
         }
 
+        value = MathUtils.clamp(value, 0, 1);
+
         if (!animated) {
-            this.value = MathUtils.clamp(value, 0, 1);
+            this.value = value;
             invalidate();
         } else {
-            final float newValue = MathUtils.clamp(value, 0, 1);
+            final float newValue = value;
             valueAnimator = ValueAnimator.ofFloat(this.value, newValue);
             valueAnimator.addUpdateListener(anm -> {
                 ActionBarMenuSlider.this.value = (float) anm.getAnimatedValue();
@@ -120,6 +169,31 @@ public class ActionBarMenuSlider extends FrameLayout {
             valueAnimator.setDuration(220);
             valueAnimator.start();
         }
+
+        String stringValue = getStringValue(value);
+        if (stringValue != null && !TextUtils.equals(textDrawable.getText(), stringValue)) {
+            textDrawable.cancelAnimation();
+            textDrawable.setText(stringValue, true);
+        }
+        fillPaint.setColor(getColorValue(value));
+    }
+
+    public void setBackgroundColor(int color) {
+        backgroundPaint.setColor(color);
+        backgroundDark = AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= 0.721f;
+        textDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
+    }
+
+    public void setTextColor(int color) {
+        textDrawable.setTextColor(color);
+    }
+
+    protected String getStringValue(float value) {
+        return null;
+    }
+
+    protected int getColorValue(float value) {
+        return Color.WHITE;
     }
 
     private void updateValue(float value, boolean isFinal) {
@@ -137,6 +211,11 @@ public class ActionBarMenuSlider extends FrameLayout {
         drawShadow = draw;
         final int pad = drawShadow ? dp(8) : 0;
         setPadding(pad, pad, pad, pad);
+        invalidate();
+    }
+
+    public void setDrawBlur(boolean draw) {
+        drawBlur = draw;
         invalidate();
     }
 
@@ -169,10 +248,10 @@ public class ActionBarMenuSlider extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec) + getPaddingRight() + getPaddingLeft(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(44) + getPaddingTop() + getPaddingBottom(), MeasureSpec.EXACTLY));
+        super.onMeasure(drawShadow ? MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec) + getPaddingRight() + getPaddingLeft(), MeasureSpec.EXACTLY) : widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(44) + getPaddingTop() + getPaddingBottom(), MeasureSpec.EXACTLY));
 
         final boolean canDoBlur = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
-        if (blurBitmap == null && !preparingBlur && canDoBlur) {
+        if (drawBlur && blurBitmap == null && !preparingBlur && canDoBlur) {
             this.prepareBlur.run();
 //            removeCallbacks(this.prepareBlur);
 //            post(this.prepareBlur);
@@ -220,40 +299,65 @@ public class ActionBarMenuSlider extends FrameLayout {
             canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), shadowPaint);
         }
 
-        final float blurAlpha = blurBitmapAlpha.set(blurBitmap != null ? 1 : 0);
-        if (blurAlpha < 1f) {
-            if (pseudoBlurMatrix == null || pseudoBlurWidth != (int) AndroidUtilities.rectTmp.width()) {
-                if (pseudoBlurMatrix == null) {
-                    pseudoBlurMatrix = new Matrix();
-                } else {
-                    pseudoBlurMatrix.reset();
+        if (drawBlur) {
+            final float blurAlpha = blurBitmapAlpha.set(blurBitmap != null ? 1 : 0);
+            if (blurAlpha < 1f) {
+                if (pseudoBlurMatrix == null || pseudoBlurWidth != (int) AndroidUtilities.rectTmp.width()) {
+                    if (pseudoBlurMatrix == null) {
+                        pseudoBlurMatrix = new Matrix();
+                    } else {
+                        pseudoBlurMatrix.reset();
+                    }
+                    pseudoBlurMatrix.postScale(pseudoBlurWidth = (int) AndroidUtilities.rectTmp.width(), 1);
+                    pseudoBlurGradient.setLocalMatrix(pseudoBlurMatrix);
                 }
-                pseudoBlurMatrix.postScale(pseudoBlurWidth = (int) AndroidUtilities.rectTmp.width(), 1);
-                pseudoBlurGradient.setLocalMatrix(pseudoBlurMatrix);
+
+                pseudoBlurPaint.setAlpha((int) (0xFF * (1f - blurAlpha)));
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), pseudoBlurPaint);
             }
 
-            pseudoBlurPaint.setAlpha((int) (0xFF * (1f - blurAlpha)));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), pseudoBlurPaint);
+            if (blurBitmap != null && value < 1 && blurAlpha > 0) {
+                blurPaint.setAlpha((int) (0xFF * blurAlpha));
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), blurPaint);
+            }
+
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), brightenBlurPaint);
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), darkenBlurPaint);
+
+            fillPaint.setColor(Color.WHITE);
+        } else {
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), backgroundPaint);
         }
 
-        if (blurBitmap != null && value < 1 && blurAlpha > 0) {
-            blurPaint.setAlpha((int) (0xFF * blurAlpha));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), blurPaint);
+        if (!backgroundDark) {
+            drawText(canvas, false);
         }
 
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), brightenBlurPaint);
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), darkenBlurPaint);
-
-//        fillPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
-        fillPaint.setColor(Color.WHITE);
         if (value < 1) {
             canvas.save();
             canvas.clipRect(getPaddingLeft(), getPaddingTop(), getPaddingLeft() + (getWidth() - getPaddingLeft() - getPaddingRight()) * value, getHeight() - getPaddingBottom());
         }
         canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(roundRadiusDp), dp(roundRadiusDp), fillPaint);
+
+        if (!backgroundDark) {
+            drawText(canvas, true);
+        }
+
         if (value < 1) {
             canvas.restore();
         }
+
+        if (backgroundDark) {
+            drawText(canvas, false);
+        }
+    }
+
+    private ColorFilter whiteColorFilter;
+
+    private void drawText(Canvas canvas, boolean white) {
+        textDrawable.setColorFilter(white ? (whiteColorFilter == null ? whiteColorFilter = new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN) : whiteColorFilter) : null);
+        textDrawable.setBounds(getPaddingLeft() + dp(20), getMeasuredHeight() / 2, getMeasuredWidth() - getPaddingRight() - dp(20), getMeasuredHeight() / 2);
+        textDrawable.draw(canvas);
     }
 
     private Pair<Integer, Integer> getBitmapGradientColors(Bitmap bitmap) {
@@ -331,13 +435,11 @@ public class ActionBarMenuSlider extends FrameLayout {
             fromX = x;
             fromValue = value;
             tapStart = System.currentTimeMillis();
-            return true;
         } else if (action == MotionEvent.ACTION_MOVE || action == MotionEvent.ACTION_UP) {
             if (action == MotionEvent.ACTION_UP) {
                 dragging = false;
                 if (System.currentTimeMillis() - tapStart < ViewConfiguration.getTapTimeout()) {
                     final float value = (x - getPaddingLeft()) / (getWidth() - getPaddingLeft() - getPaddingRight());
-//                    setValue(value, true);
                     if (onValueChange != null) {
                         onValueChange.run(value, true);
                     }
@@ -346,9 +448,110 @@ public class ActionBarMenuSlider extends FrameLayout {
             }
             final float value = fromValue + (x - fromX) / Math.max(1, getWidth() - getPaddingLeft() - getPaddingRight());
             updateValue(value, !dragging);
-            return true;
         }
 
-        return super.onTouchEvent(event);
+        return true;
+    }
+
+    public static class SpeedSlider extends ActionBarMenuSlider {
+
+        private final SeekBarAccessibilityDelegate seekBarAccessibilityDelegate;
+
+        public static final float MIN_SPEED = 0.2f;
+        public static final float MAX_SPEED = 2.5f;
+
+        public SpeedSlider(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+
+            setFocusable(true);
+            setFocusableInTouchMode(true);
+
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            setAccessibilityDelegate(seekBarAccessibilityDelegate = new FloatSeekBarAccessibilityDelegate(false) {
+                @Override
+                public float getProgress() {
+                    return getSpeed();
+                }
+
+                @Override
+                public void setProgress(float progress) {
+                    setSpeed(progress, true);
+                }
+
+                @Override
+                protected float getMinValue() {
+                    return MIN_SPEED;
+                }
+
+                @Override
+                protected float getMaxValue() {
+                    return MAX_SPEED;
+                }
+
+                @Override
+                protected float getDelta() {
+                    return 0.2f;
+                }
+
+                @Override
+                public CharSequence getContentDescription(View host) {
+                    return SpeedIconDrawable.formatNumber(getSpeed()) + "x  " + LocaleController.getString("AccDescrSpeedSlider", R.string.AccDescrSpeedSlider);
+                }
+            });
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(this, info);
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, Bundle arguments) {
+            return super.performAccessibilityAction(action, arguments) || seekBarAccessibilityDelegate.performAccessibilityActionInternal(this, action, arguments);
+        }
+
+        public float getSpeed(float value) {
+            return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * value;
+        }
+
+        public float getSpeed() {
+            return getSpeed(getValue());
+        }
+
+        public void setSpeed(float speed, boolean animated) {
+            setValue((speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED), animated);
+        }
+
+        @Override
+        protected String getStringValue(float value) {
+            return SpeedIconDrawable.formatNumber(MIN_SPEED + value * (MAX_SPEED - MIN_SPEED)) + "x";
+        }
+
+        @Override
+        protected int getColorValue(float value) {
+            final float speed = MIN_SPEED + value * (MAX_SPEED - MIN_SPEED);
+//            if (speed <= 0.3f) {
+//                return Theme.getColor(Theme.key_color_red, resourcesProvider);
+//            } else if (speed <= 0.5f) {
+//                return ColorUtils.blendARGB(
+//                        Theme.getColor(Theme.key_color_red, resourcesProvider),
+//                        Theme.getColor(Theme.key_color_yellow, resourcesProvider),
+//                        (speed - 0.3f) / (0.5f - 0.3f)
+//                );
+//            } else if (speed <= 1f) {
+//                return ColorUtils.blendARGB(
+//                        Theme.getColor(Theme.key_color_yellow, resourcesProvider),
+//                        Theme.getColor(Theme.key_color_lightblue, resourcesProvider),
+//                        MathUtils.clamp((speed - 0.5f) / (1f - 0.5f), 0, 1)
+//                );
+//            } else {
+                return ColorUtils.blendARGB(
+                        Theme.getColor(Theme.key_color_lightblue, resourcesProvider),
+                        Theme.getColor(Theme.key_color_blue, resourcesProvider),
+                        MathUtils.clamp((speed - 1f) / (2f - 1f), 0, 1)
+                );
+//            }
+        }
     }
 }

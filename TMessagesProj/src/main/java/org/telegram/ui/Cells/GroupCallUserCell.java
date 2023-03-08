@@ -433,6 +433,9 @@ public class GroupCallUserCell extends FrameLayout {
         if (animatorSet != null) {
             animatorSet.cancel();
         }
+        if (rightDrawable != null) {
+            rightDrawable.detach();
+        }
     }
 
     public boolean isSelfUser() {
@@ -538,6 +541,9 @@ public class GroupCallUserCell extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         applyParticipantChanges(false);
+        if (rightDrawable != null) {
+            rightDrawable.attach();
+        }
     }
 
     public TLRPC.TL_groupCallParticipant getParticipant() {

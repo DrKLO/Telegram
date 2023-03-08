@@ -739,7 +739,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             popupLayout.addView(sendMsgCell);
 
             ActionBarMenuSubItem dismissCell = new ActionBarMenuSubItem(context, false, true);
-            dismissCell.setColors(Theme.getColor(Theme.key_dialogTextRed2, resourcesProvider), Theme.getColor(Theme.key_dialogRedIcon, resourcesProvider));
+            dismissCell.setColors(Theme.getColor(Theme.key_dialogTextRed, resourcesProvider), Theme.getColor(Theme.key_dialogRedIcon, resourcesProvider));
             dismissCell.setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider));
             dismissCell.setTextAndIcon(LocaleController.getString("DismissRequest", R.string.DismissRequest), R.drawable.msg_remove);
             dismissCell.setOnClickListener((v) -> {

@@ -11,7 +11,6 @@ public class FileLoaderPriorityQueue {
     String name;
 
     ArrayList<FileLoadOperation> allOperations = new ArrayList<>();
-    ArrayList<FileLoadOperation> activeOperations = new ArrayList<>();
 
     private int PRIORITY_VALUE_MAX = (1 << 20);
     private int PRIORITY_VALUE_NORMAL = (1 << 16);

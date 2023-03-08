@@ -109,6 +109,11 @@ public class CodeFieldContainer extends LinearLayout {
 
     public void setNumbersCount(int length, int currentType) {
         if (codeField == null || codeField.length != length) {
+            if (codeField != null) {
+                for (CodeNumberField f : codeField) {
+                    removeView(f);
+                }
+            }
             codeField = new CodeNumberField[length];
             for (int a = 0; a < length; a++) {
                 final int num = a;

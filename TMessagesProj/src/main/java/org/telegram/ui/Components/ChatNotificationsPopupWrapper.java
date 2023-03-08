@@ -171,7 +171,7 @@ public class ChatNotificationsPopupWrapper {
         int color;
         if (muted) {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString("UnmuteNotifications", R.string.UnmuteNotifications), R.drawable.msg_unmute);
-            color = Theme.getColor(Theme.key_wallet_greenText);
+            color = Theme.getColor(Theme.key_windowBackgroundWhiteGreenText2);
             soundToggle.setVisibility(View.GONE);
         } else {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString("MuteNotifications", R.string.MuteNotifications), R.drawable.msg_mute);

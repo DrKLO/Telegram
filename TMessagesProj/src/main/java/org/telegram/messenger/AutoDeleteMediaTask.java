@@ -138,9 +138,6 @@ public class AutoDeleteMediaTask {
                 if (totalSize > maxCacheSize) {
                     ArrayList<FileInfoInternal> allFiles = new ArrayList<>();
                     for (int a = 0; a < paths.size(); a++) {
-                        if (paths.keyAt(a) == FileLoader.MEDIA_DIR_CACHE) {
-                            continue;
-                        }
                         File dir = paths.valueAt(a);
                         fillFilesRecursive(dir, allFiles);
                     }

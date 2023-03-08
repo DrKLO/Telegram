@@ -85,6 +85,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSlider;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -129,6 +130,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private SeekBarView seekBarView;
     private SimpleTextView timeTextView;
     private ActionBarMenuItem playbackSpeedButton;
+    private SpeedIconDrawable speedIcon;
+    private ActionBarMenuSlider.SpeedSlider speedSlider;
+    private boolean slidingSpeed;
     private ActionBarMenuSubItem[] speedItems = new ActionBarMenuSubItem[6];
     private TextView durationTextView;
     private ActionBarMenuItem repeatButton;
@@ -183,15 +187,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private boolean wasLight;
 
     private final static float[] speeds = new float[] {
-            .5f, 1f, 1.2f, 1.5f, 1.65f, 1.8f
-    };
-    private final static int[] speedIcons = new int[] {
-            R.drawable.voice_mini_0_5,
-            R.drawable.voice_mini_1_0,
-            R.drawable.voice_mini_1_2,
-            R.drawable.voice_mini_1_5,
-            R.drawable.voice_mini_1_7,
-            R.drawable.voice_mini_2_0
+            .5f, 1f, 1.2f, 1.5f, 1.7f, 2f
     };
 
     private final Runnable forwardSeek = new Runnable() {
@@ -439,7 +435,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 containerView.invalidate();
             }
         };
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_player_actionBar));
+        actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setItemsColor(getThemedColor(Theme.key_player_actionBarTitle), false);
         actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_player_actionBarSelector), false);
@@ -694,7 +690,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             MediaController.getInstance().setPlaybackSpeed(true, speeds[id]);
             updatePlaybackButton(true);
         });
-        final float[] toggleSpeeds = new float[] { 1.0F, 1.5F, 1.8F };
+        playbackSpeedButton.setIcon(speedIcon = new SpeedIconDrawable(true));
+        final float[] toggleSpeeds = new float[] { 1.0F, 1.5F, 2F };
+        speedSlider = new ActionBarMenuSlider.SpeedSlider(getContext(), resourcesProvider);
+        speedSlider.setRoundRadiusDp(6);
+        speedSlider.setDrawShadow(true);
+        speedSlider.setOnValueChange((value, isFinal) -> {
+            slidingSpeed = !isFinal;
+            MediaController.getInstance().setPlaybackSpeed(true, speedSlider.getSpeed(value));
+        });
         speedItems[0] = playbackSpeedButton.addSubItem(0, R.drawable.msg_speed_slow, LocaleController.getString("SpeedSlow", R.string.SpeedSlow));
         speedItems[1] = playbackSpeedButton.addSubItem(1, R.drawable.msg_speed_normal, LocaleController.getString("SpeedNormal", R.string.SpeedNormal));
         speedItems[2] = playbackSpeedButton.addSubItem(2, R.drawable.msg_speed_medium, LocaleController.getString("SpeedMedium", R.string.SpeedMedium));
@@ -705,6 +709,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             playbackSpeedButton.setPadding(0, 1, 0, 0);
         }
         playbackSpeedButton.setAdditionalXOffset(AndroidUtilities.dp(8));
+        playbackSpeedButton.setAdditionalYOffset(-AndroidUtilities.dp(400));
         playbackSpeedButton.setShowedFromBottom(true);
         playerLayout.addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 86, 20, 0));
         playbackSpeedButton.setOnClickListener(v -> {
@@ -721,9 +726,17 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 index = 0;
             }
             MediaController.getInstance().setPlaybackSpeed(true, toggleSpeeds[index]);
+
+            checkSpeedHint();
         });
         playbackSpeedButton.setOnLongClickListener(view -> {
-            playbackSpeedButton.toggleSubMenu();
+            final float speed = MediaController.getInstance().getPlaybackSpeed(true);
+            speedSlider.setSpeed(speed, false);
+            speedSlider.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+            updatePlaybackButton(false);
+            playbackSpeedButton.setDimMenu(.15f);
+            playbackSpeedButton.toggleSubMenu(speedSlider, null);
+            MessagesController.getGlobalNotificationsSettings().edit().putInt("speedhint", -15).apply();
             return true;
         });
         updatePlaybackButton(false);
@@ -1351,6 +1364,45 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     }
 
+    private HintView speedHintView;
+    private long lastPlaybackClick;
+
+    private void checkSpeedHint() {
+        final long now = System.currentTimeMillis();
+        if (now - lastPlaybackClick > 300) {
+            int hintValue = MessagesController.getGlobalNotificationsSettings().getInt("speedhint", 0);
+            hintValue++;
+            if (hintValue > 2) {
+                hintValue = -10;
+            }
+            MessagesController.getGlobalNotificationsSettings().edit().putInt("speedhint", hintValue).apply();
+            if (hintValue >= 0) {
+                showSpeedHint();
+            }
+        }
+        lastPlaybackClick = now;
+    }
+
+    private void showSpeedHint() {
+        if (containerView != null) {
+            speedHintView = new HintView(getContext(), 5, false) {
+                @Override
+                public void setVisibility(int visibility) {
+                    super.setVisibility(visibility);
+                    if (visibility != View.VISIBLE) {
+                        try {
+                            ((ViewGroup) getParent()).removeView(this);
+                        } catch (Exception e) {}
+                    }
+                }
+            };
+            speedHintView.setExtraTranslationY(AndroidUtilities.dp(6));
+            speedHintView.setText(LocaleController.getString("SpeedHint"));
+            playerLayout.addView(speedHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 0, 6, 0));
+            speedHintView.showForView(playbackSpeedButton, true);
+        }
+    }
+
     private void updateSubMenu() {
         setMenuItemChecked(shuffleListItem, SharedConfig.shuffleMusic);
         setMenuItemChecked(reverseOrderItem, SharedConfig.playOrderReversed);
@@ -1359,7 +1411,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     private boolean equals(float a, float b) {
-        return Math.abs(a - b) < 0.001f;
+        return Math.abs(a - b) < 0.05f;
     }
 
     private void updatePlaybackButton(boolean animated) {
@@ -1367,20 +1419,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             return;
         }
         float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
-        int index = -1;
-        for (int i = 0; i < speeds.length; ++i) {
-            if (equals(speeds[i], currentPlaybackSpeed)) {
-                index = i;
-                break;
-            }
-        }
-        if (index >= 0) {
-            playbackSpeedButton.setIcon(speedIcons[index], animated);
-        }
+        speedIcon.setValue(currentPlaybackSpeed, animated);
+        speedSlider.setSpeed(currentPlaybackSpeed, animated);
         updateColors();
 
+        boolean isFinal = !slidingSpeed;
+        slidingSpeed = false;
+
         for (int a = 0; a < speedItems.length; a++) {
-            if (equals(currentPlaybackSpeed, speeds[a])) {
+            if (isFinal && equals(currentPlaybackSpeed, speeds[a])) {
                 speedItems[a].setColors(getThemedColor(Theme.key_featuredStickers_addButtonPressed), getThemedColor(Theme.key_featuredStickers_addButtonPressed));
             } else {
                 speedItems[a].setColors(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
@@ -1392,9 +1439,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (playbackSpeedButton != null) {
             float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
             final int color = getThemedColor(!equals(currentPlaybackSpeed, 1.0f) ? Theme.key_featuredStickers_addButtonPressed : Theme.key_inappPlayerClose);
-            playbackSpeedButton.setIconColor(color);
+            if (speedIcon != null) {
+                speedIcon.setColor(color);
+            }
             if (Build.VERSION.SDK_INT >= 21) {
-                playbackSpeedButton.setBackgroundDrawable(Theme.createSelectorDrawable(color & 0x19ffffff, 1, AndroidUtilities.dp(14)));
+                playbackSpeedButton.setBackground(Theme.createSelectorDrawable(color & 0x19ffffff, 1, AndroidUtilities.dp(14)));
             }
         }
     }
@@ -2262,7 +2311,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             optionsButton.redrawPopup(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
         };
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_actionBar));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, delegate, Theme.key_player_actionBarTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
