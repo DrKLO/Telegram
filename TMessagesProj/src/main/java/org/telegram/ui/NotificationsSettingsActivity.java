@@ -468,7 +468,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (position == inappSoundRow) {
                 SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);

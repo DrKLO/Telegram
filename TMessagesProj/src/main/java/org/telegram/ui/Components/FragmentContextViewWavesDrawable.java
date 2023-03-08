@@ -10,8 +10,11 @@ import android.graphics.Shader;
 import android.os.SystemClock;
 import android.view.View;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
@@ -69,7 +72,7 @@ public class FragmentContextViewWavesDrawable {
             return;
         }
         long dt = 0;
-        boolean rippleTransition = currentState != null && previousState != null &&  ((currentState.currentState == MUTE_BUTTON_STATE_MUTE && previousState.currentState == MUTE_BUTTON_STATE_UNMUTE) || (previousState.currentState == MUTE_BUTTON_STATE_MUTE && currentState.currentState == MUTE_BUTTON_STATE_UNMUTE));
+        boolean rippleTransition = currentState != null && previousState != null && ((currentState.currentState == MUTE_BUTTON_STATE_MUTE && previousState.currentState == MUTE_BUTTON_STATE_UNMUTE) || (previousState.currentState == MUTE_BUTTON_STATE_MUTE && currentState.currentState == MUTE_BUTTON_STATE_UNMUTE));
 
         if (update) {
             long newTime = SystemClock.elapsedRealtime();
@@ -155,37 +158,13 @@ public class FragmentContextViewWavesDrawable {
                 lineBlobDrawable2.update(amplitude, 0.7f);
             }
 
-//            if (rippleTransition) {
-//                paint.setAlpha(76);
-//                canvas.save();
-//                float cx = right - AndroidUtilities.dp(18);
-//                float r = (right - left) * 1.1f * progressToState;
-//                float offset = (float) Math.sqrt(r * r - (bottom - top) * (bottom - top));
-//                if (i == 0) {
-//                    if (cx - offset > left) {
-//                        canvas.clipRect(left, top - AndroidUtilities.dp(20), cx - offset, bottom);
-//                        float top1 = AndroidUtilities.dp(6) * amplitude2;
-//                        float top2 = AndroidUtilities.dp(6) * amplitude2;
-//                        lineBlobDrawable1.draw(left, top - top1, right, bottom, canvas, paint, top, progress);
-//                        lineBlobDrawable2.draw(left, top - top2, right, bottom, canvas, paint, top, progress);
-//                    }
-//                } else {
-//                    if (cx - offset > left) {
-//                        canvas.clipRect(cx - offset, top - AndroidUtilities.dp(20), right, bottom);
-//                    }
-//                    float top1 = AndroidUtilities.dp(6) * amplitude2;
-//                    float top2 = AndroidUtilities.dp(6) * amplitude2;
-//                    lineBlobDrawable1.draw(left, top - top1, right, bottom, canvas, paint, top, progress);
-//                    lineBlobDrawable2.draw(left, top - top2, right, bottom, canvas, paint, top, progress);
-//                }
-//                canvas.restore();
-//            } else {
+            if (LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
                 paint.setAlpha((int) (76 * alpha));
                 float top1 = AndroidUtilities.dp(6) * amplitude2;
                 float top2 = AndroidUtilities.dp(6) * amplitude2;
                 lineBlobDrawable1.draw(left, top - top1, right, bottom, canvas, paint, top, progress);
                 lineBlobDrawable2.draw(left, top - top2, right, bottom, canvas, paint, top, progress);
-            //}
+            }
 
             if (i == 1 && rippleTransition) {
                 paint.setAlpha(255);
@@ -209,37 +188,6 @@ public class FragmentContextViewWavesDrawable {
                 lineBlobDrawable.draw(left, top, right, bottom, canvas, paint, top, progress);
             }
         }
-
-//        if (Build.VERSION.SDK_INT > 21 && parentView != null && (parentView.isPressed() || pressedRemoveProgress != 0)) {
-//            if (parentView.isPressed()) {
-//                pressedRemoveProgress = 1f;
-//            }
-//            if (pressedProgress != 1f) {
-//                pressedProgress += 16f / 150f;
-//                if (pressedProgress > 1f) {
-//                    pressedProgress = 1f;
-//                }
-//            } else if (!parentView.isPressed() && pressedRemoveProgress != 0) {
-//                pressedRemoveProgress -= 16f / 150f;
-//                if (pressedRemoveProgress < 0) {
-//                    pressedRemoveProgress = 0;
-//                    pressedProgress = 0;
-//                }
-//            }
-//            rect.set(left, top - AndroidUtilities.dp(20), right, bottom);
-//            canvas.saveLayerAlpha(rect, 255, Canvas.ALL_SAVE_FLAG);
-//            Theme.getColor(Theme.key_listSelector);
-//            selectedPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (16 * pressedRemoveProgress)));
-//
-//            float hotspotX = left + parentView.hotspotX;
-//            float rad = Math.max(right - hotspotX, hotspotX - left) * 0.8f;
-//            canvas.drawCircle(hotspotX, top + parentView.hotspotY, rad * 1.3f * CubicBezierInterpolator.DEFAULT.getInterpolation(pressedProgress), selectedPaint);
-//
-//            lineBlobDrawable.path.toggleInverseFillType();
-//            canvas.drawPath(lineBlobDrawable.path, xRefP);
-//            lineBlobDrawable.path.toggleInverseFillType();
-//            canvas.restore();
-//        }
     }
 
     float pressedProgress;
@@ -333,6 +281,7 @@ public class FragmentContextViewWavesDrawable {
         private float time;
 
         public Shader shader;
+        public int averageColor;
         private final Matrix matrix = new Matrix();
         private final int currentState;
 
@@ -428,7 +377,16 @@ public class FragmentContextViewWavesDrawable {
 
         public void setToPaint(Paint paint) {
             if (currentState == MUTE_BUTTON_STATE_UNMUTE || currentState == MUTE_BUTTON_STATE_MUTE || currentState == MUTE_BUTTON_STATE_MUTED_BY_ADMIN) {
-                paint.setShader(shader);
+                if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+                    paint.setShader(null);
+                    if (currentState == MUTE_BUTTON_STATE_MUTED_BY_ADMIN) {
+                        paint.setColor(ColorUtils.blendARGB(ColorUtils.blendARGB(color1, color2, 0.5f), color3, 0.5f));
+                    } else {
+                        paint.setColor(ColorUtils.blendARGB(color1, color2, 0.5f));
+                    }
+                } else {
+                    paint.setShader(shader);
+                }
             } else {
                 paint.setShader(null);
                 paint.setColor(Theme.getColor(Theme.key_voipgroup_topPanelGray));

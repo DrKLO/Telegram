@@ -706,13 +706,13 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                                 showDialog(alertDialog);
                                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                                 if (button != null) {
-                                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                                 }
                             }
                         });
                         final AlertDialog dialog = builder1.create();
                         showDialog(dialog);
-                        dialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                        dialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
                     });
                     view = filterCell;
                     break;

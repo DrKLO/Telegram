@@ -1937,7 +1937,15 @@ public class AndroidUtilities {
                     file = ApplicationLoader.applicationContext.getExternalCacheDir();
                 }
                 if (file != null && (file.exists() || file.mkdirs()) && file.canWrite()) {
-                    return file;
+                    boolean canWrite = true;
+                    try {
+                        AndroidUtilities.createEmptyFile(new File(file, ".nomedia"));
+                    } catch (Exception e) {
+                        canWrite = false;
+                    }
+                    if (canWrite) {
+                        return file;
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -4225,44 +4233,6 @@ public class AndroidUtilities {
 
             }
             flagSecureFragment = null;
-        }
-    }
-
-    private static final HashMap<Window, ArrayList<Long>> flagSecureReasons = new HashMap<>();
-
-    // Sets FLAG_SECURE to true, until it gets unregistered (when returned callback is run)
-    // Useful for having multiple reasons to have this flag on.
-    public static Runnable registerFlagSecure(Window window) {
-        final long reasonId = (long) (Math.random() * 999999999);
-        final ArrayList<Long> reasonIds;
-        if (flagSecureReasons.containsKey(window)) {
-            reasonIds = flagSecureReasons.get(window);
-        } else {
-            reasonIds = new ArrayList<>();
-            flagSecureReasons.put(window, reasonIds);
-        }
-        reasonIds.add(reasonId);
-        updateFlagSecure(window);
-        return () -> {
-            reasonIds.remove(reasonId);
-            updateFlagSecure(window);
-        };
-    }
-
-    private static void updateFlagSecure(Window window) {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (window == null) {
-                return;
-            }
-            final boolean value = flagSecureReasons.containsKey(window) && flagSecureReasons.get(window).size() > 0;
-            try {
-                if (value) {
-                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-                } else {
-                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-                }
-            } catch (Exception ignore) {
-            }
         }
     }
 

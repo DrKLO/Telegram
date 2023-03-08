@@ -131,6 +131,7 @@ import org.telegram.ui.Components.ListView.RecyclerListViewWithOverlayDraw;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.ContentPreviewViewer;
+import org.telegram.ui.StickersActivity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -2380,6 +2381,23 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     AndroidUtilities.runOnUIThread(checkExpandStickerTabsRunnable, 1500);
                     sendReorder();
                     updateStickerTabs(true);
+
+                    if (SharedConfig.updateStickersOrderOnSend) {
+                        SharedConfig.toggleUpdateStickersOrderOnSend();
+                        if (fragment != null) {
+                            BulletinFactory.of(fragment).createSimpleBulletin(
+                                R.raw.filter_reorder,
+                                LocaleController.getString("DynamicPackOrderOff", R.string.DynamicPackOrderOff),
+                                LocaleController.getString("DynamicPackOrderOffInfo", R.string.DynamicPackOrderOffInfo),
+                                LocaleController.getString("Settings"),
+                                () -> fragment.presentFragment(new StickersActivity(MediaDataController.TYPE_IMAGE, null))
+                            ).show();
+                        } else if (bulletinContainer != null) {
+                            BulletinFactory.of(bulletinContainer, EmojiView.this.resourcesProvider).createSimpleBulletin(R.raw.filter_reorder, LocaleController.getString("DynamicPackOrderOff", R.string.DynamicPackOrderOff), LocaleController.getString("DynamicPackOrderOffInfo", R.string.DynamicPackOrderOffInfo)).show();
+                        } else {
+                            return;
+                        }
+                    }
                 }
 
                 private void swapListElements(List<TLRPC.TL_messages_stickerSet> list, int index1, int index2) {
@@ -6415,7 +6433,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                                     alertDialog.show();
                                     TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                                     if (button != null) {
-                                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                                     }
                                 }
                             }

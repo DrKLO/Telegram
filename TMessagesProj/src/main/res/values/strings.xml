@@ -148,6 +148,7 @@
     <string name="PaymentAppNotFoundForDeeplink">No app found to handle this deep link.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">New conversation</string>
+    <string name="AutoNightSystemModeOff">System Default theme is disabled</string>
     <string name="AutoNightModeOff">Auto-Night Mode is off</string>
     <string name="SetEmojiStatus">Set Emoji Status</string>
     <string name="ChangeEmojiStatus">Change Status</string>
@@ -1023,6 +1024,7 @@
     <string name="OpenBot">OPEN BOT</string>
     <string name="SponsoredMessage">sponsored</string>
     <string name="SponsoredMessageRecommended">recommended</string>
+    <string name="SponsoredMessageSponsor">Advertiser Info</string>
     <string name="SponsoredMessageInfo">What are sponsored\nmessages?</string>
     <string name="SponsoredMessageInfoDescription1">Unlike other apps, Telegram never uses your private data to target ads. You are seeing this message only because someone chose this public one-to-many channel as a space to promote their messages. This means that no user data is mined or analyzed to display ads, and every user viewing a channel on Telegram sees the same sponsored message.</string>
     <string name="SponsoredMessageInfoDescription2">Unlike other apps, Telegram doesn\'t track whether you tapped on a sponsored message and doesn\'t profile you based on your activity. We also prevent external links in sponsored messages to ensure that third parties can’t spy on our users. We believe that everyone has the right to privacy, and technological platforms should respect that.</string>
@@ -1375,6 +1377,7 @@
     <string name="ImportFailedToUpload">Failed to upload file.</string>
     <string name="AudioSpeedNormal">Audio will play at normal speed.</string>
     <string name="AudioSpeedMedium">Audio will play at 1.5x speed.</string>
+    <string name="AudioSpeedCustom">Audio will play at %1$sx speed.</string>
     <string name="AudioSpeedFast">Audio will play two times faster.</string>
     <string name="MessageCopied">Message copied to clipboard.</string>
     <string name="HintSent">Delivered</string>
@@ -1760,6 +1763,8 @@
     <string name="ErrorOccurred">An error occurred.</string>
     <!--stickers view-->
     <string name="StickersName">Stickers</string>
+    <string name="StickersSettings">Settings</string>
+    <string name="StickersNameInfo">Manage your sticker packs, emoji and reactions.</string>
     <string name="LoopAnimatedStickers">Loop Animated Stickers</string>
     <string name="LoopAnimatedStickersInfo">Animated stickers will play in chat continuously.</string>
     <string name="AnimatedStickers">Animated Stickers</string>
@@ -2360,8 +2365,6 @@
     <string name="DebugMenuResetContacts">Reset Imported Contacts</string>
     <string name="DebugMenuClearMediaCache">Clear sent media cache</string>
     <string name="DebugMenuCallSettings">Call settings</string>
-    <string name="DebugMenuEnableForceRtmpStreamFlag">Enable forced RTMP Stream Flag</string>
-    <string name="DebugMenuDisableForceRtmpStreamFlag">Disable forced RTMP Stream Flag</string>
     <string name="DebugMenuClearWebViewCache">Clear WebView cache</string>
     <string name="DebugMenuEnableWebViewDebug">Enable WebView debug</string>
     <string name="DebugMenuDisableWebViewDebug">Disable WebView debug</string>
@@ -2488,6 +2491,7 @@
     <string name="ShowSendersName">Show sender\’s name</string>
     <string name="HideSendersName">Hide sender\’s name</string>
     <string name="ChatListSwipeGesture">Chat list swipe gesture</string>
+    <string name="ChatListSwipeGestureInfo">Set up which action you want to perform each time you swipe to left in the chat list.</string>
     <string name="SwipeSettingsPin">Pin</string>
     <string name="SwipeSettingsRead">Read</string>
     <string name="SwipeSettingsArchive">Archive</string>
@@ -3016,6 +3020,12 @@
     <string name="SpeedNormal">Normal</string>
     <string name="SpeedMedium">Medium</string>
     <string name="SpeedSuperFast">Super Fast</string>
+    <string name="VideoSpeedVeryFast">Very fast</string>
+    <string name="VideoSpeedFast">Fast</string>
+    <string name="VideoSpeedCustom">Custom %s</string>
+    <string name="VideoSpeedNormal">Normal</string>
+    <string name="VideoSpeedSlow">Slow</string>
+    <string name="VideoSpeedVerySlow">Very slow</string>
     <string name="SpeedHint">Long tap for more speed values.</string>
     <string name="ShowAsList">Show as list</string>
     <string name="ShowAsGrid">Show as grid</string>
@@ -5261,6 +5271,7 @@
     <string name="AccDescrUnreadCount_many">%1$d unread chats</string>
     <string name="AccDescrUnreadCount_other">%1$d unread chats</string>
     <string name="AccDescrMentionReaction">With new reaction</string>
+    <string name="AccDescrSpeedSlider">Choose speed</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMM yyyy</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
@@ -5646,6 +5657,7 @@
     <string name="UserRestrictionsCantModifyDisabled">This action is disabled for all members. Please change it in Group Permissions.</string>
     <string name="UserRestrictionsCantModifyEnabled">This action is enabled for all members. Please change it in Group Permissions.</string>
     <string name="BotRequestAttachPermission">**%1$s** requests to be added as an option to your attachments menu so you can access it from any chat.</string>
+    <string name="BotStartAppPermission">Do you want to start app **%1$s** from bot **%2$s**?\n\nIt will be able to access your **IP address** and basic device info.</string>
     <string name="BotCantAddToAttachMenu">This bot can\'t be added to the attachment menu.</string>
     <string name="BotAlreadyAddedToAttachMenu">This bot is already in your attachment menu.</string>
     <string name="BotRemoveFromMenu">Remove **%1$s** from the attachment menu?</string>
@@ -6265,17 +6277,32 @@
     <string name="AccDescrArchivedChatsHidden">Archived chats hidden</string>
     <string name="AccDescrNotificationsMuted">Muted</string>
     <string name="AccDescrUserOnline">Online</string>
-    <string name="LitePresetTitle">Power usage</string>
-    <string name="LitePresetInfo">You can switch to low power mode to increase battery life. Recommended for weak devices.</string>
+    <string name="LiteMode">Animations</string>
+    <string name="LiteModeInfo">Reduce motion effects to save power.</string>
+    <string name="LiteBatteryTitle">Low power mode</string>
+    <string name="LiteBatteryRestricted">Please turn off Low Power Mode to change these settings.</string>
+    <string name="LowPowerEnabledTitle">Low Power Mode enabled</string>
+    <string name="LowPowerEnabledSubtitle">%s battery remaining</string>
+    <string name="LiteBatteryWhenBelow">When below %s</string>
+    <string name="LiteBatteryDisabled">Off</string>
+    <string name="LiteBatteryEnabled">On</string>
+    <string name="LiteBatteryAlwaysDisabled">Always Disabled</string>
+    <string name="LiteBatteryAlwaysEnabled">Always Enabled</string>
+    <string name="LiteBatteryInfoDisabled">Never reduce power usage and keep all animations even when your battery is low.</string>
+    <string name="LiteBatteryInfoBelow">Automatically reduce power usage and animations when your battery is below %s.</string>
+    <string name="LiteBatteryInfoEnabled">Always reduce power usage regardless of your battery level.</string>
     <string name="LiteOptionsTitle">Power saving options</string>
     <string name="LiteOptionsAutoplayKeyboard">Autoplay in keyboard</string>
     <string name="LiteOptionsAutoplayChat">Autoplay in chat</string>
     <string name="LiteOptionsAutoplayReactions">Autoplay in reactions menu</string>
+    <string name="LiteOptionsStickers">Animated Stickers</string>
+    <string name="LiteOptionsEmoji">Animated Emoji</string>
     <string name="LiteOptionsChat">Animations in Chats</string>
     <string name="LiteOptionsBackground">Background rotation</string>
     <string name="LiteOptionsTopics">Side menu in topics</string>
     <string name="LiteOptionsSpoiler">Animated spoiler effect</string>
     <string name="LiteOptionsBlur">Night theme blur</string>
+    <string name="LiteOptionsScale">Zoom animations</string>
     <string name="LiteOptionsCalls">Animations in Calls</string>
     <string name="LiteOptionsAutoplayVideo">Autoplay Videos</string>
     <string name="LiteOptionsAutoplayGifs">Autoplay GIFs</string>
@@ -6285,4 +6312,42 @@
     <string name="LitePowerSaverInfo">Automatically switch to low power usage when your devices is in Battery Saving Mode.</string>
     <string name="DynamicPackOrder">Dynamic Pack Order</string>
     <string name="DynamicPackOrderInfo">Automatically place recently used sticker packs at the front of the panel.</string>
+    <string name="DynamicPackOrderOff">Dynamic Order Off</string>
+    <string name="DynamicPackOrderOffInfo">Sticker packs will no longer be placed first every time you use a sticker.</string>
+    <string name="UserRead">read %s</string>
+    <string name="InviteRestrictedUsersOne">**%s** restrict adding them to groups. You can send them an invite link as message instead.</string>
+    <string name="InviteRestrictedUsers_one">**%d user** restrict adding them to groups. You can send them an invite link as message instead.</string>
+    <string name="InviteRestrictedUsers_two">**%d users** restrict adding them to groups. You can send them an invite link as message instead.</string>
+    <string name="InviteRestrictedUsers_few">**%d users** restrict adding them to groups. You can send them an invite link as message instead.</string>
+    <string name="InviteRestrictedUsers_many">**%d users** restrict adding them to groups. You can send them an invite link as message instead.</string>
+    <string name="InviteRestrictedUsers_other">**%d users** restrict adding them to groups. You can send them an invite link as message instead.</string>
+    <string name="InviteChannelRestrictedUsersOne">**%s** restrict adding them to channels. You can send them an invite link as message instead.</string>
+    <string name="InviteChannelRestrictedUsers_one">**%d user** restrict adding them to channels. You can send them an invite link as message instead.</string>
+    <string name="InviteChannelRestrictedUsers_two">**%d users** restrict adding them to channels. You can send them an invite link as message instead.</string>
+    <string name="InviteChannelRestrictedUsers_few">**%d users** restrict adding them to channels. You can send them an invite link as message instead.</string>
+    <string name="InviteChannelRestrictedUsers_many">**%d users** restrict adding them to channels. You can send them an invite link as message instead.</string>
+    <string name="InviteChannelRestrictedUsers_other">**%d users** restrict adding them to channels. You can send them an invite link as message instead.</string>
+    <string name="InviteRestrictedUsers2One">**%s** can only be invited via link. However admin of this group restricts you from sharing invite links.</string>
+    <string name="InviteRestrictedUsers2_one">**%d user** can only be invited via link. However admin of this group restricts you from sharing invite links.</string>
+    <string name="InviteRestrictedUsers2_two">**%d users** can only be invited via link. However admin of this group restricts you from sharing invite links.</string>
+    <string name="InviteRestrictedUsers2_few">**%d users** can only be invited via link. However admin of this group restricts you from sharing invite links.</string>
+    <string name="InviteRestrictedUsers2_many">**%d users** can only be invited via link. However admin of this group restricts you from sharing invite links.</string>
+    <string name="InviteRestrictedUsers2_other">**%d users** can only be invited via link. However admin of this group restricts you from sharing invite links.</string>
+    <string name="InviteChannelRestrictedUsers2One">**%s** can only be invited via link. However admin of this channel restricts you from sharing invite links.</string>
+    <string name="InviteChannelRestrictedUsers2_one">**%d user** can only be invited via link. However admin of this channel restricts you from sharing invite links.</string>
+    <string name="InviteChannelRestrictedUsers2_two">**%d users** can only be invited via link. However admin of this channel restricts you from sharing invite links.</string>
+    <string name="InviteChannelRestrictedUsers2_few">**%d users** can only be invited via link. However admin of this channel restricts you from sharing invite links.</string>
+    <string name="InviteChannelRestrictedUsers2_many">**%d users** can only be invited via link. However admin of this channel restricts you from sharing invite links.</string>
+    <string name="InviteChannelRestrictedUsers2_other">**%d users** can only be invited via link. However admin of this channel restricts you from sharing invite links.</string>
+    <string name="InviteLinkSentSingle">Invitation link sent to **%s**</string>
+    <string name="InviteLinkSent_one">Invitation link sent to %d user</string>
+    <string name="InviteLinkSent_two">Invitation link sent to %d users</string>
+    <string name="InviteLinkSent_few">Invitation link sent to %d users</string>
+    <string name="InviteLinkSent_many">Invitation link sent to %d users</string>
+    <string name="InviteLinkSent_other">Invitation link sent to %d users</string>
+    <string name="SendInviteLink">Send Invite Link</string>
+    <string name="ActionSkip">Skip</string>
+    <string name="ChannelInviteViaLinkRestricted">You can\'t create a link</string>
+    <string name="ChannelInviteViaLinkRestricted2">This user can\'t be invited</string>
+    <string name="ChannelInviteViaLinkRestricted3">This users can\'t be invited</string>
 </resources>

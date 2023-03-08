@@ -146,10 +146,13 @@ public class FileLoader extends BaseController {
     public static final int IMAGE_TYPE_SVG_WHITE = 4;
     public static final int IMAGE_TYPE_THEME_PREVIEW = 5;
 
-    private final FileLoaderPriorityQueue largeFilesQueue = new FileLoaderPriorityQueue("large files queue", 2);
-    private final FileLoaderPriorityQueue filesQueue = new FileLoaderPriorityQueue("files queue", 3);
-    private final FileLoaderPriorityQueue imagesQueue = new FileLoaderPriorityQueue("imagesQueue queue", 6);
-    private final FileLoaderPriorityQueue audioQueue = new FileLoaderPriorityQueue("audioQueue queue", 3);
+//    private final FileLoaderPriorityQueue largeFilesQueue = new FileLoaderPriorityQueue("large files queue", 2);
+//    private final FileLoaderPriorityQueue filesQueue = new FileLoaderPriorityQueue("files queue", 3);
+//    private final FileLoaderPriorityQueue imagesQueue = new FileLoaderPriorityQueue("imagesQueue queue", 6);
+//    private final FileLoaderPriorityQueue audioQueue = new FileLoaderPriorityQueue("audioQueue queue", 3);
+
+    private final FileLoaderPriorityQueue[] smallFilesQueue = new FileLoaderPriorityQueue[5];
+    private final FileLoaderPriorityQueue[] largeFilesQueue = new FileLoaderPriorityQueue[5];
 
     public final static long DEFAULT_MAX_FILE_SIZE = 1024L * 1024L * 2000L;
     public final static long DEFAULT_MAX_FILE_SIZE_PREMIUM = DEFAULT_MAX_FILE_SIZE * 2L;
@@ -159,16 +162,16 @@ public class FileLoader extends BaseController {
     private volatile static DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
     private final FilePathDatabase filePathDatabase;
 
-    private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<>();
-    private LinkedList<FileUploadOperation> uploadSmallOperationQueue = new LinkedList<>();
-    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPaths = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, FileUploadOperation> uploadOperationPathsEnc = new ConcurrentHashMap<>();
+    private final LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<>();
+    private final LinkedList<FileUploadOperation> uploadSmallOperationQueue = new LinkedList<>();
+    private final ConcurrentHashMap<String, FileUploadOperation> uploadOperationPaths = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, FileUploadOperation> uploadOperationPathsEnc = new ConcurrentHashMap<>();
     private int currentUploadOperationsCount = 0;
     private int currentUploadSmallOperationsCount = 0;
 
 
-    private ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, LoadOperationUIObject> loadOperationPathsUI = new ConcurrentHashMap<>(10, 1, 2);
+    private final ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, LoadOperationUIObject> loadOperationPathsUI = new ConcurrentHashMap<>(10, 1, 2);
     private HashMap<String, Long> uploadSizes = new HashMap<>();
 
     private HashMap<String, Boolean> loadingVideos = new HashMap<>();
@@ -199,6 +202,11 @@ public class FileLoader extends BaseController {
     public FileLoader(int instance) {
         super(instance);
         filePathDatabase = new FilePathDatabase(instance);
+        for (int i = 0; i < smallFilesQueue.length; i++)  {
+            smallFilesQueue[i] = new FileLoaderPriorityQueue("smallFilesQueue dc" + (i + 1), 5);
+            largeFilesQueue[i] = new FileLoaderPriorityQueue("largeFilesQueue dc" + (i + 1), 2);
+        }
+        dumpFilesQueue();
     }
 
     public static void setMediaDirs(SparseArray<File> dirs) {
@@ -660,7 +668,7 @@ public class FileLoader extends BaseController {
         FileLoadOperation operation = loadOperationPaths.get(fileName);
 
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation + " priority=" + priority);
+            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation + " priority=" + priority + " account=" + currentAccount);
         }
         priority = getPriorityValue(priority);
 
@@ -723,17 +731,19 @@ public class FileLoader extends BaseController {
             }
         }
         FileLoaderPriorityQueue loaderQueue;
-        if (type == MEDIA_DIR_AUDIO) {
-            loaderQueue = audioQueue;
-        } else if (secureDocument != null || location != null && (imageLocation == null || imageLocation.imageType != IMAGE_TYPE_ANIMATION) || MessageObject.isImageWebDocument(webDocument) || MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isVideoStickerDocument(document)) {
-            loaderQueue = imagesQueue;
+        int index = Utilities.clamp(operation.getDatacenterId() - 1, 4, 0);
+        if (operation.totalBytesCount >  20 * 1024 * 1024) {
+            loaderQueue = largeFilesQueue[index];
         } else {
-            if (document == null || document.size > 20 * 1024 * 1024) {
-                loaderQueue = largeFilesQueue;
-            } else {
-                loaderQueue = filesQueue;
-            }
+            loaderQueue = smallFilesQueue[index];
         }
+//        if (type == MEDIA_DIR_AUDIO) {
+//            loaderQueue = audioQueue;
+//        } else if (secureDocument != null || location != null && (imageLocation == null || imageLocation.imageType != IMAGE_TYPE_ANIMATION) || MessageObject.isImageWebDocument(webDocument) || MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isVideoStickerDocument(document)) {
+//            loaderQueue = imagesQueue;
+//        } else {
+
+//        }
 
         String storeFileName = fileName;
 
@@ -1665,5 +1675,20 @@ public class FileLoader extends BaseController {
             l ^= bytes[i] & 0xFF;
         }
         return l;
+    }
+
+    Runnable dumpFilesQueueRunnable = () -> {
+        for (int i = 0; i < smallFilesQueue.length; i++) {
+            FileLog.d("download queue: dc" + (i + 1) + " small_operations=" + smallFilesQueue[i].allOperations.size() + " large_operations=" + largeFilesQueue[i].allOperations.size());
+        }
+        dumpFilesQueue();
+    };
+
+    public void dumpFilesQueue() {
+        if (!BuildVars.LOGS_ENABLED) {
+            return;
+        }
+        fileLoaderQueue.cancelRunnable(dumpFilesQueueRunnable);
+        fileLoaderQueue.postRunnable(dumpFilesQueueRunnable, 10_000);
     }
 }

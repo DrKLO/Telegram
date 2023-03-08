@@ -744,9 +744,6 @@ public class NotificationsController extends BaseController {
             boolean updated = false;
             for (int a = 0, N = editedMessages.size(); a < N; a++) {
                 long dialogId = editedMessages.keyAt(a);
-                if (pushDialogs.indexOfKey(dialogId) < 0) {
-                    continue;
-                }
                 ArrayList<MessageObject> messages = editedMessages.valueAt(a);
                 for (int b = 0, N2 = messages.size(); b < N2; b++) {
                     MessageObject messageObject = messages.get(b);
@@ -3416,7 +3413,7 @@ public class NotificationsController extends BaseController {
             if (sound != null) {
                 notificationChannel.setSound(sound, builder.build());
             } else {
-                notificationChannel.setSound(null, null);
+               // notificationChannel.setSound(null, null);
             }
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("create new channel " + channelId);

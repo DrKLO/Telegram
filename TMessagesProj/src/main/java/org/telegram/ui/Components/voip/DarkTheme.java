@@ -18,8 +18,6 @@ public class DarkTheme{
 		switch(key){
 			case "avatar_subtitleInProfilePink":
 				return 0xFF8A8A8A;
-			case "chat_secretTimerBackground":
-				return 0xB61E1E1E;
 			case "chat_emojiPanelTrendingDescription":
 				return 0xFF717171;
 			case "chat_inFileBackground":
@@ -32,16 +30,12 @@ public class DarkTheme{
 				return 0xFF828282;
 			case "chat_inTimeText":
 				return 0xD98091A0;
-			case "avatar_backgroundGroupCreateSpanBlue":
-				return 0xFF2D5E8C;
 			case "windowBackgroundGray":
 				return 0xFF0D0D0D;
 			case "windowBackgroundWhiteGreenText2":
 				return 0xFF42C366;
 			case "chat_emojiPanelBackspace":
 				return 0xFF727272;
-			case "chat_outPreviewInstantSelectedText":
-				return 0xFFFFFFFF;
 			case "chat_inBubble":
 				return 0xFF253442;
 			case "chat_outFileInfoSelectedText":
@@ -106,22 +100,14 @@ public class DarkTheme{
 				return 0xFF282E33;
 			case "chat_messageTextIn":
 				return 0xFFFAFAFA;
-			case "chat_outLoaderPhoto":
-				return 0xFF3872A4;
-			case "chat_outFileIcon":
-				return 0xFF37729C;
 			case "chat_serviceBackgroundSelected":
 				return 0x60495154;
 			case "inappPlayerBackground":
 				return 0xD82B2B2B;
 			case "chat_topPanelLine":
 				return 0xFF5680A9;
-			case "player_actionBar":
-				return 0xFF1C1C1C;
 			case "chat_outFileInfoText":
 				return 0xFFAACFEE;
-			case "chat_outLoaderPhotoIcon":
-				return 0xFF72A5D0;
 			case "chat_unreadMessagesStartArrowIcon":
 				return 0xFF5A6B7A;
 			case "chat_outAudioProgress":
@@ -136,8 +122,6 @@ public class DarkTheme{
 				return 0xFFFAFAFA;
 			case "chat_outAudioTitleText":
 				return 0xFFD1EBFF;
-			case "chat_inLoaderPhotoSelected":
-				return 0xFF1C4063;
 			case "inappPlayerPerformer":
 				return 0xFFFAFAFA;
 			case "actionBarActionModeDefaultTop":
@@ -152,28 +136,18 @@ public class DarkTheme{
 				return 0xFF6CB55B;
 			case "chat_outAudioSeekbarFill":
 				return 0xFFC4E1F7;
-			case "player_placeholder":
-				return 0xFF2B2B2B;
 			case "chat_inReplyNameText":
 				return 0xFF55A2DB;
 			case "chat_messagePanelIcons":
 				return 0xFF696969;
 			case "graySection":
 				return 0xFF222222;
-			case "chats_nameIcon":
-				return 0xFFDDDDDD;
 			case "avatar_backgroundActionBarViolet":
 				return 0xFF212426;
-			case "chat_emojiPanelIconSelector":
-				return 0xFF5598DB;
-			case "chat_replyPanelMessage":
-				return 0xFF939393;
 			case "chat_outPreviewInstantText":
 				return 0xFFD1EBFF;
 			case "chat_emojiPanelTrendingTitle":
 				return 0xFFF4F4F4;
-			case "chat_inPreviewInstantSelectedText":
-				return 0xFF56A2DB;
 			case "chat_inFileInfoSelectedText":
 				return 0xFFA9CFEE;
 			case "avatar_subtitleInProfileRed":
@@ -198,8 +172,6 @@ public class DarkTheme{
 				return 0xFFFFFFFF;
 			case "chat_outTimeSelectedText":
 				return 0xFFFFFFFF;
-			case "chat_outFileSelectedIcon":
-				return 0xFF2B83CB;
 			case "chats_secretIcon":
 				return 0xFF71D756;
 			case "dialogIcon":
@@ -234,8 +206,6 @@ public class DarkTheme{
 				return 0xFFFFFFFF;
 			case "avatar_actionBarSelectorGreen":
 				return 0xFF495154;
-			case "chat_inFileIcon":
-				return 0xFF233442;
 			case "chat_inAudioTitleText":
 				return 0xFF56A3DB;
 			case "chat_inAudioDurationSelectedText":
@@ -314,8 +284,6 @@ public class DarkTheme{
 				return 0x6628323D;
 			case "windowBackgroundWhiteGrayText2":
 				return 0xFF797979;
-			case "chat_inFileSelectedIcon":
-				return 0xFF1A4063;
 			case "profile_actionIcon":
 				return 0xFFFFFFFF;
 			case "chat_secretChatStatusText":
@@ -398,12 +366,8 @@ public class DarkTheme{
 				return 0xFF549CDD;
 			case "chat_outInstantSelected":
 				return 0xFFFFFFFF;
-			case "chat_outLoaderPhotoIconSelected":
-				return 0xFFFFFFFF;
 			case "chat_outAudioSeekbar":
 				return 0x9672A5D0;
-			case "chat_inLoaderPhotoIcon":
-				return 0xFF596F80;
 			case "windowBackgroundWhiteRedText5":
 				return 0xFFFF4C56;
 			case "avatar_actionBarSelectorViolet":
@@ -420,8 +384,6 @@ public class DarkTheme{
 				return 0xFF5EA4E0;
 			case "chat_inMenu":
 				return 0x795C6F80;
-			case "player_seekBarBackground":
-				return 0x47525252;
 			case "chats_sentClock":
 				return 0xFF6082BD;
 			case "chat_messageLinkOut":
@@ -446,18 +408,12 @@ public class DarkTheme{
 				return 0x11FFFFFF;
 			case "chat_goDownButtonIcon":
 				return 0xFFE4E4E4;
-			case "chats_menuCloudBackgroundCats":
-				return 0xFF549CDD;
-			case "chat_inLoaderPhotoIconSelected":
-				return 0xFFA9CFEE;
 			case "windowBackgroundWhiteBlueText4":
 				return 0xFF4A8FCD;
 			case "chat_inContactNameText":
 				return 0xFF56A3DB;
 			case "chat_topPanelTitle":
 				return 0xFF55A3DB;
-			case "chat_outLoaderPhotoSelected":
-				return 0xFF3672A4;
 			case "avatar_actionBarSelectorPink":
 				return 0xFF495154;
 			case "chat_outContactNameText":
@@ -502,8 +458,6 @@ public class DarkTheme{
 				return 0xFF515151;
 			case "chat_inFileProgress":
 				return 0xFF5D6F80;
-			case "chat_outLocationBackground":
-				return 0xFFA0DCF5;
 			case "chats_muteIcon":
 				return 0xFF5B5B5B;
 			case "groupcreate_spanText":

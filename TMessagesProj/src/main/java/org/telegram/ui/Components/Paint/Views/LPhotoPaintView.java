@@ -1378,7 +1378,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         measureChild(topLayout, widthMeasureSpec, heightMeasureSpec);
         ignoreLayout = false;
 
-        int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
+        int keyboardSize = 0;
         if (!waitingForKeyboardOpen && keyboardSize <= AndroidUtilities.dp(20) && !emojiViewVisible && !isAnimatePopupClosing) {
             ignoreLayout = true;
             hideEmojiView();
@@ -2907,37 +2907,36 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             onWindowSizeChanged();
 
             if (!emojiWasVisible) {
-                if (SharedConfig.smoothKeyboard) {
-                    if (keyboardVisible) {
-                        translateBottomPanelAfterResize = true;
-                        weightChooserView.startPanTransition(AndroidUtilities.displaySize.y, AndroidUtilities.displaySize.y - emojiPadding);
+                if (keyboardVisible) {
+                    translateBottomPanelAfterResize = true;
+                    weightChooserView.startPanTransition(AndroidUtilities.displaySize.y, AndroidUtilities.displaySize.y - emojiPadding);
 //                        weightChooserView.updatePanTransition(0, 1);
 //                        weightChooserView.stopPanTransition();
-                    } else {
-                        ValueAnimator animator = ValueAnimator.ofFloat(emojiPadding, 0);
-                        weightChooserView.startPanTransition(AndroidUtilities.displaySize.y, AndroidUtilities.displaySize.y - emojiPadding);
-                        animator.addUpdateListener(animation -> {
-                            float v = (float) animation.getAnimatedValue();
-                            emojiView.setTranslationY(v);
+                } else {
+                    ValueAnimator animator = ValueAnimator.ofFloat(emojiPadding, 0);
+                    weightChooserView.startPanTransition(AndroidUtilities.displaySize.y, AndroidUtilities.displaySize.y - emojiPadding);
+                    animator.addUpdateListener(animation -> {
+                        float v = (float) animation.getAnimatedValue();
+                        emojiView.setTranslationY(v);
+                        if (!ignore) {
+                            bottomPanelTranslationY(v, 1f - v / emojiPadding);
+                        }
+                    });
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            emojiView.setTranslationY(0);
                             if (!ignore) {
-                                bottomPanelTranslationY(v, 1f - v / emojiPadding);
+                                bottomPanelTranslationY(0, 1);
                             }
-                        });
-                        animator.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                emojiView.setTranslationY(0);
-                                if (!ignore) {
-                                    bottomPanelTranslationY(0, 1);
-                                }
-                                weightChooserView.stopPanTransition();
-                            }
-                        });
-                        animator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
-                        animator.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
-                        animator.start();
-                    }
+                            weightChooserView.stopPanTransition();
+                        }
+                    });
+                    animator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
+                    animator.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
+                    animator.start();
                 }
+
             }
         } else {
             ChatActivityEnterViewAnimatedIconView emojiButton = textOptionsView.getEmojiButton();
@@ -2970,7 +2969,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             showEmojiPopup(0);
         }
         if (byBackButton) {
-            if (SharedConfig.smoothKeyboard && emojiView != null && emojiView.getVisibility() == View.VISIBLE && !waitingForKeyboardOpen) {
+            if (emojiView != null && emojiView.getVisibility() == View.VISIBLE && !waitingForKeyboardOpen) {
                 int height = emojiView.getMeasuredHeight();
                 ValueAnimator animator = ValueAnimator.ofFloat(0, height);
                 final boolean ignore = bottomPanelIgnoreOnce;

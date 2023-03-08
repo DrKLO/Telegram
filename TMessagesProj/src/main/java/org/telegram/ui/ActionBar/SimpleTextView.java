@@ -32,6 +32,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
@@ -536,6 +538,11 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (!recreateLayoutMaybe()) {
             invalidate();
         }
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return who == rightDrawable || who == leftDrawable || super.verifyDrawable(who);
     }
 
     public void replaceTextWithDrawable(Drawable drawable, String replacedText) {

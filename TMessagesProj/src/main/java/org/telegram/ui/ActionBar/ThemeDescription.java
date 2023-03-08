@@ -341,9 +341,6 @@ public class ThemeDescription {
                 ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color, false);
             }
         }
-        if (viewToInvalidate instanceof VideoTimelineView) {
-            ((VideoTimelineView) viewToInvalidate).setColor(color);
-        }
         if (viewToInvalidate instanceof EmptyTextProgressView) {
             if ((changeFlags & FLAG_TEXTCOLOR) != 0) {
                 ((EmptyTextProgressView) viewToInvalidate).setTextColor(color);

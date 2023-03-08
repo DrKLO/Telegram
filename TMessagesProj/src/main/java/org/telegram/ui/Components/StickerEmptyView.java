@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SvgHelper;
@@ -79,7 +80,9 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
             public void setVisibility(int visibility) {
                 if (getVisibility() == View.GONE && visibility == View.VISIBLE) {
                     setSticker();
-                    stickerView.getImageReceiver().startAnimation();
+                    if (LiteMode.isEnabled(LiteMode.FLAGS_ANIMATED_STICKERS)) {
+                        stickerView.getImageReceiver().startAnimation();
+                    }
                 } else if (visibility == View.GONE) {
                     stickerView.getImageReceiver().clearImage();
                 }
@@ -233,6 +236,10 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
                 document = set.documents.get(stickerType);
             }
             imageFilter = "130_130";
+        }
+
+        if (!LiteMode.isEnabled(LiteMode.FLAGS_ANIMATED_STICKERS)) {
+            imageFilter += "_firstframe";
         }
 
         if (document != null) {

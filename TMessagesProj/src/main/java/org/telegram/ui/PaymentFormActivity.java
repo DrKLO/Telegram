@@ -2517,7 +2517,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(getThemedColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(getThemedColor(Theme.key_dialogTextRed));
                 }
             });
 

@@ -73,7 +73,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     public int rawDrawIndex;
 
     private static SparseArray<LongSparseArray<AnimatedEmojiDrawable>> globalEmojiCache;
-    private boolean LOG_MEMORY_LEAK = false;
+    private static boolean LOG_MEMORY_LEAK = false;
 
     @NonNull
     public static AnimatedEmojiDrawable make(int account, int cacheType, long documentId) {
@@ -477,7 +477,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setUniqKeyPrefix(cacheType + "_");
         }
         imageReceiver.setVideoThumbIsSame(true);
-        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || (cacheType == CACHE_TYPE_KEYBOARD || cacheType == CACHE_TYPE_ALERT_PREVIEW) && !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD);
+        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_KEYBOARD && !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) || cacheType == CACHE_TYPE_ALERT_PREVIEW && !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
         if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC) {
             onlyStaticPreview = true;
         }
@@ -714,13 +714,13 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attachedDrawable = new ArrayList<>();
                 }
                 if (attached) {
-                    attachedCount--;
-                    attachedDrawable.remove(this);
-                } else {
                     attachedCount++;
                     attachedDrawable.add(this);
+                } else {
+                    attachedCount--;
+                    attachedDrawable.remove(this);
                 }
-                Log.d("animatedDrable", "attached count " + attachedCount);
+                Log.d("animatedDrawable", "attached count " + attachedCount);
             }
         }
 
@@ -1194,6 +1194,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             if (secondParent != null) {
                 secondParent.invalidate();
             }
+            invalidateSelf();
         }
 
         public void setSecondParent(View secondParent) {

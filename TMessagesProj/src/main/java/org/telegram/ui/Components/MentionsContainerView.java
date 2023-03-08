@@ -83,7 +83,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                 } else {
                     i--;
                 }
-                if (adapter.getBotContextSwitch() != null) {
+                if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                     i++;
                 }
                 size.width = 0;
@@ -134,7 +134,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
 
             @Override
             protected int getFlowItemCount() {
-                if (adapter.getBotContextSwitch() != null) {
+                if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                     return getItemCount() - 2;
                 }
                 return super.getFlowItemCount() - 1;
@@ -154,7 +154,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                 } else if (object instanceof TLRPC.Document) {
                     return 20;
                 } else {
-                    if (adapter.getBotContextSwitch() != null) {
+                    if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                         position--;
                     }
                     return gridLayoutManager.getSpanSizeForItem(position);
@@ -292,7 +292,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
     @Override
     public void dispatchDraw(Canvas canvas) {
         boolean reversed = isReversed();
-        boolean topPadding = (adapter.isStickers() || adapter.isBotContext()) && adapter.isMediaLayout() && adapter.getBotContextSwitch() == null;
+        boolean topPadding = (adapter.isStickers() || adapter.isBotContext()) && adapter.isMediaLayout() && adapter.getBotContextSwitch() == null && adapter.getBotWebViewSwitch() == null;
         containerPadding = AndroidUtilities.dp(2 + (topPadding ? 2 : 0));
 
         float r = AndroidUtilities.dp(4);
@@ -552,7 +552,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                         position--;
                         if (adapter.isStickers()) {
                             return;
-                        } else if (adapter.getBotContextSwitch() != null) {
+                        } else if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                             if (position == 0) {
                                 return;
                             }

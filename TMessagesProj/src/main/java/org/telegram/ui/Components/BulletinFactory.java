@@ -14,6 +14,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
@@ -35,6 +36,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
@@ -56,6 +58,14 @@ public final class BulletinFactory {
 
     public static final int ICON_TYPE_NOT_FOUND = 0;
     public static final int ICON_TYPE_WARNING = 1;
+
+    public static BulletinFactory global() {
+        BaseFragment baseFragment = LaunchActivity.getLastFragment();
+        if (baseFragment == null) {
+            return null;
+        }
+        return BulletinFactory.of(baseFragment);
+    }
 
     public enum FileType {
 
@@ -175,6 +185,15 @@ public final class BulletinFactory {
         return createSimpleBulletin(iconRawId, text, button, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG, onButtonClick);
     }
 
+    public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence subtext, CharSequence button, Runnable onButtonClick) {
+        final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
+        layout.setAnimation(iconRawId, 36, 36);
+        layout.titleTextView.setText(text);
+        layout.subtitleTextView.setText(subtext);
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
+        return create(layout, Bulletin.DURATION_PROLONG);
+    }
+
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence button, int duration, Runnable onButtonClick) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(iconRawId, 36, 36);
@@ -195,6 +214,49 @@ public final class BulletinFactory {
         layout.textView.setMaxLines(2);
         layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
         return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.imageView.setImageDrawable(drawable);
+        layout.textView.setText(text);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text, CharSequence subtitle) {
+        final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
+        layout.imageView.setImageDrawable(drawable);
+        layout.titleTextView.setText(text);
+        layout.subtitleTextView.setText(subtitle);
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createSimpleBulletin(CharSequence text, CharSequence subtitle) {
+        final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
+        layout.hideImage();
+        layout.titleTextView.setText(text);
+        layout.subtitleTextView.setText(subtitle);
+        return create(layout, Bulletin.DURATION_PROLONG);
+    }
+
+    public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text, CharSequence subtitle, String button, Runnable onButtonClick) {
+        final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
+        layout.imageView.setImageDrawable(drawable);
+        layout.titleTextView.setText(text);
+        layout.subtitleTextView.setText(subtitle);
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createSimpleBulletin(CharSequence text, CharSequence subtitle, String button, Runnable onButtonClick) {
+        final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
+        layout.hideImage();
+        layout.titleTextView.setText(text);
+        layout.subtitleTextView.setText(subtitle);
+        layout.setButton(new Bulletin.UndoButton(getContext(), true, resourcesProvider).setText(button).setUndoAction(onButtonClick));
+        return create(layout, Bulletin.DURATION_PROLONG);
     }
 
     public Bulletin createUndoBulletin(CharSequence text, Runnable onUndo, Runnable onAction) {
@@ -282,7 +344,7 @@ public final class BulletinFactory {
             if (ChatObject.isChannelAndNotMegaGroup(chat)) {
                 text = AndroidUtilities.replaceTags(LocaleController.formatPluralString("AddedMembersToChannel", users.size()));
             } else {
-                text = AndroidUtilities.replaceTags(LocaleController.formatPluralString("AddedMembersToGroup", users.size()));
+                text = AndroidUtilities.replaceTags(LocaleController.formatPluralString("AddedSubscribersToChannel", users.size()));
             }
         }
         return createUsersBulletin(users, text);

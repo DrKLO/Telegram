@@ -86,10 +86,6 @@ public class AdjustPanLayoutHelper {
     ViewTreeObserver.OnPreDrawListener onPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
         @Override
         public boolean onPreDraw() {
-            if (!SharedConfig.smoothKeyboard) {
-                onDetach();
-                return true;
-            }
             int contentHeight = parent.getHeight();
             if (contentHeight - startOffset() == previousHeight - previousStartOffset || contentHeight == previousHeight || animator != null) {
                 if (animator == null) {
@@ -280,9 +276,6 @@ public class AdjustPanLayoutHelper {
     }
 
     public void onAttach() {
-        if (!SharedConfig.smoothKeyboard) {
-            return;
-        }
         onDetach();
         Context context = parent.getContext();
         Activity activity = getActivity(context);

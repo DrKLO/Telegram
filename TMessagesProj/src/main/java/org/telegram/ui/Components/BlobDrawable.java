@@ -59,7 +59,13 @@ public class BlobDrawable {
 
     private final Matrix m = new Matrix();
 
+    private final int liteFlag;
+
     public BlobDrawable(int n) {
+        this(n, LiteMode.FLAG_CALLS_ANIMATIONS);
+    }
+
+    public BlobDrawable(int n, int liteFlag) {
         N = n;
         L = (float) ((4.0 / 3.0) * Math.tan(Math.PI / (2 * N)));
         radius = new float[n];
@@ -75,6 +81,8 @@ public class BlobDrawable {
             generateBlob(radiusNext, angleNext, i);
             progress[i] = 0;
         }
+
+        this.liteFlag = liteFlag;
     }
 
     private void generateBlob(float[] radius, float[] angle, int i) {
@@ -86,7 +94,7 @@ public class BlobDrawable {
     }
 
     public void update(float amplitude, float speedScale) {
-        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+        if (!LiteMode.isEnabled(liteFlag)) {
             return;
         }
         for (int i = 0; i < N; i++) {
@@ -101,7 +109,7 @@ public class BlobDrawable {
     }
 
     public void draw(float cX, float cY, Canvas canvas, Paint paint) {
-        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+        if (!LiteMode.isEnabled(liteFlag)) {
             return;
         }
         path.reset();
@@ -172,7 +180,7 @@ public class BlobDrawable {
 
     public void setValue(float value, boolean isBig) {
         animateToAmplitude = value;
-        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+        if (!LiteMode.isEnabled(liteFlag)) {
             return;
         }
         if (isBig) {

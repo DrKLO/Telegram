@@ -91,12 +91,7 @@ public class StickerSetCell extends FrameLayout {
         imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 13, 9, LocaleController.isRTL ? 13 : 0, 0));
 
-        if (option == 2) {
-            progressView = new RadialProgressView(getContext());
-            progressView.setProgressColor(Theme.getColor(Theme.key_dialogProgressCircle));
-            progressView.setSize(AndroidUtilities.dp(30));
-            addView(progressView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 5, LocaleController.isRTL ? 12 : 0, 0));
-        } else if (option != 0) {
+        if (option != 0) {
             optionsButton = new ImageView(context);
             optionsButton.setFocusable(false);
             optionsButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -548,7 +543,7 @@ public class StickerSetCell extends FrameLayout {
 
     public void updateRightMargin() {
         sideButtons.measure(MeasureSpec.makeMeasureSpec(999999, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58), MeasureSpec.EXACTLY));
-        final int margin = sideButtons.getMeasuredWidth();
+        final int margin = AndroidUtilities.dp(26) + sideButtons.getMeasuredWidth();
         if (LocaleController.isRTL) {
             ((MarginLayoutParams) textView.getLayoutParams()).leftMargin = margin;
             ((MarginLayoutParams) valueTextView.getLayoutParams()).leftMargin = margin;

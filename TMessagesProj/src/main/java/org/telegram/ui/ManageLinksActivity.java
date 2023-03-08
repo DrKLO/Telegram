@@ -1121,7 +1121,7 @@ public class ManageLinksActivity extends BaseFragment {
                 AlertDialog alert = builder.create();
                 builder.show();
                 if (redLastItem) {
-                    alert.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                    alert.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
                 }
             });
             optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));

@@ -996,6 +996,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             currentConnectionState = ConnectionsManager.getInstance(currentAccount).getConnectionState();
             updateCurrentConnectionState();
         }
+        if (emojiStatusDrawable != null) {
+            emojiStatusDrawable.attach();
+        }
     }
 
     @Override
@@ -1004,6 +1007,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (parentFragment != null) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateConnectionState);
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        }
+        if (emojiStatusDrawable != null) {
+            emojiStatusDrawable.detach();
         }
     }
 
