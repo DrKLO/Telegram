@@ -176,13 +176,21 @@ public class OverlayActionBarLayoutDialog extends Dialog implements INavigationL
     @Override
     public void onRebuildAllFragments(INavigationLayout layout, boolean last) {}
 
-    private static final class EmptyFragment extends BaseFragment {
+    private final class EmptyFragment extends BaseFragment {
         @Override
         public View createView(Context context) {
+            hasOwnBackground = true;
             actionBar.setAddToContainer(false);
             View v = new View(context);
             v.setBackgroundColor(Color.TRANSPARENT);
             return v;
+        }
+
+        @Override
+        public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+            if (isOpen && backward) {
+                dismiss();
+            }
         }
     }
 }

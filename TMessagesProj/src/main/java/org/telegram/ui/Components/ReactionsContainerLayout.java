@@ -969,7 +969,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     }
                 }
             } else {
-                if (BuildVars.DEBUG_VERSION) {
+                if (BuildVars.DEBUG_PRIVATE_VERSION) {
                     throw new RuntimeException("Unknown chat reactions type: " + reactionsChat.available_reactions);
                 }
             }
@@ -1163,7 +1163,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
         }
     }
 
@@ -1589,6 +1589,14 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 startEnterAnimation(false);
             }
         }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (getAlpha() < 0.5f) {
+            return false;
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     @Override

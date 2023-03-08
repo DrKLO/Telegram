@@ -68,6 +68,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextEmoji;
+import org.telegram.ui.Components.FillLastLinearLayoutManager;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
@@ -127,6 +128,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private int ttlPeriod;
 
     private final static int done_button = 1;
+    private FillLastLinearLayoutManager linearLayoutManager;
 
     public interface GroupCreateFinalActivityDelegate {
         void didStartChatCreation();
@@ -537,9 +539,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         editText.setFilters(inputFilters);
         editTextContainer.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 5 : 96, 0, LocaleController.isRTL ? 96 : 5, 0));
 
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
 
         listView = new RecyclerListView(context);
+        linearLayoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, listView);
+
         listView.setAdapter(adapter = new GroupCreateAdapter(context));
         listView.setLayoutManager(linearLayoutManager);
         listView.setVerticalScrollBarEnabled(false);
@@ -925,6 +928,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         private final static int VIEW_TYPE_AUTO_DELETE = 4;
         private final static int VIEW_TYPE_TEXT_INFO_CELL = 5;
         private final static int VIEW_TYPE_TOPICS = 6;
+        private final static int VIEW_TYPE_LAST_EMPTY_VIEW = 7;
 
         ArrayList<InnerItem> items = new ArrayList<>();
 
@@ -948,11 +952,14 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 items.add(new InnerItem(VIEW_TYPE_TEXT_SETTINGS));
                 items.add(new InnerItem(VIEW_TYPE_SHADOW_SECTION_CELL));
             }
-            items.add(new InnerItem(VIEW_TYPE_HEADER_CELL));
-            usersStartRow = items.size();
-            for (int i = 0; i < selectedContacts.size(); i++) {
-                items.add(new InnerItem(VIEW_TYPE_USER_CELL));
+            if (selectedContacts.size() > 0) {
+                items.add(new InnerItem(VIEW_TYPE_HEADER_CELL));
+                usersStartRow = items.size();
+                for (int i = 0; i < selectedContacts.size(); i++) {
+                    items.add(new InnerItem(VIEW_TYPE_USER_CELL));
+                }
             }
+            items.add(new InnerItem(VIEW_TYPE_LAST_EMPTY_VIEW));
 
             super.notifyDataSetChanged();
         }
@@ -992,7 +999,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     break;
                 case VIEW_TYPE_TEXT_INFO_CELL:
                     view = new TextInfoPrivacyCell(context);
-                    Drawable drawable = Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                    Drawable drawable = Theme.getThemedDrawable(context, selectedContacts.size() == 0 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
                     view.setBackgroundDrawable(combinedDrawable);
@@ -1003,6 +1010,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 case 3:
                 default:
                     view = new TextSettingsCell(context);
+                    break;
+                case VIEW_TYPE_LAST_EMPTY_VIEW:
+                    view = new View(context);
+                    if (selectedContacts.isEmpty()) {
+                        view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    }
                     break;
             }
             return new RecyclerListView.Holder(view);

@@ -33,21 +33,12 @@ public class Utilities {
     public static Random fastRandom = new Xoroshiro128PlusRandom(random.nextLong());
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
-    public static volatile DispatchQueue stageQueue2 = new DispatchQueue("stageQueue2");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
     public static volatile DispatchQueue cacheClearQueue = new DispatchQueue("cacheClearQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
     public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
-
-    private static final Object lock = new Object();
-    private static volatile int stageQueueI = 0;
-    public static DispatchQueue getStageQueue() {
-        synchronized (lock) {
-            return stageQueueI++ % 2 == 0 ? stageQueue : stageQueue2;
-        }
-    }
 
     private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

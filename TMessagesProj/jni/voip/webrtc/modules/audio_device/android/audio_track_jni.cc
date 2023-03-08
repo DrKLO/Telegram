@@ -176,7 +176,7 @@ int32_t AudioTrackJni::StartPlayout() {
 int32_t AudioTrackJni::StopPlayout() {
   RTC_LOG(LS_INFO) << "StopPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
-  if (!initialized_ || !playing_) {
+  if (!initialized_ || !playing_ || j_audio_track_ == nullptr) {
     return 0;
   }
   if (!j_audio_track_->StopPlayout()) {

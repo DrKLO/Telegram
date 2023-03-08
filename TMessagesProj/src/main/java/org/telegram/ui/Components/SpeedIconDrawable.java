@@ -6,12 +6,19 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
+
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class SpeedIconDrawable extends Drawable {
 
@@ -54,15 +61,26 @@ public class SpeedIconDrawable extends Drawable {
         }
     }
 
-    public void setValue(float value, boolean animated) {
-        float roundedValue = Math.round(value * 10F) / 10F;
-        String text;
+//    private static Locale decimalFormatLocale;
+//    private static DecimalFormat decimalFormat;
+    public static String formatNumber(float value) {
+        final float precision = Math.abs(value - .25f) < 0.001f && false ? 100F : 10F;
+        float roundedValue = Math.round(value * precision) / precision;
         if (roundedValue == (long) roundedValue) {
-            text = String.format("%d", (long) roundedValue);
+            return "" + (long) roundedValue;
         } else {
-            text = String.format("%s", roundedValue);
+            return "" + roundedValue;
         }
-        text += "X";
+//        if (decimalFormat == null || decimalFormatLocale != Locale.getDefault()) {
+//            DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(decimalFormatLocale = Locale.getDefault());
+//            symbols.setDecimalSeparator('.');
+//            decimalFormat = new DecimalFormat("###,##0.0", symbols);
+//        }
+//        return decimalFormat.format(value);
+    }
+
+    public void setValue(float value, boolean animated) {
+        String text = formatNumber(value) + "X";
         if (!animated || !TextUtils.equals(textDrawable.getText(), text)) {
             textDrawable.cancelAnimation();
             textDrawable.setText(text, animated);

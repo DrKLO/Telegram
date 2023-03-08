@@ -277,43 +277,6 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         futureTabsPositions.put(index, view);
     }
 
-    public TextView addIconTabWithCounter(int id, Drawable drawable) {
-        String key = "textTab" + id;
-        final int position = tabCount++;
-
-        FrameLayout tab = (FrameLayout) prevTypes.get(key);
-        TextView textView;
-        if (tab != null) {
-            textView = (TextView) tab.getChildAt(1);
-            checkViewIndex(key, tab, position);
-        } else {
-            tab = new FrameLayout(getContext());
-            tab.setFocusable(true);
-            tabsContainer.addView(tab, position);
-
-            ImageView imageView = new ImageView(getContext());
-            imageView.setImageDrawable(drawable);
-            imageView.setScaleType(ImageView.ScaleType.CENTER);
-            tab.setOnClickListener(v -> delegate.onPageSelected((Integer) v.getTag(R.id.index_tag)));
-            tab.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-            textView = new TextView(getContext());
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelBadgeText));
-            textView.setGravity(Gravity.CENTER);
-            textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), getThemedColor(Theme.key_chat_emojiPanelBadgeBackground)));
-            textView.setMinWidth(AndroidUtilities.dp(18));
-            textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
-            tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
-        }
-        tab.setTag(R.id.index_tag, position);
-        tab.setSelected(position == currentPosition);
-
-        tabTypes.put(key, tab);
-        return textView;
-    }
-
     public FrameLayout addIconTab(int id, Drawable drawable) {
         String key = "tab" + id;
         final int position = tabCount++;

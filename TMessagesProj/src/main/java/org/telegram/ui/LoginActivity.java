@@ -565,6 +565,7 @@ public class LoginActivity extends BaseFragment {
         };
         keyboardLinearLayout.addView(slideViewsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
         keyboardView = new CustomPhoneKeyboardView(context);
+        keyboardView.setViewToFindFocus(slideViewsContainer);
         keyboardLinearLayout.addView(keyboardView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP));
 
         views[VIEW_PHONE_INPUT] = new PhoneView(context);
@@ -3994,7 +3995,9 @@ public class LoginActivity extends BaseFragment {
             if (currentType == AUTH_TYPE_MESSAGE) {
                 setProblemTextVisible(true);
                 timeText.setVisibility(GONE);
-                problemText.setVisibility(VISIBLE);
+                if (problemText != null) {
+                    problemText.setVisibility(VISIBLE);
+                }
             } else if (currentType == AUTH_TYPE_FLASH_CALL && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS)) {
                 setProblemTextVisible(false);
                 timeText.setVisibility(VISIBLE);
@@ -4016,7 +4019,9 @@ public class LoginActivity extends BaseFragment {
                 timeText.setText(LocaleController.formatString("CallAvailableIn", R.string.CallAvailableIn, 2, 0));
                 setProblemTextVisible(time < 1000);
                 timeText.setVisibility(time < 1000 ? GONE : VISIBLE);
-                problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
+                if (problemText != null) {
+                    problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
+                }
 
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 String hash = preferences.getString("sms_hash", null);
@@ -4039,11 +4044,15 @@ public class LoginActivity extends BaseFragment {
                 timeText.setText(LocaleController.formatString("SmsAvailableIn", R.string.SmsAvailableIn, 2, 0));
                 setProblemTextVisible(time < 1000);
                 timeText.setVisibility(time < 1000 ? GONE : VISIBLE);
-                problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
+                if (problemText != null) {
+                    problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
+                }
                 createTimer();
             } else {
                 timeText.setVisibility(GONE);
-                problemText.setVisibility(VISIBLE);
+                if (problemText != null) {
+                    problemText.setVisibility(VISIBLE);
+                }
                 setProblemTextVisible(false);
                 createCodeTimer();
             }
@@ -4095,7 +4104,9 @@ public class LoginActivity extends BaseFragment {
                         if (codeTime <= 1000) {
                             setProblemTextVisible(true);
                             timeText.setVisibility(GONE);
-                            problemText.setVisibility(VISIBLE);
+                            if (problemText != null) {
+                                problemText.setVisibility(VISIBLE);
+                            }
                             destroyCodeTimer();
                         }
                     });

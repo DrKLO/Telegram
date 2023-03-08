@@ -71,6 +71,7 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmojiPacksAlert;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -121,6 +122,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private int largeEmojiRow;
     private int reactionsDoubleTapRow;
     private int stickersBotInfo;
+    private int featuredRow;
     private int masksRow;
     private int emojiPacksRow;
     private int masksInfoRow;
@@ -132,6 +134,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private int featuredStickersEndRow;
     private int featuredStickersShowMoreRow;
     private int featuredStickersShadowRow;
+    private int stickersSettingsRow;
 
     private int stickersHeaderRow;
     private int stickersStartRow;
@@ -309,10 +312,24 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new RecyclerListView(context);
+        listView = new RecyclerListView(context) {
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                if (actionBar.isActionModeShowed()) {
+                    drawSectionBackground(canvas, stickersHeaderRow, stickersEndRow, getThemedColor(Theme.key_windowBackgroundWhite));
+                }
+                super.dispatchDraw(canvas);
+            }
+        };
         listView.setFocusable(true);
         listView.setTag(7);
-        DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+        DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
+            @Override
+            protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                super.onMoveAnimationUpdate(holder);
+                listView.invalidate();
+            }
+        };
         itemAnimator.setMoveDuration(350);
         itemAnimator.setMoveInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         listView.setItemAnimator(itemAnimator);
@@ -349,7 +366,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 } else {
                     showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, inputStickerSetID, null, null));
                 }
-            } else if (position == featuredStickersShowMoreRow) {
+            } else if (position == featuredStickersShowMoreRow || position == featuredRow) {
                 if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
                     ArrayList<TLRPC.InputStickerSet> inputStickerSets = new ArrayList<>();
                     List<TLRPC.StickerSetCovered> featuredStickerSets = getFeaturedSets();
@@ -514,6 +531,20 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> activeReorderingRequests--));
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.stickersDidLoad, currentType, true);
+
+        if (SharedConfig.updateStickersOrderOnSend && dynamicPackOrder != -1) {
+            SharedConfig.toggleUpdateStickersOrderOnSend();
+            BulletinFactory.of(StickersActivity.this).createSimpleBulletin(R.raw.filter_reorder, LocaleController.getString("DynamicPackOrderOff", R.string.DynamicPackOrderOff), LocaleController.getString("DynamicPackOrderOffInfo", R.string.DynamicPackOrderOffInfo)).show();
+
+            for (int i = 0; i < listView.getChildCount(); ++i) {
+                View child = listView.getChildAt(i);
+                int position = listView.getChildAdapterPosition(child);
+                if (position == dynamicPackOrder && child instanceof TextCheckCell) {
+                    ((TextCheckCell) child).setChecked(SharedConfig.updateStickersOrderOnSend);
+                    break;
+                }
+            }
+        }
     }
 
     private void updateRows(boolean updateEmojipacks) {
@@ -622,17 +653,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
         rowCount = 0;
 
-        if (currentType == MediaDataController.TYPE_IMAGE) {
-            suggestRow = rowCount++;
-            largeEmojiRow = rowCount++;
-            loopRow = rowCount++;
-            loopInfoRow = rowCount++;
-        } else {
-            suggestRow = -1;
-            largeEmojiRow = -1;
-            loopRow = -1;
-            loopInfoRow = -1;
-        }
+        loopRow = -1;
+        loopInfoRow = -1;
 
         if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
             suggestAnimatedEmojiRow = rowCount++;
@@ -643,9 +665,11 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
 
         if (currentType == MediaDataController.TYPE_IMAGE) {
-            masksRow = rowCount++;
+            featuredRow = rowCount++;
+            masksRow = -1;
             emojiPacksRow = rowCount++;
         } else {
+            featuredRow = -1;
             masksRow = -1;
             emojiPacksRow = -1;
         }
@@ -687,22 +711,28 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         featuredStickersEndRow = -1;
         featuredStickersShowMoreRow = -1;
         featuredStickersShadowRow = -1;
-        if (!featuredStickersList.isEmpty() && (currentType == MediaDataController.TYPE_IMAGE)) {
-            featuredStickersHeaderRow = rowCount++;
-            featuredStickersStartRow = rowCount;
-            rowCount += featuredStickersList.size();
-            featuredStickersEndRow = rowCount;
-
-            if (truncatedFeaturedStickers) {
-                featuredStickersShowMoreRow = rowCount++;
-            }
-            featuredStickersShadowRow = rowCount++;
-        }
+//        if (!featuredStickersList.isEmpty() && (currentType == MediaDataController.TYPE_IMAGE)) {
+//            featuredStickersHeaderRow = rowCount++;
+//            featuredStickersStartRow = rowCount;
+//            rowCount += featuredStickersList.size();
+//            featuredStickersEndRow = rowCount;
+//
+//            if (truncatedFeaturedStickers) {
+//                featuredStickersShowMoreRow = rowCount++;
+//            }
+//            featuredStickersShadowRow = rowCount++;
+//        }
 
         if (currentType == MediaDataController.TYPE_IMAGE) {
+            stickersSettingsRow = rowCount++;
+            suggestRow = rowCount++;
+            largeEmojiRow = rowCount++;
             dynamicPackOrder = rowCount++;
             dynamicPackOrderInfo = rowCount++;
         } else {
+            stickersSettingsRow = -1;
+            suggestRow = -1;
+            largeEmojiRow = -1;
             dynamicPackOrder = -1;
             dynamicPackOrderInfo = -1;
         }
@@ -964,7 +994,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         if (which == MENU_DELETE) {
                             TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                             if (button != null) {
-                                button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                                button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                             }
                         }
                         break;
@@ -1013,6 +1043,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         headerCell.setText(LocaleController.getString(currentType == MediaDataController.TYPE_EMOJIPACKS ? R.string.FeaturedEmojiPacks : R.string.FeaturedStickers));
                     } else if (position == stickersHeaderRow) {
                         headerCell.setText(LocaleController.getString(currentType == MediaDataController.TYPE_EMOJIPACKS ? R.string.ChooseStickerMyEmojiPacks : R.string.ChooseStickerMyStickerSets));
+                    } else if (position == stickersSettingsRow) {
+                        headerCell.setText(LocaleController.getString("StickersSettings", R.string.StickersSettings));
                     }
                     break;
                 case TYPE_FEATURED_STICKER_SET: {
@@ -1078,6 +1110,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     break;
                 case TYPE_INFO:
                     TextInfoPrivacyCell infoPrivacyCell = (TextInfoPrivacyCell) holder.itemView;
+                    infoPrivacyCell.setFixedSize(0);
                     if (position == stickersBotInfo) {
                         infoPrivacyCell.setText(addStickersBotSpan(
                             currentType == MediaDataController.TYPE_EMOJIPACKS ?
@@ -1091,7 +1124,9 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                             infoPrivacyCell.setText(LocaleController.getString("ArchivedMasksInfo", R.string.ArchivedMasksInfo));
                         }
                     } else if (position == loopInfoRow) {
-                        infoPrivacyCell.setText(LocaleController.getString("LoopAnimatedStickersInfo", R.string.LoopAnimatedStickersInfo));
+//                        infoPrivacyCell.setText(LocaleController.getString("LoopAnimatedStickersInfo", R.string.LoopAnimatedStickersInfo));
+                        infoPrivacyCell.setText(null);
+                        infoPrivacyCell.setFixedSize(12);
                     } else if (position == suggestAnimatedEmojiInfoRow) {
                         infoPrivacyCell.setText(LocaleController.getString("SuggestAnimatedEmojiInfo", R.string.SuggestAnimatedEmojiInfo));
                     } else if (position == masksInfoRow) {
@@ -1105,18 +1140,19 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     if (position == featuredStickersShowMoreRow) {
                         settingsCell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
                         if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-                            settingsCell.setTextAndIcon(LocaleController.getString(R.string.ShowMoreEmojiPacks), R.drawable.msg_trending, false);
+                            settingsCell.setTextAndIcon(LocaleController.getString(R.string.ShowMoreEmojiPacks), R.drawable.msg2_trending, false);
                         } else {
-                            settingsCell.setTextAndIcon(LocaleController.getString(R.string.ShowMoreStickers), R.drawable.msg_trending, false);
+                            settingsCell.setTextAndIcon(LocaleController.getString(R.string.ShowMoreStickers), R.drawable.msg2_trending, false);
                         }
                     } else {
                         settingsCell.imageView.setTranslationX(0);
+                        settingsCell.textView.setTranslationX(0);
                         settingsCell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         if (position == archivedRow) {
                             int count = MediaDataController.getInstance(currentAccount).getArchivedStickersCount(currentType);
                             String value = count > 0 ? Integer.toString(count) : "";
                             if (currentType == MediaDataController.TYPE_IMAGE) {
-                                settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ArchivedStickers), value, R.drawable.msg_archived_stickers, true);
+                                settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ArchivedStickers), value, R.drawable.msg2_archived_stickers, true);
                             } else if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
                                 settingsCell.setTextAndValue(LocaleController.getString("ArchivedEmojiPacks", R.string.ArchivedEmojiPacks), value, false, true);
                             } else {
@@ -1127,12 +1163,15 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                             MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
                             int count = MessagesController.getInstance(currentAccount).filterPremiumStickers(mediaDataController.getStickerSets(type)).size() + mediaDataController.getArchivedStickersCount(type);
                             settingsCell.setTextAndValueAndIcon(LocaleController.getString("Masks", R.string.Masks), count > 0 ? Integer.toString(count) : "", R.drawable.msg_mask, true);
+                        } else if (position == featuredRow) {
+                            List<TLRPC.StickerSetCovered> sets = getFeaturedSets();
+                            settingsCell.setTextAndValueAndIcon(LocaleController.getString("FeaturedStickers", R.string.FeaturedStickers), sets != null ? "" + sets.size() : "", R.drawable.msg2_trending, true);
                         } else if (position == emojiPacksRow) {
                             int type = MediaDataController.TYPE_EMOJIPACKS;
                             MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
                             int count = mediaDataController.getStickerSets(type).size();
                             settingsCell.imageView.setTranslationX(-AndroidUtilities.dp(2));
-                            settingsCell.setTextAndValueAndIcon(LocaleController.getString("Emoji", R.string.Emoji), count > 0 ? Integer.toString(count) : "", R.drawable.input_smile, true);
+                            settingsCell.setTextAndValueAndIcon(LocaleController.getString("Emoji", R.string.Emoji), count > 0 ? Integer.toString(count) : "", R.drawable.msg2_smile_status, true);
                         } else if (position == suggestRow) {
                             String value;
                             switch (SharedConfig.suggestStickers) {
@@ -1146,6 +1185,9 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                                 default:
                                     value = LocaleController.getString("SuggestStickersNone", R.string.SuggestStickersNone);
                                     break;
+                            }
+                            if (!LocaleController.isRTL) {
+                                settingsCell.textView.setTranslationX(AndroidUtilities.dp(-2));
                             }
                             settingsCell.setTextAndValue(LocaleController.getString("SuggestStickers", R.string.SuggestStickers), value, updateSuggestStickers, true);
                             updateSuggestStickers = false;
@@ -1173,7 +1215,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 case TYPE_DOUBLE_TAP_REACTIONS: {
                     TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
                     settingsCell.setText(LocaleController.getString("DoubleTapSetting", R.string.DoubleTapSetting), false);
-                    settingsCell.setIcon(R.drawable.msg_reactions2);
+                    settingsCell.setIcon(R.drawable.msg2_reactions2);
                     String reaction = MediaDataController.getInstance(currentAccount).getDoubleTapReaction();
                     if (reaction != null) {
                         if (reaction.startsWith("animated_")) {
@@ -1335,7 +1377,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         showDialog(dialog);
 
                         if (options[options.length - 1] == MENU_DELETE) {
-                            dialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                            dialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
                         }
                     });
                     break;
@@ -1376,7 +1418,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 return TYPE_STICKER_SET;
             } else if (i == stickersBotInfo || i == archivedInfoRow || i == loopInfoRow || i == suggestAnimatedEmojiInfoRow || i == masksInfoRow || i == dynamicPackOrderInfo) {
                 return TYPE_INFO;
-            } else if (i == archivedRow || i == masksRow || i == emojiPacksRow || i == suggestRow || i == featuredStickersShowMoreRow) {
+            } else if (i == archivedRow || i == masksRow || i == featuredRow || i == emojiPacksRow || i == suggestRow || i == featuredStickersShowMoreRow) {
                 return TYPE_TEXT_AND_VALUE;
             } else if (i == stickersShadowRow || i == featuredStickersShadowRow) {
                 return TYPE_SHADOW;
@@ -1384,7 +1426,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 return TYPE_SWITCH;
             } else if (i == reactionsDoubleTapRow) {
                 return TYPE_DOUBLE_TAP_REACTIONS;
-            } else if (i == featuredStickersHeaderRow || i == stickersHeaderRow) {
+            } else if (i == featuredStickersHeaderRow || i == stickersHeaderRow || i == stickersSettingsRow) {
                 return TYPE_HEADER;
             }
             return TYPE_STICKER_SET;

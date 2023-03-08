@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -34,6 +35,7 @@ import androidx.dynamicanimation.animation.SpringForce;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -50,23 +52,29 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.List;
 import java.util.Locale;
 
 public class BotWebViewSheet extends Dialog implements NotificationCenter.NotificationCenterDelegate {
-    public final static int TYPE_WEB_VIEW_BUTTON = 0, TYPE_SIMPLE_WEB_VIEW_BUTTON = 1, TYPE_BOT_MENU_BUTTON = 2;
+    public final static int TYPE_WEB_VIEW_BUTTON = 0, TYPE_SIMPLE_WEB_VIEW_BUTTON = 1, TYPE_BOT_MENU_BUTTON = 2, TYPE_WEB_VIEW_BOT_APP = 3;
+
+    public final static int FLAG_FROM_INLINE_SWITCH = 1;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef(value = {
             TYPE_WEB_VIEW_BUTTON,
             TYPE_SIMPLE_WEB_VIEW_BUTTON,
-            TYPE_BOT_MENU_BUTTON
+            TYPE_BOT_MENU_BUTTON,
+            TYPE_WEB_VIEW_BOT_APP
     })
     public @interface WebViewType {}
 
@@ -296,6 +304,66 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     return;
                 }
                 swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY());
+            }
+
+            @Override
+            public void onWebAppSwitchInlineQuery(TLRPC.User botUser, String query, List<String> chatTypes) {
+                if (chatTypes.isEmpty()) {
+                    if (parentActivity instanceof LaunchActivity) {
+                        BaseFragment lastFragment = ((LaunchActivity) parentActivity).getActionBarLayout().getLastFragment();
+                        if (lastFragment instanceof ChatActivity) {
+                            ((ChatActivity) lastFragment).getChatActivityEnterView().setFieldText("@" + UserObject.getPublicUsername(botUser) + " " + query);
+                            dismiss();
+                        }
+                    }
+                } else {
+                    Bundle args = new Bundle();
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_START_ATTACH_BOT);
+                    args.putBoolean("onlySelect", true);
+
+                    args.putBoolean("allowGroups", chatTypes.contains("groups"));
+                    args.putBoolean("allowUsers", chatTypes.contains("users"));
+                    args.putBoolean("allowChannels", chatTypes.contains("channels"));
+                    args.putBoolean("allowBots", chatTypes.contains("bots"));
+
+                    DialogsActivity dialogsActivity = new DialogsActivity(args);
+                    AndroidUtilities.hideKeyboard(frameLayout);
+                    OverlayActionBarLayoutDialog overlayActionBarLayoutDialog = new OverlayActionBarLayoutDialog(context, resourcesProvider);
+                    dialogsActivity.setDelegate((fragment, dids, message1, param, topicsFragment) -> {
+                        long did = dids.get(0).dialogId;
+
+                        Bundle args1 = new Bundle();
+                        args1.putBoolean("scrollToTopOnResume", true);
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
+                        } else if (DialogObject.isUserDialog(did)) {
+                            args1.putLong("user_id", did);
+                        } else {
+                            args1.putLong("chat_id", -did);
+                        }
+                        args1.putString("inline_query_input", "@" + UserObject.getPublicUsername(botUser) + " " + query);
+
+                        if (parentActivity instanceof LaunchActivity) {
+                            BaseFragment lastFragment = ((LaunchActivity) parentActivity).getActionBarLayout().getLastFragment();
+                            if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args1, lastFragment)) {
+                                overlayActionBarLayoutDialog.dismiss();
+
+                                dismissed = true;
+                                AndroidUtilities.cancelRunOnUIThread(pollRunnable);
+
+                                webViewContainer.destroyWebView();
+                                NotificationCenter.getInstance(currentAccount).removeObserver(BotWebViewSheet.this, NotificationCenter.webViewResultSent);
+                                NotificationCenter.getGlobalInstance().removeObserver(BotWebViewSheet.this, NotificationCenter.didSetNewTheme);
+                                BotWebViewSheet.super.dismiss();
+
+                                lastFragment.presentFragment(new INavigationLayout.NavigationParams(new ChatActivity(args1)).setRemoveLast(true));
+                            }
+                        }
+                        return true;
+                    });
+                    overlayActionBarLayoutDialog.show();
+                    overlayActionBarLayoutDialog.addFragment(dialogsActivity);
+                }
             }
 
             @Override
@@ -674,7 +742,19 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
     }
 
+    public void requestWebView(int currentAccount, long peerId, long botId, String buttonText, String buttonUrl, @WebViewType int type, int replyToMsgId, boolean silent, int flags) {
+        requestWebView(currentAccount, peerId, botId, buttonText, buttonUrl, type, replyToMsgId, silent, null, null, false, null, null, flags);
+    }
+
     public void requestWebView(int currentAccount, long peerId, long botId, String buttonText, String buttonUrl, @WebViewType int type, int replyToMsgId, boolean silent) {
+        requestWebView(currentAccount, peerId, botId, buttonText, buttonUrl, type, replyToMsgId, silent, null, null, false, null, null, 0);
+    }
+
+    public void requestWebView(int currentAccount, long peerId, long botId, String buttonText, String buttonUrl, @WebViewType int type, int replyToMsgId, boolean silent, BaseFragment lastFragment, TLRPC.BotApp app, boolean allowWrite, String startParam, TLRPC.User botUser) {
+        requestWebView(currentAccount, peerId, botId, buttonText, buttonUrl, type, replyToMsgId, silent, lastFragment, app, allowWrite, startParam, botUser, 0);
+    }
+
+    public void requestWebView(int currentAccount, long peerId, long botId, String buttonText, String buttonUrl, @WebViewType int type, int replyToMsgId, boolean silent, BaseFragment lastFragment, TLRPC.BotApp app, boolean allowWrite, String startParam, TLRPC.User botUser, int flags) {
         this.currentAccount = currentAccount;
         this.peerId = peerId;
         this.botId = botId;
@@ -773,6 +853,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
             case TYPE_SIMPLE_WEB_VIEW_BUTTON: {
                 TLRPC.TL_messages_requestSimpleWebView req = new TLRPC.TL_messages_requestSimpleWebView();
+                req.from_switch_webview = (flags & FLAG_FROM_INLINE_SWITCH) != 0;
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
                 req.platform = "android";
                 if (hasThemeParams) {
@@ -825,6 +906,40 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 }));
                 NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
                 break;
+            }
+            case TYPE_WEB_VIEW_BOT_APP: {
+                TLRPC.TL_messages_requestAppWebView req = new TLRPC.TL_messages_requestAppWebView();
+                TLRPC.TL_inputBotAppID botApp = new TLRPC.TL_inputBotAppID();
+                botApp.id = app.id;
+                botApp.access_hash = app.access_hash;
+
+                req.app = botApp;
+                req.write_allowed = allowWrite;
+                req.platform = "android";
+                req.peer = lastFragment instanceof ChatActivity ? ((ChatActivity) lastFragment).getCurrentUser() != null ? MessagesController.getInputPeer(((ChatActivity) lastFragment).getCurrentUser()) : MessagesController.getInputPeer(((ChatActivity) lastFragment).getCurrentChat())
+                        : MessagesController.getInputPeer(botUser);
+
+                if (!TextUtils.isEmpty(startParam)) {
+                    req.start_param = startParam;
+                    req.flags |= 2;
+                }
+
+                if (hasThemeParams) {
+                    req.theme_params = new TLRPC.TL_dataJSON();
+                    req.theme_params.data = themeParams;
+                    req.flags |= 4;
+                }
+
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (error2 == null) {
+                        TLRPC.TL_appWebViewResultUrl result = (TLRPC.TL_appWebViewResultUrl) response2;
+                        queryId = 0;
+                        webViewContainer.loadUrl(currentAccount, result.url);
+                        swipeContainer.setWebView(webViewContainer.getWebView());
+
+                        AndroidUtilities.runOnUIThread(pollRunnable, POLL_PERIOD);
+                    }
+                }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
             }
         }
     }

@@ -307,8 +307,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
-                float iconX = backgroundView.getX() + backgroundView.imageView.getX();
-                float iconY = backgroundView.getY() + backgroundView.imageView.getY();
+                float iconX = backgroundView.getX() + backgroundView.imageFrameLayout.getX();
+                float iconY = backgroundView.getY() + backgroundView.imageFrameLayout.getY();
                 AndroidUtilities.rectTmp.set(iconX, iconY, iconX + backgroundView.imageView.getMeasuredWidth(), iconY + backgroundView.imageView.getMeasuredHeight());
                 if ((AndroidUtilities.rectTmp.contains(ev.getX(), ev.getY()) || iconInterceptedTouch) && !listView.scrollingByUser) {
                     ev.offsetLocation(-iconX, -iconY);
@@ -1155,6 +1155,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 }
             };
             imageFrameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            imageFrameLayout.setClipChildren(false);
+            setClipChildren(false);
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);

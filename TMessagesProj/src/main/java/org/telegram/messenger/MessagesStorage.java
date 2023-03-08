@@ -94,7 +94,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 112;
+    public final static int LAST_DB_VERSION = 113;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -642,6 +642,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE INDEX IF NOT EXISTS reaction_mentions_topics_did ON reaction_mentions_topics(dialog_id, topic_id);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE emoji_groups(type INTEGER PRIMARY KEY, data BLOB)").stepThis().dispose();
+        database.executeFast("CREATE TABLE app_config(data BLOB)").stepThis().dispose();
 
         database.executeFast("PRAGMA user_version = " + MessagesStorage.LAST_DB_VERSION).stepThis().dispose();
 
@@ -3199,34 +3200,40 @@ public class MessagesStorage extends BaseController {
             }
             SQLiteCursor cursor = null;
             try {
-                if (scheduled) {
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
-                } else {
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
-                }
-                while (cursor.next()) {
-                    NativeByteBuffer data = cursor.byteBufferValue(0);
-                    if (data != null) {
-                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                        message.readAttachPath(data, getUserConfig().clientUserId);
-                        data.reuse();
-                        message.id = cursor.intValue(1);
-                        message.date = cursor.intValue(2);
-                        message.dialog_id = cursor.longValue(3);
+                for (int i = 0; i < 2; i++) {
+                    if (i == 1 && !scheduled) {
+                        continue;
+                    }
+                    boolean findInScheduled = i == 1;
+                    if (findInScheduled) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                    } else {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                    }
+                    while (cursor.next()) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
+                            TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
+                            data.reuse();
+                            message.id = cursor.intValue(1);
+                            message.date = cursor.intValue(2);
+                            message.dialog_id = cursor.longValue(3);
 
-                        addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
+                            addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
 
-                        ArrayList<TLRPC.Message> arrayList = owners.get(message.id);
-                        if (arrayList != null) {
-                            for (int a = 0, N = arrayList.size(); a < N; a++) {
-                                TLRPC.Message m = arrayList.get(a);
-                                m.replyMessage = message;
-                                MessageObject.getDialogId(message);
+                            ArrayList<TLRPC.Message> arrayList = owners.get(message.id);
+                            if (arrayList != null) {
+                                for (int a = 0, N = arrayList.size(); a < N; a++) {
+                                    TLRPC.Message m = arrayList.get(a);
+                                    m.replyMessage = message;
+                                    MessageObject.getDialogId(message);
+                                }
                             }
                         }
                     }
+                    cursor.dispose();
                 }
-                cursor.dispose();
             } catch (Exception e) {
                 throw e;
             } finally {

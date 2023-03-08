@@ -822,7 +822,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     }
 
     protected void invalidateInternal() {
-        for (int i = 0; i < parentViews.size(); i++) {
+        for (int i = 0, N = parentViews.size(); i < N; i++) {
             parentViews.get(i).invalidate();
         }
         if (masterParent != null) {

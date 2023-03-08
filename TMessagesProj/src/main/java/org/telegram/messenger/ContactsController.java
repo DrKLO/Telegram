@@ -35,10 +35,13 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.Bulletin;
 
+import java.text.CollationKey;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -119,6 +122,47 @@ public class ContactsController extends BaseController {
         public boolean deliverSelfNotifications() {
             return false;
         }
+    }
+
+    private static Locale cachedCollatorLocale;
+    private static Collator cachedCollator;
+    public static Collator getLocaleCollator() {
+        if (cachedCollator == null || cachedCollatorLocale != Locale.getDefault()) {
+            try {
+                cachedCollator = Collator.getInstance(cachedCollatorLocale = Locale.getDefault());
+                cachedCollator.setStrength(Collator.SECONDARY);
+            } catch (Exception e) {
+                FileLog.e(e, true);
+            }
+        }
+        if (cachedCollator == null) {
+            try {
+                cachedCollator = Collator.getInstance();
+                cachedCollator.setStrength(Collator.SECONDARY);
+            } catch (Exception e) {
+                FileLog.e(e, true);
+            }
+        }
+        if (cachedCollator == null) {
+            cachedCollator = new Collator() {
+                @Override
+                public int compare(String source, String target) {
+                    if (source == null || target == null) {
+                        return 0;
+                    }
+                    return source.compareTo(target);
+                }
+                @Override
+                public CollationKey getCollationKey(String source) {
+                    return null;
+                }
+                @Override
+                public int hashCode() {
+                    return 0;
+                }
+            };
+        }
+        return cachedCollator;
     }
 
     public static class Contact {
@@ -1460,12 +1504,13 @@ public class ContactsController extends BaseController {
                     getMessagesStorage().putContacts(contactsArr, from != 2);
                 }
 
+                final Collator collator = getLocaleCollator();
                 Collections.sort(contactsArr, (tl_contact, tl_contact2) -> {
                     TLRPC.User user1 = usersDict.get(tl_contact.user_id);
                     TLRPC.User user2 = usersDict.get(tl_contact2.user_id);
                     String name1 = UserObject.getFirstName(user1);
                     String name2 = UserObject.getFirstName(user2);
-                    return name1.compareTo(name2);
+                    return collator.compare(name1, name2);
                 });
 
                 final ConcurrentHashMap<Long, TLRPC.TL_contact> contactsDictionary = new ConcurrentHashMap<>(20, 1.0f, 2);
@@ -1535,7 +1580,7 @@ public class ContactsController extends BaseController {
                     } else if (cv2 == '#') {
                         return -1;
                     }
-                    return s.compareTo(s2);
+                    return collator.compare(s, s2);
                 });
 
                 Collections.sort(sortedSectionsArrayMutual, (s, s2) -> {
@@ -1546,7 +1591,7 @@ public class ContactsController extends BaseController {
                     } else if (cv2 == '#') {
                         return -1;
                     }
-                    return s.compareTo(s2);
+                    return collator.compare(s, s2);
                 });
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -1649,6 +1694,7 @@ public class ContactsController extends BaseController {
                     arrayList.add(user);
                 }
             }
+            final Collator collator = getLocaleCollator();
             for (ArrayList<Object> arrayList : phoneBookSectionsDictFinal.values()) {
                 Collections.sort(arrayList, (o1, o2) -> {
                     String name1;
@@ -1681,7 +1727,7 @@ public class ContactsController extends BaseController {
                         name2 = "";
                     }
 
-                    return name1.compareTo(name2);
+                    return collator.compare(name1, name2);
                 });
             }
             Collections.sort(phoneBookSectionsArrayFinal, (s, s2) -> {
@@ -1692,7 +1738,7 @@ public class ContactsController extends BaseController {
                 } else if (cv2 == '#') {
                     return -1;
                 }
-                return s.compareTo(s2);
+                return collator.compare(s, s2);
             });
             AndroidUtilities.runOnUIThread(() -> {
                 phoneBookSectionsArray = phoneBookSectionsArrayFinal;
@@ -1731,29 +1777,31 @@ public class ContactsController extends BaseController {
 
             sortedPhoneBookContacts.add(value);
         }
+        final Collator collator = getLocaleCollator();
         Collections.sort(sortedPhoneBookContacts, (contact, contact2) -> {
-            String toComapre1 = contact.first_name;
-            if (toComapre1.length() == 0) {
-                toComapre1 = contact.last_name;
+            String toCompare1 = contact.first_name;
+            if (toCompare1.length() == 0) {
+                toCompare1 = contact.last_name;
             }
-            String toComapre2 = contact2.first_name;
-            if (toComapre2.length() == 0) {
-                toComapre2 = contact2.last_name;
+            String toCompare2 = contact2.first_name;
+            if (toCompare2.length() == 0) {
+                toCompare2 = contact2.last_name;
             }
-            return toComapre1.compareTo(toComapre2);
+            return collator.compare(toCompare1, toCompare2);
         });
 
         phoneBookContacts = sortedPhoneBookContacts;
     }
 
     private void buildContactsSectionsArrays(boolean sort) {
+        final Collator collator = getLocaleCollator();
         if (sort) {
             Collections.sort(contacts, (tl_contact, tl_contact2) -> {
                 TLRPC.User user1 = getMessagesController().getUser(tl_contact.user_id);
                 TLRPC.User user2 = getMessagesController().getUser(tl_contact2.user_id);
                 String name1 = UserObject.getFirstName(user1);
                 String name2 = UserObject.getFirstName(user2);
-                return name1.compareTo(name2);
+                return collator.compare(name1, name2);
             });
         }
 
@@ -1797,7 +1845,7 @@ public class ContactsController extends BaseController {
             } else if (cv2 == '#') {
                 return -1;
             }
-            return s.compareTo(s2);
+            return collator.compare(s, s2);
         });
 
         usersSectionsDict = sectionsDict;
@@ -2654,6 +2702,10 @@ public class ContactsController extends BaseController {
         } catch (Exception x) {
             FileLog.e(x);
         }
+    }
+
+    public static String formatName(TLRPC.User user) {
+        return formatName(user.first_name, user.last_name, 0);
     }
 
     public static String formatName(String firstName, String lastName) {

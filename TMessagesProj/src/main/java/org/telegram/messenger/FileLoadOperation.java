@@ -46,6 +46,7 @@ public class FileLoadOperation {
     }
 
     protected static class RequestInfo {
+        public long requestStartTime;
         private int requestToken;
         private long offset;
         private TLRPC.TL_upload_file response;
@@ -138,7 +139,7 @@ public class FileLoadOperation {
     private volatile int state = stateIdle;
     private volatile boolean paused;
     private long downloadedBytes;
-    private long totalBytesCount;
+    public long totalBytesCount;
     private long bytesCountPadding;
     private long streamStartOffset;
     private long streamPriorityStartOffset;
@@ -1206,7 +1207,7 @@ public class FileLoadOperation {
             for (int a = 0; a < requestInfos.size(); a++) {
                 RequestInfo requestInfo = requestInfos.get(a);
                 if (requestInfo.requestToken != 0) {
-                    ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, false);
+                    ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, true);
                 }
             }
         }
@@ -1409,7 +1410,7 @@ public class FileLoadOperation {
                     }
                 }
                 Utilities.stageQueue.postRunnable(() -> {
-                    FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime));
+                    FileLog.d("finished downloading file to " + cacheFileFinal + " time = " + (System.currentTimeMillis() - startTime) + " dc = " + datacenterId + " size = " + AndroidUtilities.formatFileSize(totalBytesCount));
                     if (increment) {
                         if (currentType == ConnectionsManager.FileTypeAudio) {
                             StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_AUDIOS, 1);
@@ -2050,9 +2051,16 @@ public class FileLoadOperation {
                 }
             }
             requestInfo.forceSmallChunk = forceSmallChunk;
+            if (BuildVars.LOGS_ENABLED) {
+                requestInfo.requestStartTime = System.currentTimeMillis();
+            }
+            int datacenterId =  isCdn ? cdnDatacenterId : this.datacenterId;
             requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequestSync(request, (response, error) -> {
                 if (!requestInfos.contains(requestInfo)) {
                     return;
+                }
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("debug_loading: " + request.getClass().getSimpleName() + " time=" + (System.currentTimeMillis() - requestInfo.requestStartTime) + " dcId=" + datacenterId + " cdn=" + isCdn + " connectionType=" + connectionType + " " + isLast);
                 }
                 if (requestInfo == priorityRequestInfo) {
                     if (BuildVars.DEBUG_VERSION) {
@@ -2163,7 +2171,7 @@ public class FileLoadOperation {
                     }
                     processRequestResult(requestInfo, error);
                 }
-            }, null, null, flags, isCdn ? cdnDatacenterId : datacenterId, connectionType, isLast);
+            }, null, null, flags, datacenterId, connectionType, isLast);
             requestsCount++;
         }
     }

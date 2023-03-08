@@ -75,7 +75,6 @@ import java.util.Map;
 public class AlertDialog extends Dialog implements Drawable.Callback, NotificationCenter.NotificationCenterDelegate {
 
     public static final int ALERT_TYPE_MESSAGE = 0;
-    public static final int ALERT_TYPE_SPINNER_DETAIL = 1; // not used?
     public static final int ALERT_TYPE_LOADING = 2;
     public static final int ALERT_TYPE_SPINNER = 3;
 
@@ -200,7 +199,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     public void redPositive() {
         TextView button = (TextView) getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(getThemedColor(Theme.key_dialogTextRed2));
+            button.setTextColor(getThemedColor(Theme.key_dialogTextRed));
         }
     }
 
@@ -279,7 +278,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         backgroundPaddings = new Rect();
         if (progressStyle != ALERT_TYPE_SPINNER || blurredBackground) {
             shadowDrawable = context.getResources().getDrawable(R.drawable.popup_fixed_alert3).mutate();
-            blurOpacity = progressStyle == ALERT_TYPE_SPINNER ? 0.55f : (isDark ? 0.80f : 0.97f);
+            blurOpacity = progressStyle == ALERT_TYPE_SPINNER ? 0.55f : (isDark ? 0.80f : 0.985f);
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
             shadowDrawable.getPadding(backgroundPaddings);
         }
@@ -736,18 +735,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             messageTextView.setEnabled(false);
         }
         messageTextView.setGravity((topAnimationIsNew ? Gravity.CENTER_HORIZONTAL : LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        if (progressViewStyle == ALERT_TYPE_SPINNER_DETAIL) {
-            progressViewContainer = new FrameLayout(getContext());
-            containerView.addView(progressViewContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.LEFT | Gravity.TOP, 23, title == null ? 24 : 0, 23, 24));
-
-            RadialProgressView progressView = new RadialProgressView(getContext(), resourcesProvider);
-            progressView.setProgressColor(getThemedColor(Theme.key_dialogProgressCircle));
-            progressViewContainer.addView(progressView, LayoutHelper.createFrame(44, 44, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP));
-
-            messageTextView.setLines(1);
-            messageTextView.setEllipsize(TextUtils.TruncateAt.END);
-            progressViewContainer.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, (LocaleController.isRTL ? 0 : 62), 0, (LocaleController.isRTL ? 62 : 0), 0));
-        } else if (progressViewStyle == ALERT_TYPE_LOADING) {
+        if (progressViewStyle == ALERT_TYPE_LOADING) {
             containerView.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, title == null ? 19 : 0, 24, 20));
 
             lineProgressView = new LineProgressView(getContext());
@@ -1223,10 +1211,6 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             }
 
         }
-    }
-
-    public void setProgressStyle(int style) {
-        progressViewStyle = style;
     }
 
     public void setDismissDialogByButtons(boolean value) {

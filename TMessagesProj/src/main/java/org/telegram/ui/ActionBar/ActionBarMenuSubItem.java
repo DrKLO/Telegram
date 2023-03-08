@@ -257,9 +257,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     void updateBackground() {
-        int topBackgroundRadius = top ? 6 : 0;
-        int bottomBackgroundRadius = bottom ? 6 : 0;
-        setBackground(Theme.createRadSelectorDrawable(selectorColor, topBackgroundRadius, bottomBackgroundRadius));
+        setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? 6 : 0, bottom ? 6 : 0));
     }
 
     private int getThemedColor(String key) {

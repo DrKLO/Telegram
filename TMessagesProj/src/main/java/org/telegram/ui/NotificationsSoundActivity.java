@@ -202,7 +202,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                     AlertDialog dialog = builder.show();
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2, resourcesProvider));
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed, resourcesProvider));
                     }
                 } else if (id == shareId) {
                     if (selectedTones.size() == 1) {

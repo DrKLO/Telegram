@@ -5452,35 +5452,41 @@ public class MediaDataController extends BaseController {
                         if (ids == null) {
                             continue;
                         }
-                        SQLiteCursor cursor;
-                        if (scheduled) {
-                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
-                        } else {
-                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
-                        }
-                        while (cursor.next()) {
-                            NativeByteBuffer data = cursor.byteBufferValue(0);
-                            if (data != null) {
-                                TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                message.readAttachPath(data, getUserConfig().clientUserId);
-                                data.reuse();
-                                message.id = cursor.intValue(1);
-                                message.date = cursor.intValue(2);
-                                message.dialog_id = dialogId;
-                                MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
-                                result.add(message);
+                        for (int i = 0; i < 2; i++) {
+                            if (i == 1 && !scheduled) {
+                                continue;
+                            }
+                            boolean findInScheduled = i == 1;
+                            SQLiteCursor cursor;
+                            if (findInScheduled) {
+                                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                            } else {
+                                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                            }
+                            while (cursor.next()) {
+                                NativeByteBuffer data = cursor.byteBufferValue(0);
+                                if (data != null) {
+                                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                    message.readAttachPath(data, getUserConfig().clientUserId);
+                                    data.reuse();
+                                    message.id = cursor.intValue(1);
+                                    message.date = cursor.intValue(2);
+                                    message.dialog_id = dialogId;
+                                    MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
+                                    result.add(message);
 
-                                long channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
-                                ArrayList<Integer> mids = dialogReplyMessagesIds.get(channelId);
-                                if (mids != null) {
-                                    mids.remove((Integer) message.id);
-                                    if (mids.isEmpty()) {
-                                        dialogReplyMessagesIds.remove(channelId);
+                                    long channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
+                                    ArrayList<Integer> mids = dialogReplyMessagesIds.get(channelId);
+                                    if (mids != null) {
+                                        mids.remove((Integer) message.id);
+                                        if (mids.isEmpty()) {
+                                            dialogReplyMessagesIds.remove(channelId);
+                                        }
                                     }
                                 }
                             }
+                            cursor.dispose();
                         }
-                        cursor.dispose();
                     }
 
                     if (!usersToLoad.isEmpty()) {
@@ -5503,15 +5509,55 @@ public class MediaDataController extends BaseController {
                                         TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
                                         for (int i = 0; i < messagesRes.messages.size(); i++) {
                                             TLRPC.Message message = messagesRes.messages.get(i);
-                                            if (message.dialog_id == 0) {
-                                                message.dialog_id = dialogId;
+                                            if (message instanceof TLRPC.TL_messageEmpty) {
+                                                messagesRes.messages.remove(i);
+                                                i--;
                                             }
                                         }
-                                        MessageObject.fixMessagePeer(messagesRes.messages, channelId);
-                                        ImageLoader.saveMessagesThumbs(messagesRes.messages);
-                                        broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
-                                        getMessagesStorage().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
-                                        saveReplyMessages(replyMessageOwners, messagesRes.messages, scheduled);
+                                        if (messagesRes.messages.size() < req.id.size()) {
+                                            TLObject req2;
+                                            if (channelId != 0) {
+                                                TLRPC.TL_channels_getMessages reqInner = new TLRPC.TL_channels_getMessages();
+                                                reqInner.channel = getMessagesController().getInputChannel(channelId);
+                                                reqInner.id = req.id;
+                                                req2 = reqInner;
+                                            } else {
+                                                TLRPC.TL_messages_getMessages reqInner = new TLRPC.TL_messages_getMessages();
+                                                reqInner.id = req.id;
+                                                req2 = reqInner;
+                                            }
+                                            getConnectionsManager().sendRequest(req2, (response2, error2) -> {
+                                                if (error == null) {
+                                                    TLRPC.messages_Messages messagesRes2 = (TLRPC.messages_Messages) response2;
+                                                    messagesRes.messages.addAll(messagesRes2.messages);
+                                                    messagesRes.users.addAll(messagesRes2.users);
+                                                    messagesRes.chats.addAll(messagesRes2.chats);
+                                                    for (int i = 0; i < messagesRes.messages.size(); i++) {
+                                                        TLRPC.Message message = messagesRes.messages.get(i);
+                                                        if (message.dialog_id == 0) {
+                                                            message.dialog_id = dialogId;
+                                                        }
+                                                    }
+                                                    MessageObject.fixMessagePeer(messagesRes.messages, channelId);
+                                                    ImageLoader.saveMessagesThumbs(messagesRes.messages);
+                                                    broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
+                                                    getMessagesStorage().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
+                                                    saveReplyMessages(replyMessageOwners, messagesRes.messages, scheduled);
+                                                }
+                                            });
+                                        } else {
+                                            for (int i = 0; i < messagesRes.messages.size(); i++) {
+                                                TLRPC.Message message = messagesRes.messages.get(i);
+                                                if (message.dialog_id == 0) {
+                                                    message.dialog_id = dialogId;
+                                                }
+                                            }
+                                            MessageObject.fixMessagePeer(messagesRes.messages, channelId);
+                                            ImageLoader.saveMessagesThumbs(messagesRes.messages);
+                                            broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
+                                            getMessagesStorage().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
+                                            saveReplyMessages(replyMessageOwners, messagesRes.messages, scheduled);
+                                        }
                                     }
                                     if (callback != null) {
                                         AndroidUtilities.runOnUIThread(callback);
