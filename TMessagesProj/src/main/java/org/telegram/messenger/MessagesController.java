@@ -7954,6 +7954,9 @@ public class MessagesController extends BaseController implements NotificationCe
         LongSparseArray<TLRPC.Chat> chatsDict = new LongSparseArray<>();
         for (int a = 0; a < messagesRes.users.size(); a++) {
             TLRPC.User u = messagesRes.users.get(a);
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("processLoadedMessages(): +usersDict put " + u.id + " " + u);
+            }
             usersDict.put(u.id, u);
         }
         for (int a = 0; a < messagesRes.chats.size(); a++) {

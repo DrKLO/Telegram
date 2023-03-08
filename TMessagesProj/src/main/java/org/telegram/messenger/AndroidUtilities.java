@@ -2157,43 +2157,6 @@ public class AndroidUtilities {
         }
     }
 
-    public static void slowRunOnUIThread(Runnable runnable) {
-        slowRunOnUIThread(runnable, 12);
-    }
-
-    public static void slowRunOnUIThread(Runnable runnable, int triesCount) {
-        if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
-            runOnUIThread(runnable);
-        } else {
-            runOnUIThread(new TryPost(runnable, triesCount));
-        }
-    }
-
-    private static class TryPost implements Runnable {
-
-        private final Runnable runnable;
-        private int triesCount;
-
-        private long lastTime = System.currentTimeMillis();
-        private final long threshold = (long) (1000L / AndroidUtilities.screenRefreshRate * 1.25f);
-
-        public TryPost(Runnable runnable, int triesCount) {
-            this.runnable = runnable;
-            this.triesCount = triesCount;
-        }
-
-        public void run() {
-            final long now = System.currentTimeMillis();
-            if (triesCount <= 0 || now - lastTime <= threshold) {
-                runnable.run();
-            } else {
-                triesCount--;
-                lastTime = now;
-                AndroidUtilities.runOnUIThread(this);
-            }
-        }
-    }
-
     public static void cancelRunOnUIThread(Runnable runnable) {
         if (ApplicationLoader.applicationHandler == null) {
             return;

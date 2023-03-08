@@ -9,6 +9,7 @@ import com.microsoft.appcenter.crashes.Crashes;
 import com.microsoft.appcenter.distribute.Distribute;
 
 import org.telegram.messenger.regular.BuildConfig;
+import org.telegram.tgnet.TLRPC;
 
 public class ApplicationLoaderImpl extends ApplicationLoader {
     @Override

@@ -231,16 +231,22 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private void sendInviteMessages() {
+        String link = null;
+        TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(fromChat.id);
+        if (chatFull == null) {
+            dismiss();
+            return;
+        }
+        if (fromChat.username != null) {
+            link = "@" + fromChat.username;
+        } else if (chatFull.exported_invite != null) {
+            link = chatFull.exported_invite.link;
+        } else {
+            dismiss();
+            return;
+        }
         for (Object obj : selectedChats) {
             TLRPC.User user = (TLRPC.User) obj;
-            TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(fromChat.id);
-            String link;
-            if (fromChat.username != null) {
-                link = "@" + fromChat.username;
-            } else {
-                link = chatFull.exported_invite.link;
-            }
-            TLRPC.TL_webPage webPage = null;
             SendMessagesHelper.getInstance(currentAccount).sendMessage(link, user.id, null, null, linkPreview, false, null, null, null, false, 0, null, false);
         }
         AndroidUtilities.runOnUIThread(() -> {
@@ -497,7 +503,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
         TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(fromChat.id);
         String link;
-        if (fromChat.username == null && chatFull != null) {
+        if (fromChat.username == null && chatFull != null && chatFull.exported_invite != null) {
             link = chatFull.exported_invite.link;
 
             TLRPC.TL_messages_getWebPage webPagePreview = new TLRPC.TL_messages_getWebPage();

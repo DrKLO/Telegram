@@ -1679,7 +1679,7 @@ public class FileLoader extends BaseController {
 
     Runnable dumpFilesQueueRunnable = () -> {
         for (int i = 0; i < smallFilesQueue.length; i++) {
-            FileLog.d("download queue: dc" + (i + 1) + " small_operations=" + smallFilesQueue[i].allOperations.size() + " large_operations=" + largeFilesQueue[i].allOperations.size());
+            FileLog.d("download queue: dc" + (i + 1) + " account=" + currentAccount + " small_operations=" + smallFilesQueue[i].allOperations.size() + " large_operations=" + largeFilesQueue[i].allOperations.size());
         }
         dumpFilesQueue();
     };

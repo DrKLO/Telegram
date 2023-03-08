@@ -344,7 +344,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private long chatInviterId;
 
-    private static ArrayList<ChatMessageCell> chatMessageCellsCache = new ArrayList<>();
+    private ArrayList<ChatMessageCell> chatMessageCellsCache = new ArrayList<>();
 
     private HashMap<MessageObject, Boolean> alreadyPlayedStickers = new HashMap<>();
 
@@ -2713,6 +2713,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         actionBarBackgroundPaint.setColor(getThemedColor(Theme.key_actionBarDefault));
 
+        if (chatMessageCellsCache.isEmpty()) {
+            for (int a = 0; a < 15; a++) {
+                chatMessageCellsCache.add(new ChatMessageCell(context, true, themeDelegate));
+            }
+        }
         for (int a = 1; a >= 0; a--) {
             selectedMessagesIds[a].clear();
             selectedMessagesCanCopyIds[a].clear();
@@ -27541,14 +27546,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             View view = null;
             if (viewType == 0) {
                 if (!chatMessageCellsCache.isEmpty()) {
-                    view = chatMessageCellsCache.remove(0);
+                    view = chatMessageCellsCache.get(0);
+                    chatMessageCellsCache.remove(0);
                 } else {
                     view = new ChatMessageCell(mContext, true, themeDelegate);
                 }
                 ChatMessageCell chatMessageCell = (ChatMessageCell) view;
                 chatMessageCell.setResourcesProvider(themeDelegate);
                 chatMessageCell.shouldCheckVisibleOnScreen = true;
-                chatMessageCell.setDelegate(getChatMessageCellDelegate());
+                chatMessageCell.setDelegate(new ChatMessageCellDelegate());
                 if (currentEncryptedChat == null) {
                     chatMessageCell.setAllowAssistant(true);
                 }
@@ -31659,14 +31665,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         skeleton.width = (int) Math.min(chatListView.getWidth() * 0.8f - (noAvatar ? 0 : AndroidUtilities.dp(42)), AndroidUtilities.dp(42) + (0.4f + Utilities.fastRandom.nextFloat() * 0.35f) * chatListView.getWidth());
         return skeleton;
-    }
-
-    public static void preload(Context context) {
-        if (context != null && chatMessageCellsCache.isEmpty()) {
-            for (int i = 0; i < 8; ++i) {
-                chatMessageCellsCache.add(new ChatMessageCell(context, true, null));
-            }
-        }
     }
 
     @Override

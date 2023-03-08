@@ -223,7 +223,9 @@ public class LiteModeSettingsActivity extends BaseFragment {
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsBackground"), LiteMode.FLAG_CHAT_BACKGROUND));
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsTopics"), LiteMode.FLAG_CHAT_FORUM_TWOCOLUMN));
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsSpoiler"), LiteMode.FLAG_CHAT_SPOILER));
-            items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsBlur"), LiteMode.FLAG_CHAT_BLUR));
+            if (SharedConfig.canBlurChat()) {
+                items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsBlur"), LiteMode.FLAG_CHAT_BLUR));
+            }
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsScale"), LiteMode.FLAG_CHAT_SCALE));
         }
         items.add(Item.asSwitch(R.drawable.msg2_call_earpiece, LocaleController.getString("LiteOptionsCalls"), LiteMode.FLAG_CALLS_ANIMATIONS));
@@ -557,6 +559,9 @@ public class LiteModeSettingsActivity extends BaseFragment {
             count += ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT_NOT_PREMIUM) > 0 ? -1 : 0) +      ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT_PREMIUM) > 0 ? -1 : 0) +      ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT) > 0 ? +1 : 0);
             count += ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_NOT_PREMIUM) > 0 ? -1 : 0) + ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_PREMIUM) > 0 ? -1 : 0) + ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS) > 0 ? +1 : 0);
             count += ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD_NOT_PREMIUM) > 0 ? -1 : 0) +  ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD_PREMIUM) > 0 ? -1 : 0) +  ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) > 0 ? +1 : 0);
+            if (!SharedConfig.canBlurChat() && (flags & LiteMode.FLAG_CHAT_BLUR) > 0) {
+                count--;
+            }
             return count;
         }
 
