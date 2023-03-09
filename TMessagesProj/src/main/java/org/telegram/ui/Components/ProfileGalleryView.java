@@ -906,7 +906,11 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                                 thumbsFileNames.add(null);
                                 videoFileNames.add(null);
                                 imagesLocations.add(prevImageLocation);
-                                thumbsLocations.add(prevThumbLocation);
+                                ImageLocation thumbLocation = prevThumbLocation;
+                                if (thumbLocation == null) {
+                                    thumbLocation = ImageLocation.getForPhoto(sizeThumb, photo);
+                                }
+                                thumbsLocations.add(thumbLocation);
                                 vectorAvatars.add(prevVectorAvatarThumbDrawable);
                                 videoLocations.add(null);
                                 photos.add(null);
@@ -1115,7 +1119,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                 item.imageView.isVideo = videoLocation != null;
                 needProgress = vectorAvatars.get(imageLocationPosition) == null;
                 ImageLocation location = thumbsLocations.get(imageLocationPosition);
-                String filter = location.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
+                String filter = (location != null && location.photoSize instanceof TLRPC.TL_photoStrippedSize) ? "b" : null;
                 String parent = "avatar_" + dialogId;
                 item.imageView.setImageMedia(vectorAvatars.get(imageLocationPosition), videoLocation, null, imagesLocations.get(imageLocationPosition), null, thumbsLocations.get(imageLocationPosition), filter, null, imagesLocationsSizes.get(imageLocationPosition), 1, parent);
             }
