@@ -545,10 +545,9 @@ public class FileLoadOperation {
                             filePartsStream.write(filesQueueByteBuffer.buf, 0, bufferSize);
                         }
                     } catch (Exception e) {
+                        FileLog.e(e, false);
                         if (AndroidUtilities.isENOSPC(e)) {
                             LaunchActivity.checkFreeDiscSpaceStatic(1);
-                        } else {
-                            FileLog.e(e);
                         }
                     }
                     totalTime += System.currentTimeMillis() - time;
@@ -881,6 +880,7 @@ public class FileLoadOperation {
                 } catch (Exception e) {
                     if (AndroidUtilities.isENOSPC(e)) {
                         LaunchActivity.checkFreeDiscSpaceStatic(1);
+                        FileLog.e(e, false);
                     } else {
                         FileLog.e(e);
                     }
@@ -1044,6 +1044,7 @@ public class FileLoadOperation {
                     requestedBytesCount = downloadedBytes = 0;
                     if (AndroidUtilities.isENOSPC(e)) {
                         LaunchActivity.checkFreeDiscSpaceStatic(1);
+                        FileLog.e(e, false);
                     } else {
                         FileLog.e(e);
                     }
@@ -1059,12 +1060,11 @@ public class FileLoadOperation {
                     fileOutputStream.seek(downloadedBytes);
                 }
             } catch (Exception e) {
+                FileLog.e(e, false);
                 if (AndroidUtilities.isENOSPC(e)) {
                     LaunchActivity.checkFreeDiscSpaceStatic(1);
                     onFail(true, -1);
                     return false;
-                } else {
-                    FileLog.e(e, false);
                 }
             }
             if (fileOutputStream == null) {
@@ -1091,11 +1091,11 @@ public class FileLoadOperation {
                     delegate.saveFilePath(pathSaveData, null);
                 }
             } catch (Exception e) {
+                FileLog.e(e, false);
                 if (AndroidUtilities.isENOSPC(e)) {
                     LaunchActivity.checkFreeDiscSpaceStatic(1);
                     onFail(true, -1);
                 } else {
-                    FileLog.e(e, false);
                     onFail(true, 0);
                 }
             }
@@ -1772,10 +1772,10 @@ public class FileLoadOperation {
                     startDownloadRequest();
                 }
             } catch (Exception e) {
+                FileLog.e(e, !AndroidUtilities.isFilNotFoundException(e) && !AndroidUtilities.isENOSPC(e));
                 if (AndroidUtilities.isENOSPC(e)) {
                     onFail(false, -1);
                 } else {
-                    FileLog.e(e, !AndroidUtilities.isFilNotFoundException(e));
                     onFail(false, 0);
                 }
             }
@@ -1835,6 +1835,9 @@ public class FileLoadOperation {
         cleanup();
         state = reason == 1 ? stateCanceled : stateFailed;
         if (delegate != null) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("failed downloading file to " + cacheFileFinal + " reason = " + reason + " time = " + (System.currentTimeMillis() - startTime) + " dc = " + datacenterId + " size = " + AndroidUtilities.formatFileSize(totalBytesCount));
+            }
             if (thread) {
                 Utilities.stageQueue.postRunnable(() -> delegate.didFailedLoadingFile(FileLoadOperation.this, reason));
             } else {

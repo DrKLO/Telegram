@@ -454,20 +454,35 @@ public class DataSettingsActivity extends BaseFragment {
                     }
                 }
 
+                boolean fullString = true;
+                try {
+                    fullString = storageDirs.size() != 2 || storageDirs.get(0).getAbsolutePath().contains("/storage/emulated/") == storageDirs.get(1).getAbsolutePath().contains("/storage/emulated/");
+                } catch (Exception ignore) {}
+
                 for (int a = 0, N = storageDirs.size(); a < N; a++) {
-                    String storageDir = storageDirs.get(a).getAbsolutePath();
+                    File file = storageDirs.get(a);
+                    String storageDir = file.getAbsolutePath();
                     LanguageCell cell = new LanguageCell(context);
                     cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
                     cell.setTag(a);
-                    cell.setValue(storageDir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard), storageDir);
+                    cell.setValue(
+                        storageDir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard),
+                        fullString ?
+                            LocaleController.formatString("StoragePathFreeValue", R.string.StoragePathFreeValue, AndroidUtilities.formatFileSize(file.getFreeSpace()), storageDir) :
+                            LocaleController.formatString("StoragePathFree", R.string.StoragePathFree, AndroidUtilities.formatFileSize(file.getFreeSpace()))
+                    );
                     cell.setLanguageSelected(storageDir.startsWith(dir), false);
+                    cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 2));
                     linearLayout.addView(cell);
                     cell.setOnClickListener(v -> {
                         SharedConfig.storageCacheDir = storageDir;
                         SharedConfig.saveConfig();
-                        ImageLoader.getInstance().checkMediaPaths();
                         builder.getDismissRunnable().run();
-                        listAdapter.notifyItemChanged(storageNumRow);
+                        rebind(storageNumRow);
+                        ImageLoader.getInstance().checkMediaPaths(() -> {
+                            CacheControlActivity.resetCalculatedTotalSIze();
+                            loadCacheSize();
+                        });
                     });
                 }
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -582,7 +597,18 @@ public class DataSettingsActivity extends BaseFragment {
                         );
                         textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), AndroidUtilities.formatFileSize(size), true, R.drawable.msg_filled_datausage, getThemedColor(Theme.key_color_green), storageNumRow != -1);
                     } else if (position == storageNumRow) {
-                        textCell.setTextAndColorfulIcon(LocaleController.getString("StoragePath", R.string.StoragePath), R.drawable.msg_filled_sdcard, getThemedColor(Theme.key_color_yellow), false);
+                        String dir = storageDirs.get(0).getAbsolutePath();
+                        if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                            for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                                String path = storageDirs.get(a).getAbsolutePath();
+                                if (path.startsWith(SharedConfig.storageCacheDir)) {
+                                    dir = path;
+                                    break;
+                                }
+                            }
+                        }
+                        final String value = dir == null || dir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard);
+                        textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("StoragePath", R.string.StoragePath), value, true, R.drawable.msg_filled_sdcard, getThemedColor(Theme.key_color_yellow), false);
                     }
                     break;
                 }

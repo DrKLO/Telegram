@@ -434,15 +434,7 @@ public class LinkEditActivity extends BaseFragment {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
             @Override
             public void afterTextChanged(Editable s) {
-                SpannableStringBuilder builder = new SpannableStringBuilder(s);
-                Emoji.replaceEmoji(builder, nameEditText.getPaint().getFontMetricsInt(), (int) nameEditText.getPaint().getTextSize(), false);
-                int selection = nameEditText.getSelectionStart();
-                nameEditText.removeTextChangedListener(this);
-                nameEditText.setText(builder);
-                if (selection >= 0) {
-                    nameEditText.setSelection(selection);
-                }
-                nameEditText.addTextChangedListener(this);
+                Emoji.replaceEmoji(s, nameEditText.getPaint().getFontMetricsInt(), (int) nameEditText.getPaint().getTextSize(), false);
             }
         });
         nameEditText.setCursorVisible(false);

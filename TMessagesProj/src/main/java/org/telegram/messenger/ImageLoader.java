@@ -2176,9 +2176,18 @@ public class ImageLoader {
     }
 
     public void checkMediaPaths() {
+        checkMediaPaths(null);
+    }
+
+    public void checkMediaPaths(Runnable after) {
         cacheOutQueue.postRunnable(() -> {
             final SparseArray<File> paths = createMediaPaths();
-            AndroidUtilities.runOnUIThread(() -> FileLoader.setMediaDirs(paths));
+            AndroidUtilities.runOnUIThread(() -> {
+                FileLoader.setMediaDirs(paths);
+                if (after != null) {
+                    after.run();
+                }
+            });
         });
     }
 

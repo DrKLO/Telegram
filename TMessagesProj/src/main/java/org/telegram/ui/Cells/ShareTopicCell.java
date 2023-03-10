@@ -79,7 +79,7 @@ public class ShareTopicCell extends FrameLayout {
         }
         if (topic.icon_emoji_id != 0) {
             imageView.setImageDrawable(null);
-            imageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, UserConfig.selectedAccount, topic.icon_emoji_id));
+            imageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC, UserConfig.selectedAccount, topic.icon_emoji_id));
         } else {
             imageView.setAnimatedEmojiDrawable(null);
             ForumBubbleDrawable forumBubbleDrawable = new ForumBubbleDrawable(topic.icon_color);

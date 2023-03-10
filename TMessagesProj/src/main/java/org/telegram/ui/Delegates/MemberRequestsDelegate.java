@@ -43,6 +43,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MemberRequestsController;
 import org.telegram.messenger.MessagesController;
@@ -777,8 +778,19 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
         public void setImporter(TLRPC.TL_chatInviteImporter importer, BackupImageView imageView) {
             this.importer = importer;
             this.imageView = imageView;
+
+            final ImageLocation imageLocation;
+            final ImageLocation thumbLocation;
+            TLRPC.User currentUser = MessagesController.getInstance(currentAccount).getUser(importer.user_id);
+            imageLocation = ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_BIG);
+            thumbLocation = ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_SMALL);
+            final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(importer.user_id);
+            if (userFull == null) {
+                MessagesController.getInstance(currentAccount).loadUserInfo(currentUser, false, 0);
+            }
             viewPager.setParentAvatarImage(imageView);
             viewPager.setData(importer.user_id, true);
+            viewPager.initIfEmpty(null, imageLocation, thumbLocation, true);
             TLRPC.User user = users.get(importer.user_id);
             nameText.setText(UserObject.getUserName(user));
             bioText.setText(importer.about);

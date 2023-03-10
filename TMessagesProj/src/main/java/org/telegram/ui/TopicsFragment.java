@@ -2970,7 +2970,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             } else if (topic != null && topic.icon_emoji_id != 0) {
                 setForumIcon(null);
                 if (animatedEmojiDrawable == null || animatedEmojiDrawable.getDocumentId() != topic.icon_emoji_id) {
-                    setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, currentAccount, topic.icon_emoji_id));
+                    setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(openedForForward ? AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC : AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, currentAccount, topic.icon_emoji_id));
                 }
             } else {
                 setAnimatedEmojiDrawable(null);

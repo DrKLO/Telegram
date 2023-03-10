@@ -1,7 +1,6 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -10,17 +9,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.SpannableString;
+import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -31,6 +24,7 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -44,9 +38,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.extractor.mkv.MatroskaExtractor;
-import com.google.zxing.common.detector.MathUtils;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -59,7 +50,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -68,17 +58,15 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.IntSeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.SeekBarView;
-import org.telegram.ui.Components.SlideChooseView;
-import org.telegram.ui.Components.SlideView;
-import org.telegram.ui.Components.SpannableStringLight;
 import org.telegram.ui.Components.Switch;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
 public class LiteModeSettingsActivity extends BaseFragment {
 
@@ -223,7 +211,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsBackground"), LiteMode.FLAG_CHAT_BACKGROUND));
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsTopics"), LiteMode.FLAG_CHAT_FORUM_TWOCOLUMN));
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsSpoiler"), LiteMode.FLAG_CHAT_SPOILER));
-            if (SharedConfig.canBlurChat()) {
+            if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
                 items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsBlur"), LiteMode.FLAG_CHAT_BLUR));
             }
             items.add(Item.asCheckbox(LocaleController.getString("LiteOptionsScale"), LiteMode.FLAG_CHAT_SCALE));
@@ -309,7 +297,22 @@ public class LiteModeSettingsActivity extends BaseFragment {
                 view = powerSaverSlider;
                 view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             } else if (viewType == VIEW_TYPE_INFO) {
-                view = new TextInfoPrivacyCell(context);
+                view = new TextInfoPrivacyCell(context) {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(info);
+
+                        info.setEnabled(true);
+                    }
+
+                    @Override
+                    public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
+                        super.onPopulateAccessibilityEvent(event);
+
+                        event.setContentDescription(getTextView().getText());
+                        setContentDescription(getTextView().getText());
+                    }
+                };
             } else if (viewType == VIEW_TYPE_SWITCH || viewType == VIEW_TYPE_CHECKBOX) {
                 view = new SwitchCell(context);
             } else if (viewType == VIEW_TYPE_SWITCH2) {
@@ -342,6 +345,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
                     textInfoPrivacyCell.setFixedSize(0);
                 }
                 textInfoPrivacyCell.setText(item.text);
+                textInfoPrivacyCell.setContentDescription(item.text);
                 boolean top = position > 0 && items.get(position - 1).viewType != VIEW_TYPE_INFO;
                 boolean bottom = position + 1 < items.size() && items.get(position + 1).viewType != VIEW_TYPE_INFO;
                 if (top && bottom) {
@@ -401,6 +405,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
         public SwitchCell(Context context) {
             super(context);
 
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
             setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
             imageView = new ImageView(context);
@@ -423,12 +428,14 @@ public class LiteModeSettingsActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
 
             countTextView = new AnimatedTextView(context, false, true, true);
             countTextView.setAnimationProperties(.35f, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
             countTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             countTextView.setTextSize(dp(14));
             countTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            countTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
 
             arrowView = new ImageView(context);
             arrowView.setVisibility(GONE);
@@ -452,6 +459,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             switchView = new Switch(context);
             switchView.setVisibility(GONE);
             switchView.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
+            switchView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(switchView, LayoutHelper.createFrame(37, 50, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 19, 0, 19, 0));
 
             checkBoxView = new CheckBox2(context, 21);
@@ -460,6 +468,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             checkBoxView.setChecked(true, false);
             checkBoxView.setDrawBackgroundAsArc(10);
             checkBoxView.setVisibility(GONE);
+            checkBoxView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(checkBoxView, LayoutHelper.createFrame(21, 21, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 64, 0, LocaleController.isRTL ? 64 : 0, 0));
 
             setFocusable(true);
@@ -555,11 +564,24 @@ public class LiteModeSettingsActivity extends BaseFragment {
         }
 
         private int preprocessFlagsCount(int flags) {
+            boolean isPremium = getUserConfig().isPremium();
             int count = Integer.bitCount(flags);
-            count += ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT_NOT_PREMIUM) > 0 ? -1 : 0) +      ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT_PREMIUM) > 0 ? -1 : 0) +      ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT) > 0 ? +1 : 0);
-            count += ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_NOT_PREMIUM) > 0 ? -1 : 0) + ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_PREMIUM) > 0 ? -1 : 0) + ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS) > 0 ? +1 : 0);
-            count += ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD_NOT_PREMIUM) > 0 ? -1 : 0) +  ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD_PREMIUM) > 0 ? -1 : 0) +  ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) > 0 ? +1 : 0);
-            if (!SharedConfig.canBlurChat() && (flags & LiteMode.FLAG_CHAT_BLUR) > 0) {
+            if (isPremium) {
+                if ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT_NOT_PREMIUM) > 0)
+                    count--;
+                if ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_NOT_PREMIUM) > 0)
+                    count--;
+                if ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD_NOT_PREMIUM) > 0)
+                    count--;
+            } else {
+                if ((flags & LiteMode.FLAG_ANIMATED_EMOJI_CHAT_PREMIUM) > 0)
+                    count--;
+                if ((flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_PREMIUM) > 0)
+                    count--;
+                if ((flags & LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD_PREMIUM) > 0)
+                    count--;
+            }
+            if (SharedConfig.getDevicePerformanceClass() < SharedConfig.PERFORMANCE_CLASS_AVERAGE && (flags & LiteMode.FLAG_CHAT_BLUR) > 0) {
                 count--;
             }
             return count;
@@ -590,8 +612,9 @@ public class LiteModeSettingsActivity extends BaseFragment {
         @Override
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
-            info.setClassName("android.widget.Switch");
+            info.setClassName(checkBoxView.getVisibility() == View.VISIBLE ? "android.widget.CheckBox" : "android.widget.Switch");
             info.setCheckable(true);
+            info.setEnabled(true);
             if (checkBoxView.getVisibility() == View.VISIBLE) {
                 info.setChecked(checkBoxView.isChecked());
             } else {
@@ -621,11 +644,14 @@ public class LiteModeSettingsActivity extends BaseFragment {
         TextView rightTextView;
         SeekBarView seekBarView;
 
+        private SeekBarAccessibilityDelegate seekBarAccessibilityDelegate;
+
         public PowerSaverSlider(Context context) {
             super(context);
 
             headerLayout = new LinearLayout(context);
             headerLayout.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            headerLayout.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
             headerTextView = new TextView(context);
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -680,9 +706,11 @@ public class LiteModeSettingsActivity extends BaseFragment {
                 }
             });
             seekBarView.setProgress(LiteMode.getPowerSaverLevel() / 100F);
+            seekBarView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38 + 6, Gravity.TOP, 6, 68, 6, 0));
 
             valuesView = new FrameLayout(context);
+            valuesView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
             leftTextView = new TextView(context);
             leftTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -725,7 +753,74 @@ public class LiteModeSettingsActivity extends BaseFragment {
 
             addView(valuesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 21, 52, 21, 0));
 
+            seekBarAccessibilityDelegate = new IntSeekBarAccessibilityDelegate() {
+                @Override
+                protected int getProgress() {
+                    return LiteMode.getPowerSaverLevel();
+                }
+
+                @Override
+                protected void setProgress(int progress) {
+                    seekBarView.delegate.onSeekBarDrag(true, progress / 100f);
+                    seekBarView.setProgress(progress / 100f);
+                }
+
+                @Override
+                protected int getMaxValue() {
+                    return 100;
+                }
+
+                @Override
+                protected int getDelta() {
+                    return 5;
+                }
+
+                @Override
+                public void onInitializeAccessibilityNodeInfoInternal(View host, AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfoInternal(host, info);
+
+                    info.setEnabled(true);
+                }
+
+                @Override
+                public void onPopulateAccessibilityEvent(@NonNull View host, @NonNull AccessibilityEvent event) {
+                    super.onPopulateAccessibilityEvent(host, event);
+
+                    StringBuilder sb = new StringBuilder(LocaleController.getString(R.string.LiteBatteryTitle)).append(", ");
+                    int percent = LiteMode.getPowerSaverLevel();
+                    if (percent <= 0) {
+                        sb.append(LocaleController.getString(R.string.LiteBatteryAlwaysDisabled));
+                    } else if (percent >= 100) {
+                        sb.append(LocaleController.getString(R.string.LiteBatteryAlwaysEnabled));
+                    } else {
+                        sb.append(LocaleController.formatString(R.string.AccDescrLiteBatteryWhenBelow, Math.round(percent)));
+                    }
+
+                    event.setContentDescription(sb);
+                    setContentDescription(sb);
+                }
+            };
+
             update();
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+
+            seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfo(this, info);
+        }
+
+        @Override
+        public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
+            super.onPopulateAccessibilityEvent(event);
+
+            seekBarAccessibilityDelegate.onPopulateAccessibilityEvent(this, event);
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, @Nullable Bundle arguments) {
+            return seekBarAccessibilityDelegate.performAccessibilityAction(this, action, arguments);
         }
 
         public void update() {
