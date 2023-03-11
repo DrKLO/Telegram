@@ -94,7 +94,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 113;
+    public final static int LAST_DB_VERSION = 114;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -354,9 +354,6 @@ public class MessagesStorage extends BaseController {
             }
         } catch (Exception e) {
             FileLog.e(e);
-//            if (BuildVars.DEBUG_PRIVATE_VERSION) {
-//                throw new RuntimeException(e);
-//            }
             if (openTries < 3 && e.getMessage() != null && e.getMessage().contains("malformed")) {
                 if (openTries == 2) {
                     cleanupInternal(true);
@@ -696,7 +693,11 @@ public class MessagesStorage extends BaseController {
     }
 
     private void cleanupInternal(boolean deleteFiles) {
-        clearDatabaseValues();
+        if (deleteFiles) {
+            reset();
+        } else {
+            clearDatabaseValues();
+        }
         if (database != null) {
             database.close();
             database = null;
@@ -714,10 +715,11 @@ public class MessagesStorage extends BaseController {
                 shmCacheFile.delete();
                 shmCacheFile = null;
             }
+
         }
     }
 
-    private void clearDatabaseValues() {
+    public void clearDatabaseValues() {
         lastDateValue = 0;
         lastSeqValue = 0;
         lastPtsValue = 0;
@@ -1334,10 +1336,7 @@ public class MessagesStorage extends BaseController {
                 if (cursor != null) {
                     cursor.dispose();
                 }
-                AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didClearDatabase);
-                    getMediaDataController().loadAttachMenuBots(false, true);
-                });
+                reset();
             }
         });
     }
@@ -1826,6 +1825,23 @@ public class MessagesStorage extends BaseController {
         files.add(walCacheFile);
         files.add(shmCacheFile);
         return files;
+    }
+
+    public void reset() {
+        clearDatabaseValues();
+
+        AndroidUtilities.runOnUIThread(() -> {
+            for (int a = 0; a < 2; a++) {
+                getUserConfig().setDialogsLoadOffset(a, 0, 0, 0, 0, 0, 0);
+                getUserConfig().setTotalDialogsCount(a, 0);
+            }
+            getUserConfig().clearFilters();
+            getUserConfig().clearPinnedDialogsLoaded();
+
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didClearDatabase);
+            getMediaDataController().loadAttachMenuBots(false, true);
+            getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
+        });
     }
 
     private static class ReadDialog {

@@ -542,6 +542,7 @@
     <string name="ChannelJoinTo">Do you want to join the channel \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Sorry, this channel is private, so you can’t view its content.</string>
     <string name="ChannelCantOpenPrivate2">Sorry, this channel is private.</string>
+    <string name="ChannelCantOpenBannedByAdminTitle">Can\'t access the chat</string>
     <string name="ChannelCantOpenBannedByAdmin">Sorry, you can\'t access this chat because you were banned by an admin.</string>
     <string name="ChannelCantOpenBanned">Unfortunately, you were banned from participating in public groups.</string>
     <string name="ChannelCantOpenNa">Sorry, this chat is no longer accessible.</string>
@@ -2346,6 +2347,7 @@
     <string name="EmojiUseDefault">Use system default emoji</string>
     <string name="TelegramVersion">Telegram for Android %1$s</string>
     <string name="DebugMenu">Debug Menu</string>
+    <string name="DebugMenuLongPress">Long press again for debug menu</string>
     <string name="DebugSendLogs">Send Logs</string>
     <string name="DebugSendLastLogs">Send Last Logs</string>
     <string name="DebugClearLogs">Clear Logs</string>
@@ -6350,4 +6352,10 @@
     <string name="ChannelInviteViaLinkRestricted">You can\'t create a link</string>
     <string name="ChannelInviteViaLinkRestricted2">This user can\'t be invited</string>
     <string name="ChannelInviteViaLinkRestricted3">This users can\'t be invited</string>
+    <string name="StoragePathFree">%1$s free</string>
+    <string name="StoragePathFreeValue">%1$s free, %2$s</string>
+    <string name="AccDescrLiteBatteryWhenBelow">enabled when below %s%%</string>
+    <string name="AccDescrLiteBatteryLevelAnnounce">%s%%</string>
+    <string name="AccDescrRateTranscriptionUp">Rate up</string>
+    <string name="AccDescrRateTranscriptionDown">Rate down</string>
 </resources>

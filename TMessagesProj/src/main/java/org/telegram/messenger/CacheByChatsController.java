@@ -41,7 +41,7 @@ public class CacheByChatsController {
         } else if (type == KEEP_MEDIA_TYPE_GROUP) {
             return KEEP_MEDIA_ONE_MONTH;
         } else if (type == KEEP_MEDIA_TYPE_CHANNEL) {
-            return KEEP_MEDIA_ONE_MONTH;
+            return KEEP_MEDIA_ONE_WEEK;
         }
         return SharedConfig.keepMedia;
     }

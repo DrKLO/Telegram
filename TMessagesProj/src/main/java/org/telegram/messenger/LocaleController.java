@@ -18,6 +18,7 @@ import android.content.res.Configuration;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.util.Xml;
 
 import androidx.annotation.StringRes;
@@ -39,7 +40,9 @@ import java.util.Collection;
 import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class LocaleController {
@@ -487,17 +490,65 @@ public class LocaleController {
         }
     }
 
+    private boolean checkingUpdateForCurrentRemoteLocale;
+
     public void checkUpdateForCurrentRemoteLocale(int currentAccount, int version, int baseVersion) {
         if (currentLocaleInfo == null || !currentLocaleInfo.isRemote() && !currentLocaleInfo.isUnofficial()) {
             return;
         }
         if (currentLocaleInfo.hasBaseLang()) {
             if (currentLocaleInfo.baseVersion < baseVersion) {
-                applyRemoteLanguage(currentLocaleInfo, currentLocaleInfo.baseLangCode, false, currentAccount, null);
+                checkingUpdateForCurrentRemoteLocale = true;
+                applyRemoteLanguage(currentLocaleInfo, currentLocaleInfo.baseLangCode, false, currentAccount, () -> {
+                    checkingUpdateForCurrentRemoteLocale = false;
+                    checkPatchLangpack(currentAccount);
+                });
             }
         }
         if (currentLocaleInfo.version < version) {
-            applyRemoteLanguage(currentLocaleInfo, currentLocaleInfo.shortName, false, currentAccount, null);
+            checkingUpdateForCurrentRemoteLocale = true;
+            applyRemoteLanguage(currentLocaleInfo, currentLocaleInfo.shortName, false, currentAccount, () -> {
+                checkingUpdateForCurrentRemoteLocale = false;
+                checkPatchLangpack(currentAccount);
+            });
+        }
+    }
+
+    public int calculateTranslatedCount(HashMap<String, String> map) {
+        int count = 0;
+        HashSet<String> added = new HashSet<>();
+        for (String k : map.keySet()) {
+            if (k == null) {
+                continue;
+            }
+            String real = null;
+            if (k.endsWith("_other")) {
+                real = k.substring(0, k.length() - 6);
+            } else if (k.endsWith("_zero") || k.endsWith("_many")) {
+                real = k.substring(0, k.length() - 5);
+            } else if (k.endsWith("_one") || k.endsWith("_two") || k.endsWith("_few")) {
+                real = k.substring(0, k.length() - 4);
+            }
+            if (real == null) {
+                count++;
+            } else if (!added.contains(real)) {
+                added.add(real);
+                count++;
+            }
+        }
+        added.clear();
+        return count;
+    }
+
+    public void checkPatchLangpack(int currentAccount) {
+        if (currentLocaleInfo == null || checkingUpdateForCurrentRemoteLocale) {
+            return;
+        }
+        if (shouldReinstallLangpack(currentLocaleInfo.shortName)) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("reload locale because locale file is not enough");
+            }
+            AndroidUtilities.runOnUIThread(() -> reloadCurrentRemoteLocale(currentAccount, null, true, null));
         }
     }
 
@@ -943,7 +994,7 @@ public class LocaleController {
             config.locale = currentLocale;
             ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
             changingConfiguration = false;
-            if (reloadLastFile) {
+            if (reloadLastFile || !isLoadingRemote && !force && shouldReinstallLangpack(localeInfo.shortName)) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("reload locale because one of file is corrupted " + pathToFile + " " + pathToBaseFile);
                 }
@@ -2316,6 +2367,7 @@ public class LocaleController {
                 onDone.run();
             }
         };
+        patched(localeInfo.shortName);
         if (localeInfo.hasBaseLang() && (langCode == null || langCode.equals(localeInfo.baseLangCode))) {
             if (localeInfo.baseVersion != 0 && !force) {
                 if (localeInfo.hasBaseLang()) {
@@ -3261,6 +3313,25 @@ public class LocaleController {
         return formatDistance(distance, type, null);
     }
 
+    // patch to force reinstalling of langpack in case some strings are missing after 9.0
+    private boolean shouldReinstallLangpack(String lng) {
+        int mustBeCount = MessagesController.getInstance(UserConfig.selectedAccount).checkResetLangpack;
+        if (mustBeCount <= 0) {
+            return false;
+        }
+        boolean alreadyPatched = MessagesController.getGlobalMainSettings().getBoolean("lngpack_patched_" + lng, false);
+        if (alreadyPatched) {
+            return false;
+        }
+        int count = calculateTranslatedCount(localeValues);
+        if (count >= mustBeCount) {
+            return false;
+        }
+        FileLog.e("reinstalling " + lng + " langpack because of patch (" + count + " keys, must be at least " + mustBeCount + ")");
+        patched(lng);
+        return true;
+    }
+
     public static String formatDistance(float distance, int type, Boolean useImperial) {
         ensureImperialSystemInit();
         boolean imperial = useImperial != null && useImperial || useImperial == null && useImperialSystemType;
@@ -3323,5 +3394,12 @@ public class LocaleController {
                 }
             }
         }
+    }
+
+    private void patched(String lng) {
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("set as patched " + lng + " langpack");
+        }
+        MessagesController.getGlobalMainSettings().edit().putBoolean("lngpack_patched_" + lng, true).apply();
     }
 }

@@ -1234,6 +1234,13 @@ public class DatabaseMigrationHelper {
             version = 113;
         }
 
+        if (version == 113) {
+            //fix issue when database file was deleted
+            //just reload dialogs
+            messagesStorage.reset();
+            database.executeFast("PRAGMA user_version = 114").stepThis().dispose();
+            version = 114;
+        }
         return version;
     }
 

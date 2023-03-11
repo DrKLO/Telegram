@@ -319,8 +319,7 @@ public class CalendarActivity extends BaseFragment {
                     @Override
                     public void run(boolean forAll) {
                         finishFragment();
-
-                        if (parentLayout.getFragmentStack().size() >= 2) {
+                        if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
                             BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
                             if (fragment instanceof ChatActivity) {
                                 ((ChatActivity) fragment).deleteHistory(dateSelectedStart, dateSelectedEnd + 86400, forAll);

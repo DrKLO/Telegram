@@ -2060,7 +2060,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 if (hasRecordVideo) {
                     calledRecordRunnable = false;
                     recordAudioVideoRunnableStarted = true;
-                    AndroidUtilities.runOnUIThread(recordAudioVideoRunnable, Math.max(150, ViewConfiguration.getLongPressTimeout()));
+                    AndroidUtilities.runOnUIThread(recordAudioVideoRunnable, 150);
                 } else {
                     recordAudioVideoRunnable.run();
                 }

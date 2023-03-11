@@ -3826,6 +3826,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		} else {
 			bluetoothScoActive = false;
 			bluetoothScoConnecting = false;
+
+			am.setBluetoothScoOn(false);
 		}
 		for (StateListener l : stateListeners) {
 			l.onAudioSettingsChanged();

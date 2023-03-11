@@ -1005,7 +1005,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 sortedSizes.add(previewSizes.get(i));
             }
         }
-        if (sortedSizes.isEmpty() || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
+        int devicePerformanceClass = SharedConfig.getLegacyDevicePerformanceClass();
+        if (sortedSizes.isEmpty() || devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_LOW || devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
             ArrayList<Size> sizes = sortedSizes;
             if (!sortedSizes.isEmpty()) {
                 sizes = sortedSizes;
@@ -2691,7 +2692,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     }
 
     private String createFragmentShader(Size previewSize) {
-        if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_AVERAGE || Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
+        int devicePerformanceClass = SharedConfig.getLegacyDevicePerformanceClass();
+        if (devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_LOW || devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE || Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
             return "#extension GL_OES_EGL_image_external : require\n" +
                     "precision highp float;\n" +
                     "varying vec2 vTextureCoord;\n" +
