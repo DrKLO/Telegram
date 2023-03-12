@@ -952,8 +952,8 @@ public class GroupCallUserCell extends FrameLayout {
             blobDrawable2.maxRadius = maxRadius;
             blobDrawable.generateBlob();
             blobDrawable2.generateBlob();
-            blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), 76));
-            blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), 76));
+            blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), BlobDrawable.ALPHA_2));
+            blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), BlobDrawable.ALPHA_2));
         }
 
         public void update() {
@@ -1011,7 +1011,7 @@ public class GroupCallUserCell extends FrameLayout {
 
                     if (invalidateColor) {
                         int color = ColorUtils.blendARGB(Theme.getColor(Theme.key_voipgroup_speakingText), isMuted == 2 ? Theme.getColor(Theme.key_voipgroup_mutedByAdminIcon) : Theme.getColor(Theme.key_voipgroup_listeningText), progressToMuted);
-                        blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(color, 76));
+                        blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(color, BlobDrawable.ALPHA_2));
                     }
                 }
 

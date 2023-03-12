@@ -1002,11 +1002,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
 
         public void setAmplitude(double value) {
-            bigWaveDrawable.setValue((float) (Math.min(1800, value) / 1800), true);
-            tinyWaveDrawable.setValue((float) (Math.min(1800, value) / 1800), false);
+            bigWaveDrawable.setValue((float) (Math.min(BlobDrawable.MAX_AMPLITUDE, value) / BlobDrawable.MAX_AMPLITUDE), true);
+            tinyWaveDrawable.setValue((float) (Math.min(BlobDrawable.MAX_AMPLITUDE, value) / BlobDrawable.MAX_AMPLITUDE), false);
 
-            animateToAmplitude = (float) (Math.min(1800, value) / 1800);
-            animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100f + 500.0f * 0.55f);
+            animateToAmplitude = (float) (Math.min(BlobDrawable.MAX_AMPLITUDE, value) / BlobDrawable.MAX_AMPLITUDE);
+            animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100f + 500.0f * BlobDrawable.ANIMATION_SPEED);
 
             invalidate();
         }
@@ -1646,8 +1646,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
         public void updateColors() {
             paint.setColor(getThemedColor(Theme.key_chat_messagePanelVoiceBackground));
-            tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), 38));
-            bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), 76));
+            tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), BlobDrawable.ALPHA_2));
+            bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), BlobDrawable.ALPHA_1));
             tooltipPaint.setColor(getThemedColor(Theme.key_chat_gifSaveHintText));
             tooltipBackground = Theme.createRoundRectDrawable(AndroidUtilities.dp(5), getThemedColor(Theme.key_chat_gifSaveHintBackground));
             tooltipBackgroundArrow.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));

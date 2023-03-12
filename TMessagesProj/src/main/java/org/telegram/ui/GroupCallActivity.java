@@ -4065,8 +4065,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         bigWaveDrawable.maxRadius = AndroidUtilities.dp(75);
         bigWaveDrawable.generateBlob();
 
-        tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_unmuteButton), 38));
-        bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_unmuteButton),76));
+        tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_unmuteButton), BlobDrawable.ALPHA_2));
+        bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_unmuteButton),BlobDrawable.ALPHA_1));
 
         soundButton = new VoIPToggleButton(context);
         soundButton.setCheckable(true);
