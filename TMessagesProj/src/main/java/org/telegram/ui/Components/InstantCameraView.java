@@ -227,6 +227,11 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     private final static int audioSampleRate = 48000;
 
+    private static final int[] ALLOW_BIG_CAMERA_WHITELIST = {
+            285904780, // XIAOMI (Redmi Note 7)
+    };
+
+
     @SuppressLint("ClickableViewAccessibility")
     public InstantCameraView(Context context, ChatActivity parentFragment, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -1001,12 +1006,11 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private Size chooseOptimalSize(ArrayList<Size> previewSizes) {
         ArrayList<Size> sortedSizes = new ArrayList<>();
         for (int i = 0; i < previewSizes.size(); i++) {
-            if (Math.max(previewSizes.get(i).mHeight, previewSizes.get(i).mWidth) <= 1200 && Math.min(previewSizes.get(i).mHeight, previewSizes.get(i).mWidth) >= 320) {
+            if (Math.max(previewSizes.get(i).mHeight, previewSizes.get(i).mWidth) <= 1440 && Math.min(previewSizes.get(i).mHeight, previewSizes.get(i).mWidth) >= 320) {
                 sortedSizes.add(previewSizes.get(i));
             }
         }
-        int devicePerformanceClass = SharedConfig.getLegacyDevicePerformanceClass();
-        if (sortedSizes.isEmpty() || devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_LOW || devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
+        if (sortedSizes.isEmpty() || !allowBigSizeCamera()) {
             ArrayList<Size> sizes = sortedSizes;
             if (!sortedSizes.isEmpty()) {
                 sizes = sortedSizes;
@@ -1031,6 +1035,20 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             return 0;
         });
         return sortedSizes.get(0);
+    }
+
+    private boolean allowBigSizeCamera() {
+        int devicePerformanceClass = Math.max(SharedConfig.getDevicePerformanceClass(), SharedConfig.getLegacyDevicePerformanceClass());
+        if (devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_HIGH) {
+            return true;
+        }
+        int hash = (Build.MANUFACTURER + " " + Build.DEVICE).toUpperCase().hashCode();
+        for (int i = 0; i < ALLOW_BIG_CAMERA_WHITELIST.length; ++i) {
+            if (ALLOW_BIG_CAMERA_WHITELIST[i] == hash) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void createCamera(final SurfaceTexture surfaceTexture) {
@@ -2692,8 +2710,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     }
 
     private String createFragmentShader(Size previewSize) {
-        int devicePerformanceClass = SharedConfig.getLegacyDevicePerformanceClass();
-        if (devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_LOW || devicePerformanceClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE || Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
+        if (!allowBigSizeCamera() || Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
             return "#extension GL_OES_EGL_image_external : require\n" +
                     "precision highp float;\n" +
                     "varying vec2 vTextureCoord;\n" +
@@ -2718,27 +2735,27 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 "uniform vec2 resolution;\n" +
                 "uniform vec2 preview;\n" +
                 "uniform float alpha;\n" +
-                "const float kernel = 1.0;\n" +
 
                 "uniform samplerExternalOES sTexture;\n" +
                 "void main() {\n" +
-                "   float pixelSizeX = 1.0 / preview.x;\n" +
-                "   float pixelSizeY = 1.0 / preview.y;\n" +
-                "   vec3 accumulation = vec3(0);\n" +
-                "   vec3 weightsum = vec3(0);\n" +
-                "   for (float x = -kernel; x < kernel; x++){\n" +
-                "       for (float y = -kernel; y < kernel; y++){\n" +
-                "           accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
-                "           weightsum += 1.0;\n" +
-                "       }\n" +
-                "   }\n" +
-                "   vec4 textColor = vec4(accumulation / weightsum, 1.0);\n" +
                 "   vec2 coord = resolution * 0.5;\n" +
                 "   float radius = 0.51 * resolution.x;\n" +
                 "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
                 "   float t = clamp(d, 0.0, 1.0);\n" +
-                "   vec3 color = mix(textColor.rgb, vec3(1, 1, 1), t);\n" +
-                "   gl_FragColor = vec4(color * alpha, alpha);\n" +
+                "   if (t == 0.0) {\n" +
+                "       float pixelSizeX = 1.0 / preview.x;\n" +
+                "       float pixelSizeY = 1.0 / preview.y;\n" +
+                "       vec3 accumulation = vec3(0);\n" +
+                "       for (float x = 0.0; x < 2.0; x++){\n" +
+                "           for (float y = 0.0; y < 2.0; y++){\n" +
+                "               accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
+                "           }\n" +
+                "       }\n" +
+                "       vec4 textColor = vec4(accumulation / vec3(4, 4, 4), 1);\n" +
+                "       gl_FragColor = textColor * alpha;\n" +
+                "   } else {\n" +
+                "       gl_FragColor = vec4(1, 1, 1, alpha);\n" +
+                "   }\n" +
                 "}\n";
     }
 

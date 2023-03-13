@@ -8,13 +8,18 @@
 
 package org.telegram.messenger.secretmedia;
 
+import static java.lang.Math.min;
+
 import android.net.Uri;
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.upstream.BaseDataSource;
+import com.google.android.exoplayer2.upstream.DataSourceException;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.FileLoader;
@@ -26,6 +31,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public final class EncryptedFileDataSource extends BaseDataSource {
 
@@ -38,9 +45,9 @@ public final class EncryptedFileDataSource extends BaseDataSource {
     }
 
     private Uri uri;
-    private long bytesRemaining;
     private boolean opened;
-    private int fileOffset;
+    private int bytesRemaining;
+    EncryptedFileInputStream fileInputStream;
 
     public EncryptedFileDataSource() {
         super(/* isNetwork= */ false);
@@ -54,82 +61,71 @@ public final class EncryptedFileDataSource extends BaseDataSource {
         }
     }
 
-    EncryptedFileInputStream fileInputStream;
 
     @Override
-    public long open(DataSpec dataSpec) throws EncryptedFileDataSourceException {
-        try {
-            uri = dataSpec.uri;
-            File path = new File(dataSpec.uri.getPath());
-            String name = path.getName();
-            File keyPath = new File(FileLoader.getInternalCacheDir(), name + ".key");
+    public long open(DataSpec dataSpec) throws IOException {
+        uri = dataSpec.uri;
+        File path = new File(dataSpec.uri.getPath());
+        String name = path.getName();
+        File keyPath = new File(FileLoader.getInternalCacheDir(), name + ".key");
 
-            FileLog.d("EncryptedFileDataSource " + path + " " + keyPath);
+        try {
             fileInputStream = new EncryptedFileInputStream(path, keyPath);
             fileInputStream.skip(dataSpec.position);
-            bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? fileInputStream.available() : dataSpec.length;
-            FileLog.d("EncryptedFileDataSource bytesRemaining" + bytesRemaining);
-            if (bytesRemaining < 0) {
-                throw new EOFException();
+            int len = (int) path.length();
+
+            transferInitializing(dataSpec);
+            if (dataSpec.position > len) {
+                throw new DataSourceException(PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
-            throw new EncryptedFileDataSourceException(e);
+            bytesRemaining = (int) (len - dataSpec.position);
+            if (dataSpec.length != C.LENGTH_UNSET) {
+                bytesRemaining = (int) min(bytesRemaining, dataSpec.length);
+            }
+            opened = true;
+            transferStarted(dataSpec);
+            return dataSpec.length != C.LENGTH_UNSET ? dataSpec.length : bytesRemaining;
+        } catch (Throwable throwable) {
+            throw new DataSourceException(PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE);
         }
-
-        FileLog.d("EncryptedFileDataSource opened");
-        opened = true;
-        transferStarted(dataSpec);
-
-        return bytesRemaining;
     }
 
     @Override
-    public int read(byte[] buffer, int offset, int readLength) throws EncryptedFileDataSourceException {
-        if (readLength == 0) {
+    public int read(byte[] buffer, int offset, int length) {
+        if (length == 0) {
             return 0;
         } else if (bytesRemaining == 0) {
             return C.RESULT_END_OF_INPUT;
-        } else {
-            int bytesRead;
-            try {
-                bytesRead = fileInputStream.read(buffer, offset, (int) Math.min(bytesRemaining, readLength));
-                fileOffset += bytesRead;
-            } catch (IOException e) {
-                FileLog.e(e);
-                throw new EncryptedFileDataSourceException(e);
-            }
-
-            if (bytesRead > 0) {
-                bytesRemaining -= bytesRead;
-                bytesTransferred(bytesRead);
-            }
-
-            return bytesRead;
         }
+        length = min(length, bytesRemaining);
+        try {
+            fileInputStream.read(buffer, offset, length);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        bytesRemaining -= length;
+        bytesTransferred(length);
+        return length;
     }
 
     @Override
+    @Nullable
     public Uri getUri() {
         return uri;
     }
 
     @Override
-    public void close() throws EncryptedFileDataSourceException {
-        uri = null;
-        fileOffset = 0;
+    public void close() {
         try {
-            if (fileInputStream != null) {
-                fileInputStream.close();
-            }
+            fileInputStream.close();
         } catch (IOException e) {
-            FileLog.e(e);
-            throw new EncryptedFileDataSourceException(e);
-        } finally {
-            if (opened) {
-                opened = false;
-                transferEnded();
-            }
+            e.printStackTrace();
         }
+        if (opened) {
+            opened = false;
+            transferEnded();
+        }
+        fileInputStream = null;
+        uri = null;
     }
 }

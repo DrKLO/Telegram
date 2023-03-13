@@ -127,11 +127,11 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         language = language.toLowerCase();
         LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
         HashSet<String> selectedLanguages = getRestrictedLanguages();
-        if (language != null && language.equals(currentLocaleInfo.pluralLangCode) && doNotTranslate) {
-//            AndroidUtilities.shakeViewSpring(view);
-//            BotWebViewVibrationEffect.APP_ERROR.vibrate();
-            return false;
-        }
+//        if (language != null && language.equals(currentLocaleInfo.pluralLangCode) && doNotTranslate) {
+////            AndroidUtilities.shakeViewSpring(view);
+////            BotWebViewVibrationEffect.APP_ERROR.vibrate();
+//            return false;
+//        }
         if (!doNotTranslate) {
             selectedLanguages.remove(language);
         } else {
@@ -244,11 +244,11 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
                 String langCode = language.code;
                 boolean value = selectedLanguages.contains(langCode);
-                if (langCode != null && langCode.equals(currentLocaleInfo.pluralLangCode) && value) {
-                    AndroidUtilities.shakeViewSpring(view);
-                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
-                    return;
-                }
+//                if (langCode != null && langCode.equals(currentLocaleInfo.pluralLangCode) && value) {
+//                    AndroidUtilities.shakeViewSpring(view);
+//                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
+//                    return;
+//                }
                 if (value) {
                     selectedLanguages.removeIf(s -> s != null && s.equals(langCode));
                 } else {

@@ -610,12 +610,34 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
 
         @SuppressLint("NotifyDataSetChanged")
         public void setItems(List<TLRPC.TL_chatInviteImporter> newItems) {
+            for (int i = 0; i < newItems.size(); ++i) {
+                long id = newItems.get(i).user_id;
+                for (int j = i + 1; j < newItems.size(); ++j) {
+                    long iid = newItems.get(j).user_id;
+                    if (iid == id) {
+                        newItems.remove(i);
+                        i--;
+                        break;
+                    }
+                }
+            }
             currentImporters.clear();
             currentImporters.addAll(newItems);
             notifyDataSetChanged();
         }
 
         public void appendItems(List<TLRPC.TL_chatInviteImporter> newItems) {
+            for (int i = 0; i < newItems.size(); ++i) {
+                long id = newItems.get(i).user_id;
+                for (int j = 0; j < currentImporters.size(); ++j) {
+                    long iid = currentImporters.get(j).user_id;
+                    if (iid == id) {
+                        newItems.remove(i);
+                        i--;
+                        break;
+                    }
+                }
+            }
             currentImporters.addAll(newItems);
             if (currentImporters.size() > newItems.size()) {
                 notifyItemChanged(currentImporters.size() - newItems.size() - 1);

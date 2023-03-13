@@ -689,6 +689,7 @@ public class ActionBarMenuItem extends FrameLayout {
             ((ViewGroup) popupLayout.getParent()).removeView(popupLayout);
         }
         ViewGroup container = popupLayout;
+        View setMinWidth = null;
         if (topView != null) {
             LinearLayout linearLayout = new LinearLayout(getContext()) {
                 @Override
@@ -704,6 +705,7 @@ public class ActionBarMenuItem extends FrameLayout {
             };
             linearLayout.setOrientation(LinearLayout.VERTICAL);
             FrameLayout frameLayout = new FrameLayout(getContext());
+            setMinWidth = frameLayout;
             frameLayout.setAlpha(0f);
             frameLayout.animate().alpha(1f).setDuration(100).setStartDelay(popupLayout.shownFromBottom ? 165 : 0).start();
             if (topView.getParent() instanceof ViewGroup) {
@@ -719,6 +721,8 @@ public class ActionBarMenuItem extends FrameLayout {
             linearLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, -10, 0, 0));
             container = linearLayout;
             popupLayout.setTopView(frameLayout);
+        } else {
+            popupLayout.setTopView(null);
         }
         popupWindow = new ActionBarPopupWindow(container, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
         if (animationEnabled && Build.VERSION.SDK_INT >= 19) {
@@ -753,6 +757,12 @@ public class ActionBarMenuItem extends FrameLayout {
 
        // if (measurePopup) {
             container.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(40), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
+            if (setMinWidth != null && setMinWidth.getLayoutParams() != null && popupLayout.getSwipeBack() != null) {
+                View mainScrollView = popupLayout.getSwipeBack().getChildAt(0);
+                if (mainScrollView != null && mainScrollView.getMeasuredWidth() > 0) {
+                    setMinWidth.getLayoutParams().width = mainScrollView.getMeasuredWidth() + AndroidUtilities.dp(16);
+                }
+            }
             measurePopup = false;
         //}
         processedPopupClick = false;
