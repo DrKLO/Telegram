@@ -9565,7 +9565,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             builder.setMessage(AndroidUtilities.replaceTags(message));
             builder.setPositiveButton(buttonText, (dialogInterface, i) -> didSelectResult(dialogId, topicId,false, false, topicsFragment));
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            showDialog(builder.create());
+            Dialog dialog = builder.create();
+            if (showDialog(dialog) == null) {
+                dialog.show();
+            }
         } else if (initialDialogsType == DIALOGS_TYPE_BOT_REQUEST_PEER) {
             Runnable send = () -> {
                 if (delegate != null) {

@@ -2367,7 +2367,9 @@ public class LocaleController {
                 onDone.run();
             }
         };
-        patched(localeInfo.shortName);
+        if (force) {
+            patched(localeInfo.shortName);
+        }
         if (localeInfo.hasBaseLang() && (langCode == null || langCode.equals(localeInfo.baseLangCode))) {
             if (localeInfo.baseVersion != 0 && !force) {
                 if (localeInfo.hasBaseLang()) {

@@ -225,18 +225,20 @@ public class ReactedHeaderView extends FrameLayout {
             if (response instanceof TLRPC.TL_messages_messageReactionsList) {
                 TLRPC.TL_messages_messageReactionsList list = (TLRPC.TL_messages_messageReactionsList) response;
                 int c = list.count;
+                int ic = list.users.size();
                 post(() -> {
                     String str;
                     if (seenUsers.isEmpty() || seenUsers.size() < c) {
                         str = LocaleController.formatPluralString("ReactionsCount", c);
                     } else {
                         String countStr;
+                        int n;
                         if (c == seenUsers.size()) {
-                            countStr = String.valueOf(c);
+                            countStr = String.valueOf(n = c);
                         } else {
-                            countStr = c + "/" + seenUsers.size();
+                            countStr = (n = c) + "/" + seenUsers.size();
                         }
-                        str = String.format(LocaleController.getPluralString("Reacted", c), countStr);
+                        str = String.format(LocaleController.getPluralString("Reacted", n), countStr);
                     }
 
                     if (getMeasuredWidth() > 0) {

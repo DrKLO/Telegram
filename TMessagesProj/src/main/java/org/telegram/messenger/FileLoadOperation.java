@@ -1836,6 +1836,7 @@ public class FileLoadOperation {
         state = reason == 1 ? stateCanceled : stateFailed;
         if (delegate != null) {
             if (BuildVars.LOGS_ENABLED) {
+                long time = startTime == 0 ? 0 : (System.currentTimeMillis() - startTime);
                 FileLog.d("failed downloading file to " + cacheFileFinal + " reason = " + reason + " time = " + (System.currentTimeMillis() - startTime) + " dc = " + datacenterId + " size = " + AndroidUtilities.formatFileSize(totalBytesCount));
             }
             if (thread) {
@@ -2071,7 +2072,7 @@ public class FileLoadOperation {
             if (BuildVars.LOGS_ENABLED) {
                 requestInfo.requestStartTime = System.currentTimeMillis();
             }
-            int datacenterId =  isCdn ? cdnDatacenterId : this.datacenterId;
+            int datacenterId = isCdn ? cdnDatacenterId : this.datacenterId;
             requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequestSync(request, (response, error) -> {
                 if (!requestInfos.contains(requestInfo)) {
                     return;
@@ -2158,7 +2159,7 @@ public class FileLoadOperation {
                                     onFail(false, 0);
                                 }
                             }
-                        }, null, null, 0, datacenterId, ConnectionsManager.ConnectionTypeGeneric, true);
+                        }, null, null, 0, this.datacenterId, ConnectionsManager.ConnectionTypeGeneric, true);
                     }
                 } else {
                     if (response instanceof TLRPC.TL_upload_file) {

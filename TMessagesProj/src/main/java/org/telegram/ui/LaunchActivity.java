@@ -5165,11 +5165,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         boolean withoutAnimation = dialogsFragment == null || (videoPath != null || (photoPathsArray != null && photoPathsArray.size() > 0));
                         actionBarLayout.presentFragment(fragment, dialogsFragment != null, withoutAnimation, true, false);
                         presentedFragmentWithRemoveLast = dialogsFragment != null;
-                        if (videoPath != null) {
+                        if (videoPath != null && topicId == 0) {
                             fragment.openVideoEditor(videoPath, sendingText);
                             videoEditorOpened = true;
                             sendingText = null;
-                        } else if (photoPathsArray != null && photoPathsArray.size() > 0) {
+                        } else if (photoPathsArray != null && photoPathsArray.size() > 0 && topicId == 0) {
                             photosEditorOpened = fragment.openPhotosEditor(photoPathsArray, message == null || message.length() == 0 ? sendingText : message);
                             if (photosEditorOpened) {
                                 sendingText = null;

@@ -657,8 +657,8 @@ public class TranslateController extends BaseController {
             isTranslatable(messageObject) &&
             messageObject.messageOwner.originalLanguage != null &&
             !UNKNOWN_LANGUAGE.equals(messageObject.messageOwner.originalLanguage) &&
-            !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(messageObject.messageOwner.originalLanguage) &&
-            !TextUtils.equals(getDialogTranslateTo(dialogId), messageObject.messageOwner.originalLanguage)
+            !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(messageObject.messageOwner.originalLanguage)
+//            !TextUtils.equals(getDialogTranslateTo(dialogId), messageObject.messageOwner.originalLanguage)
         );
 
         if (isUnknown) {

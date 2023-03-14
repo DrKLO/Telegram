@@ -89,6 +89,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
     private boolean needShadow;
 
     private boolean canPreviewGif;
+    private boolean isKeyboard;
 
     private boolean isForceGif;
 
@@ -323,7 +324,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 width = (int) (w / (h / (float) AndroidUtilities.dp(80)));
                 if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
                     currentPhotoFilterThumb = currentPhotoFilter = String.format(Locale.US, "%d_%d_b", (int) (width / AndroidUtilities.density), 80);
-                    if (!SharedConfig.isAutoplayGifs()) {
+                    if (!SharedConfig.isAutoplayGifs() && !isKeyboard) {
                         currentPhotoFilterThumb += "_firstframe";
                         currentPhotoFilter += "_firstframe";
                     }
@@ -340,13 +341,13 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 if (documentAttach != null) {
                     TLRPC.VideoSize thumb = MessageObject.getDocumentVideoThumb(documentAttach);
                     if (thumb != null) {
-                        linkImageView.setImage(ImageLocation.getForDocument(thumb, documentAttach), "100_100" + (!SharedConfig.isAutoplayGifs() ? "_firstframe" : ""), ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, -1, ext, parentObject, 1);
+                        linkImageView.setImage(ImageLocation.getForDocument(thumb, documentAttach), "100_100" + (!SharedConfig.isAutoplayGifs() && !isKeyboard ? "_firstframe" : ""), ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, -1, ext, parentObject, 1);
                     } else {
                         ImageLocation location = ImageLocation.getForDocument(documentAttach);
                         if (isForceGif) {
                             location.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
                         }
-                        linkImageView.setImage(location, "100_100" + (!SharedConfig.isAutoplayGifs() ? "_firstframe" : ""), ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, documentAttach.size, ext, parentObject, 0);
+                        linkImageView.setImage(location, "100_100" + (!SharedConfig.isAutoplayGifs() && !isKeyboard ? "_firstframe" : ""), ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, documentAttach.size, ext, parentObject, 0);
                     }
                 } else if (webFile != null) {
                     linkImageView.setImage(ImageLocation.getForWebFile(webFile), "100_100", ImageLocation.getForPhoto(currentPhotoObject, photoAttach), currentPhotoFilter, -1, ext, parentObject, 1);
@@ -378,7 +379,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                     linkImageView.setImage(ImageLocation.getForPath(urlLocation), currentPhotoFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, photoAttach), currentPhotoFilterThumb, -1, ext, parentObject, 1);
                 }
             }
-            if (SharedConfig.isAutoplayGifs()) {
+            if (SharedConfig.isAutoplayGifs() || isKeyboard) {
                 linkImageView.setAllowStartAnimation(true);
                 linkImageView.startAnimation();
             } else {
@@ -596,6 +597,10 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
     public void setCanPreviewGif(boolean value) {
         canPreviewGif = value;
+    }
+
+    public void setIsKeyboard(boolean value) {
+        isKeyboard = value;
     }
 
     public boolean isCanPreviewGif() {

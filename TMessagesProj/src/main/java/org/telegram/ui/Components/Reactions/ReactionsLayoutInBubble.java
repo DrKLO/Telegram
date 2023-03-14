@@ -25,6 +25,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -141,7 +142,7 @@ public class ReactionsLayoutInBubble {
                     if (!isSmall && messageObject.messageOwner.reactions.recent_reactions != null) {
                         ArrayList<TLRPC.User> users = null;
 
-                        if (messageObject.getDialogId() > 0) {
+                        if (messageObject.getDialogId() > 0 && !UserObject.isReplyUser(messageObject.getDialogId())) {
                             users = new ArrayList<>();
                             TLRPC.User me = UserConfig.getInstance(currentAccount).getCurrentUser();
                             TLRPC.User dialogUser = MessagesController.getInstance(currentAccount).getUser(messageObject.getDialogId());
