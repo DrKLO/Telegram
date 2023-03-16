@@ -18,65 +18,66 @@ extern "C" {
 using namespace rlottie;
 
 typedef struct LottieInfo {
-
-    ~LottieInfo() {
-        if (decompressBuffer != nullptr) {
-            delete[]decompressBuffer;
-            decompressBuffer = nullptr;
-        }
-    }
-
     std::unique_ptr<Animation> animation;
     size_t frameCount = 0;
     int32_t fps = 30;
     bool precache = false;
     bool createCache = false;
-    bool limitFps = false;
     std::string path;
     std::string cacheFile;
-    uint8_t *decompressBuffer = nullptr;
-    uint32_t decompressBufferSize = 0;
     volatile uint32_t maxFrameSize = 0;
     uint32_t imageSize = 0;
     uint32_t fileOffset = 0;
     uint32_t fileFrame = 0;
-    bool nextFrameIsCacheFrame = false;
-
-    char *compressBuffer = nullptr;
-    const char *buffer = nullptr;
-    bool firstFrame = false;
+    std::map<int32_t, int32_t>* colors;
     int bufferSize = 0;
-    int compressBound = 0;
-    int firstFrameSize = 0;
-    volatile uint32_t framesAvailableInCache = 0;
 };
 
-JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jstring json, jint w, jint h, jintArray data, jboolean precache, jintArray colorReplacement, jboolean limitFps, jint fitzModifier) {
-    auto info = new LottieInfo();
+const unsigned int num_threads = std::thread::hardware_concurrency();
+std::vector<std::thread> threads;
 
-    std::map<int32_t, int32_t> *colors = nullptr;
-    int color = 0;
+JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jstring json, jint w, jint h, jintArray data, jboolean precache, jintArray colorReplacement, jboolean limitFps, jint fitzModifier) {
+    auto info = std::make_unique<LottieInfo>();
+
     if (colorReplacement != nullptr) {
         jint *arr = env->GetIntArrayElements(colorReplacement, nullptr);
         if (arr != nullptr) {
             jsize len = env->GetArrayLength(colorReplacement);
-            colors = new std::map<int32_t, int32_t>();
-            for (int32_t a = 0; a < len / 2; a++) {
-                (*colors)[arr[a * 2]] = arr[a * 2 + 1];
-                if (color == 0) {
-                    color = arr[a * 2 + 1];
+            std::vector<std::map<int32_t, int32_t>> partial_maps(num_threads);
+            int32_t chunk_size = (len / 2 + num_threads - 1) / num_threads;
+            auto thread_func = [&](int32_t start, int32_t end, std::map<int32_t, int32_t> *colors) {
+                for (int32_t i = start; i < end; i++) {
+                    colors->insert({arr[i * 2], arr[i * 2 + 1]});
                 }
+            };
+
+            for (int32_t i = 0; i < num_threads; i++) {
+                int32_t start = i * chunk_size;
+                int32_t end = std::min(start + chunk_size, static_cast<int32_t>(len / 2));
+                threads.emplace_back(thread_func, start, end, &partial_maps[i]);
+            }
+
+            for (auto &t : threads) {
+                t.join();
+            }
+
+            std::map<int32_t, int32_t> result;
+            for (auto &partial_map : partial_maps) {
+                result.insert(partial_map.begin(), partial_map.end());
+            }
+
+            info->colors = &result;
+
+            for (int32_t i = 0; i < len / 2; i++) {
+                info->colors->insert({arr[i*2],arr[i*2+1]});
             }
             env->ReleaseIntArrayElements(colorReplacement, arr, 0);
         }
     }
 
+    FitzModifier modifier;
 
-    FitzModifier modifier = FitzModifier::None;
     switch (fitzModifier) {
-        case 12:
-            modifier = FitzModifier::Type12;
-            break;
         case 3:
             modifier = FitzModifier::Type3;
             break;
@@ -89,32 +90,37 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
         case 6:
             modifier = FitzModifier::Type6;
             break;
+        case 12:
+            modifier = FitzModifier::Type12;
+            break;
+        default:
+            modifier = FitzModifier::None;
+            break;
     }
-    char const *srcString = env->GetStringUTFChars(src, nullptr);
+    const char *srcString = env->GetStringUTFChars(src, nullptr);
     info->path = srcString;
     if (json != nullptr) {
-        char const *jsonString = env->GetStringUTFChars(json, nullptr);
+        const char *jsonString = env->GetStringUTFChars(json, nullptr);
         if (jsonString) {
-            info->animation = rlottie::Animation::loadFromData(jsonString, info->path, colors, modifier);
+            info->animation = rlottie::Animation::loadFromData(jsonString, info->path, info->colors, modifier);
             env->ReleaseStringUTFChars(json, jsonString);
         }
     } else {
-        info->animation = rlottie::Animation::loadFromFile(info->path, colors, modifier);
+        info->animation = rlottie::Animation::loadFromFile(info->path, info->colors, modifier);
     }
     if (srcString) {
         env->ReleaseStringUTFChars(src, srcString);
     }
     if (info->animation == nullptr) {
-        delete info;
         return 0;
     }
+
     info->frameCount = info->animation->totalFrame();
-    info->fps = (int) info->animation->frameRate();
-    info->limitFps = limitFps;
+    info->fps = static_cast<int32_t>(info->animation->frameRate());
     if (info->fps > 60 || info->frameCount > 600) {
-        delete info;
         return 0;
     }
+
     info->precache = precache;
     if (info->precache) {
         info->cacheFile = info->path;
@@ -125,8 +131,8 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
             info->cacheFile.insert(index, "/acache");
         }
         info->cacheFile += std::to_string(w) + "_" + std::to_string(h);
-        if (color != 0) {
-            info->cacheFile += "_" + std::to_string(color);
+        if (!info->colors->empty()) {
+            info->cacheFile += "_" + std::to_string(info->colors->begin()->second);
         }
         if (limitFps) {
             info->cacheFile += ".s.cache";
@@ -135,6 +141,15 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
         }
         FILE *precacheFile = fopen(info->cacheFile.c_str(), "r+");
         if (precacheFile == nullptr) {
+            precacheFile = fopen(info->cacheFile.c_str(), "w+");
+            if (precacheFile == nullptr) {
+                return 0;
+            }
+        } else {
+            fclose(precacheFile);
+        }
+
+        if (access(info->cacheFile.c_str(), F_OK) == -1) {
             info->createCache = true;
         } else {
             uint8_t temp;
@@ -160,7 +175,7 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
         dataArr[2] = info->createCache ? 1 : 0;
         env->ReleaseIntArrayElements(data, dataArr, 0);
     }
-    return (jlong) (intptr_t) info;
+    return (jlong) info.release();
 }
 
 JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(JNIEnv *env, jclass clazz, jstring json, jstring name, jintArray data, jintArray colorReplacement) {
@@ -177,23 +192,20 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(J
         }
     }
 
-    auto info = new LottieInfo();
+    auto info = std::make_unique<LottieInfo>();
 
-    char const *jsonString = env->GetStringUTFChars(json, nullptr);
-    char const *nameString = env->GetStringUTFChars(name, nullptr);
-    info->animation = rlottie::Animation::loadFromData(jsonString, nameString, colors);
-    if (jsonString) {
-        env->ReleaseStringUTFChars(json, jsonString);
-    }
-    if (nameString) {
-        env->ReleaseStringUTFChars(name, nameString);
-    }
+    const char *jsonString = env->GetStringUTFChars(json, nullptr);
+    const char *nameString = env->GetStringUTFChars(name, nullptr);
+    info->animation = Animation::loadFromData(jsonString, nameString, colors);
+    env->ReleaseStringUTFChars(json, jsonString);
+    env->ReleaseStringUTFChars(name, nameString);
+
     if (info->animation == nullptr) {
-        delete info;
         return 0;
     }
+
     info->frameCount = info->animation->totalFrame();
-    info->fps = (int) info->animation->frameRate();
+    info->fps = static_cast<int32_t>(info->animation->frameRate());
 
     jint *dataArr = env->GetIntArrayElements(data, nullptr);
     if (dataArr != nullptr) {
@@ -202,63 +214,75 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(J
         dataArr[2] = 0;
         env->ReleaseIntArrayElements(data, dataArr, 0);
     }
-    return (jlong) (intptr_t) info;
+    return (jlong) info.release();
 }
 
-JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_destroy(JNIEnv *env, jclass clazz, jlong ptr) {
-    if (!ptr) {
+JNIEXPORT void JNICALL Java_org_telegram_ui_Components_RLottieDrawable_destroy(JNIEnv *env, jclass clazz, jlong ptr) {
+    auto info = reinterpret_cast<LottieInfo *>(ptr);
+    if (info == nullptr) {
         return;
     }
-    auto info = (LottieInfo *) (intptr_t) ptr;
     delete info;
 }
 
-JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_setLayerColor(JNIEnv *env, jclass clazz, jlong ptr, jstring layer, jint color) {
-    if (!ptr || layer == nullptr) {
+JNIEXPORT void JNICALL
+Java_org_telegram_ui_Components_RLottieDrawable_setLayerColor(JNIEnv *env, jclass clazz, jlong ptr, jstring layer,
+                                                              jint color) {
+    auto info = reinterpret_cast<LottieInfo *>(ptr);
+    if (info == nullptr || layer == nullptr) {
         return;
     }
-    auto info = (LottieInfo *) (intptr_t) ptr;
-    char const *layerString = env->GetStringUTFChars(layer, nullptr);
-    info->animation->setValue<Property::Color>(layerString, Color(((color) & 0xff) / 255.0f, ((color >> 8) & 0xff) / 255.0f, ((color >> 16) & 0xff) / 255.0f));
-    if (layerString) {
-        env->ReleaseStringUTFChars(layer, layerString);
-    }
+    float r = static_cast<float>(color & 0xff) / 255.0f;
+    float g = static_cast<float>((color >> 8) & 0xff) / 255.0f;
+    float b = static_cast<float>((color >> 16) & 0xff) / 255.0f;
+    const char *layerString = env->GetStringUTFChars(layer, nullptr);
+
+    info->animation->setValue<Property::Color>(layerString, Color(r, g, b));
+    env->ReleaseStringUTFChars(layer, layerString);
 }
 
-JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_replaceColors(JNIEnv *env, jclass clazz, jlong ptr, jintArray colorReplacement) {
-    if (!ptr || colorReplacement == nullptr) {
+JNIEXPORT void JNICALL
+Java_org_telegram_ui_Components_RLottieDrawable_replaceColors(JNIEnv *env, jclass clazz, jlong ptr,
+                                                              jintArray colorReplacement) {
+    auto info = reinterpret_cast<LottieInfo *>(ptr);
+    if (info == nullptr || colorReplacement == nullptr) {
         return;
     }
-    auto info = (LottieInfo *) (intptr_t) ptr;
 
     jint *arr = env->GetIntArrayElements(colorReplacement, nullptr);
     if (arr != nullptr) {
         jsize len = env->GetArrayLength(colorReplacement);
-        for (int32_t a = 0; a < len / 2; a++) {
-            (*info->animation->colorMap)[arr[a * 2]] = arr[a * 2 + 1];
+        for (int32_t i = 0; i < len / 2; i++) {
+            info->animation->colorMap->insert({arr[i * 2], arr[i * 2 + 1]});
         }
         info->animation->resetCurrentFrame();
         env->ReleaseIntArrayElements(colorReplacement, arr, 0);
     }
 }
 
-
-JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jint w, jint h, jint stride, jboolean clear) {
-    if (!ptr || bitmap == nullptr) {
+JNIEXPORT jint JNICALL
+Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame,
+                                                         jobject bitmap, jint w, jint h, jint stride, jboolean clear) {
+    auto info = reinterpret_cast<LottieInfo *>(ptr);
+    if (info == nullptr || bitmap == nullptr) {
         return 0;
     }
-    auto info = (LottieInfo *) (intptr_t) ptr;
+    void *pixels = nullptr;
+    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0 || pixels == nullptr) {
+        return -1;
+    }
 
-    void *pixels;
     bool result = false;
-    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
-        Surface surface((uint32_t *) pixels, (size_t) w, (size_t) h, (size_t) stride);
-        info->animation->renderSync((size_t) frame, surface, clear, &result);
-        AndroidBitmap_unlockPixels(env, bitmap);
-    }
-    if (!result) {
-        return -5;
-    }
-    return frame;
+
+    Surface surface(reinterpret_cast<uint32_t *>(pixels),
+                    static_cast<size_t>(w),
+                    static_cast<size_t>(h),
+                    static_cast<size_t>(stride)
+                    );
+    info->animation->renderSync(static_cast<size_t>(frame), surface, clear, &result);
+
+    AndroidBitmap_unlockPixels(env, bitmap);
+
+    return result ? frame : -5;
 }
 }
