@@ -1296,7 +1296,11 @@ public class ChatObject {
                     return Integer.compare(o2.date, o1.date);
                 }
             };
-            Collections.sort(sortedParticipants, comparator);
+            try {
+                Collections.sort(sortedParticipants, comparator);
+            } catch (Exception e) {
+
+            }
             TLRPC.TL_groupCallParticipant lastParticipant = sortedParticipants.isEmpty() ? null : sortedParticipants.get(sortedParticipants.size() - 1);
             if (videoIsActive(lastParticipant, false, this) || videoIsActive(lastParticipant, true, this)) {
                 if (call.unmuted_video_count > activeVideos) {

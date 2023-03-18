@@ -86,11 +86,21 @@ public class TranslateButton extends FrameLayout {
         menuView.setImageResource(R.drawable.msg_mini_customize);
         menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         menuView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
-        menuView.setOnClickListener(e -> onMenuClick());
+        menuView.setOnClickListener(e -> {
+            if (UserConfig.getInstance(currentAccount).isPremium()) {
+                onMenuClick();
+            } else {
+                onCloseClick();
+            }
+        });
         addView(menuView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
     }
 
     protected void onButtonClick() {
+
+    }
+
+    protected void onCloseClick() {
 
     }
 
@@ -303,7 +313,6 @@ public class TranslateButton extends FrameLayout {
             }
             textView.setText(TextUtils.concat(translateIcon, " ", text));
         }
-
-        menuView.setVisibility(UserConfig.getInstance(currentAccount).isPremium() ? VISIBLE : GONE);
+        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() ? R.drawable.msg_mini_customize : R.drawable.msg_close);
     }
 }

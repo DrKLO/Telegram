@@ -1241,6 +1241,12 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 114").stepThis().dispose();
             version = 114;
         }
+        if (version == 114) {
+            database.executeFast("CREATE TABLE bot_keyboard_topics(uid INTEGER, tid INTEGER, mid INTEGER, info BLOB, PRIMARY KEY(uid, tid))").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_topics_idx_mid_v2 ON bot_keyboard_topics(mid, uid, tid);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 115").stepThis().dispose();
+            version = 115;
+        }
         return version;
     }
 

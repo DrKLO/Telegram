@@ -902,17 +902,33 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                         }
                         ImageLocation location = ImageLocation.getForPhoto(sizeFull, photo);
                         if (location != null) {
-                            if (prevImageLocation != null && prevImageLocation.photoId == location.photoId) {
+                            if (prevImageLocation != null && prevImageLocation.photoId == location.photoId && !isProfileFragment && dialogId != UserConfig.getInstance(currentAccount).getClientUserId()) {
                                 thumbsFileNames.add(null);
-                                videoFileNames.add(null);
+
                                 imagesLocations.add(prevImageLocation);
                                 ImageLocation thumbLocation = prevThumbLocation;
                                 if (thumbLocation == null) {
                                     thumbLocation = ImageLocation.getForPhoto(sizeThumb, photo);
                                 }
                                 thumbsLocations.add(thumbLocation);
-                                vectorAvatars.add(prevVectorAvatarThumbDrawable);
-                                videoLocations.add(null);
+
+                                if (!photo.video_sizes.isEmpty()) {
+                                    final TLRPC.VideoSize videoSize = FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 1000);
+                                    final TLRPC.VideoSize vectorMarkupVideoSize = FileLoader.getVectorMarkupVideoSize(photo);
+                                    if (vectorMarkupVideoSize != null) {
+                                        vectorAvatars.add(new VectorAvatarThumbDrawable(vectorMarkupVideoSize, user != null && user.premium, VectorAvatarThumbDrawable.TYPE_PROFILE));
+                                        videoLocations.add(null);
+                                        videoFileNames.add(null);
+                                    } else {
+                                        vectorAvatars.add(null);
+                                        videoLocations.add(ImageLocation.getForPhoto(videoSize, photo));
+                                        videoFileNames.add(FileLoader.getAttachFileName(videoSize));
+                                    }
+                                } else {
+                                    vectorAvatars.add(prevVectorAvatarThumbDrawable);
+                                    videoLocations.add(null);
+                                    videoFileNames.add(null);
+                                }
                                 photos.add(null);
                                 imagesLocationsSizes.add(-1);
                                 imagesUploadProgress.add(null);

@@ -2022,6 +2022,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
     }
 
+    protected boolean doSend(LongSparseArray<TLRPC.Dialog> dids, TLRPC.TL_forumTopic topic) {
+        return false;
+    }
+
     private int getCurrentTop() {
         if (gridView.getChildCount() != 0) {
             View child = gridView.getChildAt(0);

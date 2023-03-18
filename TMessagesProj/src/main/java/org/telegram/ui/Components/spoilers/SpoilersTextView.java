@@ -124,6 +124,12 @@ public class SpoilersTextView extends TextView {
         }
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        invalidateSpoilers();
+    }
+
     private void invalidateSpoilers() {
         if (spoilers == null) return; // Check for a super constructor
         spoilersPool.addAll(spoilers);

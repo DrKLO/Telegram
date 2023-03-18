@@ -222,12 +222,14 @@ public class FileLoader extends BaseController {
         if (dir == null && type != FileLoader.MEDIA_DIR_CACHE) {
             dir = mediaDirs.get(FileLoader.MEDIA_DIR_CACHE);
         }
-        try {
-            if (dir != null && !dir.isDirectory()) {
-                dir.mkdirs();
+        if (BuildVars.NO_SCOPED_STORAGE) {
+            try {
+                if (dir != null && !dir.isDirectory()) {
+                    dir.mkdirs();
+                }
+            } catch (Exception e) {
+                //don't promt
             }
-        } catch (Exception e) {
-            //don't promt
         }
         return dir;
     }

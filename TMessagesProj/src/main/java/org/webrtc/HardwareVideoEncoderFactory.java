@@ -22,6 +22,7 @@ import android.os.Build;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 
@@ -174,6 +175,20 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
       if (info2 == null && isSupportedCodec(info, type, false)) {
         info2 = info;
       }
+    }
+    if (info2 == null) {
+      StringBuilder stringBuilder = new StringBuilder();
+      for (int i = 0; i < count; ++i) {
+        MediaCodecInfo info = infos.get(i);
+        if (info == null || !info.isEncoder()) {
+          continue;
+        }
+        if (MediaCodecUtils.codecSupportsType(info, type)) {
+          stringBuilder.append(info.getName()).append(", ");
+        }
+      }
+
+      FileLog.e("can't create video encoder " + type.mimeType() + ", supported codecs" + stringBuilder);
     }
     return info2;
   }

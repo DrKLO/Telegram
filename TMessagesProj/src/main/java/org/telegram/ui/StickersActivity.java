@@ -667,31 +667,39 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         if (currentType == MediaDataController.TYPE_IMAGE) {
             featuredRow = rowCount++;
             masksRow = -1;
+            if (mediaDataController.getArchivedStickersCount(currentType) != 0) {
+                boolean inserted = archivedRow == -1;
+                archivedRow = rowCount++;
+                if (listAdapter != null && inserted) {
+                    listAdapter.notifyItemRangeInserted(archivedRow, 1);
+                }
+            }
+            archivedInfoRow = -1;
             emojiPacksRow = rowCount++;
         } else {
             featuredRow = -1;
             masksRow = -1;
             emojiPacksRow = -1;
-        }
 
-        if (mediaDataController.getArchivedStickersCount(currentType) != 0 && currentType != MediaDataController.TYPE_EMOJIPACKS) {
-            boolean inserted = archivedRow == -1;
+            if (mediaDataController.getArchivedStickersCount(currentType) != 0 && currentType != MediaDataController.TYPE_EMOJIPACKS) {
+                boolean inserted = archivedRow == -1;
 
-            archivedRow = rowCount++;
-            archivedInfoRow = currentType == MediaDataController.TYPE_MASK ? rowCount++ : -1;
+                archivedRow = rowCount++;
+                archivedInfoRow = currentType == MediaDataController.TYPE_MASK ? rowCount++ : -1;
 
-            if (listAdapter != null && inserted) {
-                listAdapter.notifyItemRangeInserted(archivedRow, archivedInfoRow != -1 ? 2 : 1);
-            }
-        } else {
-            int oldArchivedRow = archivedRow;
-            int oldArchivedInfoRow = archivedInfoRow;
+                if (listAdapter != null && inserted) {
+                    listAdapter.notifyItemRangeInserted(archivedRow, archivedInfoRow != -1 ? 2 : 1);
+                }
+            } else {
+                int oldArchivedRow = archivedRow;
+                int oldArchivedInfoRow = archivedInfoRow;
 
-            archivedRow = -1;
-            archivedInfoRow = -1;
+                archivedRow = -1;
+                archivedInfoRow = -1;
 
-            if (listAdapter != null && oldArchivedRow != -1) {
-                listAdapter.notifyItemRangeRemoved(oldArchivedRow, oldArchivedInfoRow != -1 ? 2 : 1);
+                if (listAdapter != null && oldArchivedRow != -1) {
+                    listAdapter.notifyItemRangeRemoved(oldArchivedRow, oldArchivedInfoRow != -1 ? 2 : 1);
+                }
             }
         }
 

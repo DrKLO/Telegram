@@ -1133,15 +1133,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             if (renderingBitmap == null && nextRenderingBitmap == null) {
                 scheduleNextGetFrame();
             } else if (nextRenderingBitmap != null && (renderingBitmap == null || (Math.abs(now - lastFrameTime) >= invalidateAfter && !skipFrameUpdate))) {
-                //if (precache) {
-                    backgroundBitmap = renderingBitmap;
-               // }
                 renderingBitmap = nextRenderingBitmap;
                 renderingBitmapTime = nextRenderingBitmapTime;
                 for (int i = 0; i < backgroundShader.length; i++) {
-                 //   if (precache) {
-                        backgroundShader[i] = renderingShader[i];
-                 //   }
                     renderingShader[i] = nextRenderingShader[i];
                     nextRenderingShader[i] = null;
                 }

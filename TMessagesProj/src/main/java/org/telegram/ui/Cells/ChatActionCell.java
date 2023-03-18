@@ -1139,7 +1139,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
         if (isButtonLayout(messageObject)) {
             canvas.save();
-            float x = (previousWidth - giftRectSize) / 2f + AndroidUtilities.dp(8), y = textY + textHeight + giftRectSize * 0.075f + imageSize + AndroidUtilities.dp(4);
+            float x = (previousWidth - giftRectSize) / 2f + AndroidUtilities.dp(8), y = textY + textHeight + giftRectSize * 0.075f + (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO ? imageSize : stickerSize) + AndroidUtilities.dp(4);
             if (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
                 y += +AndroidUtilities.dp(16);
             }

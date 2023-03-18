@@ -2287,6 +2287,7 @@
     <string name="HidAccount">The account was hidden by the user</string>
     <string name="AutoplayMedia">Auto-play media</string>
     <string name="RaiseToSpeak">Raise to Speak</string>
+    <string name="RaiseToListen">Raise to Listen</string>
     <string name="SaveToGallerySettings">Save to Gallery</string>
     <string name="SoundMuted">Sound muted</string>
     <string name="EditName">Edit name</string>
@@ -6358,4 +6359,16 @@
     <string name="AccDescrLiteBatteryLevelAnnounce">%s%%</string>
     <string name="AccDescrRateTranscriptionUp">Rate up</string>
     <string name="AccDescrRateTranscriptionDown">Rate down</string>
+    <string name="PauseMusicOnMedia">Pause music while playing media</string>
+    <string name="ProxyBottomSheetChecking">Checking</string>
+    <string name="LoginCantAccessThisEmail">Can\'t access this email?</string>
+    <string name="LoginEmailResetInTime">Email will be reset in %1$s.\n*Reset now via SMS*</string>
+    <string name="LoginEmailResetInSinglePattern">%1$s</string>
+    <string name="LoginEmailResetInDoublePattern">%1$s and %2$s</string>
+    <string name="LoginEmailResetTitle">Reset Email</string>
+    <string name="LoginEmailResetMessage">You can change your login email if you are logged into Telegram from another device. Otherwise, if you don\'t have access to email %1$s, you can reset this email with an **SMS** code in **%2$s**.</string>
+    <string name="LoginEmailResetButton">Reset Login Email</string>
+    <string name="LoginEmailResetPremiumRequiredTitle">Telegram Premium Required</string>
+    <string name="LoginEmailResetPremiumRequiredMessage">Due to the high cost of SMS in your country, you need a **Telegram Premium** account to immediately reset this email via an SMS code.\n\nYou can ask a friend to gift a Premium subscription for your account **%1$s**</string>
+    <string name="LoginEmailResetPleaseWait">Resetting email, please wait...</string>
 </resources>
