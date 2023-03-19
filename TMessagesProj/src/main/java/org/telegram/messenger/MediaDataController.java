@@ -34,6 +34,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 
@@ -720,6 +721,9 @@ public class MediaDataController extends BaseController {
 
     public void preloadDefaultReactions() {
         if (reactionsList == null || reactionsCacheGenerated || !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS)) {
+            return;
+        }
+        if (currentAccount != UserConfig.selectedAccount) {
             return;
         }
         reactionsCacheGenerated = true;
@@ -2355,7 +2359,9 @@ public class MediaDataController extends BaseController {
 
                 processLoadedDiceStickers(getUserConfig().genericAnimationsStickerPack, false, stickerSet, false, (int) (System.currentTimeMillis() / 1000));
                 for (int i = 0; i < stickerSet.documents.size(); i++) {
-                    preloadImage(ImageLocation.getForDocument(stickerSet.documents.get(i)));
+                    if (currentAccount == UserConfig.selectedAccount) {
+                        preloadImage(ImageLocation.getForDocument(stickerSet.documents.get(i)));
+                    }
                 }
             }
         }));
@@ -4294,48 +4300,20 @@ public class MediaDataController extends BaseController {
                     ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putString("directShareHash2", SharedConfig.directShareHash).commit();
                 }
 
-                List<ShortcutInfoCompat> currentShortcuts = ShortcutManagerCompat.getDynamicShortcuts(ApplicationLoader.applicationContext);
-                ArrayList<String> shortcutsToUpdate = new ArrayList<>();
-                ArrayList<String> newShortcutsIds = new ArrayList<>();
-                ArrayList<String> shortcutsToDelete = new ArrayList<>();
+                ShortcutManagerCompat.removeAllDynamicShortcuts(ApplicationLoader.applicationContext);
 
-                if (currentShortcuts != null && !currentShortcuts.isEmpty()) {
-                    newShortcutsIds.add("compose");
-                    for (int a = 0; a < hintsFinal.size(); a++) {
-                        TLRPC.TL_topPeer hint = hintsFinal.get(a);
-                        newShortcutsIds.add("did3_" + MessageObject.getPeerId(hint.peer));
-                    }
-                    for (int a = 0; a < currentShortcuts.size(); a++) {
-                        String id = currentShortcuts.get(a).getId();
-                        if (!newShortcutsIds.remove(id)) {
-                            shortcutsToDelete.add(id);
-                        }
-                        shortcutsToUpdate.add(id);
-                    }
-                    if (newShortcutsIds.isEmpty() && shortcutsToDelete.isEmpty()) {
-                        return;
-                    }
-                }
 
                 Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
                 intent.setAction("new_dialog");
                 ArrayList<ShortcutInfoCompat> arrayList = new ArrayList<>();
-                arrayList.add(new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, "compose")
+                ShortcutManagerCompat.pushDynamicShortcut(ApplicationLoader.applicationContext, new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, "compose")
                         .setShortLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
                         .setLongLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
                         .setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_compose))
+                        .setRank(0)
                         .setIntent(intent)
                         .build());
-                if (shortcutsToUpdate.contains("compose")) {
-                    ShortcutManagerCompat.updateShortcuts(ApplicationLoader.applicationContext, arrayList);
-                } else {
-                    ShortcutManagerCompat.addDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
-                }
-                arrayList.clear();
 
-                if (!shortcutsToDelete.isEmpty()) {
-                    ShortcutManagerCompat.removeDynamicShortcuts(ApplicationLoader.applicationContext, shortcutsToDelete);
-                }
 
                 HashSet<String> category = new HashSet<>(1);
                 category.add(SHORTCUT_CATEGORY);
@@ -4419,6 +4397,7 @@ public class MediaDataController extends BaseController {
                     ShortcutInfoCompat.Builder builder = new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, id)
                             .setShortLabel(name)
                             .setLongLabel(name)
+                            .setRank(1 + a)
                             .setIntent(shortcutIntent);
                     if (SharedConfig.directShare) {
                         builder.setCategories(category);
@@ -4428,13 +4407,7 @@ public class MediaDataController extends BaseController {
                     } else {
                         builder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_user));
                     }
-                    arrayList.add(builder.build());
-                    if (shortcutsToUpdate.contains(id)) {
-                        ShortcutManagerCompat.updateShortcuts(ApplicationLoader.applicationContext, arrayList);
-                    } else {
-                        ShortcutManagerCompat.addDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
-                    }
-                    arrayList.clear();
+                    ShortcutManagerCompat.pushDynamicShortcut(ApplicationLoader.applicationContext, builder.build());
                 }
             } catch (Throwable ignore) {
 
@@ -6627,37 +6600,74 @@ public class MediaDataController extends BaseController {
     //---------------- DRAFT END ----------------
 
     private HashMap<String, TLRPC.BotInfo> botInfos = new HashMap<>();
-    private LongSparseArray<TLRPC.Message> botKeyboards = new LongSparseArray<>();
-    private SparseLongArray botKeyboardsByMids = new SparseLongArray();
+    private LongSparseArray<ArrayList<TLRPC.Message>> botDialogKeyboards = new LongSparseArray<>();
+    private HashMap<MessagesStorage.TopicKey, TLRPC.Message> botKeyboards = new HashMap<>();
+    private LongSparseArray<MessagesStorage.TopicKey> botKeyboardsByMids = new LongSparseArray();
 
-    public void clearBotKeyboard(long dialogId, ArrayList<Integer> messages) {
+    public void clearBotKeyboard(MessagesStorage.TopicKey topicKey, ArrayList<Integer> messages) {
         AndroidUtilities.runOnUIThread(() -> {
             if (messages != null) {
                 for (int a = 0; a < messages.size(); a++) {
-                    long did1 = botKeyboardsByMids.get(messages.get(a));
-                    if (did1 != 0) {
-                        botKeyboards.remove(did1);
-                        botKeyboardsByMids.delete(messages.get(a));
-                        getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, null, did1);
+                    final int id = messages.get(a);
+                    MessagesStorage.TopicKey foundTopicKey = botKeyboardsByMids.get(id);
+                    if (foundTopicKey != null) {
+                        botKeyboards.remove(foundTopicKey);
+                        ArrayList<TLRPC.Message> dialogMessages = botDialogKeyboards.get(foundTopicKey.dialogId);
+                        if (dialogMessages != null) {
+                            for (int i = 0; i < dialogMessages.size(); ++i) {
+                                TLRPC.Message msg = dialogMessages.get(i);
+                                if (msg == null || msg.id == id) {
+                                    dialogMessages.remove(i);
+                                    i--;
+                                }
+                            }
+                            if (dialogMessages.isEmpty()) {
+                                botDialogKeyboards.remove(foundTopicKey.dialogId);
+                            }
+                        }
+                        botKeyboardsByMids.remove(id);
+                        getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, null, foundTopicKey);
                     }
                 }
-            } else {
-                botKeyboards.remove(dialogId);
-                getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, null, dialogId);
+            } else if (topicKey != null) {
+                botKeyboards.remove(topicKey);
+                botDialogKeyboards.remove(topicKey.dialogId);
+                getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, null, topicKey);
             }
         });
     }
 
-    public void loadBotKeyboard(long dialogId) {
-        TLRPC.Message keyboard = botKeyboards.get(dialogId);
+    public void clearBotKeyboard(long dialogId) {
+        AndroidUtilities.runOnUIThread(() -> {
+            ArrayList<TLRPC.Message> dialogMessages = botDialogKeyboards.get(dialogId);
+            if (dialogMessages != null) {
+                for (int i = 0; i < dialogMessages.size(); ++i) {
+                    TLRPC.Message msg = dialogMessages.get(i);
+                    int topicId = MessageObject.getTopicId(msg, ChatObject.isForum(currentAccount, dialogId));
+                    MessagesStorage.TopicKey topicKey = MessagesStorage.TopicKey.of(dialogId, topicId);
+                    botKeyboards.remove(topicKey);
+                    getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, null, topicKey);
+                }
+            }
+            botDialogKeyboards.remove(dialogId);
+        });
+    }
+
+    public void loadBotKeyboard(MessagesStorage.TopicKey topicKey) {
+        TLRPC.Message keyboard = botKeyboards.get(topicKey);
         if (keyboard != null) {
-            getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, keyboard, dialogId);
+            getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, keyboard, topicKey);
             return;
         }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 TLRPC.Message botKeyboard = null;
-                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT info FROM bot_keyboard WHERE uid = %d", dialogId));
+                SQLiteCursor cursor;
+                if (topicKey.topicId != 0) {
+                    cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT info FROM bot_keyboard_topics WHERE uid = %d AND tid = %d", topicKey.dialogId, topicKey.topicId));
+                } else {
+                    cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT info FROM bot_keyboard WHERE uid = %d", topicKey.dialogId));
+                }
                 if (cursor.next()) {
                     NativeByteBuffer data;
 
@@ -6673,7 +6683,7 @@ public class MediaDataController extends BaseController {
 
                 if (botKeyboard != null) {
                     TLRPC.Message botKeyboardFinal = botKeyboard;
-                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, botKeyboardFinal, dialogId));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, botKeyboardFinal, topicKey));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -6719,13 +6729,18 @@ public class MediaDataController extends BaseController {
         });
     }
 
-    public void putBotKeyboard(long dialogId, TLRPC.Message message) {
-        if (message == null) {
+    public void putBotKeyboard(MessagesStorage.TopicKey topicKey, TLRPC.Message message) {
+        if (topicKey == null) {
             return;
         }
         try {
             int mid = 0;
-            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT mid FROM bot_keyboard WHERE uid = %d", dialogId));
+            SQLiteCursor cursor;
+            if (topicKey.topicId != 0) {
+                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT mid FROM bot_keyboard_topics WHERE uid = %d AND tid = %d", topicKey.dialogId, topicKey.topicId));
+            } else {
+                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT mid FROM bot_keyboard WHERE uid = %d", topicKey.dialogId));
+            }
             if (cursor.next()) {
                 mid = cursor.intValue(0);
             }
@@ -6734,28 +6749,46 @@ public class MediaDataController extends BaseController {
                 return;
             }
 
-            SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO bot_keyboard VALUES(?, ?, ?)");
+            SQLitePreparedStatement state;
+            if (topicKey.topicId != 0) {
+                state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO bot_keyboard_topics VALUES(?, ?, ?, ?)");
+            } else {
+                state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO bot_keyboard VALUES(?, ?, ?)");
+            }
             state.requery();
             NativeByteBuffer data = new NativeByteBuffer(message.getObjectSize());
             message.serializeToStream(data);
-            state.bindLong(1, dialogId);
-            state.bindInteger(2, message.id);
-            state.bindByteBuffer(3, data);
+            if (topicKey.topicId != 0) {
+                state.bindLong(1, topicKey.dialogId);
+                state.bindInteger(2, topicKey.topicId);
+                state.bindInteger(3, message.id);
+                state.bindByteBuffer(4, data);
+            } else {
+                state.bindLong(1, topicKey.dialogId);
+                state.bindInteger(2, message.id);
+                state.bindByteBuffer(3, data);
+            }
             state.step();
             data.reuse();
             state.dispose();
 
             AndroidUtilities.runOnUIThread(() -> {
-                TLRPC.Message old = botKeyboards.get(dialogId);
-                botKeyboards.put(dialogId, message);
+                TLRPC.Message old = botKeyboards.get(topicKey);
+                botKeyboards.put(topicKey, message);
+                ArrayList<TLRPC.Message> messages = botDialogKeyboards.get(topicKey.dialogId);
+                if (messages == null) {
+                    messages = new ArrayList<>();
+                }
+                messages.add(message);
+                botDialogKeyboards.put(topicKey.dialogId, messages);
                 long channelId = MessageObject.getChannelId(message);
                 if (channelId == 0) {
                     if (old != null) {
                         botKeyboardsByMids.delete(old.id);
                     }
-                    botKeyboardsByMids.put(message.id, dialogId);
+                    botKeyboardsByMids.put(message.id, topicKey);
                 }
-                getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, message, dialogId);
+                getNotificationCenter().postNotificationName(NotificationCenter.botKeyboardDidLoad, message, topicKey);
             });
         } catch (Exception e) {
             FileLog.e(e);

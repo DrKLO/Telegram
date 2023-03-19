@@ -50,10 +50,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
@@ -87,6 +85,7 @@ import org.telegram.ui.Cells.ThemePreviewMessagesCell;
 import org.telegram.ui.Cells.ThemeTypeCell;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
@@ -137,6 +136,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int customTabsRow;
     private int directShareRow;
     private int raiseToSpeakRow;
+    private int raiseToListenRow;
     private int sendByEnterRow;
     private int saveToGalleryOption1Row;
     private int saveToGalleryOption2Row;
@@ -180,6 +180,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int themeInfoRow;
     private int chatBlurRow;
     private int pauseOnRecordRow;
+    private int pauseOnMediaRow;
 
     private int swipeGestureHeaderRow;
     private int swipeGestureRow;
@@ -485,6 +486,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         int prevThemeAccentListRow = themeAccentListRow;
         int prevEditThemeRow = editThemeRow;
+        int prevRaiseToSpeakRow = raiseToSpeakRow;
 
         rowCount = 0;
         contactsReimportRow = -1;
@@ -521,6 +523,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         chatListInfoRow = -1;
         chatBlurRow = -1;
         pauseOnRecordRow = -1;
+        pauseOnMediaRow = -1;
         stickersRow = -1;
         stickersInfoRow = -1;
         liteModeRow = -1;
@@ -533,6 +536,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         directShareRow = -1;
         enableAnimationsRow = -1;
         raiseToSpeakRow = -1;
+        raiseToListenRow = -1;
         sendByEnterRow = -1;
         saveToGalleryOption1Row = -1;
         saveToGalleryOption2Row = -1;
@@ -633,8 +637,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             customTabsRow = rowCount++;
             directShareRow = rowCount++;
 //            enableAnimationsRow = rowCount++;
-            raiseToSpeakRow = rowCount++;
+            raiseToListenRow = rowCount++;
+            if (SharedConfig.raiseToListen) {
+                raiseToSpeakRow = rowCount++;
+            }
             sendByEnterRow = rowCount++;
+            pauseOnMediaRow = rowCount++;
             pauseOnRecordRow = rowCount++;
             bluetoothScoRow = rowCount++;
 //            if (SharedConfig.canBlurChat()) {
@@ -704,6 +712,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         listAdapter.notifyItemInserted(editThemeRow);
                     } else if (prevEditThemeRow != -1 && editThemeRow == -1) {
                         listAdapter.notifyItemRemoved(prevEditThemeRow);
+                    }
+
+                    if (prevRaiseToSpeakRow == -1 && raiseToSpeakRow != -1) {
+                        listAdapter.notifyItemInserted(raiseToSpeakRow);
+                    } else if (prevRaiseToSpeakRow != -1 && raiseToSpeakRow == -1) {
+                        listAdapter.notifyItemRemoved(prevRaiseToSpeakRow);
                     }
                 }
             } else {
@@ -1028,14 +1042,33 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     ((TextCheckCell) view).setChecked(!send);
                 }
             } else if (position == raiseToSpeakRow) {
-                SharedConfig.toogleRaiseToSpeak();
+                SharedConfig.toggleRaiseToSpeak();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.raiseToSpeak);
                 }
+            } else if (position == raiseToListenRow) {
+                SharedConfig.toggleRaiseToListen();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.raiseToListen);
+                }
+                if (!SharedConfig.raiseToListen && raiseToSpeakRow != -1) {
+                    for (int i = 0; i < listView.getChildCount(); ++i) {
+                        View child = listView.getChildAt(i);
+                        if (child instanceof TextCheckCell && listView.getChildAdapterPosition(child) == raiseToSpeakRow) {
+                            ((TextCheckCell) child).setChecked(false);
+                        }
+                    }
+                }
+                updateRows(false);
             } else if (position == pauseOnRecordRow) {
                 SharedConfig.togglePauseMusicOnRecord();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.pauseMusicOnRecord);
+                }
+            } else if (position == pauseOnMediaRow) {
+                SharedConfig.togglePauseMusicOnMedia();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.pauseMusicOnMedia);
                 }
             } else if (position == distanceRow) {
                 if (getParentActivity() == null) {
@@ -1274,6 +1307,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 presentFragment(new LiteModeSettingsActivity());
             }
         });
+        if (currentType == THEME_TYPE_BASIC) {
+            DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+            itemAnimator.setDurations(350);
+            itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            itemAnimator.setDelayAnimations(false);
+            itemAnimator.setSupportsChangeAnimations(false);
+            listView.setItemAnimator(itemAnimator);
+        }
 
         return fragmentView;
     }
@@ -2254,8 +2295,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == raiseToSpeakRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), SharedConfig.raiseToSpeak, true);
+                    } else if (position == raiseToListenRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToListen", R.string.RaiseToListen), SharedConfig.raiseToListen, true);
                     } else if (position == pauseOnRecordRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString(R.string.PauseMusicOnRecord), SharedConfig.pauseMusicOnRecord, true);
+                    } else if (position == pauseOnMediaRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString(R.string.PauseMusicOnMedia), SharedConfig.pauseMusicOnMedia, true);
                     } else if (position == customTabsRow) {
                         textCheckCell.setTextAndValueAndCheck(LocaleController.getString("ChromeCustomTabs", R.string.ChromeCustomTabs), LocaleController.getString("ChromeCustomTabsInfo", R.string.ChromeCustomTabsInfo), SharedConfig.customTabs, false, true);
                     } else if (position == directShareRow) {
@@ -2377,8 +2422,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             } else if (position == automaticBrightnessRow) {
                 return TYPE_BRIGHTNESS;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
-                    position == raiseToSpeakRow || position == pauseOnRecordRow || position == customTabsRow ||
-                    position == directShareRow || position == chatBlurRow) {
+                    position == raiseToSpeakRow || position == raiseToListenRow || position == pauseOnRecordRow || position == customTabsRow ||
+                    position == directShareRow || position == chatBlurRow || position == pauseOnMediaRow) {
                 return TYPE_TEXT_CHECK;
             } else if (position == textSizeRow) {
                 return TYPE_TEXT_SIZE;

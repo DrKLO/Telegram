@@ -20,7 +20,6 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.Utilities;
 
@@ -71,7 +70,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 155;
+    public static final int LAYER = 156;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
@@ -6839,6 +6838,8 @@ public class TLRPC {
         public byte[] nonce;
         public String receipt;
         public int push_timeout;
+        public int reset_available_period;
+        public int reset_pending_date;
         public boolean verifiedFirebase; //custom
 
         public static auth_SentCodeType TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
@@ -6850,7 +6851,7 @@ public class TLRPC {
                 case 0x5353e5a7:
                     result = new TL_auth_sentCodeTypeCall();
                     break;
-                case 0x5a159841:
+                case 0xf450f59b:
                     result = new TL_auth_sentCodeTypeEmailCode();
                     break;
                 case 0xa5491dea:
@@ -6911,7 +6912,7 @@ public class TLRPC {
     }
 
     public static class TL_auth_sentCodeTypeEmailCode extends auth_SentCodeType {
-        public static int constructor = 0x5a159841;
+        public static int constructor = 0xf450f59b;
 
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
@@ -6920,8 +6921,11 @@ public class TLRPC {
             google_signin_allowed = (flags & 2) != 0;
             email_pattern = stream.readString(exception);
             length = stream.readInt32(exception);
-            if ((flags & 4) != 0) {
-                next_phone_login_date = stream.readInt32(exception);
+            if ((flags & 8) != 0) {
+                reset_available_period = stream.readInt32(exception);
+            }
+            if ((flags & 16) != 0) {
+                reset_pending_date = stream.readInt32(exception);
             }
         }
 
@@ -6932,8 +6936,11 @@ public class TLRPC {
             stream.writeInt32(flags);
             stream.writeString(email_pattern);
             stream.writeInt32(length);
-            if ((flags & 4) != 0) {
-                stream.writeInt32(next_phone_login_date);
+            if ((flags & 8) != 0) {
+                stream.writeInt32(reset_available_period);
+            }
+            if ((flags & 16) != 0) {
+                stream.writeInt32(reset_pending_date);
             }
         }
     }
@@ -11449,6 +11456,7 @@ public class TLRPC {
         public int flags;
         public boolean resize;
         public boolean single_use;
+        public boolean is_persistent;
         public boolean selective;
         public String placeholder;
         public ArrayList<TL_keyboardButtonRow> rows = new ArrayList<>();
@@ -11495,6 +11503,7 @@ public class TLRPC {
             resize = (flags & 1) != 0;
             single_use = (flags & 2) != 0;
             selective = (flags & 4) != 0;
+            is_persistent = (flags & 16) != 0;
             int magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
                 if (exception) {
@@ -11520,6 +11529,7 @@ public class TLRPC {
             flags = resize ? (flags | 1) : (flags &~ 1);
             flags = single_use ? (flags | 2) : (flags &~ 2);
             flags = selective ? (flags | 4) : (flags &~ 4);
+            flags = is_persistent ? (flags | 16) : (flags &~ 16);
             stream.writeInt32(flags);
             stream.writeInt32(0x1cb5c415);
             int count = rows.size();
@@ -50875,6 +50885,23 @@ public class TLRPC {
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_auth_resetLoginEmail extends TLObject {
+        public static int constructor = 0x7e960193;
+
+        public String phone_number;
+        public String phone_code_hash;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return auth_SentCode.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(phone_number);
+            stream.writeString(phone_code_hash);
         }
     }
 

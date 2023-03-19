@@ -887,13 +887,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
         }
 
         deserializingDatacenter = datacenter;
-        bool error = false;
-        uint32_t constructor = data->readUint32(&error);
-        TLObject *object = request->deserializeResponse(data, constructor, instanceNum, error);
-        if (object != nullptr && error) {
-            delete object;
-            object = nullptr;
-        }
+        TLObject *object = TLdeserialize(request, messageLength, data);
 
         if (object != nullptr) {
             if (datacenter->isHandshaking(connection->isMediaConnection)) {

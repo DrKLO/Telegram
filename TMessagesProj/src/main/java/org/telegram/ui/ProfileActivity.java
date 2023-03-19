@@ -183,6 +183,7 @@ import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.IdenticonDrawable;
 import org.telegram.ui.Components.ImageUpdater;
+import org.telegram.ui.Components.InstantCameraView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.Premium.GiftPremiumBottomSheet;
@@ -3347,7 +3348,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 BuildVars.DEBUG_PRIVATE_VERSION ? LocaleController.getString(SharedConfig.isFloatingDebugActive ? R.string.FloatingDebugDisable : R.string.FloatingDebugEnable) : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Force remove premium suggestions" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Share device info" : null,
-                                BuildVars.DEBUG_PRIVATE_VERSION ? "Force performance class" : null
+                                BuildVars.DEBUG_PRIVATE_VERSION ? "Force performance class" : null,
+                                BuildVars.DEBUG_PRIVATE_VERSION && !InstantCameraView.allowBigSizeCameraDebug() ? (!SharedConfig.bigCameraForRound ? "Force big camera for round" : "Disable big camera for round") : null
                         };
 
                         builder.setItems(items, (dialog, which) -> {
@@ -3552,6 +3554,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 });
                                 builder2.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                                 builder2.show();
+                            } else if (which == 21) {
+                                SharedConfig.toggleRoundCamera();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

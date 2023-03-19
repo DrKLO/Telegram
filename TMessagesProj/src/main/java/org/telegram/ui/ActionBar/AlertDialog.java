@@ -568,7 +568,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             }
         };
         containerView.setOrientation(LinearLayout.VERTICAL);
-        if (blurredBackground || progressViewStyle == ALERT_TYPE_SPINNER) {
+        if ((blurredBackground || progressViewStyle == ALERT_TYPE_SPINNER) && progressViewStyle != ALERT_TYPE_LOADING) {
             containerView.setBackgroundDrawable(null);
             containerView.setPadding(0, 0, 0, 0);
             if (blurredBackground && !blurredNativeBackground) {

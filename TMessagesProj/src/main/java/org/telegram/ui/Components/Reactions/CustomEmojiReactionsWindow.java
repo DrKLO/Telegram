@@ -446,7 +446,7 @@ public class CustomEmojiReactionsWindow {
         });
     }
 
-    private void dismiss() {
+    public void dismiss() {
         if (dismissed) {
             return;
         }

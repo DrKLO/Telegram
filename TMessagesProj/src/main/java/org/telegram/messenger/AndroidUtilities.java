@@ -59,6 +59,7 @@ import android.telephony.TelephonyManager;
 import android.text.Layout;
 import android.text.Selection;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.SpannedString;
@@ -136,6 +137,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.HideViewAfterAnimation;
@@ -185,6 +187,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -3436,24 +3439,25 @@ public class AndroidUtilities {
         return openForView(f, fileName, document.mime_type, activity, null);
     }
 
-    public static SpannableStringBuilder formatSpannableSimple(String format, CharSequence... cs) {
+    public static SpannableStringBuilder formatSpannableSimple(CharSequence format, CharSequence... cs) {
         return formatSpannable(format, i -> "%s", cs);
     }
 
-    public static SpannableStringBuilder formatSpannable(String format, CharSequence... cs) {
-        if (format.contains("%s"))
+    public static SpannableStringBuilder formatSpannable(CharSequence format, CharSequence... cs) {
+        if (format.toString().contains("%s"))
             return formatSpannableSimple(format, cs);
         return formatSpannable(format, i -> "%" + (i + 1) + "$s", cs);
     }
 
-    public static SpannableStringBuilder formatSpannable(String format, GenericProvider<Integer, String> keysProvider, CharSequence... cs) {
-        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(format);
+    public static SpannableStringBuilder formatSpannable(CharSequence format, GenericProvider<Integer, String> keysProvider, CharSequence... cs) {
+        String str = format.toString();
+        SpannableStringBuilder stringBuilder = SpannableStringBuilder.valueOf(format);
         for (int i = 0; i < cs.length; i++) {
             String key = keysProvider.provide(i);
-            int j = format.indexOf(key);
+            int j = str.indexOf(key);
             if (j != -1) {
                 stringBuilder.replace(j, j + key.length(), cs[i]);
-                format = format.substring(0, j) + cs[i].toString() + format.substring(j + key.length());
+                str = str.substring(0, j) + cs[i].toString() + str.substring(j + key.length());
             }
         }
         return stringBuilder;
@@ -3758,14 +3762,43 @@ public class AndroidUtilities {
                 text = password;
                 detail = LocaleController.getString("UseProxyPassword", R.string.UseProxyPassword);
             } else if (a == 5) {
-                text = LocaleController.getString(R.string.Checking);
+                text = LocaleController.getString(R.string.ProxyBottomSheetChecking);
                 detail = LocaleController.getString(R.string.ProxyStatus);
             }
             if (TextUtils.isEmpty(text)) {
                 continue;
             }
-            TextDetailSettingsCell cell = new TextDetailSettingsCell(activity);
-            cell.setTextAndValue(text, detail, true);
+            AtomicReference<EllipsizeSpanAnimator> ellRef = new AtomicReference<>();
+            TextDetailSettingsCell cell = new TextDetailSettingsCell(activity) {
+                @Override
+                protected void onAttachedToWindow() {
+                    super.onAttachedToWindow();
+                    if (ellRef.get() != null) {
+                        ellRef.get().onAttachedToWindow();
+                    }
+                }
+
+                @Override
+                protected void onDetachedFromWindow() {
+                    super.onDetachedFromWindow();
+                    if (ellRef.get() != null) {
+                        ellRef.get().onDetachedFromWindow();
+                    }
+                }
+            };
+            if (a == 5) {
+                SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(text);
+                EllipsizeSpanAnimator ellipsizeAnimator = new EllipsizeSpanAnimator(cell);
+                ellipsizeAnimator.addView(cell);
+                SpannableString ell = new SpannableString("...");
+                ellipsizeAnimator.wrap(ell, 0);
+                spannableStringBuilder.append(ell);
+                ellRef.set(ellipsizeAnimator);
+
+                cell.setTextAndValue(spannableStringBuilder, detail, true);
+            } else {
+                cell.setTextAndValue(text, detail, true);
+            }
             cell.getTextView().setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             cell.getValueTextView().setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

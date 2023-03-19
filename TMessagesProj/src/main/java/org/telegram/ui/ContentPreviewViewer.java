@@ -394,7 +394,7 @@ public class ContentPreviewViewer {
                 ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(containerView.getContext(), R.drawable.popup_fixed_alert2, resourcesProvider);
 
                 View.OnClickListener onItemClickListener = v -> {
-                    if (parentActivity == null) {
+                    if (parentActivity == null || delegate == null) {
                         return;
                     }
                     int which = (int) v.getTag();

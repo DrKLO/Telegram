@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -94,7 +95,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 114;
+    public final static int LAST_DB_VERSION = 115;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -411,14 +412,9 @@ public class MessagesStorage extends BaseController {
             }
         }
         if (!restored) {
-            cleanupInternal(true);
-            for (int a = 0; a < 2; a++) {
-                getUserConfig().setDialogsLoadOffset(a, 0, 0, 0, 0, 0, 0);
-                getUserConfig().setTotalDialogsCount(a, 0);
-            }
-            getUserConfig().saveConfig(false);
             openDatabase(1);
         }
+        reset();
         return restored;
     }
 
@@ -440,6 +436,7 @@ public class MessagesStorage extends BaseController {
             "params",
             "media_v4",
             "bot_keyboard",
+            "bot_keyboard_topics",
             "chat_settings_v2",
             "user_settings",
             "chat_pinned_v2",
@@ -553,6 +550,9 @@ public class MessagesStorage extends BaseController {
 
         database.executeFast("CREATE TABLE bot_keyboard(uid INTEGER PRIMARY KEY, mid INTEGER, info BLOB)").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_idx_mid_v2 ON bot_keyboard(mid, uid);").stepThis().dispose();
+
+        database.executeFast("CREATE TABLE bot_keyboard_topics(uid INTEGER, tid INTEGER, mid INTEGER, info BLOB, PRIMARY KEY(uid, tid))").stepThis().dispose();
+        database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_topics_idx_mid_v2 ON bot_keyboard_topics(mid, uid, tid);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE chat_settings_v2(uid INTEGER PRIMARY KEY, info BLOB, pinned INTEGER, online INTEGER, inviter INTEGER, links INTEGER)").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS chat_settings_pinned_idx ON chat_settings_v2(uid, pinned) WHERE pinned != 0;").stepThis().dispose();
@@ -1299,10 +1299,11 @@ public class MessagesStorage extends BaseController {
                         database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
                         database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
+                        database.executeFast("DELETE FROM bot_keyboard_topics WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                        MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
+                        MediaDataController.getInstance(currentAccount).clearBotKeyboard(did);
                         if (messageId != -1) {
                             MessagesStorage.createFirstHoles(did, state5, state6, messageId, 0);
                         }
@@ -2767,6 +2768,28 @@ public class MessagesStorage extends BaseController {
         }
     }
 
+    private ArrayList<Long> toPeerIds(ArrayList<TLRPC.InputPeer> inputPeers) {
+        ArrayList<Long> array = new ArrayList<Long>();
+        if (inputPeers == null) {
+            return array;
+        }
+        final int count = inputPeers.size();
+        for (int i = 0; i < count; ++i) {
+            TLRPC.InputPeer peer = inputPeers.get(i);
+            if (peer == null) {
+                continue;
+            }
+            long id;
+            if (peer.user_id != 0) {
+                id = peer.user_id;
+            } else {
+                id = -(peer.chat_id != 0 ? peer.chat_id : peer.channel_id);
+            }
+            array.add(id);
+        }
+        return array;
+    }
+
     public void checkLoadedRemoteFilters(TLRPC.Vector vector) {
         storageQueue.postRunnable(() -> {
             try {
@@ -2776,14 +2799,15 @@ public class MessagesStorage extends BaseController {
                     filtersToDelete.put(filter.id, filter);
                 }
                 ArrayList<Integer> filtersOrder = new ArrayList<>();
+
                 ArrayList<Long> usersToLoad = new ArrayList<>();
                 HashMap<Long, TLRPC.InputPeer> usersToLoadMap = new HashMap<>();
                 ArrayList<Long> chatsToLoad = new ArrayList<>();
                 HashMap<Long, TLRPC.InputPeer> chatsToLoadMap = new HashMap<>();
                 ArrayList<Long> dialogsToLoad = new ArrayList<>();
                 HashMap<Long, TLRPC.InputPeer> dialogsToLoadMap = new HashMap<>();
+
                 ArrayList<MessagesController.DialogFilter> filtersToSave = new ArrayList<>();
-                HashMap<Integer, HashSet<Long>> filterUserRemovals = new HashMap<>();
                 HashMap<Integer, HashSet<Long>> filterDialogRemovals = new HashMap<>();
                 HashSet<Integer> filtersUnreadCounterReset = new HashSet<>();
                 for (int a = 0, N = vector.objects.size(); a < N; a++) {
@@ -2867,7 +2891,6 @@ public class MessagesStorage extends BaseController {
                                 }
                             }
                         }
-
                         for (int c = 0, N2 = filter.pinnedDialogs.size(); c < N2; c++) {
                             long did = filter.pinnedDialogs.keyAt(c);
                             if (DialogObject.isEncryptedDialog(did)) {
@@ -2876,83 +2899,73 @@ public class MessagesStorage extends BaseController {
                             existingDialogsIds.add(did);
                             existingIds.remove(did);
                         }
-                        for (int c = 0; c < 2; c++) {
-                            ArrayList<TLRPC.InputPeer> fromArray = c == 0 ? newFilter.include_peers : newFilter.exclude_peers;
-                            ArrayList<Long> toArray = c == 0 ? filter.alwaysShow : filter.neverShow;
 
-                            if (c == 0) {
-                                filter.pinnedDialogs.clear();
-                                for (int b = 0, N2 = newFilter.pinned_peers.size(); b < N2; b++) {
-                                    TLRPC.InputPeer peer = newFilter.pinned_peers.get(b);
-                                    Long id;
-                                    if (peer.user_id != 0) {
-                                        id = peer.user_id;
-                                    } else {
-                                        id = -(peer.chat_id != 0 ? peer.chat_id : peer.channel_id);
-                                    }
-                                    if (!filter.alwaysShow.contains(id)) {
-                                        filter.alwaysShow.add(id);
-                                    }
-                                    int index = filter.pinnedDialogs.size();
-                                    if (secretChatsMap != null) {
-                                        Long did;
-                                        while ((did = secretChatsMap.remove(index)) != null) {
-                                            filter.pinnedDialogs.put(did, index);
-                                            index++;
-                                        }
-                                    }
-                                    filter.pinnedDialogs.put(id, index);
-                                    existingIds.remove(id);
-                                    if (!existingDialogsIds.remove(id)) {
-                                        changed = true;
-                                        if (!dialogsToLoadMap.containsKey(id)) {
-                                            dialogsToLoad.add(id);
-                                            dialogsToLoadMap.put(id, peer);
-                                        }
-                                    }
-                                }
-                                if (secretChatsMap != null) {
-                                    for (LinkedHashMap.Entry<Integer, Long> entry : secretChatsMap.entrySet()) {
-                                        filter.pinnedDialogs.put(entry.getValue(), filter.pinnedDialogs.size());
-                                    }
+                        filter.pinnedDialogs.clear();
+                        for (int b = 0, N2 = newFilter.pinned_peers.size(); b < N2; b++) {
+                            TLRPC.InputPeer peer = newFilter.pinned_peers.get(b);
+                            Long id;
+                            if (peer.user_id != 0) {
+                                id = peer.user_id;
+                            } else {
+                                id = -(peer.chat_id != 0 ? peer.chat_id : peer.channel_id);
+                            }
+                            int index = filter.pinnedDialogs.size();
+                            if (secretChatsMap != null) {
+                                Long did;
+                                while ((did = secretChatsMap.remove(index)) != null) {
+                                    filter.pinnedDialogs.put(did, index);
+                                    index++;
                                 }
                             }
-                            for (int b = 0, N2 = fromArray.size(); b < N2; b++) {
-                                TLRPC.InputPeer peer = fromArray.get(b);
-                                if (peer.user_id != 0) {
-                                    Long uid = peer.user_id;
-                                    if (!existingIds.remove(uid)) {
-                                        changed = true;
-                                        if (!toArray.contains(uid)) {
-                                            toArray.add(uid);
-                                        }
-                                        if (!usersToLoadMap.containsKey(uid)) {
-                                            usersToLoad.add(uid);
-                                            usersToLoadMap.put(uid, peer);
-                                            unreadChanged = true;
-                                        }
-                                    }
-                                } else {
-                                    Long chatId = peer.chat_id != 0 ? peer.chat_id : peer.channel_id;
-                                    Long dialogId = -chatId;
-                                    if (!existingIds.remove(dialogId)) {
-                                        changed = true;
-                                        if (!toArray.contains(dialogId)) {
-                                            toArray.add(dialogId);
-                                        }
-                                        if (!chatsToLoadMap.containsKey(chatId)) {
-                                            chatsToLoad.add(chatId);
-                                            chatsToLoadMap.put(chatId, peer);
-                                            unreadChanged = true;
-                                        }
-                                    }
+                            filter.pinnedDialogs.put(id, index);
+                            existingIds.remove(id);
+                            if (!existingDialogsIds.remove(id)) {
+                                changed = true;
+                                if (!dialogsToLoadMap.containsKey(id)) {
+                                    dialogsToLoad.add(id);
+                                    dialogsToLoadMap.put(id, peer);
                                 }
                             }
                         }
-                        if (!existingIds.isEmpty()) {
-                            filterUserRemovals.put(filter.id, existingIds);
-                            unreadChanged = true;
-                            changed = true;
+                        if (secretChatsMap != null) {
+                            for (LinkedHashMap.Entry<Integer, Long> entry : secretChatsMap.entrySet()) {
+                                filter.pinnedDialogs.put(entry.getValue(), filter.pinnedDialogs.size());
+                            }
+                        }
+
+                        for (int c = 0; c < 2; c++) {
+                            ArrayList<Long> fromArray = toPeerIds(c == 0 ? newFilter.include_peers : newFilter.exclude_peers);
+                            ArrayList<Long> toArray = c == 0 ? filter.alwaysShow : filter.neverShow;
+
+                            if (c == 0) {
+                                // put pinned_peers into include_peers (alwaysShow)
+                                ArrayList<Long> pinnedArray = toPeerIds(newFilter.pinned_peers);
+                                for (int i = 0; i < pinnedArray.size(); ++i) {
+                                    fromArray.remove(pinnedArray.get(i));
+                                }
+                                fromArray.addAll(0, pinnedArray);
+                            }
+
+                            final int fromArrayCount = fromArray.size();
+                            boolean isDifferent = fromArray.size() != toArray.size();
+                            if (!isDifferent) {
+                                for (int i = 0; i < fromArrayCount; ++i) {
+                                    if (!toArray.contains(fromArray.get(i))) {
+                                        isDifferent = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (isDifferent) {
+                                unreadChanged = true;
+                                changed = true;
+                                if (c == 0) {
+                                    filter.alwaysShow = fromArray;
+                                } else {
+                                    filter.neverShow = fromArray;
+                                }
+                            }
                         }
                         if (!existingDialogsIds.isEmpty()) {
                             filterDialogRemovals.put(filter.id, existingDialogsIds);
@@ -3048,9 +3061,9 @@ public class MessagesStorage extends BaseController {
                 }
 
                 if (usersToLoadMap.isEmpty() && chatsToLoadMap.isEmpty() && dialogsToLoadMap.isEmpty()) {
-                    processLoadedFilterPeersInternal(dialogs, null, users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filterUserRemovals, filtersUnreadCounterReset);
+                    processLoadedFilterPeersInternal(dialogs, null, users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filtersUnreadCounterReset);
                 } else {
-                    getMessagesController().loadFilterPeers(dialogsToLoadMap, usersToLoadMap, chatsToLoadMap, dialogs, new TLRPC.TL_messages_dialogs(), users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filterUserRemovals, filtersUnreadCounterReset);
+                    getMessagesController().loadFilterPeers(dialogsToLoadMap, usersToLoadMap, chatsToLoadMap, dialogs, new TLRPC.TL_messages_dialogs(), users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filtersUnreadCounterReset);
                 }
             } catch (Exception e) {
                 checkSQLException(e);
@@ -3058,7 +3071,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    private void processLoadedFilterPeersInternal(TLRPC.messages_Dialogs pinnedDialogs, TLRPC.messages_Dialogs pinnedRemoteDialogs, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<MessagesController.DialogFilter> filtersToSave, SparseArray<MessagesController.DialogFilter> filtersToDelete, ArrayList<Integer> filtersOrder, HashMap<Integer, HashSet<Long>> filterDialogRemovals, HashMap<Integer, HashSet<Long>> filterUserRemovals, HashSet<Integer> filtersUnreadCounterReset) {
+    private void processLoadedFilterPeersInternal(TLRPC.messages_Dialogs pinnedDialogs, TLRPC.messages_Dialogs pinnedRemoteDialogs, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<MessagesController.DialogFilter> filtersToSave, SparseArray<MessagesController.DialogFilter> filtersToDelete, ArrayList<Integer> filtersOrder, HashMap<Integer, HashSet<Long>> filterDialogRemovals, HashSet<Integer> filtersUnreadCounterReset) {
         boolean anythingChanged = false;
         putUsersAndChats(users, chats, true, false);
         for (int a = 0, N = filtersToDelete.size(); a < N; a++) {
@@ -3071,16 +3084,6 @@ public class MessagesStorage extends BaseController {
                 continue;
             }
             filter.pendingUnreadCount = -1;
-        }
-        for (HashMap.Entry<Integer, HashSet<Long>> entry : filterUserRemovals.entrySet()) {
-            MessagesController.DialogFilter filter = dialogFiltersMap.get(entry.getKey());
-            if (filter == null) {
-                continue;
-            }
-            HashSet<Long> set = entry.getValue();
-            filter.alwaysShow.removeAll(set);
-            filter.neverShow.removeAll(set);
-            anythingChanged = true;
         }
         for (HashMap.Entry<Integer, HashSet<Long>> entry : filterDialogRemovals.entrySet()) {
             MessagesController.DialogFilter filter = dialogFiltersMap.get(entry.getKey());
@@ -3123,8 +3126,8 @@ public class MessagesStorage extends BaseController {
         getMessagesController().processLoadedDialogFilters(new ArrayList<>(dialogFilters), pinnedDialogs, pinnedRemoteDialogs, users, chats, null, remote);
     }
 
-    protected void processLoadedFilterPeers(TLRPC.messages_Dialogs pinnedDialogs, TLRPC.messages_Dialogs pinnedRemoteDialogs, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<MessagesController.DialogFilter> filtersToSave, SparseArray<MessagesController.DialogFilter> filtersToDelete, ArrayList<Integer> filtersOrder, HashMap<Integer, HashSet<Long>> filterDialogRemovals, HashMap<Integer, HashSet<Long>> filterUserRemovals, HashSet<Integer> filtersUnreadCounterReset) {
-        storageQueue.postRunnable(() -> processLoadedFilterPeersInternal(pinnedDialogs, pinnedRemoteDialogs, users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filterUserRemovals, filtersUnreadCounterReset));
+    protected void processLoadedFilterPeers(TLRPC.messages_Dialogs pinnedDialogs, TLRPC.messages_Dialogs pinnedRemoteDialogs, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<MessagesController.DialogFilter> filtersToSave, SparseArray<MessagesController.DialogFilter> filtersToDelete, ArrayList<Integer> filtersOrder, HashMap<Integer, HashSet<Long>> filterDialogRemovals, HashSet<Integer> filtersUnreadCounterReset) {
+        storageQueue.postRunnable(() -> processLoadedFilterPeersInternal(pinnedDialogs, pinnedRemoteDialogs, users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filtersUnreadCounterReset));
     }
 
     private void deleteDialogFilterInternal(MessagesController.DialogFilter filter) {
@@ -3804,10 +3807,11 @@ public class MessagesStorage extends BaseController {
                         database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
                         database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
+                        database.executeFast("DELETE FROM bot_keyboard_topics WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                        getMediaDataController().clearBotKeyboard(did, null);
+                        getMediaDataController().clearBotKeyboard(did);
 
                         state5 = database.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
                         state6 = database.executeFast("REPLACE INTO media_holes_v2 VALUES(?, ?, ?, ?)");
@@ -3828,11 +3832,12 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("UPDATE dialogs SET unread_count = 0, unread_count_i = 0 WHERE did = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
+                database.executeFast("DELETE FROM bot_keyboard_topics WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                getMediaDataController().clearBotKeyboard(did, null);
+                getMediaDataController().clearBotKeyboard(did);
                 AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needReloadRecentDialogsSearch));
                 resetAllUnreadCounters(false);
                 updateWidgets(did);
@@ -3981,6 +3986,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM messages_v2 WHERE uid IN " + ids).stepThis().dispose();
                 database.executeFast("DELETE FROM polls_v2 WHERE 1").stepThis().dispose();
                 database.executeFast("DELETE FROM bot_keyboard WHERE uid IN " + ids).stepThis().dispose();
+                database.executeFast("DELETE FROM bot_keyboard_topics WHERE uid IN " + ids).stepThis().dispose();
                 database.executeFast("DELETE FROM media_v4 WHERE uid IN " + ids).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes WHERE uid IN " + ids).stepThis().dispose();
                 database.executeFast("DELETE FROM media_holes_v2 WHERE uid IN " + ids).stepThis().dispose();
@@ -9693,6 +9699,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM chat_pinned_v2 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
+                database.executeFast("DELETE FROM bot_keyboard_topics WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("UPDATE media_counts_v2 SET old = 1 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
@@ -9705,7 +9712,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM messages_topics WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes_topics WHERE uid = " + did).stepThis().dispose();
 
-                getMediaDataController().clearBotKeyboard(did, null);
+                getMediaDataController().clearBotKeyboard(did);
 
                 TLRPC.TL_messages_dialogs dialogs = new TLRPC.TL_messages_dialogs();
                 dialogs.chats.addAll(difference.chats);
@@ -10229,7 +10236,7 @@ public class MessagesStorage extends BaseController {
                 LongSparseIntArray newMentionsCounts = new LongSparseIntArray();
                 LongSparseIntArray mentionCounts = new LongSparseIntArray();
                 SparseArray<LongSparseIntArray> mediaCounts = null;
-                LongSparseArray<TLRPC.Message> botKeyboards = new LongSparseArray<>();
+                HashMap<TopicKey, TLRPC.Message> botKeyboards = new HashMap<>();
 
                 LongSparseArray<ArrayList<Integer>> dialogMessagesMediaIdsMap = null;
                 LongSparseArray<SparseIntArray> dialogsMediaTypesChange = null;
@@ -10403,15 +10410,20 @@ public class MessagesStorage extends BaseController {
                         }
                     }
                     if (isValidKeyboardToSave(message)) {
-                        TLRPC.Message oldMessage = botKeyboards.get(message.dialog_id);
+                        TopicKey topicKey = TopicKey.of(message.dialog_id, topicId);
+                        TLRPC.Message oldMessage = botKeyboards.get(topicKey);
                         if (oldMessage == null || oldMessage.id < message.id) {
-                            botKeyboards.put(message.dialog_id, message);
+                            botKeyboards.put(topicKey, message);
                         }
                     }
                 }
 
-                for (int a = 0; a < botKeyboards.size(); a++) {
-                    getMediaDataController().putBotKeyboard(botKeyboards.keyAt(a), botKeyboards.valueAt(a));
+                if (botKeyboards != null && !botKeyboards.isEmpty()) {
+                    Iterator<TopicKey> iterator = botKeyboards.keySet().iterator();
+                    while (iterator.hasNext()) {
+                        TopicKey topicKey = iterator.next();
+                        getMediaDataController().putBotKeyboard(topicKey, botKeyboards.get(topicKey));
+                    }
                 }
 
                 if (mediaIdsMap != null) {
@@ -12210,6 +12222,7 @@ public class MessagesStorage extends BaseController {
                     database.executeFast(String.format(Locale.US, "DELETE FROM messages_topics WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
                     database.executeFast(String.format(Locale.US, "DELETE FROM polls_v2 WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
                     database.executeFast(String.format(Locale.US, "DELETE FROM bot_keyboard WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM bot_keyboard_topics WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
                     if (unknownMessages.isEmpty()) {
                         cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, type FROM media_v4 WHERE mid IN(%s) AND uid = %d", ids, did));
                         SparseArray<LongSparseArray<Integer>> mediaCounts = null;
@@ -12344,7 +12357,7 @@ public class MessagesStorage extends BaseController {
                         database.executeFast(String.format(Locale.US, "UPDATE media_counts_topics SET old = 1 WHERE uid = %d", dialogId)).stepThis().dispose();
                     }
                 }
-                getMediaDataController().clearBotKeyboard(0, messages);
+                getMediaDataController().clearBotKeyboard(null, messages);
 
                 if (dialogsToUpdate.size() != 0) {
                     resetAllUnreadCounters(false);
@@ -13378,7 +13391,7 @@ public class MessagesStorage extends BaseController {
                     state_webpage = null;
                     state_tasks = null;
                     int minDeleteTime = Integer.MAX_VALUE;
-                    TLRPC.Message botKeyboard = null;
+                    HashMap<TopicKey, TLRPC.Message> botKeyboards = null;
                     long channelId = 0;
                     for (int a = 0; a < count; a++) {
                         TLRPC.Message message = messages.messages.get(a);
@@ -13656,8 +13669,13 @@ public class MessagesStorage extends BaseController {
                         }
 
                         if (load_type == 0 && isValidKeyboardToSave(message)) {
-                            if (botKeyboard == null || botKeyboard.id < message.id) {
-                                botKeyboard = message;
+                            TopicKey topicKey = TopicKey.of(dialogId, MessageObject.getTopicId(message, isForum(dialogId)));
+                            TLRPC.Message currentBotKeyboard = botKeyboards == null ? null : botKeyboards.get(topicKey);
+                            if (currentBotKeyboard == null || currentBotKeyboard.id < message.id) {
+                                if (botKeyboards == null) {
+                                    botKeyboards = new HashMap<>();
+                                }
+                                botKeyboards.put(topicKey, message);
                             }
                         }
                     }
@@ -13680,8 +13698,12 @@ public class MessagesStorage extends BaseController {
                         state_polls.dispose();
                         state_polls = null;
                     }
-                    if (botKeyboard != null) {
-                        getMediaDataController().putBotKeyboard(dialogId, botKeyboard);
+                    if (botKeyboards != null) {
+                        Iterator<TopicKey> iterator = botKeyboards.keySet().iterator();
+                        while (iterator.hasNext()) {
+                            TopicKey topicKey = iterator.next();
+                            getMediaDataController().putBotKeyboard(topicKey, botKeyboards.get(topicKey));
+                        }
                     }
                     deleteFromDownloadQueue(idsToDelete, false);
                     AndroidUtilities.runOnUIThread(() -> getFileLoader().cancelLoadFiles(namesToDelete));
@@ -14362,7 +14384,8 @@ public class MessagesStorage extends BaseController {
                         messageDate = Math.max(message.date, messageDate);
 
                         if (isValidKeyboardToSave(message)) {
-                            getMediaDataController().putBotKeyboard(dialog.id, message);
+                            TopicKey topicKey = TopicKey.of(dialog.id, MessageObject.getTopicId(message, isForum(dialog.id)));
+                            getMediaDataController().putBotKeyboard(topicKey, message);
                         }
 
                         fixUnsupportedMedia(message);
@@ -15645,6 +15668,14 @@ public class MessagesStorage extends BaseController {
         @Override
         public int hashCode() {
             return Objects.hash(dialogId, topicId);
+        }
+
+        @Override
+        public String toString() {
+            return "TopicKey{" +
+                    "dialogId=" + dialogId +
+                    ", topicId=" + topicId +
+                    '}';
         }
     }
 }
