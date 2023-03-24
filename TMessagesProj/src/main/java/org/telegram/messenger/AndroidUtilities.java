@@ -638,7 +638,7 @@ public class AndroidUtilities {
         if (TextUtils.indexOf(s, '─') >= 0) {
             s = new SpannableStringBuilder(s.toString().replace('─', ' '));
         }
-        if (TextUtils.lastIndexOf(s, '_') == s.length() - 1) {
+        if (!TextUtils.isEmpty(s) && TextUtils.lastIndexOf(s, '_') == s.length() - 1) {
             //fix infinity loop regex
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(s.toString());
             s = spannableStringBuilder.replace(s.length() - 1, s.length(), "a");
