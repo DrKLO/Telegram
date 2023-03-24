@@ -419,7 +419,11 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void checkConnection() {
-        native_setIpStrategy(currentAccount, getIpStrategy());
+        byte selectedStrategy = getIpStrategy();
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("selected ip strategy " + selectedStrategy);
+        }
+        native_setIpStrategy(currentAccount, selectedStrategy);
         native_setNetworkAvailable(currentAccount, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), ApplicationLoader.isConnectionSlow());
     }
 

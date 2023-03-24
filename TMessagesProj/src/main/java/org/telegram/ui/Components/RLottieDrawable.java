@@ -822,6 +822,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     }
 
     protected void invalidateInternal() {
+        if (isRecycled) {
+            return;
+        }
         for (int i = 0, N = parentViews.size(); i < N; i++) {
             parentViews.get(i).invalidate();
         }

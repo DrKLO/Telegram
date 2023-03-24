@@ -10,7 +10,9 @@ package org.telegram.messenger;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.os.Build;
@@ -27,7 +29,11 @@ import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -55,6 +61,40 @@ public class SharedConfig {
 
     public static boolean loopStickers() {
         return LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_CHAT);
+    }
+
+    public static boolean readOnlyStorageDirAlertShowed;
+
+    public static void checkSdCard(File file) {
+        if (file == null || SharedConfig.storageCacheDir == null || readOnlyStorageDirAlertShowed) {
+            return;
+        }
+        if (file.getPath().startsWith(SharedConfig.storageCacheDir)) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (readOnlyStorageDirAlertShowed) {
+                    return;
+                }
+                BaseFragment fragment = LaunchActivity.getLastFragment();
+                if (fragment != null && fragment.getParentActivity() != null) {
+                    SharedConfig.storageCacheDir = null;
+                    SharedConfig.saveConfig();
+                    ImageLoader.getInstance().checkMediaPaths(() -> {
+
+                    });
+
+                    readOnlyStorageDirAlertShowed = true;
+                    AlertDialog.Builder dialog = new AlertDialog.Builder(fragment.getParentActivity());
+                    dialog.setTitle(LocaleController.getString("SdCardError", R.string.SdCardError));
+                    dialog.setSubtitle(LocaleController.getString("SdCardErrorDescription", R.string.SdCardErrorDescription));
+                    dialog.setPositiveButton(LocaleController.getString("DoNotUseSDCard", R.string.DoNotUseSDCard), (dialog1, which) -> {
+
+                    });
+                    Dialog dialogFinal = dialog.create();
+                    dialogFinal.setCanceledOnTouchOutside(false);
+                    dialogFinal.show();
+                }
+            });
+        }
     }
 
     @Retention(RetentionPolicy.SOURCE)

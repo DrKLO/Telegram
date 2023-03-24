@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "../../logging.h"
 #include "JNIUtilities.h"
+#include "tgnet/FileLog.h"
 
 extern JavaVM* sharedJVM;
 
@@ -25,6 +26,7 @@ AudioInputAndroid::AudioInputAndroid(){
 	jni::DoWithJNI([this](JNIEnv* env){
 		jmethodID ctor=env->GetMethodID(jniClass, "<init>", "(J)V");
 		jobject obj=env->NewObject(jniClass, ctor, (jlong)(intptr_t)this);
+		DEBUG_REF("AudioInputAndroid");
 		javaObject=env->NewGlobalRef(obj);
 
 		env->CallVoidMethod(javaObject, initMethod, 48000, 16, 1, 960*2);
@@ -38,6 +40,7 @@ AudioInputAndroid::~AudioInputAndroid(){
 		MutexGuard guard(mutex);
 		jni::DoWithJNI([this](JNIEnv* env){
 			env->CallVoidMethod(javaObject, releaseMethod);
+			DEBUG_DELREF("AudioInputAndroid");
 			env->DeleteGlobalRef(javaObject);
 			javaObject=NULL;
 		});

@@ -56,6 +56,7 @@ void TL_dcOption::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool
     cdn = (flags & 8) != 0;
     isStatic = (flags & 16) != 0;
     thisPortOnly = (flags & 32) != 0;
+    force_try_ipv6 = (flags & 16384) != 0;
     id = stream->readInt32(&error);
     ip_address = stream->readString(&error);
     port = stream->readInt32(&error);
@@ -72,6 +73,7 @@ void TL_dcOption::serializeToStream(NativeByteBuffer *stream) {
     flags = cdn ? (flags | 8) : (flags &~ 8);
     flags = isStatic ? (flags | 16) : (flags &~ 16);
     flags = thisPortOnly ? (flags | 32) : (flags &~ 32);
+    flags = force_try_ipv6 ? (flags | 16384) : (flags &~ 16384);
     stream->writeInt32(flags);
     stream->writeInt32(id);
     stream->writeString(ip_address);

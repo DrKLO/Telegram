@@ -121,6 +121,7 @@ typedef struct VideoInfo {
             } else {
                 attached = false;
             }
+            DEBUG_DELREF("gifvideocpp stream");
             jniEnv->DeleteGlobalRef(stream);
             if (attached) {
                 javaVm->DetachCurrentThread();
@@ -955,6 +956,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
     int ret;
     if (streamFileSize != 0) {
         info->file_size = streamFileSize;
+        DEBUG_REF("gifvideo.cpp new stream");
         info->stream = env->NewGlobalRef(stream);
         info->account = account;
         info->fd = open(info->src, O_RDONLY, S_IRUSR);
@@ -1381,6 +1383,7 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
 
 extern "C" jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     //av_log_set_callback(custom_log);
+    DEBUG_REF("gifvideo.cpp AnimatedFileDrawableStream ref");
     jclass_AnimatedFileDrawableStream = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/AnimatedFileDrawableStream"));
     if (jclass_AnimatedFileDrawableStream == 0) {
         return JNI_FALSE;

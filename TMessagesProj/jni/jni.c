@@ -274,7 +274,7 @@ JNIEXPORT jlong Java_org_telegram_messenger_Utilities_getLastUsageFileTime(JNIEn
     struct stat attrib;
     stat(fileName, &attrib);
     jlong value;
-    if (attrib.st_atim.tv_sec != 0) {
+    if (attrib.st_atim.tv_sec > 316000000) {
         value = attrib.st_atim.tv_sec;
     } else {
         value = attrib.st_mtim.tv_sec;

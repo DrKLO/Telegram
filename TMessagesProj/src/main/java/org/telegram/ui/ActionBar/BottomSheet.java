@@ -1540,7 +1540,6 @@ public class BottomSheet extends Dialog {
         onDismissAnimationStart();
         if (!allowCustomAnimation || !onCustomCloseAnimation()) {
             currentSheetAnimationType = 2;
-            currentSheetAnimation = new AnimatorSet();
             if (navigationBarAnimation != null) {
                 navigationBarAnimation.cancel();
             }
@@ -1551,11 +1550,14 @@ public class BottomSheet extends Dialog {
                     container.invalidate();
                 }
             });
-            currentSheetAnimation.playTogether(
-                containerView == null ? null : ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)),
-                ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
-                navigationBarAnimation
-            );
+            currentSheetAnimation = new AnimatorSet();
+            ArrayList<Animator> animators = new ArrayList<>();
+            if (containerView != null) {
+                animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
+            }
+            animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
+            animators.add(navigationBarAnimation);
+            currentSheetAnimation.playTogether(animators);
 //            if (useFastDismiss) {
 //                int height = containerView.getMeasuredHeight();
 //                duration = Math.max(60, (int) (250 * (height - containerView.getTranslationY()) / (float) height));

@@ -34,7 +34,6 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
-import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 
@@ -53,7 +52,6 @@ import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.ringtone.RingtoneDataStore;
 import org.telegram.messenger.ringtone.RingtoneUploader;
-import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
@@ -6934,10 +6932,12 @@ public class MediaDataController extends BaseController {
                 TLRPC.Document document = premiumPreviewStickers.get(i == 2 ? premiumPreviewStickers.size() - 1 : i);
                 if (MessageObject.isPremiumSticker(document)) {
                     ImageReceiver imageReceiver = new ImageReceiver();
+                    imageReceiver.setAllowLoadingOnAttachedOnly(false);
                     imageReceiver.setImage(ImageLocation.getForDocument(document), null, null, "webp", null, 1);
                     ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
 
                     imageReceiver = new ImageReceiver();
+                    imageReceiver.setAllowLoadingOnAttachedOnly(false);
                     imageReceiver.setImage(ImageLocation.getForDocument(MessageObject.getPremiumStickerAnimation(document), document), null, null, null, "tgs", null, 1);
                     ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
                 }

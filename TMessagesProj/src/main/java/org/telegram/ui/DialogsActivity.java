@@ -3244,6 +3244,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.listView.setInstantClick(true);
             viewPage.layoutManager = new LinearLayoutManager(context) {
 
+                @Override
+                protected int firstPosition() {
+                    if (viewPage.dialogsType == DIALOGS_TYPE_DEFAULT && hasHiddenArchive() && viewPage.archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                        return 1;
+                    }
+                    return 0;
+                }
+
                 private boolean fixOffset;
 
                 @Override
@@ -7123,6 +7131,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         ActionBarMenuSubItem deleteItem = new ActionBarMenuSubItem(getParentActivity(), false, true);
         deleteItem.setIconColor(getThemedColor(Theme.key_dialogRedIcon));
         deleteItem.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+        deleteItem.setSelectorColor(Theme.multAlpha(getThemedColor(Theme.key_dialogTextRed), .12f));
         deleteItem.setTextAndIcon(LocaleController.getString("Delete", R.string.Delete), R.drawable.msg_delete);
         deleteItem.setMinimumWidth(160);
         deleteItem.setOnClickListener(e -> {
@@ -8669,7 +8678,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (id == NotificationCenter.dialogsUnreadReactionsCounterChanged) {
             updateVisibleRows(0);
         } else if (id == NotificationCenter.emojiLoaded) {
-            updateVisibleRows(0);
+            for (int i = 0; i < viewPages.length; ++i) {
+                final RecyclerListView listView = viewPages[i].listView;
+                if (listView != null) {
+                    for (int a = 0; a < listView.getChildCount(); ++a) {
+                        View child = listView.getChildAt(a);
+                        if (child != null) {
+                            child.invalidate();
+                        }
+                    }
+                }
+            }
             if (filterTabsView != null) {
                 filterTabsView.getTabsContainer().invalidateViews();
             }
