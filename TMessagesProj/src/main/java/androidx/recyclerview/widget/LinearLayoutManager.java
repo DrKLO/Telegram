@@ -802,6 +802,10 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
         mLayoutState.mScrapList = null;
     }
 
+    protected int firstPosition() {
+        return 0;
+    }
+
     private void updateAnchorInfoForLayout(RecyclerView.Recycler recycler, RecyclerView.State state,
             AnchorInfo anchorInfo) {
         if (updateAnchorFromPendingData(state, anchorInfo)) {
@@ -821,7 +825,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
             Log.d(TAG, "deciding anchor info for fresh state");
         }
         anchorInfo.assignCoordinateFromPadding();
-        anchorInfo.mPosition = mStackFromEnd ? state.getItemCount() - 1 : 0;
+        anchorInfo.mPosition = mStackFromEnd ? state.getItemCount() - 1 : firstPosition();
     }
 
     /**

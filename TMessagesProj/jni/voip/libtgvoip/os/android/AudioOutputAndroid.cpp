@@ -7,6 +7,7 @@
 #include "AudioOutputAndroid.h"
 #include <stdio.h>
 #include "../../logging.h"
+#include "tgnet/FileLog.h"
 
 extern JavaVM* sharedJVM;
 
@@ -30,6 +31,7 @@ AudioOutputAndroid::AudioOutputAndroid(){
 
 	jmethodID ctor=env->GetMethodID(jniClass, "<init>", "(J)V");
 	jobject obj=env->NewObject(jniClass, ctor, (jlong)(intptr_t)this);
+	DEBUG_REF("AudioOutputAndroid");
 	javaObject=env->NewGlobalRef(obj);
 
 	env->CallVoidMethod(javaObject, initMethod, 48000, 16, 1, 960*2);
@@ -50,6 +52,7 @@ AudioOutputAndroid::~AudioOutputAndroid(){
 	}
 
 	env->CallVoidMethod(javaObject, releaseMethod);
+	DEBUG_DELREF("AudioOutputAndroid");
 	env->DeleteGlobalRef(javaObject);
 	javaObject=NULL;
 

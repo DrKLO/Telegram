@@ -33,6 +33,7 @@ class ClassLoader {
  public:
   explicit ClassLoader(JNIEnv* env)
       : class_loader_(jni::Java_WebRtcClassLoader_getClassLoader(env)) {
+    DEBUG_REF("webrtc class_loader");
     class_loader_class_ = reinterpret_cast<jclass>(
         env->NewGlobalRef(env->FindClass("java/lang/ClassLoader")));
     CHECK_EXCEPTION(env);

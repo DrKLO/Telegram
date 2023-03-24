@@ -381,9 +381,13 @@ void initWebRTC(JNIEnv *env) {
     rtc::InitializeSSL();
     webrtcLoaded = true;
 
+    DEBUG_REF("NativeInstanceClass");
     NativeInstanceClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/NativeInstance")));
+    DEBUG_REF("TrafficStatsClass");
     TrafficStatsClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$TrafficStats")));
+    DEBUG_REF("FingerprintClass");
     FingerprintClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$Fingerprint")));
+    DEBUG_REF("FinalStateClass");
     FinalStateClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$FinalState")));
     FinalStateInitMethod = env->GetMethodID(FinalStateClass, "<init>", "([BLjava/lang/String;Lorg/telegram/messenger/voip/Instance$TrafficStats;Z)V");
 }

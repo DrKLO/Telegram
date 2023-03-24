@@ -53,8 +53,10 @@ public class LiteMode {
 
     public static int PRESET_LOW = (
         FLAG_ANIMATED_EMOJI_CHAT_PREMIUM |
+        FLAG_ANIMATED_EMOJI_KEYBOARD_PREMIUM |
+        FLAG_ANIMATED_EMOJI_REACTIONS_PREMIUM |
         FLAG_AUTOPLAY_GIFS
-    ); // 2064
+    ); // 2076
     public static int PRESET_MEDIUM = (
         FLAGS_ANIMATED_STICKERS |
         FLAG_ANIMATED_EMOJI_KEYBOARD_PREMIUM |

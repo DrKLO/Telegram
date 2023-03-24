@@ -204,7 +204,7 @@ public class FileLoader extends BaseController {
         filePathDatabase = new FilePathDatabase(instance);
         for (int i = 0; i < smallFilesQueue.length; i++)  {
             smallFilesQueue[i] = new FileLoaderPriorityQueue("smallFilesQueue dc" + (i + 1), 5);
-            largeFilesQueue[i] = new FileLoaderPriorityQueue("largeFilesQueue dc" + (i + 1), 2);
+            largeFilesQueue[i] = new FileLoaderPriorityQueue("largeFilesQueue dc" + (i + 1), 1);
         }
         dumpFilesQueue();
     }
@@ -667,11 +667,9 @@ public class FileLoader extends BaseController {
             getDownloadController().startDownloadFile(document, (MessageObject) parentObject);
         }
 
-        FileLoadOperation operation = loadOperationPaths.get(fileName);
+        final String finalFileName = fileName;
+        FileLoadOperation operation = loadOperationPaths.get(finalFileName);
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("checkFile operation fileName=" + fileName + " documentName=" + getDocumentFileName(document) + " operation=" + operation + " priority=" + priority + " account=" + currentAccount);
-        }
         priority = getPriorityValue(priority);
 
         if (operation != null) {
@@ -684,6 +682,7 @@ public class FileLoader extends BaseController {
             operation.getQueue().add(operation);
             operation.updateProgress();
             operation.getQueue().checkLoadingOperations();
+            FileLog.d("load operation update position fileName=" + finalFileName + " position in queue " + operation.getPositionInQueue() + " account=" + currentAccount);
             return operation;
         }
 
@@ -734,18 +733,11 @@ public class FileLoader extends BaseController {
         }
         FileLoaderPriorityQueue loaderQueue;
         int index = Utilities.clamp(operation.getDatacenterId() - 1, 4, 0);
-        if (operation.totalBytesCount >  20 * 1024 * 1024) {
+        if (operation.totalBytesCount >  20 * 1024 * 1024) {//20mb
             loaderQueue = largeFilesQueue[index];
         } else {
             loaderQueue = smallFilesQueue[index];
         }
-//        if (type == MEDIA_DIR_AUDIO) {
-//            loaderQueue = audioQueue;
-//        } else if (secureDocument != null || location != null && (imageLocation == null || imageLocation.imageType != IMAGE_TYPE_ANIMATION) || MessageObject.isImageWebDocument(webDocument) || MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isVideoStickerDocument(document)) {
-//            loaderQueue = imagesQueue;
-//        } else {
-
-//        }
 
         String storeFileName = fileName;
 
@@ -804,6 +796,20 @@ public class FileLoader extends BaseController {
         final int finalType = type;
 
         FileLoadOperation.FileLoadOperationDelegate fileLoadOperationDelegate = new FileLoadOperation.FileLoadOperationDelegate() {
+
+            @Override
+            public void didPreFinishLoading(FileLoadOperation operation, File finalFile) {
+                FileLoaderPriorityQueue queue = operation.getQueue();
+                fileLoaderQueue.postRunnable(() -> {
+                    FileLoadOperation currentOperation = loadOperationPaths.remove(fileName);
+                    if (currentOperation != null) {
+                        currentOperation.preFinished = true;
+                        queue.checkLoadingOperations();
+                    }
+                });
+                checkDownloadQueue(operation.getQueue(), fileName);
+            }
+
             @Override
             public void didFinishLoadingFile(FileLoadOperation operation, File finalFile) {
                 if (!operation.isPreloadVideoOperation() && operation.isPreloadFinished()) {
@@ -864,16 +870,16 @@ public class FileLoader extends BaseController {
         };
         operation.setDelegate(fileLoadOperationDelegate);
 
-        loadOperationPaths.put(fileName, operation);
+        loadOperationPaths.put(finalFileName, operation);
         operation.setPriority(priority);
         operation.setStream(stream, streamPriority, streamOffset);
 
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("loadFileInternal fileName=" + fileName + " documentName=" + getDocumentFileName(document));
-        }
-
         loaderQueue.add(operation);
         loaderQueue.checkLoadingOperations();
+
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("create load operation fileName=" + finalFileName + " documentName=" + getDocumentFileName(document) + "size=" + AndroidUtilities.formatFileSize(operation.totalBytesCount) + " position in queue " + operation.getPositionInQueue() + " account=" + currentAccount);
+        }
         return operation;
     }
 
@@ -1681,8 +1687,8 @@ public class FileLoader extends BaseController {
 
     Runnable dumpFilesQueueRunnable = () -> {
         for (int i = 0; i < smallFilesQueue.length; i++) {
-            if (smallFilesQueue[i].allOperations.size() > 0 || largeFilesQueue[i].allOperations.size() > 0) {
-                FileLog.d("download queue: dc" + (i + 1) + " account=" + currentAccount + " small_operations=" + smallFilesQueue[i].allOperations.size() + " large_operations=" + largeFilesQueue[i].allOperations.size());
+            if (smallFilesQueue[i].getCount() > 0 || largeFilesQueue[i].getCount() > 0) {
+                FileLog.d("download queue: dc" + (i + 1) + " account=" + currentAccount + " small_operations=" + smallFilesQueue[i].getCount() + " large_operations=" + largeFilesQueue[i].getCount());
             }
         }
         dumpFilesQueue();

@@ -774,6 +774,8 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         imagesUploadProgress.remove(index);
         if (index == 0 && !imagesLocations.isEmpty()) {
             prevImageLocation = imagesLocations.get(0);
+            prevThumbLocation = null;
+            prevVectorAvatarThumbDrawable = null;
         }
         adapter.notifyDataSetChanged();
         return photos.isEmpty();

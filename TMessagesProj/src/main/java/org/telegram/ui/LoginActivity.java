@@ -6085,6 +6085,10 @@ public class LoginActivity extends BaseFragment {
             int minutes = ((timeRemaining % 86400) % 3600) / 60;
             int seconds = ((timeRemaining % 86400) % 3600) % 60;
 
+            if (hours >= 16) {
+                days++;
+            }
+
             String time;
             if (days != 0) {
                 time = LocaleController.formatString(R.string.LoginEmailResetInSinglePattern, LocaleController.formatPluralString("Days", days));
