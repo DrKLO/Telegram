@@ -20,19 +20,13 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.UriUtil;
 
-/**
- * Defines a range of data located at a reference uri.
- */
+/** Defines a range of data located at a reference uri. */
 public final class RangedUri {
 
-  /**
-   * The (zero based) index of the first byte of the range.
-   */
+  /** The (zero based) index of the first byte of the range. */
   public final long start;
 
-  /**
-   * The length of the range, or {@link C#LENGTH_UNSET} to indicate that the range is unbounded.
-   */
+  /** The length of the range, or {@link C#LENGTH_UNSET} to indicate that the range is unbounded. */
   public final long length;
 
   private final String referenceUri;
@@ -92,10 +86,14 @@ public final class RangedUri {
     if (other == null || !resolvedUri.equals(other.resolveUriString(baseUri))) {
       return null;
     } else if (length != C.LENGTH_UNSET && start + length == other.start) {
-      return new RangedUri(resolvedUri, start,
+      return new RangedUri(
+          resolvedUri,
+          start,
           other.length == C.LENGTH_UNSET ? C.LENGTH_UNSET : length + other.length);
     } else if (other.length != C.LENGTH_UNSET && other.start + other.length == start) {
-      return new RangedUri(resolvedUri, other.start,
+      return new RangedUri(
+          resolvedUri,
+          other.start,
           length == C.LENGTH_UNSET ? C.LENGTH_UNSET : other.length + length);
     } else {
       return null;

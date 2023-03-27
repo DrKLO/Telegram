@@ -78,6 +78,10 @@ class NodeHashMapPolicy;
 // absl/hash/hash.h for information on extending Abseil hashing to user-defined
 // types.
 //
+// Using `absl::node_hash_map` at interface boundaries in dynamically loaded
+// libraries (e.g. .dll, .so) is unsupported due to way `absl::Hash` values may
+// be randomized across dynamically loaded libraries.
+//
 // Example:
 //
 //   // Create a node hash map of three strings (that map to strings)
@@ -348,8 +352,8 @@ class node_hash_map
   // `node_hash_map`.
   //
   //   iterator try_emplace(const_iterator hint,
-  //                        const init_type& k, Args&&... args):
-  //   iterator try_emplace(const_iterator hint, init_type&& k, Args&&... args):
+  //                        const key_type& k, Args&&... args):
+  //   iterator try_emplace(const_iterator hint, key_type&& k, Args&&... args):
   //
   // Inserts (via copy or move) the element of the specified key into the
   // `node_hash_map` using the position of `hint` as a non-binding suggestion

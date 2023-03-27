@@ -165,6 +165,9 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     private int lastSecondPartTextWidth;
     private CharSequence lastSecondPartText;
     private int updateLayout(int width, boolean full) {
+        if (width <= 0) {
+            return 0;
+        }
         if (mainText != lastMainTextText || lastMainTextWidth != width) {
             if (mainText != null) {
                 mainTextLayout = new StaticLayout(mainText, 0, mainText.length(), textPaint, Math.max(width, 0), Layout.Alignment.ALIGN_NORMAL, 1, 0, false);

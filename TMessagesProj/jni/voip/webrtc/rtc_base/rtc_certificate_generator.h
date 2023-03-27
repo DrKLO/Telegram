@@ -13,9 +13,9 @@
 
 #include <stdint.h>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/types/optional.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/system/rtc_export.h"
@@ -23,21 +23,15 @@
 
 namespace rtc {
 
-// See `RTCCertificateGeneratorInterface::GenerateCertificateAsync`.
-class RTCCertificateGeneratorCallback : public RefCountInterface {
- public:
-  virtual void OnSuccess(const scoped_refptr<RTCCertificate>& certificate) = 0;
-  virtual void OnFailure() = 0;
-
- protected:
-  ~RTCCertificateGeneratorCallback() override {}
-};
-
 // Generates `RTCCertificate`s.
 // See `RTCCertificateGenerator` for the WebRTC repo's implementation.
 class RTCCertificateGeneratorInterface {
  public:
-  virtual ~RTCCertificateGeneratorInterface() {}
+  // Functor that will be called when certificate is generated asynchroniosly.
+  // Called with nullptr as the parameter on failure.
+  using Callback = absl::AnyInvocable<void(scoped_refptr<RTCCertificate>) &&>;
+
+  virtual ~RTCCertificateGeneratorInterface() = default;
 
   // Generates a certificate asynchronously on the worker thread.
   // Must be called on the signaling thread. The `callback` is invoked with the
@@ -47,7 +41,7 @@ class RTCCertificateGeneratorInterface {
   virtual void GenerateCertificateAsync(
       const KeyParams& key_params,
       const absl::optional<uint64_t>& expires_ms,
-      const scoped_refptr<RTCCertificateGeneratorCallback>& callback) = 0;
+      Callback callback) = 0;
 };
 
 // Standard implementation of `RTCCertificateGeneratorInterface`.
@@ -74,10 +68,9 @@ class RTC_EXPORT RTCCertificateGenerator
   // that many milliseconds from now. `expires_ms` is limited to a year, a
   // larger value than that is clamped down to a year. If `expires_ms` is not
   // specified, a default expiration time is used.
-  void GenerateCertificateAsync(
-      const KeyParams& key_params,
-      const absl::optional<uint64_t>& expires_ms,
-      const scoped_refptr<RTCCertificateGeneratorCallback>& callback) override;
+  void GenerateCertificateAsync(const KeyParams& key_params,
+                                const absl::optional<uint64_t>& expires_ms,
+                                Callback callback) override;
 
  private:
   Thread* const signaling_thread_;

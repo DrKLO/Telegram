@@ -15,11 +15,10 @@
  */
 package com.google.android.exoplayer2.source.dash.manifest;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.source.dash.DashSegmentIndex;
 
-/**
- * A {@link DashSegmentIndex} that defines a single segment.
- */
+/** A {@link DashSegmentIndex} that defines a single segment. */
 /* package */ final class SingleSegmentIndex implements DashSegmentIndex {
 
   private final RangedUri uri;
@@ -57,13 +56,27 @@ import com.google.android.exoplayer2.source.dash.DashSegmentIndex;
   }
 
   @Override
-  public int getSegmentCount(long periodDurationUs) {
+  public long getFirstAvailableSegmentNum(long periodDurationUs, long nowUnixTimeUs) {
+    return 0;
+  }
+
+  @Override
+  public long getSegmentCount(long periodDurationUs) {
     return 1;
+  }
+
+  @Override
+  public long getAvailableSegmentCount(long periodDurationUs, long nowUnixTimeUs) {
+    return 1;
+  }
+
+  @Override
+  public long getNextSegmentAvailableTimeUs(long periodDurationUs, long nowUnixTimeUs) {
+    return C.TIME_UNSET;
   }
 
   @Override
   public boolean isExplicit() {
     return true;
   }
-
 }

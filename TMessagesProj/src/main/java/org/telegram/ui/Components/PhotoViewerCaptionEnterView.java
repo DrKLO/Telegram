@@ -823,7 +823,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 emojiIconDrawable.setIcon(R.drawable.input_smile, true);
             }
             if (sizeNotifierLayout != null) {
-                if (animated && SharedConfig.smoothKeyboard && show == 0 && emojiView != null) {
+                if (animated && show == 0 && emojiView != null) {
                     ValueAnimator animator = ValueAnimator.ofFloat(emojiPadding, 0);
                     float animateFrom = emojiPadding;
                     popupAnimating = true;
@@ -857,10 +857,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                         emojiView.setVisibility(GONE);
                     }
                     emojiPadding = 0;
-                } else {
-                    if (!SharedConfig.smoothKeyboard && emojiView != null) {
-                        emojiView.setVisibility(GONE);
-                    }
                 }
                 sizeNotifierLayout.requestLayout();
                 onWindowSizeChanged();

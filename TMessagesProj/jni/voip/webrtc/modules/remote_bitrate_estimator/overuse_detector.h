@@ -12,19 +12,21 @@
 
 #include <stdint.h>
 
+#include "api/field_trials_view.h"
 #include "api/network_state_predictor.h"
-#include "api/transport/webrtc_key_value_config.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
 bool AdaptiveThresholdExperimentIsDisabled(
-    const WebRtcKeyValueConfig& key_value_config);
+    const FieldTrialsView& key_value_config);
 
 class OveruseDetector {
  public:
-  explicit OveruseDetector(const WebRtcKeyValueConfig* key_value_config);
+  explicit OveruseDetector(const FieldTrialsView* key_value_config);
   virtual ~OveruseDetector();
+
+  OveruseDetector(const OveruseDetector&) = delete;
+  OveruseDetector& operator=(const OveruseDetector&) = delete;
 
   // Update the detection state based on the estimated inter-arrival time delta
   // offset. `timestamp_delta` is the delta between the last timestamp which the
@@ -42,7 +44,7 @@ class OveruseDetector {
 
  private:
   void UpdateThreshold(double modified_offset, int64_t now_ms);
-  void InitializeExperiment(const WebRtcKeyValueConfig& key_value_config);
+  void InitializeExperiment(const FieldTrialsView& key_value_config);
 
   bool in_experiment_;
   double k_up_;
@@ -54,8 +56,6 @@ class OveruseDetector {
   double time_over_using_;
   int overuse_counter_;
   BandwidthUsage hypothesis_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OveruseDetector);
 };
 }  // namespace webrtc
 

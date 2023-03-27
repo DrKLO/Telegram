@@ -35,9 +35,12 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     private EditText editText;
     private View[] views = new View[12];
 
+    private View viewToFindFocus;
+
     private boolean dispatchBackWhenEmpty;
     private boolean runningLongClick;
     private Runnable onBackButton = () -> {
+        checkFindEditText();
         if (editText == null || editText.length() == 0 && !dispatchBackWhenEmpty) return;
 
         performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -100,6 +103,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
             String num = String.valueOf(i != 10 ? i + 1 : 0);
             views[i] = new NumberButtonView(context, num, symbols);
             views[i].setOnClickListener(v -> {
+                checkFindEditText();
                 if (editText == null) return;
 
                 performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -184,6 +188,19 @@ public class CustomPhoneKeyboardView extends ViewGroup {
                 return false;
             }
         });
+    }
+
+    public void setViewToFindFocus(View viewToFindFocus) {
+        this.viewToFindFocus = viewToFindFocus;
+    }
+
+    public void checkFindEditText() {
+        if (editText == null && viewToFindFocus != null) {
+            View focus = viewToFindFocus.findFocus();
+            if (focus instanceof EditText) {
+                editText = (EditText) focus;
+            }
+        }
     }
 
     public void setEditText(EditText editText) {

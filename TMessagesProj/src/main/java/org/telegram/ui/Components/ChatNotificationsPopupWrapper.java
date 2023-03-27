@@ -119,14 +119,12 @@ public class ChatNotificationsPopupWrapper {
             callback.showCustomize();
         });
 
-
         muteUnmuteButton = ActionBarMenuItem.addItem(windowLayout, 0, "", false, resourcesProvider);
         muteUnmuteButton.setOnClickListener(view -> {
             dismiss();
             AndroidUtilities.runOnUIThread(() -> {
                 callback.toggleMute();
             });
-
         });
 
         gap = new FrameLayout(context);
@@ -173,7 +171,7 @@ public class ChatNotificationsPopupWrapper {
         int color;
         if (muted) {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString("UnmuteNotifications", R.string.UnmuteNotifications), R.drawable.msg_unmute);
-            color = Theme.getColor(Theme.key_wallet_greenText);
+            color = Theme.getColor(Theme.key_windowBackgroundWhiteGreenText2);
             soundToggle.setVisibility(View.GONE);
         } else {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString("MuteNotifications", R.string.MuteNotifications), R.drawable.msg_mute);
@@ -280,6 +278,9 @@ public class ChatNotificationsPopupWrapper {
         float x = touchedX, y = touchedY;
         View view = anchorView;
         while (view != parentFragment.getFragmentView()) {
+            if (view.getParent() == null) {
+                return;
+            }
             x += view.getX();
             y += view.getY();
             view = (View) view.getParent();

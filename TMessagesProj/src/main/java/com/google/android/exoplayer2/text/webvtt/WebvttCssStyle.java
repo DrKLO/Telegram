@@ -15,19 +15,24 @@
  */
 package com.google.android.exoplayer2.text.webvtt;
 
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import android.graphics.Typeface;
-import android.text.Layout;
 import android.text.TextUtils;
+import androidx.annotation.ColorInt;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.text.span.TextAnnotation;
+import com.google.common.base.Ascii;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Style object of a Css style block in a Webvtt file.
@@ -45,6 +50,7 @@ public final class WebvttCssStyle {
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef(
       flag = true,
       value = {UNSPECIFIED, STYLE_NORMAL, STYLE_BOLD, STYLE_ITALIC, STYLE_BOLD_ITALIC})
@@ -61,6 +67,7 @@ public final class WebvttCssStyle {
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({UNSPECIFIED, FONT_SIZE_UNIT_PIXEL, FONT_SIZE_UNIT_EM, FONT_SIZE_UNIT_PERCENT})
   public @interface FontSizeUnit {}
 
@@ -70,6 +77,7 @@ public final class WebvttCssStyle {
 
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({UNSPECIFIED, OFF, ON})
   private @interface OptionalBoolean {}
 
@@ -79,35 +87,28 @@ public final class WebvttCssStyle {
   // Selector properties.
   private String targetId;
   private String targetTag;
-  private List<String> targetClasses;
+  private Set<String> targetClasses;
   private String targetVoice;
 
   // Style properties.
   @Nullable private String fontFamily;
-  private int fontColor;
+  @ColorInt private int fontColor;
   private boolean hasFontColor;
   private int backgroundColor;
   private boolean hasBackgroundColor;
-  @OptionalBoolean private int linethrough;
-  @OptionalBoolean private int underline;
-  @OptionalBoolean private int bold;
-  @OptionalBoolean private int italic;
-  @FontSizeUnit private int fontSizeUnit;
+  private @OptionalBoolean int linethrough;
+  private @OptionalBoolean int underline;
+  private @OptionalBoolean int bold;
+  private @OptionalBoolean int italic;
+  private @FontSizeUnit int fontSizeUnit;
   private float fontSize;
-  @Nullable private Layout.Alignment textAlign;
+  private @TextAnnotation.Position int rubyPosition;
+  private boolean combineUpright;
 
-  // Calling reset() is forbidden because `this` isn't initialized. This can be safely suppressed
-  // because reset() only assigns fields, it doesn't read any.
-  @SuppressWarnings("nullness:method.invocation.invalid")
   public WebvttCssStyle() {
-    reset();
-  }
-
-  @EnsuresNonNull({"targetId", "targetTag", "targetClasses", "targetVoice"})
-  public void reset() {
     targetId = "";
     targetTag = "";
-    targetClasses = Collections.emptyList();
+    targetClasses = Collections.emptySet();
     targetVoice = "";
     fontFamily = null;
     hasFontColor = false;
@@ -117,11 +118,12 @@ public final class WebvttCssStyle {
     bold = UNSPECIFIED;
     italic = UNSPECIFIED;
     fontSizeUnit = UNSPECIFIED;
-    textAlign = null;
+    rubyPosition = TextAnnotation.POSITION_UNKNOWN;
+    combineUpright = false;
   }
 
   public void setTargetId(String targetId) {
-    this.targetId  = targetId;
+    this.targetId = targetId;
   }
 
   public void setTargetTagName(String targetTag) {
@@ -129,7 +131,7 @@ public final class WebvttCssStyle {
   }
 
   public void setTargetClasses(String[] targetClasses) {
-    this.targetClasses = Arrays.asList(targetClasses);
+    this.targetClasses = new HashSet<>(Arrays.asList(targetClasses));
   }
 
   public void setTargetVoice(String targetVoice) {
@@ -139,24 +141,27 @@ public final class WebvttCssStyle {
   /**
    * Returns a value in a score system compliant with the CSS Specificity rules.
    *
-   * @see <a href="https://www.w3.org/TR/CSS2/cascade.html">CSS Cascading</a>
-   *     <p>The score works as follows:
-   *     <ul>
-   *       <li>Id match adds 0x40000000 to the score.
-   *       <li>Each class and voice match adds 4 to the score.
-   *       <li>Tag matching adds 2 to the score.
-   *       <li>Universal selector matching scores 1.
-   *     </ul>
+   * <p>The score works as follows:
+   *
+   * <ul>
+   *   <li>Id match adds 0x40000000 to the score.
+   *   <li>Each class and voice match adds 4 to the score.
+   *   <li>Tag matching adds 2 to the score.
+   *   <li>Universal selector matching scores 1.
+   * </ul>
    *
    * @param id The id of the cue if present, {@code null} otherwise.
    * @param tag Name of the tag, {@code null} if it refers to the entire cue.
    * @param classes An array containing the classes the tag belongs to. Must not be null.
    * @param voice Annotated voice if present, {@code null} otherwise.
    * @return The score of the match, zero if there is no match.
+   * @see <a href="https://www.w3.org/TR/CSS2/cascade.html">CSS Cascading</a>
    */
   public int getSpecificityScore(
-      @Nullable String id, @Nullable String tag, String[] classes, @Nullable String voice) {
-    if (targetId.isEmpty() && targetTag.isEmpty() && targetClasses.isEmpty()
+      @Nullable String id, @Nullable String tag, Set<String> classes, @Nullable String voice) {
+    if (targetId.isEmpty()
+        && targetTag.isEmpty()
+        && targetClasses.isEmpty()
         && targetVoice.isEmpty()) {
       // The selector is universal. It matches with the minimum score if and only if the given
       // element is a whole cue.
@@ -166,7 +171,7 @@ public final class WebvttCssStyle {
     score = updateScoreForMatch(score, targetId, id, 0x40000000);
     score = updateScoreForMatch(score, targetTag, tag, 2);
     score = updateScoreForMatch(score, targetVoice, voice, 4);
-    if (score == -1 || !Arrays.asList(classes).containsAll(targetClasses)) {
+    if (score == -1 || !classes.containsAll(targetClasses)) {
       return 0;
     } else {
       score += targetClasses.size() * 4;
@@ -180,18 +185,18 @@ public final class WebvttCssStyle {
    * @return {@link #UNSPECIFIED}, {@link #STYLE_NORMAL}, {@link #STYLE_BOLD}, {@link #STYLE_BOLD}
    *     or {@link #STYLE_BOLD_ITALIC}.
    */
-  @StyleFlags public int getStyle() {
+  public @StyleFlags int getStyle() {
     if (bold == UNSPECIFIED && italic == UNSPECIFIED) {
       return UNSPECIFIED;
     }
-    return (bold == ON ? STYLE_BOLD : STYLE_NORMAL)
-        | (italic == ON ? STYLE_ITALIC : STYLE_NORMAL);
+    return (bold == ON ? STYLE_BOLD : STYLE_NORMAL) | (italic == ON ? STYLE_ITALIC : STYLE_NORMAL);
   }
 
   public boolean isLinethrough() {
     return linethrough == ON;
   }
 
+  @CanIgnoreReturnValue
   public WebvttCssStyle setLinethrough(boolean linethrough) {
     this.linethrough = linethrough ? ON : OFF;
     return this;
@@ -201,15 +206,19 @@ public final class WebvttCssStyle {
     return underline == ON;
   }
 
+  @CanIgnoreReturnValue
   public WebvttCssStyle setUnderline(boolean underline) {
     this.underline = underline ? ON : OFF;
     return this;
   }
+
+  @CanIgnoreReturnValue
   public WebvttCssStyle setBold(boolean bold) {
     this.bold = bold ? ON : OFF;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public WebvttCssStyle setItalic(boolean italic) {
     this.italic = italic ? ON : OFF;
     return this;
@@ -220,8 +229,9 @@ public final class WebvttCssStyle {
     return fontFamily;
   }
 
+  @CanIgnoreReturnValue
   public WebvttCssStyle setFontFamily(@Nullable String fontFamily) {
-    this.fontFamily = Util.toLowerInvariant(fontFamily);
+    this.fontFamily = fontFamily == null ? null : Ascii.toLowerCase(fontFamily);
     return this;
   }
 
@@ -232,6 +242,7 @@ public final class WebvttCssStyle {
     return fontColor;
   }
 
+  @CanIgnoreReturnValue
   public WebvttCssStyle setFontColor(int color) {
     this.fontColor = color;
     hasFontColor = true;
@@ -249,6 +260,7 @@ public final class WebvttCssStyle {
     return backgroundColor;
   }
 
+  @CanIgnoreReturnValue
   public WebvttCssStyle setBackgroundColor(int backgroundColor) {
     this.backgroundColor = backgroundColor;
     hasBackgroundColor = true;
@@ -259,27 +271,19 @@ public final class WebvttCssStyle {
     return hasBackgroundColor;
   }
 
-  @Nullable
-  public Layout.Alignment getTextAlign() {
-    return textAlign;
-  }
-
-  public WebvttCssStyle setTextAlign(@Nullable Layout.Alignment textAlign) {
-    this.textAlign = textAlign;
-    return this;
-  }
-
+  @CanIgnoreReturnValue
   public WebvttCssStyle setFontSize(float fontSize) {
     this.fontSize = fontSize;
     return this;
   }
 
-  public WebvttCssStyle setFontSizeUnit(short unit) {
+  @CanIgnoreReturnValue
+  public WebvttCssStyle setFontSizeUnit(@FontSizeUnit int unit) {
     this.fontSizeUnit = unit;
     return this;
   }
 
-  @FontSizeUnit public int getFontSizeUnit() {
+  public @FontSizeUnit int getFontSizeUnit() {
     return fontSizeUnit;
   }
 
@@ -287,35 +291,24 @@ public final class WebvttCssStyle {
     return fontSize;
   }
 
-  public void cascadeFrom(WebvttCssStyle style) {
-    if (style.hasFontColor) {
-      setFontColor(style.fontColor);
-    }
-    if (style.bold != UNSPECIFIED) {
-      bold = style.bold;
-    }
-    if (style.italic != UNSPECIFIED) {
-      italic = style.italic;
-    }
-    if (style.fontFamily != null) {
-      fontFamily = style.fontFamily;
-    }
-    if (linethrough == UNSPECIFIED) {
-      linethrough = style.linethrough;
-    }
-    if (underline == UNSPECIFIED) {
-      underline = style.underline;
-    }
-    if (textAlign == null) {
-      textAlign = style.textAlign;
-    }
-    if (fontSizeUnit == UNSPECIFIED) {
-      fontSizeUnit = style.fontSizeUnit;
-      fontSize = style.fontSize;
-    }
-    if (style.hasBackgroundColor) {
-      setBackgroundColor(style.backgroundColor);
-    }
+  @CanIgnoreReturnValue
+  public WebvttCssStyle setRubyPosition(@TextAnnotation.Position int rubyPosition) {
+    this.rubyPosition = rubyPosition;
+    return this;
+  }
+
+  public @TextAnnotation.Position int getRubyPosition() {
+    return rubyPosition;
+  }
+
+  @CanIgnoreReturnValue
+  public WebvttCssStyle setCombineUpright(boolean enabled) {
+    this.combineUpright = enabled;
+    return this;
+  }
+
+  public boolean getCombineUpright() {
+    return combineUpright;
   }
 
   private static int updateScoreForMatch(
@@ -325,5 +318,4 @@ public final class WebvttCssStyle {
     }
     return target.equals(actual) ? currentScore + score : -1;
   }
-
 }

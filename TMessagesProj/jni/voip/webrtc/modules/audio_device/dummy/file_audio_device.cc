@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/platform_thread.h"
@@ -29,8 +30,8 @@ const size_t kPlayoutBufferSize =
 const size_t kRecordingBufferSize =
     kRecordingFixedSampleRate / 100 * kRecordingNumChannels * 2;
 
-FileAudioDevice::FileAudioDevice(const char* inputFilename,
-                                 const char* outputFilename)
+FileAudioDevice::FileAudioDevice(absl::string_view inputFilename,
+                                 absl::string_view outputFilename)
     : _ptrAudioBuffer(NULL),
       _recordingBuffer(NULL),
       _playoutBuffer(NULL),
@@ -206,7 +207,7 @@ int32_t FileAudioDevice::StartPlayout() {
 
   // PLAYOUT
   if (!_outputFilename.empty()) {
-    _outputFile = FileWrapper::OpenWriteOnly(_outputFilename.c_str());
+    _outputFile = FileWrapper::OpenWriteOnly(_outputFilename);
     if (!_outputFile.is_open()) {
       RTC_LOG(LS_ERROR) << "Failed to open playout file: " << _outputFilename;
       _playing = false;
@@ -266,7 +267,7 @@ int32_t FileAudioDevice::StartRecording() {
   }
 
   if (!_inputFilename.empty()) {
-    _inputFile = FileWrapper::OpenReadOnly(_inputFilename.c_str());
+    _inputFile = FileWrapper::OpenReadOnly(_inputFilename);
     if (!_inputFile.is_open()) {
       RTC_LOG(LS_ERROR) << "Failed to open audio input file: "
                         << _inputFilename;

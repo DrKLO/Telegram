@@ -319,8 +319,7 @@ public class CalendarActivity extends BaseFragment {
                     @Override
                     public void run(boolean forAll) {
                         finishFragment();
-
-                        if (parentLayout.getFragmentStack().size() >= 2) {
+                        if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
                             BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
                             if (fragment instanceof ChatActivity) {
                                 ((ChatActivity) fragment).deleteHistory(dateSelectedStart, dateSelectedEnd + 86400, forAll);
@@ -720,7 +719,7 @@ public class CalendarActivity extends BaseFragment {
                         cellJump.setTextAndIcon(LocaleController.getString("JumpToDate", R.string.JumpToDate), R.drawable.msg_message);
                         cellJump.setMinimumWidth(160);
                         cellJump.setOnClickListener(view -> {
-                            if (parentLayout.getFragmentStack().size() >= 3) {
+                            if (parentLayout != null && parentLayout.getFragmentStack().size() >= 3) {
                                 BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3);
                                 if (fragment instanceof ChatActivity) {
                                     AndroidUtilities.runOnUIThread(() -> {

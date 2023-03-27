@@ -15,22 +15,71 @@
  */
 package com.google.android.exoplayer2.source;
 
+import static java.lang.annotation.ElementType.TYPE_USE;
+
+import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.FormatHolder;
 import com.google.android.exoplayer2.decoder.DecoderInputBuffer;
+import com.google.android.exoplayer2.decoder.DecoderInputBuffer.InsufficientCapacityException;
 import java.io.IOException;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * A stream of media samples (and associated format information).
- */
+/** A stream of media samples (and associated format information). */
 public interface SampleStream {
 
   /**
+   * Flags that can be specified when calling {@link #readData}. Possible flag values are {@link
+   * #FLAG_PEEK}, {@link #FLAG_REQUIRE_FORMAT} and {@link #FLAG_OMIT_SAMPLE_DATA}.
+   */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
+  @IntDef(
+      flag = true,
+      value = {FLAG_PEEK, FLAG_REQUIRE_FORMAT, FLAG_OMIT_SAMPLE_DATA})
+  @interface ReadFlags {}
+  /** Specifies that the read position should not be advanced if a sample buffer is read. */
+  int FLAG_PEEK = 1;
+  /**
+   * Specifies that if a sample buffer would normally be read next, the format of the stream should
+   * be read instead. In detail, the effect of this flag is as follows:
+   *
+   * <ul>
+   *   <li>If a sample buffer would be read were the flag not set, then the stream format will be
+   *       read instead.
+   *   <li>If nothing would be read were the flag not set, then the stream format will be read if
+   *       it's known. If the stream format is not known then behavior is unchanged.
+   *   <li>If an end of stream buffer would be read were the flag not set, then behavior is
+   *       unchanged.
+   * </ul>
+   */
+  int FLAG_REQUIRE_FORMAT = 1 << 1;
+  /**
+   * Specifies that {@link DecoderInputBuffer#data}, {@link DecoderInputBuffer#supplementalData} and
+   * {@link DecoderInputBuffer#cryptoInfo} should not be populated when reading a sample buffer.
+   *
+   * <p>This flag is useful for efficiently reading or (when combined with {@link #FLAG_PEEK})
+   * peeking sample metadata. It can also be used for efficiency by a caller wishing to skip a
+   * sample buffer.
+   */
+  int FLAG_OMIT_SAMPLE_DATA = 1 << 2;
+
+  /** Return values of {@link #readData}. */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
+  @IntDef({C.RESULT_NOTHING_READ, C.RESULT_FORMAT_READ, C.RESULT_BUFFER_READ})
+  @interface ReadDataResult {}
+
+  /**
    * Returns whether data is available to be read.
-   * <p>
-   * Note: If the stream has ended then a buffer with the end of stream flag can always be read from
-   * {@link #readData(FormatHolder, DecoderInputBuffer, boolean)}. Hence an ended stream is always
-   * ready.
+   *
+   * <p>Note: If the stream has ended then a buffer with the end of stream flag can always be read
+   * from {@link #readData}. Hence an ended stream is always ready.
    *
    * @return Whether data is available to be read.
    */
@@ -55,17 +104,15 @@ public interface SampleStream {
    * @param formatHolder A {@link FormatHolder} to populate in the case of reading a format.
    * @param buffer A {@link DecoderInputBuffer} to populate in the case of reading a sample or the
    *     end of the stream. If the end of the stream has been reached, the {@link
-   *     C#BUFFER_FLAG_END_OF_STREAM} flag will be set on the buffer. If a {@link
-   *     DecoderInputBuffer#isFlagsOnly() flags-only} buffer is passed, then no {@link
-   *     DecoderInputBuffer#data} will be read and the read position of the stream will not change,
-   *     but the flags of the buffer will be populated.
-   * @param formatRequired Whether the caller requires that the format of the stream be read even if
-   *     it's not changing. A sample will never be read if set to true, however it is still possible
-   *     for the end of stream or nothing to be read.
-   * @return The result, which can be {@link C#RESULT_NOTHING_READ}, {@link C#RESULT_FORMAT_READ} or
-   *     {@link C#RESULT_BUFFER_READ}.
+   *     C#BUFFER_FLAG_END_OF_STREAM} flag will be set on the buffer.
+   * @param readFlags Flags controlling the behavior of this read operation.
+   * @return The {@link ReadDataResult result} of the read operation.
+   * @throws InsufficientCapacityException If the {@code buffer} has insufficient capacity to hold
+   *     the data of a sample being read. The buffer {@link DecoderInputBuffer#timeUs timestamp} and
+   *     flags are populated if this exception is thrown, but the read position is not advanced.
    */
-  int readData(FormatHolder formatHolder, DecoderInputBuffer buffer, boolean formatRequired);
+  @ReadDataResult
+  int readData(FormatHolder formatHolder, DecoderInputBuffer buffer, @ReadFlags int readFlags);
 
   /**
    * Attempts to skip to the keyframe before the specified position, or to the end of the stream if
@@ -75,5 +122,4 @@ public interface SampleStream {
    * @return The number of samples that were skipped.
    */
   int skipData(long positionUs);
-
 }

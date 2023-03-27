@@ -16,32 +16,29 @@
 package com.google.android.exoplayer2.metadata.emsg;
 
 import com.google.android.exoplayer2.metadata.Metadata;
-import com.google.android.exoplayer2.metadata.MetadataDecoder;
 import com.google.android.exoplayer2.metadata.MetadataInputBuffer;
+import com.google.android.exoplayer2.metadata.SimpleMetadataDecoder;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /** Decodes data encoded by {@link EventMessageEncoder}. */
-public final class EventMessageDecoder implements MetadataDecoder {
+public final class EventMessageDecoder extends SimpleMetadataDecoder {
 
-  @SuppressWarnings("ByteBufferBackingArray")
   @Override
-  public Metadata decode(MetadataInputBuffer inputBuffer) {
-    ByteBuffer buffer = Assertions.checkNotNull(inputBuffer.data);
-    byte[] data = buffer.array();
-    int size = buffer.limit();
-    return new Metadata(decode(new ParsableByteArray(data, size)));
+  @SuppressWarnings("ByteBufferBackingArray") // Buffer validated by SimpleMetadataDecoder.decode
+  protected Metadata decode(MetadataInputBuffer inputBuffer, ByteBuffer buffer) {
+    return new Metadata(decode(new ParsableByteArray(buffer.array(), buffer.limit())));
   }
 
   public EventMessage decode(ParsableByteArray emsgData) {
     String schemeIdUri = Assertions.checkNotNull(emsgData.readNullTerminatedString());
     String value = Assertions.checkNotNull(emsgData.readNullTerminatedString());
-    long durationMs = emsgData.readUnsignedInt();
-    long id = emsgData.readUnsignedInt();
+    long durationMs = emsgData.readLong();
+    long id = emsgData.readLong();
     byte[] messageData =
-        Arrays.copyOfRange(emsgData.data, emsgData.getPosition(), emsgData.limit());
+        Arrays.copyOfRange(emsgData.getData(), emsgData.getPosition(), emsgData.limit());
     return new EventMessage(schemeIdUri, value, durationMs, id, messageData);
   }
 }

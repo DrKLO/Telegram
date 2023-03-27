@@ -126,7 +126,7 @@ class FakeVideoSource : public rtc::VideoSourceInterface<webrtc::VideoFrame> {
   }
   // RemoveSink must guarantee that at the time the method returns,
   // there is no current and no future calls to VideoSinkInterface::OnFrame.
-  void RemoveSink(rtc::VideoSinkInterface<VideoFrameT> *sink) {
+  void RemoveSink(rtc::VideoSinkInterface<VideoFrameT> *sink) override {
     RTC_LOG(LS_WARNING) << "REMOVE";
     data_->broadcaster_.RemoveSink(sink);
   }
@@ -166,7 +166,7 @@ std::unique_ptr<FrameSource> FrameSource::chess(){
 }
 
 void FrameSource::video_frame_to_rgb0(const webrtc::VideoFrame & src, char *dest){
-  auto buffer = src.video_frame_buffer()->GetI420();
+  auto buffer = src.video_frame_buffer()->ToI420();
   libyuv::I420ToABGR(buffer->DataY(), buffer->StrideY(), buffer->DataU(),
                      buffer->StrideU(), buffer->DataV(), buffer->StrideV( ), reinterpret_cast<uint8_t *>(dest), src.width() * 4,  src.width(), src.height());
 }

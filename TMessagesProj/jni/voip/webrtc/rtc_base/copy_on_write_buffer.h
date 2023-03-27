@@ -19,6 +19,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "api/scoped_refptr.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/checks.h"
@@ -38,7 +39,7 @@ class RTC_EXPORT CopyOnWriteBuffer {
   CopyOnWriteBuffer(CopyOnWriteBuffer&& buf);
 
   // Construct a buffer from a string, convenient for unittests.
-  CopyOnWriteBuffer(const std::string& s);
+  explicit CopyOnWriteBuffer(absl::string_view s);
 
   // Construct a buffer with the specified number of uninitialized bytes.
   explicit CopyOnWriteBuffer(size_t size);

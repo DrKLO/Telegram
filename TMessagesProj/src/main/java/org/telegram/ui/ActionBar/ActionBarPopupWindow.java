@@ -21,7 +21,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -106,7 +105,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         private boolean startAnimationPending = false;
         private int backAlpha = 255;
         private int lastStartedChild = 0;
-        private boolean shownFromBottom;
+        public boolean shownFromBottom;
         private boolean animationEnabled = allowAnimation;
         private ArrayList<AnimatorSet> itemAnimators;
         private HashMap<View, Integer> positions = new HashMap<>();
@@ -291,16 +290,6 @@ public class ActionBarPopupWindow extends PopupWindow {
                 invalidate();
                 if (onSizeChangedListener != null) {
                     onSizeChangedListener.onSizeChanged();
-                }
-            }
-        }
-
-        public void translateChildrenAfter(int index, float ty) {
-            subtractBackgroundHeight = (int) -ty;
-            for (int i = index + 1; i < linearLayout.getChildCount(); ++i) {
-                View child = linearLayout.getChildAt(i);
-                if (child != null) {
-                    child.setTranslationY(ty);
                 }
             }
         }
@@ -728,12 +717,16 @@ public class ActionBarPopupWindow extends PopupWindow {
     }
 
     public void dimBehind() {
+        dimBehind(0.2f);
+    }
+
+    public void dimBehind(float amount) {
         View container = getContentView().getRootView();
         Context context = getContentView().getContext();
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
         p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        p.dimAmount = 0.2f;
+        p.dimAmount = amount;
         wm.updateViewLayout(container, p);
     }
 
@@ -1050,21 +1043,20 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     public static class GapView extends FrameLayout {
 
-        Theme.ResourcesProvider resourcesProvider;
-        String colorKey;
-
         Drawable shadowDrawable;
 
         public GapView(Context context, Theme.ResourcesProvider resourcesProvider) {
             this(context, resourcesProvider, Theme.key_actionBarDefaultSubmenuSeparator);
         }
 
-        public GapView(Context context, Theme.ResourcesProvider resourcesProvider, String colorKey) {
+        public GapView(Context context, int color, int shadowColor) {
             super(context);
-            this.resourcesProvider = resourcesProvider;
-            this.colorKey = colorKey;
-            this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow, resourcesProvider);
-            setBackgroundColor(Theme.getColor(colorKey, resourcesProvider));
+            this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, shadowColor);
+            setBackgroundColor(color);
+        }
+
+        public GapView(Context context, Theme.ResourcesProvider resourcesProvider, String colorKey) {
+            this(context, Theme.getColor(colorKey, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
         }
 
         public void setColor(int color) {

@@ -549,7 +549,13 @@ public class AvatarsDrawable {
         return AndroidUtilities.dp(bigAvatars ? 32 : 24);
     }
 
+    private boolean attached;
+
     public void onDetachedFromWindow() {
+        if (!attached) {
+            return;
+        }
+        attached = false;
         wasDraw = false;
         for (int a = 0; a < 3; a++) {
             currentStates[a].imageReceiver.onDetachedFromWindow();
@@ -561,6 +567,10 @@ public class AvatarsDrawable {
     }
 
     public void onAttachedToWindow() {
+        if (attached) {
+            return;
+        }
+        attached = true;
         for (int a = 0; a < 3; a++) {
             currentStates[a].imageReceiver.onAttachedToWindow();
             animatingStates[a].imageReceiver.onAttachedToWindow();

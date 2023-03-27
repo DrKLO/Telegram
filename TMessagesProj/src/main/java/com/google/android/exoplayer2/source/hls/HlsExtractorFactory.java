@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.source.hls;
 import android.net.Uri;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.analytics.PlayerId;
 import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.PositionHolder;
@@ -26,67 +27,35 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Factory for HLS media chunk extractors.
- */
+/** Factory for HLS media chunk extractors. */
 public interface HlsExtractorFactory {
-
-  /** Holds an {@link Extractor} and associated parameters. */
-  final class Result {
-
-    /** The created extractor; */
-    public final Extractor extractor;
-    /** Whether the segments for which {@link #extractor} is created are packed audio segments. */
-    public final boolean isPackedAudioExtractor;
-    /**
-     * Whether {@link #extractor} may be reused for following continuous (no immediately preceding
-     * discontinuities) segments of the same variant.
-     */
-    public final boolean isReusable;
-
-    /**
-     * Creates a result.
-     *
-     * @param extractor See {@link #extractor}.
-     * @param isPackedAudioExtractor See {@link #isPackedAudioExtractor}.
-     * @param isReusable See {@link #isReusable}.
-     */
-    public Result(Extractor extractor, boolean isPackedAudioExtractor, boolean isReusable) {
-      this.extractor = extractor;
-      this.isPackedAudioExtractor = isPackedAudioExtractor;
-      this.isReusable = isReusable;
-    }
-  }
 
   HlsExtractorFactory DEFAULT = new DefaultHlsExtractorFactory();
 
   /**
    * Creates an {@link Extractor} for extracting HLS media chunks.
    *
-   * @param previousExtractor A previously used {@link Extractor} which can be reused if the current
-   *     chunk is a continuation of the previously extracted chunk, or null otherwise. It is the
-   *     responsibility of implementers to only reuse extractors that are suited for reusage.
    * @param uri The URI of the media chunk.
    * @param format A {@link Format} associated with the chunk to extract.
    * @param muxedCaptionFormats List of muxed caption {@link Format}s. Null if no closed caption
-   *     information is available in the master playlist.
+   *     information is available in the multivariant playlist.
    * @param timestampAdjuster Adjuster corresponding to the provided discontinuity sequence number.
    * @param responseHeaders The HTTP response headers associated with the media segment or
    *     initialization section to extract.
    * @param sniffingExtractorInput The first extractor input that will be passed to the returned
    *     extractor's {@link Extractor#read(ExtractorInput, PositionHolder)}. Must only be used to
    *     call {@link Extractor#sniff(ExtractorInput)}.
-   * @return A {@link Result}.
-   * @throws InterruptedException If the thread is interrupted while sniffing.
+   * @param playerId The {@link PlayerId} of the player using this extractors factory.
+   * @return An {@link HlsMediaChunkExtractor}.
    * @throws IOException If an I/O error is encountered while sniffing.
    */
-  Result createExtractor(
-      @Nullable Extractor previousExtractor,
+  HlsMediaChunkExtractor createExtractor(
       Uri uri,
       Format format,
       @Nullable List<Format> muxedCaptionFormats,
       TimestampAdjuster timestampAdjuster,
       Map<String, List<String>> responseHeaders,
-      ExtractorInput sniffingExtractorInput)
-      throws InterruptedException, IOException;
+      ExtractorInput sniffingExtractorInput,
+      PlayerId playerId)
+      throws IOException;
 }

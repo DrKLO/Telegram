@@ -133,6 +133,23 @@ class ScalabilityStructureL2T2 : public ScalabilityStructureFullSvc {
   FrameDependencyStructure DependencyStructure() const override;
 };
 
+// S1T2      4    ,8
+// S1T1    / |  6' |
+// S1T0   2--+-'+--+-...
+//        |  |  |  |
+// S0T2   |  3  | ,7
+// S0T1   | /   5'
+// S0T0   1----'-----...
+// Time-> 0  1  2  3
+class ScalabilityStructureL2T3 : public ScalabilityStructureFullSvc {
+ public:
+  explicit ScalabilityStructureL2T3(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureFullSvc(2, 3, resolution_factor) {}
+  ~ScalabilityStructureL2T3() override = default;
+
+  FrameDependencyStructure DependencyStructure() const override;
+};
+
 // S2     0-0-0-
 //        | | |
 // S1     0-0-0-...
@@ -144,6 +161,16 @@ class ScalabilityStructureL3T1 : public ScalabilityStructureFullSvc {
   explicit ScalabilityStructureL3T1(ScalingFactor resolution_factor = {})
       : ScalabilityStructureFullSvc(3, 1, resolution_factor) {}
   ~ScalabilityStructureL3T1() override = default;
+
+  FrameDependencyStructure DependencyStructure() const override;
+};
+
+// https://www.w3.org/TR/webrtc-svc/#L3T2*
+class ScalabilityStructureL3T2 : public ScalabilityStructureFullSvc {
+ public:
+  explicit ScalabilityStructureL3T2(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureFullSvc(3, 2, resolution_factor) {}
+  ~ScalabilityStructureL3T2() override = default;
 
   FrameDependencyStructure DependencyStructure() const override;
 };

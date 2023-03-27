@@ -19,6 +19,8 @@ import android.media.MediaDrmException;
 import android.os.PersistableBundle;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.decoder.CryptoConfig;
 import com.google.android.exoplayer2.util.Util;
 import java.util.HashMap;
 import java.util.List;
@@ -26,21 +28,25 @@ import java.util.Map;
 
 /** An {@link ExoMediaDrm} that does not support any protection schemes. */
 @RequiresApi(18)
-public final class DummyExoMediaDrm<T extends ExoMediaCrypto> implements ExoMediaDrm<T> {
+public final class DummyExoMediaDrm implements ExoMediaDrm {
 
   /** Returns a new instance. */
-  @SuppressWarnings("unchecked")
-  public static <T extends ExoMediaCrypto> DummyExoMediaDrm<T> getInstance() {
-    return (DummyExoMediaDrm<T>) new DummyExoMediaDrm<>();
+  public static DummyExoMediaDrm getInstance() {
+    return new DummyExoMediaDrm();
   }
 
   @Override
-  public void setOnEventListener(OnEventListener<? super T> listener) {
+  public void setOnEventListener(@Nullable OnEventListener listener) {
     // Do nothing.
   }
 
   @Override
-  public void setOnKeyStatusChangeListener(OnKeyStatusChangeListener<? super T> listener) {
+  public void setOnKeyStatusChangeListener(@Nullable OnKeyStatusChangeListener listener) {
+    // Do nothing.
+  }
+
+  @Override
+  public void setOnExpirationUpdateListener(@Nullable OnExpirationUpdateListener listener) {
     // Do nothing.
   }
 
@@ -64,8 +70,8 @@ public final class DummyExoMediaDrm<T extends ExoMediaCrypto> implements ExoMedi
     throw new IllegalStateException();
   }
 
-  @Nullable
   @Override
+  @Nullable
   public byte[] provideKeyResponse(byte[] scope, byte[] response) {
     // Should not be invoked. No session should exist.
     throw new IllegalStateException();
@@ -85,6 +91,12 @@ public final class DummyExoMediaDrm<T extends ExoMediaCrypto> implements ExoMedi
 
   @Override
   public Map<String, String> queryKeyStatus(byte[] sessionId) {
+    // Should not be invoked. No session should exist.
+    throw new IllegalStateException();
+  }
+
+  @Override
+  public boolean requiresSecureDecoder(byte[] sessionId, String mimeType) {
     // Should not be invoked. No session should exist.
     throw new IllegalStateException();
   }
@@ -132,15 +144,13 @@ public final class DummyExoMediaDrm<T extends ExoMediaCrypto> implements ExoMedi
   }
 
   @Override
-  public T createMediaCrypto(byte[] sessionId) {
+  public CryptoConfig createCryptoConfig(byte[] sessionId) {
     // Should not be invoked. No session should exist.
     throw new IllegalStateException();
   }
 
   @Override
-  @Nullable
-  public Class<T> getExoMediaCryptoType() {
-    // No ExoMediaCrypto type is supported.
-    return null;
+  public @C.CryptoType int getCryptoType() {
+    return C.CRYPTO_TYPE_UNSUPPORTED;
   }
 }

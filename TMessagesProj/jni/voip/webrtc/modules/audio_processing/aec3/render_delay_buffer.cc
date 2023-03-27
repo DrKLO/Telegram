@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <memory>
 #include <numeric>
@@ -32,7 +33,6 @@
 #include "modules/audio_processing/aec3/render_buffer.h"
 #include "modules/audio_processing/aec3/spectrum_buffer.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-#include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
@@ -54,8 +54,7 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   ~RenderDelayBufferImpl() override;
 
   void Reset() override;
-  BufferingEvent Insert(
-      const std::vector<std::vector<std::vector<float>>>& block) override;
+  BufferingEvent Insert(const Block& block) override;
   BufferingEvent PrepareCaptureProcessing() override;
   void HandleSkippedCaptureProcessing() override;
   bool AlignFromDelay(size_t delay) override;
@@ -75,7 +74,7 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   bool HasReceivedBufferDelay() override;
 
  private:
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   const Aec3Optimization optimization_;
   const EchoCanceller3Config config_;
@@ -110,8 +109,7 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   int MapDelayToTotalDelay(size_t delay) const;
   int ComputeDelay() const;
   void ApplyTotalDelay(int delay);
-  void InsertBlock(const std::vector<std::vector<std::vector<float>>>& block,
-                   int previous_write);
+  void InsertBlock(const Block& block, int previous_write);
   bool DetectActiveRender(rtc::ArrayView<const float> x) const;
   bool DetectExcessRenderBlocks();
   void IncrementWriteIndices();
@@ -121,13 +119,12 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   bool RenderUnderrun();
 };
 
-int RenderDelayBufferImpl::instance_count_ = 0;
+std::atomic<int> RenderDelayBufferImpl::instance_count_ = 0;
 
 RenderDelayBufferImpl::RenderDelayBufferImpl(const EchoCanceller3Config& config,
                                              int sample_rate_hz,
                                              size_t num_render_channels)
-    : data_dumper_(
-          new ApmDataDumper(rtc::AtomicOps::Increment(&instance_count_))),
+    : data_dumper_(new ApmDataDumper(instance_count_.fetch_add(1) + 1)),
       optimization_(DetectOptimization()),
       config_(config),
       update_capture_call_counter_on_skipped_blocks_(
@@ -145,8 +142,7 @@ RenderDelayBufferImpl::RenderDelayBufferImpl(const EchoCanceller3Config& config,
                                        config.delay.num_filters,
                                        config.filter.refined.length_blocks),
               NumBandsForRate(sample_rate_hz),
-              num_render_channels,
-              kBlockSize),
+              num_render_channels),
       spectra_(blocks_.buffer.size(), num_render_channels),
       ffts_(blocks_.buffer.size(), num_render_channels),
       delay_(config_.delay.default_delay),
@@ -161,7 +157,7 @@ RenderDelayBufferImpl::RenderDelayBufferImpl(const EchoCanceller3Config& config,
   RTC_DCHECK_EQ(blocks_.buffer.size(), ffts_.buffer.size());
   RTC_DCHECK_EQ(spectra_.buffer.size(), ffts_.buffer.size());
   for (size_t i = 0; i < blocks_.buffer.size(); ++i) {
-    RTC_DCHECK_EQ(blocks_.buffer[i][0].size(), ffts_.buffer[i].size());
+    RTC_DCHECK_EQ(blocks_.buffer[i].NumChannels(), ffts_.buffer[i].size());
     RTC_DCHECK_EQ(spectra_.buffer[i].size(), ffts_.buffer[i].size());
   }
 
@@ -211,7 +207,7 @@ void RenderDelayBufferImpl::Reset() {
 
 // Inserts a new block into the render buffers.
 RenderDelayBuffer::BufferingEvent RenderDelayBufferImpl::Insert(
-    const std::vector<std::vector<std::vector<float>>>& block) {
+    const Block& block) {
   ++render_call_counter_;
   if (delay_) {
     if (!last_call_was_render_) {
@@ -239,7 +235,8 @@ RenderDelayBuffer::BufferingEvent RenderDelayBufferImpl::Insert(
 
   // Detect and update render activity.
   if (!render_activity_) {
-    render_activity_counter_ += DetectActiveRender(block[0][0]) ? 1 : 0;
+    render_activity_counter_ +=
+        DetectActiveRender(block.View(/*band=*/0, /*channel=*/0)) ? 1 : 0;
     render_activity_ = render_activity_counter_ >= 20;
   }
 
@@ -394,46 +391,45 @@ void RenderDelayBufferImpl::AlignFromExternalDelay() {
 }
 
 // Inserts a block into the render buffers.
-void RenderDelayBufferImpl::InsertBlock(
-    const std::vector<std::vector<std::vector<float>>>& block,
-    int previous_write) {
+void RenderDelayBufferImpl::InsertBlock(const Block& block,
+                                        int previous_write) {
   auto& b = blocks_;
   auto& lr = low_rate_;
   auto& ds = render_ds_;
   auto& f = ffts_;
   auto& s = spectra_;
-  const size_t num_bands = b.buffer[b.write].size();
-  const size_t num_render_channels = b.buffer[b.write][0].size();
-  RTC_DCHECK_EQ(block.size(), b.buffer[b.write].size());
+  const size_t num_bands = b.buffer[b.write].NumBands();
+  const size_t num_render_channels = b.buffer[b.write].NumChannels();
+  RTC_DCHECK_EQ(block.NumBands(), num_bands);
+  RTC_DCHECK_EQ(block.NumChannels(), num_render_channels);
   for (size_t band = 0; band < num_bands; ++band) {
-    RTC_DCHECK_EQ(block[band].size(), num_render_channels);
-    RTC_DCHECK_EQ(b.buffer[b.write][band].size(), num_render_channels);
     for (size_t ch = 0; ch < num_render_channels; ++ch) {
-      RTC_DCHECK_EQ(block[band][ch].size(), b.buffer[b.write][band][ch].size());
-      std::copy(block[band][ch].begin(), block[band][ch].end(),
-                b.buffer[b.write][band][ch].begin());
+      std::copy(block.begin(band, ch), block.end(band, ch),
+                b.buffer[b.write].begin(band, ch));
     }
   }
 
   if (render_linear_amplitude_gain_ != 1.f) {
     for (size_t band = 0; band < num_bands; ++band) {
       for (size_t ch = 0; ch < num_render_channels; ++ch) {
-        for (size_t k = 0; k < 64; ++k) {
-          b.buffer[b.write][band][ch][k] *= render_linear_amplitude_gain_;
+        rtc::ArrayView<float, kBlockSize> b_view =
+            b.buffer[b.write].View(band, ch);
+        for (float& sample : b_view) {
+          sample *= render_linear_amplitude_gain_;
         }
       }
     }
   }
 
   std::array<float, kBlockSize> downmixed_render;
-  render_mixer_.ProduceOutput(b.buffer[b.write][0], downmixed_render);
+  render_mixer_.ProduceOutput(b.buffer[b.write], downmixed_render);
   render_decimator_.Decimate(downmixed_render, ds);
   data_dumper_->DumpWav("aec3_render_decimator_output", ds.size(), ds.data(),
                         16000 / down_sampling_factor_, 1);
   std::copy(ds.rbegin(), ds.rend(), lr.buffer.begin() + lr.write);
-  for (size_t channel = 0; channel < b.buffer[b.write][0].size(); ++channel) {
-    fft_.PaddedFft(b.buffer[b.write][0][channel],
-                   b.buffer[previous_write][0][channel],
+  for (int channel = 0; channel < b.buffer[b.write].NumChannels(); ++channel) {
+    fft_.PaddedFft(b.buffer[b.write].View(/*band=*/0, channel),
+                   b.buffer[previous_write].View(/*band=*/0, channel),
                    &f.buffer[f.write][channel]);
     f.buffer[f.write][channel].Spectrum(optimization_,
                                         s.buffer[s.write][channel]);

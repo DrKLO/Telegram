@@ -17,11 +17,12 @@
 #include <vector>
 
 #include "api/audio_codecs/audio_encoder_factory.h"
+#include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/transport/rtp/rtp_source.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "call/audio_state.h"
 #include "call/call.h"
 #include "media/base/media_engine.h"
@@ -30,7 +31,6 @@
 #include "rtc_base/buffer.h"
 #include "rtc_base/network_route.h"
 #include "rtc_base/task_queue.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 
 namespace webrtc {
 class AudioFrameProcessor;
@@ -55,7 +55,7 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
       rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer,
       rtc::scoped_refptr<webrtc::AudioProcessing> audio_processing,
       webrtc::AudioFrameProcessor* audio_frame_processor,
-      const webrtc::WebRtcKeyValueConfig& trials);
+      const webrtc::FieldTrialsView& trials);
 
   WebRtcVoiceEngine() = delete;
   WebRtcVoiceEngine(const WebRtcVoiceEngine&) = delete;
@@ -91,7 +91,7 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
   // Every option that is "set" will be applied. Every option not "set" will be
   // ignored. This allows us to selectively turn on and off different options
   // easily at any time.
-  bool ApplyOptions(const AudioOptions& options);
+  void ApplyOptions(const AudioOptions& options);
 
   int CreateVoEChannel();
 
@@ -124,18 +124,11 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
   bool is_dumping_aec_ = false;
   bool initialized_ = false;
 
-  // Cache experimental_ns and apply in case they are missing in the audio
-  // options.
-  absl::optional<bool> experimental_ns_;
   // Jitter buffer settings for new streams.
   size_t audio_jitter_buffer_max_packets_ = 200;
   bool audio_jitter_buffer_fast_accelerate_ = false;
   int audio_jitter_buffer_min_delay_ms_ = 0;
-  bool audio_jitter_buffer_enable_rtx_handling_ = false;
 
-  // If this field is enabled, we will negotiate and use RFC 2198
-  // redundancy for opus audio.
-  const bool audio_red_for_opus_enabled_;
   const bool minimized_remsampling_on_mobile_trial_enabled_;
 };
 
@@ -209,7 +202,7 @@ class WebRtcVoiceMediaChannel final : public VoiceMediaChannel,
   void OnPacketReceived(rtc::CopyOnWriteBuffer packet,
                         int64_t packet_time_us) override;
   void OnPacketSent(const rtc::SentPacket& sent_packet) override;
-  void OnNetworkRouteChanged(const std::string& transport_name,
+  void OnNetworkRouteChanged(absl::string_view transport_name,
                              const rtc::NetworkRoute& network_route) override;
   void OnReadyToSend(bool ready) override;
   bool GetStats(VoiceMediaInfo* info, bool get_and_clear_legacy_stats) override;
@@ -328,8 +321,8 @@ class WebRtcVoiceMediaChannel final : public VoiceMediaChannel,
   // Unsignaled streams have an option to have a frame decryptor set on them.
   rtc::scoped_refptr<webrtc::FrameDecryptorInterface>
       unsignaled_frame_decryptor_;
-
-  const bool audio_red_for_opus_enabled_;
+  rtc::scoped_refptr<webrtc::FrameTransformerInterface>
+      unsignaled_frame_transformer_;
 };
 }  // namespace cricket
 

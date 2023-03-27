@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ABSL_STRINGS_CORDZ_HANDLE_H_
-#define ABSL_STRINGS_CORDZ_HANDLE_H_
+#ifndef ABSL_STRINGS_INTERNAL_CORDZ_HANDLE_H_
+#define ABSL_STRINGS_INTERNAL_CORDZ_HANDLE_H_
 
 #include <atomic>
 #include <vector>
@@ -128,4 +128,4 @@ class CordzSnapshot : public CordzHandle {
 ABSL_NAMESPACE_END
 }  // namespace absl
 
-#endif  // ABSL_STRINGS_CORDZ_HANDLE_H_
+#endif  // ABSL_STRINGS_INTERNAL_CORDZ_HANDLE_H_

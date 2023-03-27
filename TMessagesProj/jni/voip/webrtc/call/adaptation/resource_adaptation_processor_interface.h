@@ -47,8 +47,6 @@ class ResourceAdaptationProcessorInterface {
  public:
   virtual ~ResourceAdaptationProcessorInterface();
 
-  virtual void SetTaskQueue(TaskQueueBase* task_queue) = 0;
-
   virtual void AddResourceLimitationsListener(
       ResourceLimitationsListener* limitations_listener) = 0;
   virtual void RemoveResourceLimitationsListener(

@@ -22,6 +22,7 @@ import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -129,7 +130,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             return;
         }
 
-        fromRadius = chatActivityEnterView.getRecordCicle().drawingCircleRadius;
+        ChatActivityEnterView.RecordCircle recordCircle = chatActivityEnterView.getRecordCircle();
+        fromRadius = recordCircle == null ? 0 : recordCircle.drawingCircleRadius;
         bitmapPaint.setFilterBitmap(true);
         currentMessageObject = messageView.getMessageObject();
 
@@ -139,7 +141,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
         messageView.setEnterTransitionInProgress(true);
 
-        CharSequence editText = chatActivityEnterView.getEditField().getLayout().getText();
+        CharSequence editText = chatActivityEnterView.getEditText();
         CharSequence text = messageView.getMessageObject().messageText;
 
         crossfade = false;
@@ -148,23 +150,24 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         TextPaint textPaint = Theme.chat_msgTextPaint;
         int emojiSize = AndroidUtilities.dp(20);
         if (messageView.getMessageObject().getEmojiOnlyCount() != 0) {
-            switch (messageView.getMessageObject().getEmojiOnlyCount()) {
+            boolean large = messageView.getMessageObject().emojiOnlyCount == messageView.getMessageObject().animatedEmojiCount;
+            switch (Math.max(messageView.getMessageObject().emojiOnlyCount, messageView.getMessageObject().animatedEmojiCount)) {
                 case 0:
                 case 1:
                 case 2:
-                    textPaint = Theme.chat_msgTextPaintEmoji[0];
+                    textPaint = large ? Theme.chat_msgTextPaintEmoji[0] : Theme.chat_msgTextPaintEmoji[2];
                     break;
                 case 3:
-                    textPaint = Theme.chat_msgTextPaintEmoji[1];
+                    textPaint = large ? Theme.chat_msgTextPaintEmoji[1] : Theme.chat_msgTextPaintEmoji[3];
                     break;
                 case 4:
-                    textPaint = Theme.chat_msgTextPaintEmoji[2];
+                    textPaint = large ? Theme.chat_msgTextPaintEmoji[2] : Theme.chat_msgTextPaintEmoji[4];
                     break;
                 case 5:
-                    textPaint = Theme.chat_msgTextPaintEmoji[3];
+                    textPaint = large ? Theme.chat_msgTextPaintEmoji[3] : Theme.chat_msgTextPaintEmoji[5];
                     break;
                 case 6:
-                    textPaint = Theme.chat_msgTextPaintEmoji[4];
+                    textPaint = large ? Theme.chat_msgTextPaintEmoji[4] : Theme.chat_msgTextPaintEmoji[5];
                     break;
                 case 7:
                 case 8:
@@ -181,12 +184,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         if (text instanceof Spannable) {
             Spannable spannable = (Spannable) text;
             Object[] objects = spannable.getSpans(0, text.length(), Object.class);
-            for (int i = 0; i < objects.length; i++) {
-                if (!(objects[i] instanceof Emoji.EmojiSpan)) {
-                    containsSpans = true;
-                    break;
-                }
-            }
+            containsSpans = objects != null && objects.length > 0;
         }
         if (editText.length() != text.length() || containsSpans) {
             crossfade = true;

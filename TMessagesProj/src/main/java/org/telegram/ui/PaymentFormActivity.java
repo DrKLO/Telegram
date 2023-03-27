@@ -280,6 +280,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private String cardName;
     private TLRPC.TL_paymentSavedCredentialsCard savedCredentialsCard;
     private boolean webviewLoading;
+    private CountrySelectActivity.Country country;
     private String countryName;
     private String totalPriceDecimal;
     private TLRPC.TL_payments_paymentForm paymentForm;
@@ -729,7 +730,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         }
                         if (event.getAction() == MotionEvent.ACTION_UP) {
                             CountrySelectActivity fragment = new CountrySelectActivity(false);
+                            fragment.setDisableAnonymousNumbers(true);
                             fragment.setCountrySelectActivityDelegate((country) -> {
+                                this.country = country;
                                 inputFields[FIELD_COUNTRY].setText(country.name);
                                 countryName = country.shortname;
                             });
@@ -1271,7 +1274,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             }
                             if (event.getAction() == MotionEvent.ACTION_UP) {
                                 CountrySelectActivity fragment = new CountrySelectActivity(false);
-                                fragment.setCountrySelectActivityDelegate((country) -> inputFields[FIELD_CARD_COUNTRY].setText(country.name));
+                                fragment.setDisableAnonymousNumbers(true);
+                                fragment.setCountrySelectActivityDelegate((country) -> {
+                                    this.country = country;
+                                    inputFields[FIELD_CARD_COUNTRY].setText(country.name);
+                                });
                                 presentFragment(fragment);
                             }
                             return true;
@@ -1314,6 +1321,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             public final String[] PREFIXES_16 = {
                                     "2221", "2222", "2223", "2224", "2225", "2226", "2227", "2228", "2229",
                                     "2200", "2201", "2202", "2203", "2204",
+                                    "8600", "9860",
                                     "223", "224", "225", "226", "227", "228", "229",
                                     "23", "24", "25", "26",
                                     "270", "271", "2720",
@@ -1448,7 +1456,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         }
                                     }
                                 } else {
-                                    phoneField.setTextColor(builder.length() > 0 ? getThemedColor(Theme.key_windowBackgroundWhiteRedText4) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+//                                    phoneField.setTextColor(builder.length() > 0 ? getThemedColor(Theme.key_windowBackgroundWhiteRedText4) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                                 }
                                 if (!builder.toString().equals(editable.toString())) {
                                     editable.replace(0, editable.length(), builder);
@@ -1528,8 +1536,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         int month = Utilities.parseInt(args[0]);
                                         int year = Utilities.parseInt(args[1]) + 2000;
                                         Calendar rightNow = Calendar.getInstance();
-                                        int currentYear = rightNow.get(Calendar.YEAR);
-                                        int currentMonth = rightNow.get(Calendar.MONTH) + 1;
+                                        // Only check for >= 01/22 then
+                                        boolean bypass = UserConfig.getInstance(currentAccount).getClientPhone().startsWith("7") || country != null && country.code.equals("7");
+                                        int currentYear = bypass ? 2022 : rightNow.get(Calendar.YEAR);
+                                        int currentMonth = bypass ? 1 : rightNow.get(Calendar.MONTH) + 1;
                                         if (year < currentYear || year == currentYear && month < currentMonth) {
                                             inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText4));
                                             isError = true;
@@ -2507,7 +2517,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(getThemedColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(getThemedColor(Theme.key_dialogTextRed));
                 }
             });
 
@@ -4013,8 +4023,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                         goToNextStep();
                         if (parentFragment instanceof ChatActivity) {
-                            CharSequence info = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName));
-                            ((ChatActivity) parentFragment).getUndoView().showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, info, message[0], null, null);
+                            UndoView undoView = ((ChatActivity) parentFragment).getUndoView();
+                            if (undoView != null) {
+                                CharSequence info = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName));
+                                undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, info, message[0], null, null);
+                            }
                         }
                     });
                 } else if (response instanceof TLRPC.TL_payments_paymentVerificationNeeded) {
@@ -4044,8 +4057,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                     onCheckoutSuccess(parentLayout, parentActivity);
 
                                     if (parentFragment instanceof ChatActivity) {
-                                        CharSequence info = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName));
-                                        ((ChatActivity) parentFragment).getUndoView().showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, info, message, null, null);
+                                        UndoView undoView = ((ChatActivity) parentFragment).getUndoView();
+                                        if (undoView != null) {
+                                            CharSequence info = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PaymentInfoHint, totalPrice[0], currentItemName));
+                                            undoView.showWithAction(0, UndoView.ACTION_PAYMENT_SUCCESS, info, message, null, null);
+                                        }
                                     }
                                 });
                                 return true;
@@ -4089,7 +4105,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         try {
             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignored) {}
-        AndroidUtilities.shakeView(view);
+        AndroidUtilities.shakeViewSpring(view, 2.5f);
     }
 
     private void setDonePressed(boolean value) {
@@ -4123,7 +4139,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             try {
                 inputFields[FIELD_SAVEDPASSWORD].performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignored) {}
-            AndroidUtilities.shakeView(inputFields[FIELD_SAVEDPASSWORD]);
+            AndroidUtilities.shakeViewSpring(inputFields[FIELD_SAVEDPASSWORD], 2.5f);
             return;
         }
         final String password = inputFields[FIELD_SAVEDPASSWORD].getText().toString();
@@ -4168,7 +4184,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                     try {
                                         inputFields[FIELD_SAVEDPASSWORD].performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     } catch (Exception ignored) {}
-                                    AndroidUtilities.shakeView(inputFields[FIELD_SAVEDPASSWORD]);
+                                    AndroidUtilities.shakeViewSpring(inputFields[FIELD_SAVEDPASSWORD], 3.25f);
                                     inputFields[FIELD_SAVEDPASSWORD].setText("");
                                 } else {
                                     AlertsCreator.processError(currentAccount, error1, PaymentFormActivity.this, req1);

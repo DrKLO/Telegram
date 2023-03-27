@@ -67,6 +67,10 @@ ABSL_NAMESPACE_BEGIN
 //      ABSL_FLAG(int, count, 0, "Count of items to process");
 //
 // No public methods of `absl::Flag<T>` are part of the Abseil Flags API.
+//
+// For type support of Abseil Flags, see the marshalling.h header file, which
+// discusses supported standard types, optional flags, and additional Abseil
+// type support.
 #if !defined(_MSC_VER) || defined(__clang__)
 template <typename T>
 using Flag = flags_internal::Flag<T>;
@@ -163,7 +167,6 @@ ABSL_NAMESPACE_END
 // Note: do not construct objects of type `absl::Flag<T>` directly. Only use the
 // `ABSL_FLAG()` macro for such construction.
 #define ABSL_FLAG(Type, name, default_value, help) \
-  extern ::absl::Flag<Type> FLAGS_##name;          \
   ABSL_FLAG_IMPL(Type, name, default_value, help)
 
 // ABSL_FLAG().OnUpdate()
@@ -266,6 +269,7 @@ ABSL_NAMESPACE_END
 // global name for FLAGS_no<flag_name> symbol, thus preventing the possibility
 // of defining two flags with names foo and nofoo.
 #define ABSL_FLAG_IMPL(Type, name, default_value, help)                       \
+  extern ::absl::Flag<Type> FLAGS_##name;                                     \
   namespace absl /* block flags in namespaces */ {}                           \
   ABSL_FLAG_IMPL_DECLARE_DEF_VAL_WRAPPER(name, Type, default_value)           \
   ABSL_FLAG_IMPL_DECLARE_HELP_WRAPPER(name, help)                             \

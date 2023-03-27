@@ -11,6 +11,8 @@
 #ifndef MODULES_AUDIO_PROCESSING_VAD_VAD_AUDIO_PROC_INTERNAL_H_
 #define MODULES_AUDIO_PROCESSING_VAD_VAD_AUDIO_PROC_INTERNAL_H_
 
+#include <stddef.h>
+
 namespace webrtc {
 
 // These values should match MATLAB counterparts for unit-tests to pass.

@@ -553,7 +553,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 if (photoSize != null) {
                     TLRPC.Photo photo = messageObject.messageOwner.action.photo;
                     TLRPC.VideoSize videoSize = null;
-                    if (!photo.video_sizes.isEmpty() && SharedConfig.autoplayGifs) {
+                    if (!photo.video_sizes.isEmpty() && SharedConfig.isAutoplayGifs()) {
                         videoSize = FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 1000);
                         if (!messageObject.mediaExists && !DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, videoSize.size)) {
                             currentVideoLocation = ImageLocation.getForPhoto(videoSize, photo);
@@ -846,6 +846,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private void createLayout(CharSequence text, int width) {
         int maxWidth = width - AndroidUtilities.dp(30);
+        if (maxWidth < 0) {
+            return;
+        }
         invalidatePath = true;
         TextPaint paint;
         if (currentMessageObject != null && currentMessageObject.drawServiceWithDefaultTypeface) {
@@ -1136,7 +1139,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
         if (isButtonLayout(messageObject)) {
             canvas.save();
-            float x = (previousWidth - giftRectSize) / 2f + AndroidUtilities.dp(8), y = textY + textHeight + giftRectSize * 0.075f + imageSize + AndroidUtilities.dp(4);
+            float x = (previousWidth - giftRectSize) / 2f + AndroidUtilities.dp(8), y = textY + textHeight + giftRectSize * 0.075f + (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO ? imageSize : stickerSize) + AndroidUtilities.dp(4);
             if (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
                 y += +AndroidUtilities.dp(16);
             }

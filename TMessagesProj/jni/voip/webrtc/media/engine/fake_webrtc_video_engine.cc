@@ -24,7 +24,8 @@ namespace cricket {
 
 namespace {
 
-static const int kEventTimeoutMs = 10000;
+static constexpr webrtc::TimeDelta kEventTimeout =
+    webrtc::TimeDelta::Seconds(10);
 
 }  // namespace
 
@@ -171,7 +172,7 @@ webrtc::VideoEncoder::EncoderInfo FakeWebRtcVideoEncoder::GetEncoderInfo()
 }
 
 bool FakeWebRtcVideoEncoder::WaitForInitEncode() {
-  return init_encode_event_.Wait(kEventTimeoutMs);
+  return init_encode_event_.Wait(kEventTimeout);
 }
 
 webrtc::VideoCodec FakeWebRtcVideoEncoder::GetCodecSettings() {
@@ -228,12 +229,13 @@ FakeWebRtcVideoEncoderFactory::CreateVideoEncoder(
 bool FakeWebRtcVideoEncoderFactory::WaitForCreatedVideoEncoders(
     int num_encoders) {
   int64_t start_offset_ms = rtc::TimeMillis();
-  int64_t wait_time = kEventTimeoutMs;
+  int64_t wait_time = kEventTimeout.ms();
   do {
     if (GetNumCreatedEncoders() >= num_encoders)
       return true;
-    wait_time = kEventTimeoutMs - (rtc::TimeMillis() - start_offset_ms);
-  } while (wait_time > 0 && created_video_encoder_event_.Wait(wait_time));
+    wait_time = kEventTimeout.ms() - (rtc::TimeMillis() - start_offset_ms);
+  } while (wait_time > 0 && created_video_encoder_event_.Wait(
+                                webrtc::TimeDelta::Millis(wait_time)));
   return false;
 }
 

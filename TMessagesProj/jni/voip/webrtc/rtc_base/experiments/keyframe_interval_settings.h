@@ -12,7 +12,7 @@
 #define RTC_BASE_EXPERIMENTS_KEYFRAME_INTERVAL_SETTINGS_H_
 
 #include "absl/types/optional.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
@@ -29,8 +29,7 @@ class KeyframeIntervalSettings final {
   absl::optional<int> MinKeyframeSendIntervalMs() const;
 
  private:
-  explicit KeyframeIntervalSettings(
-      const WebRtcKeyValueConfig* key_value_config);
+  explicit KeyframeIntervalSettings(const FieldTrialsView* key_value_config);
 
   FieldTrialOptional<int> min_keyframe_send_interval_ms_;
 };

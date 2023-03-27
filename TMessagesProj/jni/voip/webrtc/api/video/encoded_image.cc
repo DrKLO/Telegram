@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rtc_base/ref_counted_object.h"
-
 namespace webrtc {
 
 EncodedImageBuffer::EncodedImageBuffer(size_t size) : size_(size) {

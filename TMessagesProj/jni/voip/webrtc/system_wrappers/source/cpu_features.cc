@@ -93,13 +93,14 @@ int GetCPUInfo(CPUFeature feature) {
     //     a) AVX are supported by the CPU,
     //     b) XSAVE is supported by the CPU,
     //     c) XSAVE is enabled by the kernel.
-    // See http://software.intel.com/en-us/blogs/2011/04/14/is-avx-enabled
-    // AVX2 support needs (avx_support && (cpu_info7[1] & 0x00000020) != 0;).
-    return (cpu_info[2] & 0x10000000) != 0 &&
+    // Compiling with MSVC and /arch:AVX2 surprisingly generates BMI2
+    // instructions (see crbug.com/1315519).
+    return (cpu_info[2] & 0x10000000) != 0 /* AVX */ &&
            (cpu_info[2] & 0x04000000) != 0 /* XSAVE */ &&
            (cpu_info[2] & 0x08000000) != 0 /* OSXSAVE */ &&
            (xgetbv(0) & 0x00000006) == 6 /* XSAVE enabled by kernel */ &&
-           (cpu_info7[1] & 0x00000020) != 0;
+           (cpu_info7[1] & 0x00000020) != 0 /* AVX2 */ &&
+           (cpu_info7[1] & 0x00000100) != 0 /* BMI2 */;
   }
 #endif  // WEBRTC_ENABLE_AVX2
   return 0;

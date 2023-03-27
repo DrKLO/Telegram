@@ -29,6 +29,7 @@ import androidx.exifinterface.media.ExifInterface;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -161,6 +162,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
     public boolean isCanceled() {
         return canceled;
+    }
+
+    public void showAvatarConstructor(TLRPC.VideoSize emojiMarkup) {
+        createChatAttachView();
+        chatAttachAlert.getPhotoLayout().showAvatarConstructorFragment(null, emojiMarkup);
     }
 
     public interface ImageUpdaterDelegate {
@@ -302,7 +308,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         sheet.setOnHideListener(onDismiss);
         parentFragment.showDialog(sheet);
         if (hasAvatar) {
-            sheet.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+            sheet.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
         }
     }
 
@@ -980,10 +986,16 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 if (bitmap != null) {
                     File path = FileLoader.getInstance(currentAccount).getPathToAttach(smallPhoto, true);
                     if (path != null) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("delete file " + path);
+                        }
                         path.delete();
                     }
                     path = FileLoader.getInstance(currentAccount).getPathToAttach(bigPhoto, true);
                     if (path != null) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("delete file " + path);
+                        }
                         path.delete();
                     }
                     bigPhoto = ImageLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false, 320, 320);

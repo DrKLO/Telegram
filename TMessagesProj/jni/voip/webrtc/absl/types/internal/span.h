@@ -28,10 +28,10 @@
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
-namespace span_internal {
-// A constexpr min function
-constexpr size_t Min(size_t a, size_t b) noexcept { return a < b ? a : b; }
+template <typename T>
+class Span;
 
+namespace span_internal {
 // Wrappers for access to container data pointers.
 template <typename C>
 constexpr auto GetDataImpl(C& c, char) noexcept  // NOLINT(runtime/references)
@@ -121,6 +121,36 @@ struct IsConvertible : IsConvertibleHelper<From, To>::type {};
 template <typename From, typename To>
 using EnableIfConvertibleTo =
     typename std::enable_if<IsConvertible<From, To>::value>::type;
+
+// IsView is true for types where the return type of .data() is the same for
+// mutable and const instances. This isn't foolproof, but it's only used to
+// enable a compiler warning.
+template <typename T, typename = void, typename = void>
+struct IsView {
+  static constexpr bool value = false;
+};
+
+template <typename T>
+struct IsView<
+    T, absl::void_t<decltype(span_internal::GetData(std::declval<const T&>()))>,
+    absl::void_t<decltype(span_internal::GetData(std::declval<T&>()))>> {
+ private:
+  using Container = std::remove_const_t<T>;
+  using ConstData =
+      decltype(span_internal::GetData(std::declval<const Container&>()));
+  using MutData = decltype(span_internal::GetData(std::declval<Container&>()));
+ public:
+  static constexpr bool value = std::is_same<ConstData, MutData>::value;
+};
+
+// These enablers result in 'int' so they can be used as typenames or defaults
+// in template paramters lists.
+template <typename T>
+using EnableIfIsView = std::enable_if_t<IsView<T>::value, int>;
+
+template <typename T>
+using EnableIfNotIsView = std::enable_if_t<!IsView<T>::value, int>;
+
 }  // namespace span_internal
 ABSL_NAMESPACE_END
 }  // namespace absl

@@ -22,7 +22,7 @@
 namespace webrtc {
 
 AcknowledgedBitrateEstimator::AcknowledgedBitrateEstimator(
-    const WebRtcKeyValueConfig* key_value_config)
+    const FieldTrialsView* key_value_config)
     : AcknowledgedBitrateEstimator(
           key_value_config,
           std::make_unique<BitrateEstimator>(key_value_config)) {}
@@ -30,7 +30,7 @@ AcknowledgedBitrateEstimator::AcknowledgedBitrateEstimator(
 AcknowledgedBitrateEstimator::~AcknowledgedBitrateEstimator() {}
 
 AcknowledgedBitrateEstimator::AcknowledgedBitrateEstimator(
-    const WebRtcKeyValueConfig* key_value_config,
+    const FieldTrialsView* key_value_config,
     std::unique_ptr<BitrateEstimator> bitrate_estimator)
     : in_alr_(false), bitrate_estimator_(std::move(bitrate_estimator)) {}
 

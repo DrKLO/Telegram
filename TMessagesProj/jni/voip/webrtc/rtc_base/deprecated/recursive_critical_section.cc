@@ -12,7 +12,6 @@
 
 #include <time.h>
 
-#include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/platform_thread_types.h"
 #include "rtc_base/synchronization/yield.h"

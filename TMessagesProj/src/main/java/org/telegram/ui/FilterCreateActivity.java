@@ -389,7 +389,7 @@ public class FilterCreateActivity extends BaseFragment {
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (position == nameRow) {
                 PollEditTextCell cell = (PollEditTextCell) view;
@@ -547,7 +547,7 @@ public class FilterCreateActivity extends BaseFragment {
         showDialog(alertDialog);
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
         }
     }
 

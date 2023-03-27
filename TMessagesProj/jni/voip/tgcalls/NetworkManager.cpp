@@ -3,11 +3,11 @@
 #include "Message.h"
 
 #include "p2p/base/basic_packet_socket_factory.h"
+#include "v2/ReflectorRelayPortFactory.h"
 #include "p2p/client/basic_port_allocator.h"
 #include "p2p/base/p2p_transport_channel.h"
 #include "p2p/base/basic_async_resolver_factory.h"
 #include "api/packet_socket_factory.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "p2p/base/ice_credentials_iterator.h"
 #include "api/jsep_ice_candidate.h"
 #include "rtc_base/network_monitor_factory.h"
@@ -110,13 +110,15 @@ NetworkManager::~NetworkManager() {
 void NetworkManager::start() {
     _socketFactory.reset(new rtc::BasicPacketSocketFactory(_thread->socketserver()));
 
-    _networkManager = std::make_unique<rtc::BasicNetworkManager>(_networkMonitorFactory.get());
+    _networkManager = std::make_unique<rtc::BasicNetworkManager>(_networkMonitorFactory.get(), _thread->socketserver());
     
     if (_enableStunMarking) {
         _turnCustomizer.reset(new TurnCustomizerImpl());
     }
     
-    _portAllocator.reset(new cricket::BasicPortAllocator(_networkManager.get(), _socketFactory.get(), _turnCustomizer.get(), nullptr));
+    _relayPortFactory.reset(new ReflectorRelayPortFactory(_rtcServers));
+    
+    _portAllocator.reset(new cricket::BasicPortAllocator(_networkManager.get(), _socketFactory.get(), _turnCustomizer.get(), _relayPortFactory.get()));
 
     uint32_t flags = _portAllocator->flags();
     
@@ -154,6 +156,10 @@ void NetworkManager::start() {
     std::vector<cricket::RelayServerConfig> turnServers;
 
     for (auto &server : _rtcServers) {
+        if (server.isTcp) {
+            continue;
+        }
+        
         if (server.isTurn) {
             turnServers.push_back(cricket::RelayServerConfig(
                 rtc::SocketAddress(server.host, server.port),
@@ -170,7 +176,12 @@ void NetworkManager::start() {
     _portAllocator->SetConfiguration(stunServers, turnServers, 2, webrtc::NO_PRUNE, _turnCustomizer.get());
 
     _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncResolverFactory>();
-    _transportChannel.reset(new cricket::P2PTransportChannel("transport", 0, _portAllocator.get(), _asyncResolverFactory.get(), nullptr));
+
+    webrtc::IceTransportInit iceTransportInit;
+    iceTransportInit.set_port_allocator(_portAllocator.get());
+    iceTransportInit.set_async_resolver_factory(_asyncResolverFactory.get());
+
+    _transportChannel = cricket::P2PTransportChannel::Create("transport", 0, std::move(iceTransportInit));
 
     cricket::IceConfig iceConfig;
     iceConfig.continual_gathering_policy = cricket::GATHER_CONTINUALLY;
@@ -275,7 +286,7 @@ void NetworkManager::logCurrentNetworkState() {
 
 void NetworkManager::checkConnectionTimeout() {
     const auto weak = std::weak_ptr<NetworkManager>(shared_from_this());
-    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+    _thread->PostDelayedTask([weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
@@ -292,7 +303,7 @@ void NetworkManager::checkConnectionTimeout() {
         }
         
         strong->checkConnectionTimeout();
-    }, 1000);
+    }, webrtc::TimeDelta::Millis(1000));
 }
 
 void NetworkManager::candidateGathered(cricket::IceTransportInternal *transport, const cricket::Candidate &candidate) {

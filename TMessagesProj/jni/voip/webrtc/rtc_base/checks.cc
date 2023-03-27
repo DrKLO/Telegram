@@ -15,6 +15,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "absl/strings/string_view.h"
+
 #if defined(WEBRTC_ANDROID)
 #define RTC_LOG_TAG_ANDROID "rtc"
 #include <android/log.h>  // NOLINT
@@ -36,20 +38,6 @@
 #include "rtc_base/checks.h"
 
 namespace {
-
-RTC_NORETURN void WriteFatalLogAndAbort(const std::string& output) {
-  const char* output_c = output.c_str();
-#if defined(WEBRTC_ANDROID)
-  __android_log_print(ANDROID_LOG_ERROR, RTC_LOG_TAG_ANDROID, "%s\n", output_c);
-#endif
-  fflush(stdout);
-  fprintf(stderr, "%s", output_c);
-  fflush(stderr);
-#if defined(WEBRTC_WIN)
-  DebugBreak();
-#endif
-  abort();
-}
 
 #if defined(__GNUC__)
 __attribute__((__format__(__printf__, 2, 3)))
@@ -73,6 +61,30 @@ void AppendFormat(std::string* s, const char* fmt, ...) {
 
 namespace rtc {
 namespace webrtc_checks_impl {
+
+#if !defined(WEBRTC_CHROMIUM_BUILD)
+RTC_NORETURN void WriteFatalLog(absl::string_view output) {
+#if defined(WEBRTC_ANDROID)
+  std::string output_str(output);
+  __android_log_print(ANDROID_LOG_ERROR, RTC_LOG_TAG_ANDROID, "%s\n",
+                      output_str.c_str());
+#endif
+  fflush(stdout);
+  fwrite(output.data(), output.size(), 1, stderr);
+  fflush(stderr);
+#if defined(WEBRTC_WIN)
+  DebugBreak();
+#endif
+  abort();
+}
+
+RTC_NORETURN void WriteFatalLog(const char* file,
+                                int line,
+                                absl::string_view output) {
+  WriteFatalLog(output);
+}
+
+#endif  // !defined(WEBRTC_CHROMIUM_BUILD)
 
 #if RTC_CHECK_MSG_ENABLED
 // Reads one argument from args, appends it to s and advances fmt.
@@ -164,7 +176,7 @@ RTC_NORETURN void FatalLog(const char* file,
 
   va_end(args);
 
-  WriteFatalLogAndAbort(s);
+  WriteFatalLog(file, line, s);
 }
 #else  // RTC_CHECK_MSG_ENABLED
 RTC_NORETURN void FatalLog(const char* file, int line) {
@@ -177,7 +189,7 @@ RTC_NORETURN void FatalLog(const char* file, int line) {
                "# Check failed.\n"
                "# ",
                file, line, LAST_SYSTEM_ERROR);
-  WriteFatalLogAndAbort(s);
+  WriteFatalLog(file, line, s);
 }
 #endif  // RTC_CHECK_MSG_ENABLED
 
@@ -192,7 +204,7 @@ RTC_NORETURN void UnreachableCodeReached(const char* file, int line) {
                "# last system error: %u\n"
                "# ",
                file, line, LAST_SYSTEM_ERROR);
-  WriteFatalLogAndAbort(s);
+  WriteFatalLog(file, line, s);
 }
 
 #else  // !RTC_DCHECK_IS_ON
@@ -206,7 +218,7 @@ RTC_NORETURN void UnreachableCodeReached() {
                "# last system error: %u\n"
                "# ",
                LAST_SYSTEM_ERROR);
-  WriteFatalLogAndAbort(s);
+  WriteFatalLog(s);
 }
 
 #endif  // !RTC_DCHECK_IS_ON

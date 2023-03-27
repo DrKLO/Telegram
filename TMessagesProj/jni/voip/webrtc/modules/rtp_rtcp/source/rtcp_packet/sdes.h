@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 
 namespace webrtc {
@@ -35,7 +36,7 @@ class Sdes : public RtcpPacket {
   // Parse assumes header is already parsed and validated.
   bool Parse(const CommonHeader& packet);
 
-  bool AddCName(uint32_t ssrc, std::string cname);
+  bool AddCName(uint32_t ssrc, absl::string_view cname);
 
   const std::vector<Chunk>& chunks() const { return chunks_; }
 

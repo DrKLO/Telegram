@@ -11,31 +11,56 @@
 #ifndef PC_CHANNEL_INTERFACE_H_
 #define PC_CHANNEL_INTERFACE_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/jsep.h"
 #include "api/media_types.h"
 #include "media/base/media_channel.h"
 #include "pc/rtp_transport_internal.h"
 
+namespace webrtc {
+class Call;
+class VideoBitrateAllocatorFactory;
+}  // namespace webrtc
+
 namespace cricket {
 
 class MediaContentDescription;
+struct MediaConfig;
 
-// ChannelInterface contains methods common to voice, video and data channels.
+// A Channel is a construct that groups media streams of the same type
+// (audio or video), both outgoing and incoming.
+// When the PeerConnection API is used, a Channel corresponds one to one
+// to an RtpTransceiver.
+// When Unified Plan is used, there can only be at most one outgoing and
+// one incoming stream. With Plan B, there can be more than one.
+
+// ChannelInterface contains methods common to voice and video channels.
 // As more methods are added to BaseChannel, they should be included in the
 // interface as well.
+// TODO(bugs.webrtc.org/13931): Merge this class into RtpTransceiver.
 class ChannelInterface {
  public:
+  virtual ~ChannelInterface() = default;
   virtual cricket::MediaType media_type() const = 0;
 
   virtual MediaChannel* media_channel() const = 0;
+  // Typecasts of media_channel(). Will cause an exception if the
+  // channel is of the wrong type.
+  virtual VideoMediaChannel* video_media_channel() const = 0;
+  virtual VoiceMediaChannel* voice_media_channel() const = 0;
 
+  // Returns a string view for the transport name. Fetching the transport name
+  // must be done on the network thread only and note that the lifetime of
+  // the returned object should be assumed to only be the calling scope.
   // TODO(deadbeef): This is redundant; remove this.
-  virtual const std::string& transport_name() const = 0;
+  virtual absl::string_view transport_name() const = 0;
 
-  virtual const std::string& content_name() const = 0;
+  // TODO(tommi): Change return type to string_view.
+  virtual const std::string& mid() const = 0;
 
   // Enables or disables this channel
   virtual void Enable(bool enable) = 0;
@@ -47,10 +72,10 @@ class ChannelInterface {
   // Channel control
   virtual bool SetLocalContent(const MediaContentDescription* content,
                                webrtc::SdpType type,
-                               std::string* error_desc) = 0;
+                               std::string& error_desc) = 0;
   virtual bool SetRemoteContent(const MediaContentDescription* content,
                                 webrtc::SdpType type,
-                                std::string* error_desc) = 0;
+                                std::string& error_desc) = 0;
   virtual bool SetPayloadTypeDemuxingEnabled(bool enabled) = 0;
 
   // Access to the local and remote streams that were set on the channel.
@@ -63,9 +88,6 @@ class ChannelInterface {
   //   * An SrtpTransport for SDES.
   //   * A DtlsSrtpTransport for DTLS-SRTP.
   virtual bool SetRtpTransport(webrtc::RtpTransportInternal* rtp_transport) = 0;
-
- protected:
-  virtual ~ChannelInterface() = default;
 };
 
 }  // namespace cricket

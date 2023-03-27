@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 public class CanvasButton {
 
-    Path drawingPath = new Path();
+    Path drawingPath;
     ArrayList<RectF> drawingRects = new ArrayList<>();
     int usingRectCount;
     boolean buttonPressed;
@@ -110,7 +110,11 @@ public class CanvasButton {
     private void drawInternal(Canvas canvas, Paint paint) {
         if (usingRectCount > 1) {
             if (!pathCreated) {
-                drawingPath.rewind();
+                if (drawingPath == null) {
+                    drawingPath = new Path();
+                } else {
+                    drawingPath.rewind();
+                }
                 int left = 0, top = 0, right = 0, bottom = 0;
                 for (int i = 0; i < usingRectCount; i++) {
                     if (i + 1 < usingRectCount) {
@@ -140,7 +144,9 @@ public class CanvasButton {
                 pathCreated = true;
             }
             paint.setPathEffect(pathEffect);
-            canvas.drawPath(drawingPath, paint);
+            if (drawingPath != null) {
+                canvas.drawPath(drawingPath, paint);
+            }
         } else if (usingRectCount == 1) {
             if (selectorDrawable != null) {
                 selectorDrawable.setBounds((int) drawingRects.get(0).left, (int) drawingRects.get(0).top, (int) drawingRects.get(0).right, (int) drawingRects.get(0).bottom);

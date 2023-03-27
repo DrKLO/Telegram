@@ -20,7 +20,6 @@
 #include "modules/async_audio_processing/async_audio_processing.h"
 #include "modules/audio_device/include/audio_device.h"
 #include "modules/audio_processing/include/audio_processing.h"
-#include "modules/audio_processing/typing_detection.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -41,21 +40,34 @@ class AudioTransportImpl : public AudioTransport {
 
   ~AudioTransportImpl() override;
 
+  // TODO(bugs.webrtc.org/13620) Deprecate this function
   int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                  const size_t nSamples,
-                                  const size_t nBytesPerSample,
-                                  const size_t nChannels,
-                                  const uint32_t samplesPerSec,
-                                  const uint32_t totalDelayMS,
-                                  const int32_t clockDrift,
-                                  const uint32_t currentMicLevel,
-                                  const bool keyPressed,
+                                  size_t nSamples,
+                                  size_t nBytesPerSample,
+                                  size_t nChannels,
+                                  uint32_t samplesPerSec,
+                                  uint32_t totalDelayMS,
+                                  int32_t clockDrift,
+                                  uint32_t currentMicLevel,
+                                  bool keyPressed,
                                   uint32_t& newMicLevel) override;
 
-  int32_t NeedMorePlayData(const size_t nSamples,
-                           const size_t nBytesPerSample,
-                           const size_t nChannels,
-                           const uint32_t samplesPerSec,
+  int32_t RecordedDataIsAvailable(const void* audioSamples,
+                                  size_t nSamples,
+                                  size_t nBytesPerSample,
+                                  size_t nChannels,
+                                  uint32_t samplesPerSec,
+                                  uint32_t totalDelayMS,
+                                  int32_t clockDrift,
+                                  uint32_t currentMicLevel,
+                                  bool keyPressed,
+                                  uint32_t& newMicLevel,
+                                  int64_t estimated_capture_time_ns) override;
+
+  int32_t NeedMorePlayData(size_t nSamples,
+                           size_t nBytesPerSample,
+                           size_t nChannels,
+                           uint32_t samplesPerSec,
                            void* audioSamples,
                            size_t& nSamplesOut,
                            int64_t* elapsed_time_ms,
@@ -73,7 +85,6 @@ class AudioTransportImpl : public AudioTransport {
                           int send_sample_rate_hz,
                           size_t send_num_channels);
   void SetStereoChannelSwapping(bool enable);
-  bool typing_noise_detected() const;
 
  private:
   void SendProcessedData(std::unique_ptr<AudioFrame> audio_frame);
@@ -90,10 +101,8 @@ class AudioTransportImpl : public AudioTransport {
   std::vector<AudioSender*> audio_senders_ RTC_GUARDED_BY(capture_lock_);
   int send_sample_rate_hz_ RTC_GUARDED_BY(capture_lock_) = 8000;
   size_t send_num_channels_ RTC_GUARDED_BY(capture_lock_) = 1;
-  bool typing_noise_detected_ RTC_GUARDED_BY(capture_lock_) = false;
   bool swap_stereo_channels_ RTC_GUARDED_BY(capture_lock_) = false;
   PushResampler<int16_t> capture_resampler_;
-  TypingDetection typing_detection_;
 
   // Render side.
 

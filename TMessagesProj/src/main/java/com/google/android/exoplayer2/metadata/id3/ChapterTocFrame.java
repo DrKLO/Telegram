@@ -22,9 +22,7 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 
-/**
- * Chapter table of contents ID3 frame.
- */
+/** Chapter table of contents ID3 frame. */
 public final class ChapterTocFrame extends Id3Frame {
 
   public static final String ID = "CTOC";
@@ -35,7 +33,11 @@ public final class ChapterTocFrame extends Id3Frame {
   public final String[] children;
   private final Id3Frame[] subFrames;
 
-  public ChapterTocFrame(String elementId, boolean isRoot, boolean isOrdered, String[] children,
+  public ChapterTocFrame(
+      String elementId,
+      boolean isRoot,
+      boolean isOrdered,
+      String[] children,
       Id3Frame[] subFrames) {
     super(ID);
     this.elementId = elementId;
@@ -45,8 +47,7 @@ public final class ChapterTocFrame extends Id3Frame {
     this.subFrames = subFrames;
   }
 
-  /* package */
-  ChapterTocFrame(Parcel in) {
+  /* package */ ChapterTocFrame(Parcel in) {
     super(ID);
     this.elementId = castNonNull(in.readString());
     this.isRoot = in.readByte() != 0;
@@ -59,16 +60,12 @@ public final class ChapterTocFrame extends Id3Frame {
     }
   }
 
-  /**
-   * Returns the number of sub-frames.
-   */
+  /** Returns the number of sub-frames. */
   public int getSubFrameCount() {
     return subFrames.length;
   }
 
-  /**
-   * Returns the sub-frame at {@code index}.
-   */
+  /** Returns the sub-frame at {@code index}. */
   public Id3Frame getSubFrame(int index) {
     return subFrames[index];
   }
@@ -110,18 +107,17 @@ public final class ChapterTocFrame extends Id3Frame {
     }
   }
 
-  public static final Creator<ChapterTocFrame> CREATOR = new Creator<ChapterTocFrame>() {
+  public static final Creator<ChapterTocFrame> CREATOR =
+      new Creator<ChapterTocFrame>() {
 
-    @Override
-    public ChapterTocFrame createFromParcel(Parcel in) {
-      return new ChapterTocFrame(in);
-    }
+        @Override
+        public ChapterTocFrame createFromParcel(Parcel in) {
+          return new ChapterTocFrame(in);
+        }
 
-    @Override
-    public ChapterTocFrame[] newArray(int size) {
-      return new ChapterTocFrame[size];
-    }
-
-  };
-
+        @Override
+        public ChapterTocFrame[] newArray(int size) {
+          return new ChapterTocFrame[size];
+        }
+      };
 }

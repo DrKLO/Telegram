@@ -15,12 +15,13 @@
  */
 package com.google.android.exoplayer2.source.ads;
 
-import android.view.View;
-import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ads.AdsMediaSource.AdLoadException;
+import com.google.android.exoplayer2.ui.AdViewProvider;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import java.io.IOException;
 
@@ -32,24 +33,44 @@ import java.io.IOException;
  * with a new copy of the current {@link AdPlaybackState} whenever further information about ads
  * becomes known (for example, when an ad media URI is available, or an ad has played to the end).
  *
- * <p>{@link #start(EventListener, AdViewProvider)} will be called when the ads media source first
- * initializes, at which point the loader can request ads. If the player enters the background,
- * {@link #stop()} will be called. Loaders should maintain any ad playback state in preparation for
- * a later call to {@link #start(EventListener, AdViewProvider)}. If an ad is playing when the
- * player is detached, update the ad playback state with the current playback position using {@link
- * AdPlaybackState#withAdResumePositionUs(long)}.
+ * <p>{@link #start(AdsMediaSource, DataSpec, Object, AdViewProvider, EventListener)} will be called
+ * when an ads media source first initializes, at which point the loader can request ads. If the
+ * player enters the background, {@link #stop(AdsMediaSource, EventListener)} will be called.
+ * Loaders should maintain any ad playback state in preparation for a later call to {@link
+ * #start(AdsMediaSource, DataSpec, Object, AdViewProvider, EventListener)}. If an ad is playing
+ * when the player is detached, update the ad playback state with the current playback position
+ * using {@link AdPlaybackState#withAdResumePositionUs(long)}.
  *
  * <p>If {@link EventListener#onAdPlaybackState(AdPlaybackState)} has been called, the
- * implementation of {@link #start(EventListener, AdViewProvider)} should invoke the same listener
- * to provide the existing playback state to the new player.
+ * implementation of {@link #start(AdsMediaSource, DataSpec, Object, AdViewProvider, EventListener)}
+ * should invoke the same listener to provide the existing playback state to the new player.
  */
 public interface AdsLoader {
+
+  /**
+   * Provides {@link AdsLoader} instances for media items that have {@link
+   * MediaItem.LocalConfiguration#adsConfiguration ad tag URIs}.
+   */
+  interface Provider {
+
+    /**
+     * Returns an {@link AdsLoader} for the given {@link
+     * MediaItem.LocalConfiguration#adsConfiguration ads configuration}, or {@code null} if no ads
+     * loader is available for the given ads configuration.
+     *
+     * <p>This method is called each time a {@link MediaSource} is created from a {@link MediaItem}
+     * that defines an {@link MediaItem.LocalConfiguration#adsConfiguration ads configuration}.
+     */
+    @Nullable
+    AdsLoader getAdsLoader(MediaItem.AdsConfiguration adsConfiguration);
+  }
 
   /** Listener for ads loader events. All methods are called on the main thread. */
   interface EventListener {
 
     /**
-     * Called when the ad playback state has been updated.
+     * Called when the ad playback state has been updated. The number of {@link
+     * AdPlaybackState#adGroupCount ad groups} may not change after the first call.
      *
      * @param adPlaybackState The new ad playback state.
      */
@@ -68,25 +89,6 @@ public interface AdsLoader {
 
     /** Called when the user taps a non-clickthrough part of an ad. */
     default void onAdTapped() {}
-  }
-
-  /** Provides views for the ad UI. */
-  interface AdViewProvider {
-
-    /** Returns the {@link ViewGroup} on top of the player that will show any ad UI. */
-    ViewGroup getAdViewGroup();
-
-    /**
-     * Returns an array of views that are shown on top of the ad view group, but that are essential
-     * for controlling playback and should be excluded from ad viewability measurements by the
-     * {@link AdsLoader} (if it supports this).
-     *
-     * <p>Each view must be either a fully transparent overlay (for capturing touch events), or a
-     * small piece of transient UI that is essential to the user experience of playback (such as a
-     * button to pause/resume playback or a transient full-screen or cast button). For more
-     * information see the documentation for your ads loader.
-     */
-    View[] getAdOverlayViews();
   }
 
   // Methods called by the application.
@@ -115,36 +117,60 @@ public interface AdsLoader {
 
   /**
    * Sets the supported content types for ad media. Must be called before the first call to {@link
-   * #start(EventListener, AdViewProvider)}. Subsequent calls may be ignored. Called on the main
-   * thread by {@link AdsMediaSource}.
+   * #start(AdsMediaSource, DataSpec, Object, AdViewProvider, EventListener)}. Subsequent calls may
+   * be ignored. Called on the main thread by {@link AdsMediaSource}.
    *
    * @param contentTypes The supported content types for ad media. Each element must be one of
-   *     {@link C#TYPE_DASH}, {@link C#TYPE_HLS}, {@link C#TYPE_SS} and {@link C#TYPE_OTHER}.
+   *     {@link C#CONTENT_TYPE_DASH}, {@link C#CONTENT_TYPE_HLS}, {@link C#CONTENT_TYPE_SS} and
+   *     {@link C#CONTENT_TYPE_OTHER}.
    */
   void setSupportedContentTypes(@C.ContentType int... contentTypes);
 
   /**
    * Starts using the ads loader for playback. Called on the main thread by {@link AdsMediaSource}.
    *
-   * @param eventListener Listener for ads loader events.
+   * @param adsMediaSource The ads media source requesting to start loading ads.
+   * @param adTagDataSpec A data spec for the ad tag to load.
+   * @param adsId An opaque identifier for the ad playback state across start/stop calls.
    * @param adViewProvider Provider of views for the ad UI.
+   * @param eventListener Listener for ads loader events.
    */
-  void start(EventListener eventListener, AdViewProvider adViewProvider);
+  void start(
+      AdsMediaSource adsMediaSource,
+      DataSpec adTagDataSpec,
+      Object adsId,
+      AdViewProvider adViewProvider,
+      EventListener eventListener);
 
   /**
    * Stops using the ads loader for playback and deregisters the event listener. Called on the main
    * thread by {@link AdsMediaSource}.
+   *
+   * @param adsMediaSource The ads media source requesting to stop loading/playing ads.
+   * @param eventListener The ads media source's listener for ads loader events.
    */
-  void stop();
+  void stop(AdsMediaSource adsMediaSource, EventListener eventListener);
+
+  /**
+   * Notifies the ads loader that preparation of an ad media period is complete. Called on the main
+   * thread by {@link AdsMediaSource}.
+   *
+   * @param adsMediaSource The ads media source for which preparation of ad media completed.
+   * @param adGroupIndex The index of the ad group.
+   * @param adIndexInAdGroup The index of the ad in the ad group.
+   */
+  void handlePrepareComplete(AdsMediaSource adsMediaSource, int adGroupIndex, int adIndexInAdGroup);
 
   /**
    * Notifies the ads loader that the player was not able to prepare media for a given ad.
    * Implementations should update the ad playback state as the specified ad has failed to load.
    * Called on the main thread by {@link AdsMediaSource}.
    *
+   * @param adsMediaSource The ads media source for which preparation of ad media failed.
    * @param adGroupIndex The index of the ad group.
    * @param adIndexInAdGroup The index of the ad in the ad group.
    * @param exception The preparation error.
    */
-  void handlePrepareError(int adGroupIndex, int adIndexInAdGroup, IOException exception);
+  void handlePrepareError(
+      AdsMediaSource adsMediaSource, int adGroupIndex, int adIndexInAdGroup, IOException exception);
 }

@@ -19,6 +19,7 @@
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/audio_codecs/audio_format.h"
 #include "api/audio_codecs/opus/audio_encoder_multi_channel_opus_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -33,7 +34,8 @@ struct RTC_EXPORT AudioEncoderMultiChannelOpus {
   static std::unique_ptr<AudioEncoder> MakeAudioEncoder(
       const Config& config,
       int payload_type,
-      absl::optional<AudioCodecPairId> codec_pair_id = absl::nullopt);
+      absl::optional<AudioCodecPairId> codec_pair_id = absl::nullopt,
+      const FieldTrialsView* field_trials = nullptr);
 };
 
 }  // namespace webrtc

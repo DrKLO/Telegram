@@ -617,6 +617,48 @@ TEST(Base64, EscapeAndUnescape) {
   TestEscapeAndUnescape<std::string>();
 }
 
+TEST(Base64, Padding) {
+  // Padding is optional.
+  // '.' is an acceptable padding character, just like '='.
+  std::initializer_list<absl::string_view> good_padding = {
+    "YQ",
+    "YQ==",
+    "YQ=.",
+    "YQ.=",
+    "YQ..",
+  };
+  for (absl::string_view b64 : good_padding) {
+    std::string decoded;
+    EXPECT_TRUE(absl::Base64Unescape(b64, &decoded));
+    EXPECT_EQ(decoded, "a");
+    std::string websafe_decoded;
+    EXPECT_TRUE(absl::WebSafeBase64Unescape(b64, &websafe_decoded));
+    EXPECT_EQ(websafe_decoded, "a");
+  }
+  std::initializer_list<absl::string_view> bad_padding = {
+    "YQ=",
+    "YQ.",
+    "YQ===",
+    "YQ==.",
+    "YQ=.=",
+    "YQ=..",
+    "YQ.==",
+    "YQ.=.",
+    "YQ..=",
+    "YQ...",
+    "YQ====",
+    "YQ....",
+    "YQ=====",
+    "YQ.....",
+  };
+  for (absl::string_view b64 : bad_padding) {
+    std::string decoded;
+    EXPECT_FALSE(absl::Base64Unescape(b64, &decoded));
+    std::string websafe_decoded;
+    EXPECT_FALSE(absl::WebSafeBase64Unescape(b64, &websafe_decoded));
+  }
+}
+
 TEST(Base64, DISABLED_HugeData) {
   const size_t kSize = size_t(3) * 1000 * 1000 * 1000;
   static_assert(kSize % 3 == 0, "kSize must be divisible by 3");

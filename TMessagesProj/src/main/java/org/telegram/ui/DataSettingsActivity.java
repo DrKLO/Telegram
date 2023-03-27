@@ -43,6 +43,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.LanguageCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -84,10 +85,10 @@ public class DataSettingsActivity extends BaseFragment {
     private int enableAllStreamRow;
     private int enableMkvRow;
     private int enableAllStreamInfoRow;
-    private int autoplayHeaderRow;
-    private int autoplayGifsRow;
-    private int autoplayVideoRow;
-    private int autoplaySectionRow;
+    private int autoplayHeaderRow = -1;
+    private int autoplayGifsRow = -1;
+    private int autoplayVideoRow = -1;
+    private int autoplaySectionRow = -1;
     private int callsSectionRow;
     private int useLessDataForCallsRow;
     private int quickRepliesRow;
@@ -142,10 +143,10 @@ public class DataSettingsActivity extends BaseFragment {
         saveToGalleryChannelsRow = rowCount++;
         saveToGalleryDividerRow = rowCount++;
 
-        autoplayHeaderRow = rowCount++;
-        autoplayGifsRow = rowCount++;
-        autoplayVideoRow = rowCount++;
-        autoplaySectionRow = rowCount++;
+//        autoplayHeaderRow = rowCount++;
+//        autoplayGifsRow = rowCount++;
+//        autoplayVideoRow = rowCount++;
+//        autoplaySectionRow = rowCount++;
         streamSectionRow = rowCount++;
         enableStreamRow = rowCount++;
         if (BuildVars.DEBUG_VERSION) {
@@ -381,7 +382,7 @@ public class DataSettingsActivity extends BaseFragment {
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (position == storageUsageRow) {
                 presentFragment(new CacheControlActivity());
@@ -453,20 +454,35 @@ public class DataSettingsActivity extends BaseFragment {
                     }
                 }
 
+                boolean fullString = true;
+                try {
+                    fullString = storageDirs.size() != 2 || storageDirs.get(0).getAbsolutePath().contains("/storage/emulated/") == storageDirs.get(1).getAbsolutePath().contains("/storage/emulated/");
+                } catch (Exception ignore) {}
+
                 for (int a = 0, N = storageDirs.size(); a < N; a++) {
-                    String storageDir = storageDirs.get(a).getAbsolutePath();
-                    RadioColorCell cell = new RadioColorCell(context);
+                    File file = storageDirs.get(a);
+                    String storageDir = file.getAbsolutePath();
+                    LanguageCell cell = new LanguageCell(context);
                     cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
                     cell.setTag(a);
-                    cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
-                    cell.setTextAndValue(storageDir, storageDir.startsWith(dir));
+                    cell.setValue(
+                        storageDir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard),
+                        fullString ?
+                            LocaleController.formatString("StoragePathFreeValue", R.string.StoragePathFreeValue, AndroidUtilities.formatFileSize(file.getFreeSpace()), storageDir) :
+                            LocaleController.formatString("StoragePathFree", R.string.StoragePathFree, AndroidUtilities.formatFileSize(file.getFreeSpace()))
+                    );
+                    cell.setLanguageSelected(storageDir.startsWith(dir), false);
+                    cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 2));
                     linearLayout.addView(cell);
                     cell.setOnClickListener(v -> {
                         SharedConfig.storageCacheDir = storageDir;
                         SharedConfig.saveConfig();
-                        ImageLoader.getInstance().checkMediaPaths();
                         builder.getDismissRunnable().run();
-                        listAdapter.notifyItemChanged(storageNumRow);
+                        rebind(storageNumRow);
+                        ImageLoader.getInstance().checkMediaPaths(() -> {
+                            CacheControlActivity.resetCalculatedTotalSIze();
+                            loadCacheSize();
+                        });
                     });
                 }
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -494,12 +510,12 @@ public class DataSettingsActivity extends BaseFragment {
             } else if (position == autoplayGifsRow) {
                 SharedConfig.toggleAutoplayGifs();
                 if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.autoplayGifs);
+                    ((TextCheckCell) view).setChecked(SharedConfig.isAutoplayGifs());
                 }
             } else if (position == autoplayVideoRow) {
                 SharedConfig.toggleAutoplayVideo();
                 if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.autoplayVideo);
+                    ((TextCheckCell) view).setChecked(SharedConfig.isAutoplayVideo());
                 }
             } else if (position == clearDraftsRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -514,7 +530,7 @@ public class DataSettingsActivity extends BaseFragment {
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             }
         });
@@ -581,7 +597,18 @@ public class DataSettingsActivity extends BaseFragment {
                         );
                         textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), AndroidUtilities.formatFileSize(size), true, R.drawable.msg_filled_datausage, getThemedColor(Theme.key_color_green), storageNumRow != -1);
                     } else if (position == storageNumRow) {
-                        textCell.setTextAndColorfulIcon(LocaleController.getString("StoragePath", R.string.StoragePath), R.drawable.msg_filled_sdcard, getThemedColor(Theme.key_color_yellow), false);
+                        String dir = storageDirs.get(0).getAbsolutePath();
+                        if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                            for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                                String path = storageDirs.get(a).getAbsolutePath();
+                                if (path.startsWith(SharedConfig.storageCacheDir)) {
+                                    dir = path;
+                                    break;
+                                }
+                            }
+                        }
+                        final String value = dir == null || dir.contains("/storage/emulated/") ? LocaleController.getString("InternalStorage", R.string.InternalStorage) : LocaleController.getString("SdCard", R.string.SdCard);
+                        textCell.setTextAndValueAndColorfulIcon(LocaleController.getString("StoragePath", R.string.StoragePath), value, true, R.drawable.msg_filled_sdcard, getThemedColor(Theme.key_color_yellow), false);
                     }
                     break;
                 }
@@ -656,9 +683,9 @@ public class DataSettingsActivity extends BaseFragment {
                     } else if (position == enableAllStreamRow) {
                         checkCell.setTextAndCheck("(beta only) Stream All Videos", SharedConfig.streamAllVideo, false);
                     } else if (position == autoplayGifsRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayGIF", R.string.AutoplayGIF), SharedConfig.autoplayGifs, true);
+                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayGIF", R.string.AutoplayGIF), SharedConfig.isAutoplayGifs(), true);
                     } else if (position == autoplayVideoRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayVideo", R.string.AutoplayVideo), SharedConfig.autoplayVideo, false);
+                        checkCell.setTextAndCheck(LocaleController.getString("AutoplayVideo", R.string.AutoplayVideo), SharedConfig.isAutoplayVideo(), false);
                     }
                     break;
                 }
@@ -770,9 +797,9 @@ public class DataSettingsActivity extends BaseFragment {
                 } else if (position == enableMkvRow) {
                     checkCell.setChecked(SharedConfig.streamMkv);
                 } else if (position == autoplayGifsRow) {
-                    checkCell.setChecked(SharedConfig.autoplayGifs);
+                    checkCell.setChecked(SharedConfig.isAutoplayGifs());
                 } else if (position == autoplayVideoRow) {
-                    checkCell.setChecked(SharedConfig.autoplayVideo);
+                    checkCell.setChecked(SharedConfig.isAutoplayVideo());
                 }
             }
         }

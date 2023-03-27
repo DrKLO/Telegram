@@ -105,8 +105,9 @@ static void JNI_RtpSender_SetFrameEncryptor(JNIEnv* jni,
                                             jlong j_rtp_sender_pointer,
                                             jlong j_frame_encryptor_pointer) {
   reinterpret_cast<RtpSenderInterface*>(j_rtp_sender_pointer)
-      ->SetFrameEncryptor(reinterpret_cast<FrameEncryptorInterface*>(
-          j_frame_encryptor_pointer));
+      ->SetFrameEncryptor(rtc::scoped_refptr<FrameEncryptorInterface>(
+          reinterpret_cast<FrameEncryptorInterface*>(
+              j_frame_encryptor_pointer)));
 }
 
 }  // namespace jni

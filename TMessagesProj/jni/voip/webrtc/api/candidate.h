@@ -109,6 +109,13 @@ class RTC_EXPORT Candidate {
     network_type_ = network_type;
   }
 
+  rtc::AdapterType underlying_type_for_vpn() const {
+    return underlying_type_for_vpn_;
+  }
+  void set_underlying_type_for_vpn(rtc::AdapterType network_type) {
+    underlying_type_for_vpn_ = network_type;
+  }
+
   // Candidates in a new generation replace those in the old generation.
   uint32_t generation() const { return generation_; }
   void set_generation(uint32_t generation) { generation_ = generation; }
@@ -195,6 +202,7 @@ class RTC_EXPORT Candidate {
   std::string type_;
   std::string network_name_;
   rtc::AdapterType network_type_;
+  rtc::AdapterType underlying_type_for_vpn_;
   uint32_t generation_;
   std::string foundation_;
   rtc::SocketAddress related_address_;

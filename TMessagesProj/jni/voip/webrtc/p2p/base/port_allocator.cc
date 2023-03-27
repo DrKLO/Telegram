@@ -14,6 +14,7 @@
 #include <set>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "p2p/base/ice_credentials_iterator.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -23,17 +24,17 @@ namespace cricket {
 RelayServerConfig::RelayServerConfig() {}
 
 RelayServerConfig::RelayServerConfig(const rtc::SocketAddress& address,
-                                     const std::string& username,
-                                     const std::string& password,
+                                     absl::string_view username,
+                                     absl::string_view password,
                                      ProtocolType proto)
     : credentials(username, password) {
   ports.push_back(ProtocolAddress(address, proto));
 }
 
-RelayServerConfig::RelayServerConfig(const std::string& address,
+RelayServerConfig::RelayServerConfig(absl::string_view address,
                                      int port,
-                                     const std::string& username,
-                                     const std::string& password,
+                                     absl::string_view username,
+                                     absl::string_view password,
                                      ProtocolType proto)
     : RelayServerConfig(rtc::SocketAddress(address, port),
                         username,
@@ -41,10 +42,10 @@ RelayServerConfig::RelayServerConfig(const std::string& address,
                         proto) {}
 
 // Legacy constructor where "secure" and PROTO_TCP implies PROTO_TLS.
-RelayServerConfig::RelayServerConfig(const std::string& address,
+RelayServerConfig::RelayServerConfig(absl::string_view address,
                                      int port,
-                                     const std::string& username,
-                                     const std::string& password,
+                                     absl::string_view username,
+                                     absl::string_view password,
                                      ProtocolType proto,
                                      bool secure)
     : RelayServerConfig(address,
@@ -57,17 +58,18 @@ RelayServerConfig::RelayServerConfig(const RelayServerConfig&) = default;
 
 RelayServerConfig::~RelayServerConfig() = default;
 
-PortAllocatorSession::PortAllocatorSession(const std::string& content_name,
+PortAllocatorSession::PortAllocatorSession(absl::string_view content_name,
                                            int component,
-                                           const std::string& ice_ufrag,
-                                           const std::string& ice_pwd,
+                                           absl::string_view ice_ufrag,
+                                           absl::string_view ice_pwd,
                                            uint32_t flags)
     : flags_(flags),
       generation_(0),
       content_name_(content_name),
       component_(component),
       ice_ufrag_(ice_ufrag),
-      ice_pwd_(ice_pwd) {
+      ice_pwd_(ice_pwd),
+      tiebreaker_(0) {
   // Pooled sessions are allowed to be created with empty content name,
   // component, ufrag and password.
   RTC_DCHECK(ice_ufrag.empty() == ice_pwd.empty());
@@ -98,7 +100,8 @@ PortAllocator::PortAllocator()
       max_ipv6_networks_(kDefaultMaxIPv6Networks),
       step_delay_(kDefaultStepDelay),
       allow_tcp_listen_(true),
-      candidate_filter_(CF_ALL) {
+      candidate_filter_(CF_ALL),
+      tiebreaker_(0) {
   // The allocator will be attached to a thread in Initialize.
   thread_checker_.Detach();
 }
@@ -198,6 +201,7 @@ bool PortAllocator::SetConfiguration(
     PortAllocatorSession* pooled_session =
         CreateSessionInternal("", 0, iceCredentials.ufrag, iceCredentials.pwd);
     pooled_session->set_pooled(true);
+    pooled_session->set_ice_tiebreaker(tiebreaker_);
     pooled_session->StartGettingPorts();
     pooled_sessions_.push_back(
         std::unique_ptr<PortAllocatorSession>(pooled_session));
@@ -205,23 +209,31 @@ bool PortAllocator::SetConfiguration(
   return true;
 }
 
+void PortAllocator::SetIceTiebreaker(uint64_t tiebreaker) {
+  tiebreaker_ = tiebreaker;
+  for (auto& pooled_session : pooled_sessions_) {
+    pooled_session->set_ice_tiebreaker(tiebreaker_);
+  }
+}
+
 std::unique_ptr<PortAllocatorSession> PortAllocator::CreateSession(
-    const std::string& content_name,
+    absl::string_view content_name,
     int component,
-    const std::string& ice_ufrag,
-    const std::string& ice_pwd) {
+    absl::string_view ice_ufrag,
+    absl::string_view ice_pwd) {
   CheckRunOnValidThreadAndInitialized();
   auto session = std::unique_ptr<PortAllocatorSession>(
       CreateSessionInternal(content_name, component, ice_ufrag, ice_pwd));
   session->SetCandidateFilter(candidate_filter());
+  session->set_ice_tiebreaker(tiebreaker_);
   return session;
 }
 
 std::unique_ptr<PortAllocatorSession> PortAllocator::TakePooledSession(
-    const std::string& content_name,
+    absl::string_view content_name,
     int component,
-    const std::string& ice_ufrag,
-    const std::string& ice_pwd) {
+    absl::string_view ice_ufrag,
+    absl::string_view ice_pwd) {
   CheckRunOnValidThreadAndInitialized();
   RTC_DCHECK(!ice_ufrag.empty());
   RTC_DCHECK(!ice_pwd.empty());

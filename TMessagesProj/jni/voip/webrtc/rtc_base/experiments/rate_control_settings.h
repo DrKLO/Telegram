@@ -12,11 +12,11 @@
 #define RTC_BASE_EXPERIMENTS_RATE_CONTROL_SETTINGS_H_
 
 #include "absl/types/optional.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/field_trials_view.h"
 #include "api/units/data_size.h"
 #include "api/video_codecs/video_codec.h"
-#include "api/video_codecs/video_encoder_config.h"
 #include "rtc_base/experiments/struct_parameters_parser.h"
+#include "video/config/video_encoder_config.h"
 
 namespace webrtc {
 
@@ -38,9 +38,6 @@ struct VideoRateControlConfig {
   absl::optional<int> vp8_min_pixels;
   bool trust_vp8 = true;
   bool trust_vp9 = true;
-  double video_hysteresis = 1.2;
-  // Default to 35% hysteresis for simulcast screenshare.
-  double screenshare_hysteresis = 1.35;
   bool probe_max_allocation = true;
   bool bitrate_adjuster = true;
   bool adjuster_use_headroom = true;
@@ -57,7 +54,7 @@ class RateControlSettings final {
 
   static RateControlSettings ParseFromFieldTrials();
   static RateControlSettings ParseFromKeyValueConfig(
-      const WebRtcKeyValueConfig* const key_value_config);
+      const FieldTrialsView* const key_value_config);
 
   // When CongestionWindowPushback is enabled, the pacer is oblivious to
   // the congestion window. The relation between outstanding data and
@@ -80,12 +77,6 @@ class RateControlSettings final {
   bool LibvpxVp9TrustedRateController() const;
   bool Vp9DynamicRateSettings() const;
 
-  // TODO(bugs.webrtc.org/10272): Remove one of these when we have merged
-  // VideoCodecMode and VideoEncoderConfig::ContentType.
-  double GetSimulcastHysteresisFactor(VideoCodecMode mode) const;
-  double GetSimulcastHysteresisFactor(
-      VideoEncoderConfig::ContentType content_type) const;
-
   bool Vp8BaseHeavyTl3RateAllocation() const;
 
   bool TriggerProbeOnMaxAllocatedBitrateChange() const;
@@ -93,8 +84,7 @@ class RateControlSettings final {
   bool BitrateAdjusterCanUseNetworkHeadroom() const;
 
  private:
-  explicit RateControlSettings(
-      const WebRtcKeyValueConfig* const key_value_config);
+  explicit RateControlSettings(const FieldTrialsView* const key_value_config);
 
   CongestionWindowConfig congestion_window_config_;
   VideoRateControlConfig video_config_;

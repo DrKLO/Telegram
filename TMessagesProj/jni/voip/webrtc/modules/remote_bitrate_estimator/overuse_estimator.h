@@ -15,7 +15,6 @@
 #include <deque>
 
 #include "api/network_state_predictor.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -38,6 +37,9 @@ class OveruseEstimator {
  public:
   explicit OveruseEstimator(const OverUseDetectorOptions& options);
   ~OveruseEstimator();
+
+  OveruseEstimator(const OveruseEstimator&) = delete;
+  OveruseEstimator& operator=(const OveruseEstimator&) = delete;
 
   // Update the estimator with a new sample. The deltas should represent deltas
   // between timestamp groups as defined by the InterArrival class.
@@ -75,8 +77,6 @@ class OveruseEstimator {
   double avg_noise_;
   double var_noise_;
   std::deque<double> ts_delta_hist_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OveruseEstimator);
 };
 }  // namespace webrtc
 

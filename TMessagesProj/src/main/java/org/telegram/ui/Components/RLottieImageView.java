@@ -34,6 +34,7 @@ public class RLottieImageView extends ImageView {
     private Integer layerNum;
     private boolean onlyLastFrame;
     public boolean cached;
+    private boolean reverse;
 
     public RLottieImageView(Context context) {
         super(context);
@@ -107,6 +108,14 @@ public class RLottieImageView extends ImageView {
 
     public void setOnlyLastFrame(boolean onlyLastFrame) {
         this.onlyLastFrame = onlyLastFrame;
+    }
+
+    public void setReverse() {
+        if (drawable != null) {
+            drawable.setPlayInDirectionOfCustomEndFrame(true);
+            drawable.setCurrentFrame(drawable.getFramesCount());
+            drawable.setCustomEndFrame(0);
+        }
     }
 
     public void setAnimation(TLRPC.Document document, int w, int h) {

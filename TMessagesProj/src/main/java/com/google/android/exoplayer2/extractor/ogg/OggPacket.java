@@ -15,6 +15,10 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
+import static com.google.android.exoplayer2.extractor.ExtractorUtil.readFullyQuietly;
+import static com.google.android.exoplayer2.extractor.ExtractorUtil.skipFullyQuietly;
+import static java.lang.Math.max;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.util.Assertions;
@@ -22,25 +26,21 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.io.IOException;
 import java.util.Arrays;
 
-/**
- * OGG packet class.
- */
+/** OGG packet class. */
 /* package */ final class OggPacket {
 
   private final OggPageHeader pageHeader = new OggPageHeader();
-  private final ParsableByteArray packetArray = new ParsableByteArray(
-      new byte[OggPageHeader.MAX_PAGE_PAYLOAD], 0);
+  private final ParsableByteArray packetArray =
+      new ParsableByteArray(new byte[OggPageHeader.MAX_PAGE_PAYLOAD], 0);
 
   private int currentSegmentIndex = C.INDEX_UNSET;
   private int segmentCount;
   private boolean populated;
 
-  /**
-   * Resets this reader.
-   */
+  /** Resets this reader. */
   public void reset() {
     pageHeader.reset();
-    packetArray.reset();
+    packetArray.reset(/* limit= */ 0);
     currentSegmentIndex = C.INDEX_UNSET;
     populated = false;
   }
@@ -53,22 +53,21 @@ import java.util.Arrays;
    *
    * @param input The {@link ExtractorInput} to read data from.
    * @return {@code true} if the read was successful. The read fails if the end of the input is
-   *     encountered without reading data.
+   *     encountered without reading the whole packet.
    * @throws IOException If reading from the input fails.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  public boolean populate(ExtractorInput input) throws IOException, InterruptedException {
+  public boolean populate(ExtractorInput input) throws IOException {
     Assertions.checkState(input != null);
 
     if (populated) {
       populated = false;
-      packetArray.reset();
+      packetArray.reset(/* limit= */ 0);
     }
 
     while (!populated) {
       if (currentSegmentIndex < 0) {
         // We're at the start of a page.
-        if (!pageHeader.populate(input, true)) {
+        if (!pageHeader.skipToNextPage(input) || !pageHeader.populate(input, /* quiet= */ true)) {
           return false;
         }
         int segmentIndex = 0;
@@ -79,23 +78,25 @@ import java.util.Arrays;
           bytesToSkip += calculatePacketSize(segmentIndex);
           segmentIndex += segmentCount;
         }
-        input.skipFully(bytesToSkip);
+        if (!skipFullyQuietly(input, bytesToSkip)) {
+          return false;
+        }
         currentSegmentIndex = segmentIndex;
       }
 
       int size = calculatePacketSize(currentSegmentIndex);
       int segmentIndex = currentSegmentIndex + segmentCount;
       if (size > 0) {
-        if (packetArray.capacity() < packetArray.limit() + size) {
-          packetArray.data = Arrays.copyOf(packetArray.data, packetArray.limit() + size);
+        packetArray.ensureCapacity(packetArray.limit() + size);
+        if (!readFullyQuietly(input, packetArray.getData(), packetArray.limit(), size)) {
+          return false;
         }
-        input.readFully(packetArray.data, packetArray.limit(), size);
         packetArray.setLimit(packetArray.limit() + size);
         populated = pageHeader.laces[segmentIndex - 1] != 255;
       }
       // Advance now since we are sure reading didn't throw an exception.
-      currentSegmentIndex = segmentIndex == pageHeader.pageSegmentCount ? C.INDEX_UNSET
-          : segmentIndex;
+      currentSegmentIndex =
+          segmentIndex == pageHeader.pageSegmentCount ? C.INDEX_UNSET : segmentIndex;
     }
     return true;
   }
@@ -114,22 +115,20 @@ import java.util.Arrays;
     return pageHeader;
   }
 
-  /**
-   * Returns a {@link ParsableByteArray} containing the packet's payload.
-   */
+  /** Returns a {@link ParsableByteArray} containing the packet's payload. */
   public ParsableByteArray getPayload() {
     return packetArray;
   }
 
-  /**
-   * Trims the packet data array.
-   */
+  /** Trims the packet data array. */
   public void trimPayload() {
-    if (packetArray.data.length == OggPageHeader.MAX_PAGE_PAYLOAD) {
+    if (packetArray.getData().length == OggPageHeader.MAX_PAGE_PAYLOAD) {
       return;
     }
-    packetArray.data = Arrays.copyOf(packetArray.data, Math.max(OggPageHeader.MAX_PAGE_PAYLOAD,
-        packetArray.limit()));
+    packetArray.reset(
+        Arrays.copyOf(
+            packetArray.getData(), max(OggPageHeader.MAX_PAGE_PAYLOAD, packetArray.limit())),
+        /* limit= */ packetArray.limit());
   }
 
   /**
@@ -151,5 +150,4 @@ import java.util.Arrays;
     }
     return size;
   }
-
 }

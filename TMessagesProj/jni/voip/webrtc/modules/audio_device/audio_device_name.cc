@@ -10,14 +10,15 @@
 
 #include "modules/audio_device/audio_device_name.h"
 
-#include <utility>
+#include "absl/strings/string_view.h"
 
 namespace webrtc {
 
 const char AudioDeviceName::kDefaultDeviceId[] = "default";
 
-AudioDeviceName::AudioDeviceName(std::string device_name, std::string unique_id)
-    : device_name(std::move(device_name)), unique_id(std::move(unique_id)) {}
+AudioDeviceName::AudioDeviceName(absl::string_view device_name,
+                                 absl::string_view unique_id)
+    : device_name(device_name), unique_id(unique_id) {}
 
 bool AudioDeviceName::IsValid() {
   return !device_name.empty() && !unique_id.empty();

@@ -17,6 +17,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <new>
 #include <tuple>
@@ -174,7 +175,7 @@ decltype(std::declval<F>()(std::declval<T>())) WithConstructed(
 //
 // 2. auto a = PairArgs(args...);
 //    std::pair<F, S> p(std::piecewise_construct,
-//                      std::move(p.first), std::move(p.second));
+//                      std::move(a.first), std::move(a.second));
 inline std::pair<std::tuple<>, std::tuple<>> PairArgs() { return {}; }
 template <class F, class S>
 std::pair<std::tuple<F&&>, std::tuple<S&&>> PairArgs(F&& f, S&& s) {
@@ -340,7 +341,8 @@ template <class K, class V>
 struct map_slot_policy {
   using slot_type = map_slot_type<K, V>;
   using value_type = std::pair<const K, V>;
-  using mutable_value_type = std::pair<K, V>;
+  using mutable_value_type =
+      std::pair<absl::remove_const_t<K>, absl::remove_const_t<V>>;
 
  private:
   static void emplace(slot_type* slot) {
@@ -402,6 +404,15 @@ struct map_slot_policy {
     }
   }
 
+  // Construct this slot by copying from another slot.
+  template <class Allocator>
+  static void construct(Allocator* alloc, slot_type* slot,
+                        const slot_type* other) {
+    emplace(slot);
+    absl::allocator_traits<Allocator>::construct(*alloc, &slot->value,
+                                                 other->value);
+  }
+
   template <class Allocator>
   static void destroy(Allocator* alloc, slot_type* slot) {
     if (kMutableKeys::value) {
@@ -415,6 +426,16 @@ struct map_slot_policy {
   static void transfer(Allocator* alloc, slot_type* new_slot,
                        slot_type* old_slot) {
     emplace(new_slot);
+#if defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606
+    if (absl::is_trivially_relocatable<value_type>()) {
+      // TODO(b/247130232,b/251814870): remove casts after fixing warnings.
+      std::memcpy(static_cast<void*>(std::launder(&new_slot->value)),
+                  static_cast<const void*>(&old_slot->value),
+                  sizeof(value_type));
+      return;
+    }
+#endif
+
     if (kMutableKeys::value) {
       absl::allocator_traits<Allocator>::construct(
           *alloc, &new_slot->mutable_value, std::move(old_slot->mutable_value));
@@ -423,33 +444,6 @@ struct map_slot_policy {
                                                    std::move(old_slot->value));
     }
     destroy(alloc, old_slot);
-  }
-
-  template <class Allocator>
-  static void swap(Allocator* alloc, slot_type* a, slot_type* b) {
-    if (kMutableKeys::value) {
-      using std::swap;
-      swap(a->mutable_value, b->mutable_value);
-    } else {
-      value_type tmp = std::move(a->value);
-      absl::allocator_traits<Allocator>::destroy(*alloc, &a->value);
-      absl::allocator_traits<Allocator>::construct(*alloc, &a->value,
-                                                   std::move(b->value));
-      absl::allocator_traits<Allocator>::destroy(*alloc, &b->value);
-      absl::allocator_traits<Allocator>::construct(*alloc, &b->value,
-                                                   std::move(tmp));
-    }
-  }
-
-  template <class Allocator>
-  static void move(Allocator* alloc, slot_type* src, slot_type* dest) {
-    if (kMutableKeys::value) {
-      dest->mutable_value = std::move(src->mutable_value);
-    } else {
-      absl::allocator_traits<Allocator>::destroy(*alloc, &dest->value);
-      absl::allocator_traits<Allocator>::construct(*alloc, &dest->value,
-                                                   std::move(src->value));
-    }
   }
 };
 

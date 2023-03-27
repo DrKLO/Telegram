@@ -14,8 +14,8 @@
 #include <deque>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/neteq/neteq.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -27,6 +27,9 @@ class StatisticsCalculator {
   StatisticsCalculator();
 
   virtual ~StatisticsCalculator();
+
+  StatisticsCalculator(const StatisticsCalculator&) = delete;
+  StatisticsCalculator& operator=(const StatisticsCalculator&) = delete;
 
   // Resets most of the counters.
   void Reset();
@@ -62,6 +65,9 @@ class StatisticsCalculator {
   // Reports that `num_samples` samples were removed through accelerate.
   void AcceleratedSamples(size_t num_samples);
 
+  // Reports that `num_samples` comfort noise samples were generated.
+  void GeneratedNoiseSamples(size_t num_samples);
+
   // Reports that `num_packets` packets were discarded.
   virtual void PacketsDiscarded(size_t num_packets);
 
@@ -79,7 +85,8 @@ class StatisticsCalculator {
   // Update jitter buffer delay counter.
   void JitterBufferDelay(size_t num_samples,
                          uint64_t waiting_time_ms,
-                         uint64_t target_delay_ms);
+                         uint64_t target_delay_ms,
+                         uint64_t unlimited_target_delay_ms);
 
   // Stores new packet waiting time in waiting time statistics.
   void StoreWaitingTime(int waiting_time_ms);
@@ -120,7 +127,7 @@ class StatisticsCalculator {
 
   class PeriodicUmaLogger {
    public:
-    PeriodicUmaLogger(const std::string& uma_name,
+    PeriodicUmaLogger(absl::string_view uma_name,
                       int report_interval_ms,
                       int max_value);
     virtual ~PeriodicUmaLogger();
@@ -139,7 +146,7 @@ class StatisticsCalculator {
 
   class PeriodicUmaCount final : public PeriodicUmaLogger {
    public:
-    PeriodicUmaCount(const std::string& uma_name,
+    PeriodicUmaCount(absl::string_view uma_name,
                      int report_interval_ms,
                      int max_value);
     ~PeriodicUmaCount() override;
@@ -155,7 +162,7 @@ class StatisticsCalculator {
 
   class PeriodicUmaAverage final : public PeriodicUmaLogger {
    public:
-    PeriodicUmaAverage(const std::string& uma_name,
+    PeriodicUmaAverage(absl::string_view uma_name,
                        int report_interval_ms,
                        int max_value);
     ~PeriodicUmaAverage() override;
@@ -197,8 +204,6 @@ class StatisticsCalculator {
   PeriodicUmaAverage excess_buffer_delay_;
   PeriodicUmaCount buffer_full_counter_;
   bool decoded_output_played_ = false;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(StatisticsCalculator);
 };
 
 }  // namespace webrtc

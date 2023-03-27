@@ -111,7 +111,8 @@ class KernelTimeout {
       constexpr uint64_t max_nanos =
           (std::numeric_limits<int64_t>::max)() - 999999u;
       uint64_t ms_from_now =
-          (std::min<uint64_t>(max_nanos, ns_ - now) + 999999u) / 1000000u;
+          ((std::min)(max_nanos, static_cast<uint64_t>(ns_ - now)) + 999999u) /
+          1000000u;
       if (ms_from_now > kInfinite) {
         return kInfinite;
       }

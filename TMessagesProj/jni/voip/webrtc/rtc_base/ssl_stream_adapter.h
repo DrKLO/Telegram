@@ -13,11 +13,13 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/stream.h"
@@ -53,7 +55,7 @@ extern const char kCsAeadAes256Gcm[];
 std::string SrtpCryptoSuiteToName(int crypto_suite);
 
 // The reverse of above conversion.
-int SrtpCryptoSuiteFromName(const std::string& crypto_suite);
+int SrtpCryptoSuiteFromName(absl::string_view crypto_suite);
 
 // Get key length and salt length for given crypto suite. Returns true for
 // valid suites, otherwise false.
@@ -65,7 +67,7 @@ bool GetSrtpKeyAndSaltLengths(int crypto_suite,
 bool IsGcmCryptoSuite(int crypto_suite);
 
 // Returns true if the given crypto suite name uses a GCM cipher.
-bool IsGcmCryptoSuiteName(const std::string& crypto_suite);
+bool IsGcmCryptoSuiteName(absl::string_view crypto_suite);
 
 // SSLStreamAdapter : A StreamInterfaceAdapter that does SSL/TLS.
 // After SSL has been started, the stream will only open on successful
@@ -176,7 +178,7 @@ class SSLStreamAdapter : public StreamInterface, public sigslot::has_slots<> {
   // Returns true if successful.
   // `error` is optional and provides more information about the failure.
   virtual bool SetPeerCertificateDigest(
-      const std::string& digest_alg,
+      absl::string_view digest_alg,
       const unsigned char* digest_val,
       size_t digest_len,
       SSLPeerCertificateDigestError* error = nullptr) = 0;
@@ -208,7 +210,7 @@ class SSLStreamAdapter : public StreamInterface, public sigslot::has_slots<> {
   //                        zero-length ones).
   // result              -- where to put the computed value
   // result_len          -- the length of the computed value
-  virtual bool ExportKeyingMaterial(const std::string& label,
+  virtual bool ExportKeyingMaterial(absl::string_view label,
                                     const uint8_t* context,
                                     size_t context_len,
                                     bool use_context,
@@ -233,7 +235,7 @@ class SSLStreamAdapter : public StreamInterface, public sigslot::has_slots<> {
   // Returns true iff the supplied cipher is deemed to be strong.
   // TODO(torbjorng): Consider removing the KeyType argument.
   static bool IsAcceptableCipher(int cipher, KeyType key_type);
-  static bool IsAcceptableCipher(const std::string& cipher, KeyType key_type);
+  static bool IsAcceptableCipher(absl::string_view cipher, KeyType key_type);
 
   // TODO(guoweis): Move this away from a static class method. Currently this is
   // introduced such that any caller could depend on sslstreamadapter.h without

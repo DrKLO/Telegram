@@ -13,9 +13,10 @@
 
 #include <stdlib.h>
 
+#include "api/transport/stun.h"
+
 namespace cricket {
 class PortInterface;
-class StunMessage;
 }  // namespace cricket
 
 namespace webrtc {

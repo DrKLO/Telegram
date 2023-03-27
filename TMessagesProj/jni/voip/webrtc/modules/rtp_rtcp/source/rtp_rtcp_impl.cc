@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "api/transport/field_trial_based_config.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/dlrr.h"
 #include "modules/rtp_rtcp/source/rtcp_sender.h"
@@ -35,7 +36,6 @@
 
 namespace webrtc {
 namespace {
-const int64_t kRtpRtcpMaxIdleTimeProcessMs = 5;
 const int64_t kRtpRtcpRttProcessTimeMs = 1000;
 const int64_t kRtpRtcpBitrateProcessTimeMs = 10;
 const int64_t kDefaultExpectedRetransmissionTimeMs = 125;
@@ -70,12 +70,9 @@ ModuleRtpRtcpImpl::ModuleRtpRtcpImpl(const Configuration& configuration)
       clock_(configuration.clock),
       last_bitrate_process_time_(clock_->TimeInMilliseconds()),
       last_rtt_process_time_(clock_->TimeInMilliseconds()),
-      next_process_time_(clock_->TimeInMilliseconds() +
-                         kRtpRtcpMaxIdleTimeProcessMs),
       packet_overhead_(28),  // IPV4 UDP.
       nack_last_time_sent_full_ms_(0),
       nack_last_seq_number_sent_(0),
-      remote_bitrate_(configuration.remote_bitrate_estimator),
       rtt_stats_(configuration.rtt_stats),
       rtt_ms_(0) {
   if (!configuration.receiver_only) {
@@ -94,29 +91,14 @@ ModuleRtpRtcpImpl::ModuleRtpRtcpImpl(const Configuration& configuration)
 
 ModuleRtpRtcpImpl::~ModuleRtpRtcpImpl() = default;
 
-// Returns the number of milliseconds until the module want a worker thread
-// to call Process.
-int64_t ModuleRtpRtcpImpl::TimeUntilNextProcess() {
-  return std::max<int64_t>(0,
-                           next_process_time_ - clock_->TimeInMilliseconds());
-}
-
 // Process any pending tasks such as timeouts (non time critical events).
 void ModuleRtpRtcpImpl::Process() {
   const int64_t now = clock_->TimeInMilliseconds();
-  // TODO(bugs.webrtc.org/11581): Figure out why we need to call Process() 200
-  // times a second.
-  next_process_time_ = now + kRtpRtcpMaxIdleTimeProcessMs;
 
   if (rtp_sender_) {
     if (now >= last_bitrate_process_time_ + kRtpRtcpBitrateProcessTimeMs) {
       rtp_sender_->packet_sender.ProcessBitrateAndNotifyObservers();
       last_bitrate_process_time_ = now;
-      // TODO(bugs.webrtc.org/11581): Is this a bug? At the top of the function,
-      // next_process_time_ is incremented by 5ms, here we effectively do a
-      // std::min() of (now + 5ms, now + 10ms). Seems like this is a no-op?
-      next_process_time_ =
-          std::min(next_process_time_, now + kRtpRtcpBitrateProcessTimeMs);
     }
   }
 
@@ -158,17 +140,6 @@ void ModuleRtpRtcpImpl::Process() {
       RTC_LOG_F(LS_WARNING) << "Timeout: No increase in RTCP RR extended "
                                "highest sequence number.";
     }
-
-    if (remote_bitrate_ && rtcp_sender_.TMMBR()) {
-      unsigned int target_bitrate = 0;
-      std::vector<unsigned int> ssrcs;
-      if (remote_bitrate_->LatestEstimate(&ssrcs, &target_bitrate)) {
-        if (!ssrcs.empty()) {
-          target_bitrate = target_bitrate / ssrcs.size();
-        }
-        rtcp_sender_.SetTargetBitrate(target_bitrate);
-      }
-    }
   } else {
     // Report rtt from receiver.
     if (process_rtt) {
@@ -182,11 +153,6 @@ void ModuleRtpRtcpImpl::Process() {
   // Get processed rtt.
   if (process_rtt) {
     last_rtt_process_time_ = now;
-    // TODO(bugs.webrtc.org/11581): Is this a bug? At the top of the function,
-    // next_process_time_ is incremented by 5ms, here we effectively do a
-    // std::min() of (now + 5ms, now + 1000ms). Seems like this is a no-op?
-    next_process_time_ = std::min(
-        next_process_time_, last_rtt_process_time_ + kRtpRtcpRttProcessTimeMs);
     if (rtt_stats_) {
       // Make sure we have a valid RTT before setting.
       int64_t last_rtt = rtt_stats_->LastProcessedRtt();
@@ -291,13 +257,7 @@ RtpState ModuleRtpRtcpImpl::GetRtxState() const {
   return state;
 }
 
-void ModuleRtpRtcpImpl::SetRid(const std::string& rid) {
-  if (rtp_sender_) {
-    rtp_sender_->packet_generator.SetRid(rid);
-  }
-}
-
-void ModuleRtpRtcpImpl::SetMid(const std::string& mid) {
+void ModuleRtpRtcpImpl::SetMid(absl::string_view mid) {
   if (rtp_sender_) {
     rtp_sender_->packet_generator.SetMid(mid);
   }
@@ -348,9 +308,6 @@ RTCPSender::FeedbackState ModuleRtpRtcpImpl::GetFeedbackState() {
   return state;
 }
 
-// TODO(nisse): This method shouldn't be called for a receive-only
-// stream. Delete rtp_sender_ check as soon as all applications are
-// updated.
 int32_t ModuleRtpRtcpImpl::SetSendingStatus(const bool sending) {
   if (rtcp_sender_.Sending() != sending) {
     // Sends RTCP BYE when going from true to false
@@ -363,15 +320,8 @@ bool ModuleRtpRtcpImpl::Sending() const {
   return rtcp_sender_.Sending();
 }
 
-// TODO(nisse): This method shouldn't be called for a receive-only
-// stream. Delete rtp_sender_ check as soon as all applications are
-// updated.
 void ModuleRtpRtcpImpl::SetSendingMediaStatus(const bool sending) {
-  if (rtp_sender_) {
-    rtp_sender_->packet_generator.SetSendingMediaStatus(sending);
-  } else {
-    RTC_DCHECK(!sending);
-  }
+  rtp_sender_->packet_generator.SetSendingMediaStatus(sending);
 }
 
 bool ModuleRtpRtcpImpl::SendingMedia() const {
@@ -450,6 +400,12 @@ ModuleRtpRtcpImpl::FetchFecPackets() {
   return {};
 }
 
+void ModuleRtpRtcpImpl::OnAbortedRetransmissions(
+    rtc::ArrayView<const uint16_t> sequence_numbers) {
+  RTC_DCHECK_NOTREACHED()
+      << "Stream flushing not supported with legacy rtp modules.";
+}
+
 void ModuleRtpRtcpImpl::OnPacketsAcknowledged(
     rtc::ArrayView<const uint16_t> sequence_numbers) {
   RTC_DCHECK(rtp_sender_);
@@ -517,7 +473,7 @@ void ModuleRtpRtcpImpl::SetRTCPStatus(const RtcpMode method) {
   rtcp_sender_.SetRTCPStatus(method);
 }
 
-int32_t ModuleRtpRtcpImpl::SetCNAME(const char* c_name) {
+int32_t ModuleRtpRtcpImpl::SetCNAME(absl::string_view c_name) {
   return rtcp_sender_.SetCNAME(c_name);
 }
 
@@ -787,7 +743,7 @@ void ModuleRtpRtcpImpl::set_rtt_ms(int64_t rtt_ms) {
     rtt_ms_ = rtt_ms;
   }
   if (rtp_sender_) {
-    rtp_sender_->packet_history.SetRtt(rtt_ms);
+    rtp_sender_->packet_history.SetRtt(TimeDelta::Millis(rtt_ms));
   }
 }
 

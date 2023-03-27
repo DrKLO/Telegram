@@ -33,26 +33,22 @@ FrameBlocker::~FrameBlocker() = default;
 
 void FrameBlocker::InsertSubFrameAndExtractBlock(
     const std::vector<std::vector<rtc::ArrayView<float>>>& sub_frame,
-    std::vector<std::vector<std::vector<float>>>* block) {
+    Block* block) {
   RTC_DCHECK(block);
-  RTC_DCHECK_EQ(num_bands_, block->size());
+  RTC_DCHECK_EQ(num_bands_, block->NumBands());
   RTC_DCHECK_EQ(num_bands_, sub_frame.size());
   for (size_t band = 0; band < num_bands_; ++band) {
-    RTC_DCHECK_EQ(num_channels_, (*block)[band].size());
+    RTC_DCHECK_EQ(num_channels_, block->NumChannels());
     RTC_DCHECK_EQ(num_channels_, sub_frame[band].size());
     for (size_t channel = 0; channel < num_channels_; ++channel) {
       RTC_DCHECK_GE(kBlockSize - 16, buffer_[band][channel].size());
-      RTC_DCHECK_EQ(kBlockSize, (*block)[band][channel].size());
       RTC_DCHECK_EQ(kSubFrameLength, sub_frame[band][channel].size());
       const int samples_to_block = kBlockSize - buffer_[band][channel].size();
-      (*block)[band][channel].clear();
-      (*block)[band][channel].insert((*block)[band][channel].begin(),
-                                     buffer_[band][channel].begin(),
-                                     buffer_[band][channel].end());
-      (*block)[band][channel].insert(
-          (*block)[band][channel].begin() + buffer_[band][channel].size(),
-          sub_frame[band][channel].begin(),
-          sub_frame[band][channel].begin() + samples_to_block);
+      std::copy(buffer_[band][channel].begin(), buffer_[band][channel].end(),
+                block->begin(band, channel));
+      std::copy(sub_frame[band][channel].begin(),
+                sub_frame[band][channel].begin() + samples_to_block,
+                block->begin(band, channel) + kBlockSize - samples_to_block);
       buffer_[band][channel].clear();
       buffer_[band][channel].insert(
           buffer_[band][channel].begin(),
@@ -66,20 +62,16 @@ bool FrameBlocker::IsBlockAvailable() const {
   return kBlockSize == buffer_[0][0].size();
 }
 
-void FrameBlocker::ExtractBlock(
-    std::vector<std::vector<std::vector<float>>>* block) {
+void FrameBlocker::ExtractBlock(Block* block) {
   RTC_DCHECK(block);
-  RTC_DCHECK_EQ(num_bands_, block->size());
+  RTC_DCHECK_EQ(num_bands_, block->NumBands());
+  RTC_DCHECK_EQ(num_channels_, block->NumChannels());
   RTC_DCHECK(IsBlockAvailable());
   for (size_t band = 0; band < num_bands_; ++band) {
-    RTC_DCHECK_EQ(num_channels_, (*block)[band].size());
     for (size_t channel = 0; channel < num_channels_; ++channel) {
       RTC_DCHECK_EQ(kBlockSize, buffer_[band][channel].size());
-      RTC_DCHECK_EQ(kBlockSize, (*block)[band][channel].size());
-      (*block)[band][channel].clear();
-      (*block)[band][channel].insert((*block)[band][channel].begin(),
-                                     buffer_[band][channel].begin(),
-                                     buffer_[band][channel].end());
+      std::copy(buffer_[band][channel].begin(), buffer_[band][channel].end(),
+                block->begin(band, channel));
       buffer_[band][channel].clear();
     }
   }

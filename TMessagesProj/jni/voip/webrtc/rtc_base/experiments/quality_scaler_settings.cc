@@ -20,7 +20,7 @@ const double kMinScaleFactor = 0.01;
 }  // namespace
 
 QualityScalerSettings::QualityScalerSettings(
-    const WebRtcKeyValueConfig* const key_value_config)
+    const FieldTrialsView* const key_value_config)
     : sampling_period_ms_("sampling_period_ms"),
       average_qp_window_("average_qp_window"),
       min_frames_("min_frames"),

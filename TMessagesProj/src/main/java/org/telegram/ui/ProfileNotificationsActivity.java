@@ -381,7 +381,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (position == soundRow) {
                 Bundle bundle = new Bundle();

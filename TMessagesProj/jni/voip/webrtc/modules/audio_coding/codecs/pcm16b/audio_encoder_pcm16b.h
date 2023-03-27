@@ -12,7 +12,6 @@
 #define MODULES_AUDIO_CODING_CODECS_PCM16B_AUDIO_ENCODER_PCM16B_H_
 
 #include "modules/audio_coding/codecs/g711/audio_encoder_pcm.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,6 +28,9 @@ class AudioEncoderPcm16B final : public AudioEncoderPcm {
   explicit AudioEncoderPcm16B(const Config& config)
       : AudioEncoderPcm(config, config.sample_rate_hz) {}
 
+  AudioEncoderPcm16B(const AudioEncoderPcm16B&) = delete;
+  AudioEncoderPcm16B& operator=(const AudioEncoderPcm16B&) = delete;
+
  protected:
   size_t EncodeCall(const int16_t* audio,
                     size_t input_len,
@@ -37,9 +39,6 @@ class AudioEncoderPcm16B final : public AudioEncoderPcm {
   size_t BytesPerSample() const override;
 
   AudioEncoder::CodecType GetCodecType() const override;
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderPcm16B);
 };
 
 }  // namespace webrtc

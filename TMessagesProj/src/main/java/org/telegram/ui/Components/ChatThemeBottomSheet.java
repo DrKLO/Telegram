@@ -104,6 +104,8 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         setApplyBottomPadding(false);
         drawNavigationBar = true;
 
+        fixNavigationBar();
+
         rootLayout = new FrameLayout(getContext());
         setCustomView(rootLayout);
 

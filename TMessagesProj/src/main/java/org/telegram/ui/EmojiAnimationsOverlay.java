@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -362,7 +363,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             }
             StickerSetBulletinLayout layout = new StickerSetBulletinLayout(chatActivity.getParentActivity(), null, StickerSetBulletinLayout.TYPE_EMPTY, document, chatActivity.getResourceProvider());
             layout.subtitleTextView.setVisibility(View.GONE);
-            layout.titleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("EmojiInteractionTapHint", R.string.EmojiInteractionTapHint, chatActivity.currentUser.first_name)));
+            layout.titleTextView.setText(Emoji.replaceEmoji(AndroidUtilities.replaceTags(LocaleController.formatString("EmojiInteractionTapHint", R.string.EmojiInteractionTapHint, chatActivity.currentUser.first_name)), layout.titleTextView.getPaint().getFontMetricsInt(), false));
             layout.titleTextView.setTypeface(null);
             layout.titleTextView.setMaxLines(3);
             layout.titleTextView.setSingleLine(false);

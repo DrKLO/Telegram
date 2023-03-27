@@ -302,12 +302,13 @@ public abstract class BaseFragment {
         this.finishing = finishing;
     }
 
-    public void finishFragment(boolean animated) {
+    public boolean finishFragment(boolean animated) {
         if (isFinished || parentLayout == null) {
-            return;
+            return false;
         }
         finishing = true;
         parentLayout.closeLastFragment(animated);
+        return true;
     }
 
     public void removeSelfFromStack() {

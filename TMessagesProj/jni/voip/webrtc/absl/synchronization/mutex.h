@@ -60,6 +60,8 @@
 
 #include <atomic>
 #include <cstdint>
+#include <cstring>
+#include <iterator>
 #include <string>
 
 #include "absl/base/const_init.h"
@@ -174,9 +176,12 @@ class ABSL_LOCKABLE Mutex {
 
   // Mutex::AssertHeld()
   //
-  // Return immediately if this thread holds the `Mutex` exclusively (in write
-  // mode). Otherwise, may report an error (typically by crashing with a
-  // diagnostic), or may return immediately.
+  // Require that the mutex be held exclusively (write mode) by this thread.
+  //
+  // If the mutex is not currently held by this thread, this function may report
+  // an error (typically by crashing with a diagnostic) or it may do nothing.
+  // This function is intended only as a tool to assist debugging; it doesn't
+  // guarantee correctness.
   void AssertHeld() const ABSL_ASSERT_EXCLUSIVE_LOCK();
 
   // ---------------------------------------------------------------------------
@@ -236,9 +241,13 @@ class ABSL_LOCKABLE Mutex {
 
   // Mutex::AssertReaderHeld()
   //
-  // Returns immediately if this thread holds the `Mutex` in at least shared
-  // mode (read mode). Otherwise, may report an error (typically by
-  // crashing with a diagnostic), or may return immediately.
+  // Require that the mutex be held at least in shared mode (read mode) by this
+  // thread.
+  //
+  // If the mutex is not currently held by this thread, this function may report
+  // an error (typically by crashing with a diagnostic) or it may do nothing.
+  // This function is intended only as a tool to assist debugging; it doesn't
+  // guarantee correctness.
   void AssertReaderHeld() const ABSL_ASSERT_SHARED_LOCK();
 
   // Mutex::WriterLock()
@@ -605,12 +614,12 @@ class ABSL_SCOPED_LOCKABLE WriterMutexLock {
 // Condition
 // -----------------------------------------------------------------------------
 //
-// As noted above, `Mutex` contains a number of member functions which take a
-// `Condition` as an argument; clients can wait for conditions to become `true`
-// before attempting to acquire the mutex. These sections are known as
-// "condition critical" sections. To use a `Condition`, you simply need to
-// construct it, and use within an appropriate `Mutex` member function;
-// everything else in the `Condition` class is an implementation detail.
+// `Mutex` contains a number of member functions which take a `Condition` as an
+// argument; clients can wait for conditions to become `true` before attempting
+// to acquire the mutex. These sections are known as "condition critical"
+// sections. To use a `Condition`, you simply need to construct it, and use
+// within an appropriate `Mutex` member function; everything else in the
+// `Condition` class is an implementation detail.
 //
 // A `Condition` is specified as a function pointer which returns a boolean.
 // `Condition` functions should be pure functions -- their results should depend
@@ -735,22 +744,53 @@ class Condition {
   static bool GuaranteedEqual(const Condition *a, const Condition *b);
 
  private:
-  typedef bool (*InternalFunctionType)(void * arg);
-  typedef bool (Condition::*InternalMethodType)();
-  typedef bool (*InternalMethodCallerType)(void * arg,
-                                           InternalMethodType internal_method);
+  // Sizing an allocation for a method pointer can be subtle. In the Itanium
+  // specifications, a method pointer has a predictable, uniform size. On the
+  // other hand, MSVC ABI, method pointer sizes vary based on the
+  // inheritance of the class. Specifically, method pointers from classes with
+  // multiple inheritance are bigger than those of classes with single
+  // inheritance. Other variations also exist.
 
-  bool (*eval_)(const Condition*);  // Actual evaluator
-  InternalFunctionType function_;   // function taking pointer returning bool
-  InternalMethodType method_;       // method returning bool
-  void *arg_;                       // arg of function_ or object of method_
+#ifndef _MSC_VER
+  // Allocation for a function pointer or method pointer.
+  // The {0} initializer ensures that all unused bytes of this buffer are
+  // always zeroed out.  This is necessary, because GuaranteedEqual() compares
+  // all of the bytes, unaware of which bytes are relevant to a given `eval_`.
+  using MethodPtr = bool (Condition::*)();
+  char callback_[sizeof(MethodPtr)] = {0};
+#else
+  // It is well known that the larget MSVC pointer-to-member is 24 bytes. This
+  // may be the largest known pointer-to-member of any platform. For this
+  // reason we will allocate 24 bytes for MSVC platform toolchains.
+  char callback_[24] = {0};
+#endif
 
-  Condition();        // null constructor used only to create kTrue
+  // Function with which to evaluate callbacks and/or arguments.
+  bool (*eval_)(const Condition*);
+
+  // Either an argument for a function call or an object for a method call.
+  void *arg_;
 
   // Various functions eval_ can point to:
   static bool CallVoidPtrFunction(const Condition*);
   template <typename T> static bool CastAndCallFunction(const Condition* c);
   template <typename T> static bool CastAndCallMethod(const Condition* c);
+
+  // Helper methods for storing, validating, and reading callback arguments.
+  template <typename T>
+  inline void StoreCallback(T callback) {
+    static_assert(
+        sizeof(callback) <= sizeof(callback_),
+        "An overlarge pointer was passed as a callback to Condition.");
+    std::memcpy(callback_, &callback, sizeof(callback));
+  }
+
+  template <typename T>
+  inline void ReadCallback(T *callback) const {
+    std::memcpy(callback, callback_, sizeof(*callback));
+  }
+
+  Condition();        // null constructor used only to create kTrue
 };
 
 // -----------------------------------------------------------------------------
@@ -942,46 +982,50 @@ inline CondVar::CondVar() : cv_(0) {}
 // static
 template <typename T>
 bool Condition::CastAndCallMethod(const Condition *c) {
-  typedef bool (T::*MemberType)();
-  MemberType rm = reinterpret_cast<MemberType>(c->method_);
-  T *x = static_cast<T *>(c->arg_);
-  return (x->*rm)();
+  T *object = static_cast<T *>(c->arg_);
+  bool (T::*method_pointer)();
+  c->ReadCallback(&method_pointer);
+  return (object->*method_pointer)();
 }
 
 // static
 template <typename T>
 bool Condition::CastAndCallFunction(const Condition *c) {
-  typedef bool (*FuncType)(T *);
-  FuncType fn = reinterpret_cast<FuncType>(c->function_);
-  T *x = static_cast<T *>(c->arg_);
-  return (*fn)(x);
+  bool (*function)(T *);
+  c->ReadCallback(&function);
+  T *argument = static_cast<T *>(c->arg_);
+  return (*function)(argument);
 }
 
 template <typename T>
 inline Condition::Condition(bool (*func)(T *), T *arg)
     : eval_(&CastAndCallFunction<T>),
-      function_(reinterpret_cast<InternalFunctionType>(func)),
-      method_(nullptr),
-      arg_(const_cast<void *>(static_cast<const void *>(arg))) {}
+      arg_(const_cast<void *>(static_cast<const void *>(arg))) {
+  static_assert(sizeof(&func) <= sizeof(callback_),
+                "An overlarge function pointer was passed to Condition.");
+  StoreCallback(func);
+}
 
 template <typename T>
 inline Condition::Condition(T *object,
                             bool (absl::internal::identity<T>::type::*method)())
     : eval_(&CastAndCallMethod<T>),
-      function_(nullptr),
-      method_(reinterpret_cast<InternalMethodType>(method)),
-      arg_(object) {}
+      arg_(object) {
+  static_assert(sizeof(&method) <= sizeof(callback_),
+                "An overlarge method pointer was passed to Condition.");
+  StoreCallback(method);
+}
 
 template <typename T>
 inline Condition::Condition(const T *object,
                             bool (absl::internal::identity<T>::type::*method)()
                                 const)
     : eval_(&CastAndCallMethod<T>),
-      function_(nullptr),
-      method_(reinterpret_cast<InternalMethodType>(method)),
-      arg_(reinterpret_cast<void *>(const_cast<T *>(object))) {}
+      arg_(reinterpret_cast<void *>(const_cast<T *>(object))) {
+  StoreCallback(method);
+}
 
-// Register a hook for profiling support.
+// Register hooks for profiling support.
 //
 // The function pointer registered here will be called whenever a mutex is
 // contended.  The callback is given the cycles for which waiting happened (as

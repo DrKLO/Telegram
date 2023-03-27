@@ -50,10 +50,10 @@ struct GenerateSignedTag {};
 // inputs, otherwise it never returns 0.
 //
 // When a value in U(0,1) is required, use:
-//   Uniform64ToReal<double, PositiveValueT, true>;
+//   GenerateRealFromBits<double, PositiveValueT, true>;
 //
 // When a value in U(-1,1) is required, use:
-//   Uniform64ToReal<double, SignedValueT, false>;
+//   GenerateRealFromBits<double, SignedValueT, false>;
 //
 //   This generates more distinct values than the mathematical equivalent
 //   `U(0, 1) * 2.0 - 1.0`.

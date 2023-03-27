@@ -400,7 +400,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         }
                     }
                 }
-                if (vectorImageMarkup == null && animationEnabled && MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video && !SharedConfig.getLiteMode().enabled()) {
+                if (vectorImageMarkup == null && animationEnabled && MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video && LiteMode.isEnabled(LiteMode.FLAG_AUTOPLAY_VIDEOS)) {
                     final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(user.id);
                     if (userFull == null) {
                         MessagesController.getInstance(currentAccount).loadFullUser(user, currentGuid, false);
@@ -988,6 +988,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void onDetachedFromWindow() {
+        if (!attachedToWindow) {
+            return;
+        }
         attachedToWindow = false;
         if (currentImageLocation != null || currentMediaLocation != null || currentThumbLocation != null || staticThumbDrawable != null) {
             if (setImageBackup == null) {
@@ -1073,6 +1076,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public boolean onAttachedToWindow() {
+        if (attachedToWindow) {
+            return false;
+        }
         attachedToWindow = true;
         currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
         currentOpenedLayerFlags &= ~currentLayerNum;

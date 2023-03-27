@@ -17,6 +17,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,17 +33,17 @@
 #include "api/rtp_parameters.h"
 #include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "media/base/audio_source.h"
 #include "media/base/media_channel.h"
 #include "pc/dtmf_sender.h"
-#include "pc/stats_collector_interface.h"
+#include "pc/legacy_stats_collector_interface.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
-
-class StatsCollectorInterface;
 
 bool UnimplementedRtpParameterHasValue(const RtpParameters& parameters);
 
@@ -74,6 +75,18 @@ class RtpSenderInternal : public RtpSenderInterface {
   virtual RtpParameters GetParametersInternal() const = 0;
   virtual RTCError SetParametersInternal(const RtpParameters& parameters) = 0;
 
+  // GetParameters and SetParameters will remove deactivated simulcast layers
+  // and restore them on SetParameters. This is probably a Bad Idea, but we
+  // do not know who depends on this behavior
+  virtual RtpParameters GetParametersInternalWithAllLayers() const = 0;
+  virtual RTCError SetParametersInternalWithAllLayers(
+      const RtpParameters& parameters) = 0;
+
+  // Additional checks that are specific to the Sender type
+  virtual RTCError CheckSVCParameters(const RtpParameters& parameters) {
+    return webrtc::RTCError::OK();
+  }
+
   // Returns an ID that changes every time SetTrack() is called, but
   // otherwise remains constant. Used to generate IDs for stats.
   // The special value zero means that no track is attached.
@@ -85,6 +98,11 @@ class RtpSenderInternal : public RtpSenderInterface {
       const std::vector<std::string>& rid) = 0;
 
   virtual void SetTransceiverAsStopped() = 0;
+
+  // Used by the owning transceiver to inform the sender on the currently
+  // selected codecs.
+  virtual void SetVideoCodecPreferences(
+      std::vector<cricket::VideoCodec> codec_preferences) = 0;
 };
 
 // Shared implementation for RtpSenderInternal interface.
@@ -104,6 +122,9 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
 
   bool SetTrack(MediaStreamTrackInterface* track) override;
   rtc::scoped_refptr<MediaStreamTrackInterface> track() const override {
+    // This method is currently called from the worker thread by
+    // RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w_n.
+    // RTC_DCHECK_RUN_ON(signaling_thread_);
     return track_;
   }
 
@@ -114,15 +135,26 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
   // Allow access to get/set parameters without invalidating transaction id.
   RtpParameters GetParametersInternal() const override;
   RTCError SetParametersInternal(const RtpParameters& parameters) override;
+  RtpParameters GetParametersInternalWithAllLayers() const override;
+  RTCError SetParametersInternalWithAllLayers(
+      const RtpParameters& parameters) override;
 
   // Used to set the SSRC of the sender, once a local description has been set.
   // If `ssrc` is 0, this indiates that the sender should disconnect from the
   // underlying transport (this occurs if the sender isn't seen in a local
   // description).
   void SetSsrc(uint32_t ssrc) override;
-  uint32_t ssrc() const override { return ssrc_; }
+  uint32_t ssrc() const override {
+    // This method is currently called from the worker thread by
+    // RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w_n.
+    // RTC_DCHECK_RUN_ON(signaling_thread_);
+    return ssrc_;
+  }
 
-  std::vector<std::string> stream_ids() const override { return stream_ids_; }
+  std::vector<std::string> stream_ids() const override {
+    RTC_DCHECK_RUN_ON(signaling_thread_);
+    return stream_ids_;
+  }
   void set_stream_ids(const std::vector<std::string>& stream_ids) override {
     stream_ids_ = stream_ids;
   }
@@ -135,6 +167,7 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
     init_parameters_.encodings = init_send_encodings;
   }
   std::vector<RtpEncodingParameters> init_send_encodings() const override {
+    RTC_DCHECK_RUN_ON(signaling_thread_);
     return init_parameters_.encodings;
   }
 
@@ -143,6 +176,7 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
     dtls_transport_ = dtls_transport;
   }
   rtc::scoped_refptr<DtlsTransportInterface> dtls_transport() const override {
+    RTC_DCHECK_RUN_ON(signaling_thread_);
     return dtls_transport_;
   }
 
@@ -168,7 +202,21 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
   void SetEncoderToPacketizerFrameTransformer(
       rtc::scoped_refptr<FrameTransformerInterface> frame_transformer) override;
 
-  void SetTransceiverAsStopped() override { is_transceiver_stopped_ = true; }
+  void SetEncoderSelector(
+      std::unique_ptr<VideoEncoderFactory::EncoderSelectorInterface>
+          encoder_selector) override;
+
+  void SetEncoderSelectorOnChannel();
+
+  void SetTransceiverAsStopped() override {
+    RTC_DCHECK_RUN_ON(signaling_thread_);
+    is_transceiver_stopped_ = true;
+  }
+
+  void SetVideoCodecPreferences(
+      std::vector<cricket::VideoCodec> codec_preferences) override {
+    video_codec_preferences_ = codec_preferences;
+  }
 
  protected:
   // If `set_streams_observer` is not null, it is invoked when SetStreams()
@@ -177,8 +225,8 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
   RtpSenderBase(rtc::Thread* worker_thread,
                 const std::string& id,
                 SetStreamsObserver* set_streams_observer);
-  // TODO(nisse): Since SSRC == 0 is technically valid, figure out
-  // some other way to test if we have a valid SSRC.
+  // TODO(bugs.webrtc.org/8694): Since SSRC == 0 is technically valid, figure
+  // out some other way to test if we have a valid SSRC.
   bool can_send_track() const { return track_ && ssrc_; }
 
   virtual std::string track_kind() const = 0;
@@ -195,16 +243,23 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
   virtual void AddTrackToStats() {}
   virtual void RemoveTrackFromStats() {}
 
-  rtc::Thread* worker_thread_;
+  rtc::Thread* const signaling_thread_;
+  rtc::Thread* const worker_thread_;
   uint32_t ssrc_ = 0;
-  bool stopped_ = false;
-  bool is_transceiver_stopped_ = false;
+  bool stopped_ RTC_GUARDED_BY(signaling_thread_) = false;
+  bool is_transceiver_stopped_ RTC_GUARDED_BY(signaling_thread_) = false;
   int attachment_id_ = 0;
   const std::string id_;
 
   std::vector<std::string> stream_ids_;
   RtpParameters init_parameters_;
+  std::vector<cricket::VideoCodec> video_codec_preferences_;
 
+  // TODO(tommi): `media_channel_` and several other member variables in this
+  // class (ssrc_, stopped_, etc) are accessed from more than one thread without
+  // a guard or lock. Internally there are also several Invoke()s that we could
+  // remove since the upstream code may already be performing several operations
+  // on the worker thread.
   cricket::MediaChannel* media_channel_ = nullptr;
   rtc::scoped_refptr<MediaStreamTrackInterface> track_;
 
@@ -221,6 +276,8 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
   SetStreamsObserver* set_streams_observer_ = nullptr;
 
   rtc::scoped_refptr<FrameTransformerInterface> frame_transformer_;
+  std::unique_ptr<VideoEncoderFactory::EncoderSelectorInterface>
+      encoder_selector_;
 };
 
 // LocalAudioSinkAdapter receives data callback as a sink to the local
@@ -275,14 +332,13 @@ class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {
   static rtc::scoped_refptr<AudioRtpSender> Create(
       rtc::Thread* worker_thread,
       const std::string& id,
-      StatsCollectorInterface* stats,
+      LegacyStatsCollectorInterface* stats,
       SetStreamsObserver* set_streams_observer);
   virtual ~AudioRtpSender();
 
   // DtmfSenderProvider implementation.
   bool CanInsertDtmf() override;
   bool InsertDtmf(int code, int duration) override;
-  sigslot::signal0<>* GetOnDestroyedSignal() override;
 
   // ObserverInterface implementation.
   void OnChanged() override;
@@ -295,11 +351,12 @@ class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {
   }
 
   rtc::scoped_refptr<DtmfSenderInterface> GetDtmfSender() const override;
+  RTCError GenerateKeyFrame() override;
 
  protected:
   AudioRtpSender(rtc::Thread* worker_thread,
                  const std::string& id,
-                 StatsCollectorInterface* stats,
+                 LegacyStatsCollectorInterface* legacy_stats,
                  SetStreamsObserver* set_streams_observer);
 
   void SetSend() override;
@@ -319,9 +376,9 @@ class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {
     return rtc::scoped_refptr<AudioTrackInterface>(
         static_cast<AudioTrackInterface*>(track_.get()));
   }
-  sigslot::signal0<> SignalDestroyed;
 
-  StatsCollectorInterface* stats_ = nullptr;
+  LegacyStatsCollectorInterface* legacy_stats_ = nullptr;
+  rtc::scoped_refptr<DtmfSender> dtmf_sender_;
   rtc::scoped_refptr<DtmfSenderInterface> dtmf_sender_proxy_;
   bool cached_track_enabled_ = false;
 
@@ -354,6 +411,9 @@ class VideoRtpSender : public RtpSenderBase {
   }
 
   rtc::scoped_refptr<DtmfSenderInterface> GetDtmfSender() const override;
+  RTCError GenerateKeyFrame() override;
+
+  RTCError CheckSVCParameters(const RtpParameters& parameters) override;
 
  protected:
   VideoRtpSender(rtc::Thread* worker_thread,

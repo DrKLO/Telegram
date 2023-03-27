@@ -281,7 +281,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     showDialog(alertDialog);
                     TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     }
                 }
             }
@@ -394,7 +394,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (currentType == TYPE_ENTER_HINT) {
                 onHintDone();
@@ -2154,14 +2154,14 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     }
 
     @Override
-    public void finishFragment(boolean animated) {
+    public boolean finishFragment(boolean animated) {
         for (BaseFragment fragment : getParentLayout().getFragmentStack()) {
             if (fragment != this && fragment instanceof TwoStepVerificationSetupActivity) {
                 ((TwoStepVerificationSetupActivity) fragment).floatingAutoAnimator.ignoreNextLayout();
             }
         }
 
-        super.finishFragment(animated);
+        return super.finishFragment(animated);
     }
 
     private void showSetForcePasswordAlert() {
@@ -2172,7 +2172,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
         builder.setNegativeButton(LocaleController.getString("ForceSetPasswordCancel", R.string.ForceSetPasswordCancel), (a1, a2) -> finishFragment());
         AlertDialog alertDialog = builder.show();
-        ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed));
     }
 
     public void setBlockingAlert(int otherwiseRelogin) {

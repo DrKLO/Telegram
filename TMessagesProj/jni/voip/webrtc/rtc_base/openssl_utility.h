@@ -15,6 +15,8 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace rtc {
 // The openssl namespace holds static helper methods. All methods related
 // to OpenSSL that are commonly used and don't require global state should be
@@ -35,11 +37,11 @@ bool ParseCertificate(CRYPTO_BUFFER* cert_buffer,
 // TODO(crbug.com/webrtc/11710): When OS certificate verification is available,
 // skip compiling this as it adds a dependency on OpenSSL X509 objects, which we
 // are trying to avoid in favor of CRYPTO_BUFFERs (see crbug.com/webrtc/11410).
-bool VerifyPeerCertMatchesHost(SSL* ssl, const std::string& host);
+bool VerifyPeerCertMatchesHost(SSL* ssl, absl::string_view host);
 
 // Logs all the errors in the OpenSSL errror queue from the current thread. A
 // prefix can be provided for context.
-void LogSSLErrors(const std::string& prefix);
+void LogSSLErrors(absl::string_view prefix);
 
 #ifndef WEBRTC_EXCLUDE_BUILT_IN_SSL_ROOT_CERTS
 // Attempt to add the certificates from the loader into the SSL_CTX. False is

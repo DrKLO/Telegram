@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.audio;
 
 import androidx.annotation.CallSuper;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -47,6 +48,7 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   }
 
   @Override
+  @CanIgnoreReturnValue
   public final AudioFormat configure(AudioFormat inputAudioFormat)
       throws UnhandledAudioFormatException {
     pendingInputAudioFormat = inputAudioFormat;
@@ -101,13 +103,13 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   }
 
   /**
-   * Replaces the current output buffer with a buffer of at least {@code count} bytes and returns
-   * it. Callers should write to the returned buffer then {@link ByteBuffer#flip()} it so it can be
-   * read via {@link #getOutput()}.
+   * Replaces the current output buffer with a buffer of at least {@code size} bytes and returns it.
+   * Callers should write to the returned buffer then {@link ByteBuffer#flip()} it so it can be read
+   * via {@link #getOutput()}.
    */
-  protected final ByteBuffer replaceOutputBuffer(int count) {
-    if (buffer.capacity() < count) {
-      buffer = ByteBuffer.allocateDirect(count).order(ByteOrder.nativeOrder());
+  protected final ByteBuffer replaceOutputBuffer(int size) {
+    if (buffer.capacity() < size) {
+      buffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
     } else {
       buffer.clear();
     }
@@ -121,6 +123,7 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   }
 
   /** Called when the processor is configured for a new input format. */
+  @CanIgnoreReturnValue
   protected AudioFormat onConfigure(AudioFormat inputAudioFormat)
       throws UnhandledAudioFormatException {
     return AudioFormat.NOT_SET;

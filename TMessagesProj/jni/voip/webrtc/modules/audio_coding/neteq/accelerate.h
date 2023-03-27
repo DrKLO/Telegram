@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include "modules/audio_coding/neteq/time_stretch.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -32,6 +31,9 @@ class Accelerate : public TimeStretch {
              size_t num_channels,
              const BackgroundNoise& background_noise)
       : TimeStretch(sample_rate_hz, num_channels, background_noise) {}
+
+  Accelerate(const Accelerate&) = delete;
+  Accelerate& operator=(const Accelerate&) = delete;
 
   // This method performs the actual Accelerate operation. The samples are
   // read from `input`, of length `input_length` elements, and are written to
@@ -62,9 +64,6 @@ class Accelerate : public TimeStretch {
                                       bool active_speech,
                                       bool fast_mode,
                                       AudioMultiVector* output) const override;
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(Accelerate);
 };
 
 struct AccelerateFactory {

@@ -91,6 +91,7 @@
 #define ABSL_CACHELINE_SIZE 64
 #endif
 #endif
+#endif
 
 #ifndef ABSL_CACHELINE_SIZE
 // A reasonable default guess.  Note that overestimates tend to waste more
@@ -141,12 +142,11 @@
 //    the generated machine code.
 // 3) Prefer applying this attribute to individual variables. Avoid
 //    applying it to types. This tends to localize the effect.
+#if defined(__clang__) || defined(__GNUC__)
 #define ABSL_CACHELINE_ALIGNED __attribute__((aligned(ABSL_CACHELINE_SIZE)))
 #elif defined(_MSC_VER)
-#define ABSL_CACHELINE_SIZE 64
 #define ABSL_CACHELINE_ALIGNED __declspec(align(ABSL_CACHELINE_SIZE))
 #else
-#define ABSL_CACHELINE_SIZE 64
 #define ABSL_CACHELINE_ALIGNED
 #endif
 
@@ -181,35 +181,43 @@
 #define ABSL_PREDICT_TRUE(x) (x)
 #endif
 
-// ABSL_INTERNAL_ASSUME(cond)
+// ABSL_ASSUME(cond)
+//
 // Informs the compiler that a condition is always true and that it can assume
-// it to be true for optimization purposes. The call has undefined behavior if
-// the condition is false.
+// it to be true for optimization purposes.
+//
+// WARNING: If the condition is false, the program can produce undefined and
+// potentially dangerous behavior.
+//
 // In !NDEBUG mode, the condition is checked with an assert().
-// NOTE: The expression must not have side effects, as it will only be evaluated
-// in some compilation modes and not others.
+//
+// NOTE: The expression must not have side effects, as it may only be evaluated
+// in some compilation modes and not others. Some compilers may issue a warning
+// if the compiler cannot prove the expression has no side effects. For example,
+// the expression should not use a function call since the compiler cannot prove
+// that a function call does not have side effects.
 //
 // Example:
 //
 //   int x = ...;
-//   ABSL_INTERNAL_ASSUME(x >= 0);
+//   ABSL_ASSUME(x >= 0);
 //   // The compiler can optimize the division to a simple right shift using the
 //   // assumption specified above.
 //   int y = x / 16;
 //
 #if !defined(NDEBUG)
-#define ABSL_INTERNAL_ASSUME(cond) assert(cond)
+#define ABSL_ASSUME(cond) assert(cond)
 #elif ABSL_HAVE_BUILTIN(__builtin_assume)
-#define ABSL_INTERNAL_ASSUME(cond) __builtin_assume(cond)
+#define ABSL_ASSUME(cond) __builtin_assume(cond)
 #elif defined(__GNUC__) || ABSL_HAVE_BUILTIN(__builtin_unreachable)
-#define ABSL_INTERNAL_ASSUME(cond)        \
+#define ABSL_ASSUME(cond)                 \
   do {                                    \
     if (!(cond)) __builtin_unreachable(); \
   } while (0)
 #elif defined(_MSC_VER)
-#define ABSL_INTERNAL_ASSUME(cond) __assume(cond)
+#define ABSL_ASSUME(cond) __assume(cond)
 #else
-#define ABSL_INTERNAL_ASSUME(cond)      \
+#define ABSL_ASSUME(cond)               \
   do {                                  \
     static_cast<void>(false && (cond)); \
   } while (0)

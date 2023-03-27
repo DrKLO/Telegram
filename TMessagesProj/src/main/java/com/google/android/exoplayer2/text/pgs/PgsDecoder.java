@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.text.pgs;
 
+import static java.lang.Math.min;
+
 import android.graphics.Bitmap;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.text.Cue;
@@ -52,8 +54,9 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
   }
 
   @Override
-  protected Subtitle decode(byte[] data, int size, boolean reset) throws SubtitleDecoderException {
-    buffer.reset(data, size);
+  protected Subtitle decode(byte[] data, int length, boolean reset)
+      throws SubtitleDecoderException {
+    buffer.reset(data, length);
     maybeInflateData(buffer);
     cueBuilder.reset();
     ArrayList<Cue> cues = new ArrayList<>();
@@ -72,7 +75,7 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
         inflater = new Inflater();
       }
       if (Util.inflate(buffer, inflatedBuffer, inflater)) {
-        buffer.reset(inflatedBuffer.data, inflatedBuffer.limit());
+        buffer.reset(inflatedBuffer.getData(), inflatedBuffer.limit());
       } // else assume data is not compressed.
     }
   }
@@ -132,7 +135,7 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
 
     private void parsePaletteSection(ParsableByteArray buffer, int sectionLength) {
       if ((sectionLength % 5) != 2) {
-        // Section must be two bytes followed by a whole number of (index, y, cb, cr, a) entries.
+        // Section must be two bytes then a whole number of (index, Y, Cr, Cb, alpha) entries.
         return;
       }
       buffer.skipBytes(2);
@@ -182,8 +185,8 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
       int position = bitmapData.getPosition();
       int limit = bitmapData.limit();
       if (position < limit && sectionLength > 0) {
-        int bytesToRead = Math.min(sectionLength, limit - position);
-        buffer.readBytes(bitmapData.data, position, bytesToRead);
+        int bytesToRead = min(sectionLength, limit - position);
+        buffer.readBytes(bitmapData.getData(), position, bytesToRead);
         bitmapData.setPosition(position + bytesToRead);
       }
     }
@@ -235,14 +238,15 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
       Bitmap bitmap =
           Bitmap.createBitmap(argbBitmapData, bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
       // Build the cue.
-      return new Cue(
-          bitmap,
-          (float) bitmapX / planeWidth,
-          Cue.ANCHOR_TYPE_START,
-          (float) bitmapY / planeHeight,
-          Cue.ANCHOR_TYPE_START,
-          (float) bitmapWidth / planeWidth,
-          (float) bitmapHeight / planeHeight);
+      return new Cue.Builder()
+          .setBitmap(bitmap)
+          .setPosition((float) bitmapX / planeWidth)
+          .setPositionAnchor(Cue.ANCHOR_TYPE_START)
+          .setLine((float) bitmapY / planeHeight, Cue.LINE_TYPE_FRACTION)
+          .setLineAnchor(Cue.ANCHOR_TYPE_START)
+          .setSize((float) bitmapWidth / planeWidth)
+          .setBitmapHeight((float) bitmapHeight / planeHeight)
+          .build();
     }
 
     public void reset() {

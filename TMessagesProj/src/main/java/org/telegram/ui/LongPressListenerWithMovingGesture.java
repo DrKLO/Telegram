@@ -5,6 +5,7 @@ import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.Components.GestureDetector2;
 
@@ -15,7 +16,7 @@ public class LongPressListenerWithMovingGesture implements View.OnTouchListener 
     ActionBarPopupWindow submenu;
     Rect rect = new Rect();
     boolean subItemClicked;
-
+    boolean tapConfirmedOrCanceled;
     GestureDetector2 gestureDetector2 = new GestureDetector2(new GestureDetector2.OnGestureListener() {
         @Override
         public boolean onDown(MotionEvent e) {
@@ -54,8 +55,13 @@ public class LongPressListenerWithMovingGesture implements View.OnTouchListener 
 
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
+            if (tapConfirmedOrCanceled) {
+                return false;
+            }
             if (view != null) {
                 view.callOnClick();
+                tapConfirmedOrCanceled = true;
+                return true;
             }
             return false;
         }
@@ -85,10 +91,16 @@ public class LongPressListenerWithMovingGesture implements View.OnTouchListener 
         gestureDetector2.setIsLongpressEnabled(true);
     }
 
-
+    float startFromX;
+    float startFromY;
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         view = v;
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            startFromX = event.getX();
+            startFromY = event.getY();
+            tapConfirmedOrCanceled = false;
+        }
         gestureDetector2.onTouchEvent(event);
         if (submenu != null && !subItemClicked && event.getAction() == MotionEvent.ACTION_MOVE) {
             view.getLocationOnScreen(location);
@@ -124,9 +136,18 @@ public class LongPressListenerWithMovingGesture implements View.OnTouchListener 
                 }
             }
         }
-        if (event.getAction() == MotionEvent.ACTION_UP && !subItemClicked && selectedMenuView != null) {
-            selectedMenuView.callOnClick();
-            subItemClicked = true;
+        if (event.getAction() == MotionEvent.ACTION_MOVE && Math.abs(event.getX() - startFromX) > AndroidUtilities.touchSlop * 2 || Math.abs(event.getY() - startFromY) > AndroidUtilities.touchSlop * 2) {
+            tapConfirmedOrCanceled = true;
+            view.setPressed(false);
+            view.setSelected(false);
+        }
+        if (event.getAction() == MotionEvent.ACTION_UP && !subItemClicked && !tapConfirmedOrCanceled) {
+            if (selectedMenuView != null) {
+                selectedMenuView.callOnClick();
+                subItemClicked = true;
+            } else if (submenu == null && view != null) {
+                view.callOnClick();
+            }
         }
         return true;
     }

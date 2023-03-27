@@ -16,7 +16,7 @@
 namespace webrtc {
 
 BandwidthQualityScalerSettings::BandwidthQualityScalerSettings(
-    const WebRtcKeyValueConfig* const key_value_config)
+    const FieldTrialsView* const key_value_config)
     : bitrate_state_update_interval_s_("bitrate_state_update_interval_s_") {
   ParseFieldTrial(
       {&bitrate_state_update_interval_s_},

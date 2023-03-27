@@ -17,16 +17,20 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "media/sctp/sctp_transport_internal.h"
 #include "net/dcsctp/public/dcsctp_options.h"
 #include "net/dcsctp/public/dcsctp_socket.h"
+#include "net/dcsctp/public/dcsctp_socket_factory.h"
 #include "net/dcsctp/public/types.h"
 #include "net/dcsctp/timer/task_queue_timeout.h"
 #include "p2p/base/packet_transport_internal.h"
+#include "rtc_base/containers/flat_map.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/random.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -38,9 +42,15 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   DcSctpTransport(rtc::Thread* network_thread,
                   rtc::PacketTransportInternal* transport,
                   Clock* clock);
+  DcSctpTransport(rtc::Thread* network_thread,
+                  rtc::PacketTransportInternal* transport,
+                  Clock* clock,
+                  std::unique_ptr<dcsctp::DcSctpSocketFactory> socket_factory);
   ~DcSctpTransport() override;
 
   // cricket::SctpTransportInternal
+  void SetOnConnectedCallback(std::function<void()> callback) override;
+  void SetDataChannelSink(DataChannelSink* sink) override;
   void SetDtlsTransport(rtc::PacketTransportInternal* transport) override;
   bool Start(int local_sctp_port,
              int remote_sctp_port,
@@ -61,7 +71,8 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   // dcsctp::DcSctpSocketCallbacks
   dcsctp::SendPacketStatus SendPacketWithStatus(
       rtc::ArrayView<const uint8_t> data) override;
-  std::unique_ptr<dcsctp::Timeout> CreateTimeout() override;
+  std::unique_ptr<dcsctp::Timeout> CreateTimeout(
+      webrtc::TaskQueueBase::DelayPrecision precision) override;
   dcsctp::TimeMs TimeMillis() override;
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override;
   void OnTotalBufferedAmountLow() override;
@@ -97,12 +108,33 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   Clock* clock_;
   Random random_;
 
+  std::unique_ptr<dcsctp::DcSctpSocketFactory> socket_factory_;
   dcsctp::TaskQueueTimeoutFactory task_queue_timeout_factory_;
   std::unique_ptr<dcsctp::DcSctpSocketInterface> socket_;
   std::string debug_name_ = "DcSctpTransport";
   rtc::CopyOnWriteBuffer receive_buffer_;
 
+  // Used to keep track of the state of data channels.
+  // Reset needs to happen both ways before signaling the transport
+  // is closed.
+  struct StreamState {
+    // True when the local connection has initiated the reset.
+    // If a connection receives a reset for a stream that isn't
+    // already being reset locally, it needs to fire the signal
+    // SignalClosingProcedureStartedRemotely.
+    bool closure_initiated = false;
+    // True when the local connection received OnIncomingStreamsReset
+    bool incoming_reset_done = false;
+    // True when the local connection received OnStreamsResetPerformed
+    bool outgoing_reset_done = false;
+  };
+
+  // Map of all currently open or closing data channels
+  flat_map<dcsctp::StreamID, StreamState> stream_states_
+      RTC_GUARDED_BY(network_thread_);
   bool ready_to_send_data_ = false;
+  std::function<void()> on_connected_callback_ RTC_GUARDED_BY(network_thread_);
+  DataChannelSink* data_channel_sink_ RTC_GUARDED_BY(network_thread_) = nullptr;
 };
 
 }  // namespace webrtc

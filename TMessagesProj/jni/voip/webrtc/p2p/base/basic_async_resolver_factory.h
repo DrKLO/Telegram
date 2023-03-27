@@ -45,6 +45,11 @@ class WrappingAsyncDnsResolverFactory final
       const rtc::SocketAddress& addr,
       std::function<void()> callback) override;
 
+  std::unique_ptr<webrtc::AsyncDnsResolverInterface> CreateAndResolve(
+      const rtc::SocketAddress& addr,
+      int family,
+      std::function<void()> callback) override;
+
   std::unique_ptr<webrtc::AsyncDnsResolverInterface> Create() override;
 
  private:

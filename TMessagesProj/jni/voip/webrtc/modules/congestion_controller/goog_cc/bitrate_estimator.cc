@@ -32,7 +32,7 @@ const char kBweThroughputWindowConfig[] = "WebRTC-BweThroughputWindowConfig";
 
 }  // namespace
 
-BitrateEstimator::BitrateEstimator(const WebRtcKeyValueConfig* key_value_config)
+BitrateEstimator::BitrateEstimator(const FieldTrialsView* key_value_config)
     : sum_(0),
       initial_window_ms_("initial_window_ms",
                          kInitialRateWindowMs,

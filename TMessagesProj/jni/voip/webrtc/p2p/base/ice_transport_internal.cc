@@ -10,6 +10,7 @@
 
 #include "p2p/base/ice_transport_internal.h"
 
+#include "absl/strings/string_view.h"
 #include "p2p/base/p2p_constants.h"
 
 namespace cricket {
@@ -126,13 +127,13 @@ IceTransportInternal::IceTransportInternal() = default;
 
 IceTransportInternal::~IceTransportInternal() = default;
 
-void IceTransportInternal::SetIceCredentials(const std::string& ice_ufrag,
-                                             const std::string& ice_pwd) {
+void IceTransportInternal::SetIceCredentials(absl::string_view ice_ufrag,
+                                             absl::string_view ice_pwd) {
   SetIceParameters(IceParameters(ice_ufrag, ice_pwd, false));
 }
 
-void IceTransportInternal::SetRemoteIceCredentials(const std::string& ice_ufrag,
-                                                   const std::string& ice_pwd) {
+void IceTransportInternal::SetRemoteIceCredentials(absl::string_view ice_ufrag,
+                                                   absl::string_view ice_pwd) {
   SetRemoteIceParameters(IceParameters(ice_ufrag, ice_pwd, false));
 }
 

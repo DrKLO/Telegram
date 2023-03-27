@@ -136,7 +136,7 @@ NativeRegistration::NativeRegistration(JNIEnv* jni, jclass clazz)
 
 NativeRegistration::~NativeRegistration() {
   RTC_LOG(LS_INFO) << "NativeRegistration::dtor";
-  jni_->UnregisterNatives(j_class_);
+  //jni_->UnregisterNatives(j_class_);
   CHECK_EXCEPTION(jni_) << "Error during UnregisterNatives";
 }
 

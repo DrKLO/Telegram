@@ -88,8 +88,9 @@ class StreamResetHandler {
         last_processed_req_seq_nbr_(
             handover_state ? ReconfigRequestSN(
                                  handover_state->rx.last_completed_reset_req_sn)
-                           : ReconfigRequestSN(*ctx_->peer_initial_tsn() - 1)) {
-  }
+                           : ReconfigRequestSN(*ctx_->peer_initial_tsn() - 1)),
+        last_processed_req_result_(
+            ReconfigurationResponseParameter::Result::kSuccessNothingToDo) {}
 
   // Initiates reset of the provided streams. While there can only be one
   // ongoing stream reset request at any time, this method can be called at any
@@ -216,10 +217,6 @@ class StreamResetHandler {
   RetransmissionQueue* retransmission_queue_;
   const std::unique_ptr<Timer> reconfig_timer_;
 
-  // Outgoing streams that have been requested to be reset, but hasn't yet
-  // been included in an outgoing request.
-  webrtc::flat_set<StreamID> streams_to_reset_;
-
   // The next sequence number for outgoing stream requests.
   ReconfigRequestSN next_outgoing_req_seq_nbr_;
 
@@ -228,6 +225,8 @@ class StreamResetHandler {
 
   // For incoming requests - last processed request sequence number.
   ReconfigRequestSN last_processed_req_seq_nbr_;
+  // The result from last processed incoming request
+  ReconfigurationResponseParameter::Result last_processed_req_result_;
 };
 }  // namespace dcsctp
 

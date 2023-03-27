@@ -18,7 +18,6 @@
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
 #include "modules/audio_coding/audio_network_adaptor/util/threshold_curve.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -53,6 +52,9 @@ class FecControllerPlrBased final : public Controller {
 
   ~FecControllerPlrBased() override;
 
+  FecControllerPlrBased(const FecControllerPlrBased&) = delete;
+  FecControllerPlrBased& operator=(const FecControllerPlrBased&) = delete;
+
   void UpdateNetworkMetrics(const NetworkMetrics& network_metrics) override;
 
   void MakeDecision(AudioEncoderRuntimeConfig* config) override;
@@ -65,8 +67,6 @@ class FecControllerPlrBased final : public Controller {
   bool fec_enabled_;
   absl::optional<int> uplink_bandwidth_bps_;
   const std::unique_ptr<SmoothingFilter> packet_loss_smoother_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(FecControllerPlrBased);
 };
 
 }  // namespace webrtc

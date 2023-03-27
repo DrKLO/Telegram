@@ -25,7 +25,6 @@
 #include "api/call/audio_sink.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "absl/strings/match.h"
-#include "pc/channel_manager.h"
 #include "audio/audio_state.h"
 #include "modules/audio_coding/neteq/default_neteq_factory.h"
 #include "modules/audio_coding/include/audio_coding_module.h"
@@ -50,6 +49,10 @@
 #include "CodecSelectHelper.h"
 #include "AudioDeviceHelper.h"
 #include "SignalingEncryption.h"
+#include "ReflectorRelayPortFactory.h"
+#include "v2/SignalingConnection.h"
+#include "v2/ExternalSignalingConnection.h"
+#include "v2/SignalingSctpConnection.h"
 #ifdef WEBRTC_IOS
 #include "platform/darwin/iOS/tgcalls_audio_device_module_ios.h"
 #endif
@@ -58,9 +61,40 @@
 #include <map>
 
 #include "third-party/json11.hpp"
+#include "utils/gzip.h"
 
 namespace tgcalls {
 namespace {
+
+enum class SignalingProtocolVersion {
+    V1,
+    V2
+};
+
+SignalingProtocolVersion signalingProtocolVersion(std::string const &version) {
+    if (version == "10.0.0") {
+        return SignalingProtocolVersion::V1;
+    } else if (version == "11.0.0") {
+        return SignalingProtocolVersion::V2;
+    } else {
+        RTC_LOG(LS_ERROR) << "signalingProtocolVersion: unknown version " << version;
+
+        return SignalingProtocolVersion::V2;
+    }
+}
+
+bool signalingProtocolSupportsCompression(SignalingProtocolVersion version) {
+    switch (version) {
+        case SignalingProtocolVersion::V1:
+            return false;
+        case SignalingProtocolVersion::V2:
+            return true;
+        default:
+            RTC_DCHECK_NOTREACHED();
+            break;
+    }
+    return false;
+}
 
 static VideoCaptureInterfaceObject *GetVideoCaptureAssumingSameThread(VideoCaptureInterface *videoCapture) {
     return videoCapture
@@ -321,6 +355,7 @@ struct NetworkBitrateLogRecord {
 class InstanceV2ReferenceImplInternal : public std::enable_shared_from_this<InstanceV2ReferenceImplInternal> {
 public:
     InstanceV2ReferenceImplInternal(Descriptor &&descriptor, std::shared_ptr<Threads> threads) :
+    _signalingProtocolVersion(signalingProtocolVersion(descriptor.version)),
     _threads(threads),
     _rtcServers(descriptor.rtcServers),
     _proxy(std::move(descriptor.proxy)),
@@ -328,7 +363,7 @@ public:
     _encryptionKey(std::move(descriptor.encryptionKey)),
     _stateUpdated(descriptor.stateUpdated),
     _signalBarsUpdated(descriptor.signalBarsUpdated),
-    _audioLevelUpdated(descriptor.audioLevelUpdated),
+    _audioLevelsUpdated(descriptor.audioLevelsUpdated),
     _remoteBatteryLevelIsLowUpdated(descriptor.remoteBatteryLevelIsLowUpdated),
     _remoteMediaStateUpdated(descriptor.remoteMediaStateUpdated),
     _remotePrefferedAspectRatioUpdated(descriptor.remotePrefferedAspectRatioUpdated),
@@ -338,13 +373,17 @@ public:
     _eventLog(std::make_unique<webrtc::RtcEventLogNull>()),
     _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
     _videoCapture(descriptor.videoCapture),
-    _platformContext(descriptor.platformContext) {
+     _platformContext(descriptor.platformContext) {
+        webrtc::field_trial::InitFieldTrialsFromString(
+            "WebRTC-DataChannel-Dcsctp/Enabled/"
+            "WebRTC-Audio-iOS-Holding/Enabled/"
+        );
     }
 
     ~InstanceV2ReferenceImplInternal() {
         _currentStrongSink.reset();
 
-        _threads->getWorkerThread()->Invoke<void>(RTC_FROM_HERE, [&]() {
+        _threads->getWorkerThread()->BlockingCall([&]() {
             _audioDeviceModule = nullptr;
         });
 
@@ -363,14 +402,54 @@ public:
         PlatformInterface::SharedInstance()->configurePlatformAudio();
 
         const auto weak = std::weak_ptr<InstanceV2ReferenceImplInternal>(shared_from_this());
-        
+
         PlatformInterface::SharedInstance()->configurePlatformAudio();
-        
+
         RTC_DCHECK(_threads->getMediaThread()->IsCurrent());
 
-        _threads->getWorkerThread()->Invoke<void>(RTC_FROM_HERE, [&]() {
+        if (_signalingProtocolVersion == SignalingProtocolVersion::V2) {
+            _signalingConnection = std::make_unique<SignalingSctpConnection>(
+                _threads,
+                [threads = _threads, weak](const std::vector<uint8_t> &data) {
+                    threads->getMediaThread()->PostTask([weak, data] {
+                        const auto strong = weak.lock();
+                        if (!strong) {
+                            return;
+                        }
+
+                        strong->onSignalingData(data);
+                    });
+                },
+                [signalingDataEmitted = _signalingDataEmitted](const std::vector<uint8_t> &data) {
+                    signalingDataEmitted(data);
+                }
+            );
+        }
+        if (!_signalingConnection) {
+            _signalingConnection = std::make_unique<ExternalSignalingConnection>(
+                [threads = _threads, weak](const std::vector<uint8_t> &data) {
+                    threads->getMediaThread()->PostTask([weak, data] {
+                        const auto strong = weak.lock();
+                        if (!strong) {
+                            return;
+                        }
+
+                        strong->onSignalingData(data);
+                    });
+                },
+                [signalingDataEmitted = _signalingDataEmitted](const std::vector<uint8_t> &data) {
+                    signalingDataEmitted(data);
+                }
+            );
+        }
+
+        _signalingConnection->start();
+
+        _threads->getWorkerThread()->BlockingCall([&]() {
             _audioDeviceModule = createAudioDeviceModule();
         });
+
+        _relayPortFactory.reset(new ReflectorRelayPortFactory(_rtcServers));
 
         webrtc::PeerConnectionFactoryDependencies peerConnectionFactoryDependencies;
         peerConnectionFactoryDependencies.signaling_thread = _threads->getMediaThread();
@@ -389,18 +468,17 @@ public:
 
         std::unique_ptr<cricket::MediaEngineInterface> mediaEngine = cricket::CreateMediaEngine(std::move(mediaDeps));
         peerConnectionFactoryDependencies.media_engine = std::move(mediaEngine);
-        
 
         peerConnectionFactoryDependencies.call_factory = webrtc::CreateCallFactory();
         peerConnectionFactoryDependencies.event_log_factory = std::make_unique<webrtc::RtcEventLogFactory>(peerConnectionFactoryDependencies.task_queue_factory.get());
 
         _peerConnectionFactory = webrtc::CreateModularPeerConnectionFactory(std::move(peerConnectionFactoryDependencies));
-        
+
         webrtc::PeerConnectionDependencies peerConnectionDependencies(nullptr);
-        
+
         PeerConnectionDelegateAdapter::Parameters delegateParameters;
         delegateParameters.onRenegotiationNeeded = [weak, threads = _threads]() {
-            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak]() {
+            threads->getMediaThread()->PostTask([weak]() {
                 const auto strong = weak.lock();
                 if (!strong) {
                     return;
@@ -558,6 +636,10 @@ public:
         peerConnectionConfiguration.audio_jitter_buffer_fast_accelerate = true;
 
         for (auto &server : _rtcServers) {
+            if (server.isTcp) {
+                continue;
+            }
+
             rtc::SocketAddress address(server.host, server.port);
             if (!address.IsComplete()) {
                 RTC_LOG(LS_ERROR) << "Invalid ICE server host: " << server.host;
@@ -609,7 +691,7 @@ public:
             cricket::AudioOptions audioSourceOptions;
             rtc::scoped_refptr<webrtc::AudioSourceInterface> audioSource = _peerConnectionFactory->CreateAudioSource(audioSourceOptions);
 
-            rtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack = _peerConnectionFactory->CreateAudioTrack("0", audioSource);
+            rtc::scoped_refptr<webrtc::AudioTrackInterface> audioTrack = _peerConnectionFactory->CreateAudioTrack("0", audioSource.get());
             webrtc::RTCErrorOr<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> audioTransceiverOrError = _peerConnection->AddTransceiver(audioTrack, transceiverInit);
             if (audioTransceiverOrError.ok()) {
                 _outgoingAudioTrack = audioTrack;
@@ -635,7 +717,7 @@ public:
             _encryptionKey,
             [weak, threads = _threads](int delayMs, int cause) {
                 if (delayMs == 0) {
-                    threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, cause]() {
+                    threads->getMediaThread()->PostTask([weak, cause]() {
                         const auto strong = weak.lock();
                         if (!strong) {
                             return;
@@ -644,14 +726,14 @@ public:
                         strong->sendPendingSignalingServiceData(cause);
                     });
                 } else {
-                    threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak, cause]() {
+                    threads->getMediaThread()->PostDelayedTask([weak, cause]() {
                         const auto strong = weak.lock();
                         if (!strong) {
                             return;
                         }
 
                         strong->sendPendingSignalingServiceData(cause);
-                    }, delayMs);
+                    }, webrtc::TimeDelta::Millis(delayMs));
                 }
             }
         );
@@ -673,10 +755,41 @@ public:
     void sendRawSignalingMessage(std::vector<uint8_t> const &data) {
         RTC_LOG(LS_INFO) << "sendSignalingMessage: " << std::string(data.begin(), data.end());
 
-        if (_signalingEncryptedConnection) {
-            rtc::CopyOnWriteBuffer message;
-            message.AppendData(data.data(), data.size());
-            commitSendSignalingMessage(_signalingEncryptedConnection->prepareForSendingRawMessage(message, true));
+        if (_signalingConnection && _signalingEncryptedConnection) {
+            switch (_signalingProtocolVersion) {
+                case SignalingProtocolVersion::V1: {
+                    rtc::CopyOnWriteBuffer message;
+                    message.AppendData(data.data(), data.size());
+
+                    commitSendSignalingMessage(_signalingEncryptedConnection->prepareForSendingRawMessage(message, true));
+
+                    break;
+                }
+                case SignalingProtocolVersion::V2: {
+                    std::vector<uint8_t> packetData;
+                    if (signalingProtocolSupportsCompression(_signalingProtocolVersion)) {
+                        if (const auto compressedData = gzipData(data)) {
+                            packetData = std::move(compressedData.value());
+                        } else {
+                            RTC_LOG(LS_ERROR) << "Could not gzip signaling message";
+                        }
+                    } else {
+                        packetData = data;
+                    }
+
+                    if (const auto message = _signalingEncryptedConnection->encryptRawPacket(rtc::CopyOnWriteBuffer(packetData.data(), packetData.size()))) {
+                        _signalingConnection->send(std::vector<uint8_t>(message.value().data(), message.value().data() + message.value().size()));
+                    } else {
+                        RTC_LOG(LS_ERROR) << "Could not encrypt signaling message";
+                    }
+                    break;
+                }
+                default: {
+                    RTC_DCHECK_NOTREACHED();
+
+                    break;
+                }
+            }
         } else {
             RTC_LOG(LS_ERROR) << "sendSignalingMessage encryption not available";
         }
@@ -686,13 +799,15 @@ public:
         if (!packet) {
             return;
         }
-        
-        _signalingDataEmitted(packet.value().bytes);
+
+        if (_signalingConnection) {
+            _signalingConnection->send(packet.value().bytes);
+        }
     }
 
     void beginLogTimer(int delayMs) {
         const auto weak = std::weak_ptr<InstanceV2ReferenceImplInternal>(shared_from_this());
-        _threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+        _threads->getMediaThread()->PostDelayedTask([weak]() {
             auto strong = weak.lock();
             if (!strong) {
                 return;
@@ -701,7 +816,7 @@ public:
             strong->writeStateLogRecords();
 
             strong->beginLogTimer(1000);
-        }, delayMs);
+        }, webrtc::TimeDelta::Millis(delayMs));
     }
 
     void writeStateLogRecords() {
@@ -711,7 +826,7 @@ public:
             return;
         }
 
-        _threads->getWorkerThread()->PostTask(RTC_FROM_HERE, [weak, call]() {
+        _threads->getWorkerThread()->PostTask([weak, call]() {
             auto strong = weak.lock();
             if (!strong) {
                 return;
@@ -720,7 +835,7 @@ public:
             auto stats = call->GetStats();
             float sendBitrateKbps = ((float)stats.send_bandwidth_bps / 1024.0f);
 
-            strong->_threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, sendBitrateKbps]() {
+            strong->_threads->getMediaThread()->PostTask([weak, sendBitrateKbps]() {
                 auto strong = weak.lock();
                 if (!strong) {
                     return;
@@ -753,7 +868,7 @@ public:
         _isMakingOffer = true;
 
         rtc::scoped_refptr<webrtc::SetLocalDescriptionObserverInterface> observer(new rtc::RefCountedObject<SetSessionDescriptionObserver>([threads = _threads, weak](webrtc::RTCError error) {
-            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak]() {
+            threads->getMediaThread()->PostTask([weak]() {
                 const auto strong = weak.lock();
                 if (!strong) {
                     return;
@@ -782,7 +897,7 @@ public:
         auto jsonResult = jsonData.dump();
         sendRawSignalingMessage(std::vector<uint8_t>(jsonResult.begin(), jsonResult.end()));
     }
-    
+
     void sentLocalDescription() {
         auto localDescription = _peerConnection->local_description();
         if (localDescription) {
@@ -793,7 +908,7 @@ public:
             json11::Json::object jsonDescription;
             jsonDescription.insert(std::make_pair("@type", json11::Json(type)));
             jsonDescription.insert(std::make_pair("sdp", json11::Json(sdp)));
-            
+
             auto jsonData = json11::Json(std::move(jsonDescription));
             auto jsonResult = jsonData.dump();
             sendRawSignalingMessage(std::vector<uint8_t>(jsonResult.begin(), jsonResult.end()));
@@ -808,12 +923,38 @@ public:
     }
 
     void receiveSignalingData(const std::vector<uint8_t> &data) {
-        if (_signalingEncryptedConnection) {
-            if (const auto packet = _signalingEncryptedConnection->handleIncomingRawPacket((const char *)data.data(), data.size())) {
-                processSignalingMessage(packet.value().main.message);
+        if (_signalingConnection) {
+            _signalingConnection->receiveExternal(data);
+        }
+    }
 
-                for (const auto &additional : packet.value().additional) {
-                    processSignalingMessage(additional.message);
+    void onSignalingData(const std::vector<uint8_t> &data) {
+        if (_signalingEncryptedConnection) {
+            switch (_signalingProtocolVersion) {
+                case SignalingProtocolVersion::V1: {
+                    if (const auto packet = _signalingEncryptedConnection->handleIncomingRawPacket((const char *)data.data(), data.size())) {
+                        processSignalingMessage(packet.value().main.message);
+
+                        for (const auto &additional : packet.value().additional) {
+                            processSignalingMessage(additional.message);
+                        }
+                    }
+
+                    break;
+                }
+                case SignalingProtocolVersion::V2: {
+                    if (const auto message = _signalingEncryptedConnection->decryptRawPacket(rtc::CopyOnWriteBuffer(data.data(), data.size()))) {
+                        processSignalingMessage(message.value());
+                    } else {
+                        RTC_LOG(LS_ERROR) << "receiveSignalingData could not decrypt signaling data";
+                    }
+
+                    break;
+                }
+                default: {
+                    RTC_DCHECK_NOTREACHED();
+
+                    break;
                 }
             }
         } else {
@@ -823,7 +964,16 @@ public:
 
     void processSignalingMessage(rtc::CopyOnWriteBuffer const &data) {
         std::vector<uint8_t> decryptedData = std::vector<uint8_t>(data.data(), data.data() + data.size());
-        processSignalingData(decryptedData);
+
+        if (isGzip(decryptedData)) {
+            if (const auto decompressedData = gunzipData(decryptedData, 2 * 1024 * 1024)) {
+                processSignalingData(decompressedData.value());
+            } else {
+                RTC_LOG(LS_ERROR) << "receiveSignalingData could not decompress gzipped data";
+            }
+        } else {
+            processSignalingData(decryptedData);
+        }
     }
 
     void processSignalingData(const std::vector<uint8_t> &data) {
@@ -892,7 +1042,7 @@ public:
                 return;
             }
             const auto messageData = &message->data;
-            
+
             if (const auto mediaState = absl::get_if<signaling::MediaStateMessage>(messageData)) {
                 AudioState mappedAudioState;
                 if (mediaState->isMuted) {
@@ -962,7 +1112,7 @@ public:
         std::unique_ptr<webrtc::SessionDescriptionInterface> remoteDescription(webrtc::CreateSessionDescription(type, sdp, &sdpParseError));
         const auto weak = std::weak_ptr<InstanceV2ReferenceImplInternal>(shared_from_this());
         rtc::scoped_refptr<webrtc::SetRemoteDescriptionObserverInterface> observer(new rtc::RefCountedObject<SetSessionDescriptionObserver>([threads = _threads, weak, type](webrtc::RTCError error) {
-            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, type]() {
+            threads->getMediaThread()->PostTask([weak, type]() {
                 const auto strong = weak.lock();
                 if (!strong) {
                     return;
@@ -1025,7 +1175,7 @@ public:
 
         DataChannelObserverImpl::Parameters dataChannelObserverParams;
         dataChannelObserverParams.onStateChange = [threads = _threads, weak]() {
-            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak]() {
+            threads->getMediaThread()->PostTask([weak]() {
                 const auto strong = weak.lock();
                 if (!strong) {
                     return;
@@ -1145,7 +1295,7 @@ public:
         _isPerformingConfiguration = true;
 
         if (_outgoingVideoTransceiver) {
-            _peerConnection->RemoveTrackNew(_outgoingVideoTransceiver->sender());
+            _peerConnection->RemoveTrackOrError(_outgoingVideoTransceiver->sender());
         }
         if (_outgoingVideoTrack) {
             _outgoingVideoTrack = nullptr;
@@ -1158,7 +1308,7 @@ public:
             } else {
                 _videoCapture = videoCapture;
 
-                auto videoTrack = _peerConnectionFactory->CreateVideoTrack("1", videoCaptureImpl->source());
+                auto videoTrack = _peerConnectionFactory->CreateVideoTrack("1", videoCaptureImpl->source().get());
                 if (videoTrack) {
                     webrtc::RtpTransceiverInit transceiverInit;
                     transceiverInit.stream_ids = { "0" };
@@ -1266,9 +1416,11 @@ public:
     }
 
     void setAudioInputDevice(std::string id) {
+        SetAudioInputDeviceById(_audioDeviceModule.get(), id);
     }
 
     void setAudioOutputDevice(std::string id) {
+        SetAudioOutputDeviceById(_audioDeviceModule.get(), id);
     }
 
     void setIsLowBatteryLevel(bool isLowBatteryLevel) {
@@ -1394,6 +1546,7 @@ private:
     }
 
 private:
+    SignalingProtocolVersion _signalingProtocolVersion;
     std::shared_ptr<Threads> _threads;
     std::vector<RtcServer> _rtcServers;
     std::unique_ptr<Proxy> _proxy;
@@ -1401,7 +1554,7 @@ private:
     EncryptionKey _encryptionKey;
     std::function<void(State)> _stateUpdated;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float)> _audioLevelUpdated;
+    std::function<void(float, float)> _audioLevelsUpdated;
     std::function<void(bool)> _remoteBatteryLevelIsLowUpdated;
     std::function<void(AudioState, VideoState)> _remoteMediaStateUpdated;
     std::function<void(float)> _remotePrefferedAspectRatioUpdated;
@@ -1409,6 +1562,7 @@ private:
     std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
     FilePath _statsLogPath;
 
+    std::unique_ptr<SignalingConnection> _signalingConnection;
     std::unique_ptr<EncryptedConnection> _signalingEncryptedConnection;
 
     bool _isConnected = false;
@@ -1441,13 +1595,13 @@ private:
 
     std::unique_ptr<webrtc::RtcEventLogNull> _eventLog;
     std::unique_ptr<webrtc::TaskQueueFactory> _taskQueueFactory;
+    std::unique_ptr<cricket::RelayPortFactoryInterface> _relayPortFactory;
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _peerConnectionFactory;
     std::unique_ptr<PeerConnectionDelegateAdapter> _peerConnectionObserver;
     rtc::scoped_refptr<webrtc::PeerConnectionInterface> _peerConnection;
-    webrtc::FieldTrialBasedConfig _fieldTrials;
-    
+
     webrtc::LocalAudioSinkAdapter _audioSource;
-    
+
     rtc::scoped_refptr<webrtc::AudioDeviceModule> _audioDeviceModule;
 
     bool _isBatteryLow = false;
@@ -1472,7 +1626,7 @@ InstanceV2ReferenceImpl::InstanceV2ReferenceImpl(Descriptor &&descriptor) {
     _internal.reset(new ThreadLocalObject<InstanceV2ReferenceImplInternal>(_threads->getMediaThread(), [descriptor = std::move(descriptor), threads = _threads]() mutable {
         return new InstanceV2ReferenceImplInternal(std::move(descriptor), threads);
     }));
-    _internal->perform(RTC_FROM_HERE, [](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([](InstanceV2ReferenceImplInternal *internal) {
         internal->start();
     });
 }
@@ -1482,55 +1636,55 @@ InstanceV2ReferenceImpl::~InstanceV2ReferenceImpl() {
 }
 
 void InstanceV2ReferenceImpl::receiveSignalingData(const std::vector<uint8_t> &data) {
-    _internal->perform(RTC_FROM_HERE, [data](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([data](InstanceV2ReferenceImplInternal *internal) {
         internal->receiveSignalingData(data);
     });
 }
 
 void InstanceV2ReferenceImpl::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) {
-    _internal->perform(RTC_FROM_HERE, [videoCapture](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([videoCapture](InstanceV2ReferenceImplInternal *internal) {
         internal->setVideoCapture(videoCapture);
     });
 }
 
 void InstanceV2ReferenceImpl::setRequestedVideoAspect(float aspect) {
-    _internal->perform(RTC_FROM_HERE, [aspect](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([aspect](InstanceV2ReferenceImplInternal *internal) {
         internal->setRequestedVideoAspect(aspect);
     });
 }
 
 void InstanceV2ReferenceImpl::setNetworkType(NetworkType networkType) {
-    _internal->perform(RTC_FROM_HERE, [networkType](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([networkType](InstanceV2ReferenceImplInternal *internal) {
         internal->setNetworkType(networkType);
     });
 }
 
 void InstanceV2ReferenceImpl::setMuteMicrophone(bool muteMicrophone) {
-    _internal->perform(RTC_FROM_HERE, [muteMicrophone](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([muteMicrophone](InstanceV2ReferenceImplInternal *internal) {
         internal->setMuteMicrophone(muteMicrophone);
     });
 }
 
 void InstanceV2ReferenceImpl::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
-    _internal->perform(RTC_FROM_HERE, [sink](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([sink](InstanceV2ReferenceImplInternal *internal) {
         internal->setIncomingVideoOutput(sink);
     });
 }
 
 void InstanceV2ReferenceImpl::setAudioInputDevice(std::string id) {
-    _internal->perform(RTC_FROM_HERE, [id](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([id](InstanceV2ReferenceImplInternal *internal) {
         internal->setAudioInputDevice(id);
     });
 }
 
 void InstanceV2ReferenceImpl::setAudioOutputDevice(std::string id) {
-    _internal->perform(RTC_FROM_HERE, [id](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([id](InstanceV2ReferenceImplInternal *internal) {
         internal->setAudioOutputDevice(id);
     });
 }
 
 void InstanceV2ReferenceImpl::setIsLowBatteryLevel(bool isLowBatteryLevel) {
-    _internal->perform(RTC_FROM_HERE, [isLowBatteryLevel](InstanceV2ReferenceImplInternal *internal) {
+    _internal->perform([isLowBatteryLevel](InstanceV2ReferenceImplInternal *internal) {
         internal->setIsLowBatteryLevel(isLowBatteryLevel);
     });
 }
@@ -1552,7 +1706,8 @@ void InstanceV2ReferenceImpl::setEchoCancellationStrength(int strength) {
 
 std::vector<std::string> InstanceV2ReferenceImpl::GetVersions() {
     std::vector<std::string> result;
-    result.push_back("4.1.2");
+    result.push_back("10.0.0");
+    result.push_back("11.0.0");
     return result;
 }
 
@@ -1585,7 +1740,7 @@ void InstanceV2ReferenceImpl::stop(std::function<void(FinalState)> completion) {
     if (_logSink) {
         debugLog = _logSink->result();
     }
-    _internal->perform(RTC_FROM_HERE, [completion, debugLog = std::move(debugLog)](InstanceV2ReferenceImplInternal *internal) mutable {
+    _internal->perform([completion, debugLog = std::move(debugLog)](InstanceV2ReferenceImplInternal *internal) mutable {
         internal->stop([completion, debugLog = std::move(debugLog)](FinalState finalState) mutable {
             finalState.debugLog = debugLog;
             completion(finalState);

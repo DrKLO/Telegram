@@ -26,6 +26,7 @@ enum class VP9Profile {
   kProfile0,
   kProfile1,
   kProfile2,
+  kProfile3,
 };
 
 // Helper functions to convert VP9Profile to std::string. Returns "0" by

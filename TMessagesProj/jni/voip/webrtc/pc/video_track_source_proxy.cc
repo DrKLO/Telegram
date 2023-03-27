@@ -11,7 +11,9 @@
 #include "pc/video_track_source_proxy.h"
 
 #include "api/media_stream_interface.h"
+#include "api/scoped_refptr.h"
 #include "api/video_track_source_proxy_factory.h"
+#include "rtc_base/thread.h"
 
 namespace webrtc {
 
@@ -19,7 +21,9 @@ rtc::scoped_refptr<VideoTrackSourceInterface> CreateVideoTrackSourceProxy(
     rtc::Thread* signaling_thread,
     rtc::Thread* worker_thread,
     VideoTrackSourceInterface* source) {
-  return VideoTrackSourceProxy::Create(signaling_thread, worker_thread, source);
+  return VideoTrackSourceProxy::Create(
+      signaling_thread, worker_thread,
+      rtc::scoped_refptr<VideoTrackSourceInterface>(source));
 }
 
 }  // namespace webrtc

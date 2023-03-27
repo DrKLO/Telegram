@@ -29,13 +29,13 @@
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "api/video/video_stream_encoder_settings.h"
-#include "api/video_codecs/video_encoder_config.h"
 #include "call/rtp_config.h"
 #include "common_video/frame_counts.h"
 #include "common_video/include/quality_limitation_reason.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
 #include "modules/rtp_rtcp/include/rtcp_statistics.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "video/config/video_encoder_config.h"
 
 namespace webrtc {
 
@@ -77,9 +77,10 @@ class VideoSendStream {
     // TODO(holmer): Move bitrate_bps out to the webrtc::Call layer.
     int total_bitrate_bps = 0;
     int retransmit_bitrate_bps = 0;
+    // `avg_delay_ms` and `max_delay_ms` are only used in tests. Consider
+    // deleting.
     int avg_delay_ms = 0;
     int max_delay_ms = 0;
-    uint64_t total_packet_send_delay_ms = 0;
     StreamDataCounters rtp_stats;
     RtcpPacketTypeCounter rtcp_packet_type_counts;
     // A snapshot of the most recent Report Block with additional data of
@@ -140,6 +141,7 @@ class VideoSendStream {
         webrtc::VideoContentType::UNSPECIFIED;
     uint32_t frames_sent = 0;
     uint32_t huge_frames_sent = 0;
+    absl::optional<bool> power_efficient_encoder;
   };
 
   struct Config {
@@ -190,6 +192,11 @@ class VideoSendStream {
     // default.
     rtc::scoped_refptr<webrtc::FrameEncryptorInterface> frame_encryptor;
 
+    // An optional encoder selector provided by the user.
+    // Overrides VideoEncoderFactory::GetEncoderSelector().
+    // Owned by RtpSenderBase.
+    VideoEncoderFactory::EncoderSelectorInterface* encoder_selector = nullptr;
+
     // Per PeerConnection cryptography options.
     CryptoOptions crypto_options;
 
@@ -208,8 +215,7 @@ class VideoSendStream {
   // Note: This starts stream activity if it is inactive and one of the layers
   // is active. This stops stream activity if it is active and all layers are
   // inactive.
-  virtual void UpdateActiveSimulcastLayers(
-      const std::vector<bool> active_layers) = 0;
+  virtual void UpdateActiveSimulcastLayers(std::vector<bool> active_layers) = 0;
 
   // Starts stream activity.
   // When a stream is active, it can receive, process and deliver packets.
@@ -246,6 +252,8 @@ class VideoSendStream {
   virtual void ReconfigureVideoEncoder(VideoEncoderConfig config) = 0;
 
   virtual Stats GetStats() = 0;
+
+  virtual void GenerateKeyFrame() = 0;
 
  protected:
   virtual ~VideoSendStream() {}

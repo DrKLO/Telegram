@@ -27,10 +27,10 @@ struct PacketOptions;
 
 namespace webrtc {
 
-// This represents the internal interface beneath SrtpTransportInterface;
-// it is not accessible to API consumers but is accessible to internal classes
-// in order to send and receive RTP and RTCP packets belonging to a single RTP
-// session. Additional convenience and configuration methods are also provided.
+// This class is an internal interface; it is not accessible to API consumers
+// but is accessible to internal classes in order to send and receive RTP and
+// RTCP packets belonging to a single RTP session. Additional convenience and
+// configuration methods are also provided.
 class RtpTransportInternal : public sigslot::has_slots<> {
  public:
   virtual ~RtpTransportInternal() = default;

@@ -25,8 +25,7 @@ ABSL_NAMESPACE_BEGIN
 namespace cord_internal {
 
 CordRepCrc* CordRepCrc::New(CordRep* child, uint32_t crc) {
-  assert(child != nullptr);
-  if (child->IsCrc()) {
+  if (child != nullptr && child->IsCrc()) {
     if (child->refcount.IsOne()) {
       child->crc()->crc = crc;
       return child->crc();
@@ -37,7 +36,7 @@ CordRepCrc* CordRepCrc::New(CordRep* child, uint32_t crc) {
     CordRep::Unref(old);
   }
   auto* new_cordrep = new CordRepCrc;
-  new_cordrep->length = child->length;
+  new_cordrep->length = child != nullptr ? child->length : 0;
   new_cordrep->tag = cord_internal::CRC;
   new_cordrep->child = child;
   new_cordrep->crc = crc;
@@ -45,7 +44,9 @@ CordRepCrc* CordRepCrc::New(CordRep* child, uint32_t crc) {
 }
 
 void CordRepCrc::Destroy(CordRepCrc* node) {
-  CordRep::Unref(node->child);
+  if (node->child != nullptr) {
+    CordRep::Unref(node->child);
+  }
   delete node;
 }
 

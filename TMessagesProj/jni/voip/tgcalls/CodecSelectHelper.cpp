@@ -129,13 +129,37 @@ void AddDefaultFeedbackParams(cricket::VideoCodec *codec) {
 	}
 }
 
+std::vector<VideoFormat> RemoveScalabilityModes(
+		std::vector<VideoFormat> list) {
+	auto changed = false;
+	for (auto &entry : list) {
+		if (!entry.scalability_modes.empty()) {
+			entry.scalability_modes = {};
+			changed = true;
+		}
+	}
+	if (changed && list.size() > 1) {
+		for (auto i = list.end() - 1; i != list.begin(); --i) {
+			if (std::find(list.begin(), i, *i) != i) {
+				i = list.erase(i);
+			}
+		}
+	}
+	return list;
+}
+
 } // namespace
 
 VideoFormatsMessage ComposeSupportedFormats(
 		std::vector<VideoFormat> encoders,
 		std::vector<VideoFormat> decoders,
         const std::vector<std::string> &preferredCodecs,
-		std::shared_ptr<PlatformContext> platformContext) {
+        std::shared_ptr<PlatformContext> platformContext) {
+	// We don't pass scalability_modes through signaling,
+	// So we have to remove them here, otherwise lists are different.
+	encoders = RemoveScalabilityModes(std::move(encoders));
+	decoders = RemoveScalabilityModes(std::move(decoders));
+
 	encoders = FilterAndSortEncoders(std::move(encoders), preferredCodecs, platformContext);
 
 	auto result = VideoFormatsMessage();

@@ -350,11 +350,13 @@ public class AnimatedTextView extends View {
                 toSetTextMoveDown = false;
                 t = 0;
 
-                currentParts = new Part[1];
-                currentParts[0] = new Part(makeLayout(currentText = text, bounds.width()), 0, -1);
-                currentWidth = currentParts[0].width;
-                currentHeight = currentParts[0].layout.getHeight();
-                isRTL = AndroidUtilities.isRTL(currentText);
+                if (!text.equals(currentText)) {
+                    currentParts = new Part[1];
+                    currentParts[0] = new Part(makeLayout(currentText = text, bounds.width()), 0, -1);
+                    currentWidth = currentParts[0].width;
+                    currentHeight = currentParts[0].layout.getHeight();
+                    isRTL = AndroidUtilities.isRTL(currentText);
+                }
 
                 oldParts = null;
                 oldText = null;
@@ -377,6 +379,10 @@ public class AnimatedTextView extends View {
             if (currentParts != null && oldParts != null) {
                 return AndroidUtilities.lerp(oldWidth, currentWidth, t);
             }
+            return currentWidth;
+        }
+
+        public float getAnimateToWidth() {
             return currentWidth;
         }
 
@@ -713,7 +719,7 @@ public class AnimatedTextView extends View {
     }
 
     private AnimatedTextDrawable drawable;
-    private int lastMaxWidth;
+    private int lastMaxWidth, maxWidth;
 
     private CharSequence toSetText;
     private boolean toSetMoveDown;
@@ -737,10 +743,17 @@ public class AnimatedTextView extends View {
         });
     }
 
+    public void setMaxWidth(int width) {
+        maxWidth = width;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
+        if (maxWidth > 0) {
+            width = Math.min(width, maxWidth);
+        }
         if (lastMaxWidth != width && getLayoutParams().width != 0) {
             drawable.setBounds(getPaddingLeft(), getPaddingTop(), width - getPaddingRight(), height - getPaddingBottom());
             setText(drawable.getText(), false);

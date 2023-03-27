@@ -15,14 +15,17 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import static java.lang.Math.min;
+
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 
 /** Audio processor for trimming samples from the start/end of data. */
 /* package */ final class TrimmingAudioProcessor extends BaseAudioProcessor {
 
-  @C.PcmEncoding private static final int OUTPUT_ENCODING = C.ENCODING_PCM_16BIT;
+  private static final @C.PcmEncoding int OUTPUT_ENCODING = C.ENCODING_PCM_16BIT;
 
   private int trimStartFrames;
   private int trimEndFrames;
@@ -43,9 +46,10 @@ import java.nio.ByteBuffer;
    * processor. After calling this method, call {@link #configure(AudioFormat)} to apply the new
    * trimming frame counts.
    *
+   * <p>See {@link AudioSink#configure(Format, int, int[])}.
+   *
    * @param trimStartFrames The number of audio frames to trim from the start of audio.
    * @param trimEndFrames The number of audio frames to trim from the end of audio.
-   * @see AudioSink#configure(int, int, int, int, int[], int, int)
    */
   public void setTrimFrameCount(int trimStartFrames, int trimEndFrames) {
     this.trimStartFrames = trimStartFrames;
@@ -86,7 +90,7 @@ import java.nio.ByteBuffer;
     }
 
     // Trim any pending start bytes from the input buffer.
-    int trimBytes = Math.min(remaining, pendingTrimStartBytes);
+    int trimBytes = min(remaining, pendingTrimStartBytes);
     trimmedFrameCount += trimBytes / inputAudioFormat.bytesPerFrame;
     pendingTrimStartBytes -= trimBytes;
     inputBuffer.position(position + trimBytes);
@@ -176,5 +180,4 @@ import java.nio.ByteBuffer;
   protected void onReset() {
     endBuffer = Util.EMPTY_BYTE_ARRAY;
   }
-
 }

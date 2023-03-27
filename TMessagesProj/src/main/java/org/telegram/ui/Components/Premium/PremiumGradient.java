@@ -101,6 +101,14 @@ public class PremiumGradient {
         mainGradient.gradientMatrix(x, y, width, height, xOffset, yOffset);
     }
 
+    public Paint getPremiumLocakedPaint() {
+        if (lockedPremiumPaint == null) {
+            lockedPremiumPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        lockedPremiumPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        return lockedPremiumPaint;
+    }
+
     public static class InternalDrawable extends BitmapDrawable {
 
         public int[] colors;

@@ -17,12 +17,9 @@ import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.net.Uri;
-import androidx.annotation.Keep;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.ActionMode;
@@ -38,6 +35,10 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.annotation.Keep;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -210,7 +211,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             allSpans.add(span);
             selectedContacts.put(span.getKey(), span);
 
-            editText.setHintVisible(false);
+            editText.setHintVisible(false, TextUtils.isEmpty(editText.getText()));
             if (currentAnimation != null) {
                 currentAnimation.setupEndValues();
                 currentAnimation.cancel();
@@ -241,7 +242,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             allSpans.remove(span);
             span.setOnClickListener(null);
 
-            if (currentAnimation != null) {
+            if (currentAnimation != null && currentAnimation.isRunning()) {
                 currentAnimation.setupEndValues();
                 currentAnimation.cancel();
             }
@@ -256,7 +257,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                     animationStarted = false;
                     editText.setAllowDrawCursor(true);
                     if (allSpans.isEmpty()) {
-                        editText.setHintVisible(true);
+                        editText.setHintVisible(true, true);
                     }
                 }
             });

@@ -99,9 +99,9 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
         this.parentFragment = parentFragment;
 
         int CacheTabChats;
-        allPages[PAGE_TYPE_CHATS] = new Page(LocaleController.getString("Chats", R.string.Chats), PAGE_TYPE_CHATS, new DialogsAdapter());
+        allPages[PAGE_TYPE_CHATS] = new Page(LocaleController.getString("FilterChats", R.string.FilterChats), PAGE_TYPE_CHATS, new DialogsAdapter());
         allPages[PAGE_TYPE_MEDIA] = new Page(LocaleController.getString("MediaTab", R.string.MediaTab), PAGE_TYPE_MEDIA, new MediaAdapter());
-        allPages[PAGE_TYPE_DOCUMENTS] = new Page(LocaleController.getString("Files", R.string.Files), PAGE_TYPE_DOCUMENTS, new DocumentsAdapter());
+        allPages[PAGE_TYPE_DOCUMENTS] = new Page(LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), PAGE_TYPE_DOCUMENTS, new DocumentsAdapter());
         allPages[PAGE_TYPE_MUSIC] = new Page(LocaleController.getString("Music", R.string.Music), PAGE_TYPE_MUSIC, new MusicAdapter());
         //   allPages[PAGE_TYPE_VOICE] = new Page(LocaleController.getString("Voice", R.string.Voice), PAGE_TYPE_VOICE, new VoiceAdapter());
 
@@ -867,8 +867,12 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
                     } catch (Exception e) {
                         FileLog.e(e);
                     } finally {
-                        if (mediaMetadataRetriever != null) {
-                            mediaMetadataRetriever.release();
+                        try {
+                            if (mediaMetadataRetriever != null) {
+                                mediaMetadataRetriever.release();
+                            }
+                        } catch (Throwable e) {
+
                         }
                     }
                     String finalTitle = title;

@@ -20,7 +20,7 @@
 #endif
 
 // For ArmCpuCaps() but unittested on all platforms
-#include <stdio.h>
+#include <stdio.h>  // For fopen()
 #include <string.h>
 
 #ifdef __cplusplus
@@ -108,14 +108,14 @@ void CpuId(int eax, int ecx, int* cpu_info) {
 //  }
 // For VS2013 and earlier 32 bit, the _xgetbv(0) optimizer produces bad code.
 // https://code.google.com/p/libyuv/issues/detail?id=529
-#if defined(_M_IX86) && (_MSC_VER < 1900)
+#if defined(_M_IX86) && defined(_MSC_VER) && (_MSC_VER < 1900)
 #pragma optimize("g", off)
 #endif
 #if (defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || \
      defined(__x86_64__)) &&                                     \
     !defined(__pnacl__) && !defined(__CLR_VER) && !defined(__native_client__)
 // X86 CPUs have xgetbv to detect OS saves high parts of ymm registers.
-int GetXCR0() {
+static int GetXCR0() {
   int xcr0 = 0;
 #if defined(_MSC_FULL_VER) && (_MSC_FULL_VER >= 160040219)
   xcr0 = (int)_xgetbv(0);  // VS2010 SP1 required.  NOLINT
@@ -129,11 +129,11 @@ int GetXCR0() {
 #define GetXCR0() 0
 #endif  // defined(_M_IX86) || defined(_M_X64) ..
 // Return optimization to previous setting.
-#if defined(_M_IX86) && (_MSC_VER < 1900)
+#if defined(_M_IX86) && defined(_MSC_VER) && (_MSC_VER < 1900)
 #pragma optimize("g", on)
 #endif
 
-// based on libvpx arm_cpudetect.c
+// Based on libvpx arm_cpudetect.c
 // For Arm, but public to allow testing on any CPU
 LIBYUV_API SAFEBUFFERS int ArmCpuCaps(const char* cpuinfo_name) {
   char cpuinfo_line[512];
@@ -174,18 +174,12 @@ LIBYUV_API SAFEBUFFERS int MipsCpuCaps(const char* cpuinfo_name) {
   }
   while (fgets(cpuinfo_line, sizeof(cpuinfo_line) - 1, f)) {
     if (memcmp(cpuinfo_line, "cpu model", 9) == 0) {
-      // Workaround early kernel without mmi in ASEs line.
-      if (strstr(cpuinfo_line, "Loongson-3")) {
-        flag |= kCpuHasMMI;
-      } else if (strstr(cpuinfo_line, "Loongson-2K")) {
-        flag |= kCpuHasMMI | kCpuHasMSA;
+      // Workaround early kernel without MSA in ASEs line.
+      if (strstr(cpuinfo_line, "Loongson-2K")) {
+        flag |= kCpuHasMSA;
       }
     }
     if (memcmp(cpuinfo_line, "ASEs implemented", 16) == 0) {
-      if (strstr(cpuinfo_line, "loongson-mmi") &&
-          strstr(cpuinfo_line, "loongson-ext")) {
-        flag |= kCpuHasMMI;
-      }
       if (strstr(cpuinfo_line, "msa")) {
         flag |= kCpuHasMSA;
       }
@@ -196,6 +190,27 @@ LIBYUV_API SAFEBUFFERS int MipsCpuCaps(const char* cpuinfo_name) {
   fclose(f);
   return flag;
 }
+
+// TODO(fbarchard): Consider read_loongarch_ir().
+#define LOONGARCH_CFG2 0x2
+#define LOONGARCH_CFG2_LSX (1 << 6)
+#define LOONGARCH_CFG2_LASX (1 << 7)
+
+#if defined(__loongarch__)
+LIBYUV_API SAFEBUFFERS int LoongarchCpuCaps(void) {
+  int flag = 0x0;
+  uint32_t cfg2 = 0;
+
+  __asm__ volatile("cpucfg %0, %1 \n\t" : "+&r"(cfg2) : "r"(LOONGARCH_CFG2));
+
+  if (cfg2 & LOONGARCH_CFG2_LSX)
+    flag |= kCpuHasLSX;
+
+  if (cfg2 & LOONGARCH_CFG2_LASX)
+    flag |= kCpuHasLASX;
+  return flag;
+}
+#endif
 
 static SAFEBUFFERS int GetCpuFlags(void) {
   int cpu_info = 0;
@@ -229,6 +244,7 @@ static SAFEBUFFERS int GetCpuFlags(void) {
       cpu_info |= (cpu_info7[1] & 0x80000000) ? kCpuHasAVX512VL : 0;
       cpu_info |= (cpu_info7[2] & 0x00000002) ? kCpuHasAVX512VBMI : 0;
       cpu_info |= (cpu_info7[2] & 0x00000040) ? kCpuHasAVX512VBMI2 : 0;
+      cpu_info |= (cpu_info7[2] & 0x00000800) ? kCpuHasAVX512VNNI : 0;
       cpu_info |= (cpu_info7[2] & 0x00001000) ? kCpuHasAVX512VBITALG : 0;
       cpu_info |= (cpu_info7[2] & 0x00004000) ? kCpuHasAVX512VPOPCNTDQ : 0;
       cpu_info |= (cpu_info7[2] & 0x00000100) ? kCpuHasGFNI : 0;
@@ -238,6 +254,10 @@ static SAFEBUFFERS int GetCpuFlags(void) {
 #if defined(__mips__) && defined(__linux__)
   cpu_info = MipsCpuCaps("/proc/cpuinfo");
   cpu_info |= kCpuHasMIPS;
+#endif
+#if defined(__loongarch__) && defined(__linux__)
+  cpu_info = LoongarchCpuCaps();
+  cpu_info |= kCpuHasLOONGARCH;
 #endif
 #if defined(__arm__) || defined(__aarch64__)
 // gcc -mfpu=neon defines __ARM_NEON__

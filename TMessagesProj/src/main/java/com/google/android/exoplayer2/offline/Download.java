@@ -15,12 +15,19 @@
  */
 package com.google.android.exoplayer2.offline;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /** Represents state of a download. */
 public final class Download {
@@ -30,8 +37,11 @@ public final class Download {
    * #STATE_DOWNLOADING}, {@link #STATE_COMPLETED}, {@link #STATE_FAILED}, {@link #STATE_REMOVING}
    * or {@link #STATE_RESTARTING}.
    */
+  // @Target list includes both 'default' targets and TYPE_USE, to ensure backwards compatibility
+  // with Kotlin usages from before TYPE_USE was added.
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target({FIELD, METHOD, PARAMETER, LOCAL_VARIABLE, TYPE_USE})
   @IntDef({
     STATE_QUEUED,
     STATE_STOPPED,
@@ -44,13 +54,13 @@ public final class Download {
   public @interface State {}
   // Important: These constants are persisted into DownloadIndex. Do not change them.
   /**
-   * The download is waiting to be started. A download may be queued because the {@link
+   * The download is waiting to be started. A download may be queued because the {@code
    * DownloadManager}
    *
    * <ul>
-   *   <li>Is {@link DownloadManager#getDownloadsPaused() paused}
-   *   <li>Has {@link DownloadManager#getRequirements() Requirements} that are not met
-   *   <li>Has already started {@link DownloadManager#getMaxParallelDownloads()
+   *   <li>Is {@code DownloadManager#getDownloadsPaused() paused}
+   *   <li>Has {@code DownloadManager#getRequirements() Requirements} that are not met
+   *   <li>Has already started {@code DownloadManager#getMaxParallelDownloads()
    *       maxParallelDownloads}
    * </ul>
    */
@@ -69,8 +79,11 @@ public final class Download {
   public static final int STATE_RESTARTING = 7;
 
   /** Failure reasons. Either {@link #FAILURE_REASON_NONE} or {@link #FAILURE_REASON_UNKNOWN}. */
+  // @Target list includes both 'default' targets and TYPE_USE, to ensure backwards compatibility
+  // with Kotlin usages from before TYPE_USE was added.
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target({FIELD, METHOD, PARAMETER, LOCAL_VARIABLE, TYPE_USE})
   @IntDef({FAILURE_REASON_NONE, FAILURE_REASON_UNKNOWN})
   public @interface FailureReason {}
   /** The download isn't failed. */
@@ -84,7 +97,7 @@ public final class Download {
   /** The download request. */
   public final DownloadRequest request;
   /** The state of the download. */
-  @State public final int state;
+  public final @State int state;
   /** The first time when download entry is created. */
   public final long startTimeMs;
   /** The last update time. */
@@ -97,7 +110,7 @@ public final class Download {
    * If {@link #state} is {@link #STATE_FAILED} then this is the cause, otherwise {@link
    * #FAILURE_REASON_NONE}.
    */
-  @FailureReason public final int failureReason;
+  public final @FailureReason int failureReason;
 
   /* package */ final DownloadProgress progress;
 

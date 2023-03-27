@@ -10,7 +10,6 @@
 
 #include "sdk/android/native_api/video/video_source.h"
 
-#include "rtc_base/ref_counted_object.h"
 #include "sdk/android/src/jni/android_video_track_source.h"
 #include "sdk/android/src/jni/native_capturer_observer.h"
 

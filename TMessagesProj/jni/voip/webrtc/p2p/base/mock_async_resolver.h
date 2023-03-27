@@ -30,6 +30,7 @@ class MockAsyncResolver : public AsyncResolverInterface {
   ~MockAsyncResolver() = default;
 
   MOCK_METHOD(void, Start, (const rtc::SocketAddress&), (override));
+  MOCK_METHOD(void, Start, (const rtc::SocketAddress&, int family), (override));
   MOCK_METHOD(bool,
               GetResolvedAddress,
               (int family, SocketAddress* addr),

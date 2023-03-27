@@ -20,7 +20,6 @@
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
 #include "modules/audio_coding/neteq/audio_vector.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -31,6 +30,9 @@ class SyncBuffer : public AudioMultiVector {
         next_index_(length),
         end_timestamp_(0),
         dtmf_index_(0) {}
+
+  SyncBuffer(const SyncBuffer&) = delete;
+  SyncBuffer& operator=(const SyncBuffer&) = delete;
 
   // Returns the number of samples yet to play out from the buffer.
   size_t FutureLength() const;
@@ -102,8 +104,6 @@ class SyncBuffer : public AudioMultiVector {
   size_t next_index_;
   uint32_t end_timestamp_;  // The timestamp of the last sample in the buffer.
   size_t dtmf_index_;       // Index to the first non-DTMF sample in the buffer.
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SyncBuffer);
 };
 
 }  // namespace webrtc

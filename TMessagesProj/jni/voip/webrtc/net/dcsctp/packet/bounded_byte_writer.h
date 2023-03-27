@@ -88,8 +88,11 @@ class BoundedByteWriter {
   }
 
   void CopyToVariableData(rtc::ArrayView<const uint8_t> source) {
-    memcpy(data_.data() + FixedSize, source.data(),
-           std::min(source.size(), data_.size() - FixedSize));
+    size_t copy_size = std::min(source.size(), data_.size() - FixedSize);
+    if (source.data() == nullptr || copy_size == 0) {
+      return;
+    }
+    memcpy(data_.data() + FixedSize, source.data(), copy_size);
   }
 
  private:

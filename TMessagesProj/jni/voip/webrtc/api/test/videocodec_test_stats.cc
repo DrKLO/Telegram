@@ -86,6 +86,10 @@ std::map<std::string, std::string> VideoCodecTestStats::VideoStatistics::ToMap()
   map["framerate_fps"] = std::to_string(framerate_fps);
   map["enc_speed_fps"] = std::to_string(enc_speed_fps);
   map["dec_speed_fps"] = std::to_string(dec_speed_fps);
+  map["avg_encode_latency_sec"] = std::to_string(avg_encode_latency_sec);
+  map["max_encode_latency_sec"] = std::to_string(max_encode_latency_sec);
+  map["avg_decode_latency_sec"] = std::to_string(avg_decode_latency_sec);
+  map["max_decode_latency_sec"] = std::to_string(max_decode_latency_sec);
   map["avg_delay_sec"] = std::to_string(avg_delay_sec);
   map["max_key_frame_delay_sec"] = std::to_string(max_key_frame_delay_sec);
   map["max_delta_frame_delay_sec"] = std::to_string(max_delta_frame_delay_sec);

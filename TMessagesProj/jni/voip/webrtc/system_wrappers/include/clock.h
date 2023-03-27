@@ -39,11 +39,7 @@ class RTC_EXPORT Clock {
   int64_t TimeInMicroseconds() { return CurrentTime().us(); }
 
   // Retrieve an NTP absolute timestamp (with an epoch of Jan 1, 1900).
-  // TODO(bugs.webrtc.org/11327): Make this non-virtual once
-  // "WebRTC-SystemIndependentNtpTimeKillSwitch" is removed.
-  virtual NtpTime CurrentNtpTime() {
-    return ConvertTimestampToNtpTime(CurrentTime());
-  }
+  NtpTime CurrentNtpTime() { return ConvertTimestampToNtpTime(CurrentTime()); }
   int64_t CurrentNtpInMilliseconds() { return CurrentNtpTime().ToMs(); }
 
   // Converts between a relative timestamp returned by this clock, to NTP time.

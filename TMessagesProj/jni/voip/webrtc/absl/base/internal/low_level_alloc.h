@@ -103,7 +103,7 @@ class LowLevelAlloc {
   // the provided flags.  For example, the call NewArena(kAsyncSignalSafe)
   // is itself async-signal-safe, as well as generatating an arena that provides
   // async-signal-safe Alloc/Free.
-  static Arena *NewArena(int32_t flags);
+  static Arena *NewArena(uint32_t flags);
 
   // Destroys an arena allocated by NewArena and returns true,
   // provided no allocated blocks remain in the arena.

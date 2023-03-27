@@ -97,7 +97,6 @@ public final class ExtendedDefaultDataSource implements DataSource {
                 context,
                 new DefaultHttpDataSource(
                         userAgent,
-                        /* contentTypePredicate= */ null,
                         connectTimeoutMillis,
                         readTimeoutMillis,
                         allowCrossProtocolRedirects,

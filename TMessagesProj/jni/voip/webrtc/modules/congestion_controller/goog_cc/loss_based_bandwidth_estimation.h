@@ -13,8 +13,8 @@
 
 #include <vector>
 
+#include "api/field_trials_view.h"
 #include "api/transport/network_types.h"
-#include "api/transport/webrtc_key_value_config.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
@@ -23,7 +23,7 @@
 namespace webrtc {
 
 struct LossBasedControlConfig {
-  explicit LossBasedControlConfig(const WebRtcKeyValueConfig* key_value_config);
+  explicit LossBasedControlConfig(const FieldTrialsView* key_value_config);
   LossBasedControlConfig(const LossBasedControlConfig&);
   LossBasedControlConfig& operator=(const LossBasedControlConfig&) = default;
   ~LossBasedControlConfig();
@@ -52,7 +52,7 @@ struct LossBasedControlConfig {
 class LossBasedBandwidthEstimation {
  public:
   explicit LossBasedBandwidthEstimation(
-      const WebRtcKeyValueConfig* key_value_config);
+      const FieldTrialsView* key_value_config);
   // Returns the new estimate.
   DataRate Update(Timestamp at_time,
                   DataRate min_bitrate,

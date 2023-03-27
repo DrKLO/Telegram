@@ -21,9 +21,6 @@
 
 #include "absl/algorithm/container.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/containers/as_const.h"
-#include "rtc_base/containers/not_fn.h"
-#include "rtc_base/containers/void_t.h"
 #include "rtc_base/system/no_unique_address.h"
 
 namespace webrtc {
@@ -44,7 +41,7 @@ constexpr bool is_sorted_and_unique(const Range& range, Comp comp) {
   // Being unique implies that there are no adjacent elements that
   // compare equal. So this checks that each element is strictly less
   // than the element after it.
-  return absl::c_adjacent_find(range, webrtc::not_fn(comp)) == std::end(range);
+  return absl::c_adjacent_find(range, std::not_fn(comp)) == std::end(range);
 }
 
 // This is a convenience trait inheriting from std::true_type if Iterator is at
@@ -58,7 +55,7 @@ using is_multipass =
 template <typename T, typename = void>
 struct IsTransparentCompare : std::false_type {};
 template <typename T>
-struct IsTransparentCompare<T, void_t<typename T::is_transparent>>
+struct IsTransparentCompare<T, std::void_t<typename T::is_transparent>>
     : std::true_type {};
 
 // Helper inspired by C++20's std::to_array to convert a C-style array to a
@@ -543,7 +540,7 @@ class flat_tree {
     std::stable_sort(first, last, value_comp());
 
     // lhs is already <= rhs due to sort, therefore !(lhs < rhs) <=> lhs == rhs.
-    auto equal_comp = webrtc::not_fn(value_comp());
+    auto equal_comp = std::not_fn(value_comp());
     erase(std::unique(first, last, equal_comp), last);
   }
 
@@ -946,7 +943,7 @@ template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
 template <typename K>
 auto flat_tree<Key, GetKeyFromValue, KeyCompare, Container>::find(const K& key)
     -> iterator {
-  return const_cast_it(webrtc::as_const(*this).find(key));
+  return const_cast_it(std::as_const(*this).find(key));
 }
 
 template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
@@ -969,7 +966,7 @@ template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
 template <typename K>
 auto flat_tree<Key, GetKeyFromValue, KeyCompare, Container>::equal_range(
     const K& key) -> std::pair<iterator, iterator> {
-  auto res = webrtc::as_const(*this).equal_range(key);
+  auto res = std::as_const(*this).equal_range(key);
   return {const_cast_it(res.first), const_cast_it(res.second)};
 }
 
@@ -990,7 +987,7 @@ template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
 template <typename K>
 auto flat_tree<Key, GetKeyFromValue, KeyCompare, Container>::lower_bound(
     const K& key) -> iterator {
-  return const_cast_it(webrtc::as_const(*this).lower_bound(key));
+  return const_cast_it(std::as_const(*this).lower_bound(key));
 }
 
 template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
@@ -1011,7 +1008,7 @@ template <class Key, class GetKeyFromValue, class KeyCompare, class Container>
 template <typename K>
 auto flat_tree<Key, GetKeyFromValue, KeyCompare, Container>::upper_bound(
     const K& key) -> iterator {
-  return const_cast_it(webrtc::as_const(*this).upper_bound(key));
+  return const_cast_it(std::as_const(*this).upper_bound(key));
 }
 
 template <class Key, class GetKeyFromValue, class KeyCompare, class Container>

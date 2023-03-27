@@ -18,7 +18,6 @@
 
 #include <memory>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/gtest_prod_util.h"
 #include "rtc_base/memory/aligned_malloc.h"
 #include "rtc_base/system/arch.h"
@@ -63,6 +62,9 @@ class SincResampler {
                 size_t request_frames,
                 SincResamplerCallback* read_cb);
   virtual ~SincResampler();
+
+  SincResampler(const SincResampler&) = delete;
+  SincResampler& operator=(const SincResampler&) = delete;
 
   // Resample `frames` of data from `read_cb_` into `destination`.
   void Resample(size_t frames, float* destination);
@@ -172,8 +174,6 @@ class SincResampler {
   float* const r2_;
   float* r3_;
   float* r4_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SincResampler);
 };
 
 }  // namespace webrtc

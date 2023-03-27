@@ -24,6 +24,10 @@
 #ifndef ABSL_RANDOM_BIT_GEN_REF_H_
 #define ABSL_RANDOM_BIT_GEN_REF_H_
 
+#include <limits>
+#include <type_traits>
+#include <utility>
+
 #include "absl/base/internal/fast_type_id.h"
 #include "absl/base/macros.h"
 #include "absl/meta/type_traits.h"

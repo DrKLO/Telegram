@@ -11,9 +11,9 @@
 #ifndef MODULES_VIDEO_CODING_INCLUDE_VIDEO_CODING_H_
 #define MODULES_VIDEO_CODING_INCLUDE_VIDEO_CODING_H_
 
+#include "api/field_trials_view.h"
 #include "api/video/video_frame.h"
 #include "api/video_codecs/video_decoder.h"
-#include "modules/include/module.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
 #include "modules/video_coding/include/video_coding_defines.h"
 
@@ -25,10 +25,14 @@ class VideoDecoder;
 class VideoEncoder;
 struct CodecSpecificInfo;
 
-class VideoCodingModule : public Module {
+class VideoCodingModule {
  public:
   // DEPRECATED.
-  static VideoCodingModule* Create(Clock* clock);
+  static VideoCodingModule* Create(
+      Clock* clock,
+      const FieldTrialsView* field_trials = nullptr);
+
+  virtual ~VideoCodingModule() = default;
 
   /*
    *   Receiver
@@ -136,6 +140,9 @@ class VideoCodingModule : public Module {
   virtual void SetNackSettings(size_t max_nack_list_size,
                                int max_packet_age_to_nack,
                                int max_incomplete_time_ms) = 0;
+
+  // Runs delayed tasks. Expected to be called periodically.
+  virtual void Process() = 0;
 };
 
 }  // namespace webrtc

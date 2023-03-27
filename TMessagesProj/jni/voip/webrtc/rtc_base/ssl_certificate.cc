@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/openssl.h"
 #ifdef OPENSSL_IS_BORINGSSL
@@ -42,6 +43,12 @@ SSLCertificateStats::SSLCertificateStats(
       issuer(std::move(issuer)) {}
 
 SSLCertificateStats::~SSLCertificateStats() {}
+
+std::unique_ptr<SSLCertificateStats> SSLCertificateStats::Copy() const {
+  return std::make_unique<SSLCertificateStats>(
+      std::string(fingerprint), std::string(fingerprint_algorithm),
+      std::string(base64_certificate), issuer ? issuer->Copy() : nullptr);
+}
 
 //////////////////////////////////////////////////////////////////////
 // SSLCertificate
@@ -121,7 +128,7 @@ std::unique_ptr<SSLCertificateStats> SSLCertChain::GetStats() const {
 
 // static
 std::unique_ptr<SSLCertificate> SSLCertificate::FromPEMString(
-    const std::string& pem_string) {
+    absl::string_view pem_string) {
 #ifdef OPENSSL_IS_BORINGSSL
   return BoringSSLCertificate::FromPEMString(pem_string);
 #else

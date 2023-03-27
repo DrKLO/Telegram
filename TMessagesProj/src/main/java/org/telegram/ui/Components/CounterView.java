@@ -45,7 +45,7 @@ public class CounterView extends View {
     }
 
 
-    public void setColors(String textKey, String circleKey){
+    public void setColors(String textKey, String circleKey) {
         counterDrawable.textColorKey = textKey;
         counterDrawable.circleColorKey = circleKey;
     }
@@ -73,6 +73,7 @@ public class CounterView extends View {
         private final static int ANIMATION_TYPE_OUT = 1;
         private final static int ANIMATION_TYPE_REPLACE = 2;
         public boolean shortFormat;
+        public float circleScale = 1f;
 
         int animationType = -1;
 
@@ -103,6 +104,7 @@ public class CounterView extends View {
         public int gravity = Gravity.CENTER;
         float countLeft;
         float x;
+        public float radius = 11.5f;
 
         private boolean reverseAnimation;
         public float horizontalPadding;
@@ -143,13 +145,23 @@ public class CounterView extends View {
 
 
         private void drawInternal(Canvas canvas) {
-            float countTop = (lastH - AndroidUtilities.dp(23)) / 2f;
+            float size = radius * 2;
+            float countTop = (lastH - AndroidUtilities.dp(size)) / 2f;
             updateX(countWidth);
-            rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
+            rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(radius - 0.5f), countTop + AndroidUtilities.dp(size));
             if (circlePaint != null && drawBackground) {
-                canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, circlePaint);
+                boolean needRestore = false;
+                if (circleScale != 1f) {
+                    canvas.save();
+                    canvas.scale(circleScale, circleScale, rectF.centerX(), rectF.centerY());
+                    needRestore = true;
+                }
+                canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, circlePaint);
                 if (addServiceGradient && Theme.hasGradientService()) {
-                    canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
+                    canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
+                }
+                if (needRestore) {
+                    canvas.restore();
                 }
             }
             if (countLayout != null) {
@@ -187,6 +199,7 @@ public class CounterView extends View {
                 if (parent != null) {
                     parent.invalidate();
                 }
+                return;
             }
             String newStr = getStringOfCCount(count);
 
@@ -306,7 +319,7 @@ public class CounterView extends View {
                         progressHalf = 1f;
                     }
 
-                    float countTop = (lastH - AndroidUtilities.dp(23)) / 2f;
+                    float countTop = (lastH - AndroidUtilities.dp(radius * 2)) / 2f;
                     float countWidth;
                     if (this.countWidth == this.countWidthOld) {
                         countWidth = this.countWidth;
@@ -324,14 +337,23 @@ public class CounterView extends View {
                         }
                     }
 
-                    rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
+                    rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(radius - 0.5f), countTop + AndroidUtilities.dp(radius * 2));
                     canvas.save();
                     canvas.scale(scale, scale, rectF.centerX(), rectF.centerY());
+                    boolean needRestore = false;
+                    if (circleScale != 1f) {
+                        needRestore = true;
+                        canvas.save();
+                        canvas.scale(circleScale, circleScale, rectF.centerX(), rectF.centerY());
+                    }
                     if (drawBackground && circlePaint != null) {
-                        canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, circlePaint);
+                        canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, circlePaint);
                         if (addServiceGradient && Theme.hasGradientService()) {
-                            canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
+                            canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
                         }
+                    }
+                    if (needRestore) {
+                        canvas.restore();
                     }
                     canvas.clipRect(rectF);
 
@@ -377,14 +399,14 @@ public class CounterView extends View {
             if (countChangeProgress != 1f) {
                 if (animationType == ANIMATION_TYPE_IN || animationType == ANIMATION_TYPE_OUT) {
                     updateX(countWidth);
-                    float countTop = (lastH - AndroidUtilities.dp(23)) / 2f;
+                    float countTop = (lastH - AndroidUtilities.dp(radius * 2)) / 2f;
                     rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
                 } else {
                     float progressHalf = countChangeProgress * 2;
                     if (progressHalf > 1f) {
                         progressHalf = 1f;
                     }
-                    float countTop = (lastH - AndroidUtilities.dp(23)) / 2f;
+                    float countTop = (lastH - AndroidUtilities.dp(radius * 2)) / 2f;
                     float countWidth;
                     if (this.countWidth == this.countWidthOld) {
                         countWidth = this.countWidth;
@@ -396,7 +418,7 @@ public class CounterView extends View {
                 }
             } else {
                 updateX(countWidth);
-                float countTop = (lastH - AndroidUtilities.dp(23)) / 2f;
+                float countTop = (lastH - AndroidUtilities.dp(radius * 2)) / 2f;
                 rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
             }
         }
@@ -435,6 +457,10 @@ public class CounterView extends View {
             Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
             return color != null ? color : Theme.getColor(key);
         }
+
+        public int getWidth() {
+            return currentCount == 0 ? 0 : (countWidth + AndroidUtilities.dp(radius - 0.5f));
+        }
     }
 
     public float getEnterProgress() {
@@ -452,4 +478,5 @@ public class CounterView extends View {
     public boolean isInOutAnimation() {
         return counterDrawable.animationType == CounterDrawable.ANIMATION_TYPE_IN || counterDrawable.animationType == CounterDrawable.ANIMATION_TYPE_OUT;
     }
+
 }

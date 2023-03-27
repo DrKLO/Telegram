@@ -1768,6 +1768,13 @@ int32_t ConnectionsManager::sendRequestInternal(TLObject *object, onCompleteFunc
     auto request = new Request(instanceNum, lastRequestToken++, connetionType, flags, datacenterId, onComplete, onQuickAck, nullptr);
     request->rawRequest = object;
     request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
+    auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
+    if (cancelledIterator != tokensToBeCancelled.end()) {
+        if (LOGS_ENABLED) DEBUG_D("(3) request is cancelled before sending, token %d", request->requestToken);
+        tokensToBeCancelled.erase(cancelledIterator);
+        delete request;
+        return request->requestToken;
+    }
     requestsQueue.push_back(std::unique_ptr<Request>(request));
     if (immediate) {
         processRequestQueue(0, 0);
@@ -1793,6 +1800,12 @@ int32_t ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onCompl
         auto request = new Request(instanceNum, requestToken, connetionType, flags, datacenterId, onComplete, onQuickAck, nullptr);
         request->rawRequest = object;
         request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
+        auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
+        if (cancelledIterator != tokensToBeCancelled.end()) {
+            if (LOGS_ENABLED) DEBUG_D("(1) request is cancelled before sending, token %d", requestToken);
+            tokensToBeCancelled.erase(cancelledIterator);
+            delete request;
+        }
         requestsQueue.push_back(std::unique_ptr<Request>(request));
         if (immediate) {
             processRequestQueue(0, 0);
@@ -1834,6 +1847,13 @@ void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete
         request->ptr3 = ptr3;
         request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
         if (LOGS_ENABLED) DEBUG_D("send request wrapped %p - %s", request->rpcRequest.get(), typeid(*(request->rpcRequest.get())).name());
+        auto cancelledIterator = tokensToBeCancelled.find(request->requestToken);
+        if (cancelledIterator != tokensToBeCancelled.end()) {
+            if (LOGS_ENABLED) DEBUG_D("(2) request is cancelled before sending, token %d", requestToken);
+            tokensToBeCancelled.erase(cancelledIterator);
+            delete request;
+            return;
+        }
         requestsQueue.push_back(std::unique_ptr<Request>(request));
         if (immediate) {
             processRequestQueue(0, 0);
@@ -1928,6 +1948,10 @@ void ConnectionsManager::removeRequestFromGuid(int32_t requestToken) {
 }
 
 bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId, bool notifyServer, bool removeFromClass) {
+    if (!tokensToBeCancelled.empty() && (connectionState != ConnectionStateWaitingForNetwork || tokensToBeCancelled.size() > 5000)) {
+        tokensToBeCancelled.clear();
+    }
+
     for (auto iter = requestsQueue.begin(); iter != requestsQueue.end(); iter++) {
         Request *request = iter->get();
         if ((token != 0 && request->requestToken == token) || (messageId != 0 && request->respondsToMessageId(messageId))) {
@@ -1958,6 +1982,12 @@ bool ConnectionsManager::cancelRequestInternal(int32_t token, int64_t messageId,
             return true;
         }
     }
+
+    if (token != 0 && connectionState == ConnectionStateWaitingForNetwork) {
+        if (LOGS_ENABLED) DEBUG_D("request is tried to be cancelled, but it does not even exist, token %d", token);
+        tokensToBeCancelled.insert(token);
+    }
+
     return false;
 }
 
@@ -2833,6 +2863,16 @@ std::unique_ptr<TLObject> ConnectionsManager::wrapInLayer(TLObject *object, Data
             objectValue->key = "tz_offset";
             objectValue->value = std::unique_ptr<JSONValue>(jsonNumber);
 
+            if (currentPerformanceClass != -1) {
+                objectValue = new TL_jsonObjectValue();
+                jsonObject->value.push_back(std::unique_ptr<TL_jsonObjectValue>(objectValue));
+
+                auto jsonNumber = new TL_jsonNumber();
+                jsonNumber->value = currentPerformanceClass + 1;
+                objectValue->key = "perf_cat";
+                objectValue->value = std::unique_ptr<JSONValue>(jsonNumber);
+            }
+
             request->flags |= 2;
 
             if (!proxyAddress.empty() && !proxySecret.empty()) {
@@ -3278,7 +3318,7 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
     });
 }
 
-void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, std::string packageId, int32_t timezoneOffset, int64_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
+void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, std::string packageId, int32_t timezoneOffset, int64_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType, int32_t performanceClass) {
     currentVersion = version;
     currentLayer = layer;
     currentApiId = apiId;
@@ -3298,6 +3338,7 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     pushConnectionEnabled = enablePushConnection;
     currentNetworkType = networkType;
     networkAvailable = hasNetwork;
+    currentPerformanceClass = performanceClass;
     if (isPaused) {
         lastPauseTime = getCurrentTimeMonotonicMillis();
     }

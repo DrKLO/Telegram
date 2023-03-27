@@ -89,11 +89,6 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
     }
 
     @Override
-    protected boolean isAllowSelectChildAtPosition(float x, float y) {
-        return y >= scrollOffsetY + frameLayout.getMeasuredHeight();
-    }
-
-    @Override
     protected void setTranslationY(int newOffset) {
         super.setTranslationY(newOffset);
         currentLoadingView.setTranslationY(newOffset + frameLayout.getMeasuredHeight());

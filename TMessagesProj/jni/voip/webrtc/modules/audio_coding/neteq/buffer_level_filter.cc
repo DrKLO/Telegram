@@ -45,7 +45,8 @@ void BufferLevelFilter::Update(size_t buffer_size_samples,
 }
 
 void BufferLevelFilter::SetFilteredBufferLevel(int buffer_size_samples) {
-  filtered_current_level_ = buffer_size_samples * 256;
+  filtered_current_level_ =
+      rtc::saturated_cast<int>(int64_t{buffer_size_samples} * 256);
 }
 
 void BufferLevelFilter::SetTargetBufferLevel(int target_buffer_level_ms) {

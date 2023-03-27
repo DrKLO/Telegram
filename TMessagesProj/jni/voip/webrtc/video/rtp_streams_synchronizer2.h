@@ -14,8 +14,8 @@
 #include <memory>
 
 #include "api/sequence_checker.h"
+#include "api/task_queue/task_queue_base.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_queue.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "video/stream_synchronization.h"
 

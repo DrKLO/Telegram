@@ -30,7 +30,6 @@ class ScopedJavaRefCounted {
                                      const JavaRef<jobject>& j_object);
   ScopedJavaRefCounted(ScopedJavaRefCounted&& other) = default;
 
-  // TODO(nisse): Implement move assignment and copy operations when needed.
   ScopedJavaRefCounted(const ScopedJavaRefCounted& other) = delete;
   ScopedJavaRefCounted& operator=(const ScopedJavaRefCounted&) = delete;
 

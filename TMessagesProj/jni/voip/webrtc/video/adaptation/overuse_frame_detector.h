@@ -15,22 +15,22 @@
 #include <memory>
 
 #include "absl/types/optional.h"
+#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
-#include "api/video/video_stream_encoder_observer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "rtc_base/thread_annotations.h"
+#include "video/video_stream_encoder_observer.h"
 
 namespace webrtc {
 
 class VideoFrame;
 
 struct CpuOveruseOptions {
-  CpuOveruseOptions();
+  explicit CpuOveruseOptions(const FieldTrialsView& field_trials);
 
   int low_encode_usage_threshold_percent;  // Threshold for triggering underuse.
   int high_encode_usage_threshold_percent;  // Threshold for triggering overuse.
@@ -65,8 +65,12 @@ class OveruseFrameDetectorObserverInterface {
 // check for overuse.
 class OveruseFrameDetector {
  public:
-  explicit OveruseFrameDetector(CpuOveruseMetricsObserver* metrics_observer);
+  explicit OveruseFrameDetector(CpuOveruseMetricsObserver* metrics_observer,
+                                const FieldTrialsView& field_trials);
   virtual ~OveruseFrameDetector();
+
+  OveruseFrameDetector(const OveruseFrameDetector&) = delete;
+  OveruseFrameDetector& operator=(const OveruseFrameDetector&) = delete;
 
   // Start to periodically check for overuse.
   void StartCheckForOveruse(
@@ -161,8 +165,6 @@ class OveruseFrameDetector {
 
   // If set by field trial, overrides CpuOveruseOptions::filter_time_ms.
   FieldTrialOptional<TimeDelta> filter_time_constant_{"tau"};
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OveruseFrameDetector);
 };
 
 }  // namespace webrtc

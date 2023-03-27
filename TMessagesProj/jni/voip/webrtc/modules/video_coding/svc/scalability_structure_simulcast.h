@@ -23,8 +23,13 @@ namespace webrtc {
 // same temporal layering.
 class ScalabilityStructureSimulcast : public ScalableVideoController {
  public:
+  struct ScalingFactor {
+    int num = 1;
+    int den = 2;
+  };
   ScalabilityStructureSimulcast(int num_spatial_layers,
-                                int num_temporal_layers);
+                                int num_temporal_layers,
+                                ScalingFactor resolution_factor);
   ~ScalabilityStructureSimulcast() override;
 
   StreamLayersConfig StreamConfig() const override;
@@ -58,6 +63,7 @@ class ScalabilityStructureSimulcast : public ScalableVideoController {
 
   const int num_spatial_layers_;
   const int num_temporal_layers_;
+  const ScalingFactor resolution_factor_;
 
   FramePattern last_pattern_ = kNone;
   std::bitset<kMaxNumSpatialLayers> can_reference_t0_frame_for_spatial_id_ = 0;
@@ -70,15 +76,65 @@ class ScalabilityStructureSimulcast : public ScalableVideoController {
 // S0  0--0--0-
 class ScalabilityStructureS2T1 : public ScalabilityStructureSimulcast {
  public:
-  ScalabilityStructureS2T1() : ScalabilityStructureSimulcast(2, 1) {}
+  explicit ScalabilityStructureS2T1(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureSimulcast(2, 1, resolution_factor) {}
   ~ScalabilityStructureS2T1() override = default;
+
+  FrameDependencyStructure DependencyStructure() const override;
+};
+
+class ScalabilityStructureS2T2 : public ScalabilityStructureSimulcast {
+ public:
+  explicit ScalabilityStructureS2T2(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureSimulcast(2, 2, resolution_factor) {}
+  ~ScalabilityStructureS2T2() override = default;
+
+  FrameDependencyStructure DependencyStructure() const override;
+};
+
+// S1T2       3   7
+//            |  /
+// S1T1       / 5
+//           |_/
+// S1T0     1-------9...
+//
+// S0T2       2   6
+//            |  /
+// S0T1       / 4
+//           |_/
+// S0T0     0-------8...
+// Time->   0 1 2 3 4
+class ScalabilityStructureS2T3 : public ScalabilityStructureSimulcast {
+ public:
+  explicit ScalabilityStructureS2T3(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureSimulcast(2, 3, resolution_factor) {}
+  ~ScalabilityStructureS2T3() override = default;
+
+  FrameDependencyStructure DependencyStructure() const override;
+};
+
+class ScalabilityStructureS3T1 : public ScalabilityStructureSimulcast {
+ public:
+  explicit ScalabilityStructureS3T1(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureSimulcast(3, 1, resolution_factor) {}
+  ~ScalabilityStructureS3T1() override = default;
+
+  FrameDependencyStructure DependencyStructure() const override;
+};
+
+class ScalabilityStructureS3T2 : public ScalabilityStructureSimulcast {
+ public:
+  explicit ScalabilityStructureS3T2(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureSimulcast(3, 2, resolution_factor) {}
+  ~ScalabilityStructureS3T2() override = default;
 
   FrameDependencyStructure DependencyStructure() const override;
 };
 
 class ScalabilityStructureS3T3 : public ScalabilityStructureSimulcast {
  public:
-  ScalabilityStructureS3T3() : ScalabilityStructureSimulcast(3, 3) {}
+  explicit ScalabilityStructureS3T3(ScalingFactor resolution_factor = {})
+      : ScalabilityStructureSimulcast(3, 3, resolution_factor) {}
   ~ScalabilityStructureS3T3() override = default;
 
   FrameDependencyStructure DependencyStructure() const override;

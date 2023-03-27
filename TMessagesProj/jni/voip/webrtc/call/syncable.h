@@ -8,8 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-// Syncable is used by RtpStreamsSynchronizer in VideoReceiveStream, and
-// implemented by AudioReceiveStream.
+// Syncable is used by RtpStreamsSynchronizer in VideoReceiveStreamInterface,
+// and implemented by AudioReceiveStreamInterface.
 
 #ifndef CALL_SYNCABLE_H_
 #define CALL_SYNCABLE_H_

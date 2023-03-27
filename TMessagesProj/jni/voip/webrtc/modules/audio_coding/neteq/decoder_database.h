@@ -15,12 +15,12 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/audio_codecs/audio_format.h"
 #include "api/scoped_refptr.h"
 #include "modules/audio_coding/codecs/cng/webrtc_cng.h"
 #include "modules/audio_coding/neteq/packet.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -42,7 +42,7 @@ class DecoderDatabase {
     DecoderInfo(const SdpAudioFormat& audio_format,
                 absl::optional<AudioCodecPairId> codec_pair_id,
                 AudioDecoderFactory* factory,
-                const std::string& codec_name);
+                absl::string_view codec_name);
     explicit DecoderInfo(const SdpAudioFormat& audio_format,
                          absl::optional<AudioCodecPairId> codec_pair_id,
                          AudioDecoderFactory* factory = nullptr);
@@ -81,9 +81,7 @@ class DecoderDatabase {
     bool IsRed() const { return subtype_ == Subtype::kRed; }
 
     // Returns true if the decoder's format is named `name`.
-    bool IsType(const char* name) const;
-    // Returns true if the decoder's format is named `name`.
-    bool IsType(const std::string& name) const;
+    bool IsType(absl::string_view name) const;
 
     const std::string& get_name() const { return name_; }
 
@@ -122,16 +120,14 @@ class DecoderDatabase {
 
   virtual ~DecoderDatabase();
 
+  DecoderDatabase(const DecoderDatabase&) = delete;
+  DecoderDatabase& operator=(const DecoderDatabase&) = delete;
+
   // Returns true if the database is empty.
   virtual bool Empty() const;
 
   // Returns the number of decoders registered in the database.
   virtual int Size() const;
-
-  // Resets the database, erasing all registered payload types, and deleting
-  // any AudioDecoder objects that were not externally created and inserted
-  // using InsertExternal().
-  virtual void Reset();
 
   // Replaces the existing set of decoders with the given set. Returns the
   // payload types that were reassigned or removed while doing so.
@@ -180,12 +176,6 @@ class DecoderDatabase {
   // object does not exist for that decoder, the object is created.
   AudioDecoder* GetDecoder(uint8_t rtp_payload_type) const;
 
-  // Returns if `rtp_payload_type` is registered with a format named `name`.
-  bool IsType(uint8_t rtp_payload_type, const char* name) const;
-
-  // Returns if `rtp_payload_type` is registered with a format named `name`.
-  bool IsType(uint8_t rtp_payload_type, const std::string& name) const;
-
   // Returns true if `rtp_payload_type` is registered as comfort noise.
   bool IsComfortNoise(uint8_t rtp_payload_type) const;
 
@@ -208,8 +198,6 @@ class DecoderDatabase {
   mutable std::unique_ptr<ComfortNoiseDecoder> active_cng_decoder_;
   rtc::scoped_refptr<AudioDecoderFactory> decoder_factory_;
   const absl::optional<AudioCodecPairId> codec_pair_id_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DecoderDatabase);
 };
 
 }  // namespace webrtc

@@ -18,6 +18,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <limits>
 
 #include "absl/base/casts.h"
 #include "absl/numeric/bits.h"
@@ -65,6 +66,14 @@ struct FloatTraits;
 
 template <>
 struct FloatTraits<double> {
+  using mantissa_t = uint64_t;
+
+  // The number of bits in the given float type.
+  static constexpr int kTargetBits = 64;
+
+  // The number of exponent bits in the given float type.
+  static constexpr int kTargetExponentBits = 11;
+
   // The number of mantissa bits in the given float type.  This includes the
   // implied high bit.
   static constexpr int kTargetMantissaBits = 53;
@@ -82,6 +91,31 @@ struct FloatTraits<double> {
   // If `m` is the smallest possible int kTargetMantissaBits bits wide, then
   // m * 2**kMinNormalExponent is exactly equal to DBL_MIN.
   static constexpr int kMinNormalExponent = -1074;
+
+  // The IEEE exponent bias.  It equals ((1 << (kTargetExponentBits - 1)) - 1).
+  static constexpr int kExponentBias = 1023;
+
+  // The Eisel-Lemire "Shifting to 54/25 Bits" adjustment.  It equals (63 - 1 -
+  // kTargetMantissaBits).
+  static constexpr int kEiselLemireShift = 9;
+
+  // The Eisel-Lemire high64_mask.  It equals ((1 << kEiselLemireShift) - 1).
+  static constexpr uint64_t kEiselLemireMask = uint64_t{0x1FF};
+
+  // The smallest negative integer N (smallest negative means furthest from
+  // zero) such that parsing 9999999999999999999eN, with 19 nines, is still
+  // positive. Parsing a smaller (more negative) N will produce zero.
+  //
+  // Adjusting the decimal point and exponent, without adjusting the value,
+  // 9999999999999999999eN equals 9.999999999999999999eM where M = N + 18.
+  //
+  // 9999999999999999999, with 19 nines but no decimal point, is the largest
+  // "repeated nines" integer that fits in a uint64_t.
+  static constexpr int kEiselLemireMinInclusiveExp10 = -324 - 18;
+
+  // The smallest positive integer N such that parsing 1eN produces infinity.
+  // Parsing a smaller N will produce something finite.
+  static constexpr int kEiselLemireMaxExclusiveExp10 = 309;
 
   static double MakeNan(const char* tagp) {
     // Support nan no matter which namespace it's in.  Some platforms
@@ -103,7 +137,7 @@ struct FloatTraits<double> {
   // a normal value is made, or it must be less narrow than that, in which case
   // `exponent` must be exactly kMinNormalExponent, and a subnormal value is
   // made.
-  static double Make(uint64_t mantissa, int exponent, bool sign) {
+  static double Make(mantissa_t mantissa, int exponent, bool sign) {
 #ifndef ABSL_BIT_PACK_FLOATS
     // Support ldexp no matter which namespace it's in.  Some platforms
     // incorrectly don't put it in namespace std.
@@ -116,8 +150,10 @@ struct FloatTraits<double> {
     if (mantissa > kMantissaMask) {
       // Normal value.
       // Adjust by 1023 for the exponent representation bias, and an additional
-      // 52 due to the implied decimal point in the IEEE mantissa represenation.
-      dbl += uint64_t{exponent + 1023u + kTargetMantissaBits - 1} << 52;
+      // 52 due to the implied decimal point in the IEEE mantissa
+      // representation.
+      dbl += static_cast<uint64_t>(exponent + 1023 + kTargetMantissaBits - 1)
+             << 52;
       mantissa &= kMantissaMask;
     } else {
       // subnormal value
@@ -134,16 +170,27 @@ struct FloatTraits<double> {
 // members and methods.
 template <>
 struct FloatTraits<float> {
+  using mantissa_t = uint32_t;
+
+  static constexpr int kTargetBits = 32;
+  static constexpr int kTargetExponentBits = 8;
   static constexpr int kTargetMantissaBits = 24;
   static constexpr int kMaxExponent = 104;
   static constexpr int kMinNormalExponent = -149;
+  static constexpr int kExponentBias = 127;
+  static constexpr int kEiselLemireShift = 38;
+  static constexpr uint64_t kEiselLemireMask = uint64_t{0x3FFFFFFFFF};
+  static constexpr int kEiselLemireMinInclusiveExp10 = -46 - 18;
+  static constexpr int kEiselLemireMaxExclusiveExp10 = 39;
+
   static float MakeNan(const char* tagp) {
     // Support nanf no matter which namespace it's in.  Some platforms
     // incorrectly don't put it in namespace std.
     using namespace std;  // NOLINT
     return nanf(tagp);
   }
-  static float Make(uint32_t mantissa, int exponent, bool sign) {
+
+  static float Make(mantissa_t mantissa, int exponent, bool sign) {
 #ifndef ABSL_BIT_PACK_FLOATS
     // Support ldexpf no matter which namespace it's in.  Some platforms
     // incorrectly don't put it in namespace std.
@@ -157,7 +204,8 @@ struct FloatTraits<float> {
       // Normal value.
       // Adjust by 127 for the exponent representation bias, and an additional
       // 23 due to the implied decimal point in the IEEE mantissa represenation.
-      flt += uint32_t{exponent + 127u + kTargetMantissaBits - 1} << 23;
+      flt += static_cast<uint32_t>(exponent + 127 + kTargetMantissaBits - 1)
+             << 23;
       mantissa &= kMantissaMask;
     } else {
       // subnormal value
@@ -181,39 +229,45 @@ struct FloatTraits<float> {
 //
 //   2**63 <= Power10Mantissa(n) < 2**64.
 //
+// See the "Table of powers of 10" comment below for a "1e60" example.
+//
 // Lookups into the power-of-10 table must first check the Power10Overflow() and
 // Power10Underflow() functions, to avoid out-of-bounds table access.
 //
-// Indexes into these tables are biased by -kPower10TableMin, and the table has
-// values in the range [kPower10TableMin, kPower10TableMax].
-extern const uint64_t kPower10MantissaTable[];
-extern const int16_t kPower10ExponentTable[];
+// Indexes into these tables are biased by -kPower10TableMinInclusive. Valid
+// indexes range from kPower10TableMinInclusive to kPower10TableMaxExclusive.
+extern const uint64_t kPower10MantissaHighTable[];  // High 64 of 128 bits.
+extern const uint64_t kPower10MantissaLowTable[];   // Low  64 of 128 bits.
 
-// The smallest allowed value for use with the Power10Mantissa() and
-// Power10Exponent() functions below.  (If a smaller exponent is needed in
+// The smallest (inclusive) allowed value for use with the Power10Mantissa()
+// and Power10Exponent() functions below.  (If a smaller exponent is needed in
 // calculations, the end result is guaranteed to underflow.)
-constexpr int kPower10TableMin = -342;
+constexpr int kPower10TableMinInclusive = -342;
 
-// The largest allowed value for use with the Power10Mantissa() and
-// Power10Exponent() functions below.  (If a smaller exponent is needed in
-// calculations, the end result is guaranteed to overflow.)
-constexpr int kPower10TableMax = 308;
+// The largest (exclusive) allowed value for use with the Power10Mantissa() and
+// Power10Exponent() functions below.  (If a larger-or-equal exponent is needed
+// in calculations, the end result is guaranteed to overflow.)
+constexpr int kPower10TableMaxExclusive = 309;
 
 uint64_t Power10Mantissa(int n) {
-  return kPower10MantissaTable[n - kPower10TableMin];
+  return kPower10MantissaHighTable[n - kPower10TableMinInclusive];
 }
 
 int Power10Exponent(int n) {
-  return kPower10ExponentTable[n - kPower10TableMin];
+  // The 217706 etc magic numbers encode the results as a formula instead of a
+  // table. Their equivalence (over the kPower10TableMinInclusive ..
+  // kPower10TableMaxExclusive range) is confirmed by
+  // https://github.com/google/wuffs/blob/315b2e52625ebd7b02d8fac13e3cd85ea374fb80/script/print-mpb-powers-of-10.go
+  return (217706 * n >> 16) - 63;
 }
 
 // Returns true if n is large enough that 10**n always results in an IEEE
 // overflow.
-bool Power10Overflow(int n) { return n > kPower10TableMax; }
+bool Power10Overflow(int n) { return n >= kPower10TableMaxExclusive; }
 
 // Returns true if n is small enough that 10**n times a ParsedFloat mantissa
 // always results in an IEEE underflow.
-bool Power10Underflow(int n) { return n < kPower10TableMin; }
+bool Power10Underflow(int n) { return n < kPower10TableMinInclusive; }
 
 // Returns true if Power10Mantissa(n) * 2**Power10Exponent(n) is exactly equal
 // to 10**n numerically.  Put another way, this returns true if there is no
@@ -242,9 +296,11 @@ struct CalculatedFloat {
 
 // Returns the bit width of the given uint128.  (Equivalently, returns 128
 // minus the number of leading zero bits.)
-unsigned BitWidth(uint128 value) {
+int BitWidth(uint128 value) {
   if (Uint128High64(value) == 0) {
-    return static_cast<unsigned>(bit_width(Uint128Low64(value)));
+    // This static_cast is only needed when using a std::bit_width()
+    // implementation that does not have the fix for LWG 3656 applied.
+    return static_cast<int>(bit_width(Uint128Low64(value)));
   }
   return 128 - countl_zero(Uint128High64(value));
 }
@@ -285,14 +341,19 @@ template <typename FloatType>
 bool HandleEdgeCase(const strings_internal::ParsedFloat& input, bool negative,
                     FloatType* value) {
   if (input.type == strings_internal::FloatType::kNan) {
-    // A bug in both clang and gcc would cause the compiler to optimize away the
-    // buffer we are building below.  Declaring the buffer volatile avoids the
-    // issue, and has no measurable performance impact in microbenchmarks.
+    // A bug in both clang < 7 and gcc would cause the compiler to optimize
+    // away the buffer we are building below.  Declaring the buffer volatile
+    // avoids the issue, and has no measurable performance impact in
+    // microbenchmarks.
     //
     // https://bugs.llvm.org/show_bug.cgi?id=37778
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86113
     constexpr ptrdiff_t kNanBufferSize = 128;
+#if defined(__GNUC__) || (defined(__clang__) && __clang_major__ < 7)
     volatile char n_char_sequence[kNanBufferSize];
+#else
+    char n_char_sequence[kNanBufferSize];
+#endif
     if (input.subrange_begin == nullptr) {
       n_char_sequence[0] = '\0';
     } else {
@@ -337,8 +398,10 @@ void EncodeResult(const CalculatedFloat& calculated, bool negative,
     *value = negative ? -0.0 : 0.0;
     return;
   }
-  *value = FloatTraits<FloatType>::Make(calculated.mantissa,
-                                        calculated.exponent, negative);
+  *value = FloatTraits<FloatType>::Make(
+      static_cast<typename FloatTraits<FloatType>::mantissa_t>(
+          calculated.mantissa),
+      calculated.exponent, negative);
 }
 
 // Returns the given uint128 shifted to the right by `shift` bits, and rounds
@@ -519,7 +582,9 @@ CalculatedFloat CalculateFromParsedHexadecimal(
     const strings_internal::ParsedFloat& parsed_hex) {
   uint64_t mantissa = parsed_hex.mantissa;
   int exponent = parsed_hex.exponent;
-  auto mantissa_width = static_cast<unsigned>(bit_width(mantissa));
+  // This static_cast is only needed when using a std::bit_width()
+  // implementation that does not have the fix for LWG 3656 applied.
+  int mantissa_width = static_cast<int>(bit_width(mantissa));
   const int shift = NormalizedShiftSize<FloatType>(mantissa_width, exponent);
   bool result_exact;
   exponent += shift;
@@ -595,6 +660,185 @@ CalculatedFloat CalculateFromParsedDecimal(
                                                  binary_exponent);
 }
 
+// As discussed in https://nigeltao.github.io/blog/2020/eisel-lemire.html the
+// primary goal of the Eisel-Lemire algorithm is speed, for 99+% of the cases,
+// not 100% coverage. As long as Eisel-Lemire doesn’t claim false positives,
+// the combined approach (falling back to an alternative implementation when
+// this function returns false) is both fast and correct.
+template <typename FloatType>
+bool EiselLemire(const strings_internal::ParsedFloat& input, bool negative,
+                 FloatType* value, std::errc* ec) {
+  uint64_t man = input.mantissa;
+  int exp10 = input.exponent;
+  if (exp10 < FloatTraits<FloatType>::kEiselLemireMinInclusiveExp10) {
+    *value = negative ? -0.0 : 0.0;
+    *ec = std::errc::result_out_of_range;
+    return true;
+  } else if (exp10 >= FloatTraits<FloatType>::kEiselLemireMaxExclusiveExp10) {
+    // Return max (a finite value) consistent with from_chars and DR 3081. For
+    // SimpleAtod and SimpleAtof, post-processing will return infinity.
+    *value = negative ? -std::numeric_limits<FloatType>::max()
+                      : std::numeric_limits<FloatType>::max();
+    *ec = std::errc::result_out_of_range;
+    return true;
+  }
+
+  // Assert kPower10TableMinInclusive <= exp10 < kPower10TableMaxExclusive.
+  // Equivalently, !Power10Underflow(exp10) and !Power10Overflow(exp10).
+  static_assert(
+      FloatTraits<FloatType>::kEiselLemireMinInclusiveExp10 >=
+          kPower10TableMinInclusive,
+      "(exp10-kPower10TableMinInclusive) in kPower10MantissaHighTable bounds");
+  static_assert(
+      FloatTraits<FloatType>::kEiselLemireMaxExclusiveExp10 <=
+          kPower10TableMaxExclusive,
+      "(exp10-kPower10TableMinInclusive) in kPower10MantissaHighTable bounds");
+
+  // The terse (+) comments in this function body refer to sections of the
+  // https://nigeltao.github.io/blog/2020/eisel-lemire.html blog post.
+  //
+  // That blog post discusses double precision (11 exponent bits with a -1023
+  // bias, 52 mantissa bits), but the same approach applies to single precision
+  // (8 exponent bits with a -127 bias, 23 mantissa bits). Either way, the
+  // computation here happens with 64-bit values (e.g. man) or 128-bit values
+  // (e.g. x) before finally converting to 64- or 32-bit floating point.
+  //
+  // See also "Number Parsing at a Gigabyte per Second, Software: Practice and
+  // Experience 51 (8), 2021" (https://arxiv.org/abs/2101.11408) for detail.
+
+  // (+) Normalization.
+  int clz = countl_zero(man);
+  man <<= static_cast<unsigned int>(clz);
+  // The 217706 etc magic numbers are from the Power10Exponent function.
+  uint64_t ret_exp2 =
+      static_cast<uint64_t>((217706 * exp10 >> 16) + 64 +
+                            FloatTraits<FloatType>::kExponentBias - clz);
+
+  // (+) Multiplication.
+  uint128 x = static_cast<uint128>(man) *
+              static_cast<uint128>(
+                  kPower10MantissaHighTable[exp10 - kPower10TableMinInclusive]);
+
+  // (+) Wider Approximation.
+  static constexpr uint64_t high64_mask =
+      FloatTraits<FloatType>::kEiselLemireMask;
+  if (((Uint128High64(x) & high64_mask) == high64_mask) &&
+      (man > (std::numeric_limits<uint64_t>::max() - Uint128Low64(x)))) {
+    uint128 y =
+        static_cast<uint128>(man) *
+        static_cast<uint128>(
+            kPower10MantissaLowTable[exp10 - kPower10TableMinInclusive]);
+    x += Uint128High64(y);
+    // For example, parsing "4503599627370497.5" will take the if-true
+    // branch here (for double precision), since:
+    //  - x   = 0x8000000000000BFF_FFFFFFFFFFFFFFFF
+    //  - y   = 0x8000000000000BFF_7FFFFFFFFFFFF400
+    //  - man = 0xA000000000000F00
+    // Likewise, when parsing "0.0625" for single precision:
+    //  - x   = 0x7FFFFFFFFFFFFFFF_FFFFFFFFFFFFFFFF
+    //  - y   = 0x813FFFFFFFFFFFFF_8A00000000000000
+    //  - man = 0x9C40000000000000
+    if (((Uint128High64(x) & high64_mask) == high64_mask) &&
+        ((Uint128Low64(x) + 1) == 0) &&
+        (man > (std::numeric_limits<uint64_t>::max() - Uint128Low64(y)))) {
+      return false;
+    }
+  }
+
+  // (+) Shifting to 54 Bits (or for single precision, to 25 bits).
+  uint64_t msb = Uint128High64(x) >> 63;
+  uint64_t ret_man =
+      Uint128High64(x) >> (msb + FloatTraits<FloatType>::kEiselLemireShift);
+  ret_exp2 -= 1 ^ msb;
+
+  // (+) Half-way Ambiguity.
+  //
+  // For example, parsing "1e+23" will take the if-true branch here (for double
+  // precision), since:
+  //  - x       = 0x54B40B1F852BDA00_0000000000000000
+  //  - ret_man = 0x002A5A058FC295ED
+  // Likewise, when parsing "20040229.0" for single precision:
+  //  - x       = 0x4C72894000000000_0000000000000000
+  //  - ret_man = 0x000000000131CA25
+  if ((Uint128Low64(x) == 0) && ((Uint128High64(x) & high64_mask) == 0) &&
+      ((ret_man & 3) == 1)) {
+    return false;
+  }
+
+  // (+) From 54 to 53 Bits (or for single precision, from 25 to 24 bits).
+  ret_man += ret_man & 1;  // Line From54a.
+  ret_man >>= 1;           // Line From54b.
+  // Incrementing ret_man (at line From54a) may have overflowed 54 bits (53
+  // bits after the right shift by 1 at line From54b), so adjust for that.
+  //
+  // For example, parsing "9223372036854775807" will take the if-true branch
+  // here (for double precision), since:
+  //  - ret_man = 0x0020000000000000 = (1 << 53)
+  // Likewise, when parsing "2147483647.0" for single precision:
+  //  - ret_man = 0x0000000001000000 = (1 << 24)
+  if ((ret_man >> FloatTraits<FloatType>::kTargetMantissaBits) > 0) {
+    ret_exp2 += 1;
+    // Conceptually, we need a "ret_man >>= 1" in this if-block to balance
+    // incrementing ret_exp2 in the line immediately above. However, we only
+    // get here when line From54a overflowed (after adding a 1), so ret_man
+    // here is (1 << 53). Its low 53 bits are therefore all zeroes. The only
+    // remaining use of ret_man is to mask it with ((1 << 52) - 1), so only its
+    // low 52 bits matter. A "ret_man >>= 1" would have no effect in practice.
+    //
+    // We omit the "ret_man >>= 1", even if it is cheap (and this if-branch is
+    // rarely taken) and technically 'more correct', so that mutation tests
+    // that would otherwise modify or omit that "ret_man >>= 1" don't complain
+    // that such code mutations have no observable effect.
+  }
+
+  // ret_exp2 is a uint64_t. Zero or underflow means that we're in subnormal
+  // space. max_exp2 (0x7FF for double precision, 0xFF for single precision) or
+  // above means that we're in Inf/NaN space.
+  //
+  // The if block is equivalent to (but has fewer branches than):
+  //   if ((ret_exp2 <= 0) || (ret_exp2 >= max_exp2)) { etc }
+  //
+  // For example, parsing "4.9406564584124654e-324" will take the if-true
+  // branch here, since ret_exp2 = -51.
+  static constexpr uint64_t max_exp2 =
+      (1 << FloatTraits<FloatType>::kTargetExponentBits) - 1;
+  if ((ret_exp2 - 1) >= (max_exp2 - 1)) {
+    return false;
+  }
+
+#ifndef ABSL_BIT_PACK_FLOATS
+  if (FloatTraits<FloatType>::kTargetBits == 64) {
+    *value = FloatTraits<FloatType>::Make(
+        (ret_man & 0x000FFFFFFFFFFFFFu) | 0x0010000000000000u,
+        static_cast<int>(ret_exp2) - 1023 - 52, negative);
+    return true;
+  } else if (FloatTraits<FloatType>::kTargetBits == 32) {
+    *value = FloatTraits<FloatType>::Make(
+        (static_cast<uint32_t>(ret_man) & 0x007FFFFFu) | 0x00800000u,
+        static_cast<int>(ret_exp2) - 127 - 23, negative);
+    return true;
+  }
+#else
+  if (FloatTraits<FloatType>::kTargetBits == 64) {
+    uint64_t ret_bits = (ret_exp2 << 52) | (ret_man & 0x000FFFFFFFFFFFFFu);
+    if (negative) {
+      ret_bits |= 0x8000000000000000u;
+    }
+    *value = absl::bit_cast<double>(ret_bits);
+    return true;
+  } else if (FloatTraits<FloatType>::kTargetBits == 32) {
+    uint32_t ret_bits = (static_cast<uint32_t>(ret_exp2) << 23) |
+                        (static_cast<uint32_t>(ret_man) & 0x007FFFFFu);
+    if (negative) {
+      ret_bits |= 0x80000000u;
+    }
+    *value = absl::bit_cast<float>(ret_bits);
+    return true;
+  }
+#endif  // ABSL_BIT_PACK_FLOATS
+  return false;
+}
+
 template <typename FloatType>
 from_chars_result FromCharsImpl(const char* first, const char* last,
                                 FloatType& value, chars_format fmt_flags) {
@@ -668,6 +912,12 @@ from_chars_result FromCharsImpl(const char* first, const char* last,
     if (HandleEdgeCase(decimal_parse, negative, &value)) {
       return result;
     }
+    // A nullptr subrange_begin means that the decimal_parse.mantissa is exact
+    // (not truncated), a precondition of the Eisel-Lemire algorithm.
+    if ((decimal_parse.subrange_begin == nullptr) &&
+        EiselLemire<FloatType>(decimal_parse, negative, &value, &result.ec)) {
+      return result;
+    }
     CalculatedFloat calculated =
         CalculateFromParsedDecimal<FloatType>(decimal_parse);
     EncodeResult(calculated, negative, &result, &value);
@@ -688,15 +938,46 @@ from_chars_result from_chars(const char* first, const char* last, float& value,
 
 namespace {
 
-// Table of powers of 10, from kPower10TableMin to kPower10TableMax.
+// Table of powers of 10, from kPower10TableMinInclusive to
+// kPower10TableMaxExclusive.
 //
-// kPower10MantissaTable[i - kPower10TableMin] stores the 64-bit mantissa (high
-// bit always on), and kPower10ExponentTable[i - kPower10TableMin] stores the
-// power-of-two exponent.  For a given number i, this gives the unique mantissa
-// and exponent such that mantissa * 2**exponent <= 10**i < (mantissa + 1) *
-// 2**exponent.
+// kPower10MantissaHighTable[i - kPower10TableMinInclusive] stores the 64-bit
+// mantissa. The high bit is always on.
+//
+// kPower10MantissaLowTable extends that 64-bit mantissa to 128 bits.
+//
+// Power10Exponent(i) calculates the power-of-two exponent.
+//
+// For a number i, this gives the unique mantissaHigh and exponent such that
+// (mantissaHigh * 2**exponent) <= 10**i < ((mantissaHigh + 1) * 2**exponent).
+//
+// For example, Python can confirm that the exact hexadecimal value of 1e60 is:
+//    >>> a = 1000000000000000000000000000000000000000000000000000000000000
+//    >>> hex(a)
+//    '0x9f4f2726179a224501d762422c946590d91000000000000000'
+// Adding underscores at every 8th hex digit shows 50 hex digits:
+//    '0x9f4f2726_179a2245_01d76242_2c946590_d9100000_00000000_00'.
+// In this case, the high bit of the first hex digit, 9, is coincidentally set,
+// so we do not have to do further shifting to deduce the 128-bit mantissa:
+//   - kPower10MantissaHighTable[60 - kP10TMI] = 0x9f4f2726179a2245U
+//   - kPower10MantissaLowTable[ 60 - kP10TMI] = 0x01d762422c946590U
+// where kP10TMI is kPower10TableMinInclusive. The low 18 of those 50 hex
+// digits are truncated.
+//
+// 50 hex digits (with the high bit set) is 200 bits and mantissaHigh holds 64
+// bits, so Power10Exponent(60) = 200 - 64 = 136. Again, Python can confirm:
+//    >>> b = 0x9f4f2726179a2245
+//    >>> ((b+0)<<136) <= a
+//    True
+//    >>> ((b+1)<<136) <= a
+//    False
+//
+// The tables were generated by
+// https://github.com/google/wuffs/blob/315b2e52625ebd7b02d8fac13e3cd85ea374fb80/script/print-mpb-powers-of-10.go
+// after re-formatting its output into two arrays of N uint64_t values (instead
+// of an N element array of uint64_t pairs).
 
-const uint64_t kPower10MantissaTable[] = {
+const uint64_t kPower10MantissaHighTable[] = {
     0xeef453d6923bd65aU, 0x9558b4661b6565f8U, 0xbaaee17fa23ebf76U,
     0xe95a99df8ace6f53U, 0x91d8a02bb6c10594U, 0xb64ec836a47146f9U,
     0xe3e27a444d8d98b7U, 0x8e6d8c6ab0787f72U, 0xb208ef855c969f4fU,
@@ -916,67 +1197,224 @@ const uint64_t kPower10MantissaTable[] = {
     0xb6472e511c81471dU, 0xe3d8f9e563a198e5U, 0x8e679c2f5e44ff8fU,
 };
 
-const int16_t kPower10ExponentTable[] = {
-    -1200, -1196, -1193, -1190, -1186, -1183, -1180, -1176, -1173, -1170, -1166,
-    -1163, -1160, -1156, -1153, -1150, -1146, -1143, -1140, -1136, -1133, -1130,
-    -1127, -1123, -1120, -1117, -1113, -1110, -1107, -1103, -1100, -1097, -1093,
-    -1090, -1087, -1083, -1080, -1077, -1073, -1070, -1067, -1063, -1060, -1057,
-    -1053, -1050, -1047, -1043, -1040, -1037, -1034, -1030, -1027, -1024, -1020,
-    -1017, -1014, -1010, -1007, -1004, -1000, -997,  -994,  -990,  -987,  -984,
-    -980,  -977,  -974,  -970,  -967,  -964,  -960,  -957,  -954,  -950,  -947,
-    -944,  -940,  -937,  -934,  -931,  -927,  -924,  -921,  -917,  -914,  -911,
-    -907,  -904,  -901,  -897,  -894,  -891,  -887,  -884,  -881,  -877,  -874,
-    -871,  -867,  -864,  -861,  -857,  -854,  -851,  -847,  -844,  -841,  -838,
-    -834,  -831,  -828,  -824,  -821,  -818,  -814,  -811,  -808,  -804,  -801,
-    -798,  -794,  -791,  -788,  -784,  -781,  -778,  -774,  -771,  -768,  -764,
-    -761,  -758,  -754,  -751,  -748,  -744,  -741,  -738,  -735,  -731,  -728,
-    -725,  -721,  -718,  -715,  -711,  -708,  -705,  -701,  -698,  -695,  -691,
-    -688,  -685,  -681,  -678,  -675,  -671,  -668,  -665,  -661,  -658,  -655,
-    -651,  -648,  -645,  -642,  -638,  -635,  -632,  -628,  -625,  -622,  -618,
-    -615,  -612,  -608,  -605,  -602,  -598,  -595,  -592,  -588,  -585,  -582,
-    -578,  -575,  -572,  -568,  -565,  -562,  -558,  -555,  -552,  -549,  -545,
-    -542,  -539,  -535,  -532,  -529,  -525,  -522,  -519,  -515,  -512,  -509,
-    -505,  -502,  -499,  -495,  -492,  -489,  -485,  -482,  -479,  -475,  -472,
-    -469,  -465,  -462,  -459,  -455,  -452,  -449,  -446,  -442,  -439,  -436,
-    -432,  -429,  -426,  -422,  -419,  -416,  -412,  -409,  -406,  -402,  -399,
-    -396,  -392,  -389,  -386,  -382,  -379,  -376,  -372,  -369,  -366,  -362,
-    -359,  -356,  -353,  -349,  -346,  -343,  -339,  -336,  -333,  -329,  -326,
-    -323,  -319,  -316,  -313,  -309,  -306,  -303,  -299,  -296,  -293,  -289,
-    -286,  -283,  -279,  -276,  -273,  -269,  -266,  -263,  -259,  -256,  -253,
-    -250,  -246,  -243,  -240,  -236,  -233,  -230,  -226,  -223,  -220,  -216,
-    -213,  -210,  -206,  -203,  -200,  -196,  -193,  -190,  -186,  -183,  -180,
-    -176,  -173,  -170,  -166,  -163,  -160,  -157,  -153,  -150,  -147,  -143,
-    -140,  -137,  -133,  -130,  -127,  -123,  -120,  -117,  -113,  -110,  -107,
-    -103,  -100,  -97,   -93,   -90,   -87,   -83,   -80,   -77,   -73,   -70,
-    -67,   -63,   -60,   -57,   -54,   -50,   -47,   -44,   -40,   -37,   -34,
-    -30,   -27,   -24,   -20,   -17,   -14,   -10,   -7,    -4,    0,     3,
-    6,     10,    13,    16,    20,    23,    26,    30,    33,    36,    39,
-    43,    46,    49,    53,    56,    59,    63,    66,    69,    73,    76,
-    79,    83,    86,    89,    93,    96,    99,    103,   106,   109,   113,
-    116,   119,   123,   126,   129,   132,   136,   139,   142,   146,   149,
-    152,   156,   159,   162,   166,   169,   172,   176,   179,   182,   186,
-    189,   192,   196,   199,   202,   206,   209,   212,   216,   219,   222,
-    226,   229,   232,   235,   239,   242,   245,   249,   252,   255,   259,
-    262,   265,   269,   272,   275,   279,   282,   285,   289,   292,   295,
-    299,   302,   305,   309,   312,   315,   319,   322,   325,   328,   332,
-    335,   338,   342,   345,   348,   352,   355,   358,   362,   365,   368,
-    372,   375,   378,   382,   385,   388,   392,   395,   398,   402,   405,
-    408,   412,   415,   418,   422,   425,   428,   431,   435,   438,   441,
-    445,   448,   451,   455,   458,   461,   465,   468,   471,   475,   478,
-    481,   485,   488,   491,   495,   498,   501,   505,   508,   511,   515,
-    518,   521,   524,   528,   531,   534,   538,   541,   544,   548,   551,
-    554,   558,   561,   564,   568,   571,   574,   578,   581,   584,   588,
-    591,   594,   598,   601,   604,   608,   611,   614,   617,   621,   624,
-    627,   631,   634,   637,   641,   644,   647,   651,   654,   657,   661,
-    664,   667,   671,   674,   677,   681,   684,   687,   691,   694,   697,
-    701,   704,   707,   711,   714,   717,   720,   724,   727,   730,   734,
-    737,   740,   744,   747,   750,   754,   757,   760,   764,   767,   770,
-    774,   777,   780,   784,   787,   790,   794,   797,   800,   804,   807,
-    810,   813,   817,   820,   823,   827,   830,   833,   837,   840,   843,
-    847,   850,   853,   857,   860,   863,   867,   870,   873,   877,   880,
-    883,   887,   890,   893,   897,   900,   903,   907,   910,   913,   916,
-    920,   923,   926,   930,   933,   936,   940,   943,   946,   950,   953,
-    956,   960,
+const uint64_t kPower10MantissaLowTable[] = {
+    0x113faa2906a13b3fU, 0x4ac7ca59a424c507U, 0x5d79bcf00d2df649U,
+    0xf4d82c2c107973dcU, 0x79071b9b8a4be869U, 0x9748e2826cdee284U,
+    0xfd1b1b2308169b25U, 0xfe30f0f5e50e20f7U, 0xbdbd2d335e51a935U,
+    0xad2c788035e61382U, 0x4c3bcb5021afcc31U, 0xdf4abe242a1bbf3dU,
+    0xd71d6dad34a2af0dU, 0x8672648c40e5ad68U, 0x680efdaf511f18c2U,
+    0x0212bd1b2566def2U, 0x014bb630f7604b57U, 0x419ea3bd35385e2dU,
+    0x52064cac828675b9U, 0x7343efebd1940993U, 0x1014ebe6c5f90bf8U,
+    0xd41a26e077774ef6U, 0x8920b098955522b4U, 0x55b46e5f5d5535b0U,
+    0xeb2189f734aa831dU, 0xa5e9ec7501d523e4U, 0x47b233c92125366eU,
+    0x999ec0bb696e840aU, 0xc00670ea43ca250dU, 0x380406926a5e5728U,
+    0xc605083704f5ecf2U, 0xf7864a44c633682eU, 0x7ab3ee6afbe0211dU,
+    0x5960ea05bad82964U, 0x6fb92487298e33bdU, 0xa5d3b6d479f8e056U,
+    0x8f48a4899877186cU, 0x331acdabfe94de87U, 0x9ff0c08b7f1d0b14U,
+    0x07ecf0ae5ee44dd9U, 0xc9e82cd9f69d6150U, 0xbe311c083a225cd2U,
+    0x6dbd630a48aaf406U, 0x092cbbccdad5b108U, 0x25bbf56008c58ea5U,
+    0xaf2af2b80af6f24eU, 0x1af5af660db4aee1U, 0x50d98d9fc890ed4dU,
+    0xe50ff107bab528a0U, 0x1e53ed49a96272c8U, 0x25e8e89c13bb0f7aU,
+    0x77b191618c54e9acU, 0xd59df5b9ef6a2417U, 0x4b0573286b44ad1dU,
+    0x4ee367f9430aec32U, 0x229c41f793cda73fU, 0x6b43527578c1110fU,
+    0x830a13896b78aaa9U, 0x23cc986bc656d553U, 0x2cbfbe86b7ec8aa8U,
+    0x7bf7d71432f3d6a9U, 0xdaf5ccd93fb0cc53U, 0xd1b3400f8f9cff68U,
+    0x23100809b9c21fa1U, 0xabd40a0c2832a78aU, 0x16c90c8f323f516cU,
+    0xae3da7d97f6792e3U, 0x99cd11cfdf41779cU, 0x40405643d711d583U,
+    0x482835ea666b2572U, 0xda3243650005eecfU, 0x90bed43e40076a82U,
+    0x5a7744a6e804a291U, 0x711515d0a205cb36U, 0x0d5a5b44ca873e03U,
+    0xe858790afe9486c2U, 0x626e974dbe39a872U, 0xfb0a3d212dc8128fU,
+    0x7ce66634bc9d0b99U, 0x1c1fffc1ebc44e80U, 0xa327ffb266b56220U,
+    0x4bf1ff9f0062baa8U, 0x6f773fc3603db4a9U, 0xcb550fb4384d21d3U,
+    0x7e2a53a146606a48U, 0x2eda7444cbfc426dU, 0xfa911155fefb5308U,
+    0x793555ab7eba27caU, 0x4bc1558b2f3458deU, 0x9eb1aaedfb016f16U,
+    0x465e15a979c1cadcU, 0x0bfacd89ec191ec9U, 0xcef980ec671f667bU,
+    0x82b7e12780e7401aU, 0xd1b2ecb8b0908810U, 0x861fa7e6dcb4aa15U,
+    0x67a791e093e1d49aU, 0xe0c8bb2c5c6d24e0U, 0x58fae9f773886e18U,
+    0xaf39a475506a899eU, 0x6d8406c952429603U, 0xc8e5087ba6d33b83U,
+    0xfb1e4a9a90880a64U, 0x5cf2eea09a55067fU, 0xf42faa48c0ea481eU,
+    0xf13b94daf124da26U, 0x76c53d08d6b70858U, 0x54768c4b0c64ca6eU,
+    0xa9942f5dcf7dfd09U, 0xd3f93b35435d7c4cU, 0xc47bc5014a1a6dafU,
+    0x359ab6419ca1091bU, 0xc30163d203c94b62U, 0x79e0de63425dcf1dU,
+    0x985915fc12f542e4U, 0x3e6f5b7b17b2939dU, 0xa705992ceecf9c42U,
+    0x50c6ff782a838353U, 0xa4f8bf5635246428U, 0x871b7795e136be99U,
+    0x28e2557b59846e3fU, 0x331aeada2fe589cfU, 0x3ff0d2c85def7621U,
+    0x0fed077a756b53a9U, 0xd3e8495912c62894U, 0x64712dd7abbbd95cU,
+    0xbd8d794d96aacfb3U, 0xecf0d7a0fc5583a0U, 0xf41686c49db57244U,
+    0x311c2875c522ced5U, 0x7d633293366b828bU, 0xae5dff9c02033197U,
+    0xd9f57f830283fdfcU, 0xd072df63c324fd7bU, 0x4247cb9e59f71e6dU,
+    0x52d9be85f074e608U, 0x67902e276c921f8bU, 0x00ba1cd8a3db53b6U,
+    0x80e8a40eccd228a4U, 0x6122cd128006b2cdU, 0x796b805720085f81U,
+    0xcbe3303674053bb0U, 0xbedbfc4411068a9cU, 0xee92fb5515482d44U,
+    0x751bdd152d4d1c4aU, 0xd262d45a78a0635dU, 0x86fb897116c87c34U,
+    0xd45d35e6ae3d4da0U, 0x8974836059cca109U, 0x2bd1a438703fc94bU,
+    0x7b6306a34627ddcfU, 0x1a3bc84c17b1d542U, 0x20caba5f1d9e4a93U,
+    0x547eb47b7282ee9cU, 0xe99e619a4f23aa43U, 0x6405fa00e2ec94d4U,
+    0xde83bc408dd3dd04U, 0x9624ab50b148d445U, 0x3badd624dd9b0957U,
+    0xe54ca5d70a80e5d6U, 0x5e9fcf4ccd211f4cU, 0x7647c3200069671fU,
+    0x29ecd9f40041e073U, 0xf468107100525890U, 0x7182148d4066eeb4U,
+    0xc6f14cd848405530U, 0xb8ada00e5a506a7cU, 0xa6d90811f0e4851cU,
+    0x908f4a166d1da663U, 0x9a598e4e043287feU, 0x40eff1e1853f29fdU,
+    0xd12bee59e68ef47cU, 0x82bb74f8301958ceU, 0xe36a52363c1faf01U,
+    0xdc44e6c3cb279ac1U, 0x29ab103a5ef8c0b9U, 0x7415d448f6b6f0e7U,
+    0x111b495b3464ad21U, 0xcab10dd900beec34U, 0x3d5d514f40eea742U,
+    0x0cb4a5a3112a5112U, 0x47f0e785eaba72abU, 0x59ed216765690f56U,
+    0x306869c13ec3532cU, 0x1e414218c73a13fbU, 0xe5d1929ef90898faU,
+    0xdf45f746b74abf39U, 0x6b8bba8c328eb783U, 0x066ea92f3f326564U,
+    0xc80a537b0efefebdU, 0xbd06742ce95f5f36U, 0x2c48113823b73704U,
+    0xf75a15862ca504c5U, 0x9a984d73dbe722fbU, 0xc13e60d0d2e0ebbaU,
+    0x318df905079926a8U, 0xfdf17746497f7052U, 0xfeb6ea8bedefa633U,
+    0xfe64a52ee96b8fc0U, 0x3dfdce7aa3c673b0U, 0x06bea10ca65c084eU,
+    0x486e494fcff30a62U, 0x5a89dba3c3efccfaU, 0xf89629465a75e01cU,
+    0xf6bbb397f1135823U, 0x746aa07ded582e2cU, 0xa8c2a44eb4571cdcU,
+    0x92f34d62616ce413U, 0x77b020baf9c81d17U, 0x0ace1474dc1d122eU,
+    0x0d819992132456baU, 0x10e1fff697ed6c69U, 0xca8d3ffa1ef463c1U,
+    0xbd308ff8a6b17cb2U, 0xac7cb3f6d05ddbdeU, 0x6bcdf07a423aa96bU,
+    0x86c16c98d2c953c6U, 0xe871c7bf077ba8b7U, 0x11471cd764ad4972U,
+    0xd598e40d3dd89bcfU, 0x4aff1d108d4ec2c3U, 0xcedf722a585139baU,
+    0xc2974eb4ee658828U, 0x733d226229feea32U, 0x0806357d5a3f525fU,
+    0xca07c2dcb0cf26f7U, 0xfc89b393dd02f0b5U, 0xbbac2078d443ace2U,
+    0xd54b944b84aa4c0dU, 0x0a9e795e65d4df11U, 0x4d4617b5ff4a16d5U,
+    0x504bced1bf8e4e45U, 0xe45ec2862f71e1d6U, 0x5d767327bb4e5a4cU,
+    0x3a6a07f8d510f86fU, 0x890489f70a55368bU, 0x2b45ac74ccea842eU,
+    0x3b0b8bc90012929dU, 0x09ce6ebb40173744U, 0xcc420a6a101d0515U,
+    0x9fa946824a12232dU, 0x47939822dc96abf9U, 0x59787e2b93bc56f7U,
+    0x57eb4edb3c55b65aU, 0xede622920b6b23f1U, 0xe95fab368e45ecedU,
+    0x11dbcb0218ebb414U, 0xd652bdc29f26a119U, 0x4be76d3346f0495fU,
+    0x6f70a4400c562ddbU, 0xcb4ccd500f6bb952U, 0x7e2000a41346a7a7U,
+    0x8ed400668c0c28c8U, 0x728900802f0f32faU, 0x4f2b40a03ad2ffb9U,
+    0xe2f610c84987bfa8U, 0x0dd9ca7d2df4d7c9U, 0x91503d1c79720dbbU,
+    0x75a44c6397ce912aU, 0xc986afbe3ee11abaU, 0xfbe85badce996168U,
+    0xfae27299423fb9c3U, 0xdccd879fc967d41aU, 0x5400e987bbc1c920U,
+    0x290123e9aab23b68U, 0xf9a0b6720aaf6521U, 0xf808e40e8d5b3e69U,
+    0xb60b1d1230b20e04U, 0xb1c6f22b5e6f48c2U, 0x1e38aeb6360b1af3U,
+    0x25c6da63c38de1b0U, 0x579c487e5a38ad0eU, 0x2d835a9df0c6d851U,
+    0xf8e431456cf88e65U, 0x1b8e9ecb641b58ffU, 0xe272467e3d222f3fU,
+    0x5b0ed81dcc6abb0fU, 0x98e947129fc2b4e9U, 0x3f2398d747b36224U,
+    0x8eec7f0d19a03aadU, 0x1953cf68300424acU, 0x5fa8c3423c052dd7U,
+    0x3792f412cb06794dU, 0xe2bbd88bbee40bd0U, 0x5b6aceaeae9d0ec4U,
+    0xf245825a5a445275U, 0xeed6e2f0f0d56712U, 0x55464dd69685606bU,
+    0xaa97e14c3c26b886U, 0xd53dd99f4b3066a8U, 0xe546a8038efe4029U,
+    0xde98520472bdd033U, 0x963e66858f6d4440U, 0xdde7001379a44aa8U,
+    0x5560c018580d5d52U, 0xaab8f01e6e10b4a6U, 0xcab3961304ca70e8U,
+    0x3d607b97c5fd0d22U, 0x8cb89a7db77c506aU, 0x77f3608e92adb242U,
+    0x55f038b237591ed3U, 0x6b6c46dec52f6688U, 0x2323ac4b3b3da015U,
+    0xabec975e0a0d081aU, 0x96e7bd358c904a21U, 0x7e50d64177da2e54U,
+    0xdde50bd1d5d0b9e9U, 0x955e4ec64b44e864U, 0xbd5af13bef0b113eU,
+    0xecb1ad8aeacdd58eU, 0x67de18eda5814af2U, 0x80eacf948770ced7U,
+    0xa1258379a94d028dU, 0x096ee45813a04330U, 0x8bca9d6e188853fcU,
+    0x775ea264cf55347dU, 0x95364afe032a819dU, 0x3a83ddbd83f52204U,
+    0xc4926a9672793542U, 0x75b7053c0f178293U, 0x5324c68b12dd6338U,
+    0xd3f6fc16ebca5e03U, 0x88f4bb1ca6bcf584U, 0x2b31e9e3d06c32e5U,
+    0x3aff322e62439fcfU, 0x09befeb9fad487c2U, 0x4c2ebe687989a9b3U,
+    0x0f9d37014bf60a10U, 0x538484c19ef38c94U, 0x2865a5f206b06fb9U,
+    0xf93f87b7442e45d3U, 0xf78f69a51539d748U, 0xb573440e5a884d1bU,
+    0x31680a88f8953030U, 0xfdc20d2b36ba7c3dU, 0x3d32907604691b4cU,
+    0xa63f9a49c2c1b10fU, 0x0fcf80dc33721d53U, 0xd3c36113404ea4a8U,
+    0x645a1cac083126e9U, 0x3d70a3d70a3d70a3U, 0xccccccccccccccccU,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x0000000000000000U, 0x0000000000000000U,
+    0x0000000000000000U, 0x4000000000000000U, 0x5000000000000000U,
+    0xa400000000000000U, 0x4d00000000000000U, 0xf020000000000000U,
+    0x6c28000000000000U, 0xc732000000000000U, 0x3c7f400000000000U,
+    0x4b9f100000000000U, 0x1e86d40000000000U, 0x1314448000000000U,
+    0x17d955a000000000U, 0x5dcfab0800000000U, 0x5aa1cae500000000U,
+    0xf14a3d9e40000000U, 0x6d9ccd05d0000000U, 0xe4820023a2000000U,
+    0xdda2802c8a800000U, 0xd50b2037ad200000U, 0x4526f422cc340000U,
+    0x9670b12b7f410000U, 0x3c0cdd765f114000U, 0xa5880a69fb6ac800U,
+    0x8eea0d047a457a00U, 0x72a4904598d6d880U, 0x47a6da2b7f864750U,
+    0x999090b65f67d924U, 0xfff4b4e3f741cf6dU, 0xbff8f10e7a8921a4U,
+    0xaff72d52192b6a0dU, 0x9bf4f8a69f764490U, 0x02f236d04753d5b4U,
+    0x01d762422c946590U, 0x424d3ad2b7b97ef5U, 0xd2e0898765a7deb2U,
+    0x63cc55f49f88eb2fU, 0x3cbf6b71c76b25fbU, 0x8bef464e3945ef7aU,
+    0x97758bf0e3cbb5acU, 0x3d52eeed1cbea317U, 0x4ca7aaa863ee4bddU,
+    0x8fe8caa93e74ef6aU, 0xb3e2fd538e122b44U, 0x60dbbca87196b616U,
+    0xbc8955e946fe31cdU, 0x6babab6398bdbe41U, 0xc696963c7eed2dd1U,
+    0xfc1e1de5cf543ca2U, 0x3b25a55f43294bcbU, 0x49ef0eb713f39ebeU,
+    0x6e3569326c784337U, 0x49c2c37f07965404U, 0xdc33745ec97be906U,
+    0x69a028bb3ded71a3U, 0xc40832ea0d68ce0cU, 0xf50a3fa490c30190U,
+    0x792667c6da79e0faU, 0x577001b891185938U, 0xed4c0226b55e6f86U,
+    0x544f8158315b05b4U, 0x696361ae3db1c721U, 0x03bc3a19cd1e38e9U,
+    0x04ab48a04065c723U, 0x62eb0d64283f9c76U, 0x3ba5d0bd324f8394U,
+    0xca8f44ec7ee36479U, 0x7e998b13cf4e1ecbU, 0x9e3fedd8c321a67eU,
+    0xc5cfe94ef3ea101eU, 0xbba1f1d158724a12U, 0x2a8a6e45ae8edc97U,
+    0xf52d09d71a3293bdU, 0x593c2626705f9c56U, 0x6f8b2fb00c77836cU,
+    0x0b6dfb9c0f956447U, 0x4724bd4189bd5eacU, 0x58edec91ec2cb657U,
+    0x2f2967b66737e3edU, 0xbd79e0d20082ee74U, 0xecd8590680a3aa11U,
+    0xe80e6f4820cc9495U, 0x3109058d147fdcddU, 0xbd4b46f0599fd415U,
+    0x6c9e18ac7007c91aU, 0x03e2cf6bc604ddb0U, 0x84db8346b786151cU,
+    0xe612641865679a63U, 0x4fcb7e8f3f60c07eU, 0xe3be5e330f38f09dU,
+    0x5cadf5bfd3072cc5U, 0x73d9732fc7c8f7f6U, 0x2867e7fddcdd9afaU,
+    0xb281e1fd541501b8U, 0x1f225a7ca91a4226U, 0x3375788de9b06958U,
+    0x0052d6b1641c83aeU, 0xc0678c5dbd23a49aU, 0xf840b7ba963646e0U,
+    0xb650e5a93bc3d898U, 0xa3e51f138ab4cebeU, 0xc66f336c36b10137U,
+    0xb80b0047445d4184U, 0xa60dc059157491e5U, 0x87c89837ad68db2fU,
+    0x29babe4598c311fbU, 0xf4296dd6fef3d67aU, 0x1899e4a65f58660cU,
+    0x5ec05dcff72e7f8fU, 0x76707543f4fa1f73U, 0x6a06494a791c53a8U,
+    0x0487db9d17636892U, 0x45a9d2845d3c42b6U, 0x0b8a2392ba45a9b2U,
+    0x8e6cac7768d7141eU, 0x3207d795430cd926U, 0x7f44e6bd49e807b8U,
+    0x5f16206c9c6209a6U, 0x36dba887c37a8c0fU, 0xc2494954da2c9789U,
+    0xf2db9baa10b7bd6cU, 0x6f92829494e5acc7U, 0xcb772339ba1f17f9U,
+    0xff2a760414536efbU, 0xfef5138519684abaU, 0x7eb258665fc25d69U,
+    0xef2f773ffbd97a61U, 0xaafb550ffacfd8faU, 0x95ba2a53f983cf38U,
+    0xdd945a747bf26183U, 0x94f971119aeef9e4U, 0x7a37cd5601aab85dU,
+    0xac62e055c10ab33aU, 0x577b986b314d6009U, 0xed5a7e85fda0b80bU,
+    0x14588f13be847307U, 0x596eb2d8ae258fc8U, 0x6fca5f8ed9aef3bbU,
+    0x25de7bb9480d5854U, 0xaf561aa79a10ae6aU, 0x1b2ba1518094da04U,
+    0x90fb44d2f05d0842U, 0x353a1607ac744a53U, 0x42889b8997915ce8U,
+    0x69956135febada11U, 0x43fab9837e699095U, 0x94f967e45e03f4bbU,
+    0x1d1be0eebac278f5U, 0x6462d92a69731732U, 0x7d7b8f7503cfdcfeU,
+    0x5cda735244c3d43eU, 0x3a0888136afa64a7U, 0x088aaa1845b8fdd0U,
+    0x8aad549e57273d45U, 0x36ac54e2f678864bU, 0x84576a1bb416a7ddU,
+    0x656d44a2a11c51d5U, 0x9f644ae5a4b1b325U, 0x873d5d9f0dde1feeU,
+    0xa90cb506d155a7eaU, 0x09a7f12442d588f2U, 0x0c11ed6d538aeb2fU,
+    0x8f1668c8a86da5faU, 0xf96e017d694487bcU, 0x37c981dcc395a9acU,
+    0x85bbe253f47b1417U, 0x93956d7478ccec8eU, 0x387ac8d1970027b2U,
+    0x06997b05fcc0319eU, 0x441fece3bdf81f03U, 0xd527e81cad7626c3U,
+    0x8a71e223d8d3b074U, 0xf6872d5667844e49U, 0xb428f8ac016561dbU,
+    0xe13336d701beba52U, 0xecc0024661173473U, 0x27f002d7f95d0190U,
+    0x31ec038df7b441f4U, 0x7e67047175a15271U, 0x0f0062c6e984d386U,
+    0x52c07b78a3e60868U, 0xa7709a56ccdf8a82U, 0x88a66076400bb691U,
+    0x6acff893d00ea435U, 0x0583f6b8c4124d43U, 0xc3727a337a8b704aU,
+    0x744f18c0592e4c5cU, 0x1162def06f79df73U, 0x8addcb5645ac2ba8U,
+    0x6d953e2bd7173692U, 0xc8fa8db6ccdd0437U, 0x1d9c9892400a22a2U,
+    0x2503beb6d00cab4bU, 0x2e44ae64840fd61dU, 0x5ceaecfed289e5d2U,
+    0x7425a83e872c5f47U, 0xd12f124e28f77719U, 0x82bd6b70d99aaa6fU,
+    0x636cc64d1001550bU, 0x3c47f7e05401aa4eU, 0x65acfaec34810a71U,
+    0x7f1839a741a14d0dU, 0x1ede48111209a050U, 0x934aed0aab460432U,
+    0xf81da84d5617853fU, 0x36251260ab9d668eU, 0xc1d72b7c6b426019U,
+    0xb24cf65b8612f81fU, 0xdee033f26797b627U, 0x169840ef017da3b1U,
+    0x8e1f289560ee864eU, 0xf1a6f2bab92a27e2U, 0xae10af696774b1dbU,
+    0xacca6da1e0a8ef29U, 0x17fd090a58d32af3U, 0xddfc4b4cef07f5b0U,
+    0x4abdaf101564f98eU, 0x9d6d1ad41abe37f1U, 0x84c86189216dc5edU,
+    0x32fd3cf5b4e49bb4U, 0x3fbc8c33221dc2a1U, 0x0fabaf3feaa5334aU,
+    0x29cb4d87f2a7400eU, 0x743e20e9ef511012U, 0x914da9246b255416U,
+    0x1ad089b6c2f7548eU, 0xa184ac2473b529b1U, 0xc9e5d72d90a2741eU,
+    0x7e2fa67c7a658892U, 0xddbb901b98feeab7U, 0x552a74227f3ea565U,
+    0xd53a88958f87275fU, 0x8a892abaf368f137U, 0x2d2b7569b0432d85U,
+    0x9c3b29620e29fc73U, 0x8349f3ba91b47b8fU, 0x241c70a936219a73U,
+    0xed238cd383aa0110U, 0xf4363804324a40aaU, 0xb143c6053edcd0d5U,
+    0xdd94b7868e94050aU, 0xca7cf2b4191c8326U, 0xfd1c2f611f63a3f0U,
+    0xbc633b39673c8cecU, 0xd5be0503e085d813U, 0x4b2d8644d8a74e18U,
+    0xddf8e7d60ed1219eU, 0xcabb90e5c942b503U, 0x3d6a751f3b936243U,
+    0x0cc512670a783ad4U, 0x27fb2b80668b24c5U, 0xb1f9f660802dedf6U,
+    0x5e7873f8a0396973U, 0xdb0b487b6423e1e8U, 0x91ce1a9a3d2cda62U,
+    0x7641a140cc7810fbU, 0xa9e904c87fcb0a9dU, 0x546345fa9fbdcd44U,
+    0xa97c177947ad4095U, 0x49ed8eabcccc485dU, 0x5c68f256bfff5a74U,
+    0x73832eec6fff3111U, 0xc831fd53c5ff7eabU, 0xba3e7ca8b77f5e55U,
+    0x28ce1bd2e55f35ebU, 0x7980d163cf5b81b3U, 0xd7e105bcc332621fU,
+    0x8dd9472bf3fefaa7U, 0xb14f98f6f0feb951U, 0x6ed1bf9a569f33d3U,
+    0x0a862f80ec4700c8U, 0xcd27bb612758c0faU, 0x8038d51cb897789cU,
+    0xe0470a63e6bd56c3U, 0x1858ccfce06cac74U, 0x0f37801e0c43ebc8U,
+    0xd30560258f54e6baU, 0x47c6b82ef32a2069U, 0x4cdc331d57fa5441U,
+    0xe0133fe4adf8e952U, 0x58180fddd97723a6U, 0x570f09eaa7ea7648U,
 };
 
 }  // namespace

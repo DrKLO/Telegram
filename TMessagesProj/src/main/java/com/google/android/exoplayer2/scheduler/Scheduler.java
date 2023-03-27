@@ -45,4 +45,14 @@ public interface Scheduler {
    * @return Whether cancellation was successful.
    */
   boolean cancel();
+
+  /**
+   * Checks whether this {@link Scheduler} supports the provided {@link Requirements}. If all of the
+   * requirements are supported then the same {@link Requirements} instance is returned. If not then
+   * a new instance is returned containing the subset of the requirements that are supported.
+   *
+   * @param requirements The requirements to check.
+   * @return The supported requirements.
+   */
+  Requirements getSupportedRequirements(Requirements requirements);
 }

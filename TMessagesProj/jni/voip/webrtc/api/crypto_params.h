@@ -13,6 +13,8 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace cricket {
 
 // Parameters for SRTP negotiation, as described in RFC 4568.
@@ -21,9 +23,9 @@ namespace cricket {
 struct CryptoParams {
   CryptoParams() : tag(0) {}
   CryptoParams(int t,
-               const std::string& cs,
-               const std::string& kp,
-               const std::string& sp)
+               absl::string_view cs,
+               absl::string_view kp,
+               absl::string_view sp)
       : tag(t), cipher_suite(cs), key_params(kp), session_params(sp) {}
 
   bool Matches(const CryptoParams& params) const {

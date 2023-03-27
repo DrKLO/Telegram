@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "api/array_view.h"
+#include "api/task_queue/task_queue_base.h"
 #include "modules/audio_device/fine_audio_buffer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -21,12 +22,8 @@ namespace webrtc {
 
 namespace jni {
 
-enum AudioDeviceMessageType : uint32_t {
-  kMessageOutputStreamDisconnected,
-};
-
 AAudioPlayer::AAudioPlayer(const AudioParameters& audio_parameters)
-    : main_thread_(rtc::Thread::Current()),
+    : main_thread_(TaskQueueBase::Current()),
       aaudio_(audio_parameters, AAUDIO_DIRECTION_OUTPUT, this) {
   RTC_LOG(LS_INFO) << "ctor";
   thread_checker_aaudio_.Detach();
@@ -163,7 +160,7 @@ void AAudioPlayer::OnErrorCallback(aaudio_result_t error) {
     // from the callback, use another thread instead". A message is therefore
     // sent to the main thread to do the restart operation.
     RTC_DCHECK(main_thread_);
-    main_thread_->Post(RTC_FROM_HERE, this, kMessageOutputStreamDisconnected);
+    main_thread_->PostTask([this] { HandleStreamDisconnected(); });
   }
 }
 
@@ -218,15 +215,6 @@ aaudio_data_callback_result_t AAudioPlayer::OnDataCallback(void* audio_data,
   // TODO(henrika): possibly add trace here to be included in systrace.
   // See https://developer.android.com/studio/profile/systrace-commandline.html.
   return AAUDIO_CALLBACK_RESULT_CONTINUE;
-}
-
-void AAudioPlayer::OnMessage(rtc::Message* msg) {
-  RTC_DCHECK_RUN_ON(&main_thread_checker_);
-  switch (msg->message_id) {
-    case kMessageOutputStreamDisconnected:
-      HandleStreamDisconnected();
-      break;
-  }
 }
 
 void AAudioPlayer::HandleStreamDisconnected() {

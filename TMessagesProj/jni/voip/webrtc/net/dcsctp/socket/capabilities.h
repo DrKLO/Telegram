@@ -10,6 +10,7 @@
 #ifndef NET_DCSCTP_SOCKET_CAPABILITIES_H_
 #define NET_DCSCTP_SOCKET_CAPABILITIES_H_
 
+#include <cstdint>
 namespace dcsctp {
 // Indicates what the association supports, meaning that both parties
 // support it and that feature can be used.
@@ -20,6 +21,9 @@ struct Capabilities {
   bool message_interleaving = false;
   // RFC6525 Stream Reconfiguration
   bool reconfig = false;
+  // Negotiated maximum incoming and outgoing stream count.
+  uint16_t negotiated_maximum_incoming_streams = 0;
+  uint16_t negotiated_maximum_outgoing_streams = 0;
 };
 }  // namespace dcsctp
 

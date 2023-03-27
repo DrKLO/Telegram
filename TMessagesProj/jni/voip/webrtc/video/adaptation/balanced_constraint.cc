@@ -14,13 +14,14 @@
 #include <utility>
 
 #include "api/sequence_checker.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 
 namespace webrtc {
 
 BalancedConstraint::BalancedConstraint(
-    DegradationPreferenceProvider* degradation_preference_provider)
+    DegradationPreferenceProvider* degradation_preference_provider,
+    const FieldTrialsView& field_trials)
     : encoder_target_bitrate_bps_(absl::nullopt),
+      balanced_settings_(field_trials),
       degradation_preference_provider_(degradation_preference_provider) {
   RTC_DCHECK(degradation_preference_provider_);
   sequence_checker_.Detach();

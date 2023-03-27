@@ -1,0 +1,63 @@
+ifndef BASE_NAME
+BASE_NAME	=	x86disasm
+endif
+
+ifndef SWIG
+SWIG		=	swig	# apt-get install swig !
+endif
+
+ifndef GCC
+GCC		=	gcc
+endif
+
+ifndef CC_FLAGS
+CC_FLAGS	=	-c -fPIC
+endif
+
+ifndef LD_FLAGS
+LD_FLAGS	=	-shared -L../.. -ldisasm
+endif
+
+INTERFACE_FILE	=	libdisasm.i
+
+SWIG_INTERFACE	=	../$(INTERFACE_FILE)
+
+# TCL rules
+TCL_VERSION	=	8.3
+TCL_MOD		=	$(BASE_NAME)-tcl.so
+TCL_SHADOW	=	$(BASE_NAME)_wrap.c
+TCL_OBJ		=	$(BASE_NAME)_wrap.o
+TCL_INC		=	/usr/include/tcl$(TCL_VERSION)
+TCL_LIB		=	/usr/lib/tcl$(TCL_VERSION)
+TCL_DEST	=	$(TCL_LIB)/$(BASE_NAME).so
+
+#====================================================
+# TARGETS
+
+all: swig-tcl
+
+dummy: swig-tcl install uninstall clean
+
+swig-tcl: $(TCL_MOD)
+
+$(TCL_MOD): $(TCL_OBJ)
+	$(GCC) $(LD_FLAGS) $(TCL_OBJ) -o $@
+
+$(TCL_OBJ): $(TCL_SHADOW)
+	$(GCC) $(CC_FLAGS) -I$(TCL_INC) -I.. -o $@ $<
+
+$(TCL_SHADOW): $(SWIG_INTERFACE)
+	swig -tcl -o $(TCL_SHADOW) -outdir . $<
+
+# ==================================================================
+install: $(TCL_MOD)
+	sudo cp $(TCL_MOD) $(TCL_DEST)
+
+# ==================================================================
+uninstall:
+
+# ==================================================================
+clean: 
+	rm $(TCL_MOD) $(TCL_SWIG) $(TCL_OBJ)
+	rm $(TCL_SHADOW)
+

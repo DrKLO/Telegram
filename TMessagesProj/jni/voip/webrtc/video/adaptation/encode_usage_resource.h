@@ -17,8 +17,6 @@
 #include "absl/types/optional.h"
 #include "api/scoped_refptr.h"
 #include "api/video/video_adaptation_reason.h"
-#include "rtc_base/ref_counted_object.h"
-#include "rtc_base/task_queue.h"
 #include "video/adaptation/overuse_frame_detector.h"
 #include "video/adaptation/video_stream_encoder_resource.h"
 

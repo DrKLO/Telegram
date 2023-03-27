@@ -118,7 +118,7 @@ public class SaveToGallerySettingsHelper {
         if (type == SAVE_TO_GALLERY_FLAG_PEER) {
             user.save("user", preferences);
         } else if (type == SAVE_TO_GALLERY_FLAG_GROUP) {
-            groups.save("group", preferences);
+            groups.save("groups", preferences);
         } else if (type == SAVE_TO_GALLERY_FLAG_CHANNELS) {
             channels.save("channels", preferences);
         }
@@ -169,7 +169,7 @@ public class SaveToGallerySettingsHelper {
         private boolean needSave(FilePathDatabase.FileMeta meta, MessageObject messageObject, int currentAccount) {
             LongSparseArray<DialogException> exceptions = UserConfig.getInstance(currentAccount).getSaveGalleryExceptions(type);
             DialogException exception = exceptions.get(meta.dialogId);
-            if (messageObject != null && messageObject.isOutOwner()) {
+            if (messageObject != null && (messageObject.isOutOwner() || messageObject.isSecretMedia())) {
                 return false;
             }
             boolean isVideo = (messageObject != null && messageObject.isVideo()) || meta.messageType == MessageObject.TYPE_VIDEO;
@@ -220,6 +220,12 @@ public class SaveToGallerySettingsHelper {
                 builder.append(LocaleController.formatPluralString("Exception", exceptions.size(), exceptions.size()));
             }
             return builder;
+        }
+
+        @Override
+        public void toggle() {
+            super.toggle();
+            saveSettings(type);
         }
     }
 

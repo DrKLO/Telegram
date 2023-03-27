@@ -15,26 +15,19 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/strings/string_view.h"
 #include "api/sequence_checker.h"
 #include "api/video/video_adaptation_counters.h"
 #include "call/adaptation/video_stream_adapter.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/strings/string_builder.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 
 namespace webrtc {
 
 ResourceAdaptationProcessor::ResourceListenerDelegate::ResourceListenerDelegate(
     ResourceAdaptationProcessor* processor)
-    : task_queue_(nullptr), processor_(processor) {}
-
-void ResourceAdaptationProcessor::ResourceListenerDelegate::SetTaskQueue(
-    TaskQueueBase* task_queue) {
-  RTC_DCHECK(!task_queue_);
-  RTC_DCHECK(task_queue);
-  task_queue_ = task_queue;
-  RTC_DCHECK_RUN_ON(task_queue_);
+    : task_queue_(TaskQueueBase::Current()), processor_(processor) {
+  RTC_DCHECK(task_queue_);
 }
 
 void ResourceAdaptationProcessor::ResourceListenerDelegate::
@@ -47,11 +40,11 @@ void ResourceAdaptationProcessor::ResourceListenerDelegate::
     OnResourceUsageStateMeasured(rtc::scoped_refptr<Resource> resource,
                                  ResourceUsageState usage_state) {
   if (!task_queue_->IsCurrent()) {
-    task_queue_->PostTask(ToQueuedTask(
+    task_queue_->PostTask(
         [this_ref = rtc::scoped_refptr<ResourceListenerDelegate>(this),
          resource, usage_state] {
           this_ref->OnResourceUsageStateMeasured(resource, usage_state);
-        }));
+        });
     return;
   }
   RTC_DCHECK_RUN_ON(task_queue_);
@@ -65,19 +58,21 @@ ResourceAdaptationProcessor::MitigationResultAndLogMessage::
     : result(MitigationResult::kAdaptationApplied), message() {}
 
 ResourceAdaptationProcessor::MitigationResultAndLogMessage::
-    MitigationResultAndLogMessage(MitigationResult result, std::string message)
-    : result(result), message(std::move(message)) {}
+    MitigationResultAndLogMessage(MitigationResult result,
+                                  absl::string_view message)
+    : result(result), message(message) {}
 
 ResourceAdaptationProcessor::ResourceAdaptationProcessor(
     VideoStreamAdapter* stream_adapter)
-    : task_queue_(nullptr),
+    : task_queue_(TaskQueueBase::Current()),
       resource_listener_delegate_(
           rtc::make_ref_counted<ResourceListenerDelegate>(this)),
       resources_(),
       stream_adapter_(stream_adapter),
       last_reported_source_restrictions_(),
       previous_mitigation_results_() {
-  RTC_DCHECK(stream_adapter_);
+  RTC_DCHECK(task_queue_);
+  stream_adapter_->AddRestrictionsListener(this);
 }
 
 ResourceAdaptationProcessor::~ResourceAdaptationProcessor() {
@@ -87,16 +82,6 @@ ResourceAdaptationProcessor::~ResourceAdaptationProcessor() {
       << "being destroyed.";
   stream_adapter_->RemoveRestrictionsListener(this);
   resource_listener_delegate_->OnProcessorDestroyed();
-}
-
-void ResourceAdaptationProcessor::SetTaskQueue(TaskQueueBase* task_queue) {
-  RTC_DCHECK(!task_queue_);
-  RTC_DCHECK(task_queue);
-  task_queue_ = task_queue;
-  resource_listener_delegate_->SetTaskQueue(task_queue);
-  RTC_DCHECK_RUN_ON(task_queue_);
-  // Now that we have the queue we can attach as adaptation listener.
-  stream_adapter_->AddRestrictionsListener(this);
 }
 
 void ResourceAdaptationProcessor::AddResourceLimitationsListener(
@@ -128,7 +113,7 @@ void ResourceAdaptationProcessor::AddResource(
         << "Resource \"" << resource->Name() << "\" was already registered.";
     resources_.push_back(resource);
   }
-  resource->SetResourceListener(resource_listener_delegate_);
+  resource->SetResourceListener(resource_listener_delegate_.get());
   RTC_LOG(LS_INFO) << "Registered resource \"" << resource->Name() << "\".";
 }
 
@@ -156,8 +141,8 @@ void ResourceAdaptationProcessor::RemoveResource(
 void ResourceAdaptationProcessor::RemoveLimitationsImposedByResource(
     rtc::scoped_refptr<Resource> resource) {
   if (!task_queue_->IsCurrent()) {
-    task_queue_->PostTask(ToQueuedTask(
-        [this, resource]() { RemoveLimitationsImposedByResource(resource); }));
+    task_queue_->PostTask(
+        [this, resource]() { RemoveLimitationsImposedByResource(resource); });
     return;
   }
   RTC_DCHECK_RUN_ON(task_queue_);

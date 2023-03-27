@@ -15,8 +15,6 @@
 
 #include <memory>
 
-#include "rtc_base/constructor_magic.h"
-
 namespace webrtc {
 
 // Format conversion (remixing and resampling) for audio. Only simple remixing
@@ -34,6 +32,9 @@ class AudioConverter {
                                                 size_t dst_channels,
                                                 size_t dst_frames);
   virtual ~AudioConverter() {}
+
+  AudioConverter(const AudioConverter&) = delete;
+  AudioConverter& operator=(const AudioConverter&) = delete;
 
   // Convert `src`, containing `src_size` samples, to `dst`, having a sample
   // capacity of `dst_capacity`. Both point to a series of buffers containing
@@ -64,8 +65,6 @@ class AudioConverter {
   const size_t src_frames_;
   const size_t dst_channels_;
   const size_t dst_frames_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioConverter);
 };
 
 }  // namespace webrtc

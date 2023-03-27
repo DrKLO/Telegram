@@ -28,6 +28,9 @@
 
 #include <stdio.h>
 
+#include "absl/strings/string_view.h"
+#include "rtc_base/system/rtc_export.h"
+
 namespace webrtc {
 
 typedef const unsigned char* (*GetCategoryEnabledPtr)(const char* name);
@@ -70,12 +73,12 @@ class EventTracer {
 namespace rtc {
 namespace tracing {
 // Set up internal event tracer.
-void SetupInternalTracer();
-bool StartInternalCapture(const char* filename);
-void StartInternalCaptureToFile(FILE* file);
-void StopInternalCapture();
+RTC_EXPORT void SetupInternalTracer(bool enable_all_categories = true);
+RTC_EXPORT bool StartInternalCapture(absl::string_view filename);
+RTC_EXPORT void StartInternalCaptureToFile(FILE* file);
+RTC_EXPORT void StopInternalCapture();
 // Make sure we run this, this will tear down the internal tracing.
-void ShutdownInternalTracer();
+RTC_EXPORT void ShutdownInternalTracer();
 }  // namespace tracing
 }  // namespace rtc
 

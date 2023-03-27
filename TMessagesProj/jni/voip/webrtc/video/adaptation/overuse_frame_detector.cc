@@ -429,7 +429,7 @@ class OverdoseInjector : public OveruseFrameDetector::ProcessingUsage {
 
 }  // namespace
 
-CpuOveruseOptions::CpuOveruseOptions()
+CpuOveruseOptions::CpuOveruseOptions(const FieldTrialsView& field_trials)
     : high_encode_usage_threshold_percent(85),
       frame_timeout_interval_ms(1500),
       min_frame_samples(120),
@@ -438,42 +438,46 @@ CpuOveruseOptions::CpuOveruseOptions()
       // Disabled by default.
       filter_time_ms(0) {
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
-  // This is proof-of-concept code for letting the physical core count affect
-  // the interval into which we attempt to scale. For now, the code is Mac OS
-  // specific, since that's the platform were we saw most problems.
-  // TODO(torbjorng): Enhance SystemInfo to return this metric.
+  // Kill switch for re-enabling special adaptation rules for macOS.
+  // TODO(bugs.webrtc.org/14138): Remove once removal is deemed safe.
+  if (field_trials.IsEnabled(
+          "WebRTC-MacSpecialOveruseRulesRemovalKillSwitch")) {
+    // This is proof-of-concept code for letting the physical core count affect
+    // the interval into which we attempt to scale. For now, the code is Mac OS
+    // specific, since that's the platform were we saw most problems.
+    // TODO(torbjorng): Enhance SystemInfo to return this metric.
 
-  mach_port_t mach_host = mach_host_self();
-  host_basic_info hbi = {};
-  mach_msg_type_number_t info_count = HOST_BASIC_INFO_COUNT;
-  kern_return_t kr =
-      host_info(mach_host, HOST_BASIC_INFO, reinterpret_cast<host_info_t>(&hbi),
-                &info_count);
-  mach_port_deallocate(mach_task_self(), mach_host);
+    mach_port_t mach_host = mach_host_self();
+    host_basic_info hbi = {};
+    mach_msg_type_number_t info_count = HOST_BASIC_INFO_COUNT;
+    kern_return_t kr =
+        host_info(mach_host, HOST_BASIC_INFO,
+                  reinterpret_cast<host_info_t>(&hbi), &info_count);
+    mach_port_deallocate(mach_task_self(), mach_host);
 
-  int n_physical_cores;
-  if (kr != KERN_SUCCESS) {
-    // If we couldn't get # of physical CPUs, don't panic. Assume we have 1.
-    n_physical_cores = 1;
-    RTC_LOG(LS_ERROR)
-        << "Failed to determine number of physical cores, assuming 1";
-  } else {
-    n_physical_cores = hbi.physical_cpu;
-    RTC_LOG(LS_INFO) << "Number of physical cores:" << n_physical_cores;
+    int n_physical_cores;
+    if (kr != KERN_SUCCESS) {
+      // If we couldn't get # of physical CPUs, don't panic. Assume we have 1.
+      n_physical_cores = 1;
+      RTC_LOG(LS_ERROR)
+          << "Failed to determine number of physical cores, assuming 1";
+    } else {
+      n_physical_cores = hbi.physical_cpu;
+      RTC_LOG(LS_INFO) << "Number of physical cores:" << n_physical_cores;
+    }
+
+    // Change init list default for few core systems. The assumption here is
+    // that encoding, which we measure here, takes about 1/4 of the processing
+    // of a two-way call. This is roughly true for x86 using both vp8 and vp9
+    // without hardware encoding. Since we don't affect the incoming stream
+    // here, we only control about 1/2 of the total processing needs, but this
+    // is not taken into account.
+    if (n_physical_cores == 1)
+      high_encode_usage_threshold_percent = 20;  // Roughly 1/4 of 100%.
+    else if (n_physical_cores == 2)
+      high_encode_usage_threshold_percent = 40;  // Roughly 1/4 of 200%.
   }
-
-  // Change init list default for few core systems. The assumption here is that
-  // encoding, which we measure here, takes about 1/4 of the processing of a
-  // two-way call. This is roughly true for x86 using both vp8 and vp9 without
-  // hardware encoding. Since we don't affect the incoming stream here, we only
-  // control about 1/2 of the total processing needs, but this is not taken into
-  // account.
-  if (n_physical_cores == 1)
-    high_encode_usage_threshold_percent = 20;  // Roughly 1/4 of 100%.
-  else if (n_physical_cores == 2)
-    high_encode_usage_threshold_percent = 40;  // Roughly 1/4 of 200%.
 #endif  // defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
-
   // Note that we make the interval 2x+epsilon wide, since libyuv scaling steps
   // are close to that (when squared). This wide interval makes sure that
   // scaling up or down does not jump all the way across the interval.
@@ -517,10 +521,12 @@ OveruseFrameDetector::CreateProcessingUsage(const CpuOveruseOptions& options) {
 }
 
 OveruseFrameDetector::OveruseFrameDetector(
-    CpuOveruseMetricsObserver* metrics_observer)
-    : metrics_observer_(metrics_observer),
+    CpuOveruseMetricsObserver* metrics_observer,
+    const FieldTrialsView& field_trials)
+    : options_(field_trials),
+      metrics_observer_(metrics_observer),
       num_process_times_(0),
-      // TODO(nisse): Use absl::optional
+      // TODO(bugs.webrtc.org/9078): Use absl::optional
       last_capture_time_us_(-1),
       num_pixels_(0),
       max_framerate_(kDefaultFrameRate),

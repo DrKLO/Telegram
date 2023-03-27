@@ -39,6 +39,7 @@ import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
@@ -414,23 +415,7 @@ public class AvatarConstructorFragment extends BaseFragment {
 
             protected void onEmojiSelected(View view, Long documentId, TLRPC.Document document, Integer until) {
                 long docId = documentId == null ? 0 : documentId;
-                previewView.documentId = docId;
-                previewView.document = document;
-                if (docId == 0) {
-                    previewView.backupImageView.setAnimatedEmojiDrawable(null);
-                    SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
-                    previewView.backupImageView.getImageReceiver().setImage(ImageLocation.getForDocument(document), "100_100", null, null, svgThumb, 0, "tgs", document, 0);
-                } else {
-                    previewView.backupImageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW, currentAccount, docId));
-                    previewView.backupImageView.getImageReceiver().clearImage();
-                }
-                if (previewView.getImageReceiver() != null && previewView.getImageReceiver().getAnimation() != null) {
-                    previewView.getImageReceiver().getAnimation().seekTo(0, true);
-                }
-                if (previewView.getImageReceiver() != null && previewView.getImageReceiver().getLottieAnimation() != null) {
-                    previewView.getImageReceiver().getLottieAnimation().setCurrentFrame(0, false, true);
-                }
-                wasChanged = true;
+                setPreview(docId, document);
             }
         };
         selectAnimatedEmojiDialog.forUser = !forGroup;
@@ -478,6 +463,26 @@ public class AvatarConstructorFragment extends BaseFragment {
         });
         fragmentView = nestedSizeNotifierLayout;
         return fragmentView;
+    }
+
+    private void setPreview(long docId, TLRPC.Document document) {
+        previewView.documentId = docId;
+        previewView.document = document;
+        if (docId == 0) {
+            previewView.backupImageView.setAnimatedEmojiDrawable(null);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundWhiteGrayIcon, 0.2f);
+            previewView.backupImageView.getImageReceiver().setImage(ImageLocation.getForDocument(document), "100_100", null, null, svgThumb, 0, "tgs", document, 0);
+        } else {
+            previewView.backupImageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW, currentAccount, docId));
+            previewView.backupImageView.getImageReceiver().clearImage();
+        }
+        if (previewView.getImageReceiver() != null && previewView.getImageReceiver().getAnimation() != null) {
+            previewView.getImageReceiver().getAnimation().seekTo(0, true);
+        }
+        if (previewView.getImageReceiver() != null && previewView.getImageReceiver().getLottieAnimation() != null) {
+            previewView.getImageReceiver().getLottieAnimation().setCurrentFrame(0, false, true);
+        }
+        wasChanged = true;
     }
 
     private void discardEditor() {
@@ -629,6 +634,9 @@ public class AvatarConstructorFragment extends BaseFragment {
 
     public void startFrom(AvatarConstructorPreviewCell previewCell) {
         BackgroundGradient gradient = previewCell.getBackgroundGradient();
+        if (previewView == null) {
+            return;
+        }
         previewView.setGradient(gradient);
         if (previewCell.getAnimatedEmoji() != null) {
             long docId = previewCell.getAnimatedEmoji().getDocumentId();
@@ -637,6 +645,34 @@ public class AvatarConstructorFragment extends BaseFragment {
         }
         backgroundSelectView.selectGradient(gradient);
         selectAnimatedEmojiDialog.setForUser(previewCell.forUser);
+    }
+
+    public void startFrom(TLRPC.VideoSize emojiMarkup) {
+        BackgroundGradient gradient = new BackgroundGradient();
+        gradient.color1 = ColorUtils.setAlphaComponent(emojiMarkup.background_colors.get(0), 255);
+        gradient.color2 =  emojiMarkup.background_colors.size() > 1 ? ColorUtils.setAlphaComponent(emojiMarkup.background_colors.get(1), 255) : 0;
+        gradient.color3 = emojiMarkup.background_colors.size() > 2 ? ColorUtils.setAlphaComponent(emojiMarkup.background_colors.get(2), 255) : 0;
+        gradient.color4 = emojiMarkup.background_colors.size() > 3 ? ColorUtils.setAlphaComponent(emojiMarkup.background_colors.get(3), 255) : 0;
+        previewView.setGradient(gradient);
+
+
+        if (emojiMarkup instanceof TLRPC.TL_videoSizeEmojiMarkup) {
+            setPreview(((TLRPC.TL_videoSizeEmojiMarkup) emojiMarkup).emoji_id, null);
+        } else {
+            TLRPC.TL_videoSizeStickerMarkup stickerMarkup = new TLRPC.TL_videoSizeStickerMarkup();
+            TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSet(stickerMarkup.stickerset, false);
+            TLRPC.Document document = null;
+            if (set != null) {
+                for (int i = 0; i < set.documents.size(); i++) {
+                    if (set.documents.get(i).id == stickerMarkup.sticker_id) {
+                        document = set.documents.get(i);
+                    }
+                }
+            }
+            setPreview(0, document);
+        }
+        backgroundSelectView.selectGradient(gradient);
+        selectAnimatedEmojiDialog.setForUser(true);
     }
 
     public class PreviewView extends FrameLayout {

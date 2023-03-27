@@ -1546,7 +1546,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 canvas.clipOutRect(AndroidUtilities.rectTmp2);
             }
         } else {
-            if (hasStart) {
+            if (hasStart && !layout.isRtlCharAt(selectionStart)) {
                 AndroidUtilities.rectTmp2.set((int) startLeft, (int) (startBottom - R), (int) Math.min(startLeft + R, layout.getLineRight(startLine)), (int) startBottom);
                 AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
                 selectionHandlePath.addRect(AndroidUtilities.rectTmp, Path.Direction.CW);
@@ -1556,7 +1556,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 }
             }
 
-            if (hasEnd) {
+            if (hasEnd && !layout.isRtlCharAt(selectionEnd)) {
                 AndroidUtilities.rectTmp2.set((int) Math.max(endRight - R, layout.getLineLeft(endLine)), (int) (endBottom - R), (int) endRight, (int) endBottom);
                 AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
                 selectionHandlePath.addRect(AndroidUtilities.rectTmp, Path.Direction.CW);

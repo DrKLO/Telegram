@@ -15,6 +15,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_coding/audio_network_adaptor/bitrate_controller.h"
 #include "modules/audio_coding/audio_network_adaptor/channel_controller.h"
 #include "modules/audio_coding/audio_network_adaptor/debug_dump_writer.h"
@@ -219,7 +220,7 @@ ControllerManagerImpl::Config::Config(int min_reordering_time_ms,
 ControllerManagerImpl::Config::~Config() = default;
 
 std::unique_ptr<ControllerManager> ControllerManagerImpl::Create(
-    const std::string& config_string,
+    absl::string_view config_string,
     size_t num_encoder_channels,
     rtc::ArrayView<const int> encoder_frame_lengths_ms,
     int min_encoder_bitrate_bps,
@@ -235,7 +236,7 @@ std::unique_ptr<ControllerManager> ControllerManagerImpl::Create(
 }
 
 std::unique_ptr<ControllerManager> ControllerManagerImpl::Create(
-    const std::string& config_string,
+    absl::string_view config_string,
     size_t num_encoder_channels,
     rtc::ArrayView<const int> encoder_frame_lengths_ms,
     int min_encoder_bitrate_bps,
@@ -247,7 +248,8 @@ std::unique_ptr<ControllerManager> ControllerManagerImpl::Create(
     DebugDumpWriter* debug_dump_writer) {
 #if WEBRTC_ENABLE_PROTOBUF
   audio_network_adaptor::config::ControllerManager controller_manager_config;
-  RTC_CHECK(controller_manager_config.ParseFromString(config_string));
+  RTC_CHECK(
+      controller_manager_config.ParseFromString(std::string(config_string)));
   if (debug_dump_writer)
     debug_dump_writer->DumpControllerManagerConfig(controller_manager_config,
                                                    rtc::TimeMillis());

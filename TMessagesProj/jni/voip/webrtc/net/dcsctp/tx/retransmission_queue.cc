@@ -51,6 +51,7 @@ constexpr float kMinBytesRequiredToSendFactor = 0.9;
 
 RetransmissionQueue::RetransmissionQueue(
     absl::string_view log_prefix,
+    DcSctpSocketCallbacks* callbacks,
     TSN my_initial_tsn,
     size_t a_rwnd,
     SendQueue& send_queue,
@@ -59,9 +60,9 @@ RetransmissionQueue::RetransmissionQueue(
     Timer& t3_rtx,
     const DcSctpOptions& options,
     bool supports_partial_reliability,
-    bool use_message_interleaving,
-    const DcSctpSocketHandoverState* handover_state)
-    : options_(options),
+    bool use_message_interleaving)
+    : callbacks_(*callbacks),
+      options_(options),
       min_bytes_required_to_send_(options.mtu * kMinBytesRequiredToSendFactor),
       partial_reliability_(supports_partial_reliability),
       log_prefix_(std::string(log_prefix) + "tx: "),
@@ -72,25 +73,19 @@ RetransmissionQueue::RetransmissionQueue(
       on_clear_retransmission_counter_(
           std::move(on_clear_retransmission_counter)),
       t3_rtx_(t3_rtx),
-      cwnd_(handover_state ? handover_state->tx.cwnd
-                           : options_.cwnd_mtus_initial * options_.mtu),
-      rwnd_(handover_state ? handover_state->tx.rwnd : a_rwnd),
+      cwnd_(options_.cwnd_mtus_initial * options_.mtu),
+      rwnd_(a_rwnd),
       // https://tools.ietf.org/html/rfc4960#section-7.2.1
       // "The initial value of ssthresh MAY be arbitrarily high (for
       // example, implementations MAY use the size of the receiver advertised
       // window).""
-      ssthresh_(handover_state ? handover_state->tx.ssthresh : rwnd_),
-      partial_bytes_acked_(
-          handover_state ? handover_state->tx.partial_bytes_acked : 0),
+      ssthresh_(rwnd_),
+      partial_bytes_acked_(0),
       send_queue_(send_queue),
       outstanding_data_(
           data_chunk_header_size_,
-          tsn_unwrapper_.Unwrap(handover_state
-                                    ? TSN(handover_state->tx.next_tsn)
-                                    : my_initial_tsn),
-          tsn_unwrapper_.Unwrap(handover_state
-                                    ? TSN(handover_state->tx.next_tsn - 1)
-                                    : TSN(*my_initial_tsn - 1)),
+          tsn_unwrapper_.Unwrap(my_initial_tsn),
+          tsn_unwrapper_.Unwrap(TSN(*my_initial_tsn - 1)),
           [this](IsUnordered unordered, StreamID stream_id, MID message_id) {
             return send_queue_.Discard(unordered, stream_id, message_id);
           }) {}
@@ -278,8 +273,27 @@ bool RetransmissionQueue::HandleSack(TimeMs now, const SackChunk& sack) {
     UpdateRTT(now, cumulative_tsn_ack);
   }
 
+  // Exit fast recovery before continuing processing, in case it needs to go
+  // into fast recovery again due to new reported packet loss.
+  MaybeExitFastRecovery(cumulative_tsn_ack);
+
   OutstandingData::AckInfo ack_info = outstanding_data_.HandleSack(
-      cumulative_tsn_ack, sack.gap_ack_blocks(), is_in_fast_retransmit_);
+      cumulative_tsn_ack, sack.gap_ack_blocks(), is_in_fast_recovery());
+
+  // Add lifecycle events for delivered messages.
+  for (LifecycleId lifecycle_id : ack_info.acked_lifecycle_ids) {
+    RTC_DLOG(LS_VERBOSE) << "Triggering OnLifecycleMessageDelivered("
+                         << lifecycle_id.value() << ")";
+    callbacks_.OnLifecycleMessageDelivered(lifecycle_id);
+    callbacks_.OnLifecycleEnd(lifecycle_id);
+  }
+  for (LifecycleId lifecycle_id : ack_info.abandoned_lifecycle_ids) {
+    RTC_DLOG(LS_VERBOSE) << "Triggering OnLifecycleMessageExpired("
+                         << lifecycle_id.value() << ", true)";
+    callbacks_.OnLifecycleMessageExpired(lifecycle_id,
+                                         /*maybe_delivered=*/true);
+    callbacks_.OnLifecycleEnd(lifecycle_id);
+  }
 
   // Update of outstanding_data_ is now done. Congestion control remains.
   UpdateReceiverWindow(sack.a_rwnd());
@@ -291,8 +305,6 @@ bool RetransmissionQueue::HandleSack(TimeMs now, const SackChunk& sack) {
                        << outstanding_data_.outstanding_bytes() << " ("
                        << old_outstanding_bytes << "), rwnd=" << rwnd_ << " ("
                        << old_rwnd << ")";
-
-  MaybeExitFastRecovery(cumulative_tsn_ack);
 
   if (cumulative_tsn_ack > old_last_cumulative_tsn_ack) {
     // https://tools.ietf.org/html/rfc4960#section-6.3.2
@@ -308,7 +320,6 @@ bool RetransmissionQueue::HandleSack(TimeMs now, const SackChunk& sack) {
   }
 
   if (ack_info.has_packet_loss) {
-    is_in_fast_retransmit_ = true;
     HandlePacketLoss(ack_info.highest_tsn_acked);
   }
 
@@ -386,6 +397,54 @@ void RetransmissionQueue::HandleT3RtxTimerExpiry() {
   RTC_DCHECK(IsConsistent());
 }
 
+std::vector<std::pair<TSN, Data>>
+RetransmissionQueue::GetChunksForFastRetransmit(size_t bytes_in_packet) {
+  RTC_DCHECK(outstanding_data_.has_data_to_be_fast_retransmitted());
+  RTC_DCHECK(IsDivisibleBy4(bytes_in_packet));
+  std::vector<std::pair<TSN, Data>> to_be_sent;
+  size_t old_outstanding_bytes = outstanding_bytes();
+
+  to_be_sent =
+      outstanding_data_.GetChunksToBeFastRetransmitted(bytes_in_packet);
+  RTC_DCHECK(!to_be_sent.empty());
+
+  // https://tools.ietf.org/html/rfc4960#section-7.2.4
+  // "4)  Restart the T3-rtx timer only if ... the endpoint is retransmitting
+  // the first outstanding DATA chunk sent to that address."
+  if (to_be_sent[0].first ==
+      outstanding_data_.last_cumulative_tsn_ack().next_value().Wrap()) {
+    RTC_DLOG(LS_VERBOSE)
+        << log_prefix_
+        << "First outstanding DATA to be retransmitted - restarting T3-RTX";
+    t3_rtx_.Stop();
+  }
+
+  // https://tools.ietf.org/html/rfc4960#section-6.3.2
+  // "Every time a DATA chunk is sent to any address (including a
+  // retransmission), if the T3-rtx timer of that address is not running,
+  // start it running so that it will expire after the RTO of that address."
+  if (!t3_rtx_.is_running()) {
+    t3_rtx_.Start();
+  }
+  RTC_DLOG(LS_VERBOSE) << log_prefix_ << "Fast-retransmitting TSN "
+                       << StrJoin(to_be_sent, ",",
+                                  [&](rtc::StringBuilder& sb,
+                                      const std::pair<TSN, Data>& c) {
+                                    sb << *c.first;
+                                  })
+                       << " - "
+                       << absl::c_accumulate(
+                              to_be_sent, 0,
+                              [&](size_t r, const std::pair<TSN, Data>& d) {
+                                return r + GetSerializedChunkSize(d.second);
+                              })
+                       << " bytes. outstanding_bytes=" << outstanding_bytes()
+                       << " (" << old_outstanding_bytes << ")";
+
+  RTC_DCHECK(IsConsistent());
+  return to_be_sent;
+}
+
 std::vector<std::pair<TSN, Data>> RetransmissionQueue::GetChunksToSend(
     TimeMs now,
     size_t bytes_remaining_in_packet) {
@@ -395,60 +454,45 @@ std::vector<std::pair<TSN, Data>> RetransmissionQueue::GetChunksToSend(
   std::vector<std::pair<TSN, Data>> to_be_sent;
   size_t old_outstanding_bytes = outstanding_bytes();
   size_t old_rwnd = rwnd_;
-  if (is_in_fast_retransmit_) {
-    // https://tools.ietf.org/html/rfc4960#section-7.2.4
-    // "Determine how many of the earliest (i.e., lowest TSN) DATA chunks
-    // marked for retransmission will fit into a single packet ... Retransmit
-    // those K DATA chunks in a single packet.  When a Fast Retransmit is being
-    // performed, the sender SHOULD ignore the value of cwnd and SHOULD NOT
-    // delay retransmission for this single packet."
-    is_in_fast_retransmit_ = false;
-    to_be_sent =
-        outstanding_data_.GetChunksToBeRetransmitted(bytes_remaining_in_packet);
-    size_t to_be_sent_bytes = absl::c_accumulate(
-        to_be_sent, 0, [&](size_t r, const std::pair<TSN, Data>& d) {
-          return r + GetSerializedChunkSize(d.second);
-        });
-    RTC_DLOG(LS_VERBOSE) << log_prefix_ << "fast-retransmit: sending "
-                         << to_be_sent.size() << " chunks, " << to_be_sent_bytes
-                         << " bytes";
-  } else {
-    // Normal sending. Calculate the bandwidth budget (how many bytes that is
-    // allowed to be sent), and fill that up first with chunks that are
-    // scheduled to be retransmitted. If there is still budget, send new chunks
-    // (which will have their TSN assigned here.)
-    size_t max_bytes =
-        RoundDownTo4(std::min(max_bytes_to_send(), bytes_remaining_in_packet));
 
-    to_be_sent = outstanding_data_.GetChunksToBeRetransmitted(max_bytes);
-    max_bytes -= absl::c_accumulate(
-        to_be_sent, 0, [&](size_t r, const std::pair<TSN, Data>& d) {
-          return r + GetSerializedChunkSize(d.second);
-        });
+  // Calculate the bandwidth budget (how many bytes that is
+  // allowed to be sent), and fill that up first with chunks that are
+  // scheduled to be retransmitted. If there is still budget, send new chunks
+  // (which will have their TSN assigned here.)
+  size_t max_bytes =
+      RoundDownTo4(std::min(max_bytes_to_send(), bytes_remaining_in_packet));
 
-    while (max_bytes > data_chunk_header_size_) {
-      RTC_DCHECK(IsDivisibleBy4(max_bytes));
-      absl::optional<SendQueue::DataToSend> chunk_opt =
-          send_queue_.Produce(now, max_bytes - data_chunk_header_size_);
-      if (!chunk_opt.has_value()) {
-        break;
+  to_be_sent = outstanding_data_.GetChunksToBeRetransmitted(max_bytes);
+  max_bytes -= absl::c_accumulate(to_be_sent, 0,
+                                  [&](size_t r, const std::pair<TSN, Data>& d) {
+                                    return r + GetSerializedChunkSize(d.second);
+                                  });
+
+  while (max_bytes > data_chunk_header_size_) {
+    RTC_DCHECK(IsDivisibleBy4(max_bytes));
+    absl::optional<SendQueue::DataToSend> chunk_opt =
+        send_queue_.Produce(now, max_bytes - data_chunk_header_size_);
+    if (!chunk_opt.has_value()) {
+      break;
+    }
+
+    size_t chunk_size = GetSerializedChunkSize(chunk_opt->data);
+    max_bytes -= chunk_size;
+    rwnd_ -= chunk_size;
+
+    absl::optional<UnwrappedTSN> tsn = outstanding_data_.Insert(
+        chunk_opt->data, now,
+        partial_reliability_ ? chunk_opt->max_retransmissions
+                             : MaxRetransmits::NoLimit(),
+        partial_reliability_ ? chunk_opt->expires_at : TimeMs::InfiniteFuture(),
+        chunk_opt->lifecycle_id);
+
+    if (tsn.has_value()) {
+      if (chunk_opt->lifecycle_id.IsSet()) {
+        RTC_DCHECK(chunk_opt->data.is_end);
+        callbacks_.OnLifecycleMessageFullySent(chunk_opt->lifecycle_id);
       }
-
-      size_t chunk_size = GetSerializedChunkSize(chunk_opt->data);
-      max_bytes -= chunk_size;
-      rwnd_ -= chunk_size;
-
-      absl::optional<UnwrappedTSN> tsn = outstanding_data_.Insert(
-          chunk_opt->data,
-          partial_reliability_ ? chunk_opt->max_retransmissions
-                               : MaxRetransmits::NoLimit(),
-          now,
-          partial_reliability_ ? chunk_opt->expires_at
-                               : TimeMs::InfiniteFuture());
-
-      if (tsn.has_value()) {
-        to_be_sent.emplace_back(tsn->Wrap(), std::move(chunk_opt->data));
-      }
+      to_be_sent.emplace_back(tsn->Wrap(), std::move(chunk_opt->data));
     }
   }
 
@@ -509,16 +553,15 @@ size_t RetransmissionQueue::max_bytes_to_send() const {
   return std::min(rwnd(), left);
 }
 
-void RetransmissionQueue::PrepareResetStreams(
-    rtc::ArrayView<const StreamID> streams) {
+void RetransmissionQueue::PrepareResetStream(StreamID stream_id) {
   // TODO(boivie): These calls are now only affecting the send queue. The
   // packet buffer can also change behavior - for example draining the chunk
   // producer and eagerly assign TSNs so that an "Outgoing SSN Reset Request"
   // can be sent quickly, with a known `sender_last_assigned_tsn`.
-  send_queue_.PrepareResetStreams(streams);
+  send_queue_.PrepareResetStream(stream_id);
 }
-bool RetransmissionQueue::CanResetStreams() const {
-  return send_queue_.CanResetStreams();
+bool RetransmissionQueue::HasStreamsReadyToBeReset() const {
+  return send_queue_.HasStreamsReadyToBeReset();
 }
 void RetransmissionQueue::CommitResetStreams() {
   send_queue_.CommitResetStreams();
@@ -547,5 +590,22 @@ void RetransmissionQueue::AddHandoverState(DcSctpSocketHandoverState& state) {
   state.tx.cwnd = cwnd_;
   state.tx.ssthresh = ssthresh_;
   state.tx.partial_bytes_acked = partial_bytes_acked_;
+}
+
+void RetransmissionQueue::RestoreFromState(
+    const DcSctpSocketHandoverState& state) {
+  // Validate that the component is in pristine state.
+  RTC_DCHECK(outstanding_data_.empty());
+  RTC_DCHECK(!t3_rtx_.is_running());
+  RTC_DCHECK(partial_bytes_acked_ == 0);
+
+  cwnd_ = state.tx.cwnd;
+  rwnd_ = state.tx.rwnd;
+  ssthresh_ = state.tx.ssthresh;
+  partial_bytes_acked_ = state.tx.partial_bytes_acked;
+
+  outstanding_data_.ResetSequenceNumbers(
+      tsn_unwrapper_.Unwrap(TSN(state.tx.next_tsn)),
+      tsn_unwrapper_.Unwrap(TSN(state.tx.next_tsn - 1)));
 }
 }  // namespace dcsctp

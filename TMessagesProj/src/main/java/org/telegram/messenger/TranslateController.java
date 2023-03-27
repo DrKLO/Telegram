@@ -82,6 +82,7 @@ public class TranslateController extends BaseController {
         return (
             messageObject != null && messageObject.messageOwner != null &&
             !messageObject.isOutOwner() &&
+            !messageObject.isRestrictedMessage &&
             (
                 messageObject.type == MessageObject.TYPE_TEXT ||
                 messageObject.type == MessageObject.TYPE_VIDEO ||
@@ -274,12 +275,15 @@ public class TranslateController extends BaseController {
     );
 
     private static List<String> allLanguages = Arrays.asList(
-        "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "zh", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "fi", "fr", "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "iw", "hi", "hmn", "hu", "is", "ig", "id", "ga", "it", "ja", "jv", "kn", "kk", "km", "rw", "ko", "ku", "ky", "lo", "la", "lv", "lt", "lb", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne", "no", "ny", "or", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sm", "gd", "sr", "st", "sn", "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th", "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "yo", "zu"
+        "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "zh-cn", "zh", "zh-tw", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "fi", "fr", "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "iw", "hi", "hmn", "hu", "is", "ig", "id", "ga", "it", "ja", "jv", "kn", "kk", "km", "rw", "ko", "ku", "ky", "lo", "la", "lv", "lt", "lb", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne", "no", "ny", "or", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sm", "gd", "sr", "st", "sn", "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th", "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "yo", "zu"
     );
 
     public static class Language {
         public String code;
         public String displayName;
+        public String ownDisplayName;
+
+        public String q;
     }
 
     public static ArrayList<Language> getLanguages() {
@@ -287,10 +291,15 @@ public class TranslateController extends BaseController {
         for (int i = 0; i < allLanguages.size(); ++i) {
             Language language = new Language();
             language.code = allLanguages.get(i);
+            if ("no".equals(language.code)) {
+                language.code = "nb";
+            }
             language.displayName = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(language.code));
+            language.ownDisplayName = TranslateAlert2.capitalFirst(TranslateAlert2.systemLanguageName(language.code, true));
             if (language.displayName == null) {
                 continue;
             }
+            language.q = (language.displayName + " " + (language.ownDisplayName == null ? "" : language.ownDisplayName)).toLowerCase();
             result.add(language);
         }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
@@ -362,10 +371,15 @@ public class TranslateController extends BaseController {
             }
             Language language = new Language();
             language.code = code;
+            if ("no".equals(language.code)) {
+                language.code = "nb";
+            }
             language.displayName = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(language.code));
+            language.ownDisplayName = TranslateAlert2.capitalFirst(TranslateAlert2.systemLanguageName(language.code, true));
             if (language.displayName == null) {
                 continue;
             }
+            language.q = (language.displayName + " " + language.ownDisplayName).toLowerCase();
             result.add(language);
         }
         return result;
@@ -605,20 +619,22 @@ public class TranslateController extends BaseController {
 
         pendingLanguageChecks.add(hash);
 
-        LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
-            String detectedLanguage = lng;
-            if (detectedLanguage == null) {
-                detectedLanguage = UNKNOWN_LANGUAGE;
-            }
-            messageObject.messageOwner.originalLanguage = detectedLanguage;
-            getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
-            pendingLanguageChecks.remove((Integer) hash);
-            checkDialogTranslatable(messageObject);
-        }), err -> AndroidUtilities.runOnUIThread(() -> {
-            messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
-            getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
-            pendingLanguageChecks.remove((Integer) hash);
-        }));
+        Utilities.stageQueue.postRunnable(() -> {
+            LanguageDetector.detectLanguage(messageObject.messageOwner.message, lng -> AndroidUtilities.runOnUIThread(() -> {
+                String detectedLanguage = lng;
+                if (detectedLanguage == null) {
+                    detectedLanguage = UNKNOWN_LANGUAGE;
+                }
+                messageObject.messageOwner.originalLanguage = detectedLanguage;
+                getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
+                pendingLanguageChecks.remove((Integer) hash);
+                checkDialogTranslatable(messageObject);
+            }), err -> AndroidUtilities.runOnUIThread(() -> {
+                messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
+                getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
+                pendingLanguageChecks.remove((Integer) hash);
+            }));
+        });
     }
 
     private void checkDialogTranslatable(MessageObject messageObject) {
@@ -640,8 +656,8 @@ public class TranslateController extends BaseController {
             isTranslatable(messageObject) &&
             messageObject.messageOwner.originalLanguage != null &&
             !UNKNOWN_LANGUAGE.equals(messageObject.messageOwner.originalLanguage) &&
-            !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(messageObject.messageOwner.originalLanguage) &&
-            !TextUtils.equals(getDialogTranslateTo(dialogId), messageObject.messageOwner.originalLanguage)
+            !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(messageObject.messageOwner.originalLanguage)
+//            !TextUtils.equals(getDialogTranslateTo(dialogId), messageObject.messageOwner.originalLanguage)
         );
 
         if (isUnknown) {
@@ -797,7 +813,7 @@ public class TranslateController extends BaseController {
 
     public boolean isTranslating(MessageObject messageObject) {
         synchronized (this) {
-            return messageObject != null && isTranslatingDialog(messageObject.getDialogId()) && loadingTranslations.contains(messageObject.getId());
+            return messageObject != null && loadingTranslations.contains(messageObject.getId()) && isTranslatingDialog(messageObject.getDialogId());
         }
     }
 

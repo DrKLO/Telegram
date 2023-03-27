@@ -89,18 +89,26 @@ int ConvertToI420(const uint8_t* sample,
 
   switch (format) {
     // Single plane formats
-    case FOURCC_YUY2:
+    case FOURCC_YUY2: {  // TODO(fbarchard): Find better odd crop fix.
+      uint8_t* u = (crop_x & 1) ? dst_v : dst_u;
+      uint8_t* v = (crop_x & 1) ? dst_u : dst_v;
+      int stride_u = (crop_x & 1) ? dst_stride_v : dst_stride_u;
+      int stride_v = (crop_x & 1) ? dst_stride_u : dst_stride_v;
       src = sample + (aligned_src_width * crop_y + crop_x) * 2;
-      r = YUY2ToI420(src, aligned_src_width * 2, dst_y, dst_stride_y, dst_u,
-                     dst_stride_u, dst_v, dst_stride_v, crop_width,
-                     inv_crop_height);
+      r = YUY2ToI420(src, aligned_src_width * 2, dst_y, dst_stride_y, u,
+                     stride_u, v, stride_v, crop_width, inv_crop_height);
       break;
-    case FOURCC_UYVY:
+    }
+    case FOURCC_UYVY: {
+      uint8_t* u = (crop_x & 1) ? dst_v : dst_u;
+      uint8_t* v = (crop_x & 1) ? dst_u : dst_v;
+      int stride_u = (crop_x & 1) ? dst_stride_v : dst_stride_u;
+      int stride_v = (crop_x & 1) ? dst_stride_u : dst_stride_v;
       src = sample + (aligned_src_width * crop_y + crop_x) * 2;
-      r = UYVYToI420(src, aligned_src_width * 2, dst_y, dst_stride_y, dst_u,
-                     dst_stride_u, dst_v, dst_stride_v, crop_width,
-                     inv_crop_height);
+      r = UYVYToI420(src, aligned_src_width * 2, dst_y, dst_stride_y, u,
+                     stride_u, v, stride_v, crop_width, inv_crop_height);
       break;
+    }
     case FOURCC_RGBP:
       src = sample + (src_width * crop_y + crop_x) * 2;
       r = RGB565ToI420(src, src_width * 2, dst_y, dst_stride_y, dst_u,

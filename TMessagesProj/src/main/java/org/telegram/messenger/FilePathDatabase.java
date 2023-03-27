@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class FilePathDatabase {
 
-    private final DispatchQueue dispatchQueue;
+    private DispatchQueue dispatchQueue;
     private final int currentAccount;
 
     private SQLiteDatabase database;
@@ -32,13 +32,10 @@ public class FilePathDatabase {
     public final static int MESSAGE_TYPE_VIDEO_MESSAGE = 0;
 
     private final FileMeta metaTmp = new FileMeta();
+    boolean databaseCreated;
 
     public FilePathDatabase(int currentAccount) {
         this.currentAccount = currentAccount;
-        dispatchQueue = new DispatchQueue("files_database_queue_" + currentAccount);
-        dispatchQueue.postRunnable(() -> {
-            createDatabase(0, false);
-        });
     }
 
     public void createDatabase(int tryCount, boolean fromBackup) {
@@ -152,8 +149,8 @@ public class FilePathDatabase {
 
     public String getPath(long documentId, int dc, int type, boolean useQueue) {
         if (useQueue) {
-            if (BuildVars.DEBUG_VERSION) {
-                if (dispatchQueue.getHandler() != null && Thread.currentThread() == dispatchQueue.getHandler().getLooper().getThread()) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                if (dispatchQueue != null && dispatchQueue.getHandler() != null && Thread.currentThread() == dispatchQueue.getHandler().getLooper().getThread()) {
                     throw new RuntimeException("Error, lead to infinity loop");
                 }
             }
@@ -161,7 +158,8 @@ public class FilePathDatabase {
             CountDownLatch syncLatch = new CountDownLatch(1);
             String[] res = new String[1];
 
-            dispatchQueue.postRunnable(() -> {
+            postRunnable(() -> {
+                ensureDatabaseCreated();
                 if (database != null) {
                     SQLiteCursor cursor = null;
                     try {
@@ -212,11 +210,33 @@ public class FilePathDatabase {
         }
     }
 
+    public void ensureDatabaseCreated() {
+        if (!databaseCreated) {
+            if (!NativeLoader.loaded()) {
+                int tryCount = 0;
+                while (!NativeLoader.loaded()) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    tryCount++;
+                    if (tryCount > 5) {
+                        break;
+                    }
+                }
+            }
+            createDatabase(0, false);
+            databaseCreated = true;
+        }
+    }
+
     public void putPath(long id, int dc, int type, String path) {
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("put file path id=" + id + " dc=" + dc + " type=" + type + " path=" + path);
             }
+            ensureDatabaseCreated();
             if (database == null) {
                 return;
             }
@@ -260,7 +280,8 @@ public class FilePathDatabase {
 
         CountDownLatch syncLatch = new CountDownLatch(1);
         long time = System.currentTimeMillis();
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
+            ensureDatabaseCreated();
             try {
                 for (int i = 0; i < arrayListFinal.size(); i++) {
                     MessageObject messageObject = arrayListFinal.get(i);
@@ -288,7 +309,8 @@ public class FilePathDatabase {
     }
 
     public void clear() {
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
+            ensureDatabaseCreated();
             try {
                 database.executeFast("DELETE FROM paths WHERE 1").stepThis().dispose();
                 database.executeFast("DELETE FROM paths_by_dialog_id WHERE 1").stepThis().dispose();
@@ -301,7 +323,8 @@ public class FilePathDatabase {
     public boolean hasAnotherRefOnFile(String path) {
         CountDownLatch syncLatch = new CountDownLatch(1);
         boolean[] res = new boolean[]{false};
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
+            ensureDatabaseCreated();
             try {
                 SQLiteCursor cursor = database.queryFinalized("SELECT document_id FROM paths WHERE path = '" + path + "'");
                 if (cursor.next()) {
@@ -325,7 +348,8 @@ public class FilePathDatabase {
         if (file == null || fileMeta == null) {
             return;
         }
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
+            ensureDatabaseCreated();
             SQLitePreparedStatement state = null;
             try {
                 state = database.executeFast("REPLACE INTO paths_by_dialog_id VALUES(?, ?, ?, ?)");
@@ -381,12 +405,14 @@ public class FilePathDatabase {
     }
 
     public DispatchQueue getQueue() {
+        ensureQueueExist();
         return dispatchQueue;
     }
 
     public void removeFiles(List<CacheModel.FileInfo> filesToRemove) {
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
             try {
+                ensureDatabaseCreated();
                 database.beginTransaction();
                 for (int i = 0; i < filesToRemove.size(); i++) {
                     database.executeFast("DELETE FROM paths_by_dialog_id WHERE path = '" + shield(filesToRemove.get(i).file.getPath()) + "'").stepThis().dispose();
@@ -402,8 +428,9 @@ public class FilePathDatabase {
     public LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> lookupFiles(ArrayList<? extends CacheByChatsController.KeepMediaFile> keepMediaFiles) {
         CountDownLatch syncLatch = new CountDownLatch(1);
         LongSparseArray<ArrayList<CacheByChatsController.KeepMediaFile>> filesByDialogId = new LongSparseArray<>();
-        dispatchQueue.postRunnable(() -> {
+        postRunnable(() -> {
             try {
+                ensureDatabaseCreated();
                 FileMeta fileMetaTmp = new FileMeta();
                 for (int i = 0; i < keepMediaFiles.size(); i++) {
                     FileMeta fileMeta = getFileDialogId(keepMediaFiles.get(i).file, fileMetaTmp);
@@ -427,6 +454,21 @@ public class FilePathDatabase {
             FileLog.e(e);
         }
         return filesByDialogId;
+    }
+
+    private void postRunnable(Runnable runnable) {
+        ensureQueueExist();
+        dispatchQueue.postRunnable(runnable);
+    }
+
+    private void ensureQueueExist() {
+        if (dispatchQueue == null) {
+            synchronized (this) {
+                if (dispatchQueue == null) {
+                    dispatchQueue = new DispatchQueue("files_database_queue_" + currentAccount);
+                }
+            }
+        }
     }
 
     public static class PathData {

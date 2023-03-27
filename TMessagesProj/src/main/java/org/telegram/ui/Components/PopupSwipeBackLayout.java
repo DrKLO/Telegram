@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -25,6 +26,7 @@ import androidx.core.view.GestureDetectorCompat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.ActionBarMenuSlider;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -432,7 +434,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
      */
     private boolean isDisallowedView(MotionEvent e, View v) {
         v.getHitRect(hitRect);
-        if (hitRect.contains((int) e.getX(), (int) e.getY()) && v.canScrollHorizontally(-1))
+        if (hitRect.contains((int) e.getX(), (int) e.getY()) && (v.canScrollHorizontally(-1) || v instanceof ActionBarMenuSlider))
             return true;
         if (v instanceof ViewGroup) {
             ViewGroup vg = (ViewGroup) v;

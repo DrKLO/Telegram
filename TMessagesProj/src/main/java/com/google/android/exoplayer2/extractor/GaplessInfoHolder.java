@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor;
 
+import static com.google.android.exoplayer2.util.Util.castNonNull;
+
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.id3.CommentFrame;
@@ -22,9 +24,7 @@ import com.google.android.exoplayer2.metadata.id3.InternalFrame;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Holder for gapless playback information.
- */
+/** Holder for gapless playback information. */
 public final class GaplessInfoHolder {
 
   private static final String GAPLESS_DOMAIN = "com.apple.iTunes";
@@ -33,20 +33,18 @@ public final class GaplessInfoHolder {
       Pattern.compile("^ [0-9a-fA-F]{8} ([0-9a-fA-F]{8}) ([0-9a-fA-F]{8})");
 
   /**
-   * The number of samples to trim from the start of the decoded audio stream, or
-   * {@link Format#NO_VALUE} if not set.
+   * The number of samples to trim from the start of the decoded audio stream, or {@link
+   * Format#NO_VALUE} if not set.
    */
   public int encoderDelay;
 
   /**
-   * The number of samples to trim from the end of the decoded audio stream, or
-   * {@link Format#NO_VALUE} if not set.
+   * The number of samples to trim from the end of the decoded audio stream, or {@link
+   * Format#NO_VALUE} if not set.
    */
   public int encoderPadding;
 
-  /**
-   * Creates a new holder for gapless playback information.
-   */
+  /** Creates a new holder for gapless playback information. */
   public GaplessInfoHolder() {
     encoderDelay = Format.NO_VALUE;
     encoderPadding = Format.NO_VALUE;
@@ -107,8 +105,8 @@ public final class GaplessInfoHolder {
     Matcher matcher = GAPLESS_COMMENT_PATTERN.matcher(data);
     if (matcher.find()) {
       try {
-        int encoderDelay = Integer.parseInt(matcher.group(1), 16);
-        int encoderPadding = Integer.parseInt(matcher.group(2), 16);
+        int encoderDelay = Integer.parseInt(castNonNull(matcher.group(1)), 16);
+        int encoderPadding = Integer.parseInt(castNonNull(matcher.group(2)), 16);
         if (encoderDelay > 0 || encoderPadding > 0) {
           this.encoderDelay = encoderDelay;
           this.encoderPadding = encoderPadding;
@@ -121,11 +119,8 @@ public final class GaplessInfoHolder {
     return false;
   }
 
-  /**
-   * Returns whether {@link #encoderDelay} and {@link #encoderPadding} have been set.
-   */
+  /** Returns whether {@link #encoderDelay} and {@link #encoderPadding} have been set. */
   public boolean hasGaplessInfo() {
     return encoderDelay != Format.NO_VALUE && encoderPadding != Format.NO_VALUE;
   }
-
 }

@@ -27,7 +27,10 @@ void ABSL_INTERNAL_C_SYMBOL(AbslInternalSpinLockDelay)(
   } else if (loop == 1) {
     Sleep(0);
   } else {
-    Sleep(absl::base_internal::SpinLockSuggestedDelayNS(loop) / 1000000);
+    // SpinLockSuggestedDelayNS() always returns a positive integer, so this
+    // static_cast is safe.
+    Sleep(static_cast<DWORD>(
+        absl::base_internal::SpinLockSuggestedDelayNS(loop) / 1000000));
   }
 }
 

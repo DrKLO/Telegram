@@ -12,7 +12,7 @@
 #define VIDEO_ALIGNMENT_ADJUSTER_H_
 
 #include "api/video_codecs/video_encoder.h"
-#include "api/video_codecs/video_encoder_config.h"
+#include "video/config/video_encoder_config.h"
 
 namespace webrtc {
 

@@ -134,11 +134,16 @@ bool StreamResetHandler::ValidateReqSeqNbr(
     ReconfigRequestSN req_seq_nbr,
     std::vector<ReconfigurationResponseParameter>& responses) {
   if (req_seq_nbr == last_processed_req_seq_nbr_) {
-    // This has already been performed previously.
+    // https://www.rfc-editor.org/rfc/rfc6525.html#section-5.2.1 "If the
+    // received RE-CONFIG chunk contains at least one request and based on the
+    // analysis of the Re-configuration Request Sequence Numbers this is the
+    // last received RE-CONFIG chunk (i.e., a retransmission), the same
+    // RE-CONFIG chunk MUST to be sent back in response, as it was earlier."
     RTC_DLOG(LS_VERBOSE) << log_prefix_ << "req=" << *req_seq_nbr
-                         << " already processed";
+                         << " already processed, returning result="
+                         << ToString(last_processed_req_result_);
     responses.push_back(ReconfigurationResponseParameter(
-        req_seq_nbr, ResponseResult::kSuccessNothingToDo));
+        req_seq_nbr, last_processed_req_result_));
     return false;
   }
 
@@ -170,20 +175,18 @@ void StreamResetHandler::HandleResetOutgoing(
   }
 
   if (ValidateReqSeqNbr(req->request_sequence_number(), responses)) {
-    ResponseResult result;
-
     RTC_DLOG(LS_VERBOSE) << log_prefix_
                          << "Reset outgoing streams with req_seq_nbr="
                          << *req->request_sequence_number();
 
-    result = reassembly_queue_->ResetStreams(
+    last_processed_req_seq_nbr_ = req->request_sequence_number();
+    last_processed_req_result_ = reassembly_queue_->ResetStreams(
         *req, data_tracker_->last_cumulative_acked_tsn());
-    if (result == ResponseResult::kSuccessPerformed) {
-      last_processed_req_seq_nbr_ = req->request_sequence_number();
+    if (last_processed_req_result_ == ResponseResult::kSuccessPerformed) {
       ctx_->callbacks().OnIncomingStreamsReset(req->stream_ids());
     }
     responses.push_back(ReconfigurationResponseParameter(
-        req->request_sequence_number(), result));
+        req->request_sequence_number(), last_processed_req_result_));
   }
 }
 
@@ -270,16 +273,13 @@ absl::optional<ReConfigChunk> StreamResetHandler::MakeStreamResetRequest() {
   // Only send stream resets if there are streams to reset, and no current
   // ongoing request (there can only be one at a time), and if the stream
   // can be reset.
-  if (streams_to_reset_.empty() || current_request_.has_value() ||
-      !retransmission_queue_->CanResetStreams()) {
+  if (current_request_.has_value() ||
+      !retransmission_queue_->HasStreamsReadyToBeReset()) {
     return absl::nullopt;
   }
 
-  std::vector<StreamID> streams_to_reset(streams_to_reset_.begin(),
-                                         streams_to_reset_.end());
   current_request_.emplace(TSN(*retransmission_queue_->next_tsn() - 1),
-                           std::move(streams_to_reset));
-  streams_to_reset_.clear();
+                           retransmission_queue_->GetStreamsReadyToBeReset());
   reconfig_timer_->set_duration(ctx_->current_rto());
   reconfig_timer_->Start();
   return MakeReconfigChunk();
@@ -310,18 +310,8 @@ ReConfigChunk StreamResetHandler::MakeReconfigChunk() {
 
 void StreamResetHandler::ResetStreams(
     rtc::ArrayView<const StreamID> outgoing_streams) {
-  // Enqueue streams to be reset - as this may be called multiple times
-  // while a request is already in progress (and there can only be one).
   for (StreamID stream_id : outgoing_streams) {
-    streams_to_reset_.insert(stream_id);
-  }
-  if (current_request_.has_value()) {
-    // Already an ongoing request - will need to wait for it to finish as
-    // there can only be one in-flight ReConfig chunk with requests at any
-    // time.
-  } else {
-    retransmission_queue_->PrepareResetStreams(std::vector<StreamID>(
-        streams_to_reset_.begin(), streams_to_reset_.end()));
+    retransmission_queue_->PrepareResetStream(stream_id);
   }
 }
 
@@ -345,7 +335,7 @@ absl::optional<DurationMs> StreamResetHandler::OnReconfigTimerExpiry() {
 
 HandoverReadinessStatus StreamResetHandler::GetHandoverReadiness() const {
   HandoverReadinessStatus status;
-  if (!streams_to_reset_.empty()) {
+  if (retransmission_queue_->HasStreamsReadyToBeReset()) {
     status.Add(HandoverUnreadinessReason::kPendingStreamReset);
   }
   if (current_request_.has_value()) {

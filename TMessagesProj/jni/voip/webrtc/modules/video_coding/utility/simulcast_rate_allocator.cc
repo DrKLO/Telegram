@@ -151,7 +151,7 @@ void SimulcastRateAllocator::DistributeAllocationToSimulcastLayers(
   size_t top_active_layer = active_layer;
   // Allocate up to the target bitrate for each active simulcast layer.
   for (; active_layer < codec_.numberOfSimulcastStreams; ++active_layer) {
-    const SpatialLayer& stream =
+    const SimulcastStream& stream =
         codec_.simulcastStream[layer_index[active_layer]];
     if (!stream.active) {
       stream_enabled_[layer_index[active_layer]] = false;
@@ -194,7 +194,7 @@ void SimulcastRateAllocator::DistributeAllocationToSimulcastLayers(
   // TODO(sprang): Allocate up to max bitrate for all layers once we have a
   //               better idea of possible performance implications.
   if (left_in_total_allocation > DataRate::Zero()) {
-    const SpatialLayer& stream = codec_.simulcastStream[top_active_layer];
+    const SimulcastStream& stream = codec_.simulcastStream[top_active_layer];
     DataRate initial_layer_rate = DataRate::BitsPerSec(
         allocated_bitrates->GetSpatialLayerSum(top_active_layer));
     DataRate additional_allocation = std::min(

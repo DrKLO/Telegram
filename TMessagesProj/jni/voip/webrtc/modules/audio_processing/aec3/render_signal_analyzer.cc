@@ -66,10 +66,9 @@ void IdentifyStrongNarrowBandComponent(const RenderBuffer& render_buffer,
     *narrow_peak_band = absl::nullopt;
   }
 
-  const std::vector<std::vector<std::vector<float>>>& x_latest =
-      render_buffer.Block(0);
+  const Block& x_latest = render_buffer.GetBlock(0);
   float max_peak_level = 0.f;
-  for (size_t channel = 0; channel < x_latest[0].size(); ++channel) {
+  for (int channel = 0; channel < x_latest.NumChannels(); ++channel) {
     rtc::ArrayView<const float, kFftLengthBy2Plus1> X2_latest =
         render_buffer.Spectrum(0)[channel];
 
@@ -90,13 +89,14 @@ void IdentifyStrongNarrowBandComponent(const RenderBuffer& render_buffer,
     }
 
     // Assess the render signal strength.
-    auto result0 = std::minmax_element(x_latest[0][channel].begin(),
-                                       x_latest[0][channel].end());
+    auto result0 = std::minmax_element(x_latest.begin(/*band=*/0, channel),
+                                       x_latest.end(/*band=*/0, channel));
     float max_abs = std::max(fabs(*result0.first), fabs(*result0.second));
 
-    if (x_latest.size() > 1) {
-      const auto result1 = std::minmax_element(x_latest[1][channel].begin(),
-                                               x_latest[1][channel].end());
+    if (x_latest.NumBands() > 1) {
+      const auto result1 =
+          std::minmax_element(x_latest.begin(/*band=*/1, channel),
+                              x_latest.end(/*band=*/1, channel));
       max_abs =
           std::max(max_abs, static_cast<float>(std::max(
                                 fabs(*result1.first), fabs(*result1.second))));

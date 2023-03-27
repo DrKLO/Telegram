@@ -14,13 +14,14 @@
 #include <stddef.h>
 
 #include <array>
+#include <atomic>
 #include <memory>
 #include <vector>
 
 #include "api/array_view.h"
 #include "api/audio/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
-#include "rtc_base/constructor_magic.h"
+#include "modules/audio_processing/aec3/block.h"
 
 namespace webrtc {
 
@@ -94,7 +95,7 @@ class FilterAnalyzer {
     void Reset();
     bool Detect(rtc::ArrayView<const float> filter_to_analyze,
                 const FilterRegion& region,
-                rtc::ArrayView<const std::vector<float>> x_block,
+                const Block& x_block,
                 size_t peak_index,
                 int delay_blocks);
 
@@ -129,7 +130,7 @@ class FilterAnalyzer {
     ConsistentFilterDetector consistent_filter_detector;
   };
 
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   const bool bounded_erl_;
   const float default_gain_;

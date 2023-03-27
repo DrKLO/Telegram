@@ -16,7 +16,7 @@
 #include <memory>
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/file_rotating_stream.h"
 #include "rtc_base/logging.h"
 
@@ -28,16 +28,23 @@ class FileRotatingLogSink : public LogSink {
  public:
   // `num_log_files` must be greater than 1 and `max_log_size` must be greater
   // than 0.
-  FileRotatingLogSink(const std::string& log_dir_path,
-                      const std::string& log_prefix,
+  FileRotatingLogSink(absl::string_view log_dir_path,
+                      absl::string_view log_prefix,
                       size_t max_log_size,
                       size_t num_log_files);
   ~FileRotatingLogSink() override;
 
+  FileRotatingLogSink(const FileRotatingLogSink&) = delete;
+  FileRotatingLogSink& operator=(const FileRotatingLogSink&) = delete;
+
   // Writes the message to the current file. It will spill over to the next
   // file if needed.
   void OnLogMessage(const std::string& message) override;
+  void OnLogMessage(absl::string_view message) override;
   void OnLogMessage(const std::string& message,
+                    LoggingSeverity sev,
+                    const char* tag) override;
+  void OnLogMessage(absl::string_view message,
                     LoggingSeverity sev,
                     const char* tag) override;
 
@@ -52,20 +59,20 @@ class FileRotatingLogSink : public LogSink {
 
  private:
   std::unique_ptr<FileRotatingStream> stream_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(FileRotatingLogSink);
 };
 
 // Log sink that uses a CallSessionFileRotatingStream to write to disk.
 // Init() must be called before adding this sink.
 class CallSessionFileRotatingLogSink : public FileRotatingLogSink {
  public:
-  CallSessionFileRotatingLogSink(const std::string& log_dir_path,
+  CallSessionFileRotatingLogSink(absl::string_view log_dir_path,
                                  size_t max_total_log_size);
   ~CallSessionFileRotatingLogSink() override;
 
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(CallSessionFileRotatingLogSink);
+  CallSessionFileRotatingLogSink(const CallSessionFileRotatingLogSink&) =
+      delete;
+  CallSessionFileRotatingLogSink& operator=(
+      const CallSessionFileRotatingLogSink&) = delete;
 };
 
 }  // namespace rtc

@@ -14,6 +14,7 @@
 #include <stddef.h>
 
 #include <array>
+#include <atomic>
 #include <memory>
 
 #include "api/array_view.h"
@@ -110,7 +111,7 @@ class StationarityEstimator {
     size_t block_counter_;
   };
 
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   NoiseSpectrum noise_;
   std::array<int, kFftLengthBy2Plus1> hangovers_;

@@ -45,12 +45,12 @@ struct CordzStatistics {
   };
 
   // The size of the cord in bytes. This matches the result of Cord::size().
-  int64_t size = 0;
+  size_t size = 0;
 
   // The estimated memory used by the sampled cord. This value matches the
   // value as reported by Cord::EstimatedMemoryUsage().
   // A value of 0 implies the property has not been recorded.
-  int64_t estimated_memory_usage = 0;
+  size_t estimated_memory_usage = 0;
 
   // The effective memory used by the sampled cord, inversely weighted by the
   // effective indegree of each allocated node. This is a representation of the
@@ -59,14 +59,14 @@ struct CordzStatistics {
   // by multiple Cord instances, and for cases where a Cord includes the same
   // node multiple times (either directly or indirectly).
   // A value of 0 implies the property has not been recorded.
-  int64_t estimated_fair_share_memory_usage = 0;
+  size_t estimated_fair_share_memory_usage = 0;
 
   // The total number of nodes referenced by this cord.
   // For ring buffer Cords, this includes the 'ring buffer' node.
   // For btree Cords, this includes all 'CordRepBtree' tree nodes as well as all
   // the substring, flat and external nodes referenced by the tree.
   // A value of 0 implies the property has not been recorded.
-  int64_t node_count = 0;
+  size_t node_count = 0;
 
   // Detailed node counts per type
   NodeCounts node_counts;

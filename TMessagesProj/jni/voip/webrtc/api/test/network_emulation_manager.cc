@@ -7,12 +7,39 @@
  *  in the file PATENTS.  All contributing project authors may
  *  be found in the AUTHORS file in the root of the source tree.
  */
+#include "api/test/network_emulation_manager.h"
+
 #include <utility>
 
-#include "api/test/network_emulation_manager.h"
 #include "call/simulated_network.h"
+#include "rtc_base/checks.h"
 
 namespace webrtc {
+
+bool AbslParseFlag(absl::string_view text, TimeMode* mode, std::string* error) {
+  if (text == "realtime") {
+    *mode = TimeMode::kRealTime;
+    return true;
+  }
+  if (text == "simulated") {
+    *mode = TimeMode::kSimulated;
+    return true;
+  }
+  *error =
+      "Unknown value for TimeMode enum. Options are 'realtime' or 'simulated'";
+  return false;
+}
+
+std::string AbslUnparseFlag(TimeMode mode) {
+  switch (mode) {
+    case TimeMode::kRealTime:
+      return "realtime";
+    case TimeMode::kSimulated:
+      return "simulated";
+  }
+  RTC_CHECK_NOTREACHED();
+  return "unknown";
+}
 
 NetworkEmulationManager::SimulatedNetworkNode::Builder&
 NetworkEmulationManager::SimulatedNetworkNode::Builder::config(
@@ -73,5 +100,23 @@ NetworkEmulationManager::SimulatedNetworkNode::Builder::Build(
   res.simulation = behavior.get();
   res.node = net->CreateEmulatedNode(std::move(behavior));
   return res;
+}
+
+std::pair<EmulatedNetworkManagerInterface*, EmulatedNetworkManagerInterface*>
+NetworkEmulationManager::CreateEndpointPairWithTwoWayRoutes(
+    const BuiltInNetworkBehaviorConfig& config) {
+  auto* alice_node = CreateEmulatedNode(config);
+  auto* bob_node = CreateEmulatedNode(config);
+
+  auto* alice_endpoint = CreateEndpoint(EmulatedEndpointConfig());
+  auto* bob_endpoint = CreateEndpoint(EmulatedEndpointConfig());
+
+  CreateRoute(alice_endpoint, {alice_node}, bob_endpoint);
+  CreateRoute(bob_endpoint, {bob_node}, alice_endpoint);
+
+  return {
+      CreateEmulatedNetworkManagerInterface({alice_endpoint}),
+      CreateEmulatedNetworkManagerInterface({bob_endpoint}),
+  };
 }
 }  // namespace webrtc

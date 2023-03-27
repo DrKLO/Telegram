@@ -790,8 +790,14 @@ int readCallback(void *opaque, uint8_t *buf, int buf_size) {
                 if (attached) {
                     javaVm->DetachCurrentThread();
                 }
+                if (buf_size == 0) {
+                    return AVERROR_EOF;
+                }
                 int ret = (int) read(info->fd, buf, (size_t) buf_size);
-                return ret ? ret : AVERROR_EOF;
+                if (ret <= 0) {
+                    return AVERROR_EOF;
+                }
+                return ret;
             }
         }
     }

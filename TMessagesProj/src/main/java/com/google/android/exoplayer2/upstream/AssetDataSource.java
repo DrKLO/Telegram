@@ -16,29 +16,43 @@
 package com.google.android.exoplayer2.upstream;
 
 import static com.google.android.exoplayer2.util.Util.castNonNull;
+import static java.lang.Math.min;
 
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.util.Assertions;
-import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
 /** A {@link DataSource} for reading from a local asset. */
 public final class AssetDataSource extends BaseDataSource {
 
-  /**
-   * Thrown when an {@link IOException} is encountered reading a local asset.
-   */
-  public static final class AssetDataSourceException extends IOException {
+  /** Thrown when an {@link IOException} is encountered reading a local asset. */
+  public static final class AssetDataSourceException extends DataSourceException {
 
+    /**
+     * @deprecated Use {@link #AssetDataSourceException(Throwable, int)}.
+     */
+    @Deprecated
     public AssetDataSourceException(IOException cause) {
-      super(cause);
+      super(cause, PlaybackException.ERROR_CODE_IO_UNSPECIFIED);
     }
 
+    /**
+     * Creates a new instance.
+     *
+     * @param cause The error cause.
+     * @param errorCode See {@link PlaybackException.ErrorCode}.
+     */
+    public AssetDataSourceException(
+        @Nullable Throwable cause, @PlaybackException.ErrorCode int errorCode) {
+      super(cause, errorCode);
+    }
   }
 
   private final AssetManager assetManager;
@@ -48,7 +62,9 @@ public final class AssetDataSource extends BaseDataSource {
   private long bytesRemaining;
   private boolean opened;
 
-  /** @param context A context. */
+  /**
+   * @param context A context.
+   */
   public AssetDataSource(Context context) {
     super(/* isNetwork= */ false);
     this.assetManager = context.getAssets();
@@ -70,7 +86,8 @@ public final class AssetDataSource extends BaseDataSource {
       if (skipped < dataSpec.position) {
         // assetManager.open() returns an AssetInputStream, whose skip() implementation only skips
         // fewer bytes than requested if the skip is beyond the end of the asset's data.
-        throw new EOFException();
+        throw new AssetDataSourceException(
+            /* cause= */ null, PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE);
       }
       if (dataSpec.length != C.LENGTH_UNSET) {
         bytesRemaining = dataSpec.length;
@@ -83,8 +100,14 @@ public final class AssetDataSource extends BaseDataSource {
           bytesRemaining = C.LENGTH_UNSET;
         }
       }
+    } catch (AssetDataSourceException e) {
+      throw e;
     } catch (IOException e) {
-      throw new AssetDataSourceException(e);
+      throw new AssetDataSourceException(
+          e,
+          e instanceof FileNotFoundException
+              ? PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND
+              : PlaybackException.ERROR_CODE_IO_UNSPECIFIED);
     }
 
     opened = true;
@@ -93,8 +116,8 @@ public final class AssetDataSource extends BaseDataSource {
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) throws AssetDataSourceException {
-    if (readLength == 0) {
+  public int read(byte[] buffer, int offset, int length) throws AssetDataSourceException {
+    if (length == 0) {
       return 0;
     } else if (bytesRemaining == 0) {
       return C.RESULT_END_OF_INPUT;
@@ -102,18 +125,14 @@ public final class AssetDataSource extends BaseDataSource {
 
     int bytesRead;
     try {
-      int bytesToRead = bytesRemaining == C.LENGTH_UNSET ? readLength
-          : (int) Math.min(bytesRemaining, readLength);
+      int bytesToRead =
+          bytesRemaining == C.LENGTH_UNSET ? length : (int) min(bytesRemaining, length);
       bytesRead = castNonNull(inputStream).read(buffer, offset, bytesToRead);
     } catch (IOException e) {
-      throw new AssetDataSourceException(e);
+      throw new AssetDataSourceException(e, PlaybackException.ERROR_CODE_IO_UNSPECIFIED);
     }
 
     if (bytesRead == -1) {
-      if (bytesRemaining != C.LENGTH_UNSET) {
-        // End of stream reached having not read sufficient data.
-        throw new AssetDataSourceException(new EOFException());
-      }
       return C.RESULT_END_OF_INPUT;
     }
     if (bytesRemaining != C.LENGTH_UNSET) {
@@ -137,7 +156,7 @@ public final class AssetDataSource extends BaseDataSource {
         inputStream.close();
       }
     } catch (IOException e) {
-      throw new AssetDataSourceException(e);
+      throw new AssetDataSourceException(e, PlaybackException.ERROR_CODE_IO_UNSPECIFIED);
     } finally {
       inputStream = null;
       if (opened) {
@@ -146,5 +165,4 @@ public final class AssetDataSource extends BaseDataSource {
       }
     }
   }
-
 }

@@ -20,7 +20,6 @@
 #include "api/array_view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-#include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
 #include "system_wrappers/include/field_trial.h"
 
@@ -97,7 +96,7 @@ void ComputeAvgRenderReverb(
 
 }  // namespace
 
-int AecState::instance_count_ = 0;
+std::atomic<int> AecState::instance_count_(0);
 
 void AecState::GetResidualEchoScaling(
     rtc::ArrayView<float> residual_scaling) const {
@@ -115,8 +114,7 @@ void AecState::GetResidualEchoScaling(
 
 AecState::AecState(const EchoCanceller3Config& config,
                    size_t num_capture_channels)
-    : data_dumper_(
-          new ApmDataDumper(rtc::AtomicOps::Increment(&instance_count_))),
+    : data_dumper_(new ApmDataDumper(instance_count_.fetch_add(1) + 1)),
       config_(config),
       num_capture_channels_(num_capture_channels),
       deactivate_initial_state_reset_at_echo_path_change_(
@@ -206,15 +204,16 @@ void AecState::Update(
                         strong_not_saturated_render_blocks_);
   }
 
-  const std::vector<std::vector<float>>& aligned_render_block =
-      render_buffer.Block(-delay_state_.MinDirectPathFilterDelay())[0];
+  const Block& aligned_render_block =
+      render_buffer.GetBlock(-delay_state_.MinDirectPathFilterDelay());
 
   // Update render counters.
   bool active_render = false;
-  for (size_t ch = 0; ch < aligned_render_block.size(); ++ch) {
-    const float render_energy = std::inner_product(
-        aligned_render_block[ch].begin(), aligned_render_block[ch].end(),
-        aligned_render_block[ch].begin(), 0.f);
+  for (int ch = 0; ch < aligned_render_block.NumChannels(); ++ch) {
+    const float render_energy =
+        std::inner_product(aligned_render_block.begin(/*block=*/0, ch),
+                           aligned_render_block.end(/*block=*/0, ch),
+                           aligned_render_block.begin(/*block=*/0, ch), 0.f);
     if (render_energy > (config_.render_levels.active_render_limit *
                          config_.render_levels.active_render_limit) *
                             kFftLengthBy2) {
@@ -446,7 +445,7 @@ void AecState::FilteringQualityAnalyzer::Update(
 }
 
 void AecState::SaturationDetector::Update(
-    rtc::ArrayView<const std::vector<float>> x,
+    const Block& x,
     bool saturated_capture,
     bool usable_linear_estimate,
     rtc::ArrayView<const SubtractorOutput> subtractor_output,
@@ -466,8 +465,9 @@ void AecState::SaturationDetector::Update(
     }
   } else {
     float max_sample = 0.f;
-    for (auto& channel : x) {
-      for (float sample : channel) {
+    for (int ch = 0; ch < x.NumChannels(); ++ch) {
+      rtc::ArrayView<const float, kBlockSize> x_ch = x.View(/*band=*/0, ch);
+      for (float sample : x_ch) {
         max_sample = std::max(max_sample, fabsf(sample));
       }
     }
