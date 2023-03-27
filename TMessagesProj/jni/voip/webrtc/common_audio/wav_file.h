@@ -39,7 +39,7 @@ class WavFile {
 class WavWriter final : public WavFile {
  public:
   // Opens a new WAV file for writing.
-  WavWriter(const std::string& filename,
+  WavWriter(absl::string_view filename,
             int sample_rate,
             size_t num_channels,
             SampleFormat sample_format = SampleFormat::kInt16);
@@ -77,7 +77,7 @@ class WavWriter final : public WavFile {
 class WavReader final : public WavFile {
  public:
   // Opens an existing WAV file for reading.
-  explicit WavReader(const std::string& filename);
+  explicit WavReader(absl::string_view filename);
   explicit WavReader(FileWrapper file);
 
   // Close the WAV file.

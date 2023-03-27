@@ -13,7 +13,6 @@
 #include <algorithm>
 
 #include "common_audio/include/audio_util.h"
-#include "modules/audio_processing/agc2/vad_wrapper.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
@@ -103,6 +102,13 @@ void AdaptiveDigitalGainController::Process(AudioFrameView<float> frame,
 void AdaptiveDigitalGainController::HandleInputGainChange() {
   speech_level_estimator_.Reset();
   saturation_protector_->Reset();
+}
+
+absl::optional<float>
+AdaptiveDigitalGainController::GetSpeechLevelDbfsIfConfident() const {
+  return speech_level_estimator_.IsConfident()
+             ? absl::optional<float>(speech_level_estimator_.level_dbfs())
+             : absl::nullopt;
 }
 
 }  // namespace webrtc

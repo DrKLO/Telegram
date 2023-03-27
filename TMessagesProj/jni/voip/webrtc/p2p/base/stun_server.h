@@ -16,6 +16,7 @@
 
 #include <memory>
 
+#include "absl/strings/string_view.h"
 #include "api/transport/stun.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/async_udp_socket.h"
@@ -52,13 +53,13 @@ class StunServer : public sigslot::has_slots<> {
   void SendErrorResponse(const StunMessage& msg,
                          const rtc::SocketAddress& addr,
                          int error_code,
-                         const char* error_desc);
+                         absl::string_view error_desc);
 
   // Sends the given message to the appropriate destination.
   void SendResponse(const StunMessage& msg, const rtc::SocketAddress& addr);
 
   // A helper method to compose a STUN binding response.
-  void GetStunBindResponse(StunMessage* request,
+  void GetStunBindResponse(StunMessage* message,
                            const rtc::SocketAddress& remote_addr,
                            StunMessage* response) const;
 

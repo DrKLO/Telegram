@@ -16,14 +16,14 @@
 package com.google.android.exoplayer2.ext.ffmpeg;
 
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
 import com.google.android.exoplayer2.util.LibraryLoader;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.MimeTypes;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-/**
- * Configures and queries the underlying native library.
- */
+/** Configures and queries the underlying native library. */
 public final class FfmpegLibrary {
 
   static {
@@ -32,11 +32,59 @@ public final class FfmpegLibrary {
 
   private static final String TAG = "FfmpegLibrary";
 
+  private static final LibraryLoader LOADER =
+      new LibraryLoader("ffmpegJNI") {
+        @Override
+        protected void loadLibrary(String name) {
+          System.loadLibrary(name);
+        }
+      };
+
+  private static @MonotonicNonNull String version;
+  private static int inputBufferPaddingSize = C.LENGTH_UNSET;
+
   private FfmpegLibrary() {}
 
+  /**
+   * Override the names of the FFmpeg native libraries. If an application wishes to call this
+   * method, it must do so before calling any other method defined by this class, and before
+   * instantiating a {@link FfmpegAudioRenderer} instance.
+   *
+   * @param libraries The names of the FFmpeg native libraries.
+   */
+  public static void setLibraries(String... libraries) {
+    LOADER.setLibraries(libraries);
+  }
+
+  /** Returns whether the underlying library is available, loading it if necessary. */
+  public static boolean isAvailable() {
+    return LOADER.isAvailable();
+  }
+
   /** Returns the version of the underlying library if available, or null otherwise. */
-  public static @Nullable String getVersion() {
-    return ffmpegGetVersion();
+  @Nullable
+  public static String getVersion() {
+    if (!isAvailable()) {
+      return null;
+    }
+    if (version == null) {
+      version = ffmpegGetVersion();
+    }
+    return version;
+  }
+
+  /**
+   * Returns the required amount of padding for input buffers in bytes, or {@link C#LENGTH_UNSET} if
+   * the underlying library is not available.
+   */
+  public static int getInputBufferPaddingSize() {
+    if (!isAvailable()) {
+      return C.LENGTH_UNSET;
+    }
+    if (inputBufferPaddingSize == C.LENGTH_UNSET) {
+      inputBufferPaddingSize = ffmpegGetInputBufferPaddingSize();
+    }
+    return inputBufferPaddingSize;
   }
 
   /**
@@ -45,7 +93,10 @@ public final class FfmpegLibrary {
    * @param mimeType The MIME type to check.
    */
   public static boolean supportsFormat(String mimeType) {
-    String codecName = getCodecName(mimeType);
+    if (!isAvailable()) {
+      return false;
+    }
+    @Nullable String codecName = getCodecName(mimeType);
     if (codecName == null) {
       return false;
     }
@@ -60,7 +111,8 @@ public final class FfmpegLibrary {
    * Returns the name of the FFmpeg decoder that could be used to decode the format, or {@code null}
    * if it's unsupported.
    */
-  /* package */ static @Nullable String getCodecName(String mimeType) {
+  @Nullable
+  /* package */ static String getCodecName(String mimeType) {
     switch (mimeType) {
       case MimeTypes.AUDIO_AAC:
         return "aac";
@@ -100,6 +152,8 @@ public final class FfmpegLibrary {
   }
 
   private static native String ffmpegGetVersion();
-  private static native boolean ffmpegHasDecoder(String codecName);
 
+  private static native int ffmpegGetInputBufferPaddingSize();
+
+  private static native boolean ffmpegHasDecoder(String codecName);
 }

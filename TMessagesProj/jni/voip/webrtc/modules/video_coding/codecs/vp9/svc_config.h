@@ -15,16 +15,24 @@
 #include <vector>
 
 #include "api/video_codecs/spatial_layer.h"
+#include "api/video_codecs/video_codec.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
 
 namespace webrtc {
 
-std::vector<SpatialLayer> GetSvcConfig(size_t input_width,
-                                       size_t input_height,
-                                       float max_framerate_fps,
-                                       size_t first_active_layer,
-                                       size_t num_spatial_layers,
-                                       size_t num_temporal_layers,
-                                       bool is_screen_sharing);
+// Uses scalability mode to configure spatial layers.
+std::vector<SpatialLayer> GetVp9SvcConfig(VideoCodec& video_codec);
+
+std::vector<SpatialLayer> GetSvcConfig(
+    size_t input_width,
+    size_t input_height,
+    float max_framerate_fps,
+    size_t first_active_layer,
+    size_t num_spatial_layers,
+    size_t num_temporal_layers,
+    bool is_screen_sharing,
+    absl::optional<ScalableVideoController::StreamLayersConfig> config =
+        absl::nullopt);
 
 }  // namespace webrtc
 

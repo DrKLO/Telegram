@@ -77,8 +77,8 @@ class SampleRecorder {
   // samples that have been dropped.
   int64_t Iterate(const std::function<void(const T& stack)>& f);
 
-  int32_t GetMaxSamples() const;
-  void SetMaxSamples(int32_t max);
+  size_t GetMaxSamples() const;
+  void SetMaxSamples(size_t max);
 
  private:
   void PushNew(T* sample);
@@ -88,7 +88,7 @@ class SampleRecorder {
 
   std::atomic<size_t> dropped_samples_;
   std::atomic<size_t> size_estimate_;
-  std::atomic<int32_t> max_samples_{1 << 20};
+  std::atomic<size_t> max_samples_{1 << 20};
 
   // Intrusive lock free linked lists for tracking samples.
   //
@@ -186,7 +186,7 @@ T* SampleRecorder<T>::PopDead(Targs... args) {
 template <typename T>
 template <typename... Targs>
 T* SampleRecorder<T>::Register(Targs&&... args) {
-  int64_t size = size_estimate_.fetch_add(1, std::memory_order_relaxed);
+  size_t size = size_estimate_.fetch_add(1, std::memory_order_relaxed);
   if (size > max_samples_.load(std::memory_order_relaxed)) {
     size_estimate_.fetch_sub(1, std::memory_order_relaxed);
     dropped_samples_.fetch_add(1, std::memory_order_relaxed);
@@ -229,12 +229,12 @@ int64_t SampleRecorder<T>::Iterate(
 }
 
 template <typename T>
-void SampleRecorder<T>::SetMaxSamples(int32_t max) {
+void SampleRecorder<T>::SetMaxSamples(size_t max) {
   max_samples_.store(max, std::memory_order_release);
 }
 
 template <typename T>
-int32_t SampleRecorder<T>::GetMaxSamples() const {
+size_t SampleRecorder<T>::GetMaxSamples() const {
   return max_samples_.load(std::memory_order_acquire);
 }
 

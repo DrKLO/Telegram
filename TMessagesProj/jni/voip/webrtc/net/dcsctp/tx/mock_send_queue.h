@@ -11,6 +11,7 @@
 #define NET_DCSCTP_TX_MOCK_SEND_QUEUE_H_
 
 #include <cstdint>
+#include <vector>
 
 #include "absl/types/optional.h"
 #include "api/array_view.h"
@@ -35,11 +36,9 @@ class MockSendQueue : public SendQueue {
               Discard,
               (IsUnordered unordered, StreamID stream_id, MID message_id),
               (override));
-  MOCK_METHOD(void,
-              PrepareResetStreams,
-              (rtc::ArrayView<const StreamID> streams),
-              (override));
-  MOCK_METHOD(bool, CanResetStreams, (), (const, override));
+  MOCK_METHOD(void, PrepareResetStream, (StreamID stream_id), (override));
+  MOCK_METHOD(bool, HasStreamsReadyToBeReset, (), (const, override));
+  MOCK_METHOD(std::vector<StreamID>, GetStreamsReadyToBeReset, (), (override));
   MOCK_METHOD(void, CommitResetStreams, (), (override));
   MOCK_METHOD(void, RollbackResetStreams, (), (override));
   MOCK_METHOD(void, Reset, (), (override));
@@ -53,6 +52,7 @@ class MockSendQueue : public SendQueue {
               SetBufferedAmountLowThreshold,
               (StreamID stream_id, size_t bytes),
               (override));
+  MOCK_METHOD(void, EnableMessageInterleaving, (bool enabled), (override));
 };
 
 }  // namespace dcsctp

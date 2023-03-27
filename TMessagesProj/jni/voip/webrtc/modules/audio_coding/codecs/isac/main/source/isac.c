@@ -678,7 +678,7 @@ int WebRtcIsac_Encode(ISACStruct* ISAC_main_inst,
 /******************************************************************************
  * WebRtcIsac_GetNewBitStream(...)
  *
- * This function returns encoded data, with the recieved bwe-index in the
+ * This function returns encoded data, with the received bwe-index in the
  * stream. If the rate is set to a value less than bottleneck of codec
  * the new bistream will be re-encoded with the given target rate.
  * It should always return a complete packet, i.e. only called once

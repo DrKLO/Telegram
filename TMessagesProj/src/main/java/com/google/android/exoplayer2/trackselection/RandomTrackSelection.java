@@ -18,6 +18,8 @@ package com.google.android.exoplayer2.trackselection;
 import android.os.SystemClock;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.chunk.MediaChunk;
 import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
@@ -26,15 +28,11 @@ import java.util.List;
 import java.util.Random;
 import org.checkerframework.checker.nullness.compatqual.NullableType;
 
-/**
- * A {@link TrackSelection} whose selected track is updated randomly.
- */
+/** An {@link ExoTrackSelection} whose selected track is updated randomly. */
 public final class RandomTrackSelection extends BaseTrackSelection {
 
-  /**
-   * Factory for {@link RandomTrackSelection} instances.
-   */
-  public static final class Factory implements TrackSelection.Factory {
+  /** Factory for {@link RandomTrackSelection} instances. */
+  public static final class Factory implements ExoTrackSelection.Factory {
 
     private final Random random;
 
@@ -50,11 +48,16 @@ public final class RandomTrackSelection extends BaseTrackSelection {
     }
 
     @Override
-    public @NullableType TrackSelection[] createTrackSelections(
-        @NullableType Definition[] definitions, BandwidthMeter bandwidthMeter) {
+    public @NullableType ExoTrackSelection[] createTrackSelections(
+        @NullableType Definition[] definitions,
+        BandwidthMeter bandwidthMeter,
+        MediaPeriodId mediaPeriodId,
+        Timeline timeline) {
       return TrackSelectionUtil.createTrackSelectionsForDefinitions(
           definitions,
-          definition -> new RandomTrackSelection(definition.group, definition.tracks, random));
+          definition ->
+              new RandomTrackSelection(
+                  definition.group, definition.tracks, definition.type, random));
     }
   }
 
@@ -66,31 +69,10 @@ public final class RandomTrackSelection extends BaseTrackSelection {
    * @param group The {@link TrackGroup}. Must not be null.
    * @param tracks The indices of the selected tracks within the {@link TrackGroup}. Must not be
    *     null or empty. May be in any order.
-   */
-  public RandomTrackSelection(TrackGroup group, int... tracks) {
-    super(group, tracks);
-    random = new Random();
-    selectedIndex = random.nextInt(length);
-  }
-
-  /**
-   * @param group The {@link TrackGroup}. Must not be null.
-   * @param tracks The indices of the selected tracks within the {@link TrackGroup}. Must not be
-   *     null or empty. May be in any order.
-   * @param seed A seed for the {@link Random} instance used to update the selected track.
-   */
-  public RandomTrackSelection(TrackGroup group, int[] tracks, long seed) {
-    this(group, tracks, new Random(seed));
-  }
-
-  /**
-   * @param group The {@link TrackGroup}. Must not be null.
-   * @param tracks The indices of the selected tracks within the {@link TrackGroup}. Must not be
-   *     null or empty. May be in any order.
    * @param random A source of random numbers.
    */
-  public RandomTrackSelection(TrackGroup group, int[] tracks, Random random) {
-    super(group, tracks);
+  public RandomTrackSelection(TrackGroup group, int[] tracks, int type, Random random) {
+    super(group, tracks, type);
     this.random = random;
     selectedIndex = random.nextInt(length);
   }
@@ -102,21 +84,21 @@ public final class RandomTrackSelection extends BaseTrackSelection {
       long availableDurationUs,
       List<? extends MediaChunk> queue,
       MediaChunkIterator[] mediaChunkIterators) {
-    // Count the number of non-blacklisted formats.
+    // Count the number of allowed formats.
     long nowMs = SystemClock.elapsedRealtime();
-    int nonBlacklistedFormatCount = 0;
+    int allowedFormatCount = 0;
     for (int i = 0; i < length; i++) {
       if (!isBlacklisted(i, nowMs)) {
-        nonBlacklistedFormatCount++;
+        allowedFormatCount++;
       }
     }
 
-    selectedIndex = random.nextInt(nonBlacklistedFormatCount);
-    if (nonBlacklistedFormatCount != length) {
-      // Adjust the format index to account for blacklisted formats.
-      nonBlacklistedFormatCount = 0;
+    selectedIndex = random.nextInt(allowedFormatCount);
+    if (allowedFormatCount != length) {
+      // Adjust the format index to account for excluded formats.
+      allowedFormatCount = 0;
       for (int i = 0; i < length; i++) {
-        if (!isBlacklisted(i, nowMs) && selectedIndex == nonBlacklistedFormatCount++) {
+        if (!isBlacklisted(i, nowMs) && selectedIndex == allowedFormatCount++) {
           selectedIndex = i;
           return;
         }
@@ -139,5 +121,4 @@ public final class RandomTrackSelection extends BaseTrackSelection {
   public Object getSelectionData() {
     return null;
   }
-
 }

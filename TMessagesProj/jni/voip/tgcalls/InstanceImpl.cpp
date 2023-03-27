@@ -7,6 +7,7 @@
 #include "VideoCapturerInterface.h"
 
 namespace tgcalls {
+
 namespace {
 
 rtc::Thread *makeManagerThread() {
@@ -35,7 +36,7 @@ InstanceImpl::InstanceImpl(Descriptor &&descriptor)
 	_manager.reset(new ThreadLocalObject<Manager>(getManagerThread(), [descriptor = std::move(descriptor)]() mutable {
 		return new Manager(getManagerThread(), std::move(descriptor));
 	}));
-	_manager->perform(RTC_FROM_HERE, [](Manager *manager) {
+	_manager->perform([](Manager *manager) {
 		manager->start();
 	});
 
@@ -47,25 +48,25 @@ InstanceImpl::~InstanceImpl() {
 }
 
 void InstanceImpl::receiveSignalingData(const std::vector<uint8_t> &data) {
-	_manager->perform(RTC_FROM_HERE, [data](Manager *manager) {
+	_manager->perform([data](Manager *manager) {
 		manager->receiveSignalingData(data);
 	});
 };
 
 void InstanceImpl::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) {
-    _manager->perform(RTC_FROM_HERE, [videoCapture](Manager *manager) {
+    _manager->perform([videoCapture](Manager *manager) {
         manager->setVideoCapture(videoCapture);
     });
 }
 
 void InstanceImpl::sendVideoDeviceUpdated() {
-    _manager->perform(RTC_FROM_HERE, [](Manager *manager) {
+    _manager->perform([](Manager *manager) {
         manager->sendVideoDeviceUpdated();
     });
 }
 
 void InstanceImpl::setRequestedVideoAspect(float aspect) {
-    _manager->perform(RTC_FROM_HERE, [aspect](Manager *manager) {
+    _manager->perform([aspect](Manager *manager) {
         manager->setRequestedVideoAspect(aspect);
     });
 }
@@ -81,19 +82,19 @@ void InstanceImpl::setNetworkType(NetworkType networkType) {
             break;
     }
 
-    _manager->perform(RTC_FROM_HERE, [isLowCostNetwork](Manager *manager) {
+    _manager->perform([isLowCostNetwork](Manager *manager) {
         manager->setIsLocalNetworkLowCost(isLowCostNetwork);
     });
 }
 
 void InstanceImpl::setMuteMicrophone(bool muteMicrophone) {
-	_manager->perform(RTC_FROM_HERE, [muteMicrophone](Manager *manager) {
+	_manager->perform([muteMicrophone](Manager *manager) {
 		manager->setMuteOutgoingAudio(muteMicrophone);
 	});
 }
 
 void InstanceImpl::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
-	_manager->perform(RTC_FROM_HERE, [sink](Manager *manager) {
+	_manager->perform([sink](Manager *manager) {
 		manager->setIncomingVideoOutput(sink);
 	});
 }
@@ -105,25 +106,25 @@ void InstanceImpl::setEchoCancellationStrength(int strength) {
 }
 
 void InstanceImpl::setAudioInputDevice(std::string id) {
-	_manager->perform(RTC_FROM_HERE, [id](Manager *manager) {
+	_manager->perform([id](Manager *manager) {
 		manager->setAudioInputDevice(id);
 	});
 }
 
 void InstanceImpl::setAudioOutputDevice(std::string id) {
-	_manager->perform(RTC_FROM_HERE, [id](Manager *manager) {
+	_manager->perform([id](Manager *manager) {
 		manager->setAudioOutputDevice(id);
 	});
 }
 
 void InstanceImpl::setInputVolume(float level) {
-	_manager->perform(RTC_FROM_HERE, [level](Manager *manager) {
+	_manager->perform([level](Manager *manager) {
 		manager->setInputVolume(level);
 	});
 }
 
 void InstanceImpl::setOutputVolume(float level) {
-	_manager->perform(RTC_FROM_HERE, [level](Manager *manager) {
+	_manager->perform([level](Manager *manager) {
 		manager->setOutputVolume(level);
 	});
 }
@@ -133,13 +134,13 @@ void InstanceImpl::setAudioOutputDuckingEnabled(bool enabled) {
 }
 
 void InstanceImpl::addExternalAudioSamples(std::vector<uint8_t> &&samples) {
-    _manager->perform(RTC_FROM_HERE, [samples = std::move(samples)](Manager *manager) mutable {
+    _manager->perform([samples = std::move(samples)](Manager *manager) mutable {
         manager->addExternalAudioSamples(std::move(samples));
     });
 }
 
 void InstanceImpl::setIsLowBatteryLevel(bool isLowBatteryLevel) {
-    _manager->perform(RTC_FROM_HERE, [isLowBatteryLevel](Manager *manager) {
+    _manager->perform([isLowBatteryLevel](Manager *manager) {
         manager->setIsLowBatteryLevel(isLowBatteryLevel);
     });
 }
@@ -167,7 +168,7 @@ PersistentState InstanceImpl::getPersistentState() {
 void InstanceImpl::stop(std::function<void(FinalState)> completion) {
     std::string debugLog = _logSink->result();
 
-    _manager->perform(RTC_FROM_HERE, [completion, debugLog = std::move(debugLog)](Manager *manager) {
+    _manager->perform([completion, debugLog = std::move(debugLog)](Manager *manager) {
         manager->getNetworkStats([completion, debugLog = std::move(debugLog)](TrafficStats stats, CallStats callStats) {
             FinalState finalState;
             finalState.debugLog = debugLog;
@@ -187,7 +188,7 @@ int InstanceImpl::GetConnectionMaxLayer() {
 std::vector<std::string> InstanceImpl::GetVersions() {
     std::vector<std::string> result;
     result.push_back("2.7.7");
-    result.push_back("3.0.0");
+    result.push_back("5.0.0");
     return result;
 }
 

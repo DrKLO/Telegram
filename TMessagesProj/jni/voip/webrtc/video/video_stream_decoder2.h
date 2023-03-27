@@ -18,6 +18,7 @@
 
 #include "api/scoped_refptr.h"
 #include "api/video/video_sink_interface.h"
+#include "api/video_codecs/video_decoder.h"
 #include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "modules/video_coding/include/video_coding_defines.h"
 #include "rtc_base/platform_thread.h"
@@ -41,11 +42,12 @@ class VideoStreamDecoder : public VCMReceiveCallback {
   // Implements VCMReceiveCallback.
   int32_t FrameToRender(VideoFrame& video_frame,
                         absl::optional<uint8_t> qp,
-                        int32_t decode_time_ms,
+                        TimeDelta decode_time,
                         VideoContentType content_type) override;
   void OnDroppedFrames(uint32_t frames_dropped) override;
   void OnIncomingPayloadType(int payload_type) override;
-  void OnDecoderImplementationName(const char* implementation_name) override;
+  void OnDecoderInfoChanged(
+      const VideoDecoder::DecoderInfo& decoder_info) override;
 
  private:
   VideoReceiver2* const video_receiver_;

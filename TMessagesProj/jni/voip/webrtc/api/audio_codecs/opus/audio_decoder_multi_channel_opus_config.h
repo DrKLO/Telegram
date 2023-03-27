@@ -13,6 +13,8 @@
 
 #include <vector>
 
+#include "api/audio_codecs/audio_decoder.h"
+
 namespace webrtc {
 struct AudioDecoderMultiChannelOpusConfig {
   // The number of channels that the decoder will output.

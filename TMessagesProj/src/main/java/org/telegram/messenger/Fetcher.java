@@ -21,7 +21,11 @@ public abstract class Fetcher<Args, R> {
         // Implement this function
     }
 
-    private long requestRemotelyTimeout = 4 * 60 * 1000;
+    protected boolean useCache(Args arguments) {
+        return true;
+    }
+
+    private final long requestRemotelyTimeout = 4 * 60 * 1000;
 
     private HashMap<Pair<Integer, Args>, R> cachedResults;
     private HashMap<Pair<Integer, Args>, ArrayList<Utilities.Callback<R>>> loadingCallbacks;
@@ -74,6 +78,9 @@ public abstract class Fetcher<Args, R> {
     }
 
     private void cacheResult(Pair<Integer, Args> key, R result) {
+        if (!useCache(key.second)) {
+            return;
+        }
         if (cachedResults == null) {
             cachedResults = new HashMap<>();
         }

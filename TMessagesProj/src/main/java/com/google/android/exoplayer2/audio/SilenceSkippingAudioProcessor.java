@@ -15,15 +15,19 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import static java.lang.Math.min;
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * An {@link AudioProcessor} that skips silence in the input stream. Input and output are 16-bit
@@ -50,6 +54,7 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
   /** Trimming states. */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({
     STATE_NOISY,
     STATE_MAYBE_SILENT,
@@ -82,7 +87,7 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
    */
   private byte[] paddingBuffer;
 
-  @State private int state;
+  private @State int state;
   private int maybeSilenceBufferSize;
   private int paddingSize;
   private boolean hasOutputNoise;
@@ -139,6 +144,7 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
   // AudioProcessor implementation.
 
   @Override
+  @CanIgnoreReturnValue
   public AudioFormat onConfigure(AudioFormat inputAudioFormat)
       throws UnhandledAudioFormatException {
     if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
@@ -219,7 +225,7 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
     int limit = inputBuffer.limit();
 
     // Check if there's any noise within the maybe silence buffer duration.
-    inputBuffer.limit(Math.min(limit, inputBuffer.position() + maybeSilenceBuffer.length));
+    inputBuffer.limit(min(limit, inputBuffer.position() + maybeSilenceBuffer.length));
     int noiseLimit = findNoiseLimit(inputBuffer);
     if (noiseLimit == inputBuffer.position()) {
       // The buffer contains the start of possible silence.
@@ -249,7 +255,7 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
       state = STATE_NOISY;
     } else {
       // Fill as much of the maybe silence buffer as possible.
-      int bytesToWrite = Math.min(maybeSilenceInputSize, maybeSilenceBufferRemaining);
+      int bytesToWrite = min(maybeSilenceInputSize, maybeSilenceBufferRemaining);
       inputBuffer.limit(inputBuffer.position() + bytesToWrite);
       inputBuffer.get(maybeSilenceBuffer, maybeSilenceBufferSize, bytesToWrite);
       maybeSilenceBufferSize += bytesToWrite;
@@ -321,7 +327,7 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
    * position.
    */
   private void updatePaddingBuffer(ByteBuffer input, byte[] buffer, int size) {
-    int fromInputSize = Math.min(input.remaining(), paddingSize);
+    int fromInputSize = min(input.remaining(), paddingSize);
     int fromBufferSize = paddingSize - fromInputSize;
     System.arraycopy(
         /* src= */ buffer,
@@ -345,7 +351,6 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
    * classified as a noisy frame, or the limit of the buffer if no such frame exists.
    */
   private int findNoisePosition(ByteBuffer buffer) {
-    Assertions.checkArgument(buffer.order() == ByteOrder.LITTLE_ENDIAN);
     // The input is in ByteOrder.nativeOrder(), which is little endian on Android.
     for (int i = buffer.position(); i < buffer.limit(); i += 2) {
       if (Math.abs(buffer.getShort(i)) > silenceThresholdLevel) {
@@ -361,7 +366,6 @@ public final class SilenceSkippingAudioProcessor extends BaseAudioProcessor {
    * from the byte position to the limit are classified as silent.
    */
   private int findNoiseLimit(ByteBuffer buffer) {
-    Assertions.checkArgument(buffer.order() == ByteOrder.LITTLE_ENDIAN);
     // The input is in ByteOrder.nativeOrder(), which is little endian on Android.
     for (int i = buffer.limit() - 2; i >= buffer.position(); i -= 2) {
       if (Math.abs(buffer.getShort(i)) > silenceThresholdLevel) {

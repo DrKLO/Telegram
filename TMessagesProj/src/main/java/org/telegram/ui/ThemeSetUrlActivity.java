@@ -373,7 +373,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                     }
                     themes.add(themeInfo);
                 }
-                ThemesHorizontalListCell cell = new ThemesHorizontalListCell(context, ThemeActivity.THEME_TYPE_OTHER, themes, new ArrayList<>()) {
+                ThemesHorizontalListCell cell = new ThemesHorizontalListCell(context, this, ThemeActivity.THEME_TYPE_OTHER, themes, new ArrayList<>()) {
                     @Override
                     protected void updateRows() {
                         builder.getDismissRunnable().run();

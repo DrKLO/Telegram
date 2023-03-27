@@ -280,16 +280,16 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
                 String backKey;
                 if (resId == R.drawable.files_storage) {
                     backKey = Theme.key_chat_attachLocationBackground;
-                    iconKey = Theme.key_chat_attachLocationIcon;
+                    iconKey = Theme.key_chat_attachIcon;
                 } else if (resId == R.drawable.files_gallery) {
                     backKey = Theme.key_chat_attachContactBackground;
-                    iconKey = Theme.key_chat_attachContactIcon;
+                    iconKey = Theme.key_chat_attachIcon;
                 } else if (resId == R.drawable.files_music) {
                     backKey = Theme.key_chat_attachAudioBackground;
-                    iconKey = Theme.key_chat_attachAudioIcon;
+                    iconKey = Theme.key_chat_attachIcon;
                 } else if (resId == R.drawable.files_internal) {
                     backKey = Theme.key_chat_attachGalleryBackground;
-                    iconKey = Theme.key_chat_attachGalleryIcon;
+                    iconKey = Theme.key_chat_attachIcon;
                 } else {
                     backKey = Theme.key_files_folderIconBackground;
                     iconKey = Theme.key_files_folderIcon;

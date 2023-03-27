@@ -211,8 +211,9 @@ void ThreeBandFilterBank::Analysis(
 
       // Band and modulate the output.
       for (int band = 0; band < ThreeBandFilterBank::kNumBands; ++band) {
+        float* out_band = out[band].data();
         for (int n = 0; n < kSplitBandSize; ++n) {
-          out[band][n] += dct_modulation[band] * out_subsampled[n];
+          out_band[n] += dct_modulation[band] * out_subsampled[n];
         }
       }
     }
@@ -254,8 +255,9 @@ void ThreeBandFilterBank::Synthesis(
       std::fill(in_subsampled.begin(), in_subsampled.end(), 0.f);
       for (int band = 0; band < ThreeBandFilterBank::kNumBands; ++band) {
         RTC_DCHECK_EQ(in[band].size(), kSplitBandSize);
+        const float* in_band = in[band].data();
         for (int n = 0; n < kSplitBandSize; ++n) {
-          in_subsampled[n] += dct_modulation[band] * in[band][n];
+          in_subsampled[n] += dct_modulation[band] * in_band[n];
         }
       }
 

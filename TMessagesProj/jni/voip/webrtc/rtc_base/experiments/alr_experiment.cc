@@ -15,6 +15,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/transport/field_trial_based_config.h"
 #include "rtc_base/logging.h"
 
@@ -32,22 +33,22 @@ bool AlrExperimentSettings::MaxOneFieldTrialEnabled() {
 }
 
 bool AlrExperimentSettings::MaxOneFieldTrialEnabled(
-    const WebRtcKeyValueConfig& key_value_config) {
+    const FieldTrialsView& key_value_config) {
   return key_value_config.Lookup(kStrictPacingAndProbingExperimentName)
              .empty() ||
          key_value_config.Lookup(kScreenshareProbingBweExperimentName).empty();
 }
 
 absl::optional<AlrExperimentSettings>
-AlrExperimentSettings::CreateFromFieldTrial(const char* experiment_name) {
+AlrExperimentSettings::CreateFromFieldTrial(absl::string_view experiment_name) {
   return AlrExperimentSettings::CreateFromFieldTrial(FieldTrialBasedConfig(),
                                                      experiment_name);
 }
 
 absl::optional<AlrExperimentSettings>
 AlrExperimentSettings::CreateFromFieldTrial(
-    const WebRtcKeyValueConfig& key_value_config,
-    const char* experiment_name) {
+    const FieldTrialsView& key_value_config,
+    absl::string_view experiment_name) {
   absl::optional<AlrExperimentSettings> ret;
   std::string group_name = key_value_config.Lookup(experiment_name);
 

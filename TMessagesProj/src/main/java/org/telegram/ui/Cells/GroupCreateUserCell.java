@@ -264,11 +264,11 @@ public class GroupCreateUserCell extends FrameLayout {
             }
             avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(46);
             if (checkBox != null) {
-                ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(33) + padding;
+                ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(29) + padding;
                 if (LocaleController.isRTL) {
                     ((LayoutParams) checkBox.getLayoutParams()).rightMargin = AndroidUtilities.dp(39) + padding;
                 } else {
-                    ((LayoutParams) checkBox.getLayoutParams()).leftMargin = AndroidUtilities.dp(40) + padding;
+                    ((LayoutParams) checkBox.getLayoutParams()).leftMargin = AndroidUtilities.dp(45) + padding;
                 }
             }
 

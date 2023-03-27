@@ -63,7 +63,6 @@ VCMPacket::VCMPacket(const uint8_t* ptr,
     completeNALU = kNaluIncomplete;
   }
 
-  // TODO(nisse): Delete?
   // Playout decisions are made entirely based on first packet in a frame.
   if (!is_first_packet_in_frame()) {
     video_header.playout_delay = {-1, -1};

@@ -19,9 +19,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -33,6 +35,7 @@ import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
@@ -48,7 +51,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     public static final int TYPE_PUBLIC_LINKS = 2;
     public static final int TYPE_FOLDERS = 3;
     public static final int TYPE_CHATS_IN_FOLDER = 4;
-    public static final int TYPE_TO_MANY_COMMUNITIES = 5;
+    public static final int TYPE_TO0_MANY_COMMUNITIES = 5;
     public static final int TYPE_LARGE_FILE = 6;
     public static final int TYPE_ACCOUNTS = 7;
 
@@ -56,11 +59,16 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     public static final int TYPE_GIFS = 9;
     public static final int TYPE_STICKERS = 10;
 
+
+    public static final int TYPE_ADD_MEMBERS_RESTRICTED = 11;
+    private boolean canSendLink;
+    private TLRPC.TL_webPage linkPreview;
+
     public static String limitTypeToServerString(int type) {
         switch (type) {
             case TYPE_PIN_DIALOGS:
                 return "double_limits__dialog_pinned";
-            case TYPE_TO_MANY_COMMUNITIES:
+            case TYPE_TO0_MANY_COMMUNITIES:
                 return "double_limits__channels";
             case TYPE_PUBLIC_LINKS:
                 return "double_limits__channels_public";
@@ -88,15 +96,18 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     int dividerRow = -1;
     int chatsTitleRow = -1;
     int chatStartRow = -1;
+    int chatEndRow = -1;
     int loadingRow = -1;
+    int emptyViewDividerRow = -1;
 
     public boolean parentIsChannel;
     private int currentValue = -1;
     LimitPreviewView limitPreviewView;
-    HashSet<TLRPC.Chat> selectedChats = new HashSet<>();
+    HashSet<Object> selectedChats = new HashSet<>();
 
     private ArrayList<TLRPC.Chat> inactiveChats = new ArrayList<>();
     private ArrayList<String> inactiveChatsSignatures = new ArrayList<>();
+    private ArrayList<TLRPC.User> restrictedUsers = new ArrayList<>();
 
     PremiumButtonView premiumButtonView;
     public Runnable onSuccessRunnable;
@@ -107,17 +118,19 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     View divider;
     LimitParams limitParams;
     private boolean isVeryLargeFile;
+    private TLRPC.Chat fromChat;
 
     public LimitReachedBottomSheet(BaseFragment fragment, Context context, int type, int currentAccount) {
         super(fragment, false, hasFixedSize(type));
         fixNavigationBar();
         parentFragment = fragment;
         this.type = type;
+        updateTitle();
         this.currentAccount = currentAccount;
         updateRows();
         if (type == TYPE_PUBLIC_LINKS) {
             loadAdminedChannels();
-        } else if (type == TYPE_TO_MANY_COMMUNITIES) {
+        } else if (type == TYPE_TO0_MANY_COMMUNITIES) {
             loadInactiveChannels();
         }
         updatePremiumButtonText();
@@ -135,7 +148,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 @Override
                 protected void onDraw(Canvas canvas) {
                     super.onDraw(canvas);
-                    canvas.drawRect(0, 0, getMeasuredWidth(), 1, Theme.dividerPaint);
+                    if (chatEndRow - chatStartRow > 1) {
+                        canvas.drawRect(0, 0, getMeasuredWidth(), 1, Theme.dividerPaint);
+                    }
                 }
             };
             divider.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
@@ -155,14 +170,17 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 adminedChannelCell.setChecked(selectedChats.contains(chat), true);
                 updateButton();
             } else if (view instanceof GroupCreateUserCell) {
-                GroupCreateUserCell cell = (GroupCreateUserCell) view;
-                TLRPC.Chat chat = (TLRPC.Chat) cell.getObject();
-                if (selectedChats.contains(chat)) {
-                    selectedChats.remove(chat);
-                } else {
-                    selectedChats.add(chat);
+                if (!canSendLink && type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                    return;
                 }
-                cell.setChecked(selectedChats.contains(chat), true);
+                GroupCreateUserCell cell = (GroupCreateUserCell) view;
+                Object object = cell.getObject();
+                if (selectedChats.contains(object)) {
+                    selectedChats.remove(object);
+                } else {
+                    selectedChats.add(object);
+                }
+                cell.setChecked(selectedChats.contains(object), true);
                 updateButton();
             }
         });
@@ -172,6 +190,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             return false;
         });
         premiumButtonView.buttonLayout.setOnClickListener(v -> {
+            if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                return;
+            }
             if (UserConfig.getInstance(currentAccount).isPremium() || MessagesController.getInstance(currentAccount).premiumLocked || isVeryLargeFile) {
                 dismiss();
                 return;
@@ -189,16 +210,61 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             dismiss();
         });
         premiumButtonView.overlayTextView.setOnClickListener(v -> {
+            if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                if (selectedChats.isEmpty()) {
+                    dismiss();
+                    return;
+                }
+                sendInviteMessages();
+                return;
+            }
             if (selectedChats.isEmpty()) {
                 return;
             }
             if (type == TYPE_PUBLIC_LINKS) {
                 revokeSelectedLinks();
-            } else if (type == TYPE_TO_MANY_COMMUNITIES) {
+            } else if (type == TYPE_TO0_MANY_COMMUNITIES) {
                 leaveFromSelectedGroups();
             }
         });
         enterAnimator = new RecyclerItemsEnterAnimator(recyclerListView, true);
+    }
+
+    private void sendInviteMessages() {
+        String link = null;
+        TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(fromChat.id);
+        if (chatFull == null) {
+            dismiss();
+            return;
+        }
+        if (fromChat.username != null) {
+            link = "@" + fromChat.username;
+        } else if (chatFull.exported_invite != null) {
+            link = chatFull.exported_invite.link;
+        } else {
+            dismiss();
+            return;
+        }
+        for (Object obj : selectedChats) {
+            TLRPC.User user = (TLRPC.User) obj;
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(link, user.id, null, null, linkPreview, false, null, null, null, false, 0, null, false);
+        }
+        AndroidUtilities.runOnUIThread(() -> {
+            BulletinFactory factory = BulletinFactory.global();
+            if (factory != null)  {
+                if (selectedChats.size() == 1) {
+                    TLRPC.User user = (TLRPC.User) selectedChats.iterator().next();
+                    factory.createSimpleBulletin(R.raw.voip_invite,
+                            AndroidUtilities.replaceTags(LocaleController.formatString("InviteLinkSentSingle", R.string.InviteLinkSentSingle, ContactsController.formatName(user)))
+                    ).show();
+                } else {
+                    factory.createSimpleBulletin(R.raw.voip_invite,
+                            AndroidUtilities.replaceTags(LocaleController.formatPluralString("InviteLinkSent", selectedChats.size(), selectedChats.size()))
+                    ).show();
+                }
+            }
+        });
+        dismiss();
     }
 
     public void updatePremiumButtonText() {
@@ -213,7 +279,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
     private void leaveFromSelectedGroups() {
         TLRPC.User currentUser = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
-        ArrayList<TLRPC.Chat> chats = new ArrayList<>(selectedChats);
+        ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+        for (Object obj : selectedChats) {
+            chats.add((TLRPC.Chat) obj);
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle(LocaleController.formatPluralString("LeaveCommunities", chats.size()));
         if (chats.size() == 1) {
@@ -235,21 +304,34 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
         }
     }
 
     private void updateButton() {
-        if (selectedChats.size() > 0) {
-            String str = null;
-            if (type == TYPE_PUBLIC_LINKS) {
-                str = LocaleController.formatPluralString("RevokeLinks", selectedChats.size());
-            } else if (type == TYPE_TO_MANY_COMMUNITIES) {
-                str = LocaleController.formatPluralString("LeaveCommunities", selectedChats.size());
+        if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+            premiumButtonView.checkCounterView();
+            if (!canSendLink) {
+                premiumButtonView.setOverlayText(LocaleController.getString("Close", R.string.Close), true, true);
+            } else if (selectedChats.size() > 0) {
+                premiumButtonView.setOverlayText(LocaleController.getString("SendInviteLink", R.string.SendInviteLink), true, true);
+            } else {
+                premiumButtonView.setOverlayText(LocaleController.getString("ActionSkip", R.string.ActionSkip), true, true);
             }
-            premiumButtonView.setOverlayText(str, true, true);
+            premiumButtonView.counterView.setCount(selectedChats.size(), true);
+            premiumButtonView.invalidate();
         } else {
-            premiumButtonView.clearOverlayText();
+            if (selectedChats.size() > 0) {
+                String str = null;
+                if (type == TYPE_PUBLIC_LINKS) {
+                    str = LocaleController.formatPluralString("RevokeLinks", selectedChats.size());
+                } else if (type == TYPE_TO0_MANY_COMMUNITIES) {
+                    str = LocaleController.formatPluralString("LeaveCommunities", selectedChats.size());
+                }
+                premiumButtonView.setOverlayText(str, true, true);
+            } else {
+                premiumButtonView.clearOverlayText();
+            }
         }
     }
 
@@ -262,6 +344,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
     @Override
     public CharSequence getTitle() {
+        if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+            return LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink);
+        }
         return LocaleController.getString("LimitReached", R.string.LimitReached);
     }
 
@@ -270,6 +355,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         return new RecyclerListView.SelectionAdapter() {
             @Override
             public boolean isEnabled(RecyclerView.ViewHolder holder) {
+                if (type == TYPE_ADD_MEMBERS_RESTRICTED && !canSendLink) {
+                    return false;
+                }
                 return holder.getItemViewType() == 1 || holder.getItemViewType() == 4;
             }
 
@@ -312,6 +400,14 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                         flickerLoadingView.setItemsCount(10);
                         view = flickerLoadingView;
                         break;
+                    case 6:
+                        view = new View(getContext()) {
+                            @Override
+                            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(16), MeasureSpec.EXACTLY));
+                            }
+                        };
+                        break;
                 }
                 view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(view);
@@ -320,11 +416,18 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 if (holder.getItemViewType() == 4) {
-                    TLRPC.Chat chat = inactiveChats.get(position - chatStartRow);
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                    String signature = inactiveChatsSignatures.get(position - chatStartRow);
-                    cell.setObject(chat, chat.title, signature, true);
-                    cell.setChecked(selectedChats.contains(chat), false);
+                    if (type == TYPE_TO0_MANY_COMMUNITIES) {
+                        TLRPC.Chat chat = inactiveChats.get(position - chatStartRow);
+                        String signature = inactiveChatsSignatures.get(position - chatStartRow);
+                        cell.setObject(chat, chat.title, signature, position != chatEndRow - 1f);
+                        cell.setChecked(selectedChats.contains(chat), false);
+                    } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                        TLRPC.User user = restrictedUsers.get(position - chatStartRow);
+                        String signature = LocaleController.formatUserStatus(currentAccount, user, null, null);
+                        cell.setObject(user, ContactsController.formatName(user.first_name, user.last_name), signature, position != chatEndRow - 1f);
+                        cell.setChecked(selectedChats.contains(user), false);
+                    }
                 } else if (holder.getItemViewType() == 1) {
                     TLRPC.Chat chat = chats.get(position - chatStartRow);
                     AdminedChannelCell adminedChannelCell = (AdminedChannelCell) holder.itemView;
@@ -333,7 +436,17 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                     adminedChannelCell.setChecked(selectedChats.contains(chat), oldChat == chat);
                 } else if (holder.getItemViewType() == 3) {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
-                    if (type == TYPE_PUBLIC_LINKS) {
+                    if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                        if (canSendLink) {
+                            headerCell.setText(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink));
+                        } else {
+                            if (restrictedUsers.size() == 1) {
+                                headerCell.setText(LocaleController.getString("ChannelInviteViaLinkRestricted2", R.string.ChannelInviteViaLinkRestricted2));
+                            } else {
+                                headerCell.setText(LocaleController.getString("ChannelInviteViaLinkRestricted3", R.string.ChannelInviteViaLinkRestricted3));
+                            }
+                        }
+                    } else if (type == TYPE_PUBLIC_LINKS) {
                         headerCell.setText(LocaleController.getString("YourPublicCommunities", R.string.YourPublicCommunities));
                     } else {
                         headerCell.setText(LocaleController.getString("LastActiveCommunities", R.string.LastActiveCommunities));
@@ -351,8 +464,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                     return 3;
                 } else if (loadingRow == position) {
                     return 5;
+                } else if (emptyViewDividerRow == position) {
+                    return 6;
                 }
-                if (type == TYPE_TO_MANY_COMMUNITIES) {
+                if (type == TYPE_TO0_MANY_COMMUNITIES || type == TYPE_ADD_MEMBERS_RESTRICTED) {
                     return 4;
                 } else {
                     return 1;
@@ -375,6 +490,35 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         updatePremiumButtonText();
     }
 
+    public void setRestrictedUsers(TLRPC.Chat chat, ArrayList<TLRPC.User> userRestrictedPrivacy) {
+        fromChat = chat;
+        canSendLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE);
+        restrictedUsers = new ArrayList<>(userRestrictedPrivacy);
+        selectedChats.clear();
+        if (canSendLink) {
+            selectedChats.addAll(restrictedUsers);
+        }
+        updateRows();
+        updateButton();
+
+        TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(fromChat.id);
+        String link;
+        if (fromChat.username == null && chatFull != null && chatFull.exported_invite != null) {
+            link = chatFull.exported_invite.link;
+
+            TLRPC.TL_messages_getWebPage webPagePreview = new TLRPC.TL_messages_getWebPage();
+            webPagePreview.url = link;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(webPagePreview,(response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response != null) {
+                    if (response instanceof TLRPC.TL_webPage) {
+                        linkPreview = (TLRPC.TL_webPage) response;
+                    }
+                }
+            }));
+        }
+
+    }
+
 
     private class HeaderView extends LinearLayout {
 
@@ -388,10 +532,43 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             int icon = limitParams.icon;
             String descriptionStr;
             boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumLocked;
-            if (premiumLocked) {
-                descriptionStr = limitParams.descriptionStrLocked;
+            if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                premiumLocked = true;
+                if (!canSendLink) {
+                    if (ChatObject.isChannelAndNotMegaGroup(fromChat)) {
+                        if (restrictedUsers.size() == 1) {
+                            descriptionStr = LocaleController.formatString("InviteChannelRestrictedUsers2One", R.string.InviteChannelRestrictedUsers2One, ContactsController.formatName(restrictedUsers.get(0)));
+                        } else {
+                            descriptionStr = LocaleController.formatPluralString("InviteChannelRestrictedUsers2", restrictedUsers.size(), restrictedUsers.size());
+                        }
+                    } else {
+                        if (restrictedUsers.size() == 1) {
+                            descriptionStr = LocaleController.formatString("InviteRestrictedUsers2One", R.string.InviteRestrictedUsers2One, ContactsController.formatName(restrictedUsers.get(0)));
+                        } else {
+                            descriptionStr = LocaleController.formatPluralString("InviteRestrictedUsers2", restrictedUsers.size(), restrictedUsers.size());
+                        }
+                    }
+                } else {
+                    if (ChatObject.isChannelAndNotMegaGroup(fromChat)) {
+                        if (restrictedUsers.size() == 1) {
+                            descriptionStr = LocaleController.formatString("InviteChannelRestrictedUsersOne", R.string.InviteChannelRestrictedUsersOne, ContactsController.formatName(restrictedUsers.get(0)));
+                        } else {
+                            descriptionStr = LocaleController.formatPluralString("InviteChannelRestrictedUsers", restrictedUsers.size(), restrictedUsers.size());
+                        }
+                    } else {
+                        if (restrictedUsers.size() == 1) {
+                            descriptionStr = LocaleController.formatString("InviteRestrictedUsersOne", R.string.InviteRestrictedUsersOne, ContactsController.formatName(restrictedUsers.get(0)));
+                        } else {
+                            descriptionStr = LocaleController.formatPluralString("InviteRestrictedUsers", restrictedUsers.size(), restrictedUsers.size());
+                        }
+                    }
+                }
             } else {
-                descriptionStr = (UserConfig.getInstance(currentAccount).isPremium() || isVeryLargeFile) ? limitParams.descriptionStrPremium : limitParams.descriptionStr;
+                if (premiumLocked) {
+                    descriptionStr = limitParams.descriptionStrLocked;
+                } else {
+                    descriptionStr = (UserConfig.getInstance(currentAccount).isPremium() || isVeryLargeFile) ? limitParams.descriptionStrPremium : limitParams.descriptionStr;
+                }
             }
             int defaultLimit = limitParams.defaultLimit;
             int premiumLimit = limitParams.premiumLimit;
@@ -452,7 +629,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 }
             }
 
-            if (type == TYPE_PUBLIC_LINKS || type == TYPE_TO_MANY_COMMUNITIES) {
+            if (type == TYPE_PUBLIC_LINKS || type == TYPE_TO0_MANY_COMMUNITIES) {
                 limitPreviewView.setDelayedAnimation();
             }
 
@@ -461,14 +638,20 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
             TextView title = new TextView(context);
             title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            if (type == TYPE_LARGE_FILE) {
+            if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                if (canSendLink) {
+                    title.setText(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink));
+                } else {
+                    title.setText(LocaleController.getString("ChannelInviteViaLinkRestricted", R.string.ChannelInviteViaLinkRestricted));
+                }
+            } else if (type == TYPE_LARGE_FILE) {
                 title.setText(LocaleController.getString("FileTooLarge", R.string.FileTooLarge));
             } else {
                 title.setText(LocaleController.getString("LimitReached", R.string.LimitReached));
             }
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 22, 0, 10));
+            addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, premiumLocked ? 8 : 22, 0, 10));
 
             TextView description = new TextView(context);
             description.setText(AndroidUtilities.replaceTags(descriptionStr));
@@ -509,7 +692,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             limitParams.descriptionStr = LocaleController.formatString("LimitReachedChatInFolders", R.string.LimitReachedChatInFolders, limitParams.defaultLimit, limitParams.premiumLimit);
             limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedChatInFoldersPremium", R.string.LimitReachedChatInFoldersPremium, limitParams.premiumLimit);
             limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedChatInFoldersLocked", R.string.LimitReachedChatInFoldersLocked, limitParams.defaultLimit);
-        } else if (type == TYPE_TO_MANY_COMMUNITIES) {
+        } else if (type == TYPE_TO0_MANY_COMMUNITIES) {
             limitParams.defaultLimit = MessagesController.getInstance(currentAccount).channelsLimitDefault;
             limitParams.premiumLimit = MessagesController.getInstance(currentAccount).channelsLimitPremium;
             limitParams.icon = R.drawable.msg_limit_groups;
@@ -530,6 +713,13 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             limitParams.descriptionStr = LocaleController.formatString("LimitReachedAccounts", R.string.LimitReachedAccounts, limitParams.defaultLimit, limitParams.premiumLimit);
             limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedAccountsPremium", R.string.LimitReachedAccountsPremium, limitParams.premiumLimit);
             limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedAccountsPremium", R.string.LimitReachedAccountsPremium, limitParams.defaultLimit);
+        } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+            limitParams.defaultLimit = 0;
+            limitParams.premiumLimit = 0;
+            limitParams.icon = R.drawable.msg_limit_links;
+            limitParams.descriptionStr = LocaleController.formatString("LimitReachedAccounts", R.string.LimitReachedAccounts, limitParams.defaultLimit, limitParams.premiumLimit);
+            limitParams.descriptionStrPremium = "";
+            limitParams.descriptionStrLocked = "";
         }
         return limitParams;
     }
@@ -573,7 +763,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         rowCount = 0;
         dividerRow = -1;
         chatStartRow = -1;
+        chatEndRow = -1;
         loadingRow = -1;
+        emptyViewDividerRow = -1;
         headerRow = rowCount++;
         if (!hasFixedSize(type)) {
             dividerRow = rowCount++;
@@ -582,10 +774,16 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 loadingRow = rowCount++;
             } else {
                 chatStartRow = rowCount;
-                if (type == TYPE_TO_MANY_COMMUNITIES) {
+                if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
+                    rowCount += restrictedUsers.size();
+                } else if (type == TYPE_TO0_MANY_COMMUNITIES) {
                     rowCount += inactiveChats.size();
                 } else {
                     rowCount += chats.size();
+                }
+                chatEndRow = rowCount;
+                if (chatEndRow - chatStartRow > 1) {
+                    emptyViewDividerRow = rowCount++;
                 }
             }
         }
@@ -594,7 +792,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
 
 
     private void revokeSelectedLinks() {
-        final ArrayList<TLRPC.Chat> channels = new ArrayList<>(selectedChats);
+        final ArrayList<TLRPC.Chat> channels = new ArrayList<>();
+        for (Object obj : selectedChats) {
+            chats.add((TLRPC.Chat) obj);
+        }
         revokeLinks(channels);
     }
 
@@ -634,7 +835,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
         }
     }
 
@@ -693,9 +894,11 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                         limitParams = getLimitParams(type, currentAccount);
                     }
                     int currentValue = Math.max(inactiveChats.size(), limitParams.defaultLimit);
-                    limitPreviewView.setIconValue(currentValue);
-                    limitPreviewView.setBagePosition(currentValue / (float) limitParams.premiumLimit);
-                    limitPreviewView.startDelayedAnimation();
+                    if (limitPreviewView != null) {
+                        limitPreviewView.setIconValue(currentValue);
+                        limitPreviewView.setBagePosition(currentValue / (float) limitParams.premiumLimit);
+                        limitPreviewView.startDelayedAnimation();
+                    }
                 });
             }
         }));

@@ -1,0 +1,65 @@
+ifndef BASE_NAME
+BASE_NAME	=	x86disasm
+endif
+
+ifndef SWIG
+SWIG		=	swig	# apt-get install swig !
+endif
+
+ifndef GCC
+GCC		=	gcc
+endif
+
+ifndef CC_FLAGS
+CC_FLAGS	=	-c -fPIC
+endif
+
+ifndef LD_FLAGS
+LD_FLAGS	=	-shared -L.. -ldisasm
+endif
+
+INTERFACE_FILE	=	libdisasm_oop.i
+
+SWIG_INTERFACE	=	../$(INTERFACE_FILE)
+
+# PERL rules
+PERL_MOD	=	blib/arch/auto/$(BASE_NAME)/$(BASE_NAME).so
+PERL_SHADOW	=	$(BASE_NAME)_wrap.c
+PERL_SWIG	=	$(BASE_NAME).pl
+PERL_OBJ	=	$(BASE_NAME)_wrap.o
+PERL_INC	=	`perl -e 'use Config; print $$Config{archlib};'`/CORE
+PERL_CC_FLAGS	=	`perl -e 'use Config; print $$Config{ccflags};'`
+
+#====================================================
+# TARGETS
+
+all: swig-perl
+
+dummy: swig-perl install uninstall clean
+
+swig-perl: $(PERL_MOD)
+
+$(PERL_MOD): $(PERL_OBJ)
+	perl Makefile.PL
+	make
+	#$(GCC) $(LD_FLAGS) $(PERL_OBJ) -o $@
+
+$(PERL_OBJ): $(PERL_SHADOW)
+	$(GCC) $(CC_FLAGS) $(PERL_CC_FLAGS) -I$(PERL_INC) -o $@ $<
+
+$(PERL_SHADOW): $(SWIG_INTERFACE)
+	swig -perl -shadow -o $(PERL_SHADOW) -outdir . $<
+
+# ==================================================================
+install: $(PERL_MOD)
+	make install
+
+# ==================================================================
+uninstall:
+
+# ==================================================================
+clean: 
+	rm $(PERL_MOD) $(PERL_OBJ)
+	rm $(PERL_SHADOW)
+	rm -rf Makefile blib pm_to_blib
+

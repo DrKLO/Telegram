@@ -24,29 +24,27 @@ namespace webrtc {
 class RtcEventLog;
 
 struct BitrateProberConfig {
-  explicit BitrateProberConfig(const WebRtcKeyValueConfig* key_value_config);
+  explicit BitrateProberConfig(const FieldTrialsView* key_value_config);
   BitrateProberConfig(const BitrateProberConfig&) = default;
   BitrateProberConfig& operator=(const BitrateProberConfig&) = default;
   ~BitrateProberConfig() = default;
 
-  // The minimum number probing packets used.
-  FieldTrialParameter<int> min_probe_packets_sent;
   // A minimum interval between probes to allow scheduling to be feasible.
   FieldTrialParameter<TimeDelta> min_probe_delta;
-  // The minimum probing duration.
-  FieldTrialParameter<TimeDelta> min_probe_duration;
   // Maximum amount of time each probe can be delayed.
   FieldTrialParameter<TimeDelta> max_probe_delay;
-  // If NextProbeTime() is called with a delay higher than specified by
-  // `max_probe_delay`, abort it.
-  FieldTrialParameter<bool> abort_delayed_probes;
+  // This is used to start sending a probe after a large enough packet.
+  // The min packet size is scaled with the bitrate we're probing at.
+  // This defines the max min packet size, meaning that on high bitrates
+  // a packet of at least this size is needed to trigger sending a probe.
+  FieldTrialParameter<DataSize> min_packet_size;
 };
 
 // Note that this class isn't thread-safe by itself and therefore relies
 // on being protected by the caller.
 class BitrateProber {
  public:
-  explicit BitrateProber(const WebRtcKeyValueConfig& field_trials);
+  explicit BitrateProber(const FieldTrialsView& field_trials);
   ~BitrateProber();
 
   void SetEnabled(bool enable);
@@ -61,10 +59,8 @@ class BitrateProber {
   // with.
   void OnIncomingPacket(DataSize packet_size);
 
-  // Create a cluster used to probe for `bitrate_bps` with `num_probes` number
-  // of probes.
-  void CreateProbeCluster(DataRate bitrate, Timestamp now, int cluster_id);
-
+  // Create a cluster used to probe.
+  void CreateProbeCluster(const ProbeClusterConfig& cluster_config);
   // Returns the time at which the next probe should be sent to get accurate
   // probing. If probing is not desired at this time, Timestamp::PlusInfinity()
   // will be returned.
@@ -75,7 +71,8 @@ class BitrateProber {
   absl::optional<PacedPacketInfo> CurrentCluster(Timestamp now);
 
   // Returns the minimum number of bytes that the prober recommends for
-  // the next probe, or zero if not probing.
+  // the next probe, or zero if not probing. A probe can consist of multiple
+  // packets that are sent back to back.
   DataSize RecommendedMinProbeSize() const;
 
   // Called to report to the prober that a probe has been sent. In case of
@@ -104,7 +101,7 @@ class BitrateProber {
 
     int sent_probes = 0;
     int sent_bytes = 0;
-    Timestamp created_at = Timestamp::MinusInfinity();
+    Timestamp requested_at = Timestamp::MinusInfinity();
     Timestamp started_at = Timestamp::MinusInfinity();
     int retries = 0;
   };

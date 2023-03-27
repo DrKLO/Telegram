@@ -221,47 +221,26 @@ class pcg_engine {
 template <uint64_t kMultA, uint64_t kMultB, uint64_t kIncA, uint64_t kIncB>
 class pcg128_params {
  public:
-#if ABSL_HAVE_INTRINSIC_INT128
-  using state_type = __uint128_t;
-  static inline constexpr state_type make_u128(uint64_t a, uint64_t b) {
-    return (static_cast<__uint128_t>(a) << 64) | b;
-  }
-#else
   using state_type = absl::uint128;
-  static inline constexpr state_type make_u128(uint64_t a, uint64_t b) {
-    return absl::MakeUint128(a, b);
-  }
-#endif
-
   static inline constexpr state_type multiplier() {
-    return make_u128(kMultA, kMultB);
+    return absl::MakeUint128(kMultA, kMultB);
   }
   static inline constexpr state_type increment() {
-    return make_u128(kIncA, kIncB);
+    return absl::MakeUint128(kIncA, kIncB);
   }
 };
 
 // Implementation of the PCG xsl_rr_128_64 128-bit mixing function, which
 // accepts an input of state_type and mixes it into an output of result_type.
 struct pcg_xsl_rr_128_64 {
-#if ABSL_HAVE_INTRINSIC_INT128
-  using state_type = __uint128_t;
-#else
   using state_type = absl::uint128;
-#endif
   using result_type = uint64_t;
 
   inline uint64_t operator()(state_type state) {
     // This is equivalent to the xsl_rr_128_64 mixing function.
-#if ABSL_HAVE_INTRINSIC_INT128
     uint64_t rotate = static_cast<uint64_t>(state >> 122u);
     state ^= state >> 64;
     uint64_t s = static_cast<uint64_t>(state);
-#else
-    uint64_t h = Uint128High64(state);
-    uint64_t rotate = h >> 58u;
-    uint64_t s = Uint128Low64(state) ^ h;
-#endif
     return rotr(s, static_cast<int>(rotate));
   }
 };

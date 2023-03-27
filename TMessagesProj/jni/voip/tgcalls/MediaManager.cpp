@@ -25,6 +25,9 @@
 #ifdef WEBRTC_IOS
 #include "platform/darwin/iOS/tgcalls_audio_device_module_ios.h"
 #endif
+
+#include "FieldTrialsConfig.h"
+
 namespace tgcalls {
 namespace {
 
@@ -242,7 +245,7 @@ MediaManager::MediaManager(
 	std::function<void(Message &&)> sendSignalingMessage,
 	std::function<void(Message &&)> sendTransportMessage,
     std::function<void(int)> signalBarsUpdated,
-    std::function<void(float)> audioLevelUpdated,
+    std::function<void(float, float)> audioLevelsUpdated,
     std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
     bool enableHighBitrateVideo,
     std::vector<std::string> preferredCodecs,
@@ -253,7 +256,7 @@ _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
 _sendSignalingMessage(std::move(sendSignalingMessage)),
 _sendTransportMessage(std::move(sendTransportMessage)),
 _signalBarsUpdated(std::move(signalBarsUpdated)),
-_audioLevelUpdated(std::move(audioLevelUpdated)),
+_audioLevelsUpdated(std::move(audioLevelsUpdated)),
 _createAudioDeviceModule(std::move(createAudioDeviceModule)),
 _protocolVersion(protocolVersion),
 _outgoingVideoState(videoCapture ? VideoState::Active : VideoState::Inactive),
@@ -292,6 +295,7 @@ _platformContext(platformContext) {
 		"WebRTC-FlexFEC-03/Enabled/"
 		"WebRTC-FlexFEC-03-Advertised/Enabled/"
         "WebRTC-Turn-AllowSystemPorts/Enabled/"
+        "WebRTC-Audio-iOS-Holding/Enabled/"
 	);
 
 	PlatformInterface::SharedInstance()->configurePlatformAudio();
@@ -314,7 +318,7 @@ _platformContext(platformContext) {
 
     webrtc::AudioProcessingBuilder builder;
     std::unique_ptr<AudioCapturePostProcessor> audioProcessor = std::make_unique<AudioCapturePostProcessor>([this](float level) {
-        this->_thread->PostTask(RTC_FROM_HERE, [this, level](){
+        this->_thread->PostTask([this, level](){
             auto strong = this;
             strong->_currentMyAudioLevel = level;
         });
@@ -322,85 +326,95 @@ _platformContext(platformContext) {
     builder.SetCapturePostProcessing(std::move(audioProcessor));
     mediaDeps.audio_processing = builder.Create();
 
-	_audioDeviceModule = this->createAudioDeviceModule();
-	if (!_audioDeviceModule) {
-		return;
-	}
-	mediaDeps.adm = _audioDeviceModule;
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        _audioDeviceModule = this->createAudioDeviceModule();
 
-	_mediaEngine = cricket::CreateMediaEngine(std::move(mediaDeps));
-	_mediaEngine->Init();
+        /*if (!_audioDeviceModule) {
+            return;
+        }*/
+        mediaDeps.adm = _audioDeviceModule;
 
-	/*setAudioInputDevice(devicesConfig.audioInputId);
-	setAudioOutputDevice(devicesConfig.audioOutputId);
-	setInputVolume(devicesConfig.inputVolume);
-	setOutputVolume(devicesConfig.outputVolume);*/
+        _mediaEngine = cricket::CreateMediaEngine(std::move(mediaDeps));
+        _mediaEngine->Init();
+    });
 
-	webrtc::Call::Config callConfig(_eventLog.get());
-	callConfig.task_queue_factory = _taskQueueFactory.get();
-	callConfig.trials = &_fieldTrials;
-	callConfig.audio_state = _mediaEngine->voice().GetAudioState();
-	_call.reset(webrtc::Call::Create(callConfig));
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        /*setAudioInputDevice(devicesConfig.audioInputId);
+        setAudioOutputDevice(devicesConfig.audioOutputId);
+        setInputVolume(devicesConfig.inputVolume);
+        setOutputVolume(devicesConfig.outputVolume);*/
 
-    cricket::AudioOptions audioOptions;
-    audioOptions.echo_cancellation = true;
-    audioOptions.noise_suppression = true;
-    audioOptions.audio_jitter_buffer_fast_accelerate = true;
+        webrtc::Call::Config callConfig(_eventLog.get());
+        callConfig.task_queue_factory = _taskQueueFactory.get();
+        callConfig.trials = &fieldTrialsBasedConfig;
+        callConfig.audio_state = _mediaEngine->voice().GetAudioState();
+        _call.reset(webrtc::Call::Create(callConfig));
 
-    std::vector<std::string> streamIds;
-    streamIds.push_back("1");
+        cricket::AudioOptions audioOptions;
+        audioOptions.echo_cancellation = true;
+        audioOptions.noise_suppression = true;
+        audioOptions.audio_jitter_buffer_fast_accelerate = true;
 
-	_audioChannel.reset(_mediaEngine->voice().CreateMediaChannel(_call.get(), cricket::MediaConfig(), audioOptions, webrtc::CryptoOptions::NoGcm()));
-	_videoChannel.reset(_mediaEngine->video().CreateMediaChannel(_call.get(), cricket::MediaConfig(), cricket::VideoOptions(), webrtc::CryptoOptions::NoGcm(), _videoBitrateAllocatorFactory.get()));
+        std::vector<std::string> streamIds;
+        streamIds.push_back("1");
 
-	const uint32_t opusClockrate = 48000;
-	const uint16_t opusSdpPayload = 111;
-	const char *opusSdpName = "opus";
-	const uint8_t opusSdpChannels = 2;
-	const uint32_t opusSdpBitrate = 0;
+        _audioChannel.reset(_mediaEngine->voice().CreateMediaChannel(_call.get(), cricket::MediaConfig(), audioOptions, webrtc::CryptoOptions::NoGcm()));
+        _videoChannel.reset(_mediaEngine->video().CreateMediaChannel(_call.get(), cricket::MediaConfig(), cricket::VideoOptions(), webrtc::CryptoOptions::NoGcm(), _videoBitrateAllocatorFactory.get()));
 
-	const uint8_t opusMinBitrateKbps = 6;
-	const uint8_t opusMaxBitrateKbps = 32;
-	const uint8_t opusStartBitrateKbps = 8;
-	const uint8_t opusPTimeMs = 120;
+        const uint32_t opusClockrate = 48000;
+        const uint16_t opusSdpPayload = 111;
+        const char *opusSdpName = "opus";
+        const uint8_t opusSdpChannels = 2;
+        const uint32_t opusSdpBitrate = 0;
 
-	cricket::AudioCodec opusCodec(opusSdpPayload, opusSdpName, opusClockrate, opusSdpBitrate, opusSdpChannels);
-	opusCodec.AddFeedbackParam(cricket::FeedbackParam(cricket::kRtcpFbParamTransportCc));
-	opusCodec.SetParam(cricket::kCodecParamMinBitrate, opusMinBitrateKbps);
-	opusCodec.SetParam(cricket::kCodecParamStartBitrate, opusStartBitrateKbps);
-	opusCodec.SetParam(cricket::kCodecParamMaxBitrate, opusMaxBitrateKbps);
-	opusCodec.SetParam(cricket::kCodecParamUseInbandFec, 1);
-	opusCodec.SetParam(cricket::kCodecParamPTime, opusPTimeMs);
+        const uint8_t opusMinBitrateKbps = 6;
+        const uint8_t opusMaxBitrateKbps = 32;
+        const uint8_t opusStartBitrateKbps = 8;
+        const uint8_t opusPTimeMs = 120;
 
-	cricket::AudioSendParameters audioSendPrameters;
-	audioSendPrameters.codecs.push_back(opusCodec);
-	audioSendPrameters.extensions.emplace_back(webrtc::RtpExtension::kTransportSequenceNumberUri, 1);
-	audioSendPrameters.options.echo_cancellation = true;
-	//audioSendPrameters.options.experimental_ns = false;
-	audioSendPrameters.options.noise_suppression = true;
-	audioSendPrameters.options.auto_gain_control = true;
-	//audioSendPrameters.options.highpass_filter = false;
-	audioSendPrameters.options.typing_detection = false;
-	//audioSendPrameters.max_bandwidth_bps = 16000;
-	audioSendPrameters.rtcp.reduced_size = true;
-	audioSendPrameters.rtcp.remote_estimate = true;
-	_audioChannel->SetSendParameters(audioSendPrameters);
-	_audioChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcAudio.outgoing));
-	_audioChannel->SetInterface(_audioNetworkInterface.get());
+        cricket::AudioCodec opusCodec(opusSdpPayload, opusSdpName, opusClockrate, opusSdpBitrate, opusSdpChannels);
+        opusCodec.AddFeedbackParam(cricket::FeedbackParam(cricket::kRtcpFbParamTransportCc));
+        opusCodec.SetParam(cricket::kCodecParamMinBitrate, opusMinBitrateKbps);
+        opusCodec.SetParam(cricket::kCodecParamStartBitrate, opusStartBitrateKbps);
+        opusCodec.SetParam(cricket::kCodecParamMaxBitrate, opusMaxBitrateKbps);
+        opusCodec.SetParam(cricket::kCodecParamUseInbandFec, 1);
+        opusCodec.SetParam(cricket::kCodecParamPTime, opusPTimeMs);
 
-	cricket::AudioRecvParameters audioRecvParameters;
-	audioRecvParameters.codecs.emplace_back(opusSdpPayload, opusSdpName, opusClockrate, opusSdpBitrate, opusSdpChannels);
-	audioRecvParameters.extensions.emplace_back(webrtc::RtpExtension::kTransportSequenceNumberUri, 1);
-	audioRecvParameters.rtcp.reduced_size = true;
-	audioRecvParameters.rtcp.remote_estimate = true;
+        cricket::AudioSendParameters audioSendPrameters;
+        audioSendPrameters.codecs.push_back(opusCodec);
+        audioSendPrameters.extensions.emplace_back(webrtc::RtpExtension::kTransportSequenceNumberUri, 1);
+    #if WEBRTC_IOS
+        audioSendPrameters.options.echo_cancellation = false;
+        audioSendPrameters.options.auto_gain_control = false;
+    #else
+        audioSendPrameters.options.echo_cancellation = true;
+        audioSendPrameters.options.auto_gain_control = true;
+    #endif
+        //audioSendPrameters.options.experimental_ns = false;
+        audioSendPrameters.options.noise_suppression = true;
+        //audioSendPrameters.options.highpass_filter = false;
+        //audioSendPrameters.options.typing_detection = false;
+        //audioSendPrameters.max_bandwidth_bps = 16000;
+        audioSendPrameters.rtcp.reduced_size = true;
+        audioSendPrameters.rtcp.remote_estimate = true;
+        _audioChannel->SetSendParameters(audioSendPrameters);
+        _audioChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcAudio.outgoing));
+        _audioChannel->SetInterface(_audioNetworkInterface.get());
 
-	_audioChannel->SetRecvParameters(audioRecvParameters);
-    cricket::StreamParams audioRecvStreamParams = cricket::StreamParams::CreateLegacy(_ssrcAudio.incoming);
-    audioRecvStreamParams.set_stream_ids(streamIds);
-    _audioChannel->AddRecvStream(audioRecvStreamParams);
-	_audioChannel->SetPlayout(true);
+        cricket::AudioRecvParameters audioRecvParameters;
+        audioRecvParameters.codecs.emplace_back(opusSdpPayload, opusSdpName, opusClockrate, opusSdpBitrate, opusSdpChannels);
+        audioRecvParameters.extensions.emplace_back(webrtc::RtpExtension::kTransportSequenceNumberUri, 1);
+        audioRecvParameters.rtcp.reduced_size = true;
+        audioRecvParameters.rtcp.remote_estimate = true;
 
-	_videoChannel->SetInterface(_videoNetworkInterface.get());
+        _audioChannel->SetRecvParameters(audioRecvParameters);
+        cricket::StreamParams audioRecvStreamParams = cricket::StreamParams::CreateLegacy(_ssrcAudio.incoming);
+        audioRecvStreamParams.set_stream_ids(streamIds);
+        _audioChannel->AddRecvStream(audioRecvStreamParams);
+        _audioChannel->SetPlayout(true);
+
+        _videoChannel->SetInterface(_videoNetworkInterface.get());
+    });
 
     adjustBitratePreferences(true);
 }
@@ -436,13 +450,15 @@ void MediaManager::start() {
     // Here we hope that thread outlives the sink
     rtc::Thread *thread = _thread;
     std::unique_ptr<AudioTrackSinkInterfaceImpl> incomingSink(new AudioTrackSinkInterfaceImpl([weak, thread](float level) {
-        thread->PostTask(RTC_FROM_HERE, [weak, level] {
+        thread->PostTask([weak, level] {
             if (const auto strong = weak.lock()) {
                 strong->_currentAudioLevel = level;
             }
         });
     }));
-    _audioChannel->SetRawAudioSink(_ssrcAudio.incoming, std::move(incomingSink));
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        _audioChannel->SetRawAudioSink(_ssrcAudio.incoming, std::move(incomingSink));
+    });
 
     _sendSignalingMessage({ _myVideoFormats });
 
@@ -451,7 +467,7 @@ void MediaManager::start() {
     }
 
     beginStatsTimer(3000);
-    if (_audioLevelUpdated != nullptr) {
+    if (_audioLevelsUpdated != nullptr) {
         beginLevelsTimer(100);
     }
 }
@@ -461,44 +477,59 @@ MediaManager::~MediaManager() {
 
     RTC_LOG(LS_INFO) << "MediaManager::~MediaManager()";
 
-	_call->SignalChannelNetworkState(webrtc::MediaType::AUDIO, webrtc::kNetworkDown);
-	_call->SignalChannelNetworkState(webrtc::MediaType::VIDEO, webrtc::kNetworkDown);
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        _call->SignalChannelNetworkState(webrtc::MediaType::AUDIO, webrtc::kNetworkDown);
+        _call->SignalChannelNetworkState(webrtc::MediaType::VIDEO, webrtc::kNetworkDown);
 
-	_audioChannel->OnReadyToSend(false);
-	_audioChannel->SetSend(false);
-	_audioChannel->SetAudioSend(_ssrcAudio.outgoing, false, nullptr, &_audioSource);
+        _audioChannel->OnReadyToSend(false);
+        _audioChannel->SetSend(false);
+        _audioChannel->SetAudioSend(_ssrcAudio.outgoing, false, nullptr, &_audioSource);
 
-	_audioChannel->SetPlayout(false);
+        _audioChannel->SetPlayout(false);
 
-	_audioChannel->RemoveRecvStream(_ssrcAudio.incoming);
-	_audioChannel->RemoveSendStream(_ssrcAudio.outgoing);
+        _audioChannel->RemoveRecvStream(_ssrcAudio.incoming);
+        _audioChannel->RemoveSendStream(_ssrcAudio.outgoing);
 
-	_audioChannel->SetInterface(nullptr);
+        _audioChannel->SetInterface(nullptr);
+
+        _audioChannel.reset();
+    });
 
 	setSendVideo(nullptr);
 
     if (computeIsReceivingVideo()) {
-        _videoChannel->RemoveRecvStream(_ssrcVideo.incoming);
-        if (_enableFlexfec) {
-            _videoChannel->RemoveRecvStream(_ssrcVideo.fecIncoming);
-        }
+        StaticThreads::getWorkerThread()->BlockingCall([&] {
+            _videoChannel->RemoveRecvStream(_ssrcVideo.incoming);
+            if (_enableFlexfec) {
+                _videoChannel->RemoveRecvStream(_ssrcVideo.fecIncoming);
+            }
+        });
     }
 
     if (_didConfigureVideo) {
-        _videoChannel->OnReadyToSend(false);
-        _videoChannel->SetSend(false);
+        StaticThreads::getWorkerThread()->BlockingCall([&] {
+            _videoChannel->OnReadyToSend(false);
+            _videoChannel->SetSend(false);
 
-        if (_enableFlexfec) {
-            _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
-            _videoChannel->RemoveSendStream(_ssrcVideo.fecOutgoing);
-        } else {
-            _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
-        }
+            if (_enableFlexfec) {
+                _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
+                _videoChannel->RemoveSendStream(_ssrcVideo.fecOutgoing);
+            } else {
+                _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
+            }
+        });
     }
 
-    _videoChannel->SetInterface(nullptr);
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        _videoChannel->SetInterface(nullptr);
 
-    _audioDeviceModule = nullptr;
+        _videoChannel.reset();
+
+        _audioDeviceModule = nullptr;
+
+        _call.reset();
+        _mediaEngine.reset();
+    });
 }
 
 void MediaManager::setIsConnected(bool isConnected) {
@@ -512,22 +543,24 @@ void MediaManager::setIsConnected(bool isConnected) {
     }
 	_isConnected = isConnected;
 
-	if (_isConnected) {
-		_call->SignalChannelNetworkState(webrtc::MediaType::AUDIO, webrtc::kNetworkUp);
-		_call->SignalChannelNetworkState(webrtc::MediaType::VIDEO, webrtc::kNetworkUp);
-	} else {
-		_call->SignalChannelNetworkState(webrtc::MediaType::AUDIO, webrtc::kNetworkDown);
-		_call->SignalChannelNetworkState(webrtc::MediaType::VIDEO, webrtc::kNetworkDown);
-	}
-	if (_audioChannel) {
-		_audioChannel->OnReadyToSend(_isConnected);
-		_audioChannel->SetSend(_isConnected);
-		_audioChannel->SetAudioSend(_ssrcAudio.outgoing, _isConnected && (_outgoingAudioState == AudioState::Active), nullptr, &_audioSource);
-	}
-	if (computeIsSendingVideo() && _videoChannel) {
-		_videoChannel->OnReadyToSend(_isConnected);
-		_videoChannel->SetSend(_isConnected);
-	}
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        if (_isConnected) {
+            _call->SignalChannelNetworkState(webrtc::MediaType::AUDIO, webrtc::kNetworkUp);
+            _call->SignalChannelNetworkState(webrtc::MediaType::VIDEO, webrtc::kNetworkUp);
+        } else {
+            _call->SignalChannelNetworkState(webrtc::MediaType::AUDIO, webrtc::kNetworkDown);
+            _call->SignalChannelNetworkState(webrtc::MediaType::VIDEO, webrtc::kNetworkDown);
+        }
+        if (_audioChannel) {
+            _audioChannel->OnReadyToSend(_isConnected);
+            _audioChannel->SetSend(_isConnected);
+            _audioChannel->SetAudioSend(_ssrcAudio.outgoing, _isConnected && (_outgoingAudioState == AudioState::Active), nullptr, &_audioSource);
+        }
+        if (computeIsSendingVideo() && _videoChannel) {
+            _videoChannel->OnReadyToSend(_isConnected);
+            _videoChannel->SetSend(_isConnected);
+        }
+    });
     if (isFirstConnection) {
         sendVideoParametersMessage();
         sendOutgoingMediaStateMessage();
@@ -545,32 +578,35 @@ void MediaManager::sendOutgoingMediaStateMessage() {
 
 void MediaManager::beginStatsTimer(int timeoutMs) {
     const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+    _thread->PostDelayedTask([weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
         }
         strong->collectStats();
-    }, timeoutMs);
+    }, webrtc::TimeDelta::Millis(timeoutMs));
 }
 
 void MediaManager::beginLevelsTimer(int timeoutMs) {
     const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+    _thread->PostDelayedTask([weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
         }
 
-        float effectiveLevel = fmaxf(strong->_currentAudioLevel, strong->_currentMyAudioLevel);
-        strong->_audioLevelUpdated(effectiveLevel);
+        strong->_audioLevelsUpdated(strong->_currentMyAudioLevel, strong->_currentAudioLevel);
 
         strong->beginLevelsTimer(100);
-    }, timeoutMs);
+    }, webrtc::TimeDelta::Millis(timeoutMs));
 }
 
 void MediaManager::collectStats() {
-    auto stats = _call->GetStats();
+    webrtc::Call::Stats stats;
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        stats = _call->GetStats();
+    });
+
     float bitrateNorm = 16.0f;
     switch (_outgoingVideoState) {
         case VideoState::Active:
@@ -642,20 +678,27 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
     const auto wasReceiving = computeIsReceivingVideo();
 
     if (_videoCapture) {
-        GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated(nullptr);
+		_videoCaptureGuard = nullptr;
+		GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated(nullptr);
     }
     _videoCapture = videoCapture;
     if (_videoCapture) {
         _videoCapture->setPreferredAspectRatio(_preferredAspectRatio);
 
 		const auto thread = _thread;
-		const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
         const auto object = GetVideoCaptureAssumingSameThread(_videoCapture.get());
         _isScreenCapture = object->isScreenCapture();
+        _videoCaptureGuard = std::make_shared<bool>(true);
+        const auto guard = std::weak_ptr<bool>{_videoCaptureGuard};
 		object->setStateUpdated([=](VideoState state) {
-			thread->PostTask(RTC_FROM_HERE, [=] {
-				if (const auto strong = weak.lock()) {
-					strong->setOutgoingVideoState(state);
+			thread->PostTask([=] {
+				// Checking this special guard instead of weak_ptr(this)
+				// ensures that we won't call setOutgoingVideoState after
+				// the _videoCapture was already changed and the old
+				// stateUpdated was already null-ed, but the event
+				// at that time was already posted.
+				if (guard.lock()) {
+					setOutgoingVideoState(state);
 				}
 			});
 		});
@@ -666,23 +709,27 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
         setOutgoingVideoState(VideoState::Inactive);
     }
 
-    if (_enableFlexfec) {
-        _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
-        _videoChannel->RemoveSendStream(_ssrcVideo.fecOutgoing);
-    } else {
-        _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
-    }
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        if (_enableFlexfec) {
+            _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
+            _videoChannel->RemoveSendStream(_ssrcVideo.fecOutgoing);
+        } else {
+            _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
+        }
 
-    if (_enableFlexfec) {
-        cricket::StreamParams videoSendStreamParams;
-        cricket::SsrcGroup videoSendSsrcGroup(cricket::kFecFrSsrcGroupSemantics, {_ssrcVideo.outgoing, _ssrcVideo.fecOutgoing});
-        videoSendStreamParams.ssrcs = {_ssrcVideo.outgoing};
-        videoSendStreamParams.ssrc_groups.push_back(videoSendSsrcGroup);
-        videoSendStreamParams.cname = "cname";
-        _videoChannel->AddSendStream(videoSendStreamParams);
-    } else {
-        _videoChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcVideo.outgoing));
-    }
+        if (videoCapture) {
+            if (_enableFlexfec) {
+                cricket::StreamParams videoSendStreamParams;
+                cricket::SsrcGroup videoSendSsrcGroup(cricket::kFecFrSsrcGroupSemantics, {_ssrcVideo.outgoing, _ssrcVideo.fecOutgoing});
+                videoSendStreamParams.ssrcs = {_ssrcVideo.outgoing};
+                videoSendStreamParams.ssrc_groups.push_back(videoSendSsrcGroup);
+                videoSendStreamParams.cname = "cname";
+                _videoChannel->AddSendStream(videoSendStreamParams);
+            } else {
+                _videoChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcVideo.outgoing));
+            }
+        }
+    });
 
     checkIsSendingVideoChanged(wasSending);
     checkIsReceivingVideoChanged(wasReceiving);
@@ -747,18 +794,20 @@ void MediaManager::configureSendingVideoIfNeeded() {
             break;
     }
     videoSendParameters.rtcp.remote_estimate = true;
-    _videoChannel->SetSendParameters(videoSendParameters);
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        _videoChannel->SetSendParameters(videoSendParameters);
 
-    if (_enableFlexfec) {
-        cricket::StreamParams videoSendStreamParams;
-        cricket::SsrcGroup videoSendSsrcGroup(cricket::kFecFrSsrcGroupSemantics, {_ssrcVideo.outgoing, _ssrcVideo.fecOutgoing});
-        videoSendStreamParams.ssrcs = {_ssrcVideo.outgoing};
-        videoSendStreamParams.ssrc_groups.push_back(videoSendSsrcGroup);
-        videoSendStreamParams.cname = "cname";
-        _videoChannel->AddSendStream(videoSendStreamParams);
-    } else {
-        _videoChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcVideo.outgoing));
-    }
+        if (_enableFlexfec) {
+            cricket::StreamParams videoSendStreamParams;
+            cricket::SsrcGroup videoSendSsrcGroup(cricket::kFecFrSsrcGroupSemantics, {_ssrcVideo.outgoing, _ssrcVideo.fecOutgoing});
+            videoSendStreamParams.ssrcs = {_ssrcVideo.outgoing};
+            videoSendStreamParams.ssrc_groups.push_back(videoSendSsrcGroup);
+            videoSendStreamParams.cname = "cname";
+            _videoChannel->AddSendStream(videoSendStreamParams);
+        } else {
+            _videoChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcVideo.outgoing));
+        }
+    });
 
     adjustBitratePreferences(true);
 }
@@ -770,18 +819,24 @@ void MediaManager::checkIsSendingVideoChanged(bool wasSending) {
 	} else if (sending) {
         configureSendingVideoIfNeeded();
 
-        if (_enableFlexfec) {
-            _videoChannel->SetVideoSend(_ssrcVideo.outgoing, NULL, GetVideoCaptureAssumingSameThread(_videoCapture.get())->source());
-            _videoChannel->SetVideoSend(_ssrcVideo.fecOutgoing, NULL, nullptr);
-        } else {
-            _videoChannel->SetVideoSend(_ssrcVideo.outgoing, NULL, GetVideoCaptureAssumingSameThread(_videoCapture.get())->source());
-        }
+        rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source = GetVideoCaptureAssumingSameThread(_videoCapture.get())->source();
 
-		_videoChannel->OnReadyToSend(_isConnected);
-		_videoChannel->SetSend(_isConnected);
+        StaticThreads::getWorkerThread()->BlockingCall([&] {
+            if (_enableFlexfec) {
+                _videoChannel->SetVideoSend(_ssrcVideo.outgoing, NULL, source.get());
+                _videoChannel->SetVideoSend(_ssrcVideo.fecOutgoing, NULL, nullptr);
+            } else {
+                _videoChannel->SetVideoSend(_ssrcVideo.outgoing, NULL, source.get());
+            }
+
+            _videoChannel->OnReadyToSend(_isConnected);
+            _videoChannel->SetSend(_isConnected);
+        });
 	} else {
-		_videoChannel->SetVideoSend(_ssrcVideo.outgoing, NULL, nullptr);
-		_videoChannel->SetVideoSend(_ssrcVideo.fecOutgoing, NULL, nullptr);
+        StaticThreads::getWorkerThread()->BlockingCall([&] {
+            _videoChannel->SetVideoSend(_ssrcVideo.outgoing, NULL, nullptr);
+            _videoChannel->SetVideoSend(_ssrcVideo.fecOutgoing, NULL, nullptr);
+        });
 	}
 
     adjustBitratePreferences(true);
@@ -886,16 +941,21 @@ void MediaManager::checkIsReceivingVideoChanged(bool wasReceiving) {
         streamIds.push_back("1");
         videoRecvStreamParams.set_stream_ids(streamIds);
 
-        _videoChannel->SetRecvParameters(videoRecvParameters);
-        _videoChannel->AddRecvStream(videoRecvStreamParams);
         _readyToReceiveVideo = true;
-        _videoChannel->SetSink(_ssrcVideo.incoming, _incomingVideoSinkProxy.get());
+        StaticThreads::getWorkerThread()->BlockingCall([&] {
+            _videoChannel->SetRecvParameters(videoRecvParameters);
+            _videoChannel->AddRecvStream(videoRecvStreamParams);
+            _videoChannel->SetSink(_ssrcVideo.incoming, _incomingVideoSinkProxy.get());
+        });
     }
 }
 
 void MediaManager::setMuteOutgoingAudio(bool mute) {
 	setOutgoingAudioState(mute ? AudioState::Muted : AudioState::Active);
-	_audioChannel->SetAudioSend(_ssrcAudio.outgoing, _isConnected && (_outgoingAudioState == AudioState::Active), nullptr, &_audioSource);
+
+    StaticThreads::getWorkerThread()->BlockingCall([&] {
+        _audioChannel->SetAudioSend(_ssrcAudio.outgoing, _isConnected && (_outgoingAudioState == AudioState::Active), nullptr, &_audioSource);
+    });
 }
 
 void MediaManager::setOutgoingAudioState(AudioState state) {
@@ -926,19 +986,23 @@ void MediaManager::receiveMessage(DecryptedMessage &&message) {
         if (webrtc::IsRtcpPacket(audio->data)) {
             RTC_LOG(LS_VERBOSE) << "Deliver audio RTCP";
         }
-        if (webrtc::IsRtcpPacket(audio->data)) {
-            _call->Receiver()->DeliverPacket(webrtc::MediaType::ANY, audio->data, -1);
-        } else {
-            _call->Receiver()->DeliverPacket(webrtc::MediaType::AUDIO, audio->data, -1);
-        }
+        StaticThreads::getWorkerThread()->BlockingCall([&] {
+            if (webrtc::IsRtcpPacket(audio->data)) {
+                _call->Receiver()->DeliverPacket(webrtc::MediaType::ANY, audio->data, -1);
+            } else {
+                _call->Receiver()->DeliverPacket(webrtc::MediaType::AUDIO, audio->data, -1);
+            }
+        });
 	} else if (const auto video = absl::get_if<VideoDataMessage>(data)) {
 		if (_videoChannel) {
 			if (_readyToReceiveVideo) {
-                if (webrtc::IsRtcpPacket(video->data)) {
-                    _call->Receiver()->DeliverPacket(webrtc::MediaType::ANY, video->data, -1);
-                } else {
-                    _call->Receiver()->DeliverPacket(webrtc::MediaType::VIDEO, video->data, -1);
-                }
+                StaticThreads::getWorkerThread()->BlockingCall([&] {
+                    if (webrtc::IsRtcpPacket(video->data)) {
+                        _call->Receiver()->DeliverPacket(webrtc::MediaType::ANY, video->data, -1);
+                    } else {
+                        _call->Receiver()->DeliverPacket(webrtc::MediaType::VIDEO, video->data, -1);
+                    }
+                });
 			} else {
 				// maybe we need to queue packets for some time?
 			}

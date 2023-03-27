@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "api/crypto/crypto_options.h"
+#include "api/field_trials_view.h"
 #include "api/media_types.h"
 #include "api/rtp_parameters.h"
 #include "api/rtp_transceiver_direction.h"
@@ -33,11 +34,20 @@
 #include "pc/media_protocol_names.h"
 #include "pc/session_description.h"
 #include "pc/simulcast_description.h"
+#include "rtc_base/memory/always_valid_pointer.h"
 #include "rtc_base/unique_id_generator.h"
+
+namespace webrtc {
+
+// Forward declaration due to circular dependecy.
+class ConnectionContext;
+
+}  // namespace webrtc
 
 namespace cricket {
 
 class ChannelManager;
+class MediaEngineInterface;
 
 // Default RTCP CNAME for unit tests.
 const char kDefaultRtcpCname[] = "DefaultRtcpCname";
@@ -139,10 +149,11 @@ class MediaSessionDescriptionFactory {
   MediaSessionDescriptionFactory(const TransportDescriptionFactory* factory,
                                  rtc::UniqueRandomIdGenerator* ssrc_generator);
   // This helper automatically sets up the factory to get its configuration
-  // from the specified ChannelManager.
-  MediaSessionDescriptionFactory(ChannelManager* cmanager,
-                                 const TransportDescriptionFactory* factory,
-                                 rtc::UniqueRandomIdGenerator* ssrc_generator);
+  // from the specified MediaEngine
+  MediaSessionDescriptionFactory(cricket::MediaEngineInterface* media_engine,
+                                 bool rtx_enabled,
+                                 rtc::UniqueRandomIdGenerator* ssrc_generator,
+                                 const TransportDescriptionFactory* factory);
 
   const AudioCodecs& audio_sendrecv_codecs() const;
   const AudioCodecs& audio_send_codecs() const;
@@ -321,6 +332,10 @@ class MediaSessionDescriptionFactory {
 
   void ComputeVideoCodecsIntersectionAndUnion();
 
+  rtc::UniqueRandomIdGenerator* ssrc_generator() const {
+    return ssrc_generator_.get();
+  }
+
   bool is_unified_plan_ = false;
   AudioCodecs audio_send_codecs_;
   AudioCodecs audio_recv_codecs_;
@@ -334,8 +349,9 @@ class MediaSessionDescriptionFactory {
   VideoCodecs video_sendrecv_codecs_;
   // Union of send and recv.
   VideoCodecs all_video_codecs_;
-  // This object is not owned by the channel so it must outlive it.
-  rtc::UniqueRandomIdGenerator* const ssrc_generator_;
+  // This object may or may not be owned by this class.
+  webrtc::AlwaysValidPointer<rtc::UniqueRandomIdGenerator> const
+      ssrc_generator_;
   bool enable_encrypted_rtp_header_extensions_ = false;
   // TODO(zhihuang): Rename secure_ to sdec_policy_; rename the related getter
   // and setter.

@@ -79,7 +79,7 @@ class FirewallSocketServer : public SocketServer {
   Socket* CreateSocket(int family, int type) override;
 
   void SetMessageQueue(Thread* queue) override;
-  bool Wait(int cms, bool process_io) override;
+  bool Wait(webrtc::TimeDelta max_wait_duration, bool process_io) override;
   void WakeUp() override;
 
   Socket* WrapSocket(Socket* sock, int type);

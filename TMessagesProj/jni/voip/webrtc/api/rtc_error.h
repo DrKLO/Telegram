@@ -244,7 +244,7 @@ class RTCErrorOr {
   //
   // REQUIRES: !error.ok(). This requirement is DCHECKed.
   RTCErrorOr(RTCError&& error) : error_(std::move(error)) {  // NOLINT
-    RTC_DCHECK(!error.ok());
+    RTC_DCHECK(!error_.ok());
   }
 
   // Constructs a new RTCErrorOr with the given value. After calling this

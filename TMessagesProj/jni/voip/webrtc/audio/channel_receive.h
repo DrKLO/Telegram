@@ -53,7 +53,6 @@ class RtpRtcp;
 struct CallReceiveStatistics {
   unsigned int cumulativeLost;
   unsigned int jitterSamples;
-  int64_t rttMs;
   int64_t payload_bytes_rcvd = 0;
   int64_t header_and_padding_bytes_rcvd = 0;
   int packetsReceived;
@@ -83,7 +82,7 @@ namespace voe {
 
 class ChannelSendInterface;
 
-// Interface class needed for AudioReceiveStream tests that use a
+// Interface class needed for AudioReceiveStreamInterface tests that use a
 // MockChannelReceive.
 
 class ChannelReceiveInterface : public RtpPacketSinkInterface {
@@ -182,7 +181,6 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
     size_t jitter_buffer_max_packets,
     bool jitter_buffer_fast_playout,
     int jitter_buffer_min_delay_ms,
-    bool jitter_buffer_enable_rtx_handling,
     bool enable_non_sender_rtt,
     rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
     absl::optional<AudioCodecPairId> codec_pair_id,

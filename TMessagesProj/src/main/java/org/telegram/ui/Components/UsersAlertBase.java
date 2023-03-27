@@ -117,10 +117,6 @@ public class UsersAlertBase extends BottomSheet {
         containerView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 58 + 4, 0, 0));
 
         listView = new RecyclerListView(context) {
-            @Override
-            protected boolean allowSelectChildAtPosition(float x, float y) {
-                return isAllowSelectChildAtPosition(x, y);
-            }
 
             @Override
             public void setTranslationY(float translationY) {
@@ -194,10 +190,6 @@ public class UsersAlertBase extends BottomSheet {
         return new ContainerView(context);
     }
 
-    protected boolean isAllowSelectChildAtPosition(float x, float y) {
-        return y >= AndroidUtilities.dp(58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
-    }
-
     protected void updateColorKeys() {
 
     }
@@ -246,7 +238,7 @@ public class UsersAlertBase extends BottomSheet {
                 @Override
                 public boolean dispatchTouchEvent(MotionEvent event) {
                     MotionEvent e = MotionEvent.obtain(event);
-                    e.setLocation(e.getRawX(), e.getRawY() - containerView.getTranslationY());
+                    e.setLocation(e.getRawX(), e.getRawY() - listView.getMeasuredHeight());
                     if (e.getAction() == MotionEvent.ACTION_UP) {
                         e.setAction(MotionEvent.ACTION_CANCEL);
                     }

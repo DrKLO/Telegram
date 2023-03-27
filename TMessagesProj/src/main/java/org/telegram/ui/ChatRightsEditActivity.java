@@ -281,7 +281,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                                                                 defaultBannedRights.send_voices = defaultBannedRights.send_roundvideos = false;
             }
 
-            if (!defaultBannedRights.change_info) {
+            if (!defaultBannedRights.change_info && !isChannel) {
                 adminRights.change_info = true;
             }
             if (!defaultBannedRights.pin_messages) {
@@ -1020,7 +1020,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     }), ConnectionsManager.RequestFlagWithoutLogin);
                 } else if (error.text.equals("CHANNELS_TOO_MUCH")) {
                     if (getParentActivity() != null && !AccountInstance.getInstance(currentAccount).getUserConfig().isPremium()) {
-                        showDialog(new LimitReachedBottomSheet(this, getParentActivity(), LimitReachedBottomSheet.TYPE_TO_MANY_COMMUNITIES, currentAccount));
+                        showDialog(new LimitReachedBottomSheet(this, getParentActivity(), LimitReachedBottomSheet.TYPE_TO0_MANY_COMMUNITIES, currentAccount));
                     } else {
                         presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_EDIT));
                     }
@@ -1477,7 +1477,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                         return false;
                     }
                     if (position == changeInfoRow) {
-                        return myAdminRights.change_info && (defaultBannedRights == null || defaultBannedRights.change_info);
+                        return myAdminRights.change_info && (defaultBannedRights == null || defaultBannedRights.change_info || isChannel);
                     } else if (position == postMessagesRow) {
                         return myAdminRights.post_messages;
                     } else if (position == editMesagesRow) {
@@ -1725,7 +1725,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     } else if (position == changeInfoRow) {
                         if (currentType == TYPE_ADMIN || currentType == TYPE_ADD_BOT) {
                             if (isChannel) {
-                                checkCell.setTextAndCheck(LocaleController.getString("EditAdminChangeChannelInfo", R.string.EditAdminChangeChannelInfo), asAdminValue && adminRights.change_info || !defaultBannedRights.change_info, true);
+                                checkCell.setTextAndCheck(LocaleController.getString("EditAdminChangeChannelInfo", R.string.EditAdminChangeChannelInfo), asAdminValue && adminRights.change_info, true);
                             } else {
                                 checkCell.setTextAndCheck(LocaleController.getString("EditAdminChangeGroupInfo", R.string.EditAdminChangeGroupInfo), asAdminValue && adminRights.change_info || !defaultBannedRights.change_info, true);
                             }

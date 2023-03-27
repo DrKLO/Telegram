@@ -687,15 +687,16 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
                     env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onSignalBarsUpdated", "(I)V"), count);
                 });
             },
-            .audioLevelUpdated = [platformContext](float level) {
-                tgvoip::jni::DoWithJNI([platformContext, level](JNIEnv *env) {
+            .audioLevelsUpdated = [platformContext](float myAudioLevel, float audioLevel) {
+                tgvoip::jni::DoWithJNI([platformContext, myAudioLevel, audioLevel](JNIEnv *env) {
                     jintArray intArray = nullptr;
-                    jfloatArray floatArray = env->NewFloatArray(1);
+                    jfloatArray floatArray = env->NewFloatArray(2);
                     jbooleanArray boolArray = nullptr;
 
-                    jfloat floatFill[1];
-                    floatFill[0] = level;
-                    env->SetFloatArrayRegion(floatArray, 0, 1, floatFill);
+                    jfloat floatFill[2];
+                    floatFill[0] = myAudioLevel;
+                    floatFill[1] = audioLevel;
+                    env->SetFloatArrayRegion(floatArray, 0, 2, floatFill);
 
                     jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
                     env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onAudioLevelsUpdated", "([I[F[Z)V"), intArray, floatArray, boolArray);
@@ -718,12 +719,14 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
             },
             .platformContext = platformContext,
     };
+    descriptor.version = v;
 
     for (int i = 0, size = env->GetArrayLength(endpoints); i < size; i++) {
         JavaObject endpointObject(env, env->GetObjectArrayElement(endpoints, i));
         bool isRtc = endpointObject.getBooleanField("isRtc");
         if (isRtc) {
             RtcServer rtcServer;
+            rtcServer.id = static_cast<uint8_t>(endpointObject.getIntField("reflectorId"));
             rtcServer.host = tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("ipv4"));
             rtcServer.port = static_cast<uint16_t>(endpointObject.getIntField("port"));
             rtcServer.login = tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("username"));
@@ -731,6 +734,16 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
             rtcServer.isTurn = endpointObject.getBooleanField("turn");
             descriptor.rtcServers.push_back(std::move(rtcServer));
         } else {
+            RtcServer rtcServer;
+            rtcServer.id = static_cast<uint8_t>(endpointObject.getIntField("reflectorId"));
+            rtcServer.host = tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("ipv4"));
+            rtcServer.port = static_cast<uint16_t>(endpointObject.getIntField("port"));
+            rtcServer.login = tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("username"));
+            rtcServer.password = tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("password"));
+            rtcServer.isTurn = true;
+            rtcServer.isTcp = endpointObject.getBooleanField("tcp");
+            descriptor.rtcServers.push_back(std::move(rtcServer));
+
             Endpoint endpoint;
             endpoint.endpointId = endpointObject.getLongField("id");
             endpoint.host = EndpointHost{tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("ipv4")), tgvoip::jni::JavaStringToStdString(env, endpointObject.getStringField("ipv6"))};
@@ -742,7 +755,7 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
                 memcpy(endpoint.peerTag, peerTagBytes, 16);
                 env->ReleaseByteArrayElements(peerTag, peerTagBytes, JNI_ABORT);
             }
-            descriptor.endpoints.push_back(std::move(endpoint));
+           descriptor.endpoints.push_back(std::move(endpoint));
         }
     }
 

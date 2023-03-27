@@ -19,8 +19,8 @@
 #include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/include/video_codec_interface.h"
-#include "libvpx/vp8dx.h"
-#include "libvpx/vpx_decoder.h"
+#include <libvpx/vp8dx.h>
+#include <libvpx/vpx_decoder.h>
 
 namespace webrtc {
 
@@ -67,9 +67,6 @@ class LibvpxVp8Decoder : public VideoDecoder {
   bool key_frame_required_;
   const absl::optional<DeblockParams> deblock_params_;
   const std::unique_ptr<QpSmoother> qp_smoother_;
-
-  // Decoder should produce this format if possible.
-  const VideoFrameBuffer::Type preferred_output_format_;
 };
 
 }  // namespace webrtc

@@ -18,6 +18,7 @@
 
 #include "api/sequence_checker.h"
 #include "api/transport/network_types.h"
+#include "api/units/timestamp.h"
 #include "modules/include/module_common_types_public.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "rtc_base/network/sent_packet.h"
@@ -91,7 +92,7 @@ class TransportFeedbackAdapter {
   InFlightBytesTracker in_flight_;
 
   Timestamp current_offset_ = Timestamp::MinusInfinity();
-  TimeDelta last_timestamp_ = TimeDelta::MinusInfinity();
+  Timestamp last_timestamp_ = Timestamp::MinusInfinity();
 
   rtc::NetworkRoute network_route_;
 };

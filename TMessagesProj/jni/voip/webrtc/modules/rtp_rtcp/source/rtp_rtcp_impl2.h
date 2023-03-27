@@ -19,14 +19,15 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/rtp_headers.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/time_delta.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "modules/include/module_fec_types.h"
-#include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"  // RTCPPacketType
 #include "modules/rtp_rtcp/source/packet_sequencer.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/tmmb_item.h"
@@ -39,9 +40,7 @@
 #include "rtc_base/gtest_prod_util.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -113,9 +112,7 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
   // RtpRtcpInterface::Configuration::local_media_ssrc.
   uint32_t local_media_ssrc() const;
 
-  void SetRid(const std::string& rid) override;
-
-  void SetMid(const std::string& mid) override;
+  void SetMid(absl::string_view mid) override;
 
   void SetCsrcs(const std::vector<uint32_t>& csrcs) override;
 
@@ -157,6 +154,9 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
 
   std::vector<std::unique_ptr<RtpPacketToSend>> FetchFecPackets() override;
 
+  void OnAbortedRetransmissions(
+      rtc::ArrayView<const uint16_t> sequence_numbers) override;
+
   void OnPacketsAcknowledged(
       rtc::ArrayView<const uint16_t> sequence_numbers) override;
 
@@ -179,7 +179,7 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
   void SetRTCPStatus(RtcpMode method) override;
 
   // Set RTCP CName.
-  int32_t SetCNAME(const char* c_name) override;
+  int32_t SetCNAME(absl::string_view c_name) override;
 
   // Get remote NTP.
   int32_t RemoteNTP(uint32_t* received_ntp_secs,
@@ -322,8 +322,6 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
   // Send side
   int64_t nack_last_time_sent_full_ms_;
   uint16_t nack_last_seq_number_sent_;
-
-  RemoteBitrateEstimator* const remote_bitrate_;
 
   RtcpRttStats* const rtt_stats_;
   RepeatingTaskHandle rtt_update_task_ RTC_GUARDED_BY(worker_queue_);

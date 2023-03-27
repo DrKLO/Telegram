@@ -34,7 +34,7 @@ class MediaStreamObserver : public ObserverInterface {
           video_track_removed_callback);
   ~MediaStreamObserver() override;
 
-  const MediaStreamInterface* stream() const { return stream_; }
+  const MediaStreamInterface* stream() const { return stream_.get(); }
 
   void OnChanged() override;
 

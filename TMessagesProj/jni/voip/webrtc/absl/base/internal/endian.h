@@ -16,16 +16,9 @@
 #ifndef ABSL_BASE_INTERNAL_ENDIAN_H_
 #define ABSL_BASE_INTERNAL_ENDIAN_H_
 
-// The following guarantees declaration of the byte swap functions
-#ifdef _MSC_VER
-#include <stdlib.h>  // NOLINT(build/include)
-#elif defined(__FreeBSD__)
-#include <sys/endian.h>
-#elif defined(__GLIBC__)
-#include <byteswap.h>  // IWYU pragma: export
-#endif
-
 #include <cstdint>
+#include <cstdlib>
+
 #include "absl/base/casts.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/unaligned_access.h"
@@ -34,47 +27,11 @@
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
-// Use compiler byte-swapping intrinsics if they are available.  32-bit
-// and 64-bit versions are available in Clang and GCC as of GCC 4.3.0.
-// The 16-bit version is available in Clang and GCC only as of GCC 4.8.0.
-// For simplicity, we enable them all only for GCC 4.8.0 or later.
-#if defined(__clang__) || \
-    (defined(__GNUC__) && \
-     ((__GNUC__ == 4 && __GNUC_MINOR__ >= 8) || __GNUC__ >= 5))
 inline uint64_t gbswap_64(uint64_t host_int) {
+#if ABSL_HAVE_BUILTIN(__builtin_bswap64) || defined(__GNUC__)
   return __builtin_bswap64(host_int);
-}
-inline uint32_t gbswap_32(uint32_t host_int) {
-  return __builtin_bswap32(host_int);
-}
-inline uint16_t gbswap_16(uint16_t host_int) {
-  return __builtin_bswap16(host_int);
-}
-
 #elif defined(_MSC_VER)
-inline uint64_t gbswap_64(uint64_t host_int) {
   return _byteswap_uint64(host_int);
-}
-inline uint32_t gbswap_32(uint32_t host_int) {
-  return _byteswap_ulong(host_int);
-}
-inline uint16_t gbswap_16(uint16_t host_int) {
-  return _byteswap_ushort(host_int);
-}
-
-#else
-inline uint64_t gbswap_64(uint64_t host_int) {
-#if defined(__GNUC__) && defined(__x86_64__) && !defined(__APPLE__)
-  // Adapted from /usr/include/byteswap.h.  Not available on Mac.
-  if (__builtin_constant_p(host_int)) {
-    return __bswap_constant_64(host_int);
-  } else {
-    uint64_t result;
-    __asm__("bswap %0" : "=r"(result) : "0"(host_int));
-    return result;
-  }
-#elif defined(__GLIBC__)
-  return bswap_64(host_int);
 #else
   return (((host_int & uint64_t{0xFF}) << 56) |
           ((host_int & uint64_t{0xFF00}) << 40) |
@@ -84,12 +41,14 @@ inline uint64_t gbswap_64(uint64_t host_int) {
           ((host_int & uint64_t{0xFF0000000000}) >> 24) |
           ((host_int & uint64_t{0xFF000000000000}) >> 40) |
           ((host_int & uint64_t{0xFF00000000000000}) >> 56));
-#endif  // bswap_64
+#endif
 }
 
 inline uint32_t gbswap_32(uint32_t host_int) {
-#if defined(__GLIBC__)
-  return bswap_32(host_int);
+#if ABSL_HAVE_BUILTIN(__builtin_bswap32) || defined(__GNUC__)
+  return __builtin_bswap32(host_int);
+#elif defined(_MSC_VER)
+  return _byteswap_ulong(host_int);
 #else
   return (((host_int & uint32_t{0xFF}) << 24) |
           ((host_int & uint32_t{0xFF00}) << 8) |
@@ -99,33 +58,29 @@ inline uint32_t gbswap_32(uint32_t host_int) {
 }
 
 inline uint16_t gbswap_16(uint16_t host_int) {
-#if defined(__GLIBC__)
-  return bswap_16(host_int);
+#if ABSL_HAVE_BUILTIN(__builtin_bswap16) || defined(__GNUC__)
+  return __builtin_bswap16(host_int);
+#elif defined(_MSC_VER)
+  return _byteswap_ushort(host_int);
 #else
   return (((host_int & uint16_t{0xFF}) << 8) |
           ((host_int & uint16_t{0xFF00}) >> 8));
 #endif
 }
 
-#endif  // intrinsics available
-
 #ifdef ABSL_IS_LITTLE_ENDIAN
 
-// Definitions for ntohl etc. that don't require us to include
-// netinet/in.h. We wrap gbswap_32 and gbswap_16 in functions rather
-// than just #defining them because in debug mode, gcc doesn't
-// correctly handle the (rather involved) definitions of bswap_32.
-// gcc guarantees that inline functions are as fast as macros, so
-// this isn't a performance hit.
+// Portable definitions for htonl (host-to-network) and friends on little-endian
+// architectures.
 inline uint16_t ghtons(uint16_t x) { return gbswap_16(x); }
 inline uint32_t ghtonl(uint32_t x) { return gbswap_32(x); }
 inline uint64_t ghtonll(uint64_t x) { return gbswap_64(x); }
 
 #elif defined ABSL_IS_BIG_ENDIAN
 
-// These definitions are simpler on big-endian machines
-// These are functions instead of macros to avoid self-assignment warnings
-// on calls such as "i = ghtnol(i);".  This also provides type checking.
+// Portable definitions for htonl (host-to-network) etc on big-endian
+// architectures. These definitions are simpler since the host byte order is the
+// same as network byte order.
 inline uint16_t ghtons(uint16_t x) { return x; }
 inline uint32_t ghtonl(uint32_t x) { return x; }
 inline uint64_t ghtonll(uint64_t x) { return x; }

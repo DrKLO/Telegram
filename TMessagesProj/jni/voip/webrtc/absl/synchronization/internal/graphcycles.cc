@@ -181,9 +181,9 @@ class NodeSet {
     return true;
   }
 
-  void erase(uint32_t v) {
+  void erase(int32_t v) {
     uint32_t i = FindIndex(v);
-    if (static_cast<uint32_t>(table_[i]) == v) {
+    if (table_[i] == v) {
       table_[i] = kDel;
     }
   }
@@ -195,7 +195,7 @@ class NodeSet {
   for (int32_t elem, _cursor = 0; (eset).Next(&_cursor, &elem); )
   bool Next(int32_t* cursor, int32_t* elem) {
     while (static_cast<uint32_t>(*cursor) < table_.size()) {
-      int32_t v = table_[*cursor];
+      int32_t v = table_[static_cast<uint32_t>(*cursor)];
       (*cursor)++;
       if (v >= 0) {
         *elem = v;
@@ -210,24 +210,26 @@ class NodeSet {
   Vec<int32_t> table_;
   uint32_t occupied_;     // Count of non-empty slots (includes deleted slots)
 
-  static uint32_t Hash(uint32_t a) { return a * 41; }
+  static uint32_t Hash(int32_t a) { return static_cast<uint32_t>(a * 41); }
 
   // Return index for storing v.  May return an empty index or deleted index
-  int FindIndex(int32_t v) const {
+  uint32_t FindIndex(int32_t v) const {
     // Search starting at hash index.
     const uint32_t mask = table_.size() - 1;
     uint32_t i = Hash(v) & mask;
-    int deleted_index = -1;  // If >= 0, index of first deleted element we see
+    uint32_t deleted_index = 0;  // index of first deleted element we see
+    bool seen_deleted_element = false;
     while (true) {
       int32_t e = table_[i];
       if (v == e) {
         return i;
       } else if (e == kEmpty) {
         // Return any previously encountered deleted slot.
-        return (deleted_index >= 0) ? deleted_index : i;
-      } else if (e == kDel && deleted_index < 0) {
+        return seen_deleted_element ? deleted_index : i;
+      } else if (e == kDel && !seen_deleted_element) {
         // Keep searching since v might be present later.
         deleted_index = i;
+        seen_deleted_element = true;
       }
       i = (i + 1) & mask;  // Linear probing; quadratic is slightly slower.
     }
@@ -268,7 +270,7 @@ inline GraphId MakeId(int32_t index, uint32_t version) {
 }
 
 inline int32_t NodeIndex(GraphId id) {
-  return static_cast<uint32_t>(id.handle & 0xfffffffful);
+  return static_cast<int32_t>(id.handle);
 }
 
 inline uint32_t NodeVersion(GraphId id) {
@@ -298,7 +300,7 @@ class PointerMap {
   int32_t Find(void* ptr) {
     auto masked = base_internal::HidePtr(ptr);
     for (int32_t i = table_[Hash(ptr)]; i != -1;) {
-      Node* n = (*nodes_)[i];
+      Node* n = (*nodes_)[static_cast<uint32_t>(i)];
       if (n->masked_ptr == masked) return i;
       i = n->next_hash;
     }
@@ -307,7 +309,7 @@ class PointerMap {
 
   void Add(void* ptr, int32_t i) {
     int32_t* head = &table_[Hash(ptr)];
-    (*nodes_)[i]->next_hash = *head;
+    (*nodes_)[static_cast<uint32_t>(i)]->next_hash = *head;
     *head = i;
   }
 
@@ -317,7 +319,7 @@ class PointerMap {
     auto masked = base_internal::HidePtr(ptr);
     for (int32_t* slot = &table_[Hash(ptr)]; *slot != -1; ) {
       int32_t index = *slot;
-      Node* n = (*nodes_)[index];
+      Node* n = (*nodes_)[static_cast<uint32_t>(index)];
       if (n->masked_ptr == masked) {
         *slot = n->next_hash;  // Remove n from linked list
         n->next_hash = -1;
@@ -358,7 +360,7 @@ struct GraphCycles::Rep {
 };
 
 static Node* FindNode(GraphCycles::Rep* rep, GraphId id) {
-  Node* n = rep->nodes_[NodeIndex(id)];
+  Node* n = rep->nodes_[static_cast<uint32_t>(NodeIndex(id))];
   return (n->version == NodeVersion(id)) ? n : nullptr;
 }
 
@@ -393,7 +395,7 @@ bool GraphCycles::CheckInvariants() const {
       ABSL_RAW_LOG(FATAL, "Duplicate occurrence of rank %d", nx->rank);
     }
     HASH_FOR_EACH(y, nx->out) {
-      Node* ny = r->nodes_[y];
+      Node* ny = r->nodes_[static_cast<uint32_t>(y)];
       if (nx->rank >= ny->rank) {
         ABSL_RAW_LOG(FATAL, "Edge %u->%d has bad rank assignment %d->%d", x, y,
                      nx->rank, ny->rank);
@@ -406,14 +408,14 @@ bool GraphCycles::CheckInvariants() const {
 GraphId GraphCycles::GetId(void* ptr) {
   int32_t i = rep_->ptrmap_.Find(ptr);
   if (i != -1) {
-    return MakeId(i, rep_->nodes_[i]->version);
+    return MakeId(i, rep_->nodes_[static_cast<uint32_t>(i)]->version);
   } else if (rep_->free_nodes_.empty()) {
     Node* n =
         new (base_internal::LowLevelAlloc::AllocWithArena(sizeof(Node), arena))
             Node;
     n->version = 1;  // Avoid 0 since it is used by InvalidGraphId()
     n->visited = false;
-    n->rank = rep_->nodes_.size();
+    n->rank = static_cast<int32_t>(rep_->nodes_.size());
     n->masked_ptr = base_internal::HidePtr(ptr);
     n->nstack = 0;
     n->priority = 0;
@@ -425,7 +427,7 @@ GraphId GraphCycles::GetId(void* ptr) {
     // a permutation of [0,rep_->nodes_.size()-1].
     int32_t r = rep_->free_nodes_.back();
     rep_->free_nodes_.pop_back();
-    Node* n = rep_->nodes_[r];
+    Node* n = rep_->nodes_[static_cast<uint32_t>(r)];
     n->masked_ptr = base_internal::HidePtr(ptr);
     n->nstack = 0;
     n->priority = 0;
@@ -439,12 +441,12 @@ void GraphCycles::RemoveNode(void* ptr) {
   if (i == -1) {
     return;
   }
-  Node* x = rep_->nodes_[i];
+  Node* x = rep_->nodes_[static_cast<uint32_t>(i)];
   HASH_FOR_EACH(y, x->out) {
-    rep_->nodes_[y]->in.erase(i);
+    rep_->nodes_[static_cast<uint32_t>(y)]->in.erase(i);
   }
   HASH_FOR_EACH(y, x->in) {
-    rep_->nodes_[y]->out.erase(i);
+    rep_->nodes_[static_cast<uint32_t>(y)]->out.erase(i);
   }
   x->in.clear();
   x->out.clear();
@@ -520,7 +522,7 @@ bool GraphCycles::InsertEdge(GraphId idx, GraphId idy) {
     // Since we do not call Reorder() on this path, clear any visited
     // markers left by ForwardDFS.
     for (const auto& d : r->deltaf_) {
-      r->nodes_[d]->visited = false;
+      r->nodes_[static_cast<uint32_t>(d)]->visited = false;
     }
     return false;
   }
@@ -538,14 +540,14 @@ static bool ForwardDFS(GraphCycles::Rep* r, int32_t n, int32_t upper_bound) {
   while (!r->stack_.empty()) {
     n = r->stack_.back();
     r->stack_.pop_back();
-    Node* nn = r->nodes_[n];
+    Node* nn = r->nodes_[static_cast<uint32_t>(n)];
     if (nn->visited) continue;
 
     nn->visited = true;
     r->deltaf_.push_back(n);
 
     HASH_FOR_EACH(w, nn->out) {
-      Node* nw = r->nodes_[w];
+      Node* nw = r->nodes_[static_cast<uint32_t>(w)];
       if (nw->rank == upper_bound) {
         return false;  // Cycle
       }
@@ -564,14 +566,14 @@ static void BackwardDFS(GraphCycles::Rep* r, int32_t n, int32_t lower_bound) {
   while (!r->stack_.empty()) {
     n = r->stack_.back();
     r->stack_.pop_back();
-    Node* nn = r->nodes_[n];
+    Node* nn = r->nodes_[static_cast<uint32_t>(n)];
     if (nn->visited) continue;
 
     nn->visited = true;
     r->deltab_.push_back(n);
 
     HASH_FOR_EACH(w, nn->in) {
-      Node* nw = r->nodes_[w];
+      Node* nw = r->nodes_[static_cast<uint32_t>(w)];
       if (!nw->visited && lower_bound < nw->rank) {
         r->stack_.push_back(w);
       }
@@ -596,7 +598,7 @@ static void Reorder(GraphCycles::Rep* r) {
 
   // Assign the ranks in order to the collected list.
   for (uint32_t i = 0; i < r->list_.size(); i++) {
-    r->nodes_[r->list_[i]]->rank = r->merged_[i];
+    r->nodes_[static_cast<uint32_t>(r->list_[i])]->rank = r->merged_[i];
   }
 }
 
@@ -604,7 +606,8 @@ static void Sort(const Vec<Node*>& nodes, Vec<int32_t>* delta) {
   struct ByRank {
     const Vec<Node*>* nodes;
     bool operator()(int32_t a, int32_t b) const {
-      return (*nodes)[a]->rank < (*nodes)[b]->rank;
+      return (*nodes)[static_cast<uint32_t>(a)]->rank <
+             (*nodes)[static_cast<uint32_t>(b)]->rank;
     }
   };
   ByRank cmp;
@@ -616,8 +619,10 @@ static void MoveToList(
     GraphCycles::Rep* r, Vec<int32_t>* src, Vec<int32_t>* dst) {
   for (auto& v : *src) {
     int32_t w = v;
-    v = r->nodes_[w]->rank;         // Replace v entry with its rank
-    r->nodes_[w]->visited = false;  // Prepare for future DFS calls
+    // Replace v entry with its rank
+    v = r->nodes_[static_cast<uint32_t>(w)]->rank;
+    // Prepare for future DFS calls
+    r->nodes_[static_cast<uint32_t>(w)]->visited = false;
     dst->push_back(w);
   }
 }
@@ -647,7 +652,8 @@ int GraphCycles::FindPath(GraphId idx, GraphId idy, int max_path_len,
     }
 
     if (path_len < max_path_len) {
-      path[path_len] = MakeId(n, rep_->nodes_[n]->version);
+      path[path_len] =
+          MakeId(n, rep_->nodes_[static_cast<uint32_t>(n)]->version);
     }
     path_len++;
     r->stack_.push_back(-1);  // Will remove tentative path entry
@@ -656,7 +662,7 @@ int GraphCycles::FindPath(GraphId idx, GraphId idy, int max_path_len,
       return path_len;
     }
 
-    HASH_FOR_EACH(w, r->nodes_[n]->out) {
+    HASH_FOR_EACH(w, r->nodes_[static_cast<uint32_t>(n)]->out) {
       if (seen.insert(w)) {
         r->stack_.push_back(w);
       }

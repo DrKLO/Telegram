@@ -60,7 +60,11 @@ ABSL_NAMESPACE_END
 // The ABSL_DECLARE_FLAG(type, name) macro expands to:
 //
 //   extern absl::Flag<type> FLAGS_name;
-#define ABSL_DECLARE_FLAG(type, name)                        \
+#define ABSL_DECLARE_FLAG(type, name) ABSL_DECLARE_FLAG_INTERNAL(type, name)
+
+// Internal implementation of ABSL_DECLARE_FLAG to allow macro expansion of its
+// arguments. Clients must use ABSL_DECLARE_FLAG instead.
+#define ABSL_DECLARE_FLAG_INTERNAL(type, name)               \
   extern absl::Flag<type> FLAGS_##name;                      \
   namespace absl /* block flags in namespaces */ {}          \
   /* second redeclaration is to allow applying attributes */ \

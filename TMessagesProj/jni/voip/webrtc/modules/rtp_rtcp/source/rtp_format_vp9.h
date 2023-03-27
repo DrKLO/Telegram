@@ -30,7 +30,6 @@
 #include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -42,6 +41,9 @@ class RtpPacketizerVp9 : public RtpPacketizer {
                    const RTPVideoHeaderVP9& hdr);
 
   ~RtpPacketizerVp9() override;
+
+  RtpPacketizerVp9(const RtpPacketizerVp9&) = delete;
+  RtpPacketizerVp9& operator=(const RtpPacketizerVp9&) = delete;
 
   size_t NumPackets() const override;
 
@@ -64,8 +66,6 @@ class RtpPacketizerVp9 : public RtpPacketizer {
   rtc::ArrayView<const uint8_t> remaining_payload_;
   std::vector<int> payload_sizes_;
   std::vector<int>::const_iterator current_packet_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RtpPacketizerVp9);
 };
 
 }  // namespace webrtc

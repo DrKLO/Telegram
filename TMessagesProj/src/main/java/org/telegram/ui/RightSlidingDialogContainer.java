@@ -119,16 +119,11 @@ public abstract class RightSlidingDialogContainer extends FrameLayout {
                 });
                 openAnimator.setDuration(250);
                 openAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                openAnimator.setStartDelay(50);
+                openAnimator.setStartDelay(SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 50 : 150);
                 openAnimator.start();
             }
 
-            fragment.setPreviewDelegate(new BaseFragment.PreviewDelegate() {
-                @Override
-                public void finishFragment() {
-                    finishPreview();
-                }
-            });
+            fragment.setPreviewDelegate(() -> finishPreview());
         }
     }
 

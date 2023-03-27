@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -39,7 +40,13 @@ public class BlurredFrameLayout extends FrameLayout {
             View view = this;
             while (view != sizeNotifierFrameLayout) {
                 y += view.getY();
-                view = (View) view.getParent();
+                ViewParent parent = view.getParent();
+                if (parent instanceof View) {
+                    view = (View) parent;
+                } else {
+                    super.dispatchDraw(canvas);
+                    return;
+                }
             }
             sizeNotifierFrameLayout.drawBlurRect(canvas, y, AndroidUtilities.rectTmp2, backgroundPaint, isTopView);
         }

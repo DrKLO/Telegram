@@ -150,11 +150,11 @@ public class ViewPagerFixed extends FrameLayout {
                 updateViewForIndex(1);
 
                 onTabPageSelected(page);
-
+                int trasnlationX = viewPages[0] != null ? viewPages[0].getMeasuredWidth() : 0;
                 if (forward) {
-                    viewPages[1].setTranslationX(viewPages[0].getMeasuredWidth());
+                    viewPages[1].setTranslationX(trasnlationX);
                 } else {
-                    viewPages[1].setTranslationX(-viewPages[0].getMeasuredWidth());
+                    viewPages[1].setTranslationX(-trasnlationX);
                 }
             }
 

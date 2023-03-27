@@ -111,7 +111,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesCtrDecryption(JNIEnv *en
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, JNI_ABORT);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_aesCtrDecryptionByteArray(JNIEnv *env, jclass class, jbyteArray buffer, jbyteArray key, jbyteArray iv, jint offset, jint length, jint fileOffset) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_aesCtrDecryptionByteArray(JNIEnv *env, jclass class, jbyteArray buffer, jbyteArray key, jbyteArray iv, jint offset, jlong length, jint fileOffset) {
     unsigned char *bufferBuff = (unsigned char *) (*env)->GetByteArrayElements(env, buffer, NULL);
     unsigned char *keyBuff = (unsigned char *) (*env)->GetByteArrayElements(env, key, NULL);
     unsigned char *ivBuff = (unsigned char *) (*env)->GetByteArrayElements(env, iv, NULL);

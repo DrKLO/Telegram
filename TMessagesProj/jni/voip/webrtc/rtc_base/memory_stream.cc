@@ -128,7 +128,9 @@ StreamResult MemoryStream::DoReserve(size_t size, int* error) {
     return SR_SUCCESS;
 
   if (char* new_buffer = new char[size]) {
-    memcpy(new_buffer, buffer_, data_length_);
+    if (buffer_ != nullptr && data_length_ > 0) {
+      memcpy(new_buffer, buffer_, data_length_);
+    }
     delete[] buffer_;
     buffer_ = new_buffer;
     buffer_length_ = size;

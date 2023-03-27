@@ -18,7 +18,6 @@
 #include "api/scoped_refptr.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_count.h"
-#include "rtc_base/ref_counted_object.h"
 
 #if defined(WEBRTC_AUDIO_DEVICE_INCLUDE_ANDROID_AAUDIO)
 #include "sdk/android/src/jni/audio_device/aaudio_player.h"

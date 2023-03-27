@@ -15,11 +15,13 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -29,37 +31,17 @@ import java.nio.ShortBuffer;
  */
 public final class SonicAudioProcessor implements AudioProcessor {
 
-  /**
-   * The maximum allowed playback speed in {@link #setSpeed(float)}.
-   */
-  public static final float MAXIMUM_SPEED = 8.0f;
-  /**
-   * The minimum allowed playback speed in {@link #setSpeed(float)}.
-   */
-  public static final float MINIMUM_SPEED = 0.1f;
-  /**
-   * The maximum allowed pitch in {@link #setPitch(float)}.
-   */
-  public static final float MAXIMUM_PITCH = 8.0f;
-  /**
-   * The minimum allowed pitch in {@link #setPitch(float)}.
-   */
-  public static final float MINIMUM_PITCH = 0.1f;
-  /**
-   * Indicates that the output sample rate should be the same as the input.
-   */
+  /** Indicates that the output sample rate should be the same as the input. */
   public static final int SAMPLE_RATE_NO_CHANGE = -1;
 
-  /**
-   * The threshold below which the difference between two pitch/speed factors is negligible.
-   */
-  private static final float CLOSE_THRESHOLD = 0.01f;
+  /** The threshold below which the difference between two pitch/speed factors is negligible. */
+  private static final float CLOSE_THRESHOLD = 0.0001f;
 
   /**
-   * The minimum number of output bytes at which the speedup is calculated using the input/output
-   * byte counts, rather than using the current playback parameters speed.
+   * The minimum number of output bytes required for duration scaling to be calculated using the
+   * input and output byte counts, rather than using the current playback speed.
    */
-  private static final int MIN_BYTES_FOR_SPEEDUP_CALCULATION = 1024;
+  private static final int MIN_BYTES_FOR_DURATION_SCALING_CALCULATION = 1024;
 
   private int pendingOutputSampleRate;
   private float speed;
@@ -79,9 +61,7 @@ public final class SonicAudioProcessor implements AudioProcessor {
   private long outputBytes;
   private boolean inputEnded;
 
-  /**
-   * Creates a new Sonic audio processor.
-   */
+  /** Creates a new Sonic audio processor. */
   public SonicAudioProcessor() {
     speed = 1f;
     pitch = 1f;
@@ -96,37 +76,31 @@ public final class SonicAudioProcessor implements AudioProcessor {
   }
 
   /**
-   * Sets the playback speed. This method may only be called after draining data through the
+   * Sets the target playback speed. This method may only be called after draining data through the
    * processor. The value returned by {@link #isActive()} may change, and the processor must be
    * {@link #flush() flushed} before queueing more data.
    *
-   * @param speed The requested new playback speed.
-   * @return The actual new playback speed.
+   * @param speed The target factor by which playback should be sped up.
    */
-  public float setSpeed(float speed) {
-    speed = Util.constrainValue(speed, MINIMUM_SPEED, MAXIMUM_SPEED);
+  public void setSpeed(float speed) {
     if (this.speed != speed) {
       this.speed = speed;
       pendingSonicRecreation = true;
     }
-    return speed;
   }
 
   /**
-   * Sets the playback pitch. This method may only be called after draining data through the
+   * Sets the target playback pitch. This method may only be called after draining data through the
    * processor. The value returned by {@link #isActive()} may change, and the processor must be
    * {@link #flush() flushed} before queueing more data.
    *
-   * @param pitch The requested new pitch.
-   * @return The actual new pitch.
+   * @param pitch The target pitch.
    */
-  public float setPitch(float pitch) {
-    pitch = Util.constrainValue(pitch, MINIMUM_PITCH, MAXIMUM_PITCH);
+  public void setPitch(float pitch) {
     if (this.pitch != pitch) {
       this.pitch = pitch;
       pendingSonicRecreation = true;
     }
-    return pitch;
   }
 
   /**
@@ -142,27 +116,32 @@ public final class SonicAudioProcessor implements AudioProcessor {
   }
 
   /**
-   * Returns the specified duration scaled to take into account the speedup factor of this instance,
-   * in the same units as {@code duration}.
+   * Returns the media duration corresponding to the specified playout duration, taking speed
+   * adjustment into account.
    *
-   * @param duration The duration to scale taking into account speedup.
-   * @return The specified duration scaled to take into account speedup, in the same units as
-   *     {@code duration}.
+   * <p>The scaling performed by this method will use the actual playback speed achieved by the
+   * audio processor, on average, since it was last flushed. This may differ very slightly from the
+   * target playback speed.
+   *
+   * @param playoutDuration The playout duration to scale.
+   * @return The corresponding media duration, in the same units as {@code duration}.
    */
-  public long scaleDurationForSpeedup(long duration) {
-    if (outputBytes >= MIN_BYTES_FOR_SPEEDUP_CALCULATION) {
+  public long getMediaDuration(long playoutDuration) {
+    if (outputBytes >= MIN_BYTES_FOR_DURATION_SCALING_CALCULATION) {
+      long processedInputBytes = inputBytes - checkNotNull(sonic).getPendingInputBytes();
       return outputAudioFormat.sampleRate == inputAudioFormat.sampleRate
-          ? Util.scaleLargeTimestamp(duration, inputBytes, outputBytes)
+          ? Util.scaleLargeTimestamp(playoutDuration, processedInputBytes, outputBytes)
           : Util.scaleLargeTimestamp(
-              duration,
-              inputBytes * outputAudioFormat.sampleRate,
+              playoutDuration,
+              processedInputBytes * outputAudioFormat.sampleRate,
               outputBytes * inputAudioFormat.sampleRate);
     } else {
-      return (long) ((double) speed * duration);
+      return (long) ((double) speed * playoutDuration);
     }
   }
 
   @Override
+  @CanIgnoreReturnValue
   public AudioFormat configure(AudioFormat inputAudioFormat) throws UnhandledAudioFormatException {
     if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
       throw new UnhandledAudioFormatException(inputAudioFormat);
@@ -188,32 +167,20 @@ public final class SonicAudioProcessor implements AudioProcessor {
 
   @Override
   public void queueInput(ByteBuffer inputBuffer) {
-    Sonic sonic = Assertions.checkNotNull(this.sonic);
-    if (inputBuffer.hasRemaining()) {
-      ShortBuffer shortBuffer = inputBuffer.asShortBuffer();
-      int inputSize = inputBuffer.remaining();
-      inputBytes += inputSize;
-      sonic.queueInput(shortBuffer);
-      inputBuffer.position(inputBuffer.position() + inputSize);
+    if (!inputBuffer.hasRemaining()) {
+      return;
     }
-    int outputSize = sonic.getOutputSize();
-    if (outputSize > 0) {
-      if (buffer.capacity() < outputSize) {
-        buffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder());
-        shortBuffer = buffer.asShortBuffer();
-      } else {
-        buffer.clear();
-        shortBuffer.clear();
-      }
-      sonic.getOutput(shortBuffer);
-      outputBytes += outputSize;
-      buffer.limit(outputSize);
-      outputBuffer = buffer;
-    }
+    Sonic sonic = checkNotNull(this.sonic);
+    ShortBuffer shortBuffer = inputBuffer.asShortBuffer();
+    int inputSize = inputBuffer.remaining();
+    inputBytes += inputSize;
+    sonic.queueInput(shortBuffer);
+    inputBuffer.position(inputBuffer.position() + inputSize);
   }
 
   @Override
   public void queueEndOfStream() {
+    // TODO(internal b/174554082): assert sonic is non-null here and in getOutput.
     if (sonic != null) {
       sonic.queueEndOfStream();
     }
@@ -222,6 +189,23 @@ public final class SonicAudioProcessor implements AudioProcessor {
 
   @Override
   public ByteBuffer getOutput() {
+    @Nullable Sonic sonic = this.sonic;
+    if (sonic != null) {
+      int outputSize = sonic.getOutputSize();
+      if (outputSize > 0) {
+        if (buffer.capacity() < outputSize) {
+          buffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder());
+          shortBuffer = buffer.asShortBuffer();
+        } else {
+          buffer.clear();
+          shortBuffer.clear();
+        }
+        sonic.getOutput(shortBuffer);
+        outputBytes += outputSize;
+        buffer.limit(outputSize);
+        outputBuffer = buffer;
+      }
+    }
     ByteBuffer outputBuffer = this.outputBuffer;
     this.outputBuffer = EMPTY_BUFFER;
     return outputBuffer;
@@ -273,5 +257,4 @@ public final class SonicAudioProcessor implements AudioProcessor {
     outputBytes = 0;
     inputEnded = false;
   }
-
 }

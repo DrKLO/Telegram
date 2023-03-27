@@ -226,13 +226,15 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
                 sunDrawable.setCustomEndFrame(0);
             }
             darkThemeView.playAnimation();
-            if (Theme.selectedAutoNightType != Theme.AUTO_NIGHT_TYPE_NONE) {
-                Toast.makeText(getContext(), LocaleController.getString("AutoNightModeOff", R.string.AutoNightModeOff), Toast.LENGTH_SHORT).show();
-                Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
-                Theme.saveAutoNightThemeConfig();
-                Theme.cancelAutoNightThemeCallbacks();
-            }
             switchTheme(themeInfo, toDark);
+
+            if (drawerLayoutContainer != null ) {
+                FrameLayout layout = drawerLayoutContainer.getParent() instanceof FrameLayout ? (FrameLayout) drawerLayoutContainer.getParent() : null;
+                Theme.turnOffAutoNight(layout, () -> {
+                    drawerLayoutContainer.closeDrawer(false);
+                    drawerLayoutContainer.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
+                });
+            }
         });
         darkThemeView.setOnLongClickListener(e -> {
             if (drawerLayoutContainer != null) {
@@ -641,7 +643,6 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             NotificationCenter.getInstance(lastAccount = account).addObserver(this, NotificationCenter.userEmojiStatusUpdated);
             NotificationCenter.getInstance(lastAccount = account).addObserver(this, NotificationCenter.updateInterfaces);
         }
-
         lastUser = user;
         if (user == null) {
             return;

@@ -12,7 +12,7 @@
 #include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
-std::string FieldTrialBasedConfig::Lookup(absl::string_view key) const {
+std::string FieldTrialBasedConfig::GetValue(absl::string_view key) const {
   return webrtc::field_trial::FindFullName(std::string(key));
 }
 }  // namespace webrtc

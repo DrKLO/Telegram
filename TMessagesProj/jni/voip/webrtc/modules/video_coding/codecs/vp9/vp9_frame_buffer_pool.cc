@@ -15,9 +15,9 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "libvpx/vpx_codec.h"
-#include "libvpx/vpx_decoder.h"
-#include "libvpx/vpx_frame_buffer.h"
+#include <libvpx/vpx_codec.h>
+#include <libvpx/vpx_decoder.h>
+#include <libvpx/vpx_frame_buffer.h>
 
 namespace webrtc {
 

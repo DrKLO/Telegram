@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -47,7 +47,7 @@ class ControllerManagerImpl final : public ControllerManager {
   };
 
   static std::unique_ptr<ControllerManager> Create(
-      const std::string& config_string,
+      absl::string_view config_string,
       size_t num_encoder_channels,
       rtc::ArrayView<const int> encoder_frame_lengths_ms,
       int min_encoder_bitrate_bps,
@@ -58,7 +58,7 @@ class ControllerManagerImpl final : public ControllerManager {
       bool initial_dtx_enabled);
 
   static std::unique_ptr<ControllerManager> Create(
-      const std::string& config_string,
+      absl::string_view config_string,
       size_t num_encoder_channels,
       rtc::ArrayView<const int> encoder_frame_lengths_ms,
       int min_encoder_bitrate_bps,
@@ -79,6 +79,9 @@ class ControllerManagerImpl final : public ControllerManager {
           chracteristic_points);
 
   ~ControllerManagerImpl() override;
+
+  ControllerManagerImpl(const ControllerManagerImpl&) = delete;
+  ControllerManagerImpl& operator=(const ControllerManagerImpl&) = delete;
 
   // Sort controllers based on their significance.
   std::vector<Controller*> GetSortedControllers(
@@ -114,8 +117,6 @@ class ControllerManagerImpl final : public ControllerManager {
   // `scoring_points_` saves the scoring points of various
   // controllers.
   std::map<const Controller*, ScoringPoint> controller_scoring_points_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(ControllerManagerImpl);
 };
 
 }  // namespace webrtc

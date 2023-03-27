@@ -14,6 +14,7 @@
 #include <stddef.h>
 
 #include <array>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -154,7 +155,7 @@ class AecState {
   }
 
  private:
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   const EchoCanceller3Config config_;
   const size_t num_capture_channels_;
@@ -272,7 +273,7 @@ class AecState {
     bool SaturatedEcho() const { return saturated_echo_; }
 
     // Updates the detection decision based on new data.
-    void Update(rtc::ArrayView<const std::vector<float>> x,
+    void Update(const Block& x,
                 bool saturated_capture,
                 bool usable_linear_estimate,
                 rtc::ArrayView<const SubtractorOutput> subtractor_output,

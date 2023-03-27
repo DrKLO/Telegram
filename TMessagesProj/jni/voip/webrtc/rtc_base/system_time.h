@@ -11,6 +11,8 @@
 #ifndef RTC_BASE_SYSTEM_TIME_H_
 #define RTC_BASE_SYSTEM_TIME_H_
 
+#include <cstdint>
+
 namespace rtc {
 
 // Returns the actual system time, even if a clock is set for testing.

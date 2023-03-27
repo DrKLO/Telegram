@@ -11,7 +11,8 @@
 #ifndef RTC_BASE_DEPRECATED_RECURSIVE_CRITICAL_SECTION_H_
 #define RTC_BASE_DEPRECATED_RECURSIVE_CRITICAL_SECTION_H_
 
-#include "rtc_base/constructor_magic.h"
+#include <atomic>
+
 #include "rtc_base/platform_thread_types.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -69,7 +70,7 @@ class RTC_LOCKABLE RecursiveCriticalSection {
   // Number of times the lock has been locked + number of threads waiting.
   // TODO(tommi): We could use this number and subtract the recursion count
   // to find places where we have multiple threads contending on the same lock.
-  mutable volatile int lock_queue_;
+  mutable std::atomic<int> lock_queue_;
   // `recursion_` represents the recursion count + 1 for the thread that owns
   // the lock. Only modified by the thread that owns the lock.
   mutable int recursion_;
@@ -94,9 +95,11 @@ class RTC_SCOPED_LOCKABLE CritScope {
       RTC_EXCLUSIVE_LOCK_FUNCTION(cs);
   ~CritScope() RTC_UNLOCK_FUNCTION();
 
+  CritScope(const CritScope&) = delete;
+  CritScope& operator=(const CritScope&) = delete;
+
  private:
   const RecursiveCriticalSection* const cs_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(CritScope);
 };
 
 }  // namespace rtc

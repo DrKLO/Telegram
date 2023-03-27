@@ -110,10 +110,13 @@ TEST_F(ConsumeUnboundConversionTest, ConsumeSpecification) {
     {__LINE__, "ba",   "",     "ba"},  // 'b' is invalid
     {__LINE__, "l",    "",     "l" },  // just length mod isn't okay
     {__LINE__, "d",    "d",    ""  },  // basic
+    {__LINE__, "v",    "v",    ""  },  // basic
     {__LINE__, "d ",   "d",    " " },  // leave suffix
     {__LINE__, "dd",   "d",    "d" },  // don't be greedy
     {__LINE__, "d9",   "d",    "9" },  // leave non-space suffix
     {__LINE__, "dzz",  "d",    "zz"},  // length mod as suffix
+    {__LINE__, "3v",   "",     "3v"},  // 'v' cannot have modifiers
+    {__LINE__, "hv",   "",     "hv"},  // 'v' cannot have modifiers
     {__LINE__, "1$*2$d", "1$*2$d", ""  },  // arg indexing and * allowed.
     {__LINE__, "0-14.3hhd", "0-14.3hhd", ""},  // precision, width
     {__LINE__, " 0-+#14.3hhd", " 0-+#14.3hhd", ""},  // flags

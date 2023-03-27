@@ -10,6 +10,7 @@
 
 #include "call/adaptation/video_source_restrictions.h"
 
+#include <algorithm>
 #include <limits>
 
 #include "rtc_base/checks.h"
@@ -77,6 +78,30 @@ void VideoSourceRestrictions::set_target_pixels_per_frame(
 void VideoSourceRestrictions::set_max_frame_rate(
     absl::optional<double> max_frame_rate) {
   max_frame_rate_ = std::move(max_frame_rate);
+}
+
+void VideoSourceRestrictions::UpdateMin(const VideoSourceRestrictions& other) {
+  if (max_pixels_per_frame_.has_value()) {
+    max_pixels_per_frame_ = std::min(*max_pixels_per_frame_,
+                                     other.max_pixels_per_frame().value_or(
+                                         std::numeric_limits<size_t>::max()));
+  } else {
+    max_pixels_per_frame_ = other.max_pixels_per_frame();
+  }
+  if (target_pixels_per_frame_.has_value()) {
+    target_pixels_per_frame_ = std::min(
+        *target_pixels_per_frame_, other.target_pixels_per_frame().value_or(
+                                       std::numeric_limits<size_t>::max()));
+  } else {
+    target_pixels_per_frame_ = other.target_pixels_per_frame();
+  }
+  if (max_frame_rate_.has_value()) {
+    max_frame_rate_ = std::min(
+        *max_frame_rate_,
+        other.max_frame_rate().value_or(std::numeric_limits<double>::max()));
+  } else {
+    max_frame_rate_ = other.max_frame_rate();
+  }
 }
 
 bool DidRestrictionsIncrease(VideoSourceRestrictions before,

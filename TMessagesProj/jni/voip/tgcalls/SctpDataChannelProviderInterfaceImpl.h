@@ -16,7 +16,7 @@ class DtlsTransport;
 
 namespace tgcalls {
 
-class SctpDataChannelProviderInterfaceImpl : public sigslot::has_slots<>, public webrtc::SctpDataChannelProviderInterface, public webrtc::DataChannelObserver {
+class SctpDataChannelProviderInterfaceImpl : public sigslot::has_slots<>, public webrtc::SctpDataChannelControllerInterface, public webrtc::DataChannelObserver, public webrtc::DataChannelSink {
 public:
     SctpDataChannelProviderInterfaceImpl(
         cricket::DtlsTransport *transportChannel,
@@ -44,10 +44,15 @@ public:
     virtual void RemoveSctpDataStream(int sid) override;
     virtual bool ReadyToSendData() const override;
 
-private:
-    void sctpReadyToSendData();
-    void sctpClosedAbruptly(webrtc::RTCError error);
-    void sctpDataReceived(const cricket::ReceiveDataParams& params, const rtc::CopyOnWriteBuffer& buffer);
+    virtual void OnDataReceived(int channel_id,
+                                webrtc::DataMessageType type,
+                                const rtc::CopyOnWriteBuffer& buffer) override;
+    virtual void OnReadyToSend() override;
+    virtual void OnTransportClosed(webrtc::RTCError error) override;
+
+    // Unused
+    virtual void OnChannelClosing(int channel_id) override{}
+    virtual void OnChannelClosed(int channel_id) override{}
 
 private:
     std::shared_ptr<Threads> _threads;

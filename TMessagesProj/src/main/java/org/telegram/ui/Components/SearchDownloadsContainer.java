@@ -302,7 +302,8 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                 }
 
                 for (int i = 0; i < recentLoadingFilesTmp.size(); i++) {
-                    if (FileLoader.getDocumentFileName(recentLoadingFilesTmp.get(i).getDocument()).toLowerCase().contains(q)) {
+                    String documentName = FileLoader.getDocumentFileName(recentLoadingFilesTmp.get(i).getDocument());
+                    if (documentName != null && documentName.toLowerCase().contains(q)) {
                         MessageObject messageObject = new MessageObject(currentAccount, recentLoadingFilesTmp.get(i).messageOwner, false, false);
                         messageObject.mediaExists = recentLoadingFilesTmp.get(i).mediaExists;
                         messageObject.setQuery(searchQuery);
@@ -391,7 +392,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                     } else if (newItemPosition >= recentFilesStartRow && newItemPosition < recentFilesEndRow) {
                         newItem = recentLoadingFiles.get(newItemPosition - recentFilesStartRow);
                     }
-                    if (newItem != null && oldItem != null) {
+                    if (newItem != null && oldItem != null && newItem.getDocument() != null && oldItem.getDocument() != null) {
                         return newItem.getDocument().id == oldItem.getDocument().id;
                     }
                     return false;

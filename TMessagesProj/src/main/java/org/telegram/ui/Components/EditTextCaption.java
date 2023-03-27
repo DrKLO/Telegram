@@ -571,6 +571,7 @@ public class EditTextCaption extends EditTextBoldCursor {
                     stringBuilder.append(getText().subSequence(end, getText().length()));
                 }
                 setText(stringBuilder);
+                setSelection(start, start);
                 return true;
             } catch (Exception e) {
 

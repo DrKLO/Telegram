@@ -16,6 +16,7 @@
 #include <array>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec3_fft.h"
@@ -141,7 +142,7 @@ class AdaptiveFirFilter {
   // Returns the maximum number of partitions for the filter.
   size_t max_filter_size_partitions() const { return max_size_partitions_; }
 
-  void DumpFilter(const char* name_frequency_domain) {
+  void DumpFilter(absl::string_view name_frequency_domain) {
     for (size_t p = 0; p < max_size_partitions_; ++p) {
       data_dumper_->DumpRaw(name_frequency_domain, H_[p][0].re);
       data_dumper_->DumpRaw(name_frequency_domain, H_[p][0].im);

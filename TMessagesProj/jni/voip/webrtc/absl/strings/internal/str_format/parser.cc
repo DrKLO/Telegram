@@ -56,7 +56,7 @@ ABSL_CONST_INIT const ConvTag kTags[256] = {
     CC::X,  {},    {},    {},    {},    {},     {},    {},     // XYZ[\]^_
     {},     CC::a, {},    CC::c, CC::d, CC::e,  CC::f, CC::g,  // `abcdefg
     LM::h,  CC::i, LM::j, {},    LM::l, {},     CC::n, CC::o,  // hijklmno
-    CC::p,  LM::q, {},    CC::s, LM::t, CC::u,  {},    {},     // pqrstuvw
+    CC::p,  LM::q, {},    CC::s, LM::t, CC::u,  CC::v, {},     // pqrstuvw
     CC::x,  {},    LM::z, {},    {},    {},     {},    {},     // xyz{|}!
     {},     {},    {},    {},    {},    {},     {},    {},     // 80-87
     {},     {},    {},    {},    {},    {},     {},    {},     // 88-8f
@@ -202,6 +202,8 @@ const char *ConsumeConversion(const char *pos, const char *const end,
 
   auto tag = GetTagForChar(c);
 
+  if (ABSL_PREDICT_FALSE(c == 'v' && (pos - original_pos) != 1)) return nullptr;
+
   if (ABSL_PREDICT_FALSE(!tag.is_conv())) {
     if (ABSL_PREDICT_FALSE(!tag.is_length())) return nullptr;
 
@@ -219,6 +221,8 @@ const char *ConsumeConversion(const char *pos, const char *const end,
       conv->length_mod = length_mod;
     }
     tag = GetTagForChar(c);
+
+    if (ABSL_PREDICT_FALSE(c == 'v')) return nullptr;
     if (ABSL_PREDICT_FALSE(!tag.is_conv())) return nullptr;
   }
 
@@ -312,11 +316,11 @@ bool ParsedFormatBase::MatchesConversions(
     std::initializer_list<FormatConversionCharSet> convs) const {
   std::unordered_set<int> used;
   auto add_if_valid_conv = [&](int pos, char c) {
-      if (static_cast<size_t>(pos) > convs.size() ||
-          !Contains(convs.begin()[pos - 1], c))
-        return false;
-      used.insert(pos);
-      return true;
+    if (static_cast<size_t>(pos) > convs.size() ||
+        !Contains(convs.begin()[pos - 1], c))
+      return false;
+    used.insert(pos);
+    return true;
   };
   for (const ConversionItem &item : items_) {
     if (!item.is_conversion) continue;

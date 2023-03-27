@@ -28,7 +28,7 @@ public interface DownloadCursor extends Closeable {
 
   /**
    * Returns the current position of the cursor in the download set. The value is zero-based. When
-   * the download set is first returned the cursor will be at positon -1, which is before the first
+   * the download set is first returned the cursor will be at position -1, which is before the first
    * download. After the last download is returned another call to next() will leave the cursor past
    * the last entry, at a position of count().
    *

@@ -13,9 +13,11 @@
 #include <algorithm>
 #include <fstream>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_compare.h"
 #include "test/gtest.h"
@@ -31,8 +33,8 @@ template <typename T>
 class FloatFileReader : public FileReader {
  public:
   static_assert(std::is_arithmetic<T>::value, "");
-  FloatFileReader(const std::string& filename)
-      : is_(filename, std::ios::binary | std::ios::ate),
+  explicit FloatFileReader(absl::string_view filename)
+      : is_(std::string(filename), std::ios::binary | std::ios::ate),
         size_(is_.tellg() / sizeof(T)) {
     RTC_CHECK(is_);
     SeekBeginning();

@@ -275,7 +275,9 @@ public class GroupCreateSpan extends View {
         rect.set(0, 0, getMeasuredWidth(), AndroidUtilities.dp(32));
         backPaint.setColor(Color.argb(colors[6] + (int) ((colors[7] - colors[6]) * progress), colors[0] + (int) ((colors[1] - colors[0]) * progress), colors[2] + (int) ((colors[3] - colors[2]) * progress), colors[4] + (int) ((colors[5] - colors[4]) * progress)));
         canvas.drawRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backPaint);
-        imageReceiver.draw(canvas);
+        if (progress != 1f) {
+            imageReceiver.draw(canvas);
+        }
         if (progress != 0) {
             int color = avatarDrawable.getColor();
             float alpha = Color.alpha(color) / 255.0f;

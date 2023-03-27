@@ -72,6 +72,7 @@ public final class StatsDataSource implements DataSource {
 
   @Override
   public void addTransferListener(TransferListener transferListener) {
+    Assertions.checkNotNull(transferListener);
     dataSource.addTransferListener(transferListener);
   }
 
@@ -87,8 +88,8 @@ public final class StatsDataSource implements DataSource {
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) throws IOException {
-    int bytesRead = dataSource.read(buffer, offset, readLength);
+  public int read(byte[] buffer, int offset, int length) throws IOException {
+    int bytesRead = dataSource.read(buffer, offset, length);
     if (bytesRead != C.RESULT_END_OF_INPUT) {
       this.bytesRead += bytesRead;
     }

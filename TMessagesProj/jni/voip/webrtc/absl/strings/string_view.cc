@@ -32,7 +32,7 @@ void WritePadding(std::ostream& o, size_t pad) {
   memset(fill_buf, o.fill(), sizeof(fill_buf));
   while (pad) {
     size_t n = std::min(pad, sizeof(fill_buf));
-    o.write(fill_buf, n);
+    o.write(fill_buf, static_cast<std::streamsize>(n));
     pad -= n;
   }
 }
@@ -63,7 +63,7 @@ std::ostream& operator<<(std::ostream& o, string_view piece) {
     size_t lpad = 0;
     size_t rpad = 0;
     if (static_cast<size_t>(o.width()) > piece.size()) {
-      size_t pad = o.width() - piece.size();
+      size_t pad = static_cast<size_t>(o.width()) - piece.size();
       if ((o.flags() & o.adjustfield) == o.left) {
         rpad = pad;
       } else {
@@ -71,7 +71,7 @@ std::ostream& operator<<(std::ostream& o, string_view piece) {
       }
     }
     if (lpad) WritePadding(o, lpad);
-    o.write(piece.data(), piece.size());
+    o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
     if (rpad) WritePadding(o, rpad);
     o.width(0);
   }
@@ -86,7 +86,7 @@ string_view::size_type string_view::find(string_view s,
   }
   const char* result =
       strings_internal::memmatch(ptr_ + pos, length_ - pos, s.ptr_, s.length_);
-  return result ? result - ptr_ : npos;
+  return result ? static_cast<size_type>(result - ptr_) : npos;
 }
 
 string_view::size_type string_view::find(char c, size_type pos) const noexcept {
@@ -95,7 +95,7 @@ string_view::size_type string_view::find(char c, size_type pos) const noexcept {
   }
   const char* result =
       static_cast<const char*>(memchr(ptr_ + pos, c, length_ - pos));
-  return result != nullptr ? result - ptr_ : npos;
+  return result != nullptr ? static_cast<size_type>(result - ptr_) : npos;
 }
 
 string_view::size_type string_view::rfind(string_view s,
@@ -104,7 +104,7 @@ string_view::size_type string_view::rfind(string_view s,
   if (s.empty()) return std::min(length_, pos);
   const char* last = ptr_ + std::min(length_ - s.length_, pos) + s.length_;
   const char* result = std::find_end(ptr_, last, s.ptr_, s.ptr_ + s.length_);
-  return result != last ? result - ptr_ : npos;
+  return result != last ? static_cast<size_type>(result - ptr_) : npos;
 }
 
 // Search range is [0..pos] inclusive.  If pos == npos, search everything.
@@ -207,22 +207,11 @@ string_view::size_type string_view::find_last_not_of(
   return npos;
 }
 
-// MSVC has non-standard behavior that implicitly creates definitions for static
-// const members. These implicit definitions conflict with explicit out-of-class
-// member definitions that are required by the C++ standard, resulting in
-// LNK1169 "multiply defined" errors at link time. __declspec(selectany) asks
-// MSVC to choose only one definition for the symbol it decorates. See details
-// at https://msdn.microsoft.com/en-us/library/34h23df8(v=vs.100).aspx
-#ifdef _MSC_VER
-#define ABSL_STRING_VIEW_SELECTANY __declspec(selectany)
-#else
-#define ABSL_STRING_VIEW_SELECTANY
-#endif
 
-ABSL_STRING_VIEW_SELECTANY
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 constexpr string_view::size_type string_view::npos;
-ABSL_STRING_VIEW_SELECTANY
 constexpr string_view::size_type string_view::kMaxSize;
+#endif
 
 ABSL_NAMESPACE_END
 }  // namespace absl

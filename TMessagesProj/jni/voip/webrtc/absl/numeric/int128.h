@@ -44,7 +44,7 @@
 // builtin type.  We need to make sure not to define operator wchar_t()
 // alongside operator unsigned short() in these instances.
 #define ABSL_INTERNAL_WCHAR_T __wchar_t
-#if defined(_M_X64)
+#if defined(_M_X64) && !defined(_M_ARM64EC)
 #include <intrin.h>
 #pragma intrinsic(_umul128)
 #endif  // defined(_M_X64)
@@ -980,7 +980,7 @@ inline uint128 operator*(uint128 lhs, uint128 rhs) {
   // can be used for uint128 storage.
   return static_cast<unsigned __int128>(lhs) *
          static_cast<unsigned __int128>(rhs);
-#elif defined(_MSC_VER) && defined(_M_X64)
+#elif defined(_MSC_VER) && defined(_M_X64) && !defined(_M_ARM64EC)
   uint64_t carry;
   uint64_t low = _umul128(Uint128Low64(lhs), Uint128Low64(rhs), &carry);
   return MakeUint128(Uint128Low64(lhs) * Uint128High64(rhs) +

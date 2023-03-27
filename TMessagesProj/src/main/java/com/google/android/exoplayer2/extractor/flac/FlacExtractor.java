@@ -16,6 +16,9 @@
 package com.google.android.exoplayer2.extractor.flac;
 
 import static com.google.android.exoplayer2.util.Util.castNonNull;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.lang.annotation.ElementType.TYPE_USE;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
@@ -28,18 +31,18 @@ import com.google.android.exoplayer2.extractor.FlacFrameReader;
 import com.google.android.exoplayer2.extractor.FlacFrameReader.SampleNumberHolder;
 import com.google.android.exoplayer2.extractor.FlacMetadataReader;
 import com.google.android.exoplayer2.extractor.FlacSeekTableSeekMap;
+import com.google.android.exoplayer2.extractor.FlacStreamMetadata;
 import com.google.android.exoplayer2.extractor.PositionHolder;
 import com.google.android.exoplayer2.extractor.SeekMap;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.FlacConstants;
-import com.google.android.exoplayer2.util.FlacStreamMetadata;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /**
@@ -52,12 +55,17 @@ public final class FlacExtractor implements Extractor {
   /** Factory for {@link FlacExtractor} instances. */
   public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new FlacExtractor()};
 
+  /*
+   * Flags in the two FLAC extractors should be kept in sync. If we ever change this then
+   * DefaultExtractorsFactory will need modifying, because it currently assumes this is the case.
+   */
   /**
    * Flags controlling the behavior of the extractor. Possible flag value is {@link
    * #FLAG_DISABLE_ID3_METADATA}.
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef(
       flag = true,
       value = {FLAG_DISABLE_ID3_METADATA})
@@ -72,6 +80,7 @@ public final class FlacExtractor implements Extractor {
   /** Parser state. */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({
     STATE_READ_ID3_METADATA,
     STATE_GET_STREAM_MARKER_AND_INFO_BLOCK_BYTES,
@@ -101,15 +110,15 @@ public final class FlacExtractor implements Extractor {
 
   private final SampleNumberHolder sampleNumberHolder;
 
-  @MonotonicNonNull private ExtractorOutput extractorOutput;
-  @MonotonicNonNull private TrackOutput trackOutput;
+  private @MonotonicNonNull ExtractorOutput extractorOutput;
+  private @MonotonicNonNull TrackOutput trackOutput;
 
   private @State int state;
   @Nullable private Metadata id3Metadata;
-  @MonotonicNonNull private FlacStreamMetadata flacStreamMetadata;
+  private @MonotonicNonNull FlacStreamMetadata flacStreamMetadata;
   private int minFrameSize;
   private int frameStartMarker;
-  @MonotonicNonNull private FlacBinarySearchSeeker binarySearchSeeker;
+  private @MonotonicNonNull FlacBinarySearchSeeker binarySearchSeeker;
   private int currentFrameBytesWritten;
   private long currentFrameFirstSampleNumber;
 
@@ -134,7 +143,7 @@ public final class FlacExtractor implements Extractor {
   }
 
   @Override
-  public boolean sniff(ExtractorInput input) throws IOException, InterruptedException {
+  public boolean sniff(ExtractorInput input) throws IOException {
     FlacMetadataReader.peekId3Metadata(input, /* parseData= */ false);
     return FlacMetadataReader.checkAndPeekStreamMarker(input);
   }
@@ -148,7 +157,7 @@ public final class FlacExtractor implements Extractor {
 
   @Override
   public @ReadResult int read(ExtractorInput input, PositionHolder seekPosition)
-      throws IOException, InterruptedException {
+      throws IOException {
     switch (state) {
       case STATE_READ_ID3_METADATA:
         readId3Metadata(input);
@@ -181,7 +190,7 @@ public final class FlacExtractor implements Extractor {
     }
     currentFrameFirstSampleNumber = timeUs == 0 ? 0 : SAMPLE_NUMBER_UNKNOWN;
     currentFrameBytesWritten = 0;
-    buffer.reset();
+    buffer.reset(/* limit= */ 0);
   }
 
   @Override
@@ -191,24 +200,23 @@ public final class FlacExtractor implements Extractor {
 
   // Private methods.
 
-  private void readId3Metadata(ExtractorInput input) throws IOException, InterruptedException {
+  private void readId3Metadata(ExtractorInput input) throws IOException {
     id3Metadata = FlacMetadataReader.readId3Metadata(input, /* parseData= */ !id3MetadataDisabled);
     state = STATE_GET_STREAM_MARKER_AND_INFO_BLOCK_BYTES;
   }
 
-  private void getStreamMarkerAndInfoBlockBytes(ExtractorInput input)
-      throws IOException, InterruptedException {
+  private void getStreamMarkerAndInfoBlockBytes(ExtractorInput input) throws IOException {
     input.peekFully(streamMarkerAndInfoBlock, 0, streamMarkerAndInfoBlock.length);
     input.resetPeekPosition();
     state = STATE_READ_STREAM_MARKER;
   }
 
-  private void readStreamMarker(ExtractorInput input) throws IOException, InterruptedException {
+  private void readStreamMarker(ExtractorInput input) throws IOException {
     FlacMetadataReader.readStreamMarker(input);
     state = STATE_READ_METADATA_BLOCKS;
   }
 
-  private void readMetadataBlocks(ExtractorInput input) throws IOException, InterruptedException {
+  private void readMetadataBlocks(ExtractorInput input) throws IOException {
     boolean isLastMetadataBlock = false;
     FlacMetadataReader.FlacStreamMetadataHolder metadataHolder =
         new FlacMetadataReader.FlacStreamMetadataHolder(flacStreamMetadata);
@@ -219,14 +227,14 @@ public final class FlacExtractor implements Extractor {
     }
 
     Assertions.checkNotNull(flacStreamMetadata);
-    minFrameSize = Math.max(flacStreamMetadata.minFrameSize, FlacConstants.MIN_FRAME_HEADER_SIZE);
+    minFrameSize = max(flacStreamMetadata.minFrameSize, FlacConstants.MIN_FRAME_HEADER_SIZE);
     castNonNull(trackOutput)
         .format(flacStreamMetadata.getFormat(streamMarkerAndInfoBlock, id3Metadata));
 
     state = STATE_GET_FRAME_START_MARKER;
   }
 
-  private void getFrameStartMarker(ExtractorInput input) throws IOException, InterruptedException {
+  private void getFrameStartMarker(ExtractorInput input) throws IOException {
     frameStartMarker = FlacMetadataReader.getFrameStartMarker(input);
     castNonNull(extractorOutput)
         .seekMap(
@@ -238,7 +246,7 @@ public final class FlacExtractor implements Extractor {
   }
 
   private @ReadResult int readFrames(ExtractorInput input, PositionHolder seekPosition)
-      throws IOException, InterruptedException {
+      throws IOException {
     Assertions.checkNotNull(trackOutput);
     Assertions.checkNotNull(flacStreamMetadata);
 
@@ -260,7 +268,9 @@ public final class FlacExtractor implements Extractor {
     if (currentLimit < BUFFER_LENGTH) {
       int bytesRead =
           input.read(
-              buffer.data, /* offset= */ currentLimit, /* length= */ BUFFER_LENGTH - currentLimit);
+              buffer.getData(),
+              /* offset= */ currentLimit,
+              /* length= */ BUFFER_LENGTH - currentLimit);
       foundEndOfInput = bytesRead == C.RESULT_END_OF_INPUT;
       if (!foundEndOfInput) {
         buffer.setLimit(currentLimit + bytesRead);
@@ -275,7 +285,7 @@ public final class FlacExtractor implements Extractor {
 
     // Skip frame search on the bytes within the minimum frame size.
     if (currentFrameBytesWritten < minFrameSize) {
-      buffer.skipBytes(Math.min(minFrameSize - currentFrameBytesWritten, buffer.bytesLeft()));
+      buffer.skipBytes(min(minFrameSize - currentFrameBytesWritten, buffer.bytesLeft()));
     }
 
     long nextFrameFirstSampleNumber = findFrame(buffer, foundEndOfInput);
@@ -294,9 +304,11 @@ public final class FlacExtractor implements Extractor {
     if (buffer.bytesLeft() < FlacConstants.MAX_FRAME_HEADER_SIZE) {
       // The next frame header may not fit in the rest of the buffer, so put the trailing bytes at
       // the start of the buffer, and reset the position and limit.
+      int bytesLeft = buffer.bytesLeft();
       System.arraycopy(
-          buffer.data, buffer.getPosition(), buffer.data, /* destPos= */ 0, buffer.bytesLeft());
-      buffer.reset(buffer.bytesLeft());
+          buffer.getData(), buffer.getPosition(), buffer.getData(), /* destPos= */ 0, bytesLeft);
+      buffer.setPosition(0);
+      buffer.setLimit(bytesLeft);
     }
 
     return Extractor.RESULT_CONTINUE;
@@ -406,6 +418,6 @@ public final class FlacExtractor implements Extractor {
             C.BUFFER_FLAG_KEY_FRAME,
             currentFrameBytesWritten,
             /* offset= */ 0,
-            /* encryptionData= */ null);
+            /* cryptoData= */ null);
   }
 }

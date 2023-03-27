@@ -87,7 +87,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
     private View paddingView;
     private EmojiPacksLoader customEmojiPacks;
-
+    private ContentView contentView;
     private RecyclerListView listView;
     private Adapter adapter;
     private View shadowView;
@@ -244,300 +244,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         progressDrawable = new CircularProgressDrawable(AndroidUtilities.dp(32), AndroidUtilities.dp(3.5f), getThemedColor(Theme.key_featuredStickers_addButton));
 
         final ColorFilter colorFilter = new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteLinkText), 178), PorterDuff.Mode.MULTIPLY);
-        containerView = new FrameLayout(context) {
-
-            private Paint paint = new Paint();
-            private Path path = new Path();
-            private Boolean lastOpen = null;
-            boolean attached;
-            SparseArray<ArrayList<EmojiImageView>> viewsGroupedByLines = new SparseArray<>();
-            ArrayList<DrawingInBackgroundLine> lineDrawables = new ArrayList<>();
-            ArrayList<DrawingInBackgroundLine> lineDrawablesTmp = new ArrayList<>();
-            ArrayList<ArrayList<EmojiImageView>> unusedArrays = new ArrayList<>();
-            ArrayList<DrawingInBackgroundLine> unusedLineDrawables = new ArrayList<>();
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                if (!attached) {
-                    return;
-                }
-                paint.setColor(getThemedColor(Theme.key_dialogBackground));
-                Theme.applyDefaultShadow(paint);
-                path.reset();
-                float y = lastY = getListTop();
-                float pad = 0;
-                if (fromY != null) {
-                    float wasY = y;
-                    y = AndroidUtilities.lerp(fromY, y + containerView.getY(), loadT) - containerView.getY();
-                    pad = y - wasY;
-                }
-                float stickToTop = (1f - MathUtils.clamp((y - containerView.getPaddingTop()) / AndroidUtilities.dp(32), 0, 1));
-                y -= stickToTop * containerView.getPaddingTop();
-                float r = dp((1f - stickToTop) * 14);
-                AndroidUtilities.rectTmp.set(getPaddingLeft(), y, getWidth() - getPaddingRight(), getBottom() + r);
-                path.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
-                canvas.drawPath(path, paint);
-
-                boolean open = stickToTop > .75f;
-                if (lastOpen == null || open != lastOpen) {
-                    updateLightStatusBar(lastOpen = open);
-                }
-
-                Theme.dialogs_onlineCirclePaint.setColor(getThemedColor(Theme.key_sheet_scrollUp));
-                Theme.dialogs_onlineCirclePaint.setAlpha((int) (MathUtils.clamp(y / (float) AndroidUtilities.dp(20), 0, 1) * Theme.dialogs_onlineCirclePaint.getAlpha()));
-                int w = AndroidUtilities.dp(36);
-                y += AndroidUtilities.dp(10);
-                AndroidUtilities.rectTmp.set((getMeasuredWidth() - w) / 2, y, (getMeasuredWidth() + w) / 2, y + AndroidUtilities.dp(4));
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(2), AndroidUtilities.dp(2), Theme.dialogs_onlineCirclePaint);
-
-                shadowView.setVisibility(listView.canScrollVertically(1) || removeButtonView.getVisibility() == View.VISIBLE ? View.VISIBLE : View.INVISIBLE);
-                if (listView != null) {
-                    canvas.save();
-                    canvas.translate(listView.getLeft(), listView.getTop() + pad);
-                    canvas.clipRect(0, 0, listView.getWidth(), listView.getHeight());
-                    canvas.saveLayerAlpha(0, 0, listView.getWidth(), listView.getHeight(), (int) (255 * listView.getAlpha()), Canvas.ALL_SAVE_FLAG);
-
-                    for (int i = 0; i < viewsGroupedByLines.size(); i++) {
-                        ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.valueAt(i);
-                        arrayList.clear();
-                        unusedArrays.add(arrayList);
-                    }
-                    viewsGroupedByLines.clear();
-                    for (int i = 0; i < listView.getChildCount(); ++i) {
-                        View child = listView.getChildAt(i);
-                        if (child instanceof EmojiImageView) {
-                            ((EmojiImageView) child).updatePressedProgress();
-                            if (animatedEmojiDrawables == null) {
-                                animatedEmojiDrawables = new LongSparseArray<>();
-                            }
-                            AnimatedEmojiSpan span = ((EmojiImageView) child).span;
-                            if (span == null) {
-                                continue;
-                            }
-                            long documentId = span.getDocumentId();
-                            AnimatedEmojiDrawable drawable = animatedEmojiDrawables.get(documentId);
-                            if (drawable == null) {
-                                animatedEmojiDrawables.put(documentId, drawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, documentId));
-                            }
-                            drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
-                            drawable.addView(this);
-                            ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.get(child.getTop());
-                            if (arrayList == null) {
-                                if (!unusedArrays.isEmpty()) {
-                                    arrayList = unusedArrays.remove(unusedArrays.size() - 1);
-                                } else {
-                                    arrayList = new ArrayList<>();
-                                }
-                                viewsGroupedByLines.put(child.getTop(), arrayList);
-                            }
-                            arrayList.add((EmojiImageView) child);
-                        } else {
-                            canvas.save();
-                            canvas.translate(child.getLeft(), child.getTop());
-                            child.draw(canvas);
-                            canvas.restore();
-                        }
-                    }
-
-                    lineDrawablesTmp.clear();
-                    lineDrawablesTmp.addAll(lineDrawables);
-                    lineDrawables.clear();
-
-                    long time = System.currentTimeMillis();
-                    for (int i = 0; i < viewsGroupedByLines.size(); i++) {
-                        ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.valueAt(i);
-                        View firstView = arrayList.get(0);
-                        int position = listView.getChildAdapterPosition(firstView);
-                        DrawingInBackgroundLine drawable = null;
-                        for (int k = 0; k < lineDrawablesTmp.size(); k++) {
-                            if (lineDrawablesTmp.get(k).position == position) {
-                                drawable = lineDrawablesTmp.get(k);
-                                lineDrawablesTmp.remove(k);
-                                break;
-                            }
-                        }
-                        if (drawable == null) {
-                            if (!unusedLineDrawables.isEmpty()) {
-                                drawable = unusedLineDrawables.remove(unusedLineDrawables.size() - 1);
-                            } else {
-                                drawable = new DrawingInBackgroundLine();
-                                drawable.setLayerNum(7);
-                            }
-                            drawable.position = position;
-                            drawable.onAttachToWindow();
-                        }
-                        lineDrawables.add(drawable);
-                        drawable.imageViewEmojis = arrayList;
-                        canvas.save();
-                        canvas.translate(0, firstView.getY() + firstView.getPaddingTop());
-                        drawable.draw(canvas, time, getMeasuredWidth(), firstView.getMeasuredHeight() - firstView.getPaddingBottom(), 1f);
-                        canvas.restore();
-                    }
-
-                    for (int i = 0; i < lineDrawablesTmp.size(); i++) {
-                        if (unusedLineDrawables.size() < 3) {
-                            unusedLineDrawables.add(lineDrawablesTmp.get(i));
-                            lineDrawablesTmp.get(i).imageViewEmojis = null;
-                            lineDrawablesTmp.get(i).reset();
-
-                        } else {
-                            lineDrawablesTmp.get(i).onDetachFromWindow();
-                        }
-                    }
-                    lineDrawablesTmp.clear();
-                    canvas.restore();
-                    canvas.restore();
-
-                    if (listView.getAlpha() < 1) {
-                        int cx = getWidth() / 2;
-                        int cy = ((int) y + getHeight()) / 2;
-                        int R = AndroidUtilities.dp(16);
-                        progressDrawable.setAlpha((int) (255 * (1f - listView.getAlpha())));
-                        progressDrawable.setBounds(cx - R, cy - R, cx + R, cy + R);
-                        progressDrawable.draw(canvas);
-                        invalidate();
-                    }
-                }
-                super.dispatchDraw(canvas);
-            }
-
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < getListTop() - AndroidUtilities.dp(6)) {
-                    dismiss();
-                }
-                return super.dispatchTouchEvent(event);
-            }
-
-            class DrawingInBackgroundLine extends DrawingInBackgroundThreadDrawable {
-                public int position;
-                ArrayList<EmojiImageView> imageViewEmojis;
-                ArrayList<EmojiImageView> drawInBackgroundViews = new ArrayList<>();
-
-
-                @Override
-                public void prepareDraw(long time) {
-                    drawInBackgroundViews.clear();
-                    for (int i = 0; i < imageViewEmojis.size(); i++) {
-                        EmojiImageView imageView = imageViewEmojis.get(i);
-                        AnimatedEmojiSpan span = imageView.span;
-                        if (span == null) {
-                            continue;
-                        }
-                        AnimatedEmojiDrawable drawable = animatedEmojiDrawables.get(imageView.span.getDocumentId());
-                        if (drawable == null || drawable.getImageReceiver() == null) {
-                            continue;
-                        }
-
-                        drawable.update(time);
-                        imageView.backgroundThreadDrawHolder[threadIndex] = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder[threadIndex], threadIndex);
-                        imageView.backgroundThreadDrawHolder[threadIndex].time = time;
-                        drawable.setAlpha(255);
-                        AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(),  imageView.getPaddingTop(), imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom());
-                        imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
-                        drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
-                        imageView.imageReceiver = drawable.getImageReceiver();;
-                        drawInBackgroundViews.add(imageView);
-                    }
-                }
-
-                @Override
-                public void draw(Canvas canvas, long time, int w, int h, float alpha) {
-                    if (imageViewEmojis == null) {
-                        return;
-                    }
-                    boolean drawInUi = imageViewEmojis.size() <= 3 || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW;
-                    if (!drawInUi) {
-                        for (int i = 0; i < imageViewEmojis.size(); i++) {
-                            EmojiImageView img = imageViewEmojis.get(i);
-                            if (img.pressedProgress != 0 || img.backAnimator != null || img.getTranslationX() != 0 || img.getTranslationY() != 0 || img.getAlpha() != 1) {
-                                drawInUi = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (drawInUi) {
-                        prepareDraw(System.currentTimeMillis());
-                        drawInUiThread(canvas, alpha);
-                        reset();
-                    } else {
-                        super.draw(canvas, time, w, h, alpha);
-                    }
-                }
-
-                @Override
-                public void drawInBackground(Canvas canvas) {
-                    for (int i = 0; i < drawInBackgroundViews.size(); i++) {
-                        EmojiImageView imageView = drawInBackgroundViews.get(i);
-                        imageView.imageReceiver.draw(canvas, imageView.backgroundThreadDrawHolder[threadIndex]);
-                    }
-                }
-
-                @Override
-                protected void drawInUiThread(Canvas canvas, float alpha) {
-                    if (imageViewEmojis != null) {
-                        for (int i = 0; i < imageViewEmojis.size(); i++) {
-                            EmojiImageView imageView = imageViewEmojis.get(i);
-                            AnimatedEmojiSpan span = imageView.span;
-                            if (span == null) {
-                                continue;
-                            }
-                            AnimatedEmojiDrawable drawable = animatedEmojiDrawables.get(imageView.span.getDocumentId());
-                            if (drawable == null || drawable.getImageReceiver() == null) {
-                                continue;
-                            }
-                            if (imageView.imageReceiver != null) {
-                                drawable.setAlpha((int) (255 * alpha * imageView.getAlpha()));
-                                float hw = (imageView.getWidth() - imageView.getPaddingLeft() - imageView.getPaddingRight()) / 2f;
-                                float hh = (imageView.getHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom()) / 2f;
-                                float cx = (imageView.getLeft() + imageView.getRight()) / 2f;
-                                float cy = imageView.getPaddingTop() + hh;
-                                float scale = 1f;
-                                if (imageView.pressedProgress != 0) {
-                                    scale *= 0.8f + 0.2f * (1f - imageView.pressedProgress);
-                                }
-                                drawable.setBounds(
-                                    (int) (cx - hw * imageView.getScaleX() * scale),
-                                    (int) (cy - hh * imageView.getScaleY() * scale),
-                                    (int) (cx + hw * imageView.getScaleX() * scale),
-                                    (int) (cy + hh * imageView.getScaleY() * scale)
-                                );
-                                drawable.draw(canvas);
-                            }
-                        }
-                    }
-                }
-
-                @Override
-                public void onFrameReady() {
-                    super.onFrameReady();
-                    for (int i = 0; i < drawInBackgroundViews.size(); i++) {
-                        EmojiImageView imageView = drawInBackgroundViews.get(i);
-                        imageView.backgroundThreadDrawHolder[threadIndex].release();
-                    }
-                    containerView.invalidate();
-                }
-            }
-
-            @Override
-            protected void onAttachedToWindow() {
-                super.onAttachedToWindow();
-                attached = true;
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                attached = false;
-                for (int i = 0; i < lineDrawables.size(); i++) {
-                    lineDrawables.get(i).onDetachFromWindow();
-                }
-                for (int i = 0; i < unusedLineDrawables.size(); i++) {
-                    unusedLineDrawables.get(i).onDetachFromWindow();
-                }
-                lineDrawables.clear();
-            }
-        };
+        containerView = contentView = new ContentView(context);
 
         paddingView = new View(context) {
             @Override
@@ -564,7 +271,14 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             @Override
             public void onScrolled(int dx, int dy) {
                 super.onScrolled(dx, dy);
+                contentView.updateEmojiDrawables();
                 containerView.invalidate();
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                super.onLayout(changed, l, t, r, b);
+                contentView.updateEmojiDrawables();
             }
 
             @Override
@@ -817,6 +531,323 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             listView.setTranslationY(!show ? (AndroidUtilities.dp(68) - removeOffset) : 0);
         }
         shown = show;
+    }
+
+    private class ContentView extends FrameLayout {
+        public ContentView(Context context) {
+            super(context);
+        }
+
+        private Paint paint = new Paint();
+        private Path path = new Path();
+        private Boolean lastOpen = null;
+        boolean attached;
+        SparseArray<ArrayList<EmojiImageView>> viewsGroupedByLines = new SparseArray<>();
+        ArrayList<DrawingInBackgroundLine> lineDrawables = new ArrayList<>();
+        ArrayList<DrawingInBackgroundLine> lineDrawablesTmp = new ArrayList<>();
+        ArrayList<ArrayList<EmojiImageView>> unusedArrays = new ArrayList<>();
+        ArrayList<DrawingInBackgroundLine> unusedLineDrawables = new ArrayList<>();
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            if (!attached) {
+                return;
+            }
+            paint.setColor(getThemedColor(Theme.key_dialogBackground));
+            Theme.applyDefaultShadow(paint);
+            path.reset();
+            float y = lastY = getListTop();
+            float pad = 0;
+            if (fromY != null) {
+                float wasY = y;
+                y = AndroidUtilities.lerp(fromY, y + containerView.getY(), loadT) - containerView.getY();
+                pad = y - wasY;
+            }
+            float stickToTop = (1f - MathUtils.clamp((y - containerView.getPaddingTop()) / AndroidUtilities.dp(32), 0, 1));
+            y -= stickToTop * containerView.getPaddingTop();
+            float r = dp((1f - stickToTop) * 14);
+            AndroidUtilities.rectTmp.set(getPaddingLeft(), y, getWidth() - getPaddingRight(), getBottom() + r);
+            path.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+            canvas.drawPath(path, paint);
+
+            boolean open = stickToTop > .75f;
+            if (lastOpen == null || open != lastOpen) {
+                updateLightStatusBar(lastOpen = open);
+            }
+
+            Theme.dialogs_onlineCirclePaint.setColor(getThemedColor(Theme.key_sheet_scrollUp));
+            Theme.dialogs_onlineCirclePaint.setAlpha((int) (MathUtils.clamp(y / (float) AndroidUtilities.dp(20), 0, 1) * Theme.dialogs_onlineCirclePaint.getAlpha()));
+            int w = AndroidUtilities.dp(36);
+            y += AndroidUtilities.dp(10);
+            AndroidUtilities.rectTmp.set((getMeasuredWidth() - w) / 2, y, (getMeasuredWidth() + w) / 2, y + AndroidUtilities.dp(4));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(2), AndroidUtilities.dp(2), Theme.dialogs_onlineCirclePaint);
+
+            shadowView.setVisibility(listView.canScrollVertically(1) || removeButtonView.getVisibility() == View.VISIBLE ? View.VISIBLE : View.INVISIBLE);
+            if (listView != null) {
+                canvas.save();
+                canvas.translate(listView.getLeft(), listView.getTop() + pad);
+                canvas.clipRect(0, 0, listView.getWidth(), listView.getHeight());
+                canvas.saveLayerAlpha(0, 0, listView.getWidth(), listView.getHeight(), (int) (255 * listView.getAlpha()), Canvas.ALL_SAVE_FLAG);
+
+                for (int i = 0; i < viewsGroupedByLines.size(); i++) {
+                    ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.valueAt(i);
+                    arrayList.clear();
+                    unusedArrays.add(arrayList);
+                }
+                viewsGroupedByLines.clear();
+                for (int i = 0; i < listView.getChildCount(); ++i) {
+                    View child = listView.getChildAt(i);
+                    if (child instanceof EmojiImageView) {
+                        ((EmojiImageView) child).updatePressedProgress();
+                        if (animatedEmojiDrawables == null) {
+                            continue;
+                        }
+                        AnimatedEmojiSpan span = ((EmojiImageView) child).span;
+                        if (span == null) {
+                            continue;
+                        }
+                        long documentId = span.getDocumentId();
+                        AnimatedEmojiDrawable drawable = animatedEmojiDrawables.get(documentId);
+                        if (drawable == null) {
+                            continue;
+                        }
+                        drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+//                            drawable.addView(this);
+                        ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.get(child.getTop());
+                        if (arrayList == null) {
+                            if (!unusedArrays.isEmpty()) {
+                                arrayList = unusedArrays.remove(unusedArrays.size() - 1);
+                            } else {
+                                arrayList = new ArrayList<>();
+                            }
+                            viewsGroupedByLines.put(child.getTop(), arrayList);
+                        }
+                        arrayList.add((EmojiImageView) child);
+                    } else {
+                        canvas.save();
+                        canvas.translate(child.getLeft(), child.getTop());
+                        child.draw(canvas);
+                        canvas.restore();
+                    }
+                }
+
+                lineDrawablesTmp.clear();
+                lineDrawablesTmp.addAll(lineDrawables);
+                lineDrawables.clear();
+
+                long time = System.currentTimeMillis();
+                for (int i = 0; i < viewsGroupedByLines.size(); i++) {
+                    ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.valueAt(i);
+                    View firstView = arrayList.get(0);
+                    int position = listView.getChildAdapterPosition(firstView);
+                    DrawingInBackgroundLine drawable = null;
+                    for (int k = 0; k < lineDrawablesTmp.size(); k++) {
+                        if (lineDrawablesTmp.get(k).position == position) {
+                            drawable = lineDrawablesTmp.get(k);
+                            lineDrawablesTmp.remove(k);
+                            break;
+                        }
+                    }
+                    if (drawable == null) {
+                        if (!unusedLineDrawables.isEmpty()) {
+                            drawable = unusedLineDrawables.remove(unusedLineDrawables.size() - 1);
+                        } else {
+                            drawable = new DrawingInBackgroundLine();
+                            drawable.setLayerNum(7);
+                        }
+                        drawable.position = position;
+                        drawable.onAttachToWindow();
+                    }
+                    lineDrawables.add(drawable);
+                    drawable.imageViewEmojis = arrayList;
+                    canvas.save();
+                    canvas.translate(0, firstView.getY() + firstView.getPaddingTop());
+                    drawable.draw(canvas, time, getMeasuredWidth(), firstView.getMeasuredHeight() - firstView.getPaddingBottom(), 1f);
+                    canvas.restore();
+                }
+
+                for (int i = 0; i < lineDrawablesTmp.size(); i++) {
+                    if (unusedLineDrawables.size() < 3) {
+                        unusedLineDrawables.add(lineDrawablesTmp.get(i));
+                        lineDrawablesTmp.get(i).imageViewEmojis = null;
+                        lineDrawablesTmp.get(i).reset();
+
+                    } else {
+                        lineDrawablesTmp.get(i).onDetachFromWindow();
+                    }
+                }
+                lineDrawablesTmp.clear();
+                canvas.restore();
+                canvas.restore();
+
+                if (listView.getAlpha() < 1) {
+                    int cx = getWidth() / 2;
+                    int cy = ((int) y + getHeight()) / 2;
+                    int R = AndroidUtilities.dp(16);
+                    progressDrawable.setAlpha((int) (255 * (1f - listView.getAlpha())));
+                    progressDrawable.setBounds(cx - R, cy - R, cx + R, cy + R);
+                    progressDrawable.draw(canvas);
+                    invalidate();
+                }
+            }
+            super.dispatchDraw(canvas);
+        }
+
+        private AnimatedEmojiSpan[] getAnimatedEmojiSpans() {
+            if (listView == null) {
+                return new AnimatedEmojiSpan[0];
+            }
+            AnimatedEmojiSpan[] spans = new AnimatedEmojiSpan[listView.getChildCount()];
+            for (int i = 0; i < listView.getChildCount(); ++i) {
+                View child = listView.getChildAt(i);
+                if (child instanceof EmojiImageView) {
+                    spans[i] = ((EmojiImageView) child).span;
+                }
+            }
+            return spans;
+        }
+
+        public void updateEmojiDrawables() {
+            animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, this, getAnimatedEmojiSpans(), animatedEmojiDrawables);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN && event.getY() < getListTop() - AndroidUtilities.dp(6)) {
+                dismiss();
+            }
+            return super.dispatchTouchEvent(event);
+        }
+
+        class DrawingInBackgroundLine extends DrawingInBackgroundThreadDrawable {
+            public int position;
+            ArrayList<EmojiImageView> imageViewEmojis;
+            ArrayList<EmojiImageView> drawInBackgroundViews = new ArrayList<>();
+
+
+            @Override
+            public void prepareDraw(long time) {
+                drawInBackgroundViews.clear();
+                for (int i = 0; i < imageViewEmojis.size(); i++) {
+                    EmojiImageView imageView = imageViewEmojis.get(i);
+                    AnimatedEmojiSpan span = imageView.span;
+                    if (span == null) {
+                        continue;
+                    }
+                    AnimatedEmojiDrawable drawable = animatedEmojiDrawables.get(imageView.span.getDocumentId());
+                    if (drawable == null || drawable.getImageReceiver() == null) {
+                        continue;
+                    }
+
+                    drawable.update(time);
+                    imageView.backgroundThreadDrawHolder[threadIndex] = drawable.getImageReceiver().setDrawInBackgroundThread(imageView.backgroundThreadDrawHolder[threadIndex], threadIndex);
+                    imageView.backgroundThreadDrawHolder[threadIndex].time = time;
+                    drawable.setAlpha(255);
+                    AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(),  imageView.getPaddingTop(), imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom());
+                    imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
+                    drawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                    imageView.imageReceiver = drawable.getImageReceiver();;
+                    drawInBackgroundViews.add(imageView);
+                }
+            }
+
+            @Override
+            public void draw(Canvas canvas, long time, int w, int h, float alpha) {
+                if (imageViewEmojis == null) {
+                    return;
+                }
+                boolean drawInUi = imageViewEmojis.size() <= 3 || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW;
+                if (!drawInUi) {
+                    for (int i = 0; i < imageViewEmojis.size(); i++) {
+                        EmojiImageView img = imageViewEmojis.get(i);
+                        if (img.pressedProgress != 0 || img.backAnimator != null || img.getTranslationX() != 0 || img.getTranslationY() != 0 || img.getAlpha() != 1) {
+                            drawInUi = true;
+                            break;
+                        }
+                    }
+                }
+                if (drawInUi) {
+                    prepareDraw(System.currentTimeMillis());
+                    drawInUiThread(canvas, alpha);
+                    reset();
+                } else {
+                    super.draw(canvas, time, w, h, alpha);
+                }
+            }
+
+            @Override
+            public void drawInBackground(Canvas canvas) {
+                for (int i = 0; i < drawInBackgroundViews.size(); i++) {
+                    EmojiImageView imageView = drawInBackgroundViews.get(i);
+                    imageView.imageReceiver.draw(canvas, imageView.backgroundThreadDrawHolder[threadIndex]);
+                }
+            }
+
+            @Override
+            protected void drawInUiThread(Canvas canvas, float alpha) {
+                if (imageViewEmojis != null) {
+                    for (int i = 0; i < imageViewEmojis.size(); i++) {
+                        EmojiImageView imageView = imageViewEmojis.get(i);
+                        AnimatedEmojiSpan span = imageView.span;
+                        if (span == null) {
+                            continue;
+                        }
+                        AnimatedEmojiDrawable drawable = animatedEmojiDrawables.get(imageView.span.getDocumentId());
+                        if (drawable == null || drawable.getImageReceiver() == null) {
+                            continue;
+                        }
+                        if (imageView.imageReceiver != null) {
+                            drawable.setAlpha((int) (255 * alpha * imageView.getAlpha()));
+                            float hw = (imageView.getWidth() - imageView.getPaddingLeft() - imageView.getPaddingRight()) / 2f;
+                            float hh = (imageView.getHeight() - imageView.getPaddingTop() - imageView.getPaddingBottom()) / 2f;
+                            float cx = (imageView.getLeft() + imageView.getRight()) / 2f;
+                            float cy = imageView.getPaddingTop() + hh;
+                            float scale = 1f;
+                            if (imageView.pressedProgress != 0) {
+                                scale *= 0.8f + 0.2f * (1f - imageView.pressedProgress);
+                            }
+                            drawable.setBounds(
+                                    (int) (cx - hw * imageView.getScaleX() * scale),
+                                    (int) (cy - hh * imageView.getScaleY() * scale),
+                                    (int) (cx + hw * imageView.getScaleX() * scale),
+                                    (int) (cy + hh * imageView.getScaleY() * scale)
+                            );
+                            drawable.draw(canvas);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFrameReady() {
+                super.onFrameReady();
+                for (int i = 0; i < drawInBackgroundViews.size(); i++) {
+                    EmojiImageView imageView = drawInBackgroundViews.get(i);
+                    imageView.backgroundThreadDrawHolder[threadIndex].release();
+                }
+                containerView.invalidate();
+            }
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            attached = true;
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            attached = false;
+            for (int i = 0; i < lineDrawables.size(); i++) {
+                lineDrawables.get(i).onDetachFromWindow();
+            }
+            for (int i = 0; i < unusedLineDrawables.size(); i++) {
+                unusedLineDrawables.get(i).onDetachFromWindow();
+            }
+            lineDrawables.clear();
+            AnimatedEmojiSpan.release(this, animatedEmojiDrawables);
+        }
     }
 
     protected void onCloseByLink() {

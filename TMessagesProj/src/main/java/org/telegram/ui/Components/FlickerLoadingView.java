@@ -821,7 +821,7 @@ public class FlickerLoadingView extends View {
                 return AndroidUtilities.dp(107);
             case REACTED_TYPE_WITH_EMOJI_HINT:
             case REACTED_TYPE:
-                return AndroidUtilities.dp(48);
+                return AndroidUtilities.dp(ReactedUsersListView.ITEM_HEIGHT_DP);
             case LIMIT_REACHED_GROUPS:
                 return AndroidUtilities.dp(58);
             case LIMIT_REACHED_LINKS:

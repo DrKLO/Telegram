@@ -20,6 +20,7 @@
 #include "absl/types/optional.h"
 #include "api/rtp_packet_infos.h"
 #include "api/transport/rtp/rtp_source.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/time_utils.h"
 #include "system_wrappers/include/clock.h"
@@ -94,6 +95,13 @@ class SourceTracker {
     // most recent packet used to assemble the frame. For more info see
     // https://webrtc.org/experiments/rtp-hdrext/abs-capture-time/
     absl::optional<AbsoluteCaptureTime> absolute_capture_time;
+
+    // Clock offset between the local clock and the capturer's clock.
+    // Do not confuse with `AbsoluteCaptureTime::estimated_capture_clock_offset`
+    // which instead represents the clock offset between a remote sender and the
+    // capturer. The following holds:
+    //   Capture's NTP Clock = Local NTP Clock + Local-Capture Clock Offset
+    absl::optional<TimeDelta> local_capture_clock_offset;
 
     // RTP timestamp of the most recent packet used to assemble the frame
     // associated with `timestamp_ms`.

@@ -30,9 +30,7 @@ public interface CacheEvictor extends Cache.Listener {
    */
   boolean requiresCacheSpanTouches();
 
-  /**
-   * Called when cache has been initialized.
-   */
+  /** Called when cache has been initialized. */
   void onCacheInitialized();
 
   /**

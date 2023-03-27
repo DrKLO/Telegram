@@ -15,42 +15,43 @@
  */
 package com.google.android.exoplayer2.ext.ffmpeg;
 
+import static com.google.android.exoplayer2.audio.AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY;
+import static com.google.android.exoplayer2.audio.AudioSink.SINK_FORMAT_SUPPORTED_WITH_TRANSCODING;
+import static com.google.android.exoplayer2.audio.AudioSink.SINK_FORMAT_UNSUPPORTED;
+
 import android.os.Handler;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
 import com.google.android.exoplayer2.audio.AudioSink;
+import com.google.android.exoplayer2.audio.AudioSink.SinkFormatSupport;
+import com.google.android.exoplayer2.audio.DecoderAudioRenderer;
 import com.google.android.exoplayer2.audio.DefaultAudioSink;
-import com.google.android.exoplayer2.audio.SimpleDecoderAudioRenderer;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.drm.ExoMediaCrypto;
+import com.google.android.exoplayer2.decoder.CryptoConfig;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
-import java.util.Collections;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import com.google.android.exoplayer2.util.TraceUtil;
+import com.google.android.exoplayer2.util.Util;
 
-/**
- * Decodes and renders audio using FFmpeg.
- */
-public final class FfmpegAudioRenderer extends SimpleDecoderAudioRenderer {
+/** Decodes and renders audio using FFmpeg. */
+public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioDecoder> {
+
+  private static final String TAG = "FfmpegAudioRenderer";
 
   /** The number of input and output buffers. */
   private static final int NUM_BUFFERS = 16;
   /** The default input buffer size. */
   private static final int DEFAULT_INPUT_BUFFER_SIZE = 960 * 6;
 
-  private final boolean enableFloatOutput;
-
-  private @MonotonicNonNull FfmpegDecoder decoder;
-
   public FfmpegAudioRenderer() {
     this(/* eventHandler= */ null, /* eventListener= */ null);
   }
 
   /**
+   * Creates a new instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
@@ -63,109 +64,106 @@ public final class FfmpegAudioRenderer extends SimpleDecoderAudioRenderer {
     this(
         eventHandler,
         eventListener,
-        new DefaultAudioSink(/* audioCapabilities= */ null, audioProcessors),
-        /* enableFloatOutput= */ false);
+        new DefaultAudioSink.Builder().setAudioProcessors(audioProcessors).build());
   }
 
   /**
+   * Creates a new instance.
+   *
    * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
    *     null if delivery of events is not required.
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @param audioSink The sink to which audio will be output.
-   * @param enableFloatOutput Whether to enable 32-bit float audio format, if supported on the
-   *     device/build and if the input format may have bit depth higher than 16-bit. When using
-   *     32-bit float output, any audio processing will be disabled, including playback speed/pitch
-   *     adjustment.
    */
   public FfmpegAudioRenderer(
       @Nullable Handler eventHandler,
       @Nullable AudioRendererEventListener eventListener,
-      AudioSink audioSink,
-      boolean enableFloatOutput) {
-    super(
-        eventHandler,
-        eventListener,
-        /* drmSessionManager= */ null,
-        /* playClearSamplesWithoutKeys= */ false,
-        audioSink);
-    this.enableFloatOutput = enableFloatOutput;
+      AudioSink audioSink) {
+    super(eventHandler, eventListener, audioSink);
   }
 
   @Override
-  @FormatSupport
-  protected int supportsFormatInternal(
-      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager, Format format) {
-    Assertions.checkNotNull(format.sampleMimeType);
-    if (!FfmpegLibrary.supportsFormat(format.sampleMimeType) || !isOutputSupported(format)) {
-      return FORMAT_UNSUPPORTED_SUBTYPE;
-    } else if (!supportsFormatDrm(drmSessionManager, format.drmInitData)) {
-      return FORMAT_UNSUPPORTED_DRM;
+  public String getName() {
+    return TAG;
+  }
+
+  @Override
+  protected @C.FormatSupport int supportsFormatInternal(Format format) {
+    String mimeType = Assertions.checkNotNull(format.sampleMimeType);
+    if (!FfmpegLibrary.isAvailable() || !MimeTypes.isAudio(mimeType)) {
+      return C.FORMAT_UNSUPPORTED_TYPE;
+    } else if (!FfmpegLibrary.supportsFormat(mimeType)
+        || (!sinkSupportsFormat(format, C.ENCODING_PCM_16BIT)
+            && !sinkSupportsFormat(format, C.ENCODING_PCM_FLOAT))) {
+      return C.FORMAT_UNSUPPORTED_SUBTYPE;
+    } else if (format.cryptoType != C.CRYPTO_TYPE_NONE) {
+      return C.FORMAT_UNSUPPORTED_DRM;
     } else {
-      return FORMAT_HANDLED;
+      return C.FORMAT_HANDLED;
     }
   }
 
   @Override
-  @AdaptiveSupport
-  public final int supportsMixedMimeTypeAdaptation() throws ExoPlaybackException {
+  public @AdaptiveSupport int supportsMixedMimeTypeAdaptation() {
     return ADAPTIVE_NOT_SEAMLESS;
   }
 
+  /** {@inheritDoc} */
   @Override
-  protected FfmpegDecoder createDecoder(Format format, @Nullable ExoMediaCrypto mediaCrypto)
+  protected FfmpegAudioDecoder createDecoder(Format format, @Nullable CryptoConfig cryptoConfig)
       throws FfmpegDecoderException {
+    TraceUtil.beginSection("createFfmpegAudioDecoder");
     int initialInputBufferSize =
         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
-    decoder =
-        new FfmpegDecoder(
-            NUM_BUFFERS, NUM_BUFFERS, initialInputBufferSize, format, shouldUseFloatOutput(format));
+    FfmpegAudioDecoder decoder =
+        new FfmpegAudioDecoder(
+            format, NUM_BUFFERS, NUM_BUFFERS, initialInputBufferSize, shouldOutputFloat(format));
+    TraceUtil.endSection();
     return decoder;
   }
 
+  /** {@inheritDoc} */
   @Override
-  public Format getOutputFormat() {
+  protected Format getOutputFormat(FfmpegAudioDecoder decoder) {
     Assertions.checkNotNull(decoder);
-    int channelCount = decoder.getChannelCount();
-    int sampleRate = decoder.getSampleRate();
-    @C.PcmEncoding int encoding = decoder.getEncoding();
-    return Format.createAudioSampleFormat(
-        /* id= */ null,
-        MimeTypes.AUDIO_RAW,
-        /* codecs= */ null,
-        Format.NO_VALUE,
-        Format.NO_VALUE,
-        channelCount,
-        sampleRate,
-        encoding,
-        Collections.emptyList(),
-        /* drmInitData= */ null,
-        /* selectionFlags= */ 0,
-        /* language= */ null);
+    return new Format.Builder()
+        .setSampleMimeType(MimeTypes.AUDIO_RAW)
+        .setChannelCount(decoder.getChannelCount())
+        .setSampleRate(decoder.getSampleRate())
+        .setPcmEncoding(decoder.getEncoding())
+        .build();
   }
 
-  private boolean isOutputSupported(Format inputFormat) {
-    return shouldUseFloatOutput(inputFormat)
-        || supportsOutput(inputFormat.channelCount, C.ENCODING_PCM_16BIT);
+  /**
+   * Returns whether the renderer's {@link AudioSink} supports the PCM format that will be output
+   * from the decoder for the given input format and requested output encoding.
+   */
+  private boolean sinkSupportsFormat(Format inputFormat, @C.PcmEncoding int pcmEncoding) {
+    return sinkSupportsFormat(
+        Util.getPcmFormat(pcmEncoding, inputFormat.channelCount, inputFormat.sampleRate));
   }
 
-  private boolean shouldUseFloatOutput(Format inputFormat) {
-    Assertions.checkNotNull(inputFormat.sampleMimeType);
-    if (!enableFloatOutput || !supportsOutput(inputFormat.channelCount, C.ENCODING_PCM_FLOAT)) {
-      return false;
+  private boolean shouldOutputFloat(Format inputFormat) {
+    if (!sinkSupportsFormat(inputFormat, C.ENCODING_PCM_16BIT)) {
+      // We have no choice because the sink doesn't support 16-bit integer PCM.
+      return true;
     }
-    switch (inputFormat.sampleMimeType) {
-      case MimeTypes.AUDIO_RAW:
-        // For raw audio, output in 32-bit float encoding if the bit depth is > 16-bit.
-        return inputFormat.pcmEncoding == C.ENCODING_PCM_24BIT
-            || inputFormat.pcmEncoding == C.ENCODING_PCM_32BIT
-            || inputFormat.pcmEncoding == C.ENCODING_PCM_FLOAT;
-      case MimeTypes.AUDIO_AC3:
-        // AC-3 is always 16-bit, so there is no point outputting in 32-bit float encoding.
-        return false;
+
+    @SinkFormatSupport
+    int formatSupport =
+        getSinkFormatSupport(
+            Util.getPcmFormat(
+                C.ENCODING_PCM_FLOAT, inputFormat.channelCount, inputFormat.sampleRate));
+    switch (formatSupport) {
+      case SINK_FORMAT_SUPPORTED_DIRECTLY:
+        // AC-3 is always 16-bit, so there's no point using floating point. Assume that it's worth
+        // using for all other formats.
+        return !MimeTypes.AUDIO_AC3.equals(inputFormat.sampleMimeType);
+      case SINK_FORMAT_UNSUPPORTED:
+      case SINK_FORMAT_SUPPORTED_WITH_TRANSCODING:
       default:
-        // For all other formats, assume that it's worth using 32-bit float encoding.
-        return true;
+        // Always prefer 16-bit PCM if the sink does not provide direct support for floating point.
+        return false;
     }
   }
-
 }

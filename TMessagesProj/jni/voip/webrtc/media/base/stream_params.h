@@ -54,7 +54,6 @@
 
 #include "absl/algorithm/container.h"
 #include "media/base/rid_description.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/unique_id_generator.h"
 
 namespace cricket {

@@ -61,7 +61,7 @@ class GoogCcDebugFactory : public GoogCcNetworkControllerFactory {
   std::unique_ptr<NetworkControllerInterface> Create(
       NetworkControllerConfig config) override;
 
-  void PrintState(const Timestamp at_time);
+  void PrintState(Timestamp at_time);
 
   void AttachWriter(std::unique_ptr<RtcEventLogOutput> log_writer);
 

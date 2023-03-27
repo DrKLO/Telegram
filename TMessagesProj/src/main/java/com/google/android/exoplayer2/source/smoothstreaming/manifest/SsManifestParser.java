@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.ParserException;
+import com.google.android.exoplayer2.audio.AacUtil;
 import com.google.android.exoplayer2.drm.DrmInitData;
 import com.google.android.exoplayer2.drm.DrmInitData.SchemeData;
 import com.google.android.exoplayer2.extractor.mp4.PsshAtomUtil;
@@ -49,8 +50,8 @@ import org.xmlpull.v1.XmlPullParserFactory;
 /**
  * Parses SmoothStreaming client manifests.
  *
- * @see <a href="http://msdn.microsoft.com/en-us/library/ee673436(v=vs.90).aspx">
- * IIS Smooth Streaming Client Manifest Format</a>
+ * @see <a href="http://msdn.microsoft.com/en-us/library/ee673436(v=vs.90).aspx">IIS Smooth
+ *     Streaming Client Manifest Format</a>
  */
 public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
 
@@ -73,24 +74,23 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
           new SmoothStreamingMediaParser(null, uri.toString());
       return (SsManifest) smoothStreamingMediaParser.parse(xmlParser);
     } catch (XmlPullParserException e) {
-      throw new ParserException(e);
+      throw ParserException.createForMalformedManifest(/* message= */ null, /* cause= */ e);
     }
   }
 
-  /**
-   * Thrown if a required field is missing.
-   */
+  /** Thrown if a required field is missing. */
   public static class MissingFieldException extends ParserException {
 
     public MissingFieldException(String fieldName) {
-      super("Missing required field: " + fieldName);
+      super(
+          "Missing required field: " + fieldName,
+          /* cause= */ null,
+          /* contentIsMalformed= */ true,
+          C.DATA_TYPE_MANIFEST);
     }
-
   }
 
-  /**
-   * A base class for parsers that parse components of a smooth streaming manifest.
-   */
+  /** A base class for parsers that parse components of a smooth streaming manifest. */
   private abstract static class ElementParser {
 
     private final String baseUri;
@@ -192,7 +192,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
      * provided name, the parent element parser will be queried, and so on up the chain.
      *
      * @param key The name of the attribute.
-     * @return The stashed value, or null if the attribute was not be found.
+     * @return The stashed value, or null if the attribute was not found.
      */
     @Nullable
     protected final Object getNormalizedAttribute(String key) {
@@ -263,7 +263,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
         try {
           return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-          throw new ParserException(e);
+          throw ParserException.createForMalformedManifest(/* message= */ null, /* cause= */ e);
         }
       } else {
         return defaultValue;
@@ -276,7 +276,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
         try {
           return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-          throw new ParserException(e);
+          throw ParserException.createForMalformedManifest(/* message= */ null, /* cause= */ e);
         }
       } else {
         throw new MissingFieldException(key);
@@ -290,7 +290,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
         try {
           return Long.parseLong(value);
         } catch (NumberFormatException e) {
-          throw new ParserException(e);
+          throw ParserException.createForMalformedManifest(/* message= */ null, /* cause= */ e);
         }
       } else {
         return defaultValue;
@@ -304,7 +304,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
         try {
           return Long.parseLong(value);
         } catch (NumberFormatException e) {
-          throw new ParserException(e);
+          throw ParserException.createForMalformedManifest(/* message= */ null, /* cause= */ e);
         }
       } else {
         throw new MissingFieldException(key);
@@ -319,7 +319,6 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
         return defaultValue;
       }
     }
-
   }
 
   private static class SmoothStreamingMediaParser extends ElementParser {
@@ -379,22 +378,31 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       StreamElement[] streamElementArray = new StreamElement[streamElements.size()];
       streamElements.toArray(streamElementArray);
       if (protectionElement != null) {
-        DrmInitData drmInitData = new DrmInitData(new SchemeData(protectionElement.uuid,
-            MimeTypes.VIDEO_MP4, protectionElement.data));
+        DrmInitData drmInitData =
+            new DrmInitData(
+                new SchemeData(
+                    protectionElement.uuid, MimeTypes.VIDEO_MP4, protectionElement.data));
         for (StreamElement streamElement : streamElementArray) {
           int type = streamElement.type;
           if (type == C.TRACK_TYPE_VIDEO || type == C.TRACK_TYPE_AUDIO) {
             Format[] formats = streamElement.formats;
             for (int i = 0; i < formats.length; i++) {
-              formats[i] = formats[i].copyWithDrmInitData(drmInitData);
+              formats[i] = formats[i].buildUpon().setDrmInitData(drmInitData).build();
             }
           }
         }
       }
-      return new SsManifest(majorVersion, minorVersion, timescale, duration, dvrWindowLength,
-          lookAheadCount, isLive, protectionElement, streamElementArray);
+      return new SsManifest(
+          majorVersion,
+          minorVersion,
+          timescale,
+          duration,
+          dvrWindowLength,
+          lookAheadCount,
+          isLive,
+          protectionElement,
+          streamElementArray);
     }
-
   }
 
   private static class ProtectionParser extends ElementParser {
@@ -564,7 +572,8 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
           startTime = startTimes.get(chunkIndex - 1) + lastChunkDuration;
         } else {
           // We don't have the start time, and we're unable to infer it.
-          throw new ParserException("Unable to infer start time");
+          throw ParserException.createForMalformedManifest(
+              "Unable to infer start time", /* cause= */ null);
         }
       }
       chunkIndex++;
@@ -573,7 +582,8 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       // Handle repeated chunks.
       long repeatCount = parseLong(parser, KEY_FRAGMENT_REPEAT_COUNT, 1L);
       if (repeatCount > 1 && lastChunkDuration == C.TIME_UNSET) {
-        throw new ParserException("Repeated chunk with unspecified duration");
+        throw ParserException.createForMalformedManifest(
+            "Repeated chunk with unspecified duration", /* cause= */ null);
       }
       for (int i = 1; i < repeatCount; i++) {
         chunkIndex++;
@@ -591,6 +601,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       }
       putNormalizedAttribute(KEY_SUB_TYPE, subType);
       name = parser.getAttributeValue(null, KEY_NAME);
+      putNormalizedAttribute(KEY_NAME, name);
       url = parseRequiredString(parser, KEY_URL);
       maxWidth = parseInt(parser, KEY_MAX_WIDTH, Format.NO_VALUE);
       maxHeight = parseInt(parser, KEY_MAX_HEIGHT, Format.NO_VALUE);
@@ -615,7 +626,8 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
         } else if (KEY_TYPE_TEXT.equalsIgnoreCase(value)) {
           return C.TRACK_TYPE_TEXT;
         } else {
-          throw new ParserException("Invalid key value[" + value + "]");
+          throw ParserException.createForMalformedManifest(
+              "Invalid key value[" + value + "]", /* cause= */ null);
         }
       }
       throw new MissingFieldException(KEY_TYPE);
@@ -632,10 +644,22 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
     public Object build() {
       Format[] formatArray = new Format[formats.size()];
       formats.toArray(formatArray);
-      return new StreamElement(baseUri, url, type, subType, timescale, name, maxWidth, maxHeight,
-          displayWidth, displayHeight, language, formatArray, startTimes, lastChunkDuration);
+      return new StreamElement(
+          baseUri,
+          url,
+          type,
+          subType,
+          timescale,
+          name,
+          maxWidth,
+          maxHeight,
+          displayWidth,
+          displayHeight,
+          language,
+          formatArray,
+          startTimes,
+          lastChunkDuration);
     }
-
   }
 
   private static class QualityLevelParser extends ElementParser {
@@ -663,96 +687,65 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
 
     @Override
     public void parseStartTag(XmlPullParser parser) throws ParserException {
-      int type = (Integer) getNormalizedAttribute(KEY_TYPE);
-      String id = parser.getAttributeValue(null, KEY_INDEX);
-      String name = (String) getNormalizedAttribute(KEY_NAME);
-      int bitrate = parseRequiredInt(parser, KEY_BITRATE);
-      String sampleMimeType = fourCCToMimeType(parseRequiredString(parser, KEY_FOUR_CC));
+      Format.Builder formatBuilder = new Format.Builder();
 
+      @Nullable String sampleMimeType = fourCCToMimeType(parseRequiredString(parser, KEY_FOUR_CC));
+      int type = (Integer) getNormalizedAttribute(KEY_TYPE);
       if (type == C.TRACK_TYPE_VIDEO) {
-        int width = parseRequiredInt(parser, KEY_MAX_WIDTH);
-        int height = parseRequiredInt(parser, KEY_MAX_HEIGHT);
-        List<byte[]> codecSpecificData = buildCodecSpecificData(
-            parser.getAttributeValue(null, KEY_CODEC_PRIVATE_DATA));
-        format =
-            Format.createVideoContainerFormat(
-                id,
-                name,
-                MimeTypes.VIDEO_MP4,
-                sampleMimeType,
-                /* codecs= */ null,
-                /* metadata= */ null,
-                bitrate,
-                width,
-                height,
-                /* frameRate= */ Format.NO_VALUE,
-                codecSpecificData,
-                /* selectionFlags= */ 0,
-                /* roleFlags= */ 0);
+        List<byte[]> codecSpecificData =
+            buildCodecSpecificData(parser.getAttributeValue(null, KEY_CODEC_PRIVATE_DATA));
+        formatBuilder
+            .setContainerMimeType(MimeTypes.VIDEO_MP4)
+            .setWidth(parseRequiredInt(parser, KEY_MAX_WIDTH))
+            .setHeight(parseRequiredInt(parser, KEY_MAX_HEIGHT))
+            .setInitializationData(codecSpecificData);
       } else if (type == C.TRACK_TYPE_AUDIO) {
-        sampleMimeType = sampleMimeType == null ? MimeTypes.AUDIO_AAC : sampleMimeType;
-        int channels = parseRequiredInt(parser, KEY_CHANNELS);
-        int samplingRate = parseRequiredInt(parser, KEY_SAMPLING_RATE);
-        List<byte[]> codecSpecificData = buildCodecSpecificData(
-            parser.getAttributeValue(null, KEY_CODEC_PRIVATE_DATA));
+        if (sampleMimeType == null) {
+          // If we don't know the MIME type, assume AAC.
+          sampleMimeType = MimeTypes.AUDIO_AAC;
+        }
+        int channelCount = parseRequiredInt(parser, KEY_CHANNELS);
+        int sampleRate = parseRequiredInt(parser, KEY_SAMPLING_RATE);
+        List<byte[]> codecSpecificData =
+            buildCodecSpecificData(parser.getAttributeValue(null, KEY_CODEC_PRIVATE_DATA));
         if (codecSpecificData.isEmpty() && MimeTypes.AUDIO_AAC.equals(sampleMimeType)) {
-          codecSpecificData = Collections.singletonList(
-              CodecSpecificDataUtil.buildAacLcAudioSpecificConfig(samplingRate, channels));
+          codecSpecificData =
+              Collections.singletonList(
+                  AacUtil.buildAacLcAudioSpecificConfig(sampleRate, channelCount));
         }
-        String language = (String) getNormalizedAttribute(KEY_LANGUAGE);
-        format =
-            Format.createAudioContainerFormat(
-                id,
-                name,
-                MimeTypes.AUDIO_MP4,
-                sampleMimeType,
-                /* codecs= */ null,
-                /* metadata= */ null,
-                bitrate,
-                channels,
-                samplingRate,
-                codecSpecificData,
-                /* selectionFlags= */ 0,
-                /* roleFlags= */ 0,
-                language);
+        formatBuilder
+            .setContainerMimeType(MimeTypes.AUDIO_MP4)
+            .setChannelCount(channelCount)
+            .setSampleRate(sampleRate)
+            .setInitializationData(codecSpecificData);
       } else if (type == C.TRACK_TYPE_TEXT) {
-        String subType = (String) getNormalizedAttribute(KEY_SUB_TYPE);
         @C.RoleFlags int roleFlags = 0;
-        switch (subType) {
-          case "CAPT":
-            roleFlags = C.ROLE_FLAG_CAPTION;
-            break;
-          case "DESC":
-            roleFlags = C.ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND;
-            break;
-          default:
-            break;
+        @Nullable String subType = (String) getNormalizedAttribute(KEY_SUB_TYPE);
+        if (subType != null) {
+          switch (subType) {
+            case "CAPT":
+              roleFlags = C.ROLE_FLAG_CAPTION;
+              break;
+            case "DESC":
+              roleFlags = C.ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND;
+              break;
+            default:
+              break;
+          }
         }
-        String language = (String) getNormalizedAttribute(KEY_LANGUAGE);
-        format =
-            Format.createTextContainerFormat(
-                id,
-                name,
-                MimeTypes.APPLICATION_MP4,
-                sampleMimeType,
-                /* codecs= */ null,
-                bitrate,
-                /* selectionFlags= */ 0,
-                roleFlags,
-                language);
+        formatBuilder.setContainerMimeType(MimeTypes.APPLICATION_MP4).setRoleFlags(roleFlags);
       } else {
-        format =
-            Format.createContainerFormat(
-                id,
-                name,
-                MimeTypes.APPLICATION_MP4,
-                sampleMimeType,
-                /* codecs= */ null,
-                bitrate,
-                /* selectionFlags= */ 0,
-                /* roleFlags= */ 0,
-                /* language= */ null);
+        formatBuilder.setContainerMimeType(MimeTypes.APPLICATION_MP4);
       }
+
+      format =
+          formatBuilder
+              .setId(parser.getAttributeValue(null, KEY_INDEX))
+              .setLabel((String) getNormalizedAttribute(KEY_NAME))
+              .setSampleMimeType(sampleMimeType)
+              .setAverageBitrate(parseRequiredInt(parser, KEY_BITRATE))
+              .setLanguage((String) getNormalizedAttribute(KEY_LANGUAGE))
+              .build();
     }
 
     @Override
@@ -764,7 +757,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       ArrayList<byte[]> csd = new ArrayList<>();
       if (!TextUtils.isEmpty(codecSpecificDataString)) {
         byte[] codecPrivateData = Util.getBytesFromHexString(codecSpecificDataString);
-        byte[][] split = CodecSpecificDataUtil.splitNalUnits(codecPrivateData);
+        @Nullable byte[][] split = CodecSpecificDataUtil.splitNalUnits(codecPrivateData);
         if (split == null) {
           csd.add(codecPrivateData);
         } else {
@@ -774,12 +767,17 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       return csd;
     }
 
+    @Nullable
     private static String fourCCToMimeType(String fourCC) {
-      if (fourCC.equalsIgnoreCase("H264") || fourCC.equalsIgnoreCase("X264")
-          || fourCC.equalsIgnoreCase("AVC1") || fourCC.equalsIgnoreCase("DAVC")) {
+      if (fourCC.equalsIgnoreCase("H264")
+          || fourCC.equalsIgnoreCase("X264")
+          || fourCC.equalsIgnoreCase("AVC1")
+          || fourCC.equalsIgnoreCase("DAVC")) {
         return MimeTypes.VIDEO_H264;
-      } else if (fourCC.equalsIgnoreCase("AAC") || fourCC.equalsIgnoreCase("AACL")
-          || fourCC.equalsIgnoreCase("AACH") || fourCC.equalsIgnoreCase("AACP")) {
+      } else if (fourCC.equalsIgnoreCase("AAC")
+          || fourCC.equalsIgnoreCase("AACL")
+          || fourCC.equalsIgnoreCase("AACH")
+          || fourCC.equalsIgnoreCase("AACP")) {
         return MimeTypes.AUDIO_AAC;
       } else if (fourCC.equalsIgnoreCase("TTML") || fourCC.equalsIgnoreCase("DFXP")) {
         return MimeTypes.APPLICATION_TTML;
@@ -798,7 +796,5 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       }
       return null;
     }
-
   }
-
 }

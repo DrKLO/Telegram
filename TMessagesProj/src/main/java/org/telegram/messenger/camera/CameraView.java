@@ -41,6 +41,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.Surface;
@@ -50,6 +51,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -60,6 +62,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.video.MP4Builder;
 import org.telegram.messenger.video.Mp4Movie;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.InstantCameraView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -88,6 +91,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private Size pictureSize;
     CameraInfo info;
     private boolean mirror;
+    private boolean lazy;
     private TextureView textureView;
     private ImageView blurredStubView;
     private CameraSession cameraSession;
@@ -99,6 +103,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private Matrix txform = new Matrix();
     private Matrix matrix = new Matrix();
     private int focusAreaSize;
+    private Drawable thumbDrawable;
 
     private boolean useMaxPreview;
 
@@ -250,11 +255,18 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     }
 
     public CameraView(Context context, boolean frontface) {
+        this(context, frontface, false);
+    }
+
+    public CameraView(Context context, boolean frontface, boolean lazy) {
         super(context, null);
         initialFrontface = isFrontface = frontface;
         textureView = new TextureView(context);
-        textureView.setSurfaceTextureListener(this);
-        addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+        if (!(this.lazy = lazy)) {
+            initTexture();
+        }
+
+        setWillNotDraw(!lazy);
 
         blurredStubView = new ImageView(context);
         addView(blurredStubView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
@@ -266,10 +278,55 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         innerPaint.setColor(0x7fffffff);
     }
 
+    private boolean textureInited = false;
+    public void initTexture() {
+        if (textureInited) {
+            return;
+        }
+
+        textureView.setSurfaceTextureListener(this);
+        addView(textureView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+        textureInited = true;
+    }
+
     public void setOptimizeForBarcode(boolean value) {
         optimizeForBarcode = value;
         if (cameraSession != null) {
             cameraSession.setOptimizeForBarcode(true);
+        }
+    }
+
+    Rect bounds = new Rect();
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (thumbDrawable != null) {
+            bounds.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            int W = thumbDrawable.getIntrinsicWidth(), H = thumbDrawable.getIntrinsicHeight();
+            float scale = 1f / Math.min(W / (float) Math.max(1, bounds.width()), H / (float) Math.max(1, bounds.height()));
+            thumbDrawable.setBounds(
+                (int) (bounds.centerX() - W * scale / 2f),
+                (int) (bounds.centerY() - H * scale / 2f),
+                (int) (bounds.centerX() + W * scale / 2f),
+                (int) (bounds.centerY() + H * scale / 2f)
+            );
+            thumbDrawable.draw(canvas);
+        }
+        super.onDraw(canvas);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return who == thumbDrawable || super.verifyDrawable(who);
+    }
+
+    public void setThumbDrawable(Drawable drawable) {
+        if (thumbDrawable != null) {
+            thumbDrawable.setCallback(null);
+        }
+        thumbDrawable = drawable;
+        if (thumbDrawable != null) {
+            thumbDrawable.setCallback(this);
         }
     }
 
@@ -477,6 +534,39 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 delegate.onCameraInit();
             }
             inited = true;
+            if (lazy) {
+                textureView.setAlpha(0);
+                showTexture(true, true);
+            }
+        }
+    }
+
+    private ValueAnimator textureViewAnimator;
+    public void showTexture(boolean show, boolean animated) {
+        if (textureView == null) {
+            return;
+        }
+
+        if (textureViewAnimator != null) {
+            textureViewAnimator.cancel();
+            textureViewAnimator = null;
+        }
+        if (animated) {
+            textureViewAnimator = ValueAnimator.ofFloat(textureView.getAlpha(), show ? 1 : 0);
+            textureViewAnimator.addUpdateListener(anm -> {
+                final float t = (float) anm.getAnimatedValue();
+                textureView.setAlpha(t);
+            });
+            textureViewAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    textureView.setAlpha(show ? 1 : 0);
+                    textureViewAnimator = null;
+                }
+            });
+            textureViewAnimator.start();
+        } else {
+            textureView.setAlpha(show ? 1 : 0);
         }
     }
 
@@ -500,7 +590,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     };
 
     private void checkPreviewMatrix() {
-        if (previewSize == null) {
+        if (previewSize == null || textureView == null) {
             return;
         }
 
@@ -1158,6 +1248,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     private void createCamera(final SurfaceTexture surfaceTexture) {
         AndroidUtilities.runOnUIThread(() -> {
+            CameraGLThread cameraThread = this.cameraThread;
             if (cameraThread == null) {
                 return;
             }

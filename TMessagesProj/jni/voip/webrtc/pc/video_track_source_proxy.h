@@ -11,7 +11,13 @@
 #ifndef PC_VIDEO_TRACK_SOURCE_PROXY_H_
 #define PC_VIDEO_TRACK_SOURCE_PROXY_H_
 
+#include "absl/types/optional.h"
 #include "api/media_stream_interface.h"
+#include "api/video/recordable_encoded_frame.h"
+#include "api/video/video_frame.h"
+#include "api/video/video_sink_interface.h"
+#include "api/video/video_source_interface.h"
+#include "api/video_track_source_constraints.h"
 #include "pc/proxy.h"
 
 namespace webrtc {
@@ -21,6 +27,7 @@ namespace webrtc {
 // TODO(deadbeef): Move this to .cc file. What threads methods are called on is
 // an implementation detail.
 BEGIN_PROXY_MAP(VideoTrackSource)
+
 PROXY_PRIMARY_THREAD_DESTRUCTOR()
 PROXY_CONSTMETHOD0(SourceState, state)
 BYPASS_PROXY_CONSTMETHOD0(bool, remote)
@@ -32,6 +39,7 @@ PROXY_SECONDARY_METHOD2(void,
                         rtc::VideoSinkInterface<VideoFrame>*,
                         const rtc::VideoSinkWants&)
 PROXY_SECONDARY_METHOD1(void, RemoveSink, rtc::VideoSinkInterface<VideoFrame>*)
+PROXY_SECONDARY_METHOD0(void, RequestRefreshFrame)
 PROXY_METHOD1(void, RegisterObserver, ObserverInterface*)
 PROXY_METHOD1(void, UnregisterObserver, ObserverInterface*)
 PROXY_CONSTMETHOD0(bool, SupportsEncodedOutput)

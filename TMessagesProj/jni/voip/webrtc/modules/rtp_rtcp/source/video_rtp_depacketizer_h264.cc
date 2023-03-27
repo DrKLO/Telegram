@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "absl/types/optional.h"
 #include "absl/types/variant.h"
 #include "common_video/h264/h264_common.h"
@@ -23,6 +22,7 @@
 #include "common_video/h264/sps_parser.h"
 #include "common_video/h264/sps_vui_rewriter.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
+#include "modules/rtp_rtcp/source/rtp_format_h264.h"
 #include "modules/rtp_rtcp/source/video_rtp_depacketizer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
@@ -35,12 +35,6 @@ constexpr size_t kNalHeaderSize = 1;
 constexpr size_t kFuAHeaderSize = 2;
 constexpr size_t kLengthFieldSize = 2;
 constexpr size_t kStapAHeaderSize = kNalHeaderSize + kLengthFieldSize;
-
-// Bit masks for FU (A and B) indicators.
-enum NalDefs : uint8_t { kFBit = 0x80, kNriMask = 0x60, kTypeMask = 0x1F };
-
-// Bit masks for FU (A and B) headers.
-enum FuDefs : uint8_t { kSBit = 0x80, kEBit = 0x40, kRBit = 0x20 };
 
 // TODO(pbos): Avoid parsing this here as well as inside the jitter buffer.
 bool ParseStapAStartOffsets(const uint8_t* nalu_ptr,
@@ -82,7 +76,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessStapAOrSingleNalu(
 
   const uint8_t* nalu_start = payload_data + kNalHeaderSize;
   const size_t nalu_length = rtp_payload.size() - kNalHeaderSize;
-  uint8_t nal_type = payload_data[0] & kTypeMask;
+  uint8_t nal_type = payload_data[0] & kH264TypeMask;
   std::vector<size_t> nalu_start_offsets;
   if (nal_type == H264::NaluType::kStapA) {
     // Skip the StapA header (StapA NAL type + length).
@@ -97,7 +91,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessStapAOrSingleNalu(
     }
 
     h264_header.packetization_type = kH264StapA;
-    nal_type = payload_data[kStapAHeaderSize] & kTypeMask;
+    nal_type = payload_data[kStapAHeaderSize] & kH264TypeMask;
   } else {
     h264_header.packetization_type = kH264SingleNalu;
     nalu_start_offsets.push_back(0);
@@ -118,7 +112,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessStapAOrSingleNalu(
     }
 
     NaluInfo nalu;
-    nalu.type = payload_data[start_offset] & kTypeMask;
+    nalu.type = payload_data[start_offset] & kH264TypeMask;
     nalu.sps_id = -1;
     nalu.pps_id = -1;
     start_offset += H264::kNaluTypeSize;
@@ -197,7 +191,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ProcessStapAOrSingleNalu(
       case H264::NaluType::kIdr:
         parsed_payload->video_header.frame_type =
             VideoFrameType::kVideoFrameKey;
-        ABSL_FALLTHROUGH_INTENDED;
+        [[fallthrough]];
       case H264::NaluType::kSlice: {
         absl::optional<uint32_t> pps_id = PpsParser::ParsePpsIdFromSlice(
             &payload_data[start_offset], end_offset - start_offset);
@@ -242,9 +236,9 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ParseFuaNalu(
   }
   absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> parsed_payload(
       absl::in_place);
-  uint8_t fnri = rtp_payload.cdata()[0] & (kFBit | kNriMask);
-  uint8_t original_nal_type = rtp_payload.cdata()[1] & kTypeMask;
-  bool first_fragment = (rtp_payload.cdata()[1] & kSBit) > 0;
+  uint8_t fnri = rtp_payload.cdata()[0] & (kH264FBit | kH264NriMask);
+  uint8_t original_nal_type = rtp_payload.cdata()[1] & kH264TypeMask;
+  bool first_fragment = (rtp_payload.cdata()[1] & kH264SBit) > 0;
   NaluInfo nalu;
   nalu.type = original_nal_type;
   nalu.sps_id = -1;
@@ -301,7 +295,7 @@ VideoRtpDepacketizerH264::Parse(rtc::CopyOnWriteBuffer rtp_payload) {
     return absl::nullopt;
   }
 
-  uint8_t nal_type = rtp_payload.cdata()[0] & kTypeMask;
+  uint8_t nal_type = rtp_payload.cdata()[0] & kH264TypeMask;
 
   if (nal_type == H264::NaluType::kFuA) {
     // Fragmented NAL units (FU-A).

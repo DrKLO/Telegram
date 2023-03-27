@@ -27,7 +27,6 @@ class MockDecoderDatabase : public DecoderDatabase {
   MOCK_METHOD(void, Die, ());
   MOCK_METHOD(bool, Empty, (), (const, override));
   MOCK_METHOD(int, Size, (), (const, override));
-  MOCK_METHOD(void, Reset, (), (override));
   MOCK_METHOD(int,
               RegisterPayload,
               (int rtp_payload_type, const SdpAudioFormat& audio_format),

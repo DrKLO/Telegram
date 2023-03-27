@@ -24,7 +24,7 @@ class MockVideoTrack final
     : public rtc::RefCountedObject<webrtc::VideoTrackInterface> {
  public:
   static rtc::scoped_refptr<MockVideoTrack> Create() {
-    return new MockVideoTrack();
+    return rtc::scoped_refptr<MockVideoTrack>(new MockVideoTrack());
   }
 
   // NotifierInterface

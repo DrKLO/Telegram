@@ -17,23 +17,22 @@
 #include "api/transport/field_trial_based_config.h"
 #include "api/transport/network_control.h"
 #include "api/units/data_rate.h"
+#include "api/units/time_delta.h"
 #include "modules/congestion_controller/remb_throttler.h"
-#include "modules/include/module.h"
 #include "modules/pacing/packet_router.h"
 #include "modules/remote_bitrate_estimator/remote_estimator_proxy.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 class RemoteBitrateEstimator;
-class RemoteBitrateObserver;
 
 // This class represents the congestion control state for receive
 // streams. For send side bandwidth estimation, this is simply
 // relaying for each received RTP packet back to the sender. While for
 // receive side bandwidth estimation, we do the estimation locally and
 // send our results back to the sender.
-class ReceiveSideCongestionController : public CallStatsObserver,
-                                        public Module {
+class ReceiveSideCongestionController : public CallStatsObserver {
  public:
   ReceiveSideCongestionController(
       Clock* clock,
@@ -48,10 +47,6 @@ class ReceiveSideCongestionController : public CallStatsObserver,
                                 const RTPHeader& header);
 
   void SetSendPeriodicFeedback(bool send_periodic_feedback);
-  // TODO(nisse): Delete these methods, design a more specific interface.
-  virtual RemoteBitrateEstimator* GetRemoteBitrateEstimator(bool send_side_bwe);
-  virtual const RemoteBitrateEstimator* GetRemoteBitrateEstimator(
-      bool send_side_bwe) const;
 
   // Implements CallStatsObserver.
   void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) override;
@@ -63,56 +58,34 @@ class ReceiveSideCongestionController : public CallStatsObserver,
   // `bitrate` using RTCP REMB.
   void SetMaxDesiredReceiveBitrate(DataRate bitrate);
 
-  // Implements Module.
-  int64_t TimeUntilNextProcess() override;
-  void Process() override;
+  void SetTransportOverhead(DataSize overhead_per_packet);
+
+  // Returns latest receive side bandwidth estimation.
+  // Returns zero if receive side bandwidth estimation is unavailable.
+  DataRate LatestReceiveSideEstimate() const;
+
+  // Removes stream from receive side bandwidth estimation.
+  // Noop if receive side bwe is not used or stream doesn't participate in it.
+  void RemoveStream(uint32_t ssrc);
+
+  // Runs periodic tasks if it is time to run them, returns time until next
+  // call to `MaybeProcess` should be non idle.
+  TimeDelta MaybeProcess();
 
  private:
-  class WrappingBitrateEstimator : public RemoteBitrateEstimator {
-   public:
-    WrappingBitrateEstimator(RemoteBitrateObserver* observer, Clock* clock);
+  void PickEstimatorFromHeader(const RTPHeader& header)
+      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void PickEstimator() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-    WrappingBitrateEstimator() = delete;
-    WrappingBitrateEstimator(const WrappingBitrateEstimator&) = delete;
-    WrappingBitrateEstimator& operator=(const WrappingBitrateEstimator&) =
-        delete;
-
-    ~WrappingBitrateEstimator() override;
-
-    void IncomingPacket(int64_t arrival_time_ms,
-                        size_t payload_size,
-                        const RTPHeader& header) override;
-
-    void Process() override;
-
-    int64_t TimeUntilNextProcess() override;
-
-    void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) override;
-
-    void RemoveStream(unsigned int ssrc) override;
-
-    bool LatestEstimate(std::vector<unsigned int>* ssrcs,
-                        unsigned int* bitrate_bps) const override;
-
-    void SetMinBitrate(int min_bitrate_bps) override;
-
-   private:
-    void PickEstimatorFromHeader(const RTPHeader& header)
-        RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-    void PickEstimator() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-    RemoteBitrateObserver* observer_;
-    Clock* const clock_;
-    mutable Mutex mutex_;
-    std::unique_ptr<RemoteBitrateEstimator> rbe_;
-    bool using_absolute_send_time_;
-    uint32_t packets_since_absolute_send_time_;
-    int min_bitrate_bps_;
-  };
-
+  Clock& clock_;
   const FieldTrialBasedConfig field_trial_config_;
   RembThrottler remb_throttler_;
-  WrappingBitrateEstimator remote_bitrate_estimator_;
   RemoteEstimatorProxy remote_estimator_proxy_;
+
+  mutable Mutex mutex_;
+  std::unique_ptr<RemoteBitrateEstimator> rbe_ RTC_GUARDED_BY(mutex_);
+  bool using_absolute_send_time_ RTC_GUARDED_BY(mutex_);
+  uint32_t packets_since_absolute_send_time_ RTC_GUARDED_BY(mutex_);
 };
 
 }  // namespace webrtc

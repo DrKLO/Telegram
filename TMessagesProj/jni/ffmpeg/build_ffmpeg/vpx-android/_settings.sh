@@ -74,7 +74,7 @@ configure() {
      --stl libc++ \
      --install-dir=${TOOLCHAIN_PREFIX}
 
-  PREFIX=../../../android/${ABI}
+  PREFIX=../../android/${ABI}
 
 
   export PATH=${TOOLCHAIN_PREFIX}/bin:$PATH

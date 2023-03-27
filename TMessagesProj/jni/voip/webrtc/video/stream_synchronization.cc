@@ -35,19 +35,19 @@ bool StreamSynchronization::ComputeRelativeDelay(
     const Measurements& audio_measurement,
     const Measurements& video_measurement,
     int* relative_delay_ms) {
-  int64_t audio_last_capture_time_ms;
-  if (!audio_measurement.rtp_to_ntp.Estimate(audio_measurement.latest_timestamp,
-                                             &audio_last_capture_time_ms)) {
+  NtpTime audio_last_capture_time =
+      audio_measurement.rtp_to_ntp.Estimate(audio_measurement.latest_timestamp);
+  if (!audio_last_capture_time.Valid()) {
     return false;
   }
-  int64_t video_last_capture_time_ms;
-  if (!video_measurement.rtp_to_ntp.Estimate(video_measurement.latest_timestamp,
-                                             &video_last_capture_time_ms)) {
+  NtpTime video_last_capture_time =
+      video_measurement.rtp_to_ntp.Estimate(video_measurement.latest_timestamp);
+  if (!video_last_capture_time.Valid()) {
     return false;
   }
-  if (video_last_capture_time_ms < 0) {
-    return false;
-  }
+  int64_t audio_last_capture_time_ms = audio_last_capture_time.ToMs();
+  int64_t video_last_capture_time_ms = video_last_capture_time.ToMs();
+
   // Positive diff means that video_measurement is behind audio_measurement.
   *relative_delay_ms =
       video_measurement.latest_receive_time_ms -

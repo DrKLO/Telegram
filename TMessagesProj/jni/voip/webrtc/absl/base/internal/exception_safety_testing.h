@@ -30,6 +30,7 @@
 #include <tuple>
 #include <unordered_map>
 
+#include "gtest/gtest.h"
 #include "absl/base/internal/pretty_function.h"
 #include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"

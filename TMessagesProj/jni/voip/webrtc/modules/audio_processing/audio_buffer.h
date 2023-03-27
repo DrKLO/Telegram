@@ -40,12 +40,6 @@ class AudioBuffer {
               size_t output_rate,
               size_t output_num_channels);
 
-  // The constructor below will be deprecated.
-  AudioBuffer(size_t input_num_frames,
-              size_t input_num_channels,
-              size_t buffer_num_frames,
-              size_t buffer_num_channels,
-              size_t output_num_frames);
   virtual ~AudioBuffer();
 
   AudioBuffer(const AudioBuffer&) = delete;

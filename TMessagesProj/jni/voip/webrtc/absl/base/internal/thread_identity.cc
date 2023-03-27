@@ -14,7 +14,7 @@
 
 #include "absl/base/internal/thread_identity.h"
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__MINGW32__)
 #include <pthread.h>
 #include <signal.h>
 #endif
@@ -56,6 +56,7 @@ void AllocateThreadIdentityKey(ThreadIdentityReclaimerFunction reclaimer) {
 // *different* instances of this ptr.
 // Apple platforms have the visibility attribute, but issue a compile warning
 // that protected visibility is unsupported.
+ABSL_CONST_INIT  // Must come before __attribute__((visibility("protected")))
 #if ABSL_HAVE_ATTRIBUTE(visibility) && !defined(__APPLE__)
 __attribute__((visibility("protected")))
 #endif  // ABSL_HAVE_ATTRIBUTE(visibility) && !defined(__APPLE__)

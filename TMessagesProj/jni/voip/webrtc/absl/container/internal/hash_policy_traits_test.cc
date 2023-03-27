@@ -38,80 +38,30 @@ struct PolicyWithoutOptionalOps {
   using key_type = Slot;
   using init_type = Slot;
 
-  static std::function<void(void*, Slot*, Slot)> construct;
-  static std::function<void(void*, Slot*)> destroy;
-
   static std::function<Slot&(Slot*)> element;
   static int apply(int v) { return apply_impl(v); }
   static std::function<int(int)> apply_impl;
   static std::function<Slot&(Slot*)> value;
 };
 
-std::function<void(void*, Slot*, Slot)> PolicyWithoutOptionalOps::construct;
-std::function<void(void*, Slot*)> PolicyWithoutOptionalOps::destroy;
-
-std::function<Slot&(Slot*)> PolicyWithoutOptionalOps::element;
 std::function<int(int)> PolicyWithoutOptionalOps::apply_impl;
 std::function<Slot&(Slot*)> PolicyWithoutOptionalOps::value;
 
-struct PolicyWithOptionalOps : PolicyWithoutOptionalOps {
-  static std::function<void(void*, Slot*, Slot*)> transfer;
-};
-
-std::function<void(void*, Slot*, Slot*)> PolicyWithOptionalOps::transfer;
-
 struct Test : ::testing::Test {
   Test() {
-    PolicyWithoutOptionalOps::construct = [&](void* a1, Slot* a2, Slot a3) {
-      construct.Call(a1, a2, std::move(a3));
-    };
-    PolicyWithoutOptionalOps::destroy = [&](void* a1, Slot* a2) {
-      destroy.Call(a1, a2);
-    };
-
-    PolicyWithoutOptionalOps::element = [&](Slot* a1) -> Slot& {
-      return element.Call(a1);
-    };
     PolicyWithoutOptionalOps::apply_impl = [&](int a1) -> int {
       return apply.Call(a1);
     };
     PolicyWithoutOptionalOps::value = [&](Slot* a1) -> Slot& {
       return value.Call(a1);
     };
-
-    PolicyWithOptionalOps::transfer = [&](void* a1, Slot* a2, Slot* a3) {
-      return transfer.Call(a1, a2, a3);
-    };
   }
 
   std::allocator<int> alloc;
   int a = 53;
-
-  MockFunction<void(void*, Slot*, Slot)> construct;
-  MockFunction<void(void*, Slot*)> destroy;
-
-  MockFunction<Slot&(Slot*)> element;
   MockFunction<int(int)> apply;
   MockFunction<Slot&(Slot*)> value;
-
-  MockFunction<void(void*, Slot*, Slot*)> transfer;
 };
-
-TEST_F(Test, construct) {
-  EXPECT_CALL(construct, Call(&alloc, &a, 53));
-  hash_policy_traits<PolicyWithoutOptionalOps>::construct(&alloc, &a, 53);
-}
-
-TEST_F(Test, destroy) {
-  EXPECT_CALL(destroy, Call(&alloc, &a));
-  hash_policy_traits<PolicyWithoutOptionalOps>::destroy(&alloc, &a);
-}
-
-TEST_F(Test, element) {
-  int b = 0;
-  EXPECT_CALL(element, Call(&a)).WillOnce(ReturnRef(b));
-  EXPECT_EQ(&b, &hash_policy_traits<PolicyWithoutOptionalOps>::element(&a));
-}
 
 TEST_F(Test, apply) {
   EXPECT_CALL(apply, Call(42)).WillOnce(Return(1337));
@@ -122,20 +72,6 @@ TEST_F(Test, value) {
   int b = 0;
   EXPECT_CALL(value, Call(&a)).WillOnce(ReturnRef(b));
   EXPECT_EQ(&b, &hash_policy_traits<PolicyWithoutOptionalOps>::value(&a));
-}
-
-TEST_F(Test, without_transfer) {
-  int b = 42;
-  EXPECT_CALL(element, Call(&b)).WillOnce(::testing::ReturnRef(b));
-  EXPECT_CALL(construct, Call(&alloc, &a, b));
-  EXPECT_CALL(destroy, Call(&alloc, &b));
-  hash_policy_traits<PolicyWithoutOptionalOps>::transfer(&alloc, &a, &b);
-}
-
-TEST_F(Test, with_transfer) {
-  int b = 42;
-  EXPECT_CALL(transfer, Call(&alloc, &a, &b));
-  hash_policy_traits<PolicyWithOptionalOps>::transfer(&alloc, &a, &b);
 }
 
 }  // namespace

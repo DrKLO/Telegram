@@ -25,6 +25,7 @@
 #include "absl/strings/internal/str_format/checker.h"
 #include "absl/strings/internal/str_format/parser.h"
 #include "absl/types/span.h"
+#include "absl/utility/utility.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -87,6 +88,36 @@ class FormatSpecTemplate
     : public MakeDependent<UntypedFormatSpec, Args...>::type {
   using Base = typename MakeDependent<UntypedFormatSpec, Args...>::type;
 
+  template <bool res>
+  struct ErrorMaker {
+    constexpr bool operator()(int) const { return res; }
+  };
+
+  template <int i, int j>
+  static constexpr bool CheckArity(ErrorMaker<true> SpecifierCount = {},
+                                   ErrorMaker<i == j> ParametersPassed = {}) {
+    static_assert(SpecifierCount(i) == ParametersPassed(j),
+                  "Number of arguments passed must match the number of "
+                  "conversion specifiers.");
+    return true;
+  }
+
+  template <FormatConversionCharSet specified, FormatConversionCharSet passed,
+            int arg>
+  static constexpr bool CheckMatch(
+      ErrorMaker<Contains(specified, passed)> MismatchedArgumentNumber = {}) {
+    static_assert(MismatchedArgumentNumber(arg),
+                  "Passed argument must match specified format.");
+    return true;
+  }
+
+  template <FormatConversionCharSet... C, size_t... I>
+  static bool CheckMatches(absl::index_sequence<I...>) {
+    bool res[] = {true, CheckMatch<Args, C, I + 1>()...};
+    (void)res;
+    return true;
+  }
+
  public:
 #ifdef ABSL_INTERNAL_ENABLE_FORMAT_CHECKER
 
@@ -112,7 +143,8 @@ class FormatSpecTemplate
   template <typename T = void>
   FormatSpecTemplate(string_view s)  // NOLINT
       __attribute__((enable_if(str_format_internal::EnsureConstexpr(s),
-                               "constexpr trap"))) {
+                               "constexpr trap")))
+      : Base("to avoid noise in the compiler error") {
     static_assert(sizeof(T*) == 0,
                   "Format specified does not match the arguments passed.");
   }
@@ -133,13 +165,12 @@ class FormatSpecTemplate
 
 #endif  // ABSL_INTERNAL_ENABLE_FORMAT_CHECKER
 
-  template <
-      FormatConversionCharSet... C,
-      typename = typename std::enable_if<sizeof...(C) == sizeof...(Args)>::type,
-      typename = typename std::enable_if<AllOf(Contains(Args,
-                                                        C)...)>::type>
+  template <FormatConversionCharSet... C>
   FormatSpecTemplate(const ExtendedParsedFormat<C...>& pc)  // NOLINT
-      : Base(&pc) {}
+      : Base(&pc) {
+    CheckArity<sizeof...(C), sizeof...(Args)>();
+    CheckMatches<C...>(absl::make_index_sequence<sizeof...(C)>{});
+  }
 };
 
 class Streamable {
@@ -204,9 +235,10 @@ class StreamedWrapper {
 
  private:
   template <typename S>
-  friend ArgConvertResult<FormatConversionCharSetInternal::s> FormatConvertImpl(
-      const StreamedWrapper<S>& v, FormatConversionSpecImpl conv,
-      FormatSinkImpl* out);
+  friend ArgConvertResult<FormatConversionCharSetUnion(
+      FormatConversionCharSetInternal::s, FormatConversionCharSetInternal::v)>
+  FormatConvertImpl(const StreamedWrapper<S>& v, FormatConversionSpecImpl conv,
+                    FormatSinkImpl* out);
   const T& v_;
 };
 

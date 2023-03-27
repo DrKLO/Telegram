@@ -39,6 +39,7 @@ import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -389,7 +390,7 @@ public class SpoilerEffect extends Drawable {
             Paint shaderPaint = SpoilerEffectBitmapFactory.getInstance().getPaint();
             shaderPaint.setColorFilter(new PorterDuffColorFilter(lastColor, PorterDuff.Mode.SRC_IN));
             canvas.drawRect(getBounds().left, getBounds().top, getBounds().right, getBounds().bottom, SpoilerEffectBitmapFactory.getInstance().getPaint());
-            if (!SharedConfig.getLiteMode().enabled()) {
+            if (LiteMode.isEnabled(LiteMode.FLAG_CHAT_SPOILER)) {
                 invalidateSelf();
                 SpoilerEffectBitmapFactory.getInstance().checkUpdate();
             }

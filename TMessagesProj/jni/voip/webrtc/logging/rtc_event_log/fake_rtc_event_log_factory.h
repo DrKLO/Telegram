@@ -23,6 +23,9 @@ class FakeRtcEventLogFactory : public RtcEventLogFactoryInterface {
   FakeRtcEventLogFactory() = default;
   ~FakeRtcEventLogFactory() override = default;
 
+  std::unique_ptr<RtcEventLog> Create(
+      RtcEventLog::EncodingType encoding_type) const override;
+
   std::unique_ptr<RtcEventLog> CreateRtcEventLog(
       RtcEventLog::EncodingType encoding_type) override;
 

@@ -20,18 +20,12 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
 
-/**
- * Represents a time signal command as defined in SCTE35, Section 9.3.4.
- */
+/** Represents a time signal command as defined in SCTE35, Section 9.3.4. */
 public final class TimeSignalCommand extends SpliceCommand {
 
-  /**
-   * A PTS value, as defined in SCTE35, Section 9.3.4.
-   */
+  /** A PTS value, as defined in SCTE35, Section 9.3.4. */
   public final long ptsTime;
-  /**
-   * Equivalent to {@link #ptsTime} but in the playback timebase.
-   */
+  /** Equivalent to {@link #ptsTime} but in the playback timebase. */
   public final long playbackPositionUs;
 
   private TimeSignalCommand(long ptsTime, long playbackPositionUs) {
@@ -39,8 +33,8 @@ public final class TimeSignalCommand extends SpliceCommand {
     this.playbackPositionUs = playbackPositionUs;
   }
 
-  /* package */ static TimeSignalCommand parseFromSection(ParsableByteArray sectionData,
-      long ptsAdjustment, TimestampAdjuster timestampAdjuster) {
+  /* package */ static TimeSignalCommand parseFromSection(
+      ParsableByteArray sectionData, long ptsAdjustment, TimestampAdjuster timestampAdjuster) {
     long ptsTime = parseSpliceTime(sectionData, ptsAdjustment);
     long playbackPositionUs = timestampAdjuster.adjustTsTimestamp(ptsTime);
     return new TimeSignalCommand(ptsTime, playbackPositionUs);
@@ -78,16 +72,14 @@ public final class TimeSignalCommand extends SpliceCommand {
   public static final Creator<TimeSignalCommand> CREATOR =
       new Creator<TimeSignalCommand>() {
 
-    @Override
-    public TimeSignalCommand createFromParcel(Parcel in) {
-      return new TimeSignalCommand(in.readLong(), in.readLong());
-    }
+        @Override
+        public TimeSignalCommand createFromParcel(Parcel in) {
+          return new TimeSignalCommand(in.readLong(), in.readLong());
+        }
 
-    @Override
-    public TimeSignalCommand[] newArray(int size) {
-      return new TimeSignalCommand[size];
-    }
-
-  };
-
+        @Override
+        public TimeSignalCommand[] newArray(int size) {
+          return new TimeSignalCommand[size];
+        }
+      };
 }

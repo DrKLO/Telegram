@@ -26,6 +26,7 @@
 #include "api/rtp_receiver_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/transport/rtp/rtp_source.h"
 #include "media/base/media_channel.h"
 #include "pc/audio_track.h"
@@ -33,9 +34,7 @@
 #include "pc/media_stream_track_proxy.h"
 #include "pc/remote_audio_source.h"
 #include "pc/rtp_receiver.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -45,16 +44,24 @@ class AudioRtpReceiver : public ObserverInterface,
                          public AudioSourceInterface::AudioObserver,
                          public RtpReceiverInternal {
  public:
+  // The constructor supports optionally passing the voice channel to the
+  // instance at construction time without having to call `SetMediaChannel()`
+  // on the worker thread straight after construction.
+  // However, when using that, the assumption is that right after construction,
+  // a call to either `SetupUnsignaledMediaChannel` or `SetupMediaChannel`
+  // will be made, which will internally start the source on the worker thread.
   AudioRtpReceiver(rtc::Thread* worker_thread,
                    std::string receiver_id,
                    std::vector<std::string> stream_ids,
-                   bool is_unified_plan);
+                   bool is_unified_plan,
+                   cricket::VoiceMediaChannel* voice_channel = nullptr);
   // TODO(https://crbug.com/webrtc/9480): Remove this when streams() is removed.
   AudioRtpReceiver(
       rtc::Thread* worker_thread,
       const std::string& receiver_id,
       const std::vector<rtc::scoped_refptr<MediaStreamInterface>>& streams,
-      bool is_unified_plan);
+      bool is_unified_plan,
+      cricket::VoiceMediaChannel* media_channel = nullptr);
   virtual ~AudioRtpReceiver();
 
   // ObserverInterface implementation
@@ -90,7 +97,6 @@ class AudioRtpReceiver : public ObserverInterface,
 
   // RtpReceiverInternal implementation.
   void Stop() override;
-  void StopAndEndTrack() override;
   void SetupMediaChannel(uint32_t ssrc) override;
   void SetupUnsignaledMediaChannel() override;
   uint32_t ssrc() const override;
@@ -114,12 +120,14 @@ class AudioRtpReceiver : public ObserverInterface,
       override;
 
  private:
-  void RestartMediaChannel(absl::optional<uint32_t> ssrc);
-  void Reconfigure(bool track_enabled, double volume)
+  void RestartMediaChannel(absl::optional<uint32_t> ssrc)
+      RTC_RUN_ON(&signaling_thread_checker_);
+  void RestartMediaChannel_w(absl::optional<uint32_t> ssrc,
+                             bool track_enabled,
+                             MediaSourceInterface::SourceState state)
       RTC_RUN_ON(worker_thread_);
+  void Reconfigure(bool track_enabled) RTC_RUN_ON(worker_thread_);
   void SetOutputVolume_w(double volume) RTC_RUN_ON(worker_thread_);
-  void SetMediaChannel_w(cricket::MediaChannel* media_channel)
-      RTC_RUN_ON(worker_thread_);
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker signaling_thread_checker_;
   rtc::Thread* const worker_thread_;
@@ -132,8 +140,7 @@ class AudioRtpReceiver : public ObserverInterface,
   std::vector<rtc::scoped_refptr<MediaStreamInterface>> streams_
       RTC_GUARDED_BY(&signaling_thread_checker_);
   bool cached_track_enabled_ RTC_GUARDED_BY(&signaling_thread_checker_);
-  double cached_volume_ RTC_GUARDED_BY(&signaling_thread_checker_) = 1.0;
-  bool stopped_ RTC_GUARDED_BY(&signaling_thread_checker_) = true;
+  double cached_volume_ RTC_GUARDED_BY(worker_thread_) = 1.0;
   RtpReceiverObserverInterface* observer_
       RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
   bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =

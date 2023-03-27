@@ -16,7 +16,6 @@
 #include <string>
 #include <utility>
 
-#include "absl/base/macros.h"
 #include "api/video/encoded_image.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/include/video_error_codes.h"
@@ -84,8 +83,9 @@ VideoDecoderSoftwareFallbackWrapper::VideoDecoderSoftwareFallbackWrapper(
       hw_decoder_(std::move(hw_decoder)),
       fallback_decoder_(std::move(sw_fallback_decoder)),
       fallback_implementation_name_(
-          std::string(fallback_decoder_->ImplementationName()) +
-          " (fallback from: " + hw_decoder_->ImplementationName() + ")"),
+          fallback_decoder_->GetDecoderInfo().implementation_name +
+          " (fallback from: " +
+          hw_decoder_->GetDecoderInfo().implementation_name + ")"),
       callback_(nullptr),
       hw_decoded_frames_since_last_fallback_(0),
       hw_consequtive_generic_errors_(0) {}
@@ -215,7 +215,7 @@ int32_t VideoDecoderSoftwareFallbackWrapper::Decode(
       }
 
       // Fallback decoder initialized, fall-through.
-      ABSL_FALLTHROUGH_INTENDED;
+      [[fallthrough]];
     }
     case DecoderType::kFallback:
       return fallback_decoder_->Decode(input_image, missing_frames,

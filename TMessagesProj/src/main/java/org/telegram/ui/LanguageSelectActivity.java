@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -260,7 +261,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     if (!sameLang) {
                         progressDialog.showDelayed(500);
                     }
-                    int reqId = LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, false, currentAccount, () -> {
+                    int reqId = LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, currentAccount, () -> {
                         progressDialog.dismiss();
                         if (!sameLang) {
                             AndroidUtilities.runOnUIThread(() -> {
@@ -283,9 +284,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
                     if (selectedLanguages.contains(prevLangCode) && !selectedLanguages.contains(langCode)) {
                         newSelectedLanguages.removeIf(s -> s != null && s.equals(prevLangCode));
-                        if (langCode != null && !"null".equals(langCode)) {
-                            newSelectedLanguages.add(langCode);
-                        }
+                    }
+                    if (langCode != null && !"null".equals(langCode)) {
+                        newSelectedLanguages.add(langCode);
                     }
                     preferences.edit().putStringSet("translate_button_restricted_languages", newSelectedLanguages).apply();
                     MessagesController.getInstance(currentAccount).getTranslateController().checkRestrictedLanguagesUpdate();
@@ -344,7 +345,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -408,6 +409,23 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         Collections.sort(unofficialLanguages, comparator);
     }
 
+    private static boolean patching = false;
+
+    @Override
+    public void onBecomeFullyVisible() {
+        super.onBecomeFullyVisible();
+        boolean shouldPatch = getMessagesController().checkResetLangpack > 0 && !MessagesController.getGlobalMainSettings().getBoolean("langpack_patched", false) && !patching;
+        if (shouldPatch) {
+            patching = true;
+            LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, null, true, () -> {
+                AndroidUtilities.runOnUIThread(() -> {
+                    MessagesController.getGlobalMainSettings().edit().putBoolean("langpack_patched", true).apply();
+                    updateLanguage();
+                });
+            });
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -431,7 +449,10 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
     private void updateLanguage() {
         if (actionBar != null) {
-            actionBar.setTitleAnimated(LocaleController.getString("Language", R.string.Language), true, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+            String newTitle = LocaleController.getString("Language", R.string.Language);
+            if (!TextUtils.equals(actionBar.getTitle(), newTitle)) {
+                actionBar.setTitleAnimated(newTitle, true, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+            }
         }
         if (listAdapter != null) {
             listAdapter.notifyItemRangeChanged(0, listAdapter.getItemCount());
@@ -634,7 +655,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     String doNotTranslateCellValue = null;
                     try {
                         boolean[] accusative = new boolean[1];
-                        if (langCodes.size() == 1) {
+                        if (langCodes.size() == 0) {
+                            doNotTranslateCellValue = "";
+                        } else if (langCodes.size() == 1) {
                             doNotTranslateCellValue = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(langCodes.iterator().next(), accusative));
                         } else {
                             Iterator<String> iterator = langCodes.iterator();
@@ -677,7 +700,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 case VIEW_TYPE_INFO: {
                     TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
                     infoCell.updateRTL();
-                    if (position == (getContextValue() || getChatValue() ? 4 : 3)) {
+                    if (position == (!getMessagesController().premiumLocked && (getContextValue() || getChatValue()) ? 4 : 3)) {
                         infoCell.setText(LocaleController.getString("TranslateMessagesInfo1", R.string.TranslateMessagesInfo1));
                         infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                         infoCell.setTopPadding(11);

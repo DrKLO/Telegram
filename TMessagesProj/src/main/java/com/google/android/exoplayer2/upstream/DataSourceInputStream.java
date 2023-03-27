@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.upstream;
 
-import androidx.annotation.NonNull;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import java.io.IOException;
@@ -45,17 +44,15 @@ public final class DataSourceInputStream extends InputStream {
     singleByteArray = new byte[1];
   }
 
-  /**
-   * Returns the total number of bytes that have been read or skipped.
-   */
+  /** Returns the total number of bytes that have been read or skipped. */
   public long bytesRead() {
     return totalBytesRead;
   }
 
   /**
    * Optional call to open the underlying {@link DataSource}.
-   * <p>
-   * Calling this method does nothing if the {@link DataSource} is already open. Calling this
+   *
+   * <p>Calling this method does nothing if the {@link DataSource} is already open. Calling this
    * method is optional, since the read and skip methods will automatically open the underlying
    * {@link DataSource} if it's not open already.
    *
@@ -72,12 +69,12 @@ public final class DataSourceInputStream extends InputStream {
   }
 
   @Override
-  public int read(@NonNull byte[] buffer) throws IOException {
+  public int read(byte[] buffer) throws IOException {
     return read(buffer, 0, buffer.length);
   }
 
   @Override
-  public int read(@NonNull byte[] buffer, int offset, int length) throws IOException {
+  public int read(byte[] buffer, int offset, int length) throws IOException {
     Assertions.checkState(!closed);
     checkOpened();
     int bytesRead = dataSource.read(buffer, offset, length);
@@ -103,5 +100,4 @@ public final class DataSourceInputStream extends InputStream {
       opened = true;
     }
   }
-
 }

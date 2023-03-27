@@ -63,9 +63,10 @@ AlignmentMixer::AlignmentMixer(size_t num_channels,
   }
 }
 
-void AlignmentMixer::ProduceOutput(rtc::ArrayView<const std::vector<float>> x,
+void AlignmentMixer::ProduceOutput(const Block& x,
                                    rtc::ArrayView<float, kBlockSize> y) {
-  RTC_DCHECK_EQ(x.size(), num_channels_);
+  RTC_DCHECK_EQ(x.NumChannels(), num_channels_);
+
   if (selection_variant_ == MixingVariant::kDownmix) {
     Downmix(x, y);
     return;
@@ -73,18 +74,20 @@ void AlignmentMixer::ProduceOutput(rtc::ArrayView<const std::vector<float>> x,
 
   int ch = selection_variant_ == MixingVariant::kFixed ? 0 : SelectChannel(x);
 
-  RTC_DCHECK_GE(x.size(), ch);
-  std::copy(x[ch].begin(), x[ch].end(), y.begin());
+  RTC_DCHECK_GT(x.NumChannels(), ch);
+  std::copy(x.begin(/*band=*/0, ch), x.end(/*band=*/0, ch), y.begin());
 }
 
-void AlignmentMixer::Downmix(rtc::ArrayView<const std::vector<float>> x,
+void AlignmentMixer::Downmix(const Block& x,
                              rtc::ArrayView<float, kBlockSize> y) const {
-  RTC_DCHECK_EQ(x.size(), num_channels_);
+  RTC_DCHECK_EQ(x.NumChannels(), num_channels_);
   RTC_DCHECK_GE(num_channels_, 2);
-  std::copy(x[0].begin(), x[0].end(), y.begin());
+  std::memcpy(&y[0], x.View(/*band=*/0, /*channel=*/0).data(),
+              kBlockSize * sizeof(y[0]));
   for (size_t ch = 1; ch < num_channels_; ++ch) {
+    const auto x_ch = x.View(/*band=*/0, ch);
     for (size_t i = 0; i < kBlockSize; ++i) {
-      y[i] += x[ch][i];
+      y[i] += x_ch[i];
     }
   }
 
@@ -93,8 +96,8 @@ void AlignmentMixer::Downmix(rtc::ArrayView<const std::vector<float>> x,
   }
 }
 
-int AlignmentMixer::SelectChannel(rtc::ArrayView<const std::vector<float>> x) {
-  RTC_DCHECK_EQ(x.size(), num_channels_);
+int AlignmentMixer::SelectChannel(const Block& x) {
+  RTC_DCHECK_EQ(x.NumChannels(), num_channels_);
   RTC_DCHECK_GE(num_channels_, 2);
   RTC_DCHECK_EQ(cumulative_energies_.size(), num_channels_);
 
@@ -112,10 +115,10 @@ int AlignmentMixer::SelectChannel(rtc::ArrayView<const std::vector<float>> x) {
   ++block_counter_;
 
   for (int ch = 0; ch < num_ch_to_analyze; ++ch) {
-    RTC_DCHECK_EQ(x[ch].size(), kBlockSize);
     float x2_sum = 0.f;
+    rtc::ArrayView<const float, kBlockSize> x_ch = x.View(/*band=*/0, ch);
     for (size_t i = 0; i < kBlockSize; ++i) {
-      x2_sum += x[ch][i] * x[ch][i];
+      x2_sum += x_ch[i] * x_ch[i];
     }
 
     if (ch < 2 && x2_sum > excitation_energy_threshold_) {

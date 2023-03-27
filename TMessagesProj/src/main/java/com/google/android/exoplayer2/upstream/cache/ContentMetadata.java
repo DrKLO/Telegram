@@ -19,9 +19,7 @@ import android.net.Uri;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 
-/**
- * Interface for an immutable snapshot of keyed metadata.
- */
+/** Interface for an immutable snapshot of keyed metadata. */
 public interface ContentMetadata {
 
   /**
@@ -81,7 +79,7 @@ public interface ContentMetadata {
    */
   @Nullable
   static Uri getRedirectedUri(ContentMetadata contentMetadata) {
-    String redirectedUri = contentMetadata.get(KEY_REDIRECTED_URI, (String) null);
+    @Nullable String redirectedUri = contentMetadata.get(KEY_REDIRECTED_URI, (String) null);
     return redirectedUri == null ? null : Uri.parse(redirectedUri);
   }
 }

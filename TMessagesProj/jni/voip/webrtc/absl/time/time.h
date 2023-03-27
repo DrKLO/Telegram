@@ -162,7 +162,7 @@ class Duration {
   constexpr Duration() : rep_hi_(0), rep_lo_(0) {}  // zero-length duration
 
   // Copyable.
-#if !defined(__clang__) && defined(_MSC_VER) && _MSC_VER < 1910
+#if !defined(__clang__) && defined(_MSC_VER) && _MSC_VER < 1930
   // Explicitly defining the constexpr copy constructor avoids an MSVC bug.
   constexpr Duration(const Duration& d)
       : rep_hi_(d.rep_hi_), rep_lo_(d.rep_lo_) {}
@@ -495,7 +495,7 @@ ABSL_ATTRIBUTE_PURE_FUNCTION int64_t ToInt64Seconds(Duration d);
 ABSL_ATTRIBUTE_PURE_FUNCTION int64_t ToInt64Minutes(Duration d);
 ABSL_ATTRIBUTE_PURE_FUNCTION int64_t ToInt64Hours(Duration d);
 
-// ToDoubleNanoSeconds()
+// ToDoubleNanoseconds()
 // ToDoubleMicroseconds()
 // ToDoubleMilliseconds()
 // ToDoubleSeconds()
@@ -579,7 +579,7 @@ bool ParseDuration(absl::string_view dur_string, Duration* d);
 
 // AbslParseFlag()
 //
-// Parses a command-line flag string representation `text` into a a Duration
+// Parses a command-line flag string representation `text` into a Duration
 // value. Duration flags must be specified in a format that is valid input for
 // `absl::ParseDuration()`.
 bool AbslParseFlag(absl::string_view text, Duration* dst, std::string* error);
@@ -750,23 +750,24 @@ constexpr Time UnixEpoch() { return Time(); }
 constexpr Time UniversalEpoch() {
   // 719162 is the number of days from 0001-01-01 to 1970-01-01,
   // assuming the Gregorian calendar.
-  return Time(time_internal::MakeDuration(-24 * 719162 * int64_t{3600}, 0U));
+  return Time(
+      time_internal::MakeDuration(-24 * 719162 * int64_t{3600}, uint32_t{0}));
 }
 
 // InfiniteFuture()
 //
 // Returns an `absl::Time` that is infinitely far in the future.
 constexpr Time InfiniteFuture() {
-  return Time(
-      time_internal::MakeDuration((std::numeric_limits<int64_t>::max)(), ~0U));
+  return Time(time_internal::MakeDuration((std::numeric_limits<int64_t>::max)(),
+                                          ~uint32_t{0}));
 }
 
 // InfinitePast()
 //
 // Returns an `absl::Time` that is infinitely far in the past.
 constexpr Time InfinitePast() {
-  return Time(
-      time_internal::MakeDuration((std::numeric_limits<int64_t>::min)(), ~0U));
+  return Time(time_internal::MakeDuration((std::numeric_limits<int64_t>::min)(),
+                                          ~uint32_t{0}));
 }
 
 // FromUnixNanos()
@@ -1422,14 +1423,17 @@ constexpr int64_t GetRepHi(Duration d) { return d.rep_hi_; }
 constexpr uint32_t GetRepLo(Duration d) { return d.rep_lo_; }
 
 // Returns true iff d is positive or negative infinity.
-constexpr bool IsInfiniteDuration(Duration d) { return GetRepLo(d) == ~0U; }
+constexpr bool IsInfiniteDuration(Duration d) {
+  return GetRepLo(d) == ~uint32_t{0};
+}
 
 // Returns an infinite Duration with the opposite sign.
 // REQUIRES: IsInfiniteDuration(d)
 constexpr Duration OppositeInfinity(Duration d) {
   return GetRepHi(d) < 0
-             ? MakeDuration((std::numeric_limits<int64_t>::max)(), ~0U)
-             : MakeDuration((std::numeric_limits<int64_t>::min)(), ~0U);
+             ? MakeDuration((std::numeric_limits<int64_t>::max)(), ~uint32_t{0})
+             : MakeDuration((std::numeric_limits<int64_t>::min)(),
+                            ~uint32_t{0});
 }
 
 // Returns (-n)-1 (equivalently -(n+1)) without avoidable overflow.
@@ -1568,7 +1572,7 @@ constexpr Duration operator-(Duration d) {
 
 constexpr Duration InfiniteDuration() {
   return time_internal::MakeDuration((std::numeric_limits<int64_t>::max)(),
-                                     ~0U);
+                                     ~uint32_t{0});
 }
 
 constexpr Duration FromChrono(const std::chrono::nanoseconds& d) {

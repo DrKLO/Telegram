@@ -13,13 +13,13 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/field_trials_registry.h"
 
 namespace webrtc {
 // Implementation using the field trial API fo the key value lookup.
-class FieldTrialBasedConfig : public WebRtcKeyValueConfig {
- public:
-  std::string Lookup(absl::string_view key) const override;
+class FieldTrialBasedConfig : public FieldTrialsRegistry {
+ private:
+  std::string GetValue(absl::string_view key) const override;
 };
 }  // namespace webrtc
 

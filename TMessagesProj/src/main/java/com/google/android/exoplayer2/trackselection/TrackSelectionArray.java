@@ -30,7 +30,9 @@ public final class TrackSelectionArray {
   // Lazily initialized hashcode.
   private int hashCode;
 
-  /** @param trackSelections The selections. Must not be null, but may contain null elements. */
+  /**
+   * @param trackSelections The selections. Must not be null, but may contain null elements.
+   */
   public TrackSelectionArray(@NullableType TrackSelection... trackSelections) {
     this.trackSelections = trackSelections;
     this.length = trackSelections.length;
@@ -73,5 +75,4 @@ public final class TrackSelectionArray {
     TrackSelectionArray other = (TrackSelectionArray) obj;
     return Arrays.equals(trackSelections, other.trackSelections);
   }
-
 }

@@ -376,7 +376,6 @@ class RTCPReceiver final {
   Clock* const clock_;
   const bool receiver_only_;
   ModuleRtpRtcp* const rtp_rtcp_;
-  const uint32_t main_ssrc_;
   // The set of registered local SSRCs.
   RegisteredSsrcs registered_ssrcs_;
 

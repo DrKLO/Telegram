@@ -16,9 +16,13 @@
 package com.google.android.exoplayer2.util;
 
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.C;
+import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Chars;
+import com.google.common.primitives.UnsignedBytes;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 /**
  * Wraps a byte array, providing a set of methods for parsing data from it. Numerical values are
@@ -26,9 +30,15 @@ import java.nio.charset.Charset;
  */
 public final class ParsableByteArray {
 
-  public byte[] data;
+  private static final char[] CR_AND_LF = {'\r', '\n'};
+  private static final char[] LF = {'\n'};
+  private static final ImmutableSet<Charset> SUPPORTED_CHARSETS_FOR_READLINE =
+      ImmutableSet.of(
+          Charsets.US_ASCII, Charsets.UTF_8, Charsets.UTF_16, Charsets.UTF_16BE, Charsets.UTF_16LE);
 
+  private byte[] data;
   private int position;
+  // TODO(internal b/147657250): Enforce this limit on all read methods.
   private int limit;
 
   /** Creates a new instance that initially has no backing data. */
@@ -67,15 +77,9 @@ public final class ParsableByteArray {
     this.limit = limit;
   }
 
-  /** Sets the position and limit to zero. */
-  public void reset() {
-    position = 0;
-    limit = 0;
-  }
-
   /**
-   * Resets the position to zero and the limit to the specified value. If the limit exceeds the
-   * capacity, {@code data} is replaced with a new array of sufficient size.
+   * Resets the position to zero and the limit to the specified value. This might replace or wipe
+   * the {@link #getData() underlying array}, potentially invalidating any local references.
    *
    * @param limit The limit to set.
    */
@@ -106,15 +110,26 @@ public final class ParsableByteArray {
   }
 
   /**
-   * Returns the number of bytes yet to be read.
+   * Ensures the backing array is at least {@code requiredCapacity} long.
+   *
+   * <p>{@link #getPosition() position}, {@link #limit() limit}, and all data in the underlying
+   * array (including that beyond {@link #limit()}) are preserved.
+   *
+   * <p>This might replace or wipe the {@link #getData() underlying array}, potentially invalidating
+   * any local references.
    */
+  public void ensureCapacity(int requiredCapacity) {
+    if (requiredCapacity > capacity()) {
+      data = Arrays.copyOf(data, requiredCapacity);
+    }
+  }
+
+  /** Returns the number of bytes yet to be read. */
   public int bytesLeft() {
     return limit - position;
   }
 
-  /**
-   * Returns the limit.
-   */
+  /** Returns the limit. */
   public int limit() {
     return limit;
   }
@@ -129,18 +144,9 @@ public final class ParsableByteArray {
     this.limit = limit;
   }
 
-  /**
-   * Returns the current offset in the array, in bytes.
-   */
+  /** Returns the current offset in the array, in bytes. */
   public int getPosition() {
     return position;
-  }
-
-  /**
-   * Returns the capacity of the array, which may be larger than the limit.
-   */
-  public int capacity() {
-    return data.length;
   }
 
   /**
@@ -157,6 +163,23 @@ public final class ParsableByteArray {
   }
 
   /**
+   * Returns the underlying array.
+   *
+   * <p>Changes to this array are reflected in the results of the {@code read...()} methods.
+   *
+   * <p>This reference must be assumed to become invalid when {@link #reset} or {@link
+   * #ensureCapacity} are called (because the array might get reallocated).
+   */
+  public byte[] getData() {
+    return data;
+  }
+
+  /** Returns the capacity of the array, which may be larger than the limit. */
+  public int capacity() {
+    return data.length;
+  }
+
+  /**
    * Moves the reading offset by {@code bytes}.
    *
    * @param bytes The number of bytes to skip.
@@ -168,8 +191,8 @@ public final class ParsableByteArray {
   }
 
   /**
-   * Reads the next {@code length} bytes into {@code bitArray}, and resets the position of
-   * {@code bitArray} to zero.
+   * Reads the next {@code length} bytes into {@code bitArray}, and resets the position of {@code
+   * bitArray} to zero.
    *
    * @param bitArray The {@link ParsableBitArray} into which the bytes should be read.
    * @param length The number of bytes to write.
@@ -204,97 +227,70 @@ public final class ParsableByteArray {
     position += length;
   }
 
-  /**
-   * Peeks at the next byte as an unsigned value.
-   */
+  /** Peeks at the next byte as an unsigned value. */
   public int peekUnsignedByte() {
     return (data[position] & 0xFF);
   }
 
-  /**
-   * Peeks at the next char.
-   */
+  /** Peeks at the next char. */
   public char peekChar() {
-    return (char) ((data[position] & 0xFF) << 8
-        | (data[position + 1] & 0xFF));
+    return (char) ((data[position] & 0xFF) << 8 | (data[position + 1] & 0xFF));
   }
 
-  /**
-   * Reads the next byte as an unsigned value.
-   */
+  /** Reads the next byte as an unsigned value. */
   public int readUnsignedByte() {
     return (data[position++] & 0xFF);
   }
 
-  /**
-   * Reads the next two bytes as an unsigned value.
-   */
+  /** Reads the next two bytes as an unsigned value. */
   public int readUnsignedShort() {
-    return (data[position++] & 0xFF) << 8
-        | (data[position++] & 0xFF);
+    return (data[position++] & 0xFF) << 8 | (data[position++] & 0xFF);
   }
 
-  /**
-   * Reads the next two bytes as an unsigned value.
-   */
+  /** Reads the next two bytes as an unsigned value. */
   public int readLittleEndianUnsignedShort() {
     return (data[position++] & 0xFF) | (data[position++] & 0xFF) << 8;
   }
 
-  /**
-   * Reads the next two bytes as a signed value.
-   */
+  /** Reads the next two bytes as a signed value. */
   public short readShort() {
-    return (short) ((data[position++] & 0xFF) << 8
-        | (data[position++] & 0xFF));
+    return (short) ((data[position++] & 0xFF) << 8 | (data[position++] & 0xFF));
   }
 
-  /**
-   * Reads the next two bytes as a signed value.
-   */
+  /** Reads the next two bytes as a signed value. */
   public short readLittleEndianShort() {
     return (short) ((data[position++] & 0xFF) | (data[position++] & 0xFF) << 8);
   }
 
-  /**
-   * Reads the next three bytes as an unsigned value.
-   */
+  /** Reads the next three bytes as an unsigned value. */
   public int readUnsignedInt24() {
     return (data[position++] & 0xFF) << 16
         | (data[position++] & 0xFF) << 8
         | (data[position++] & 0xFF);
   }
 
-  /**
-   * Reads the next three bytes as a signed value.
-   */
+  /** Reads the next three bytes as a signed value. */
   public int readInt24() {
     return ((data[position++] & 0xFF) << 24) >> 8
         | (data[position++] & 0xFF) << 8
         | (data[position++] & 0xFF);
   }
 
-  /**
-   * Reads the next three bytes as a signed value in little endian order.
-   */
+  /** Reads the next three bytes as a signed value in little endian order. */
   public int readLittleEndianInt24() {
     return (data[position++] & 0xFF)
         | (data[position++] & 0xFF) << 8
         | (data[position++] & 0xFF) << 16;
   }
 
-  /**
-   * Reads the next three bytes as an unsigned value in little endian order.
-   */
+  /** Reads the next three bytes as an unsigned value in little endian order. */
   public int readLittleEndianUnsignedInt24() {
     return (data[position++] & 0xFF)
         | (data[position++] & 0xFF) << 8
         | (data[position++] & 0xFF) << 16;
   }
 
-  /**
-   * Reads the next four bytes as an unsigned value.
-   */
+  /** Reads the next four bytes as an unsigned value. */
   public long readUnsignedInt() {
     return (data[position++] & 0xFFL) << 24
         | (data[position++] & 0xFFL) << 16
@@ -302,9 +298,7 @@ public final class ParsableByteArray {
         | (data[position++] & 0xFFL);
   }
 
-  /**
-   * Reads the next four bytes as an unsigned value in little endian order.
-   */
+  /** Reads the next four bytes as an unsigned value in little endian order. */
   public long readLittleEndianUnsignedInt() {
     return (data[position++] & 0xFFL)
         | (data[position++] & 0xFFL) << 8
@@ -312,9 +306,7 @@ public final class ParsableByteArray {
         | (data[position++] & 0xFFL) << 24;
   }
 
-  /**
-   * Reads the next four bytes as a signed value
-   */
+  /** Reads the next four bytes as a signed value */
   public int readInt() {
     return (data[position++] & 0xFF) << 24
         | (data[position++] & 0xFF) << 16
@@ -322,9 +314,7 @@ public final class ParsableByteArray {
         | (data[position++] & 0xFF);
   }
 
-  /**
-   * Reads the next four bytes as a signed value in little endian order.
-   */
+  /** Reads the next four bytes as a signed value in little endian order. */
   public int readLittleEndianInt() {
     return (data[position++] & 0xFF)
         | (data[position++] & 0xFF) << 8
@@ -332,9 +322,7 @@ public final class ParsableByteArray {
         | (data[position++] & 0xFF) << 24;
   }
 
-  /**
-   * Reads the next eight bytes as a signed value.
-   */
+  /** Reads the next eight bytes as a signed value. */
   public long readLong() {
     return (data[position++] & 0xFFL) << 56
         | (data[position++] & 0xFFL) << 48
@@ -346,9 +334,7 @@ public final class ParsableByteArray {
         | (data[position++] & 0xFFL);
   }
 
-  /**
-   * Reads the next eight bytes as a signed value in little endian order.
-   */
+  /** Reads the next eight bytes as a signed value in little endian order. */
   public long readLittleEndianLong() {
     return (data[position++] & 0xFFL)
         | (data[position++] & 0xFFL) << 8
@@ -360,20 +346,17 @@ public final class ParsableByteArray {
         | (data[position++] & 0xFFL) << 56;
   }
 
-  /**
-   * Reads the next four bytes, returning the integer portion of the fixed point 16.16 integer.
-   */
+  /** Reads the next four bytes, returning the integer portion of the fixed point 16.16 integer. */
   public int readUnsignedFixedPoint1616() {
-    int result = (data[position++] & 0xFF) << 8
-        | (data[position++] & 0xFF);
+    int result = (data[position++] & 0xFF) << 8 | (data[position++] & 0xFF);
     position += 2; // Skip the non-integer portion.
     return result;
   }
 
   /**
    * Reads a Synchsafe integer.
-   * <p>
-   * Synchsafe integers keep the highest bit of every byte zeroed. A 32 bit synchsafe integer can
+   *
+   * <p>Synchsafe integers keep the highest bit of every byte zeroed. A 32 bit synchsafe integer can
    * store 28 bits of information.
    *
    * @return The parsed value.
@@ -426,16 +409,12 @@ public final class ParsableByteArray {
     return result;
   }
 
-  /**
-   * Reads the next four bytes as a 32-bit floating point value.
-   */
+  /** Reads the next four bytes as a 32-bit floating point value. */
   public float readFloat() {
     return Float.intBitsToFloat(readInt());
   }
 
-  /**
-   * Reads the next eight bytes as a 64-bit floating point value.
-   */
+  /** Reads the next eight bytes as a 64-bit floating point value. */
   public double readDouble() {
     return Double.longBitsToDouble(readLong());
   }
@@ -447,7 +426,7 @@ public final class ParsableByteArray {
    * @return The string encoded by the bytes.
    */
   public String readString(int length) {
-    return readString(length, Charset.forName(C.UTF8_NAME));
+    return readString(length, Charsets.UTF_8);
   }
 
   /**
@@ -492,11 +471,22 @@ public final class ParsableByteArray {
    */
   @Nullable
   public String readNullTerminatedString() {
+    return readDelimiterTerminatedString('\0');
+  }
+
+  /**
+   * Reads up to the next delimiter byte (or the limit) as UTF-8 characters.
+   *
+   * @return The string not including any terminating delimiter byte, or null if the end of the data
+   *     has already been reached.
+   */
+  @Nullable
+  public String readDelimiterTerminatedString(char delimiter) {
     if (bytesLeft() == 0) {
       return null;
     }
     int stringLimit = position;
-    while (stringLimit < limit && data[stringLimit] != 0) {
+    while (stringLimit < limit && data[stringLimit] != delimiter) {
       stringLimit++;
     }
     String string = Util.fromUtf8Bytes(data, position, stringLimit - position);
@@ -508,43 +498,47 @@ public final class ParsableByteArray {
   }
 
   /**
-   * Reads a line of text.
+   * Reads a line of text in UTF-8.
    *
-   * <p>A line is considered to be terminated by any one of a carriage return ('\r'), a line feed
-   * ('\n'), or a carriage return followed immediately by a line feed ('\r\n'). The system's default
-   * charset (UTF-8) is used. This method discards leading UTF-8 byte order marks, if present.
-   *
-   * @return The line not including any line-termination characters, or null if the end of the data
-   *     has already been reached.
+   * <p>Equivalent to passing {@link Charsets#UTF_8} to {@link #readLine(Charset)}.
    */
   @Nullable
   public String readLine() {
+    return readLine(Charsets.UTF_8);
+  }
+
+  /**
+   * Reads a line of text in {@code charset}.
+   *
+   * <p>A line is considered to be terminated by any one of a carriage return ('\r'), a line feed
+   * ('\n'), or a carriage return followed immediately by a line feed ('\r\n'). This method discards
+   * leading UTF byte order marks (BOM), if present.
+   *
+   * <p>The {@linkplain #getPosition() position} is advanced to start of the next line (i.e. any
+   * line terminators are skipped).
+   *
+   * @param charset The charset used to interpret the bytes as a {@link String}.
+   * @return The line not including any line-termination characters, or null if the end of the data
+   *     has already been reached.
+   * @throws IllegalArgumentException if charset is not supported. Only US_ASCII, UTF-8, UTF-16,
+   *     UTF-16BE, and UTF-16LE are supported.
+   */
+  @Nullable
+  public String readLine(Charset charset) {
+    Assertions.checkArgument(
+        SUPPORTED_CHARSETS_FOR_READLINE.contains(charset), "Unsupported charset: " + charset);
     if (bytesLeft() == 0) {
       return null;
     }
-    int lineLimit = position;
-    while (lineLimit < limit && !Util.isLinebreak(data[lineLimit])) {
-      lineLimit++;
+    if (!charset.equals(Charsets.US_ASCII)) {
+      readUtfCharsetFromBom(); // Skip BOM if present
     }
-    if (lineLimit - position >= 3 && data[position] == (byte) 0xEF
-        && data[position + 1] == (byte) 0xBB && data[position + 2] == (byte) 0xBF) {
-      // There's a UTF-8 byte order mark at the start of the line. Discard it.
-      position += 3;
-    }
-    String line = Util.fromUtf8Bytes(data, position, lineLimit - position);
-    position = lineLimit;
+    int lineLimit = findNextLineTerminator(charset);
+    String line = readString(lineLimit - position, charset);
     if (position == limit) {
       return line;
     }
-    if (data[position] == '\r') {
-      position++;
-      if (position == limit) {
-        return line;
-      }
-    }
-    if (data[position] == '\n') {
-      position++;
-    }
+    skipLineTerminator(charset);
     return line;
   }
 
@@ -583,4 +577,98 @@ public final class ParsableByteArray {
     return value;
   }
 
+  /**
+   * Reads a UTF byte order mark (BOM) and returns the UTF {@link Charset} it represents. Returns
+   * {@code null} without advancing {@link #getPosition() position} if no BOM is found.
+   */
+  @Nullable
+  public Charset readUtfCharsetFromBom() {
+    if (bytesLeft() >= 3
+        && data[position] == (byte) 0xEF
+        && data[position + 1] == (byte) 0xBB
+        && data[position + 2] == (byte) 0xBF) {
+      position += 3;
+      return Charsets.UTF_8;
+    } else if (bytesLeft() >= 2) {
+      if (data[position] == (byte) 0xFE && data[position + 1] == (byte) 0xFF) {
+        position += 2;
+        return Charsets.UTF_16BE;
+      } else if (data[position] == (byte) 0xFF && data[position + 1] == (byte) 0xFE) {
+        position += 2;
+        return Charsets.UTF_16LE;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the index of the next occurrence of '\n' or '\r', or {@link #limit} if none is found.
+   */
+  private int findNextLineTerminator(Charset charset) {
+    int stride;
+    if (charset.equals(Charsets.UTF_8) || charset.equals(Charsets.US_ASCII)) {
+      stride = 1;
+    } else if (charset.equals(Charsets.UTF_16)
+        || charset.equals(Charsets.UTF_16LE)
+        || charset.equals(Charsets.UTF_16BE)) {
+      stride = 2;
+    } else {
+      throw new IllegalArgumentException("Unsupported charset: " + charset);
+    }
+    for (int i = position; i < limit - (stride - 1); i += stride) {
+      if ((charset.equals(Charsets.UTF_8) || charset.equals(Charsets.US_ASCII))
+          && Util.isLinebreak(data[i])) {
+        return i;
+      } else if ((charset.equals(Charsets.UTF_16) || charset.equals(Charsets.UTF_16BE))
+          && data[i] == 0x00
+          && Util.isLinebreak(data[i + 1])) {
+        return i;
+      } else if (charset.equals(Charsets.UTF_16LE)
+          && data[i + 1] == 0x00
+          && Util.isLinebreak(data[i])) {
+        return i;
+      }
+    }
+    return limit;
+  }
+
+  private void skipLineTerminator(Charset charset) {
+    if (readCharacterIfInList(charset, CR_AND_LF) == '\r') {
+      readCharacterIfInList(charset, LF);
+    }
+  }
+
+  /**
+   * Peeks at the character at {@link #position} (as decoded by {@code charset}), returns it and
+   * advances {@link #position} past it if it's in {@code chars}, otherwise returns {@code 0}
+   * without advancing {@link #position}. Returns {@code 0} if {@link #bytesLeft()} doesn't allow
+   * reading a whole character in {@code charset}.
+   *
+   * <p>Only supports characters in {@code chars} that occupy a single code unit (i.e. one byte for
+   * UTF-8 and two bytes for UTF-16).
+   */
+  private char readCharacterIfInList(Charset charset, char[] chars) {
+    char character;
+    int characterSize;
+    if ((charset.equals(Charsets.UTF_8) || charset.equals(Charsets.US_ASCII)) && bytesLeft() >= 1) {
+      character = Chars.checkedCast(UnsignedBytes.toInt(data[position]));
+      characterSize = 1;
+    } else if ((charset.equals(Charsets.UTF_16) || charset.equals(Charsets.UTF_16BE))
+        && bytesLeft() >= 2) {
+      character = Chars.fromBytes(data[position], data[position + 1]);
+      characterSize = 2;
+    } else if (charset.equals(Charsets.UTF_16LE) && bytesLeft() >= 2) {
+      character = Chars.fromBytes(data[position + 1], data[position]);
+      characterSize = 2;
+    } else {
+      return 0;
+    }
+
+    if (Chars.contains(chars, character)) {
+      position += characterSize;
+      return Chars.checkedCast(character);
+    } else {
+      return 0;
+    }
+  }
 }

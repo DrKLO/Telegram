@@ -11,10 +11,10 @@
 #ifndef CALL_ADAPTATION_VIDEO_STREAM_INPUT_STATE_PROVIDER_H_
 #define CALL_ADAPTATION_VIDEO_STREAM_INPUT_STATE_PROVIDER_H_
 
-#include "api/video/video_stream_encoder_observer.h"
 #include "call/adaptation/encoder_settings.h"
 #include "call/adaptation/video_stream_input_state.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "video/video_stream_encoder_observer.h"
 
 namespace webrtc {
 

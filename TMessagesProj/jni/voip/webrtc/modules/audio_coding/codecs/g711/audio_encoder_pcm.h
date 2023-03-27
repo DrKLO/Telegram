@@ -17,7 +17,6 @@
 #include "absl/types/optional.h"
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/units/time_delta.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -83,6 +82,9 @@ class AudioEncoderPcmA final : public AudioEncoderPcm {
   explicit AudioEncoderPcmA(const Config& config)
       : AudioEncoderPcm(config, kSampleRateHz) {}
 
+  AudioEncoderPcmA(const AudioEncoderPcmA&) = delete;
+  AudioEncoderPcmA& operator=(const AudioEncoderPcmA&) = delete;
+
  protected:
   size_t EncodeCall(const int16_t* audio,
                     size_t input_len,
@@ -94,7 +96,6 @@ class AudioEncoderPcmA final : public AudioEncoderPcm {
 
  private:
   static const int kSampleRateHz = 8000;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderPcmA);
 };
 
 class AudioEncoderPcmU final : public AudioEncoderPcm {
@@ -106,6 +107,9 @@ class AudioEncoderPcmU final : public AudioEncoderPcm {
   explicit AudioEncoderPcmU(const Config& config)
       : AudioEncoderPcm(config, kSampleRateHz) {}
 
+  AudioEncoderPcmU(const AudioEncoderPcmU&) = delete;
+  AudioEncoderPcmU& operator=(const AudioEncoderPcmU&) = delete;
+
  protected:
   size_t EncodeCall(const int16_t* audio,
                     size_t input_len,
@@ -117,7 +121,6 @@ class AudioEncoderPcmU final : public AudioEncoderPcm {
 
  private:
   static const int kSampleRateHz = 8000;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderPcmU);
 };
 
 }  // namespace webrtc

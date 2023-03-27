@@ -44,15 +44,16 @@ PROXY_PRIMARY_THREAD_DESTRUCTOR()
 BYPASS_PROXY_CONSTMETHOD0(std::string, kind)
 BYPASS_PROXY_CONSTMETHOD0(std::string, id)
 PROXY_SECONDARY_CONSTMETHOD0(TrackState, state)
-PROXY_SECONDARY_CONSTMETHOD0(bool, enabled)
-PROXY_SECONDARY_METHOD1(bool, set_enabled, bool)
-PROXY_SECONDARY_CONSTMETHOD0(ContentHint, content_hint)
-PROXY_SECONDARY_METHOD1(void, set_content_hint, ContentHint)
+PROXY_CONSTMETHOD0(bool, enabled)
+PROXY_METHOD1(bool, set_enabled, bool)
+PROXY_CONSTMETHOD0(ContentHint, content_hint)
+PROXY_METHOD1(void, set_content_hint, ContentHint)
 PROXY_SECONDARY_METHOD2(void,
                         AddOrUpdateSink,
                         rtc::VideoSinkInterface<VideoFrame>*,
                         const rtc::VideoSinkWants&)
 PROXY_SECONDARY_METHOD1(void, RemoveSink, rtc::VideoSinkInterface<VideoFrame>*)
+PROXY_SECONDARY_METHOD0(void, RequestRefreshFrame)
 BYPASS_PROXY_CONSTMETHOD0(VideoTrackSourceInterface*, GetSource)
 
 PROXY_METHOD1(void, RegisterObserver, ObserverInterface*)

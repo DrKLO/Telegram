@@ -34,6 +34,7 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.service.media.MediaBrowserService;
 import android.text.TextUtils;
+import android.widget.Toast;
 
 import androidx.collection.LongSparseArray;
 
@@ -139,7 +140,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
     @Override
     public BrowserRoot onGetRoot(String clientPackageName, int clientUid, Bundle rootHints) {
-        if (clientPackageName == null || Process.SYSTEM_UID != clientUid && Process.myUid() != clientUid && !clientPackageName.equals("com.google.android.mediasimulator") && !clientPackageName.equals("com.google.android.projection.gearhead")) {
+        if (clientPackageName == null || Process.SYSTEM_UID != clientUid && Process.myUid() != clientUid && !clientPackageName.equals("com.google.android.mediasimulator") && !clientPackageName.equals("com.google.android.projection.gearhead") || passcode()) {
             return null;
         }
         return new BrowserRoot(MEDIA_ID_ROOT, null);
@@ -147,6 +148,12 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
     @Override
     public void onLoadChildren(String parentMediaId, Result<List<MediaBrowser.MediaItem>> result) {
+        if (passcode()) {
+            Toast.makeText(getApplicationContext(), LocaleController.getString(R.string.EnterYourTelegramPasscode), Toast.LENGTH_LONG).show();
+            stopSelf();
+            result.detach();
+            return;
+        }
         if (!chatsLoaded) {
             result.detach();
             if (loadingChats) {
@@ -264,6 +271,17 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
         } else {
             loadChildrenImpl(parentMediaId, result);
         }
+    }
+
+    private static boolean passcode() {
+        final int uptime = (int) (SystemClock.elapsedRealtime() / 1000);
+        return (
+            SharedConfig.passcodeHash.length() > 0 && (
+                SharedConfig.appLocked ||
+                SharedConfig.autoLockIn != 0 && SharedConfig.lastPauseTime != 0 && (SharedConfig.lastPauseTime + SharedConfig.autoLockIn) <= uptime ||
+                uptime + 5 < SharedConfig.lastPauseTime
+            )
+        );
     }
 
     private void loadChildrenImpl(String parentMediaId, Result<List<MediaBrowser.MediaItem>> result) {

@@ -21,7 +21,9 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
@@ -34,7 +36,7 @@ public class PremiumButtonView extends FrameLayout {
     private float progress;
     private boolean inc;
     public AnimatedTextView buttonTextView;
-    public TextView overlayTextView;
+    public AnimatedTextView overlayTextView;
     private int radius;
 
     private boolean showOverlay;
@@ -51,6 +53,7 @@ public class PremiumButtonView extends FrameLayout {
     private boolean isButtonTextSet;
 
     private boolean isFlickerDisabled;
+    CounterView counterView;
 
     public PremiumButtonView(@NonNull Context context, boolean createOverlayTextView) {
         this(context, AndroidUtilities.dp(8), createOverlayTextView);
@@ -85,12 +88,13 @@ public class PremiumButtonView extends FrameLayout {
         addView(buttonLayout);
 
         if (createOverlayTextView) {
-            overlayTextView = new TextView(context);
+            overlayTextView = new AnimatedTextView(context, true, true, true);
             overlayTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             overlayTextView.setGravity(Gravity.CENTER);
             overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-            overlayTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            overlayTextView.setTextSize(AndroidUtilities.dp(14));
             overlayTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            overlayTextView.getDrawable().setAllowCancel(true);
             overlayTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 120)));
             addView(overlayTextView);
 
@@ -106,6 +110,9 @@ public class PremiumButtonView extends FrameLayout {
         return buttonTextView;
     }
 
+    AnimatedFloat counterOffset = new AnimatedFloat(this);
+    AnimatedFloat counterOffset2 = new AnimatedFloat(this);
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -113,6 +120,16 @@ public class PremiumButtonView extends FrameLayout {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (counterView != null) {
+            counterOffset.set((counterView.counterDrawable.getWidth() * 0.85f + AndroidUtilities.dp(3)) / 2f);
+            counterOffset2.set(getMeasuredWidth() / 2f + (overlayTextView.getDrawable().getWidth()) / 2f + AndroidUtilities.dp(3));
+            overlayTextView.setTranslationX(-counterOffset.get());
+            counterView.setTranslationX(counterOffset2.get() - counterOffset.get());
+        } else {
+            if (overlayTextView != null) {
+                overlayTextView.setTranslationX(0);
+            }
+        }
         AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
         if (overlayProgress != 1f || !drawOverlayColor) {
             if (inc) {
@@ -157,7 +174,7 @@ public class PremiumButtonView extends FrameLayout {
     public void setOverlayText(String text, boolean drawOverlayColor, boolean animated) {
         showOverlay = true;
         this.drawOverlayColor = drawOverlayColor;
-        overlayTextView.setText(text);
+        overlayTextView.setText(text, animated);
         updateOverlay(animated);
     }
 
@@ -253,5 +270,16 @@ public class PremiumButtonView extends FrameLayout {
         }
         buttonTextView.setText(text, animated);
         buttonLayout.setOnClickListener(clickListener);
+    }
+
+    public void checkCounterView() {
+        if (counterView == null) {
+            counterView = new CounterView(getContext(), null);
+            counterView.setGravity(Gravity.LEFT);
+            counterView.setColors(Theme.key_featuredStickers_addButton, Theme.key_featuredStickers_buttonText);
+            counterView.counterDrawable.circleScale = 0.8f;
+            setClipChildren(false);
+            addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, Gravity.CENTER_VERTICAL));
+        }
     }
 }

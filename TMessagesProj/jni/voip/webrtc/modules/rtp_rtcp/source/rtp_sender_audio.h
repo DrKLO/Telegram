@@ -62,7 +62,7 @@ class RTPSenderAudio {
 
   // Store the audio level in dBov for
   // header-extension-for-audio-level-indication.
-  // Valid range is [0,100]. Actual value is negative.
+  // Valid range is [0,127]. Actual value is negative.
   int32_t SetAudioLevel(uint8_t level_dbov);
 
   // Send a DTMF tone using RFC 2833 (4733)
@@ -105,7 +105,7 @@ class RTPSenderAudio {
 
   // Audio level indication.
   // (https://datatracker.ietf.org/doc/draft-lennox-avt-rtp-audio-level-exthdr/)
-  uint8_t audio_level_dbov_ RTC_GUARDED_BY(send_audio_mutex_) = 0;
+  uint8_t audio_level_dbov_ RTC_GUARDED_BY(send_audio_mutex_) = 127;
   OneTimeEvent first_packet_sent_;
 
   absl::optional<uint32_t> encoder_rtp_timestamp_frequency_

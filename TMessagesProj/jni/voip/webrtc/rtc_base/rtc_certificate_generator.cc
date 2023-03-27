@@ -17,9 +17,6 @@
 #include <utility>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/location.h"
-#include "rtc_base/message_handler.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/ssl_identity.h"
 
 namespace rtc {
@@ -72,21 +69,18 @@ RTCCertificateGenerator::RTCCertificateGenerator(Thread* signaling_thread,
 void RTCCertificateGenerator::GenerateCertificateAsync(
     const KeyParams& key_params,
     const absl::optional<uint64_t>& expires_ms,
-    const scoped_refptr<RTCCertificateGeneratorCallback>& callback) {
+    RTCCertificateGenerator::Callback callback) {
   RTC_DCHECK(signaling_thread_->IsCurrent());
   RTC_DCHECK(callback);
 
-  // Create a new `RTCCertificateGenerationTask` for this generation request. It
-  // is reference counted and referenced by the message data, ensuring it lives
-  // until the task has completed (independent of `RTCCertificateGenerator`).
-  worker_thread_->PostTask(RTC_FROM_HERE, [key_params, expires_ms,
-                                           signaling_thread = signaling_thread_,
-                                           cb = callback]() {
+  worker_thread_->PostTask([key_params, expires_ms,
+                            signaling_thread = signaling_thread_,
+                            cb = std::move(callback)]() mutable {
     scoped_refptr<RTCCertificate> certificate =
         RTCCertificateGenerator::GenerateCertificate(key_params, expires_ms);
     signaling_thread->PostTask(
-        RTC_FROM_HERE, [cert = std::move(certificate), cb = std::move(cb)]() {
-          cert ? cb->OnSuccess(cert) : cb->OnFailure();
+        [cert = std::move(certificate), cb = std::move(cb)]() mutable {
+          std::move(cb)(std::move(cert));
         });
   });
 }

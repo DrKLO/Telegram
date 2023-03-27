@@ -16,8 +16,8 @@
 #include "absl/strings/internal/cordz_handle.h"
 #include "absl/strings/internal/cordz_info.h"
 
-#ifndef ABSL_STRINGS_CORDZ_SAMPLE_TOKEN_H_
-#define ABSL_STRINGS_CORDZ_SAMPLE_TOKEN_H_
+#ifndef ABSL_STRINGS_INTERNAL_CORDZ_SAMPLE_TOKEN_H_
+#define ABSL_STRINGS_INTERNAL_CORDZ_SAMPLE_TOKEN_H_
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -94,4 +94,4 @@ class CordzSampleToken : public CordzSnapshot {
 ABSL_NAMESPACE_END
 }  // namespace absl
 
-#endif  // ABSL_STRINGS_CORDZ_SAMPLE_TOKEN_H_
+#endif  // ABSL_STRINGS_INTERNAL_CORDZ_SAMPLE_TOKEN_H_

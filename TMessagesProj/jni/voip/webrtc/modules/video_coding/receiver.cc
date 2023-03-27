@@ -30,18 +30,22 @@ namespace webrtc {
 
 enum { kMaxReceiverDelayMs = 10000 };
 
-VCMReceiver::VCMReceiver(VCMTiming* timing, Clock* clock)
+VCMReceiver::VCMReceiver(VCMTiming* timing,
+                         Clock* clock,
+                         const FieldTrialsView& field_trials)
     : VCMReceiver::VCMReceiver(timing,
                                clock,
                                absl::WrapUnique(EventWrapper::Create()),
-                               absl::WrapUnique(EventWrapper::Create())) {}
+                               absl::WrapUnique(EventWrapper::Create()),
+                               field_trials) {}
 
 VCMReceiver::VCMReceiver(VCMTiming* timing,
                          Clock* clock,
                          std::unique_ptr<EventWrapper> receiver_event,
-                         std::unique_ptr<EventWrapper> jitter_buffer_event)
+                         std::unique_ptr<EventWrapper> jitter_buffer_event,
+                         const FieldTrialsView& field_trials)
     : clock_(clock),
-      jitter_buffer_(clock_, std::move(jitter_buffer_event)),
+      jitter_buffer_(clock_, std::move(jitter_buffer_event), field_trials),
       timing_(timing),
       render_wait_event_(std::move(receiver_event)),
       max_video_delay_ms_(kMaxVideoDelayMs) {
@@ -69,7 +73,7 @@ int32_t VCMReceiver::InsertPacket(const VCMPacket& packet) {
     // We don't want to include timestamps which have suffered from
     // retransmission here, since we compensate with extra retransmission
     // delay within the jitter estimate.
-    timing_->IncomingTimestamp(packet.timestamp, clock_->TimeInMilliseconds());
+    timing_->IncomingTimestamp(packet.timestamp, clock_->CurrentTime());
   }
   return VCM_OK;
 }
@@ -94,16 +98,18 @@ VCMEncodedFrame* VCMReceiver::FrameForDecoding(uint16_t max_wait_time_ms,
   }
 
   if (min_playout_delay_ms >= 0)
-    timing_->set_min_playout_delay(min_playout_delay_ms);
+    timing_->set_min_playout_delay(TimeDelta::Millis(min_playout_delay_ms));
 
   if (max_playout_delay_ms >= 0)
-    timing_->set_max_playout_delay(max_playout_delay_ms);
+    timing_->set_max_playout_delay(TimeDelta::Millis(max_playout_delay_ms));
 
   // We have a frame - Set timing and render timestamp.
-  timing_->SetJitterDelay(jitter_buffer_.EstimatedJitterMs());
-  const int64_t now_ms = clock_->TimeInMilliseconds();
+  timing_->SetJitterDelay(
+      TimeDelta::Millis(jitter_buffer_.EstimatedJitterMs()));
+  const Timestamp now = clock_->CurrentTime();
+  const int64_t now_ms = now.ms();
   timing_->UpdateCurrentDelay(frame_timestamp);
-  render_time_ms = timing_->RenderTimeMs(frame_timestamp, now_ms);
+  render_time_ms = timing_->RenderTime(frame_timestamp, now).ms();
   // Check render timing.
   bool timing_error = false;
   // Assume that render timing errors are due to changes in the video stream.
@@ -117,7 +123,7 @@ VCMEncodedFrame* VCMReceiver::FrameForDecoding(uint16_t max_wait_time_ms,
         << frame_delay << " > " << max_video_delay_ms_
         << "). Resetting the video jitter buffer.";
     timing_error = true;
-  } else if (static_cast<int>(timing_->TargetVideoDelay()) >
+  } else if (static_cast<int>(timing_->TargetVideoDelay().ms()) >
              max_video_delay_ms_) {
     RTC_LOG(LS_WARNING) << "The video target delay has grown larger than "
                         << max_video_delay_ms_
@@ -140,8 +146,11 @@ VCMEncodedFrame* VCMReceiver::FrameForDecoding(uint16_t max_wait_time_ms,
     uint16_t new_max_wait_time =
         static_cast<uint16_t>(VCM_MAX(available_wait_time, 0));
     uint32_t wait_time_ms = rtc::saturated_cast<uint32_t>(
-        timing_->MaxWaitingTime(render_time_ms, clock_->TimeInMilliseconds(),
-                                /*too_many_frames_queued=*/false));
+        timing_
+            ->MaxWaitingTime(Timestamp::Millis(render_time_ms),
+                             clock_->CurrentTime(),
+                             /*too_many_frames_queued=*/false)
+            .ms());
     if (new_max_wait_time < wait_time_ms) {
       // We're not allowed to wait until the frame is supposed to be rendered,
       // waiting as long as we're allowed to avoid busy looping, and then return

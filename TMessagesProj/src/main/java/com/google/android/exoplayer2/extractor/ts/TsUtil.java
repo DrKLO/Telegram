@@ -21,6 +21,38 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 
 /** Utilities method for extracting MPEG-TS streams. */
 public final class TsUtil {
+
+  /**
+   * Returns whether a TS packet starts at {@code searchPosition} according to the MPEG-TS
+   * synchronization recommendations.
+   *
+   * <p>ISO/IEC 13818-1:2015 Annex G recommends that 5 sync bytes emulating the start of 5
+   * consecutive TS packets should never occur as part of the TS packets' contents. So, this method
+   * returns true when {@code data} contains a sync byte at {@code searchPosition}, and said sync
+   * byte is also one of five consecutive sync bytes separated from each other by the size of a TS
+   * packet.
+   *
+   * @param data The array holding the data to search in.
+   * @param start The first valid position in {@code data} from which a sync byte can be read.
+   * @param limit The first invalid position in {@code data}, after which no data should be read.
+   * @param searchPosition The position to check for a TS packet start.
+   * @return Whether a TS packet starts at {@code searchPosition}.
+   */
+  public static boolean isStartOfTsPacket(byte[] data, int start, int limit, int searchPosition) {
+    int consecutiveSyncByteCount = 0;
+    for (int i = -4; i <= 4; i++) {
+      int currentPosition = searchPosition + i * TsExtractor.TS_PACKET_SIZE;
+      if (currentPosition < start
+          || currentPosition >= limit
+          || data[currentPosition] != TsExtractor.TS_SYNC_BYTE) {
+        consecutiveSyncByteCount = 0;
+      } else if (++consecutiveSyncByteCount == 5) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Returns the position of the first TS_SYNC_BYTE within the range [startPosition, limitPosition)
    * from the provided data array, or returns limitPosition if sync byte could not be found.

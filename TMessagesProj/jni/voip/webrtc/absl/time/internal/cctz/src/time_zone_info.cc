@@ -134,6 +134,21 @@ std::int_fast64_t Decode64(const char* cp) {
   return static_cast<std::int_fast64_t>(v - s64maxU - 1) - s64max - 1;
 }
 
+// Does the rule for future transitions call for year-round daylight time?
+// See tz/zic.c:stringzone() for the details on how such rules are encoded.
+bool AllYearDST(const PosixTimeZone& posix) {
+  if (posix.dst_start.date.fmt != PosixTransition::N) return false;
+  if (posix.dst_start.date.n.day != 0) return false;
+  if (posix.dst_start.time.offset != 0) return false;
+
+  if (posix.dst_end.date.fmt != PosixTransition::J) return false;
+  if (posix.dst_end.date.j.day != kDaysPerYear[0]) return false;
+  const auto offset = posix.std_offset - posix.dst_offset;
+  if (posix.dst_end.time.offset + offset != kSecsPerDay) return false;
+
+  return true;
+}
+
 // Generate a year-relative offset for a PosixTransition.
 std::int_fast64_t TransOffset(bool leap_year, int jan1_weekday,
                               const PosixTransition& pt) {
@@ -351,6 +366,12 @@ bool TimeZoneInfo::ExtendTransitions() {
   if (!GetTransitionType(posix.dst_offset, true, posix.dst_abbr, &dst_ti))
     return false;
 
+  if (AllYearDST(posix)) {  // dst only
+    // The future specification should match the last transition, and
+    // that means that handling the future will fall out naturally.
+    return EquivTransitions(transitions_.back().type_index, dst_ti);
+  }
+
   // Extend the transitions for an additional 400 years using the
   // future specification. Years beyond those can be handled by
   // mapping back to a cycle-equivalent year within that range.
@@ -481,9 +502,9 @@ bool TimeZoneInfo::Load(ZoneInfoSource* zip) {
   // encoded zoneinfo. The ttisstd/ttisgmt indicators only apply when
   // interpreting a POSIX spec that does not include start/end rules, and
   // that isn't the case here (see "zic -p").
-  bp += (8 + 4) * hdr.leapcnt;  // leap-time + TAI-UTC
-  bp += 1 * hdr.ttisstdcnt;     // UTC/local indicators
-  bp += 1 * hdr.ttisutcnt;      // standard/wall indicators
+  bp += (time_len + 4) * hdr.leapcnt;  // leap-time + TAI-UTC
+  bp += 1 * hdr.ttisstdcnt;            // UTC/local indicators
+  bp += 1 * hdr.ttisutcnt;             // standard/wall indicators
   assert(bp == tbuf.data() + tbuf.size());
 
   future_spec_.clear();
@@ -512,8 +533,8 @@ bool TimeZoneInfo::Load(ZoneInfoSource* zip) {
 
   // Trim redundant transitions. zic may have added these to work around
   // differences between the glibc and reference implementations (see
-  // zic.c:dontmerge) and the Qt library (see zic.c:WORK_AROUND_QTBUG_53071).
-  // For us, they just get in the way when we do future_spec_ extension.
+  // zic.c:dontmerge) or to avoid bugs in old readers. For us, they just
+  // get in the way when we do future_spec_ extension.
   while (hdr.timecnt > 1) {
     if (!EquivTransitions(transitions_[hdr.timecnt - 1].type_index,
                           transitions_[hdr.timecnt - 2].type_index)) {

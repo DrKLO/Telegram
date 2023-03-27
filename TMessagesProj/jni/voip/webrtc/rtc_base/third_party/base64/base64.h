@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {
@@ -56,7 +57,7 @@ class Base64 {
 
   // Determines whether the given string consists entirely of valid base64
   // encoded characters.
-  static bool IsBase64Encoded(const std::string& str);
+  static bool IsBase64Encoded(absl::string_view str);
 
   RTC_EXPORT static void EncodeFromArray(const void* data,
                                          size_t len,
@@ -78,23 +79,23 @@ class Base64 {
                               size_t* data_used);
 
   // Convenience Methods
-  static inline std::string Encode(const std::string& data) {
+  static inline std::string Encode(absl::string_view data) {
     std::string result;
     EncodeFromArray(data.data(), data.size(), &result);
     return result;
   }
-  static inline std::string Decode(const std::string& data, DecodeFlags flags) {
+  static inline std::string Decode(absl::string_view data, DecodeFlags flags) {
     std::string result;
     DecodeFromArray(data.data(), data.size(), flags, &result, nullptr);
     return result;
   }
-  static inline bool Decode(const std::string& data,
+  static inline bool Decode(absl::string_view data,
                             DecodeFlags flags,
                             std::string* result,
                             size_t* data_used) {
     return DecodeFromArray(data.data(), data.size(), flags, result, data_used);
   }
-  static inline bool Decode(const std::string& data,
+  static inline bool Decode(absl::string_view data,
                             DecodeFlags flags,
                             std::vector<char>* result,
                             size_t* data_used) {

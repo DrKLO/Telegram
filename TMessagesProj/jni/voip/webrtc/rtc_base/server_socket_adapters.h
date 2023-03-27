@@ -31,15 +31,21 @@ class AsyncSSLServerSocket : public BufferedReadAdapter {
  public:
   explicit AsyncSSLServerSocket(Socket* socket);
 
+  AsyncSSLServerSocket(const AsyncSSLServerSocket&) = delete;
+  AsyncSSLServerSocket& operator=(const AsyncSSLServerSocket&) = delete;
+
  protected:
   void ProcessInput(char* data, size_t* len) override;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncSSLServerSocket);
 };
 
 // Implements a proxy server socket for the SOCKS protocol.
 class AsyncSocksProxyServerSocket : public AsyncProxyServerSocket {
  public:
   explicit AsyncSocksProxyServerSocket(Socket* socket);
+
+  AsyncSocksProxyServerSocket(const AsyncSocksProxyServerSocket&) = delete;
+  AsyncSocksProxyServerSocket& operator=(const AsyncSocksProxyServerSocket&) =
+      delete;
 
  private:
   void ProcessInput(char* data, size_t* len) override;
@@ -64,7 +70,6 @@ class AsyncSocksProxyServerSocket : public AsyncProxyServerSocket {
     SS_ERROR
   };
   State state_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncSocksProxyServerSocket);
 };
 
 }  // namespace rtc

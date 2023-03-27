@@ -47,10 +47,6 @@ void PerThreadSem::Init(base_internal::ThreadIdentity *identity) {
   identity->is_idle.store(false, std::memory_order_relaxed);
 }
 
-void PerThreadSem::Destroy(base_internal::ThreadIdentity *identity) {
-  Waiter::GetWaiter(identity)->~Waiter();
-}
-
 void PerThreadSem::Tick(base_internal::ThreadIdentity *identity) {
   const int ticker =
       identity->ticker.fetch_add(1, std::memory_order_relaxed) + 1;

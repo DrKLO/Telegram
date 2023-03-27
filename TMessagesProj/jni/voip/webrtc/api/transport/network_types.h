@@ -241,9 +241,6 @@ struct NetworkControlUpdate {
 
 // Process control
 struct ProcessInterval {
-  ProcessInterval();
-  ProcessInterval(const ProcessInterval&);
-  ~ProcessInterval();
   Timestamp at_time = Timestamp::PlusInfinity();
   absl::optional<DataSize> pacer_queue;
 };

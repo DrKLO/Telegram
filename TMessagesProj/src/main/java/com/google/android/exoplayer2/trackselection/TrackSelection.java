@@ -15,110 +15,58 @@
  */
 package com.google.android.exoplayer2.trackselection;
 
-import androidx.annotation.Nullable;
+import static java.lang.annotation.ElementType.TYPE_USE;
+
+import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.source.TrackGroup;
-import com.google.android.exoplayer2.source.chunk.MediaChunk;
-import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
-import java.util.List;
-import org.checkerframework.checker.nullness.compatqual.NullableType;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * A track selection consisting of a static subset of selected tracks belonging to a {@link
- * TrackGroup}, and a possibly varying individual selected track from the subset.
+ * TrackGroup}.
  *
- * <p>Tracks belonging to the subset are exposed in decreasing bandwidth order. The individual
- * selected track may change dynamically as a result of calling {@link #updateSelectedTrack(long,
- * long, long, List, MediaChunkIterator[])} or {@link #evaluateQueueSize(long, List)}. This only
- * happens between calls to {@link #enable()} and {@link #disable()}.
+ * <p>Tracks belonging to the subset are exposed in decreasing bandwidth order.
  */
 public interface TrackSelection {
 
-  /** Contains of a subset of selected tracks belonging to a {@link TrackGroup}. */
-  final class Definition {
-    /** The {@link TrackGroup} which tracks belong to. */
-    public final TrackGroup group;
-    /** The indices of the selected tracks in {@link #group}. */
-    public final int[] tracks;
-    /** The track selection reason. One of the {@link C} SELECTION_REASON_ constants. */
-    public final int reason;
-    /** Optional data associated with this selection of tracks. */
-    @Nullable public final Object data;
-
-    /**
-     * @param group The {@link TrackGroup}. Must not be null.
-     * @param tracks The indices of the selected tracks within the {@link TrackGroup}. Must not be
-     *     null or empty. May be in any order.
-     */
-    public Definition(TrackGroup group, int... tracks) {
-      this(group, tracks, C.SELECTION_REASON_UNKNOWN, /* data= */ null);
-    }
-
-    /**
-     * @param group The {@link TrackGroup}. Must not be null.
-     * @param tracks The indices of the selected tracks within the {@link TrackGroup}. Must not be
-     * @param reason The track selection reason. One of the {@link C} SELECTION_REASON_ constants.
-     * @param data Optional data associated with this selection of tracks.
-     */
-    public Definition(TrackGroup group, int[] tracks, int reason, @Nullable Object data) {
-      this.group = group;
-      this.tracks = tracks;
-      this.reason = reason;
-      this.data = data;
-    }
-  }
-
   /**
-   * Factory for {@link TrackSelection} instances.
+   * Represents a type track selection. Either {@link #TYPE_UNSET} or an app-defined value (see
+   * {@link #TYPE_CUSTOM_BASE}).
    */
-  interface Factory {
-
-    /**
-     * Creates track selections for the provided {@link Definition Definitions}.
-     *
-     * <p>Implementations that create at most one adaptive track selection may use {@link
-     * TrackSelectionUtil#createTrackSelectionsForDefinitions}.
-     *
-     * @param definitions A {@link Definition} array. May include null values.
-     * @param bandwidthMeter A {@link BandwidthMeter} which can be used to select tracks.
-     * @return The created selections. Must have the same length as {@code definitions} and may
-     *     include null values.
-     */
-    @NullableType
-    TrackSelection[] createTrackSelections(
-        @NullableType Definition[] definitions, BandwidthMeter bandwidthMeter);
-  }
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
+  @IntDef(
+      open = true,
+      value = {TYPE_UNSET})
+  @interface Type {}
+  /** An unspecified track selection type. */
+  int TYPE_UNSET = 0;
+  /** The first value that can be used for application specific track selection types. */
+  int TYPE_CUSTOM_BASE = 10000;
 
   /**
-   * Enables the track selection. Dynamic changes via {@link #updateSelectedTrack(long, long, long,
-   * List, MediaChunkIterator[])} or {@link #evaluateQueueSize(long, List)} will only happen after
-   * this call.
+   * Returns an integer specifying the type of the selection, or {@link #TYPE_UNSET} if not
+   * specified.
    *
-   * <p>This method may not be called when the track selection is already enabled.
+   * <p>Track selection types are specific to individual applications, but should be defined
+   * starting from {@link #TYPE_CUSTOM_BASE} to ensure they don't conflict with any types that may
+   * be added to the library in the future.
    */
-  void enable();
+  @Type
+  int getType();
 
-  /**
-   * Disables this track selection. No further dynamic changes via {@link #updateSelectedTrack(long,
-   * long, long, List, MediaChunkIterator[])} or {@link #evaluateQueueSize(long, List)} will happen
-   * after this call.
-   *
-   * <p>This method may only be called when the track selection is already enabled.
-   */
-  void disable();
-
-  /**
-   * Returns the {@link TrackGroup} to which the selected tracks belong.
-   */
+  /** Returns the {@link TrackGroup} to which the selected tracks belong. */
   TrackGroup getTrackGroup();
 
   // Static subset of selected tracks.
 
-  /**
-   * Returns the number of tracks in the selection.
-   */
+  /** Returns the number of tracks in the selection. */
   int length();
 
   /**
@@ -156,114 +104,4 @@ public interface TrackSelection {
    *     index is not part of the selection.
    */
   int indexOf(int indexInTrackGroup);
-
-  // Individual selected track.
-
-  /**
-   * Returns the {@link Format} of the individual selected track.
-   */
-  Format getSelectedFormat();
-
-  /**
-   * Returns the index in the track group of the individual selected track.
-   */
-  int getSelectedIndexInTrackGroup();
-
-  /**
-   * Returns the index of the selected track.
-   */
-  int getSelectedIndex();
-
-  /**
-   * Returns the reason for the current track selection.
-   */
-  int getSelectionReason();
-
-  /** Returns optional data associated with the current track selection. */
-  @Nullable Object getSelectionData();
-
-  // Adaptation.
-
-  /**
-   * Called to notify the selection of the current playback speed. The playback speed may affect
-   * adaptive track selection.
-   *
-   * @param speed The playback speed.
-   */
-  void onPlaybackSpeed(float speed);
-
-  /**
-   * Called to notify the selection of a position discontinuity.
-   *
-   * <p>This happens when the playback position jumps, e.g., as a result of a seek being performed.
-   */
-  default void onDiscontinuity() {}
-
-  /**
-   * Updates the selected track for sources that load media in discrete {@link MediaChunk}s.
-   *
-   * <p>This method may only be called when the selection is enabled.
-   *
-   * @param playbackPositionUs The current playback position in microseconds. If playback of the
-   *     period to which this track selection belongs has not yet started, the value will be the
-   *     starting position in the period minus the duration of any media in previous periods still
-   *     to be played.
-   * @param bufferedDurationUs The duration of media currently buffered from the current playback
-   *     position, in microseconds. Note that the next load position can be calculated as {@code
-   *     (playbackPositionUs + bufferedDurationUs)}.
-   * @param availableDurationUs The duration of media available for buffering from the current
-   *     playback position, in microseconds, or {@link C#TIME_UNSET} if media can be buffered to the
-   *     end of the current period. Note that if not set to {@link C#TIME_UNSET}, the position up to
-   *     which media is available for buffering can be calculated as {@code (playbackPositionUs +
-   *     availableDurationUs)}.
-   * @param queue The queue of already buffered {@link MediaChunk}s. Must not be modified.
-   * @param mediaChunkIterators An array of {@link MediaChunkIterator}s providing information about
-   *     the sequence of upcoming media chunks for each track in the selection. All iterators start
-   *     from the media chunk which will be loaded next if the respective track is selected. Note
-   *     that this information may not be available for all tracks, and so some iterators may be
-   *     empty.
-   */
-  void updateSelectedTrack(
-      long playbackPositionUs,
-      long bufferedDurationUs,
-      long availableDurationUs,
-      List<? extends MediaChunk> queue,
-      MediaChunkIterator[] mediaChunkIterators);
-
-  /**
-   * May be called periodically by sources that load media in discrete {@link MediaChunk}s and
-   * support discarding of buffered chunks in order to re-buffer using a different selected track.
-   * Returns the number of chunks that should be retained in the queue.
-   * <p>
-   * To avoid excessive re-buffering, implementations should normally return the size of the queue.
-   * An example of a case where a smaller value may be returned is if network conditions have
-   * improved dramatically, allowing chunks to be discarded and re-buffered in a track of
-   * significantly higher quality. Discarding chunks may allow faster switching to a higher quality
-   * track in this case. This method may only be called when the selection is enabled.
-   *
-   * @param playbackPositionUs The current playback position in microseconds. If playback of the
-   *     period to which this track selection belongs has not yet started, the value will be the
-   *     starting position in the period minus the duration of any media in previous periods still
-   *     to be played.
-   * @param queue The queue of buffered {@link MediaChunk}s. Must not be modified.
-   * @return The number of chunks to retain in the queue.
-   */
-  int evaluateQueueSize(long playbackPositionUs, List<? extends MediaChunk> queue);
-
-  /**
-   * Attempts to blacklist the track at the specified index in the selection, making it ineligible
-   * for selection by calls to {@link #updateSelectedTrack(long, long, long, List,
-   * MediaChunkIterator[])} for the specified period of time. Blacklisting will fail if all other
-   * tracks are currently blacklisted. If blacklisting the currently selected track, note that it
-   * will remain selected until the next call to {@link #updateSelectedTrack(long, long, long, List,
-   * MediaChunkIterator[])}.
-   *
-   * <p>This method may only be called when the selection is enabled.
-   *
-   * @param index The index of the track in the selection.
-   * @param blacklistDurationMs The duration of time for which the track should be blacklisted, in
-   *     milliseconds.
-   * @return Whether blacklisting was successful.
-   */
-  boolean blacklist(int index, long blacklistDurationMs);
 }

@@ -16,34 +16,31 @@
 #include <utility>
 #include <vector>
 
+#include "api/units/time_delta.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_config.h"
 #include "modules/rtp_rtcp/source/time_util.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/time_utils.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 namespace {
 constexpr int64_t kStatisticsTimeoutMs = 8000;
 constexpr int64_t kStatisticsProcessIntervalMs = 1000;
-
-// Number of seconds since 1900 January 1 00:00 GMT (see
-// https://tools.ietf.org/html/rfc868).
-constexpr int64_t kNtpJan1970Millisecs = 2'208'988'800'000;
 }  // namespace
 
 StreamStatistician::~StreamStatistician() {}
 
-StreamStatisticianImpl::StreamStatisticianImpl(uint32_t ssrc,
-                                               Clock* clock,
+StreamStatisticianImpl::StreamStatisticianImpl(uint32_t ssrc, Clock* clock,
                                                int max_reordering_threshold)
     : ssrc_(ssrc),
       clock_(clock),
       delta_internal_unix_epoch_ms_(clock_->CurrentNtpInMilliseconds() -
                                     clock_->TimeInMilliseconds() -
-                                    kNtpJan1970Millisecs),
+                                    rtc::kNtpJan1970Millisecs),
       incoming_bitrate_(kStatisticsProcessIntervalMs,
                         RateStatistics::kBpsScale),
       max_reordering_threshold_(max_reordering_threshold),
@@ -57,7 +54,8 @@ StreamStatisticianImpl::StreamStatisticianImpl(uint32_t ssrc,
       received_seq_first_(-1),
       received_seq_max_(-1),
       last_report_cumulative_loss_(0),
-      last_report_seq_max_(-1) {}
+      last_report_seq_max_(-1),
+      last_payload_type_frequency_(0) {}
 
 StreamStatisticianImpl::~StreamStatisticianImpl() = default;
 
@@ -157,6 +155,8 @@ void StreamStatisticianImpl::UpdateJitter(const RtpPacketReceived& packet,
 
   time_diff_samples = std::abs(time_diff_samples);
 
+  ReviseFrequencyAndJitter(packet.payload_type_frequency());
+
   // lib_jingle sometimes deliver crazy jumps in TS for the same stream.
   // If this happens, don't update jitter value. Use 5 secs video frequency
   // as the threshold.
@@ -164,6 +164,38 @@ void StreamStatisticianImpl::UpdateJitter(const RtpPacketReceived& packet,
     // Note we calculate in Q4 to avoid using float.
     int32_t jitter_diff_q4 = (time_diff_samples << 4) - jitter_q4_;
     jitter_q4_ += ((jitter_diff_q4 + 8) >> 4);
+  }
+}
+
+void StreamStatisticianImpl::ReviseFrequencyAndJitter(
+    int payload_type_frequency) {
+  if (payload_type_frequency == last_payload_type_frequency_) {
+    return;
+  }
+
+  if (payload_type_frequency != 0) {
+    if (last_payload_type_frequency_ != 0) {
+      // Value in "jitter_q4_" variable is a number of samples.
+      // I.e. jitter = timestamp (ms) * frequency (kHz).
+      // Since the frequency has changed we have to update the number of samples
+      // accordingly. The new value should rely on a new frequency.
+
+      // If we don't do such procedure we end up with the number of samples that
+      // cannot be converted into milliseconds correctly
+      // (i.e. jitter_ms = jitter_q4_ >> 4 / (payload_type_frequency / 1000)).
+      // In such case, the number of samples has a "mix".
+
+      // Doing so we pretend that everything prior and including the current
+      // packet were computed on packet's frequency.
+      jitter_q4_ = static_cast<int>(static_cast<uint64_t>(jitter_q4_) *
+                                    payload_type_frequency /
+                                    last_payload_type_frequency_);
+    }
+    // If last_payload_type_frequency_ is not present, the jitter_q4_
+    // variable has its initial value.
+
+    // Keep last_payload_type_frequency_ up to date and non-zero (set).
+    last_payload_type_frequency_ = payload_type_frequency;
   }
 }
 
@@ -179,9 +211,14 @@ void StreamStatisticianImpl::EnableRetransmitDetection(bool enable) {
 RtpReceiveStats StreamStatisticianImpl::GetStats() const {
   RtpReceiveStats stats;
   stats.packets_lost = cumulative_loss_;
-  // TODO(nisse): Can we return a float instead?
   // Note: internal jitter value is in Q4 and needs to be scaled by 1/16.
   stats.jitter = jitter_q4_ >> 4;
+  if (last_payload_type_frequency_ > 0) {
+    // Divide value in fractional seconds by frequency to get jitter in
+    // fractional seconds.
+    stats.interarrival_jitter =
+        webrtc::TimeDelta::Seconds(stats.jitter) / last_payload_type_frequency_;
+  }
   if (receive_counters_.last_packet_received_timestamp_ms.has_value()) {
     stats.last_packet_received_timestamp_ms =
         *receive_counters_.last_packet_received_timestamp_ms +

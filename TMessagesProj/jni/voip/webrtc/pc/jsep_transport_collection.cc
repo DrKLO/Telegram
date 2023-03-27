@@ -219,6 +219,22 @@ const cricket::JsepTransport* JsepTransportCollection::GetTransportForMid(
   return it == mid_to_transport_.end() ? nullptr : it->second;
 }
 
+cricket::JsepTransport* JsepTransportCollection::GetTransportForMid(
+    absl::string_view mid) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  // TODO(hta): should be a better way.
+  auto it = mid_to_transport_.find(std::string(mid));
+  return it == mid_to_transport_.end() ? nullptr : it->second;
+}
+
+const cricket::JsepTransport* JsepTransportCollection::GetTransportForMid(
+    absl::string_view mid) const {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  // TODO(hta): Should be a better way
+  auto it = mid_to_transport_.find(std::string(mid));
+  return it == mid_to_transport_.end() ? nullptr : it->second;
+}
+
 bool JsepTransportCollection::SetTransportForMid(
     const std::string& mid,
     cricket::JsepTransport* jsep_transport) {

@@ -15,6 +15,8 @@
 #ifndef COMMON_AUDIO_SIGNAL_PROCESSING_INCLUDE_SPL_INL_ARMV7_H_
 #define COMMON_AUDIO_SIGNAL_PROCESSING_INCLUDE_SPL_INL_ARMV7_H_
 
+#include <stdint.h>
+
 /* TODO(kma): Replace some assembly code with GCC intrinsics
  * (e.g. __builtin_clz).
  */

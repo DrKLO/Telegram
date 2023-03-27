@@ -939,6 +939,21 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 delegate.onCloseRequested(null);
                 break;
             }
+            case "web_app_switch_inline_query": {
+                try {
+                    JSONObject jsonObject = new JSONObject(eventData);
+                    List<String> types = new ArrayList<>();
+                    JSONArray arr = jsonObject.getJSONArray("chat_types");
+                    for (int i = 0; i < arr.length(); i++) {
+                        types.add(arr.getString(i));
+                    }
+
+                    delegate.onWebAppSwitchInlineQuery(botUser, jsonObject.getString("query"), types);
+                } catch (JSONException e) {
+                    FileLog.e(e);
+                }
+                break;
+            }
             case "web_app_read_text_from_clipboard": {
                 try {
                     JSONObject jsonObject = new JSONObject(eventData);
@@ -1488,6 +1503,15 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
          * Called when WebView requests to expand viewport
          */
         void onWebAppExpand();
+
+        /**
+         * Called when web apps requests to switch to inline mode picker
+         *
+         * @param botUser Bot user
+         * @param query Inline query
+         * @param chatTypes Chat types
+         */
+        void onWebAppSwitchInlineQuery(TLRPC.User botUser, String query, List<String> chatTypes);
 
         /**
          * Called when web app attempts to open invoice

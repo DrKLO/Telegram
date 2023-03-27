@@ -23,8 +23,6 @@
 #include "call/adaptation/degradation_preference_provider.h"
 #include "call/adaptation/resource_adaptation_processor_interface.h"
 #include "modules/video_coding/utility/bandwidth_quality_scaler.h"
-#include "rtc_base/ref_counted_object.h"
-#include "rtc_base/task_queue.h"
 #include "video/adaptation/video_stream_encoder_resource.h"
 
 namespace webrtc {

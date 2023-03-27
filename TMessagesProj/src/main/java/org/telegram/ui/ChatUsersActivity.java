@@ -855,79 +855,37 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         fragment.setDelegate(new GroupCreateActivity.ContactsAddActivityDelegate() {
                             @Override
                             public void didSelectUsers(ArrayList<TLRPC.User> users, int fwdCount) {
-                                final int count = users.size();
-                                final int[] processed = new int[1];
-                                final ArrayList<TLRPC.User> userRestrictedPrivacy = new ArrayList<>();
-                                processed[0] = 0;
-                                final Runnable showUserRestrictedPrivacyAlert = () -> {
-                                    CharSequence title, description;
-                                    if (userRestrictedPrivacy.size() == 1) {
-                                        if (count > 1) {
-                                            title = LocaleController.getString("InviteToGroupErrorTitleAUser", R.string.InviteToGroupErrorTitleAUser);
-                                        } else {
-                                            title = LocaleController.getString("InviteToGroupErrorTitleThisUser", R.string.InviteToGroupErrorTitleThisUser);
-                                        }
-                                        description = AndroidUtilities.replaceTags(LocaleController.formatString("InviteToGroupErrorMessageSingle", R.string.InviteToGroupErrorMessageSingle, UserObject.getFirstName(userRestrictedPrivacy.get(0))));
-                                    } else if (userRestrictedPrivacy.size() == 2) {
-                                        title = LocaleController.getString("InviteToGroupErrorTitleSomeUsers", R.string.InviteToGroupErrorTitleSomeUsers);
-                                        description = AndroidUtilities.replaceTags(LocaleController.formatString("InviteToGroupErrorMessageDouble", R.string.InviteToGroupErrorMessageDouble, UserObject.getFirstName(userRestrictedPrivacy.get(0)), UserObject.getFirstName(userRestrictedPrivacy.get(1))));
-                                    } else if (userRestrictedPrivacy.size() == count) {
-                                        title = LocaleController.getString("InviteToGroupErrorTitleTheseUsers", R.string.InviteToGroupErrorTitleTheseUsers);
-                                        description = LocaleController.getString("InviteToGroupErrorMessageMultipleAll", R.string.InviteToGroupErrorMessageMultipleAll);
-                                    } else {
-                                        title = LocaleController.getString("InviteToGroupErrorTitleSomeUsers", R.string.InviteToGroupErrorTitleSomeUsers);
-                                        description = LocaleController.getString("InviteToGroupErrorMessageMultipleSome", R.string.InviteToGroupErrorMessageMultipleSome);
-                                    }
-                                    new AlertDialog.Builder(context)
-                                            .setTitle(title)
-                                            .setMessage(description)
-                                            .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
-                                            .show();
-                                };
-                                for (int a = 0; a < count; a++) {
-                                    final TLRPC.User user = users.get(a);
-                                    getMessagesController().addUserToChat(chatId, user, fwdCount, null, ChatUsersActivity.this, false, () -> {
-                                        processed[0]++;
-                                        if (processed[0] >= count && userRestrictedPrivacy.size() > 0) {
-                                            showUserRestrictedPrivacyAlert.run();
-                                        }
-                                        DiffCallback savedState = saveState();
-                                        ArrayList<TLObject> array = contactsMap != null && contactsMap.size() != 0 ? contacts : participants;
-                                        LongSparseArray<TLObject> map = contactsMap != null && contactsMap.size() != 0 ? contactsMap : participantsMap;
-                                        if (map.get(user.id) == null) {
-                                            if (ChatObject.isChannel(currentChat)) {
-                                                TLRPC.TL_channelParticipant channelParticipant1 = new TLRPC.TL_channelParticipant();
-                                                channelParticipant1.inviter_id = getUserConfig().getClientUserId();
-                                                channelParticipant1.peer = new TLRPC.TL_peerUser();
-                                                channelParticipant1.peer.user_id = user.id;
-                                                channelParticipant1.date = getConnectionsManager().getCurrentTime();
-                                                array.add(0, channelParticipant1);
-                                                map.put(user.id, channelParticipant1);
-                                            } else {
-                                                TLRPC.ChatParticipant participant = new TLRPC.TL_chatParticipant();
-                                                participant.user_id = user.id;
-                                                participant.inviter_id = getUserConfig().getClientUserId();
-                                                array.add(0, participant);
-                                                map.put(user.id, participant);
-                                            }
-                                        }
-                                        if (array == participants) {
-                                            sortAdmins(participants);
-                                        }
-                                        updateListAnimated(savedState);
-                                    }, err -> {
-                                        processed[0]++;
-                                        boolean privacyRestricted;
-                                        if (privacyRestricted = err != null && "USER_PRIVACY_RESTRICTED".equals(err.text)) {
-                                            userRestrictedPrivacy.add(user);
-                                        }
-                                        if (processed[0] >= count && userRestrictedPrivacy.size() > 0) {
-                                            showUserRestrictedPrivacyAlert.run();
-                                        }
-                                        return !privacyRestricted;
-                                    });
-                                    getMessagesController().putUser(user, false);
+                                if (fragment.getParentActivity() == null) {
+                                    return;
                                 }
+                                getMessagesController().addUsersToChat(currentChat, ChatUsersActivity.this, users, fwdCount, user -> {
+                                    ChatUsersActivity.DiffCallback savedState = saveState();
+                                    ArrayList<TLObject> array = contactsMap != null && contactsMap.size() != 0 ? contacts : participants;
+                                    LongSparseArray<TLObject> map = contactsMap != null && contactsMap.size() != 0 ? contactsMap : participantsMap;
+                                    if (map.get(user.id) == null) {
+                                        if (ChatObject.isChannel(currentChat)) {
+                                            TLRPC.TL_channelParticipant channelParticipant1 = new TLRPC.TL_channelParticipant();
+                                            channelParticipant1.inviter_id = getUserConfig().getClientUserId();
+                                            channelParticipant1.peer = new TLRPC.TL_peerUser();
+                                            channelParticipant1.peer.user_id = user.id;
+                                            channelParticipant1.date = getConnectionsManager().getCurrentTime();
+                                            array.add(0, channelParticipant1);
+                                            map.put(user.id, channelParticipant1);
+                                        } else {
+                                            TLRPC.ChatParticipant participant = new TLRPC.TL_chatParticipant();
+                                            participant.user_id = user.id;
+                                            participant.inviter_id = getUserConfig().getClientUserId();
+                                            array.add(0, participant);
+                                            map.put(user.id, participant);
+                                        }
+                                    }
+                                    if (array == participants) {
+                                        sortAdmins(participants);
+                                    }
+                                    updateListAnimated(savedState);
+                                }, user -> {
+
+                                }, null);
                             }
 
                             @Override
@@ -1800,7 +1758,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             AlertDialog alertDialog = builder.create();
             showDialog(alertDialog);
             if (hasRemove) {
-                alertDialog.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                alertDialog.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
             }
         } else {
             CharSequence[] items;
@@ -1943,7 +1901,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             AlertDialog alertDialog = builder.create();
             showDialog(alertDialog);
             if (type == TYPE_ADMIN) {
-                alertDialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                alertDialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
             }
         }
         return true;

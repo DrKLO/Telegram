@@ -10,37 +10,21 @@
 
 #include "rtc_base/string_utils.h"
 
+#include "absl/strings/string_view.h"
+
 namespace rtc {
 
-size_t strcpyn(char* buffer,
-               size_t buflen,
-               const char* source,
-               size_t srclen /* = SIZE_UNKNOWN */) {
+size_t strcpyn(char* buffer, size_t buflen, absl::string_view source) {
   if (buflen <= 0)
     return 0;
 
-  if (srclen == SIZE_UNKNOWN) {
-    srclen = strlen(source);
-  }
+  size_t srclen = source.length();
   if (srclen >= buflen) {
     srclen = buflen - 1;
   }
-  memcpy(buffer, source, srclen);
+  memcpy(buffer, source.data(), srclen);
   buffer[srclen] = 0;
   return srclen;
-}
-
-static const char kWhitespace[] = " \n\r\t";
-
-std::string string_trim(const std::string& s) {
-  std::string::size_type first = s.find_first_not_of(kWhitespace);
-  std::string::size_type last = s.find_last_not_of(kWhitespace);
-
-  if (first == std::string::npos || last == std::string::npos) {
-    return std::string("");
-  }
-
-  return s.substr(first, last - first + 1);
 }
 
 std::string ToHex(const int i) {

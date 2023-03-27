@@ -103,10 +103,9 @@ class Charmap {
   constexpr Charmap(uint64_t b0, uint64_t b1, uint64_t b2, uint64_t b3)
       : m_{b0, b1, b2, b3} {}
 
-  static constexpr uint64_t RangeForWord(unsigned char lo, unsigned char hi,
-                                         uint64_t word) {
-    return OpenRangeFromZeroForWord(hi + 1, word) &
-           ~OpenRangeFromZeroForWord(lo, word);
+  static constexpr uint64_t RangeForWord(char lo, char hi, uint64_t word) {
+    return OpenRangeFromZeroForWord(static_cast<unsigned char>(hi) + 1, word) &
+           ~OpenRangeFromZeroForWord(static_cast<unsigned char>(lo), word);
   }
 
   // All the chars in the specified word of the range [0, upper).
@@ -119,13 +118,16 @@ class Charmap {
                      : (~static_cast<uint64_t>(0) >> (64 - upper % 64));
   }
 
-  static constexpr uint64_t CharMaskForWord(unsigned char x, uint64_t word) {
-    return (x / 64 == word) ? (static_cast<uint64_t>(1) << (x % 64)) : 0;
+  static constexpr uint64_t CharMaskForWord(char x, uint64_t word) {
+    const auto unsigned_x = static_cast<unsigned char>(x);
+    return (unsigned_x / 64 == word)
+               ? (static_cast<uint64_t>(1) << (unsigned_x % 64))
+               : 0;
   }
 
- private:
-  void SetChar(unsigned char c) {
-    m_[c / 64] |= static_cast<uint64_t>(1) << (c % 64);
+  void SetChar(char c) {
+    const auto unsigned_c = static_cast<unsigned char>(c);
+    m_[unsigned_c / 64] |= static_cast<uint64_t>(1) << (unsigned_c % 64);
   }
 
   uint64_t m_[4];

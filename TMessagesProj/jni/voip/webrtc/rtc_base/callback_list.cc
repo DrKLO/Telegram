@@ -22,8 +22,7 @@ CallbackListReceivers::~CallbackListReceivers() {
 }
 
 void CallbackListReceivers::RemoveReceivers(const void* removal_tag) {
-  RTC_CHECK(!send_in_progress_);
-  RTC_DCHECK(removal_tag != nullptr);
+  RTC_DCHECK(removal_tag);
 
   // We divide the receivers_ vector into three regions: from right to left, the
   // "keep" region, the "todo" region, and the "remove" region. The "todo"
@@ -42,8 +41,13 @@ void CallbackListReceivers::RemoveReceivers(const void* removal_tag) {
     } else if (receivers_[first_remove - 1].removal_tag == removal_tag) {
       // The last element of the "todo" region should be removed. Move the
       // "todo"/"remove" boundary.
+      if (send_in_progress_) {
+        // Tag this receiver for removal, which will be done when `ForEach`
+        // has completed.
+        receivers_[first_remove - 1].removal_tag = pending_removal_tag();
+      }
       --first_remove;
-    } else {
+    } else if (!send_in_progress_) {
       // The first element of the "todo" region should be removed, and the last
       // element of the "todo" region should be kept. Swap them, and then shrink
       // the "todo" region from both ends.
@@ -57,18 +61,28 @@ void CallbackListReceivers::RemoveReceivers(const void* removal_tag) {
     }
   }
 
-  // Discard the remove region.
-  receivers_.resize(first_remove);
+  if (!send_in_progress_) {
+    // Discard the remove region.
+    receivers_.resize(first_remove);
+  }
 }
 
 void CallbackListReceivers::Foreach(
     rtc::FunctionView<void(UntypedFunction&)> fv) {
   RTC_CHECK(!send_in_progress_);
+  bool removals_detected = false;
   send_in_progress_ = true;
   for (auto& r : receivers_) {
+    RTC_DCHECK_NE(r.removal_tag, pending_removal_tag());
     fv(r.function);
+    if (r.removal_tag == pending_removal_tag()) {
+      removals_detected = true;
+    }
   }
   send_in_progress_ = false;
+  if (removals_detected) {
+    RemoveReceivers(pending_removal_tag());
+  }
 }
 
 template void CallbackListReceivers::AddReceiver(

@@ -78,6 +78,8 @@ public class CountrySelectActivity extends BaseFragment {
     private boolean searching;
     private boolean needPhoneCode;
 
+    private boolean disableAnonymousNumbers;
+
     private CountrySelectActivityDelegate delegate;
     private ArrayList<Country> existingCountries;
 
@@ -90,6 +92,10 @@ public class CountrySelectActivity extends BaseFragment {
             this.existingCountries = new ArrayList<>(existingCountries);
         }
         needPhoneCode = phoneCode;
+    }
+
+    public void setDisableAnonymousNumbers(boolean disableAnonymousNumbers) {
+        this.disableAnonymousNumbers = disableAnonymousNumbers;
     }
 
     @Override
@@ -170,7 +176,7 @@ public class CountrySelectActivity extends BaseFragment {
         searching = false;
         searchWas = false;
 
-        listViewAdapter = new CountryAdapter(context, existingCountries);
+        listViewAdapter = new CountryAdapter(context, existingCountries, disableAnonymousNumbers);
         searchListViewAdapter = new CountrySearchAdapter(context, listViewAdapter.getCountries());
 
         fragmentView = new FrameLayout(context);
@@ -265,7 +271,7 @@ public class CountrySelectActivity extends BaseFragment {
         private HashMap<String, ArrayList<Country>> countries = new HashMap<>();
         private ArrayList<String> sortedCountries = new ArrayList<>();
 
-        public CountryAdapter(Context context, ArrayList<Country> exisitingCountries) {
+        public CountryAdapter(Context context, ArrayList<Country> exisitingCountries, boolean disableAnonymousNumbers) {
             mContext = context;
 
             if (exisitingCountries != null) {
@@ -291,6 +297,9 @@ public class CountrySelectActivity extends BaseFragment {
                         c.name = args[2];
                         c.code = args[0];
                         c.shortname = args[1];
+                        if (c.shortname.equals("FT") && disableAnonymousNumbers) {
+                            continue;
+                        }
                         String n = c.name.substring(0, 1).toUpperCase();
                         ArrayList<Country> arr = countries.get(n);
                         if (arr == null) {
@@ -508,7 +517,7 @@ public class CountrySelectActivity extends BaseFragment {
         }
 
         public Country getItem(int i) {
-            if (i < 0 || i >= searchResult.size()) {
+            if (searchResult == null || i < 0 || i >= searchResult.size()) {
                 return null;
             }
             return searchResult.get(i);

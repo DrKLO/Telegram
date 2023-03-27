@@ -27,103 +27,99 @@ namespace {
 
 TEST(AsciiIsFoo, All) {
   for (int i = 0; i < 256; i++) {
-    if ((i >= 'a' && i <= 'z') || (i >= 'A' && i <= 'Z'))
-      EXPECT_TRUE(absl::ascii_isalpha(i)) << ": failed on " << i;
+    const auto c = static_cast<unsigned char>(i);
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+      EXPECT_TRUE(absl::ascii_isalpha(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isalpha(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isalpha(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
-    if ((i >= '0' && i <= '9'))
-      EXPECT_TRUE(absl::ascii_isdigit(i)) << ": failed on " << i;
+    const auto c = static_cast<unsigned char>(i);
+    if ((c >= '0' && c <= '9'))
+      EXPECT_TRUE(absl::ascii_isdigit(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isdigit(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isdigit(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
-    if (absl::ascii_isalpha(i) || absl::ascii_isdigit(i))
-      EXPECT_TRUE(absl::ascii_isalnum(i)) << ": failed on " << i;
+    const auto c = static_cast<unsigned char>(i);
+    if (absl::ascii_isalpha(c) || absl::ascii_isdigit(c))
+      EXPECT_TRUE(absl::ascii_isalnum(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isalnum(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isalnum(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i != '\0' && strchr(" \r\n\t\v\f", i))
-      EXPECT_TRUE(absl::ascii_isspace(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_isspace(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isspace(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isspace(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i >= 32 && i < 127)
-      EXPECT_TRUE(absl::ascii_isprint(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_isprint(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isprint(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isprint(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
-    if (absl::ascii_isprint(i) && !absl::ascii_isspace(i) &&
-        !absl::ascii_isalnum(i))
-      EXPECT_TRUE(absl::ascii_ispunct(i)) << ": failed on " << i;
-    else
-      EXPECT_TRUE(!absl::ascii_ispunct(i)) << ": failed on " << i;
+    const auto c = static_cast<unsigned char>(i);
+    if (absl::ascii_isprint(c) && !absl::ascii_isspace(c) &&
+        !absl::ascii_isalnum(c)) {
+      EXPECT_TRUE(absl::ascii_ispunct(c)) << ": failed on " << c;
+    } else {
+      EXPECT_TRUE(!absl::ascii_ispunct(c)) << ": failed on " << c;
+    }
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i == ' ' || i == '\t')
-      EXPECT_TRUE(absl::ascii_isblank(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_isblank(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isblank(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isblank(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i < 32 || i == 127)
-      EXPECT_TRUE(absl::ascii_iscntrl(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_iscntrl(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_iscntrl(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_iscntrl(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
-    if (absl::ascii_isdigit(i) || (i >= 'A' && i <= 'F') ||
-        (i >= 'a' && i <= 'f'))
-      EXPECT_TRUE(absl::ascii_isxdigit(i)) << ": failed on " << i;
-    else
-      EXPECT_TRUE(!absl::ascii_isxdigit(i)) << ": failed on " << i;
+    const auto c = static_cast<unsigned char>(i);
+    if (absl::ascii_isdigit(c) || (i >= 'A' && i <= 'F') ||
+        (i >= 'a' && i <= 'f')) {
+      EXPECT_TRUE(absl::ascii_isxdigit(c)) << ": failed on " << c;
+    } else {
+      EXPECT_TRUE(!absl::ascii_isxdigit(c)) << ": failed on " << c;
+    }
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i > 32 && i < 127)
-      EXPECT_TRUE(absl::ascii_isgraph(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_isgraph(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isgraph(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isgraph(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i >= 'A' && i <= 'Z')
-      EXPECT_TRUE(absl::ascii_isupper(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_isupper(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_isupper(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_isupper(c)) << ": failed on " << c;
   }
   for (int i = 0; i < 256; i++) {
+    const auto c = static_cast<unsigned char>(i);
     if (i >= 'a' && i <= 'z')
-      EXPECT_TRUE(absl::ascii_islower(i)) << ": failed on " << i;
+      EXPECT_TRUE(absl::ascii_islower(c)) << ": failed on " << c;
     else
-      EXPECT_TRUE(!absl::ascii_islower(i)) << ": failed on " << i;
+      EXPECT_TRUE(!absl::ascii_islower(c)) << ": failed on " << c;
   }
-  for (int i = 0; i < 128; i++) {
-    EXPECT_TRUE(absl::ascii_isascii(i)) << ": failed on " << i;
+  for (unsigned char c = 0; c < 128; c++) {
+    EXPECT_TRUE(absl::ascii_isascii(c)) << ": failed on " << c;
   }
   for (int i = 128; i < 256; i++) {
-    EXPECT_TRUE(!absl::ascii_isascii(i)) << ": failed on " << i;
-  }
-
-  // The official is* functions don't accept negative signed chars, but
-  // our absl::ascii_is* functions do.
-  for (int i = 0; i < 256; i++) {
-    signed char sc = static_cast<signed char>(static_cast<unsigned char>(i));
-    EXPECT_EQ(absl::ascii_isalpha(i), absl::ascii_isalpha(sc)) << i;
-    EXPECT_EQ(absl::ascii_isdigit(i), absl::ascii_isdigit(sc)) << i;
-    EXPECT_EQ(absl::ascii_isalnum(i), absl::ascii_isalnum(sc)) << i;
-    EXPECT_EQ(absl::ascii_isspace(i), absl::ascii_isspace(sc)) << i;
-    EXPECT_EQ(absl::ascii_ispunct(i), absl::ascii_ispunct(sc)) << i;
-    EXPECT_EQ(absl::ascii_isblank(i), absl::ascii_isblank(sc)) << i;
-    EXPECT_EQ(absl::ascii_iscntrl(i), absl::ascii_iscntrl(sc)) << i;
-    EXPECT_EQ(absl::ascii_isxdigit(i), absl::ascii_isxdigit(sc)) << i;
-    EXPECT_EQ(absl::ascii_isprint(i), absl::ascii_isprint(sc)) << i;
-    EXPECT_EQ(absl::ascii_isgraph(i), absl::ascii_isgraph(sc)) << i;
-    EXPECT_EQ(absl::ascii_isupper(i), absl::ascii_isupper(sc)) << i;
-    EXPECT_EQ(absl::ascii_islower(i), absl::ascii_islower(sc)) << i;
-    EXPECT_EQ(absl::ascii_isascii(i), absl::ascii_isascii(sc)) << i;
+    const auto c = static_cast<unsigned char>(i);
+    EXPECT_TRUE(!absl::ascii_isascii(c)) << ": failed on " << c;
   }
 }
 
@@ -137,19 +133,20 @@ TEST(AsciiIsFoo, SameAsIsFoo) {
 #endif
 
   for (int i = 0; i < 256; i++) {
-    EXPECT_EQ(isalpha(i) != 0, absl::ascii_isalpha(i)) << i;
-    EXPECT_EQ(isdigit(i) != 0, absl::ascii_isdigit(i)) << i;
-    EXPECT_EQ(isalnum(i) != 0, absl::ascii_isalnum(i)) << i;
-    EXPECT_EQ(isspace(i) != 0, absl::ascii_isspace(i)) << i;
-    EXPECT_EQ(ispunct(i) != 0, absl::ascii_ispunct(i)) << i;
-    EXPECT_EQ(isblank(i) != 0, absl::ascii_isblank(i)) << i;
-    EXPECT_EQ(iscntrl(i) != 0, absl::ascii_iscntrl(i)) << i;
-    EXPECT_EQ(isxdigit(i) != 0, absl::ascii_isxdigit(i)) << i;
-    EXPECT_EQ(isprint(i) != 0, absl::ascii_isprint(i)) << i;
-    EXPECT_EQ(isgraph(i) != 0, absl::ascii_isgraph(i)) << i;
-    EXPECT_EQ(isupper(i) != 0, absl::ascii_isupper(i)) << i;
-    EXPECT_EQ(islower(i) != 0, absl::ascii_islower(i)) << i;
-    EXPECT_EQ(isascii(i) != 0, absl::ascii_isascii(i)) << i;
+    const auto c = static_cast<unsigned char>(i);
+    EXPECT_EQ(isalpha(c) != 0, absl::ascii_isalpha(c)) << c;
+    EXPECT_EQ(isdigit(c) != 0, absl::ascii_isdigit(c)) << c;
+    EXPECT_EQ(isalnum(c) != 0, absl::ascii_isalnum(c)) << c;
+    EXPECT_EQ(isspace(c) != 0, absl::ascii_isspace(c)) << c;
+    EXPECT_EQ(ispunct(c) != 0, absl::ascii_ispunct(c)) << c;
+    EXPECT_EQ(isblank(c) != 0, absl::ascii_isblank(c)) << c;
+    EXPECT_EQ(iscntrl(c) != 0, absl::ascii_iscntrl(c)) << c;
+    EXPECT_EQ(isxdigit(c) != 0, absl::ascii_isxdigit(c)) << c;
+    EXPECT_EQ(isprint(c) != 0, absl::ascii_isprint(c)) << c;
+    EXPECT_EQ(isgraph(c) != 0, absl::ascii_isgraph(c)) << c;
+    EXPECT_EQ(isupper(c) != 0, absl::ascii_isupper(c)) << c;
+    EXPECT_EQ(islower(c) != 0, absl::ascii_islower(c)) << c;
+    EXPECT_EQ(isascii(c) != 0, absl::ascii_isascii(c)) << c;
   }
 
 #ifndef __ANDROID__
@@ -166,25 +163,20 @@ TEST(AsciiToFoo, All) {
 #endif
 
   for (int i = 0; i < 256; i++) {
-    if (absl::ascii_islower(i))
-      EXPECT_EQ(absl::ascii_toupper(i), 'A' + (i - 'a')) << i;
+    const auto c = static_cast<unsigned char>(i);
+    if (absl::ascii_islower(c))
+      EXPECT_EQ(absl::ascii_toupper(c), 'A' + (i - 'a')) << c;
     else
-      EXPECT_EQ(absl::ascii_toupper(i), static_cast<char>(i)) << i;
+      EXPECT_EQ(absl::ascii_toupper(c), static_cast<char>(i)) << c;
 
-    if (absl::ascii_isupper(i))
-      EXPECT_EQ(absl::ascii_tolower(i), 'a' + (i - 'A')) << i;
+    if (absl::ascii_isupper(c))
+      EXPECT_EQ(absl::ascii_tolower(c), 'a' + (i - 'A')) << c;
     else
-      EXPECT_EQ(absl::ascii_tolower(i), static_cast<char>(i)) << i;
+      EXPECT_EQ(absl::ascii_tolower(c), static_cast<char>(i)) << c;
 
     // These CHECKs only hold in a C locale.
-    EXPECT_EQ(static_cast<char>(tolower(i)), absl::ascii_tolower(i)) << i;
-    EXPECT_EQ(static_cast<char>(toupper(i)), absl::ascii_toupper(i)) << i;
-
-    // The official to* functions don't accept negative signed chars, but
-    // our absl::ascii_to* functions do.
-    signed char sc = static_cast<signed char>(static_cast<unsigned char>(i));
-    EXPECT_EQ(absl::ascii_tolower(i), absl::ascii_tolower(sc)) << i;
-    EXPECT_EQ(absl::ascii_toupper(i), absl::ascii_toupper(sc)) << i;
+    EXPECT_EQ(static_cast<char>(tolower(i)), absl::ascii_tolower(c)) << c;
+    EXPECT_EQ(static_cast<char>(toupper(i)), absl::ascii_toupper(c)) << c;
   }
 #ifndef __ANDROID__
   // restore the old locale.

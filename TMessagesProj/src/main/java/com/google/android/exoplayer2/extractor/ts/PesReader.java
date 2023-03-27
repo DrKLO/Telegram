@@ -15,17 +15,21 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static java.lang.Math.min;
+
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
-/**
- * Parses PES packet data and extracts samples.
- */
+/** Parses PES packet data and extracts samples. */
 public final class PesReader implements TsPayloadReader {
 
   private static final String TAG = "PesReader";
@@ -45,7 +49,7 @@ public final class PesReader implements TsPayloadReader {
   private int state;
   private int bytesRead;
 
-  private TimestampAdjuster timestampAdjuster;
+  private @MonotonicNonNull TimestampAdjuster timestampAdjuster;
   private boolean ptsFlag;
   private boolean dtsFlag;
   private boolean seenFirstDts;
@@ -61,7 +65,9 @@ public final class PesReader implements TsPayloadReader {
   }
 
   @Override
-  public void init(TimestampAdjuster timestampAdjuster, ExtractorOutput extractorOutput,
+  public void init(
+      TimestampAdjuster timestampAdjuster,
+      ExtractorOutput extractorOutput,
       TrackIdGenerator idGenerator) {
     this.timestampAdjuster = timestampAdjuster;
     reader.createTracks(extractorOutput, idGenerator);
@@ -79,6 +85,8 @@ public final class PesReader implements TsPayloadReader {
 
   @Override
   public final void consume(ParsableByteArray data, @Flags int flags) throws ParserException {
+    Assertions.checkStateNotNull(timestampAdjuster); // Asserts init has been called.
+
     if ((flags & FLAG_PAYLOAD_UNIT_START_INDICATOR) != 0) {
       switch (state) {
         case STATE_FINDING_HEADER:
@@ -89,11 +97,11 @@ public final class PesReader implements TsPayloadReader {
           Log.w(TAG, "Unexpected start indicator reading extended header");
           break;
         case STATE_READING_BODY:
-          // If payloadSize == -1 then the length of the previous packet was unspecified, and so
-          // we only know that it's finished now that we've seen the start of the next one. This
-          // is expected. If payloadSize != -1, then the length of the previous packet was known,
-          // but we didn't receive that amount of data. This is not expected.
-          if (payloadSize != -1) {
+          // If payloadSize is unset then the length of the previous packet was unspecified, and so
+          // we only know that it's finished now that we've seen the start of the next one. This is
+          // expected. If payloadSize is set, then the length of the previous packet was known, but
+          // we didn't receive that amount of data. This is not expected.
+          if (payloadSize != C.LENGTH_UNSET) {
             Log.w(TAG, "Unexpected start indicator: expected " + payloadSize + " more bytes");
           }
           // Either way, notify the reader that it has now finished.
@@ -116,10 +124,10 @@ public final class PesReader implements TsPayloadReader {
           }
           break;
         case STATE_READING_HEADER_EXTENSION:
-          int readLength = Math.min(MAX_HEADER_EXTENSION_SIZE, extendedHeaderLength);
+          int readLength = min(MAX_HEADER_EXTENSION_SIZE, extendedHeaderLength);
           // Read as much of the extended header as we're interested in, and skip the rest.
           if (continueRead(data, pesScratch.data, readLength)
-              && continueRead(data, null, extendedHeaderLength)) {
+              && continueRead(data, /* target= */ null, extendedHeaderLength)) {
             parseHeaderExtension();
             flags |= dataAlignmentIndicator ? FLAG_DATA_ALIGNMENT_INDICATOR : 0;
             reader.packetStarted(timeUs, flags);
@@ -128,13 +136,13 @@ public final class PesReader implements TsPayloadReader {
           break;
         case STATE_READING_BODY:
           readLength = data.bytesLeft();
-          int padding = payloadSize == -1 ? 0 : readLength - payloadSize;
+          int padding = payloadSize == C.LENGTH_UNSET ? 0 : readLength - payloadSize;
           if (padding > 0) {
             readLength -= padding;
             data.setLimit(data.getPosition() + readLength);
           }
           reader.consume(data);
-          if (payloadSize != -1) {
+          if (payloadSize != C.LENGTH_UNSET) {
             payloadSize -= readLength;
             if (payloadSize == 0) {
               reader.packetFinished();
@@ -162,8 +170,9 @@ public final class PesReader implements TsPayloadReader {
    * @param targetLength The target length of the read.
    * @return Whether the target length has been reached.
    */
-  private boolean continueRead(ParsableByteArray source, byte[] target, int targetLength) {
-    int bytesToRead = Math.min(source.bytesLeft(), targetLength - bytesRead);
+  private boolean continueRead(
+      ParsableByteArray source, @Nullable byte[] target, int targetLength) {
+    int bytesToRead = min(source.bytesLeft(), targetLength - bytesRead);
     if (bytesToRead <= 0) {
       return true;
     } else if (target == null) {
@@ -182,7 +191,7 @@ public final class PesReader implements TsPayloadReader {
     int startCodePrefix = pesScratch.readBits(24);
     if (startCodePrefix != 0x000001) {
       Log.w(TAG, "Unexpected start code prefix: " + startCodePrefix);
-      payloadSize = -1;
+      payloadSize = C.LENGTH_UNSET;
       return false;
     }
 
@@ -199,14 +208,22 @@ public final class PesReader implements TsPayloadReader {
     extendedHeaderLength = pesScratch.readBits(8);
 
     if (packetLength == 0) {
-      payloadSize = -1;
+      payloadSize = C.LENGTH_UNSET;
     } else {
-      payloadSize = packetLength + 6 /* packetLength does not include the first 6 bytes */
-          - HEADER_SIZE - extendedHeaderLength;
+      payloadSize =
+          packetLength
+              + 6 /* packetLength does not include the first 6 bytes */
+              - HEADER_SIZE
+              - extendedHeaderLength;
+      if (payloadSize < 0) {
+        Log.w(TAG, "Found negative packet payload size: " + payloadSize);
+        payloadSize = C.LENGTH_UNSET;
+      }
     }
     return true;
   }
 
+  @RequiresNonNull("timestampAdjuster")
   private void parseHeaderExtension() {
     pesScratch.setPosition(0);
     timeUs = C.TIME_UNSET;
@@ -237,5 +254,4 @@ public final class PesReader implements TsPayloadReader {
       timeUs = timestampAdjuster.adjustTsTimestamp(pts);
     }
   }
-
 }

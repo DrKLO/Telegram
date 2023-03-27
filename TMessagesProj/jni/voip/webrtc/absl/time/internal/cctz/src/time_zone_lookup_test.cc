@@ -21,10 +21,14 @@
 #include <thread>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "absl/base/config.h"
-#include "absl/time/internal/cctz/include/cctz/civil_time.h"
 #include "absl/time/internal/cctz/include/cctz/time_zone.h"
+#if defined(__linux__)
+#include <features.h>
+#endif
+
+#include "gtest/gtest.h"
+#include "absl/time/internal/cctz/include/cctz/civil_time.h"
 
 namespace chrono = std::chrono;
 
@@ -485,6 +489,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Kaliningrad",
                                       "Europe/Kiev",
                                       "Europe/Kirov",
+                                      "Europe/Kyiv",
                                       "Europe/Lisbon",
                                       "Europe/Ljubljana",
                                       "Europe/London",
@@ -524,6 +529,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Zagreb",
                                       "Europe/Zaporozhye",
                                       "Europe/Zurich",
+                                      "Factory",
                                       "GB",
                                       "GB-Eire",
                                       "GMT",
@@ -1043,7 +1049,7 @@ TEST(MakeTime, LocalTimeLibC) {
   //  1) we know how to change the time zone used by localtime()/mktime(),
   //  2) cctz and localtime()/mktime() will use similar-enough tzdata, and
   //  3) we have some idea about how mktime() behaves during transitions.
-#if defined(__linux__) && !defined(__ANDROID__)
+#if defined(__linux__) && defined(__GLIBC__) && !defined(__ANDROID__)
   const char* const ep = getenv("TZ");
   std::string tz_name = (ep != nullptr) ? ep : "";
   for (const char* const* np = kTimeZoneNames; *np != nullptr; ++np) {
@@ -1180,6 +1186,45 @@ TEST(PrevTransition, AmericaNewYork) {
   tp = time_point<absl::time_internal::cctz::seconds>::max();
   EXPECT_TRUE(tz.prev_transition(tp, &trans));
   // We have a transition but we don't know which one.
+}
+
+TEST(NextTransition, Scan) {
+  for (const char* const* np = kTimeZoneNames; *np != nullptr; ++np) {
+    SCOPED_TRACE(testing::Message() << "In " << *np);
+    time_zone tz;
+    // EXPECT_TRUE(load_time_zone(*np, &tz));
+    if (!load_time_zone(*np, &tz)) {
+      continue;  // tolerate kTimeZoneNames/zoneinfo skew
+    }
+
+    auto tp = time_point<absl::time_internal::cctz::seconds>::min();
+    time_zone::civil_transition trans;
+    while (tz.next_transition(tp, &trans)) {
+      time_zone::civil_lookup from_cl = tz.lookup(trans.from);
+      EXPECT_NE(from_cl.kind, time_zone::civil_lookup::REPEATED);
+      time_zone::civil_lookup to_cl = tz.lookup(trans.to);
+      EXPECT_NE(to_cl.kind, time_zone::civil_lookup::SKIPPED);
+
+      auto trans_tp = to_cl.trans;
+      time_zone::absolute_lookup trans_al = tz.lookup(trans_tp);
+      EXPECT_EQ(trans_al.cs, trans.to);
+      auto pre_trans_tp = trans_tp - absl::time_internal::cctz::seconds(1);
+      time_zone::absolute_lookup pre_trans_al = tz.lookup(pre_trans_tp);
+      EXPECT_EQ(pre_trans_al.cs + 1, trans.from);
+
+      auto offset_delta = trans_al.offset - pre_trans_al.offset;
+      EXPECT_EQ(offset_delta, trans.to - trans.from);
+      if (offset_delta == 0) {
+        // This "transition" is only an is_dst or abbr change.
+        EXPECT_EQ(to_cl.kind, time_zone::civil_lookup::UNIQUE);
+        if (trans_al.is_dst == pre_trans_al.is_dst) {
+          EXPECT_STRNE(trans_al.abbr, pre_trans_al.abbr);
+        }
+      }
+
+      tp = trans_tp;  // continue scan from transition
+    }
+  }
 }
 
 TEST(TimeZoneEdgeCase, AmericaNewYork) {

@@ -102,6 +102,30 @@ TEST(Demangle, Clones) {
   EXPECT_FALSE(Demangle("_ZL3Foov.isra.2.constprop.", tmp, sizeof(tmp)));
 }
 
+// Test the GNU abi_tag extension.
+TEST(Demangle, AbiTags) {
+  char tmp[80];
+
+  // Mangled name generated via:
+  // struct [[gnu::abi_tag("abc")]] A{};
+  // A a;
+  EXPECT_TRUE(Demangle("_Z1aB3abc", tmp, sizeof(tmp)));
+  EXPECT_STREQ("a[abi:abc]", tmp);
+
+  // Mangled name generated via:
+  // struct B {
+  //   B [[gnu::abi_tag("xyz")]] (){};
+  // };
+  // B b;
+  EXPECT_TRUE(Demangle("_ZN1BC2B3xyzEv", tmp, sizeof(tmp)));
+  EXPECT_STREQ("B::B[abi:xyz]()", tmp);
+
+  // Mangled name generated via:
+  // [[gnu::abi_tag("foo", "bar")]] void C() {}
+  EXPECT_TRUE(Demangle("_Z1CB3barB3foov", tmp, sizeof(tmp)));
+  EXPECT_STREQ("C[abi:bar][abi:foo]()", tmp);
+}
+
 // Tests that verify that Demangle footprint is within some limit.
 // They are not to be run under sanitizers as the sanitizers increase
 // stack consumption by about 4x.

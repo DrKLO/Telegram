@@ -15,7 +15,8 @@
  */
 package com.google.android.exoplayer2.scheduler;
 
-import android.annotation.TargetApi;
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,7 +29,6 @@ import android.os.Looper;
 import android.os.PowerManager;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 
 /**
@@ -60,7 +60,7 @@ public final class RequirementsWatcher {
 
   @Nullable private DeviceStatusChangeReceiver receiver;
 
-  @Requirements.RequirementFlags private int notMetRequirements;
+  private @Requirements.RequirementFlags int notMetRequirements;
   @Nullable private NetworkCallback networkCallback;
 
   /**
@@ -72,7 +72,7 @@ public final class RequirementsWatcher {
     this.context = context.getApplicationContext();
     this.listener = listener;
     this.requirements = requirements;
-    handler = new Handler(Util.getLooper());
+    handler = Util.createHandlerForCurrentOrMainLooper();
   }
 
   /**
@@ -81,8 +81,7 @@ public final class RequirementsWatcher {
    *
    * @return Initial {@link Requirements.RequirementFlags RequirementFlags} that are not met, or 0.
    */
-  @Requirements.RequirementFlags
-  public int start() {
+  public @Requirements.RequirementFlags int start() {
     notMetRequirements = requirements.getNotMetRequirements(context);
 
     IntentFilter filter = new IntentFilter();
@@ -105,14 +104,18 @@ public final class RequirementsWatcher {
         filter.addAction(Intent.ACTION_SCREEN_OFF);
       }
     }
+    if (requirements.isStorageNotLowRequired()) {
+      filter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW);
+      filter.addAction(Intent.ACTION_DEVICE_STORAGE_OK);
+    }
     receiver = new DeviceStatusChangeReceiver();
-    context.registerReceiver(receiver, filter, null, handler);
+    Util.registerReceiverNotExported(context, receiver, filter, handler);
     return notMetRequirements;
   }
 
   /** Stops watching for changes. */
   public void stop() {
-    context.unregisterReceiver(Assertions.checkNotNull(receiver));
+    context.unregisterReceiver(checkNotNull(receiver));
     receiver = null;
     if (Util.SDK_INT >= 24 && networkCallback != null) {
       unregisterNetworkCallbackV24();
@@ -124,20 +127,19 @@ public final class RequirementsWatcher {
     return requirements;
   }
 
-  @TargetApi(24)
+  @RequiresApi(24)
   private void registerNetworkCallbackV24() {
     ConnectivityManager connectivityManager =
-        Assertions.checkNotNull(
-            (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
+        checkNotNull((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
     networkCallback = new NetworkCallback();
     connectivityManager.registerDefaultNetworkCallback(networkCallback);
   }
 
-  @TargetApi(24)
+  @RequiresApi(24)
   private void unregisterNetworkCallbackV24() {
     ConnectivityManager connectivityManager =
-        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-    connectivityManager.unregisterNetworkCallback(Assertions.checkNotNull(networkCallback));
+        checkNotNull((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
+    connectivityManager.unregisterNetworkCallback(checkNotNull(networkCallback));
     networkCallback = null;
   }
 

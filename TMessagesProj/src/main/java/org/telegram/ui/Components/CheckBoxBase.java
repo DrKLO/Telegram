@@ -63,7 +63,7 @@ public class CheckBoxBase {
     private ProgressDelegate progressDelegate;
 
     private Theme.MessageDrawable messageDrawable;
-    private final Theme.ResourcesProvider resourcesProvider;
+    private Theme.ResourcesProvider resourcesProvider;
 
     private GenericProvider<Void, Paint> circlePaintProvider = obj -> paint;
 
@@ -91,6 +91,10 @@ public class CheckBoxBase {
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         backgroundPaint.setStyle(Paint.Style.STROKE);
         backgroundPaint.setStrokeWidth(AndroidUtilities.dp(1.2f));
+    }
+
+    public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
     }
 
     public void onAttachedToWindow() {

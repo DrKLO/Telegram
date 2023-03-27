@@ -377,6 +377,11 @@ TEST(Time, FloorConversion) {
 }
 
 TEST(Time, RoundtripConversion) {
+#if defined(ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT) && \
+    ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT
+  GTEST_SKIP();
+#endif
+
 #define TEST_CONVERSION_ROUND_TRIP(SOURCE, FROM, TO, MATCHER) \
   EXPECT_THAT(TO(FROM(SOURCE)), MATCHER(SOURCE))
 
@@ -558,6 +563,11 @@ TEST(Time, FromChrono) {
 }
 
 TEST(Time, ToChronoTime) {
+#if defined(ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT) && \
+    ABSL_SKIP_TIME_TESTS_BROKEN_ON_MSVC_OPT
+  GTEST_SKIP();
+#endif
+
   EXPECT_EQ(std::chrono::system_clock::from_time_t(-1),
             absl::ToChronoTime(absl::FromTimeT(-1)));
   EXPECT_EQ(std::chrono::system_clock::from_time_t(0),

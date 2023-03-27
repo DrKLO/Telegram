@@ -17,6 +17,8 @@ package com.google.android.exoplayer2.audio;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.util.Util;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.nio.ByteBuffer;
 
 /**
@@ -35,6 +37,7 @@ import java.nio.ByteBuffer;
 /* package */ final class ResamplingAudioProcessor extends BaseAudioProcessor {
 
   @Override
+  @CanIgnoreReturnValue
   public AudioFormat onConfigure(AudioFormat inputAudioFormat)
       throws UnhandledAudioFormatException {
     @C.PcmEncoding int encoding = inputAudioFormat.encoding;
@@ -115,9 +118,13 @@ import java.nio.ByteBuffer;
         // 32 bit floating point -> 16 bit resampling. Floating point values are in the range
         // [-1.0, 1.0], so need to be scaled by Short.MAX_VALUE.
         for (int i = position; i < limit; i += 4) {
-          short value = (short) (inputBuffer.getFloat(i) * Short.MAX_VALUE);
-          buffer.put((byte) (value & 0xFF));
-          buffer.put((byte) ((value >> 8) & 0xFF));
+          // Clamp to avoid integer overflow if the floating point values exceed their nominal range
+          // [Internal ref: b/161204847].
+          float floatValue =
+              Util.constrainValue(inputBuffer.getFloat(i), /* min= */ -1, /* max= */ 1);
+          short shortValue = (short) (floatValue * Short.MAX_VALUE);
+          buffer.put((byte) (shortValue & 0xFF));
+          buffer.put((byte) ((shortValue >> 8) & 0xFF));
         }
         break;
       case C.ENCODING_PCM_16BIT:
@@ -130,5 +137,4 @@ import java.nio.ByteBuffer;
     inputBuffer.position(inputBuffer.limit());
     buffer.flip();
   }
-
 }

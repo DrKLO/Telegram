@@ -13,7 +13,10 @@
 
 #include <memory>
 
+#include "absl/base/attributes.h"
+#include "api/field_trials_view.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/units/time_delta.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "rtc_base/synchronization/mutex.h"
@@ -31,7 +34,21 @@ class FrameCadenceAdapterInterface
  public:
   // Averaging window spanning 90 frames at default 30fps, matching old media
   // optimization module defaults.
+  // TODO(crbug.com/1255737): Use TimeDelta.
   static constexpr int64_t kFrameRateAveragingWindowSizeMs = (1000 / 30) * 90;
+  // In zero-hertz mode, the idle repeat rate is a compromise between
+  // RTP receiver keyframe-requesting timeout (3s), other backend limitations
+  // and some worst case RTT.
+  static constexpr TimeDelta kZeroHertzIdleRepeatRatePeriod =
+      TimeDelta::Millis(1000);
+  // The number of frame periods to wait for new frames until starting to
+  // request refresh frames.
+  static constexpr int kOnDiscardedFrameRefreshFramePeriod = 3;
+
+  struct ZeroHertzModeParams {
+    // The number of simulcast layers used in this configuration.
+    size_t num_simulcast_layers = 0;
+  };
 
   // Callback interface used to inform instance owners.
   class Callback {
@@ -55,6 +72,9 @@ class FrameCadenceAdapterInterface
 
     // Called when the source has discarded a frame.
     virtual void OnDiscardedFrame() = 0;
+
+    // Called when the adapter needs the source to send a refresh frame.
+    virtual void RequestRefreshFrame() = 0;
   };
 
   // Factory function creating a production instance. Deletion of the returned
@@ -63,13 +83,17 @@ class FrameCadenceAdapterInterface
   // Callback::OnFrame on the |queue|.
   static std::unique_ptr<FrameCadenceAdapterInterface> Create(
       Clock* clock,
-      TaskQueueBase* queue);
+      TaskQueueBase* queue,
+      const FieldTrialsView& field_trials);
 
   // Call before using the rest of the API.
   virtual void Initialize(Callback* callback) = 0;
 
-  // Pass true in |enabled| as a prerequisite to enable zero-hertz operation.
-  virtual void SetZeroHertzModeEnabled(bool enabled) = 0;
+  // Pass zero hertz parameters in |params| as a prerequisite to enable
+  // zero-hertz operation. If absl:::nullopt is passed, the cadence adapter will
+  // switch to passthrough mode.
+  virtual void SetZeroHertzModeEnabled(
+      absl::optional<ZeroHertzModeParams> params) = 0;
 
   // Returns the input framerate. This is measured by RateStatistics when
   // zero-hertz mode is off, and returns the max framerate in zero-hertz mode.
@@ -78,6 +102,19 @@ class FrameCadenceAdapterInterface
   // Updates frame rate. This is done unconditionally irrespective of adapter
   // mode.
   virtual void UpdateFrameRate() = 0;
+
+  // Updates quality convergence status for an enabled spatial layer.
+  // Convergence means QP has dropped to a low-enough level to warrant ceasing
+  // to send identical frames at high frequency.
+  virtual void UpdateLayerQualityConvergence(size_t spatial_index,
+                                             bool converged) = 0;
+
+  // Updates spatial layer enabled status.
+  virtual void UpdateLayerStatus(size_t spatial_index, bool enabled) = 0;
+
+  // Conditionally requests a refresh frame via
+  // Callback::RequestRefreshFrame.
+  virtual void ProcessKeyFrameRequest() = 0;
 };
 
 }  // namespace webrtc

@@ -33,7 +33,7 @@ class FixedLengthEncodingParametersV3 final {
 
   static FixedLengthEncodingParametersV3 CalculateParameters(
       uint64_t base,
-      const rtc::ArrayView<const uint64_t> values,
+      rtc::ArrayView<const uint64_t> values,
       uint64_t value_bit_width,
       bool values_optional);
   static absl::optional<FixedLengthEncodingParametersV3> ParseDeltaHeader(

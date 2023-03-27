@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor;
 
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * A seeker that supports seeking within a stream by searching for the target frame using binary
@@ -49,10 +52,9 @@ public abstract class BinarySearchSeeker {
      * @param targetTimestamp The target timestamp.
      * @return A {@link TimestampSearchResult} that describes the result of the search.
      * @throws IOException If an error occurred reading from the input.
-     * @throws InterruptedException If the thread was interrupted.
      */
     TimestampSearchResult searchForTimestamp(ExtractorInput input, long targetTimestamp)
-        throws IOException, InterruptedException;
+        throws IOException;
 
     /** Called when a seek operation finishes. */
     default void onSeekFinished() {}
@@ -91,7 +93,7 @@ public abstract class BinarySearchSeeker {
 
   protected final BinarySearchSeekMap seekMap;
   protected final TimestampSeeker timestampSeeker;
-  protected @Nullable SeekOperationParams seekOperationParams;
+  @Nullable protected SeekOperationParams seekOperationParams;
 
   private final int minimumSearchRange;
 
@@ -169,13 +171,12 @@ public abstract class BinarySearchSeeker {
    *     to hold the position of the required seek.
    * @return One of the {@code RESULT_} values defined in {@link Extractor}.
    * @throws IOException If an error occurred reading from the input.
-   * @throws InterruptedException If the thread was interrupted.
    */
   public int handlePendingSeek(ExtractorInput input, PositionHolder seekPositionHolder)
-      throws InterruptedException, IOException {
-    TimestampSeeker timestampSeeker = Assertions.checkNotNull(this.timestampSeeker);
+      throws IOException {
     while (true) {
-      SeekOperationParams seekOperationParams = Assertions.checkNotNull(this.seekOperationParams);
+      SeekOperationParams seekOperationParams =
+          Assertions.checkStateNotNull(this.seekOperationParams);
       long floorPosition = seekOperationParams.getFloorBytePosition();
       long ceilingPosition = seekOperationParams.getCeilingBytePosition();
       long searchPosition = seekOperationParams.getNextSearchBytePosition();
@@ -203,9 +204,9 @@ public abstract class BinarySearchSeeker {
               timestampSearchResult.timestampToUpdate, timestampSearchResult.bytePositionToUpdate);
           break;
         case TimestampSearchResult.TYPE_TARGET_TIMESTAMP_FOUND:
+          skipInputUntilPosition(input, timestampSearchResult.bytePositionToUpdate);
           markSeekOperationFinished(
               /* foundTargetFrame= */ true, timestampSearchResult.bytePositionToUpdate);
-          skipInputUntilPosition(input, timestampSearchResult.bytePositionToUpdate);
           return seekToPosition(
               input, timestampSearchResult.bytePositionToUpdate, seekPositionHolder);
         case TimestampSearchResult.TYPE_NO_TIMESTAMP:
@@ -241,7 +242,7 @@ public abstract class BinarySearchSeeker {
   }
 
   protected final boolean skipInputUntilPosition(ExtractorInput input, long position)
-      throws IOException, InterruptedException {
+      throws IOException {
     long bytesToSkip = position - input.getPosition();
     if (bytesToSkip >= 0 && bytesToSkip <= MAX_SKIP_BYTES) {
       input.skipFully((int) bytesToSkip);
@@ -407,6 +408,7 @@ public abstract class BinarySearchSeeker {
 
     @Documented
     @Retention(RetentionPolicy.SOURCE)
+    @Target(TYPE_USE)
     @IntDef({
       TYPE_TARGET_TIMESTAMP_FOUND,
       TYPE_POSITION_OVERESTIMATED,
@@ -419,7 +421,7 @@ public abstract class BinarySearchSeeker {
         new TimestampSearchResult(TYPE_NO_TIMESTAMP, C.TIME_UNSET, C.POSITION_UNSET);
 
     /** The type of the result. */
-    @Type private final int type;
+    private final @Type int type;
 
     /**
      * When {@link #type} is {@link #TYPE_POSITION_OVERESTIMATED}, the {@link
@@ -530,7 +532,9 @@ public abstract class BinarySearchSeeker {
       return durationUs;
     }
 
-    /** @see SeekTimestampConverter#timeUsToTargetTime(long) */
+    /**
+     * @see SeekTimestampConverter#timeUsToTargetTime(long)
+     */
     public long timeUsToTargetTime(long timeUs) {
       return seekTimestampConverter.timeUsToTargetTime(timeUs);
     }

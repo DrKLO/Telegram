@@ -11,6 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_GAIN_CONTROLLER2_H_
 #define MODULES_AUDIO_PROCESSING_GAIN_CONTROLLER2_H_
 
+#include <atomic>
 #include <memory>
 #include <string>
 
@@ -30,29 +31,35 @@ class AudioBuffer;
 // microphone gain and/or applying digital gain.
 class GainController2 {
  public:
+  // Ctor. If `use_internal_vad` is true, an internal voice activity
+  // detector is used for digital adaptive gain.
   GainController2(const AudioProcessing::Config::GainController2& config,
                   int sample_rate_hz,
-                  int num_channels);
+                  int num_channels,
+                  bool use_internal_vad);
   GainController2(const GainController2&) = delete;
   GainController2& operator=(const GainController2&) = delete;
   ~GainController2();
-
-  // Detects and handles changes of sample rate and/or number of channels.
-  void Initialize(int sample_rate_hz, int num_channels);
 
   // Sets the fixed digital gain.
   void SetFixedGainDb(float gain_db);
 
   // Applies fixed and adaptive digital gains to `audio` and runs a limiter.
-  void Process(AudioBuffer* audio);
-
-  // Handles analog level changes.
-  void NotifyAnalogLevel(int level);
+  // If the internal VAD is used, `speech_probability` is ignored. Otherwise
+  // `speech_probability` is used for digital adaptive gain if it's available
+  // (limited to values [0.0, 1.0]). Handles input volume changes; if the caller
+  // cannot determine whether an input volume change occurred, set
+  // `input_volume_changed` to false.
+  void Process(absl::optional<float> speech_probability,
+               bool input_volume_changed,
+               AudioBuffer* audio);
 
   static bool Validate(const AudioProcessing::Config::GainController2& config);
 
+  AvailableCpuFeatures GetCpuFeatures() const { return cpu_features_; }
+
  private:
-  static int instance_count_;
+  static std::atomic<int> instance_count_;
   const AvailableCpuFeatures cpu_features_;
   ApmDataDumper data_dumper_;
   GainApplier fixed_gain_applier_;
@@ -60,7 +67,6 @@ class GainController2 {
   std::unique_ptr<AdaptiveDigitalGainController> adaptive_digital_controller_;
   Limiter limiter_;
   int calls_since_last_limiter_log_;
-  int analog_level_;
 };
 
 }  // namespace webrtc

@@ -19,9 +19,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 
-/**
- * Sample table for a track in an MP4 file.
- */
+/** Sample table for a track in an MP4 file. */
 /* package */ final class TrackSampleTable {
 
   /** The track corresponding to this sample table. */
@@ -38,10 +36,7 @@ import com.google.android.exoplayer2.util.Util;
   public final long[] timestampsUs;
   /** Sample flags. */
   public final int[] flags;
-  /**
-   * The duration of the track sample table in microseconds, or {@link C#TIME_UNSET} if the sample
-   * table is empty.
-   */
+  /** The duration of the track sample table in microseconds. */
   public final long durationUs;
 
   public TrackSampleTable(
@@ -104,5 +99,4 @@ import com.google.android.exoplayer2.util.Util;
     }
     return C.INDEX_UNSET;
   }
-
 }

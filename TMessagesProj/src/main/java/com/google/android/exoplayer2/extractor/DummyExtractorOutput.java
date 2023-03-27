@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.extractor;
 
-/** A dummy {@link ExtractorOutput} implementation. */
+/** A fake {@link ExtractorOutput} implementation. */
 public final class DummyExtractorOutput implements ExtractorOutput {
 
   @Override

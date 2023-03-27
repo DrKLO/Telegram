@@ -15,21 +15,21 @@
  */
 package com.google.android.exoplayer2.source.smoothstreaming.offline;
 
-import android.net.Uri;
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.offline.DownloaderConstructorHelper;
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.offline.SegmentDownloader;
-import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsManifest;
 import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsManifest.StreamElement;
 import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsManifestParser;
-import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsUtil;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.ParsingLoadable;
-import java.io.IOException;
+import com.google.android.exoplayer2.upstream.ParsingLoadable.Parser;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.util.Util;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * A downloader for SmoothStreaming streams.
@@ -38,43 +38,84 @@ import java.util.List;
  *
  * <pre>{@code
  * SimpleCache cache = new SimpleCache(downloadFolder, new NoOpCacheEvictor(), databaseProvider);
- * DefaultHttpDataSourceFactory factory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
- * DownloaderConstructorHelper constructorHelper =
- *     new DownloaderConstructorHelper(cache, factory);
+ * CacheDataSource.Factory cacheDataSourceFactory =
+ *     new CacheDataSource.Factory()
+ *         .setCache(cache)
+ *         .setUpstreamDataSourceFactory(new DefaultHttpDataSource.Factory());
  * // Create a downloader for the first track of the first stream element.
  * SsDownloader ssDownloader =
  *     new SsDownloader(
- *         manifestUrl,
- *         Collections.singletonList(new StreamKey(0, 0)),
- *         constructorHelper);
+ *         new MediaItem.Builder()
+ *             .setUri(manifestUri)
+ *             .setStreamKeys(Collections.singletonList(new StreamKey(0, 0)))
+ *             .build(),
+ *         cacheDataSourceFactory);
  * // Perform the download.
  * ssDownloader.download(progressListener);
- * // Access downloaded data using CacheDataSource
- * CacheDataSource cacheDataSource =
- *     new CacheDataSource(cache, factory.createDataSource(), CacheDataSource.FLAG_BLOCK_ON_CACHE);
+ * // Use the downloaded data for playback.
+ * SsMediaSource mediaSource =
+ *     new SsMediaSource.Factory(cacheDataSourceFactory).createMediaSource(mediaItem);
  * }</pre>
  */
 public final class SsDownloader extends SegmentDownloader<SsManifest> {
 
   /**
-   * @param manifestUri The {@link Uri} of the manifest to be downloaded.
-   * @param streamKeys Keys defining which streams in the manifest should be selected for download.
-   *     If empty, all streams are downloaded.
-   * @param constructorHelper A {@link DownloaderConstructorHelper} instance.
+   * Creates an instance.
+   *
+   * @param mediaItem The {@link MediaItem} to be downloaded.
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which the
+   *     download will be written.
    */
-  public SsDownloader(
-      Uri manifestUri, List<StreamKey> streamKeys, DownloaderConstructorHelper constructorHelper) {
-    super(SsUtil.fixManifestUri(manifestUri), streamKeys, constructorHelper);
+  public SsDownloader(MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory) {
+    this(mediaItem, cacheDataSourceFactory, Runnable::run);
   }
 
-  @Override
-  protected SsManifest getManifest(DataSource dataSource, DataSpec dataSpec) throws IOException {
-    return ParsingLoadable.load(dataSource, new SsManifestParser(), dataSpec, C.DATA_TYPE_MANIFEST);
+  /**
+   * Creates an instance.
+   *
+   * @param mediaItem The {@link MediaItem} to be downloaded.
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which the
+   *     download will be written.
+   * @param executor An {@link Executor} used to make requests for the media being downloaded.
+   *     Providing an {@link Executor} that uses multiple threads will speed up the download by
+   *     allowing parts of it to be executed in parallel.
+   */
+  public SsDownloader(
+      MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory, Executor executor) {
+    this(
+        mediaItem
+            .buildUpon()
+            .setUri(
+                Util.fixSmoothStreamingIsmManifestUri(
+                    checkNotNull(mediaItem.localConfiguration).uri))
+            .build(),
+        new SsManifestParser(),
+        cacheDataSourceFactory,
+        executor);
+  }
+
+  /**
+   * Creates a new instance.
+   *
+   * @param mediaItem The {@link MediaItem} to be downloaded.
+   * @param manifestParser A parser for SmoothStreaming manifests.
+   * @param cacheDataSourceFactory A {@link CacheDataSource.Factory} for the cache into which the
+   *     download will be written.
+   * @param executor An {@link Executor} used to make requests for the media being downloaded.
+   *     Providing an {@link Executor} that uses multiple threads will speed up the download by
+   *     allowing parts of it to be executed in parallel.
+   */
+  public SsDownloader(
+      MediaItem mediaItem,
+      Parser<SsManifest> manifestParser,
+      CacheDataSource.Factory cacheDataSourceFactory,
+      Executor executor) {
+    super(mediaItem, manifestParser, cacheDataSourceFactory, executor);
   }
 
   @Override
   protected List<Segment> getSegments(
-      DataSource dataSource, SsManifest manifest, boolean allowIncompleteList) {
+      DataSource dataSource, SsManifest manifest, boolean removing) {
     ArrayList<Segment> segments = new ArrayList<>();
     for (StreamElement streamElement : manifest.streamElements) {
       for (int i = 0; i < streamElement.formats.length; i++) {
@@ -88,5 +129,4 @@ public final class SsDownloader extends SegmentDownloader<SsManifest> {
     }
     return segments;
   }
-
 }

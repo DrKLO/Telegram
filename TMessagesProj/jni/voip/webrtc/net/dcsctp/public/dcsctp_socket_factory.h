@@ -20,7 +20,8 @@
 namespace dcsctp {
 class DcSctpSocketFactory {
  public:
-  std::unique_ptr<DcSctpSocketInterface> Create(
+  virtual ~DcSctpSocketFactory();
+  virtual std::unique_ptr<DcSctpSocketInterface> Create(
       absl::string_view log_prefix,
       DcSctpSocketCallbacks& callbacks,
       std::unique_ptr<PacketObserver> packet_observer,

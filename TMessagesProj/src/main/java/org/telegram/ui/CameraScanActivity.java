@@ -473,7 +473,7 @@ public class CameraScanActivity extends BaseFragment {
             actionBar.setTitleColor(0xffffffff);
             actionBar.setItemsColor(0xffffffff, false);
             actionBar.setItemsBackgroundColor(0x22ffffff, false);
-            viewGroup.setBackgroundColor(Theme.getColor(Theme.key_wallet_blackBackground));
+            viewGroup.setBackgroundColor(0xFF000000);
             viewGroup.addView(actionBar);
         }
 

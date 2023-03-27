@@ -9,9 +9,11 @@
  */
 #include "rtc_base/experiments/field_trial_list.h"
 
+#include "absl/strings/string_view.h"
+
 namespace webrtc {
 
-FieldTrialListBase::FieldTrialListBase(std::string key)
+FieldTrialListBase::FieldTrialListBase(absl::string_view key)
     : FieldTrialParameterInterface(key),
       failed_(false),
       parse_got_called_(false) {}

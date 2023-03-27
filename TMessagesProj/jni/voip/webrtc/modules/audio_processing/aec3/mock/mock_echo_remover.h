@@ -33,8 +33,8 @@ class MockEchoRemover : public EchoRemover {
                bool capture_signal_saturation,
                const absl::optional<DelayEstimate>& delay_estimate,
                RenderBuffer* render_buffer,
-               std::vector<std::vector<std::vector<float>>>* linear_output,
-               std::vector<std::vector<std::vector<float>>>* capture),
+               Block* linear_output,
+               Block* capture),
               (override));
   MOCK_METHOD(void,
               UpdateEchoLeakageStatus,

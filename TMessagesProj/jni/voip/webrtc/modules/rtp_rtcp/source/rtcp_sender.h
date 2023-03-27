@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/call/transport.h"
 #include "api/units/time_delta.h"
@@ -137,7 +138,8 @@ class RTCPSender final {
 
   void SetRemoteSSRC(uint32_t ssrc) RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
-  int32_t SetCNAME(const char* cName) RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
+  int32_t SetCNAME(absl::string_view cName)
+      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
   bool TimeToSendRTCPReport(bool sendKeyframeBeforeRTP = false) const
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);

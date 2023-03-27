@@ -75,7 +75,7 @@ double ExponentialUpdate(TimeDelta window, TimeDelta interval) {
   return 1.0f - exp(interval / window * -1.0);
 }
 
-bool IsEnabled(const webrtc::WebRtcKeyValueConfig& key_value_config,
+bool IsEnabled(const webrtc::FieldTrialsView& key_value_config,
                absl::string_view name) {
   return absl::StartsWith(key_value_config.Lookup(name), "Enabled");
 }
@@ -83,7 +83,7 @@ bool IsEnabled(const webrtc::WebRtcKeyValueConfig& key_value_config,
 }  // namespace
 
 LossBasedControlConfig::LossBasedControlConfig(
-    const WebRtcKeyValueConfig* key_value_config)
+    const FieldTrialsView* key_value_config)
     : enabled(IsEnabled(*key_value_config, kBweLossBasedControl)),
       min_increase_factor("min_incr", 1.02),
       max_increase_factor("max_incr", 1.08),
@@ -118,7 +118,7 @@ LossBasedControlConfig::LossBasedControlConfig(const LossBasedControlConfig&) =
 LossBasedControlConfig::~LossBasedControlConfig() = default;
 
 LossBasedBandwidthEstimation::LossBasedBandwidthEstimation(
-    const WebRtcKeyValueConfig* key_value_config)
+    const FieldTrialsView* key_value_config)
     : config_(key_value_config),
       average_loss_(0),
       average_loss_max_(0),

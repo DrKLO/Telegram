@@ -125,7 +125,8 @@ double ChiSquareValue(int dof, double p) {
     const double variance = 2.0 / (9 * dof);
     // Cannot use this method if the variance is 0.
     if (variance != 0) {
-      return std::pow(z * std::sqrt(variance) + mean, 3.0) * dof;
+      double term = z * std::sqrt(variance) + mean;
+      return dof * (term * term * term);
     }
   }
 

@@ -15,10 +15,17 @@ namespace webrtc {
 namespace {
 static const size_t kMaxPacketsInHistory = 5000;
 }
+
+TransportFeedbackDemuxer::TransportFeedbackDemuxer() {
+  // In case the construction thread is different from where the registration
+  // and callbacks occur, detach from the construction thread.
+  observer_checker_.Detach();
+}
+
 void TransportFeedbackDemuxer::RegisterStreamFeedbackObserver(
     std::vector<uint32_t> ssrcs,
     StreamFeedbackObserver* observer) {
-  MutexLock lock(&observers_lock_);
+  RTC_DCHECK_RUN_ON(&observer_checker_);
   RTC_DCHECK(observer);
   RTC_DCHECK(absl::c_find_if(observers_, [=](const auto& pair) {
                return pair.second == observer;
@@ -28,7 +35,7 @@ void TransportFeedbackDemuxer::RegisterStreamFeedbackObserver(
 
 void TransportFeedbackDemuxer::DeRegisterStreamFeedbackObserver(
     StreamFeedbackObserver* observer) {
-  MutexLock lock(&observers_lock_);
+  RTC_DCHECK_RUN_ON(&observer_checker_);
   RTC_DCHECK(observer);
   const auto it = absl::c_find_if(
       observers_, [=](const auto& pair) { return pair.second == observer; });
@@ -37,7 +44,7 @@ void TransportFeedbackDemuxer::DeRegisterStreamFeedbackObserver(
 }
 
 void TransportFeedbackDemuxer::AddPacket(const RtpPacketSendInfo& packet_info) {
-  MutexLock lock(&lock_);
+  RTC_DCHECK_RUN_ON(&observer_checker_);
 
   StreamFeedbackObserver::StreamPacketInfo info;
   info.ssrc = packet_info.media_ssrc;
@@ -55,24 +62,22 @@ void TransportFeedbackDemuxer::AddPacket(const RtpPacketSendInfo& packet_info) {
 
 void TransportFeedbackDemuxer::OnTransportFeedback(
     const rtcp::TransportFeedback& feedback) {
+  RTC_DCHECK_RUN_ON(&observer_checker_);
+
   std::vector<StreamFeedbackObserver::StreamPacketInfo> stream_feedbacks;
-  {
-    MutexLock lock(&lock_);
-    for (const auto& packet : feedback.GetAllPackets()) {
-      int64_t seq_num =
-          seq_num_unwrapper_.UnwrapWithoutUpdate(packet.sequence_number());
-      auto it = history_.find(seq_num);
-      if (it != history_.end()) {
-        auto packet_info = it->second;
-        packet_info.received = packet.received();
-        stream_feedbacks.push_back(packet_info);
-        if (packet.received())
-          history_.erase(it);
-      }
+  for (const auto& packet : feedback.GetAllPackets()) {
+    int64_t seq_num =
+        seq_num_unwrapper_.UnwrapWithoutUpdate(packet.sequence_number());
+    auto it = history_.find(seq_num);
+    if (it != history_.end()) {
+      auto packet_info = it->second;
+      packet_info.received = packet.received();
+      stream_feedbacks.push_back(std::move(packet_info));
+      if (packet.received())
+        history_.erase(it);
     }
   }
 
-  MutexLock lock(&observers_lock_);
   for (auto& observer : observers_) {
     std::vector<StreamFeedbackObserver::StreamPacketInfo> selected_feedback;
     for (const auto& packet_info : stream_feedbacks) {

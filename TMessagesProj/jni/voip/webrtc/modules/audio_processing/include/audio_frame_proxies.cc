@@ -20,10 +20,8 @@ int ProcessAudioFrame(AudioProcessing* ap, AudioFrame* frame) {
     return AudioProcessing::Error::kNullPointerError;
   }
 
-  StreamConfig input_config(frame->sample_rate_hz_, frame->num_channels_,
-                            /*has_keyboard=*/false);
-  StreamConfig output_config(frame->sample_rate_hz_, frame->num_channels_,
-                             /*has_keyboard=*/false);
+  StreamConfig input_config(frame->sample_rate_hz_, frame->num_channels_);
+  StreamConfig output_config(frame->sample_rate_hz_, frame->num_channels_);
   RTC_DCHECK_EQ(frame->samples_per_channel(), input_config.num_frames());
 
   int result = ap->ProcessStream(frame->data(), input_config, output_config,
@@ -57,10 +55,8 @@ int ProcessReverseAudioFrame(AudioProcessing* ap, AudioFrame* frame) {
     return AudioProcessing::Error::kBadNumberChannelsError;
   }
 
-  StreamConfig input_config(frame->sample_rate_hz_, frame->num_channels_,
-                            /*has_keyboard=*/false);
-  StreamConfig output_config(frame->sample_rate_hz_, frame->num_channels_,
-                             /*has_keyboard=*/false);
+  StreamConfig input_config(frame->sample_rate_hz_, frame->num_channels_);
+  StreamConfig output_config(frame->sample_rate_hz_, frame->num_channels_);
 
   int result = ap->ProcessReverseStream(frame->data(), input_config,
                                         output_config, frame->mutable_data());

@@ -28,6 +28,7 @@ import android.view.View;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.ui.ActionBar.Theme;
@@ -248,7 +249,7 @@ public class CacheChart extends View {
             float innerRadius, float outerRadius,
             float textAlpha, float alpha
         ) {
-            if (alpha <= 0) {
+            if (alpha <= 0 || !LiteMode.isEnabled(LiteMode.FLAGS_CHAT)) {
                 return;
             }
             long now = System.currentTimeMillis();

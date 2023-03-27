@@ -20,6 +20,9 @@
 #include "net/dcsctp/socket/dcsctp_socket.h"
 
 namespace dcsctp {
+
+DcSctpSocketFactory::~DcSctpSocketFactory() = default;
+
 std::unique_ptr<DcSctpSocketInterface> DcSctpSocketFactory::Create(
     absl::string_view log_prefix,
     DcSctpSocketCallbacks& callbacks,

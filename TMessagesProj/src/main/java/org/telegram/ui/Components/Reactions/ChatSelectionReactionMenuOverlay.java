@@ -112,7 +112,9 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
                 public void onReactionClicked(View view, ReactionsLayoutInBubble.VisibleReaction visibleReaction, boolean longpress, boolean addToRecent) {
                     parentFragment.selectReaction(currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent);
                     AndroidUtilities.runOnUIThread(() -> {
-                        reactionsContainerLayout.dismissParent(true);
+                        if (reactionsContainerLayout != null) {
+                            reactionsContainerLayout.dismissParent(true);
+                        }
                         hideMenu();
                     });
                 }
@@ -277,11 +279,12 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
             if (msg.getGroupId() != 0) {
                 MessageObject.GroupedMessages groupedMessages = parentFragment.getGroup(msg.getGroupId());
-
-                for (MessageObject obj : groupedMessages.messages) {
-                    if (obj.messageOwner != null && obj.messageOwner.reactions != null && obj.messageOwner.reactions.results != null &&
-                            !obj.messageOwner.reactions.results.isEmpty()) {
-                        return obj;
+                if (groupedMessages != null && groupedMessages.messages != null) {
+                    for (MessageObject obj : groupedMessages.messages) {
+                        if (obj.messageOwner != null && obj.messageOwner.reactions != null && obj.messageOwner.reactions.results != null &&
+                                !obj.messageOwner.reactions.results.isEmpty()) {
+                            return obj;
+                        }
                     }
                 }
             }
@@ -292,7 +295,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
     }
 
     private boolean isMessageTypeAllowed(MessageObject obj) {
-        return MessageObject.isPhoto(obj.messageOwner) || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
+        return MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
     }
 
     public void setSelectedMessages(List<MessageObject> messages) {
@@ -300,7 +303,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
         boolean visible = false;
 
-        if (parentFragment.getCurrentChatInfo() != null && parentFragment.getCurrentChatInfo().available_reactions instanceof TLRPC.TL_chatReactionsNone) {
+        if (parentFragment.isSecretChat() || parentFragment.getCurrentChatInfo() != null && parentFragment.getCurrentChatInfo().available_reactions instanceof TLRPC.TL_chatReactionsNone) {
             visible = false;
         } else if (!messages.isEmpty()) {
             visible = true;
@@ -368,6 +371,14 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
             });
             animator.start();
         }
+    }
+
+    public boolean onBackPressed() {
+        if (reactionsContainerLayout != null && reactionsContainerLayout.getReactionsWindow() != null) {
+            reactionsContainerLayout.dismissWindow();
+            return false;
+        }
+        return true;
     }
 
     public void setHiddenByScroll(boolean hiddenByScroll) {

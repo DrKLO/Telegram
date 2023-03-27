@@ -14,7 +14,9 @@
 #ifndef ABSL_STATUS_INTERNAL_STATUS_INTERNAL_H_
 #define ABSL_STATUS_INTERNAL_STATUS_INTERNAL_H_
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/base/attributes.h"
 #include "absl/container/inlined_vector.h"
@@ -69,6 +71,14 @@ struct StatusRep {
 };
 
 absl::StatusCode MapToLocalCode(int value);
+
+// Returns a pointer to a newly-allocated string with the given `prefix`,
+// suitable for output as an error message in assertion/`CHECK()` failures.
+//
+// This is an internal implementation detail for Abseil logging.
+std::string* MakeCheckFailString(const absl::Status* status,
+                                 const char* prefix);
+
 }  // namespace status_internal
 
 ABSL_NAMESPACE_END

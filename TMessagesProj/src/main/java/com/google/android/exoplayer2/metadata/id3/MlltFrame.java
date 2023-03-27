@@ -45,8 +45,7 @@ public final class MlltFrame extends Id3Frame {
     this.millisecondsDeviations = millisecondsDeviations;
   }
 
-  /* package */
-  MlltFrame(Parcel in) {
+  /* package */ MlltFrame(Parcel in) {
     super(ID);
     this.mpegFramesBetweenReference = in.readInt();
     this.bytesBetweenReference = in.readInt();

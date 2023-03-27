@@ -16,13 +16,13 @@
 package com.google.android.exoplayer2.source;
 
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.AbstractConcatenatedTimeline;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.ShuffleOrder.UnshuffledShuffleOrder;
 import com.google.android.exoplayer2.upstream.Allocator;
-import com.google.android.exoplayer2.upstream.TransferListener;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,19 +30,24 @@ import java.util.Map;
 /**
  * Loops a {@link MediaSource} a specified number of times.
  *
- * <p>Note: To loop a {@link MediaSource} indefinitely, it is usually better to use {@link
- * ExoPlayer#setRepeatMode(int)} instead of this class.
+ * @deprecated To loop a {@link MediaSource} indefinitely, use {@link Player#setRepeatMode(int)}
+ *     instead of this class. To add a {@link MediaSource} a specific number of times to the
+ *     playlist, use {@link ExoPlayer#addMediaSource} in a loop with the same {@link MediaSource}.
+ *     To combine repeated {@link MediaSource} instances into one {@link MediaSource}, for example
+ *     to further wrap it in another {@link MediaSource}, use {@link ConcatenatingMediaSource} with
+ *     the same {@link MediaSource} {@link ConcatenatingMediaSource#addMediaSource added} multiple
+ *     times.
  */
-public final class LoopingMediaSource extends CompositeMediaSource<Void> {
+@Deprecated
+public final class LoopingMediaSource extends WrappingMediaSource {
 
-  private final MediaSource childSource;
   private final int loopCount;
   private final Map<MediaPeriodId, MediaPeriodId> childMediaPeriodIdToMediaPeriodId;
   private final Map<MediaPeriod, MediaPeriodId> mediaPeriodToChildMediaPeriodId;
 
   /**
-   * Loops the provided source indefinitely. Note that it is usually better to use
-   * {@link ExoPlayer#setRepeatMode(int)}.
+   * Loops the provided source indefinitely. Note that it is usually better to use {@link
+   * ExoPlayer#setRepeatMode(int)}.
    *
    * @param childSource The {@link MediaSource} to loop.
    */
@@ -57,8 +62,8 @@ public final class LoopingMediaSource extends CompositeMediaSource<Void> {
    * @param loopCount The desired number of loops. Must be strictly positive.
    */
   public LoopingMediaSource(MediaSource childSource, int loopCount) {
+    super(new MaskingMediaSource(childSource, /* useLazyPreparation= */ false));
     Assertions.checkArgument(loopCount > 0);
-    this.childSource = childSource;
     this.loopCount = loopCount;
     childMediaPeriodIdToMediaPeriodId = new HashMap<>();
     mediaPeriodToChildMediaPeriodId = new HashMap<>();
@@ -66,33 +71,36 @@ public final class LoopingMediaSource extends CompositeMediaSource<Void> {
 
   @Override
   @Nullable
-  public Object getTag() {
-    return childSource.getTag();
+  public Timeline getInitialTimeline() {
+    MaskingMediaSource maskingMediaSource = (MaskingMediaSource) mediaSource;
+    return loopCount != Integer.MAX_VALUE
+        ? new LoopingTimeline(maskingMediaSource.getTimeline(), loopCount)
+        : new InfinitelyLoopingTimeline(maskingMediaSource.getTimeline());
   }
 
   @Override
-  protected void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
-    super.prepareSourceInternal(mediaTransferListener);
-    prepareChildSource(/* id= */ null, childSource);
+  public boolean isSingleWindow() {
+    return false;
   }
 
   @Override
   public MediaPeriod createPeriod(MediaPeriodId id, Allocator allocator, long startPositionUs) {
     if (loopCount == Integer.MAX_VALUE) {
-      return childSource.createPeriod(id, allocator, startPositionUs);
+      return mediaSource.createPeriod(id, allocator, startPositionUs);
     }
     Object childPeriodUid = LoopingTimeline.getChildPeriodUidFromConcatenatedUid(id.periodUid);
     MediaPeriodId childMediaPeriodId = id.copyWithPeriodUid(childPeriodUid);
     childMediaPeriodIdToMediaPeriodId.put(childMediaPeriodId, id);
     MediaPeriod mediaPeriod =
-        childSource.createPeriod(childMediaPeriodId, allocator, startPositionUs);
+        mediaSource.createPeriod(childMediaPeriodId, allocator, startPositionUs);
     mediaPeriodToChildMediaPeriodId.put(mediaPeriod, childMediaPeriodId);
     return mediaPeriod;
   }
 
   @Override
   public void releasePeriod(MediaPeriod mediaPeriod) {
-    childSource.releasePeriod(mediaPeriod);
+    mediaSource.releasePeriod(mediaPeriod);
+    @Nullable
     MediaPeriodId childMediaPeriodId = mediaPeriodToChildMediaPeriodId.remove(mediaPeriod);
     if (childMediaPeriodId != null) {
       childMediaPeriodIdToMediaPeriodId.remove(childMediaPeriodId);
@@ -100,17 +108,17 @@ public final class LoopingMediaSource extends CompositeMediaSource<Void> {
   }
 
   @Override
-  protected void onChildSourceInfoRefreshed(Void id, MediaSource mediaSource, Timeline timeline) {
+  protected void onChildSourceInfoRefreshed(Timeline newTimeline) {
     Timeline loopingTimeline =
         loopCount != Integer.MAX_VALUE
-            ? new LoopingTimeline(timeline, loopCount)
-            : new InfinitelyLoopingTimeline(timeline);
+            ? new LoopingTimeline(newTimeline, loopCount)
+            : new InfinitelyLoopingTimeline(newTimeline);
     refreshSourceInfo(loopingTimeline);
   }
 
   @Override
-  protected @Nullable MediaPeriodId getMediaPeriodIdForChildMediaPeriodId(
-      Void id, MediaPeriodId mediaPeriodId) {
+  @Nullable
+  protected MediaPeriodId getMediaPeriodIdForChildMediaPeriodId(MediaPeriodId mediaPeriodId) {
     return loopCount != Integer.MAX_VALUE
         ? childMediaPeriodIdToMediaPeriodId.get(mediaPeriodId)
         : mediaPeriodId;
@@ -130,7 +138,8 @@ public final class LoopingMediaSource extends CompositeMediaSource<Void> {
       childWindowCount = childTimeline.getWindowCount();
       this.loopCount = loopCount;
       if (childPeriodCount > 0) {
-        Assertions.checkState(loopCount <= Integer.MAX_VALUE / childPeriodCount,
+        Assertions.checkState(
+            loopCount <= Integer.MAX_VALUE / childPeriodCount,
             "LoopingMediaSource contains too many periods");
       }
     }
@@ -182,7 +191,6 @@ public final class LoopingMediaSource extends CompositeMediaSource<Void> {
     protected Object getChildUidByChildIndex(int childIndex) {
       return childIndex;
     }
-
   }
 
   private static final class InfinitelyLoopingTimeline extends ForwardingTimeline {
@@ -192,23 +200,23 @@ public final class LoopingMediaSource extends CompositeMediaSource<Void> {
     }
 
     @Override
-    public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
-        boolean shuffleModeEnabled) {
-      int childNextWindowIndex = timeline.getNextWindowIndex(windowIndex, repeatMode,
-          shuffleModeEnabled);
-      return childNextWindowIndex == C.INDEX_UNSET ? getFirstWindowIndex(shuffleModeEnabled)
+    public int getNextWindowIndex(
+        int windowIndex, @Player.RepeatMode int repeatMode, boolean shuffleModeEnabled) {
+      int childNextWindowIndex =
+          timeline.getNextWindowIndex(windowIndex, repeatMode, shuffleModeEnabled);
+      return childNextWindowIndex == C.INDEX_UNSET
+          ? getFirstWindowIndex(shuffleModeEnabled)
           : childNextWindowIndex;
     }
 
     @Override
-    public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
-        boolean shuffleModeEnabled) {
-      int childPreviousWindowIndex = timeline.getPreviousWindowIndex(windowIndex, repeatMode,
-          shuffleModeEnabled);
-      return childPreviousWindowIndex == C.INDEX_UNSET ? getLastWindowIndex(shuffleModeEnabled)
+    public int getPreviousWindowIndex(
+        int windowIndex, @Player.RepeatMode int repeatMode, boolean shuffleModeEnabled) {
+      int childPreviousWindowIndex =
+          timeline.getPreviousWindowIndex(windowIndex, repeatMode, shuffleModeEnabled);
+      return childPreviousWindowIndex == C.INDEX_UNSET
+          ? getLastWindowIndex(shuffleModeEnabled)
           : childPreviousWindowIndex;
     }
-
   }
-
 }

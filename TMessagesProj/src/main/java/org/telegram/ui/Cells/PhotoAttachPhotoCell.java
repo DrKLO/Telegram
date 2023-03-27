@@ -539,11 +539,17 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
+        StringBuilder sb = new StringBuilder();
         if (photoEntry != null && photoEntry.isVideo) {
-            info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
+            sb.append(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
         } else {
-            info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+            sb.append(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
         }
+        if (photoEntry != null) {
+            sb.append(". ");
+            sb.append(LocaleController.getInstance().formatterStats.format(photoEntry.dateTaken * 1000L));
+        }
+        info.setText(sb);
         if (checkBox.isChecked()) {
             info.setSelected(true);
         }

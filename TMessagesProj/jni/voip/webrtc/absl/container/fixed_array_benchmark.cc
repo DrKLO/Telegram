@@ -16,8 +16,8 @@
 
 #include <string>
 
-#include "benchmark/benchmark.h"
 #include "absl/container/fixed_array.h"
+#include "benchmark/benchmark.h"
 
 namespace {
 

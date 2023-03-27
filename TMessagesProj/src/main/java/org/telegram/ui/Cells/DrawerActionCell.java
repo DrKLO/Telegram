@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
@@ -45,6 +44,7 @@ public class DrawerActionCell extends FrameLayout {
         super(context);
 
         imageView = new ImageView(context);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
         addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 19, 12, 0, 0));
 //        addView(imageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 19, 12, LocaleController.isRTL ? 19 : 0, 0));
 
@@ -109,11 +109,7 @@ public class DrawerActionCell extends FrameLayout {
                 imageView.setImageDrawable(null);
                 lottieImageView.setAnimation(currentLottieId = lottieId, 28, 28);
             } else {
-                Drawable drawable = getResources().getDrawable(resId).mutate();
-                if (drawable != null) {
-                    drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
-                }
-                imageView.setImageDrawable(drawable);
+                imageView.setImageResource(resId);
                 lottieImageView.clearAnimationDrawable();
                 currentLottieId = 0;
             }
@@ -143,6 +139,7 @@ public class DrawerActionCell extends FrameLayout {
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
         info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
         info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
         info.setText(textView.getText());

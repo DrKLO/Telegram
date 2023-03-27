@@ -283,6 +283,14 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_DOVI_CONF,
 
     /**
+     * Timecode which conforms to SMPTE ST 12-1:2014. The data is an array of 4 uint32_t
+     * where the first uint32_t describes how many (1-3) of the other timecodes are used.
+     * The timecode format is described in the documentation of av_timecode_get_smpte_from_framenum()
+     * function in libavutil/timecode.h.
+     */
+    AV_PKT_DATA_S12M_TIMECODE,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
@@ -297,7 +305,11 @@ enum AVPacketSideDataType {
 
 typedef struct AVPacketSideData {
     uint8_t *data;
+#if FF_API_BUFFER_SIZE_T
     int      size;
+#else
+    size_t   size;
+#endif
     enum AVPacketSideDataType type;
 } AVPacketSideData;
 
@@ -311,10 +323,6 @@ typedef struct AVPacketSideData {
  * packets, with no compressed data, containing only side data
  * (e.g. to update some stream parameters at the end of encoding).
  *
- * AVPacket is one of the few structs in FFmpeg, whose size is a part of public
- * ABI. Thus it may be allocated on stack and no new fields can be added to it
- * without libavcodec and libavformat major bump.
- *
  * The semantics of data ownership depends on the buf field.
  * If it is set, the packet data is dynamically allocated and is
  * valid indefinitely until a call to av_packet_unref() reduces the
@@ -326,6 +334,12 @@ typedef struct AVPacketSideData {
  * The side data is always allocated with av_malloc(), copied by
  * av_packet_ref() and freed by av_packet_unref().
  *
+ * sizeof(AVPacket) being a part of the public ABI is deprecated. once
+ * av_init_packet() is removed, new packets will only be able to be allocated
+ * with av_packet_alloc(), and new fields may be added to the end of the struct
+ * with a minor bump.
+ *
+ * @see av_packet_alloc
  * @see av_packet_ref
  * @see av_packet_unref
  */
@@ -384,6 +398,14 @@ typedef struct AVPacket {
     int64_t convergence_duration;
 #endif
 } AVPacket;
+
+#if FF_API_INIT_PACKET
+attribute_deprecated
+typedef struct AVPacketList {
+    AVPacket pkt;
+    struct AVPacketList *next;
+} AVPacketList;
+#endif
 
 #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
 #define AV_PKT_FLAG_CORRUPT 0x0002 ///< The packet content is corrupted
@@ -447,6 +469,7 @@ AVPacket *av_packet_clone(const AVPacket *src);
  */
 void av_packet_free(AVPacket **pkt);
 
+#if FF_API_INIT_PACKET
 /**
  * Initialize optional fields of a packet with default values.
  *
@@ -454,8 +477,16 @@ void av_packet_free(AVPacket **pkt);
  * initialized separately.
  *
  * @param pkt packet
+ *
+ * @see av_packet_alloc
+ * @see av_packet_unref
+ *
+ * @deprecated This function is deprecated. Once it's removed,
+               sizeof(AVPacket) will not be a part of the ABI anymore.
  */
+attribute_deprecated
 void av_init_packet(AVPacket *pkt);
+#endif
 
 /**
  * Allocate the payload of a packet and initialize its fields with
@@ -546,7 +577,11 @@ void av_free_packet(AVPacket *pkt);
  * @return pointer to fresh allocated data or NULL otherwise
  */
 uint8_t* av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+#if FF_API_BUFFER_SIZE_T
                                  int size);
+#else
+                                 size_t size);
+#endif
 
 /**
  * Wrap an existing array as a packet side data.
@@ -573,18 +608,27 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
  * @return 0 on success, < 0 on failure
  */
 int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+#if FF_API_BUFFER_SIZE_T
                                int size);
+#else
+                               size_t size);
+#endif
 
 /**
  * Get side information from packet.
  *
  * @param pkt packet
  * @param type desired side information type
- * @param size pointer for side information size to store (optional)
+ * @param size If supplied, *size will be set to the size of the side data
+ *             or to zero if the desired side data is not present.
  * @return pointer to data if present or NULL otherwise
  */
 uint8_t* av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
+#if FF_API_BUFFER_SIZE_T
                                  int *size);
+#else
+                                 size_t *size);
+#endif
 
 #if FF_API_MERGE_SD_API
 attribute_deprecated
@@ -603,7 +647,11 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type);
  * @param size pointer to store the size of the returned data
  * @return pointer to data if successful, NULL otherwise
  */
+#if FF_API_BUFFER_SIZE_T
 uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size);
+#else
+uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size);
+#endif
 /**
  * Unpack a dictionary from side_data.
  *
@@ -612,8 +660,12 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size);
  * @param dict the metadata storage dictionary
  * @return 0 on success, < 0 on failure
  */
+#if FF_API_BUFFER_SIZE_T
 int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **dict);
-
+#else
+int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
+                                AVDictionary **dict);
+#endif
 
 /**
  * Convenience function to free all the side data stored.

@@ -11,6 +11,7 @@
 #include <map>
 #include <memory>
 
+#include "rtc_base/string_utils.h"
 #include "sdk/android/generated_metrics_jni/Metrics_jni.h"
 #include "sdk/android/native_api/jni/java_types.h"
 #include "sdk/android/src/jni/jni_helpers.h"
@@ -28,7 +29,9 @@ static void JNI_Metrics_Enable(JNIEnv* jni) {
 static ScopedJavaLocalRef<jobject> JNI_Metrics_GetAndReset(JNIEnv* jni) {
   ScopedJavaLocalRef<jobject> j_metrics = Java_Metrics_Constructor(jni);
 
-  std::map<std::string, std::unique_ptr<metrics::SampleInfo>> histograms;
+  std::map<std::string, std::unique_ptr<metrics::SampleInfo>,
+           rtc::AbslStringViewCmp>
+      histograms;
   metrics::GetAndReset(&histograms);
   for (const auto& kv : histograms) {
     // Create and add samples to `HistogramInfo`.

@@ -158,7 +158,8 @@ void Vp9ReadQp(BitstreamReader& br, Vp9UncompressedHeader* frame_info) {
 void Vp9ReadSegmentationParams(BitstreamReader& br,
                                Vp9UncompressedHeader* frame_info) {
   constexpr int kSegmentationFeatureBits[kVp9SegLvlMax] = {8, 6, 2, 0};
-  constexpr bool kSegmentationFeatureSigned[kVp9SegLvlMax] = {1, 1, 0, 0};
+  constexpr bool kSegmentationFeatureSigned[kVp9SegLvlMax] = {true, true, false,
+                                                              false};
 
   frame_info->segmentation_enabled = br.Read<bool>();
   if (!frame_info->segmentation_enabled) {
