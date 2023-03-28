@@ -20,6 +20,7 @@
 #include "libtgvoip/PrivateDefines.h"
 #include "libtgvoip/logging.h"
 #include "../c_utils.h"
+#include "tgnet/FileLog.h"
 
 #ifdef TGVOIP_HAS_CONFIG
 #include <tgvoip_config.h>
@@ -63,6 +64,7 @@ namespace tgvoip {
 
 	jlong VoIPController_nativeInit(JNIEnv *env, jobject thiz, jstring persistentStateFile) {
 		ImplDataAndroid *impl = new ImplDataAndroid();
+		DEBUG_REF("VoIPController_nativeInit");
 		impl->javaObject = env->NewGlobalRef(thiz);
 		if (persistentStateFile) {
 			impl->persistentStateFile = jni::JavaStringToStdString(env, persistentStateFile);
@@ -123,6 +125,7 @@ namespace tgvoip {
 		ctlr->Stop();
 		std::vector<uint8_t> state = ctlr->GetPersistentState();
 		delete ctlr;
+        DEBUG_DELREF("VoIPController_nativeRelease");
 		env->DeleteGlobalRef(impl->javaObject);
 		if (!impl->persistentStateFile.empty()) {
 			FILE *f = fopen(impl->persistentStateFile.c_str(), "w");
@@ -294,6 +297,7 @@ int tgvoipOnJNILoad(JavaVM *vm, JNIEnv *env) {
     env->GetJavaVM(&sharedJVM);
     if (!AudioInputAndroid::jniClass) {
         jclass cls = env->FindClass(TGVOIP_PACKAGE_PATH "/AudioRecordJNI");
+		DEBUG_REF("AudioRecordJNI");
         AudioInputAndroid::jniClass = (jclass) env->NewGlobalRef(cls);
         AudioInputAndroid::initMethod = env->GetMethodID(cls, "init", "(IIII)V");
         AudioInputAndroid::releaseMethod = env->GetMethodID(cls, "release", "()V");
@@ -302,6 +306,7 @@ int tgvoipOnJNILoad(JavaVM *vm, JNIEnv *env) {
         AudioInputAndroid::getEnabledEffectsMaskMethod = env->GetMethodID(cls, "getEnabledEffectsMask", "()I");
 
         cls = env->FindClass(TGVOIP_PACKAGE_PATH "/AudioTrackJNI");
+		DEBUG_REF("AudioTrackJNI");
         AudioOutputAndroid::jniClass = (jclass) env->NewGlobalRef(cls);
         AudioOutputAndroid::initMethod = env->GetMethodID(cls, "init", "(IIII)V");
         AudioOutputAndroid::releaseMethod = env->GetMethodID(cls, "release", "()V");
@@ -313,6 +318,7 @@ int tgvoipOnJNILoad(JavaVM *vm, JNIEnv *env) {
     setSignalBarsMethod = env->GetMethodID(controller, "handleSignalBarsChange", "(I)V");
 
     if (!jniUtilitiesClass) {
+		DEBUG_REF("JNIUtilities");
         jniUtilitiesClass = (jclass) env->NewGlobalRef(env->FindClass(TGVOIP_PACKAGE_PATH "/JNIUtilities"));
     }
 

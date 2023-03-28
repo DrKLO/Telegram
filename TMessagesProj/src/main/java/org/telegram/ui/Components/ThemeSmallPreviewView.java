@@ -238,6 +238,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                         final TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(wallpaperDocument.thumbs, PATTERN_BITMAP_MAXWIDTH);
                         ImageLocation imageLocation = ImageLocation.getForDocument(thumbSize, wallpaperDocument);
                         ImageReceiver imageReceiver = new ImageReceiver();
+                        imageReceiver.setAllowLoadingOnAttachedOnly(false);
                         imageReceiver.setImage(imageLocation, PATTERN_BITMAP_MAXWIDTH + "_" + PATTERN_BITMAP_MAXHEIGHT, null, null, null, 1);
                         imageReceiver.setDelegate((receiver, set, thumb, memCache) -> {
                             ImageReceiver.BitmapHolder holder = receiver.getBitmapSafe();

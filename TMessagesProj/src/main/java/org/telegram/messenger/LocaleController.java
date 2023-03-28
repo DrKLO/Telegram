@@ -552,6 +552,23 @@ public class LocaleController {
         }
     }
 
+    private boolean patching = false;
+
+    public void checkForcePatchLangpack(int currentAccount, Runnable ifDone) {
+        String lng = LocaleController.getCurrentLanguageName();
+        boolean shouldPatch = MessagesController.getInstance(currentAccount).checkResetLangpack > 0 && !MessagesController.getGlobalMainSettings().getBoolean("langpack_patched" + lng, false) && !patching;
+        if (shouldPatch) {
+            patching = true;
+            reloadCurrentRemoteLocale(currentAccount, null, true, () -> AndroidUtilities.runOnUIThread(() -> {
+                MessagesController.getGlobalMainSettings().edit().putBoolean("langpack_patched" + lng, true).apply();
+                if (ifDone != null) {
+                    ifDone.run();
+                }
+                patching = false;
+            }));
+        }
+    }
+
     private String getLocaleString(Locale locale) {
         if (locale == null) {
             return "en";

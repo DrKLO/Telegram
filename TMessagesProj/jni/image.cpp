@@ -27,14 +27,17 @@ jfieldID jclass_Options_outHeight;
 jfieldID jclass_Options_outWidth;
 
 jint imageOnJNILoad(JavaVM *vm, JNIEnv *env) {
+    DEBUG_REF("image.cpp nullpointerexception class");
     jclass_NullPointerException = (jclass) env->NewGlobalRef(env->FindClass("java/lang/NullPointerException"));
     if (jclass_NullPointerException == 0) {
         return JNI_FALSE;
     }
+    DEBUG_REF("image.cpp runtimeexception class");
     jclass_RuntimeException = (jclass) env->NewGlobalRef(env->FindClass("java/lang/RuntimeException"));
     if (jclass_RuntimeException == 0) {
         return JNI_FALSE;
     }
+    DEBUG_REF("image.cpp bitmapfactoryoptions class");
     jclass_Options = (jclass) env->NewGlobalRef(env->FindClass("android/graphics/BitmapFactory$Options"));
     if (jclass_Options == 0) {
         return JNI_FALSE;

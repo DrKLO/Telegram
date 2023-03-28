@@ -103,12 +103,15 @@ public class AutoDeleteMediaTask {
                             }
                             long lastUsageTime = Utilities.getLastUsageFileTime(file.file.getAbsolutePath());
                             long timeLocal = time - seconds;
-                            boolean needDelete = lastUsageTime < timeLocal && !usingFilePaths.contains(file.file.getPath());
+                            boolean needDelete = lastUsageTime > 316000000 && lastUsageTime < timeLocal && !usingFilePaths.contains(file.file.getPath());
                             if (needDelete) {
                                 try {
                                     if (BuildVars.LOGS_ENABLED) {
                                         autoDeletedFiles++;
                                         autoDeletedFilesSize += file.file.length();
+                                    }
+                                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                                        FileLog.d("delete file " + file.file.getPath() + " last_usage_time=" + lastUsageTime + " time_local=" + timeLocal);
                                     }
                                     file.file.delete();
                                 } catch (Exception exception) {

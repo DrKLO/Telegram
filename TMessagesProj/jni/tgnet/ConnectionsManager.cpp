@@ -1825,14 +1825,17 @@ void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete
             exit(1);
         }
         if (ptr1 != nullptr) {
+            DEBUG_DELREF("connectionsmanager ptr1");
             env->DeleteGlobalRef(ptr1);
             ptr1 = nullptr;
         }
         if (ptr2 != nullptr) {
+            DEBUG_DELREF("connectionsmanager ptr2");
             env->DeleteGlobalRef(ptr2);
             ptr2 = nullptr;
         }
         if (ptr3 != nullptr) {
+            DEBUG_DELREF("connectionsmanager ptr3");
             env->DeleteGlobalRef(ptr3);
             ptr3 = nullptr;
         }
@@ -3029,12 +3032,14 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround) {
                 std::vector<TcpAddress> addressesIpv4Download;
                 std::vector<TcpAddress> addressesIpv6Download;
                 bool isCdn = false;
+                bool forceTryIpV6;
 
                 void addAddressAndPort(TL_dcOption *dcOption) {
                     std::vector<TcpAddress> *addresses;
                     if (!isCdn) {
                         isCdn = dcOption->cdn;
                     }
+                    forceTryIpV6 = dcOption->force_try_ipv6;
                     if (dcOption->media_only) {
                         if (dcOption->ipv6) {
                             addresses = &addressesIpv6Download;
@@ -3057,7 +3062,7 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround) {
                     if (dcOption->secret != nullptr) {
                         secret = std::string((const char *) dcOption->secret->bytes, dcOption->secret->length);
                     }
-                    if (LOGS_ENABLED) DEBUG_D("getConfig add %s:%d to dc%d, flags %d, has_secret = %d[%d], try_this_port_only = %d", dcOption->ip_address.c_str(), dcOption->port, dcOption->id, dcOption->flags, dcOption->secret != nullptr ? 1 : 0, dcOption->secret != nullptr ? dcOption->secret->length : 0, dcOption->thisPortOnly ? 1 : 0);
+                    if (LOGS_ENABLED) DEBUG_D("getConfig add %s:%d to dc%d, flags %d, has_secret = %d[%d], try_this_port_only = %d, force_try_ipv6 = %d", dcOption->ip_address.c_str(), dcOption->port, dcOption->id, dcOption->flags, dcOption->secret != nullptr ? 1 : 0, dcOption->secret != nullptr ? dcOption->secret->length : 0, dcOption->thisPortOnly ? 1 : 0, dcOption->force_try_ipv6 ? 1 : 0);
                     if (dcOption->thisPortOnly) {
                         addresses->insert(addresses->begin(), TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
                     } else {
@@ -3607,6 +3612,7 @@ void ConnectionsManager::useJavaVM(JavaVM *vm, bool useJavaByteBuffers) {
             if (LOGS_ENABLED) DEBUG_E("can't get jnienv");
             exit(1);
         }
+        DEBUG_REF("connectionsmanager byte buffer");
         jclass_ByteBuffer = (jclass) env->NewGlobalRef(env->FindClass("java/nio/ByteBuffer"));
         if (jclass_ByteBuffer == nullptr) {
             if (LOGS_ENABLED) DEBUG_E("can't find java ByteBuffer class");

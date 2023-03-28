@@ -5,6 +5,7 @@
 #include "tgnet/ConnectionsManager.h"
 #include "tgnet/MTProtoScheme.h"
 #include "tgnet/ConnectionSocket.h"
+#include "tgnet/FileLog.h"
 
 JavaVM *java;
 jclass jclass_RequestDelegateInternal;
@@ -96,12 +97,15 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
     TL_api_request *request = new TL_api_request();
     request->request = (NativeByteBuffer *) (intptr_t) object;
     if (onComplete != nullptr) {
+        DEBUG_REF("sendRequest onComplete");
         onComplete = env->NewGlobalRef(onComplete);
     }
     if (onQuickAck != nullptr) {
+        DEBUG_REF("sendRequest onQuickAck");
         onQuickAck = env->NewGlobalRef(onQuickAck);
     }
     if (onWriteToSocket != nullptr) {
+        DEBUG_REF("sendRequest onWriteToSocket");
         onWriteToSocket = env->NewGlobalRef(onWriteToSocket);
     }
     ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([onComplete, instanceNum](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime, int64_t msgId) {
@@ -238,6 +242,7 @@ jlong checkProxy(JNIEnv *env, jclass c, jint instanceNum, jstring address, jint 
     const char *secretStr = env->GetStringUTFChars(secret, 0);
 
     if (requestTimeFunc != nullptr) {
+        DEBUG_REF("sendRequest requestTimeFunc");
         requestTimeFunc = env->NewGlobalRef(requestTimeFunc);
     }
 
@@ -483,7 +488,8 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (!registerNativeMethods(env, ConnectionsManagerClassPathName, ConnectionsManagerMethods, sizeof(ConnectionsManagerMethods) / sizeof(ConnectionsManagerMethods[0]))) {
         return JNI_FALSE;
     }
-    
+
+    DEBUG_REF("RequestDelegateInternal class");
     jclass_RequestDelegateInternal = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/RequestDelegateInternal"));
     if (jclass_RequestDelegateInternal == 0) {
         return JNI_FALSE;
@@ -493,6 +499,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
         return JNI_FALSE;
     }
 
+    DEBUG_REF("RequestTimeDelegate class");
     jclass_RequestTimeDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/RequestTimeDelegate"));
     if (jclass_RequestTimeDelegate == 0) {
         return JNI_FALSE;
@@ -502,6 +509,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
         return JNI_FALSE;
     }
 
+    DEBUG_REF("QuickAckDelegate class");
     jclass_QuickAckDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/QuickAckDelegate"));
     if (jclass_RequestDelegateInternal == 0) {
         return JNI_FALSE;
@@ -511,6 +519,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
         return JNI_FALSE;
     }
 
+    DEBUG_REF("WriteToSocketDelegate class");
     jclass_WriteToSocketDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/WriteToSocketDelegate"));
     if (jclass_WriteToSocketDelegate == 0) {
         return JNI_FALSE;
@@ -519,6 +528,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_WriteToSocketDelegate_run == 0) {
         return JNI_FALSE;
     }
+    DEBUG_REF("ConnectionsManager class");
     jclass_ConnectionsManager = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/ConnectionsManager"));
     if (jclass_ConnectionsManager == 0) {
         return JNI_FALSE;

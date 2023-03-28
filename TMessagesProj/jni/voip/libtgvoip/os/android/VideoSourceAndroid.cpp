@@ -6,6 +6,7 @@
 #include "JNIUtilities.h"
 #include "../../logging.h"
 #include "../../PrivateDefines.h"
+#include "tgnet/FileLog.h"
 
 using namespace tgvoip;
 using namespace tgvoip::video;
@@ -27,6 +28,7 @@ VideoSourceAndroid::VideoSourceAndroid(jobject jobj) : javaObject(jobj){
 
 VideoSourceAndroid::~VideoSourceAndroid(){
 	jni::DoWithJNI([this](JNIEnv* env){
+		DEBUG_DELREF("VideoSourceAndroid");
 		env->DeleteGlobalRef(javaObject);
 	});
 }

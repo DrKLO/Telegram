@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "sdk/android/native_api/jni/java_types.h"
+#include "tgnet/FileLog.h"
 
 namespace webrtc {
 namespace jni {
@@ -26,6 +27,7 @@ ScopedJavaLocalRef<jobject> NewDirectByteBuffer(JNIEnv* env,
 }
 
 jobject NewGlobalRef(JNIEnv* jni, jobject o) {
+  DEBUG_REF("webrtc 2 new global ref");
   jobject ret = jni->NewGlobalRef(o);
   CHECK_EXCEPTION(jni) << "error during NewGlobalRef";
   RTC_CHECK(ret);
@@ -33,6 +35,7 @@ jobject NewGlobalRef(JNIEnv* jni, jobject o) {
 }
 
 void DeleteGlobalRef(JNIEnv* jni, jobject o) {
+  DEBUG_DELREF("webrtc 2 delete global ref");
   jni->DeleteGlobalRef(o);
   CHECK_EXCEPTION(jni) << "error during DeleteGlobalRef";
 }

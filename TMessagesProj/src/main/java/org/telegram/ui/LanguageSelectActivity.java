@@ -409,21 +409,14 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         Collections.sort(unofficialLanguages, comparator);
     }
 
-    private static boolean patching = false;
-
     @Override
     public void onBecomeFullyVisible() {
         super.onBecomeFullyVisible();
-        boolean shouldPatch = getMessagesController().checkResetLangpack > 0 && !MessagesController.getGlobalMainSettings().getBoolean("langpack_patched", false) && !patching;
-        if (shouldPatch) {
-            patching = true;
-            LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, null, true, () -> {
-                AndroidUtilities.runOnUIThread(() -> {
-                    MessagesController.getGlobalMainSettings().edit().putBoolean("langpack_patched", true).apply();
-                    updateLanguage();
-                });
-            });
-        }
+        LocaleController.getInstance().checkForcePatchLangpack(currentAccount, () -> {
+            if (!isPaused) {
+                updateLanguage();
+            }
+        });
     }
 
     @Override

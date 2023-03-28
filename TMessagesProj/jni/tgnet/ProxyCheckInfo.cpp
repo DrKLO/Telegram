@@ -8,10 +8,12 @@
 
 #include "ProxyCheckInfo.h"
 #include "ConnectionsManager.h"
+#include "FileLog.h"
 
 ProxyCheckInfo::~ProxyCheckInfo() {
 #ifdef ANDROID
     if (ptr1 != nullptr) {
+        DEBUG_DELREF("tgnet (2) request ptr1");
         jniEnv[instanceNum]->DeleteGlobalRef(ptr1);
         ptr1 = nullptr;
     }
