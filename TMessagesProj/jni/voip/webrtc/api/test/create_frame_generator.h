@@ -41,6 +41,15 @@ std::unique_ptr<FrameGeneratorInterface> CreateFromYuvFileFrameGenerator(
     size_t height,
     int frame_repeat_count);
 
+// Creates a frame generator that repeatedly plays a set of nv12 files.
+// The frame_repeat_count determines how many times each frame is shown,
+// with 1 = show each frame once, etc.
+std::unique_ptr<FrameGeneratorInterface> CreateFromNV12FileFrameGenerator(
+    std::vector<std::string> filenames,
+    size_t width,
+    size_t height,
+    int frame_repeat_count = 1);
+
 // Creates a frame generator that repeatedly plays an ivf file.
 std::unique_ptr<FrameGeneratorInterface> CreateFromIvfFileFrameGenerator(
     std::string filename);

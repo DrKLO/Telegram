@@ -11,6 +11,8 @@
 #ifndef RTC_BASE_SSL_ROOTS_H_
 #define RTC_BASE_SSL_ROOTS_H_
 
+#include <cstddef>
+
 // This file is the root certificates in C form that are needed to connect to
 // Google.
 

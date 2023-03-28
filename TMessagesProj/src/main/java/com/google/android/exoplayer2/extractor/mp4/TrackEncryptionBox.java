@@ -22,21 +22,17 @@ import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 
 /**
- * Encapsulates information parsed from a track encryption (tenc) box or sample group description 
+ * Encapsulates information parsed from a track encryption (tenc) box or sample group description
  * (sgpd) box in an MP4 stream.
  */
 public final class TrackEncryptionBox {
 
   private static final String TAG = "TrackEncryptionBox";
 
-  /**
-   * Indicates the encryption state of the samples in the sample group.
-   */
+  /** Indicates the encryption state of the samples in the sample group. */
   public final boolean isEncrypted;
 
-  /**
-   * The protection scheme type, as defined by the 'schm' box, or null if unknown.
-   */
+  /** The protection scheme type, as defined by the 'schm' box, or null if unknown. */
   @Nullable public final String schemeType;
 
   /**
@@ -76,12 +72,12 @@ public final class TrackEncryptionBox {
     this.schemeType = schemeType;
     this.perSampleIvSize = perSampleIvSize;
     this.defaultInitializationVector = defaultInitializationVector;
-    cryptoData = new TrackOutput.CryptoData(schemeToCryptoMode(schemeType), keyId,
-        defaultEncryptedBlocks, defaultClearBlocks);
+    cryptoData =
+        new TrackOutput.CryptoData(
+            schemeToCryptoMode(schemeType), keyId, defaultEncryptedBlocks, defaultClearBlocks);
   }
 
-  @C.CryptoMode
-  private static int schemeToCryptoMode(@Nullable String schemeType) {
+  private static @C.CryptoMode int schemeToCryptoMode(@Nullable String schemeType) {
     if (schemeType == null) {
       // If unknown, assume cenc.
       return C.CRYPTO_MODE_AES_CTR;
@@ -94,10 +90,12 @@ public final class TrackEncryptionBox {
       case C.CENC_TYPE_cbcs:
         return C.CRYPTO_MODE_AES_CBC;
       default:
-        Log.w(TAG, "Unsupported protection scheme type '" + schemeType + "'. Assuming AES-CTR "
-            + "crypto mode.");
+        Log.w(
+            TAG,
+            "Unsupported protection scheme type '"
+                + schemeType
+                + "'. Assuming AES-CTR crypto mode.");
         return C.CRYPTO_MODE_AES_CTR;
     }
   }
-
 }

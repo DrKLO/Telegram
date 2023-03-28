@@ -14,25 +14,9 @@
 
 namespace webrtc {
 
-BlockBuffer::BlockBuffer(size_t size,
-                         size_t num_bands,
-                         size_t num_channels,
-                         size_t frame_length)
+BlockBuffer::BlockBuffer(size_t size, size_t num_bands, size_t num_channels)
     : size(static_cast<int>(size)),
-      buffer(size,
-             std::vector<std::vector<std::vector<float>>>(
-                 num_bands,
-                 std::vector<std::vector<float>>(
-                     num_channels,
-                     std::vector<float>(frame_length, 0.f)))) {
-  for (auto& block : buffer) {
-    for (auto& band : block) {
-      for (auto& channel : band) {
-        std::fill(channel.begin(), channel.end(), 0.f);
-      }
-    }
-  }
-}
+      buffer(size, Block(num_bands, num_channels)) {}
 
 BlockBuffer::~BlockBuffer() = default;
 

@@ -11,9 +11,19 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.Layout;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.util.Pair;
 import android.util.StateSet;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -24,7 +34,14 @@ import android.widget.FrameLayout;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class SeekBarView extends FrameLayout {
 
@@ -38,7 +55,7 @@ public class SeekBarView extends FrameLayout {
     private AnimatedFloat animatedThumbX = new AnimatedFloat(this, 0, 80, CubicBezierInterpolator.EASE_OUT);
     private int thumbDX;
     private float progressToSet = -100;
-    private boolean pressed;
+    private boolean pressed, pressedDelayed;
     public SeekBarViewDelegate delegate;
     private boolean reportChanges;
     private float bufferedProgress;
@@ -49,6 +66,7 @@ public class SeekBarView extends FrameLayout {
     private float transitionProgress = 1f;
     private int transitionThumbX;
     private int separatorsCount;
+    private int lineWidthDp = 3;
 
     private boolean twoSided;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -194,7 +212,7 @@ public class SeekBarView extends FrameLayout {
                         }
                     }
                     thumbDX = (int) (ev.getX() - thumbX);
-                    pressed = true;
+                    pressed = pressedDelayed = true;
                 }
             }
             if (pressed) {
@@ -215,6 +233,7 @@ public class SeekBarView extends FrameLayout {
                 }
                 delegate.onSeekBarPressed(false);
                 pressed = false;
+                AndroidUtilities.runOnUIThread(() -> pressedDelayed = false, 50);
                 invalidate();
                 return true;
             }
@@ -238,7 +257,7 @@ public class SeekBarView extends FrameLayout {
                             }
                         }
                         thumbDX = (int) (ev.getX() - thumbX);
-                        pressed = true;
+                        pressed = pressedDelayed = true;
                         delegate.onSeekBarPressed(true);
                         if (Build.VERSION.SDK_INT >= 21 && hoverDrawable != null) {
                             hoverDrawable.setState(pressedState);
@@ -277,6 +296,10 @@ public class SeekBarView extends FrameLayout {
             }
         }
         return false;
+    }
+
+    public void setLineWidth(int dp) {
+        lineWidthDp = dp;
     }
 
     int lastValue;
@@ -371,10 +394,17 @@ public class SeekBarView extends FrameLayout {
         }
         int y = (getMeasuredHeight() - thumbSize) / 2;
         innerPaint1.setColor(getThemedColor(Theme.key_player_progressBackground));
-        canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() - selectorWidth / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
+
+        float centerY = getMeasuredHeight() / 2f;
+        float left = selectorWidth / 2f, right = getMeasuredWidth() - selectorWidth / 2;
+        float top = centerY - AndroidUtilities.dp(lineWidthDp) / 2f, bottom = centerY + AndroidUtilities.dp(lineWidthDp) / 2f;
+
+        rect.set(left, top, right, bottom);
+        drawProgressBar(canvas, rect, innerPaint1);
         if (bufferedProgress > 0) {
             innerPaint1.setColor(getThemedColor(Theme.key_player_progressCachedBackground));
-            canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + bufferedProgress * (getMeasuredWidth() - selectorWidth), getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
+            rect.set(left, top, selectorWidth / 2f + bufferedProgress * (getMeasuredWidth() - selectorWidth), bottom);
+            drawProgressBar(canvas, rect, innerPaint1);
         }
         if (twoSided) {
             canvas.drawRect(getMeasuredWidth() / 2 - AndroidUtilities.dp(1), getMeasuredHeight() / 2 - AndroidUtilities.dp(6), getMeasuredWidth() / 2 + AndroidUtilities.dp(1), getMeasuredHeight() / 2 + AndroidUtilities.dp(6), outerPaint1);
@@ -384,8 +414,10 @@ public class SeekBarView extends FrameLayout {
                 canvas.drawRect(thumbX + selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
             }
         } else {
-            canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
+            rect.set(left, top, selectorWidth / 2 + thumbX, bottom);
+            drawProgressBar(canvas, rect, outerPaint1);
         }
+
         if (hoverDrawable != null) {
             int dx = thumbX + selectorWidth / 2 - AndroidUtilities.dp(16);
             int dy = y + thumbSize / 2 - AndroidUtilities.dp(16);
@@ -421,6 +453,7 @@ public class SeekBarView extends FrameLayout {
                 transitionProgress = 1f;
             }
         }
+
         if (transitionProgress < 1f) {
             final float oldCircleProgress = 1f - Easings.easeInQuad.getInterpolation(Math.min(1f, transitionProgress * 3f));
             final float newCircleProgress = Easings.easeOutQuad.getInterpolation(transitionProgress);
@@ -431,8 +464,340 @@ public class SeekBarView extends FrameLayout {
         } else {
             canvas.drawCircle(thumbX + selectorWidth / 2, y + thumbSize / 2, currentRadius, outerPaint1);
         }
+
+        drawTimestampLabel(canvas);
+
         if (needInvalidate) {
             postInvalidateOnAnimation();
+        }
+    }
+
+    private ArrayList<Pair<Float, CharSequence>> timestamps;
+    private CharSequence lastCaption;
+    private long lastDuration;
+
+    private float timestampsAppearing = 0;
+    private long lastTimestampsAppearingUpdate;
+    private final float TIMESTAMP_GAP = 1f;
+    private static float[] tmpRadii;
+    private static Path tmpPath;
+
+    private int currentTimestamp = -1, lastTimestamp = -1;
+    private StaticLayout[] timestampLabel;
+    private TextPaint timestampLabelPaint;
+    private float timestampChangeT = 1;
+    private int timestampChangeDirection;
+    private long lastTimestampUpdate;
+    private float lastWidth = -1;
+
+    private RectF rect = new RectF();
+
+    public void clearTimestamps() {
+        timestamps = null;
+        currentTimestamp = -1;
+        timestampsAppearing = 0;
+        if (timestampLabel != null) {
+            timestampLabel[0] = timestampLabel[1] = null;
+        }
+        lastCaption = null;
+        lastDuration = -1;
+    }
+
+    public void updateTimestamps(MessageObject messageObject, Long duration) {
+        if (messageObject == null) {
+            clearTimestamps();
+            return;
+        }
+        if (duration == null) {
+            duration = (long) messageObject.getDuration() * 1000L;
+        }
+        if (duration == null || duration < 0) {
+            clearTimestamps();
+            return;
+        }
+        CharSequence text = messageObject.caption;
+        if (messageObject.isYouTubeVideo()) {
+            if (messageObject.youtubeDescription == null && messageObject.messageOwner.media.webpage.description != null) {
+                messageObject.youtubeDescription = SpannableString.valueOf(messageObject.messageOwner.media.webpage.description);
+                MessageObject.addUrlsByPattern(messageObject.isOut(), messageObject.youtubeDescription, false, 3, (int) (long) duration, false);
+            }
+            text = messageObject.youtubeDescription;
+        }
+        if (text == lastCaption && lastDuration == duration) {
+            return;
+        }
+        lastCaption = text;
+        lastDuration = duration;
+        if (!(text instanceof Spanned)) {
+            timestamps = null;
+            currentTimestamp = -1;
+            timestampsAppearing = 0;
+            if (timestampLabel != null) {
+                timestampLabel[0] = timestampLabel[1] = null;
+            }
+            return;
+        }
+        Spanned spanned = (Spanned) text;
+        URLSpanNoUnderline[] links;
+        try {
+            links = spanned.getSpans(0, spanned.length(), URLSpanNoUnderline.class);
+        } catch (Exception e) {
+            FileLog.e(e);
+            timestamps = null;
+            currentTimestamp = -1;
+            timestampsAppearing = 0;
+            if (timestampLabel != null) {
+                timestampLabel[0] = timestampLabel[1] = null;
+            }
+            return;
+        }
+        timestamps = new ArrayList<>();
+        timestampsAppearing = 0;
+        if (timestampLabelPaint == null) {
+            timestampLabelPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            timestampLabelPaint.setTextSize(AndroidUtilities.dp(12));
+            timestampLabelPaint.setColor(0xffffffff);
+        }
+        for (int i = 0; i < links.length; ++i) {
+            URLSpanNoUnderline link = links[i];
+            if (link != null && link.getURL() != null && link.label != null && link.getURL().startsWith("audio?")) {
+                Integer seconds = Utilities.parseInt(link.getURL().substring(6));
+                if (seconds != null && seconds >= 0) {
+                    float position = seconds * 1000L / (float) duration;
+                    String label = link.label;
+                    SpannableStringBuilder builder = new SpannableStringBuilder(label);
+                    Emoji.replaceEmoji(builder, timestampLabelPaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                    timestamps.add(new Pair<>(position, builder));
+                }
+            }
+        }
+        Collections.sort(timestamps, (a, b) -> {
+            if (a.first > b.first) {
+                return 1;
+            } else if (b.first > a.first) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+    }
+
+    private void drawProgressBar(Canvas canvas, RectF rect, Paint paint) {
+        float radius = AndroidUtilities.dp(2);
+        if (timestamps == null || timestamps.isEmpty()) {
+            canvas.drawRoundRect(rect, radius, radius, paint);
+        } else {
+            float lineWidth = rect.bottom - rect.top;
+            float left = selectorWidth / 2f;
+            float right = getMeasuredWidth() - selectorWidth / 2f;
+            AndroidUtilities.rectTmp.set(rect);
+            float halfGap = AndroidUtilities.dp(TIMESTAMP_GAP * timestampsAppearing) / 2f;
+            if (tmpPath == null) {
+                tmpPath = new Path();
+            }
+            tmpPath.reset();
+            float minDur = AndroidUtilities.dp(4) / (right - left);
+            int start = -1, end = -1;
+            for (int i = 0; i < timestamps.size(); ++i) {
+                if (timestamps.get(i).first >= minDur) {
+                    start = i;
+                    break;
+                }
+            }
+            if (start < 0) {
+                start = 0;
+            }
+            for (int i = timestamps.size() - 1; i >= 0; --i) {
+                if (1f - timestamps.get(i).first >= minDur) {
+                    end = i + 1;
+                    break;
+                }
+            }
+            if (end < 0) {
+                end = timestamps.size();
+            }
+            boolean first = true;
+            for (int i = start; i <= end; ++i) {
+                float from = i == start ? 0 : timestamps.get(i - 1).first;
+                float to = i == end ? 1 : timestamps.get(i).first;
+                while (i != end && i != 0 && i < timestamps.size() - 1 && timestamps.get(i).first - from <= minDur) {
+                    i++;
+                    to = timestamps.get(i).first;
+                }
+
+                AndroidUtilities.rectTmp.left = AndroidUtilities.lerp(left, right, from) + (i > 0 ? halfGap : 0);
+                AndroidUtilities.rectTmp.right = AndroidUtilities.lerp(left, right, to) - (i < end ? halfGap : 0);
+
+                boolean last;
+                if (last = AndroidUtilities.rectTmp.right > rect.right) {
+                    AndroidUtilities.rectTmp.right = rect.right;
+                }
+                if (AndroidUtilities.rectTmp.right < rect.left) {
+                    continue;
+                }
+                if (AndroidUtilities.rectTmp.left < rect.left) {
+                    AndroidUtilities.rectTmp.left = rect.left;
+                }
+
+                if (tmpRadii == null) {
+                    tmpRadii = new float[8];
+                }
+                if (i == start || last && AndroidUtilities.rectTmp.left >= rect.left) {
+                    tmpRadii[0] = tmpRadii[1] = tmpRadii[6] = tmpRadii[7] = radius;
+                    tmpRadii[2] = tmpRadii[3] = tmpRadii[4] = tmpRadii[5] = radius * 0.7f * timestampsAppearing;
+                } else if (i >= end) {
+                    tmpRadii[0] = tmpRadii[1] = tmpRadii[6] = tmpRadii[7] = radius * 0.7f * timestampsAppearing;
+                    tmpRadii[2] = tmpRadii[3] = tmpRadii[4] = tmpRadii[5] = radius;
+                } else {
+                    tmpRadii[0] = tmpRadii[1] = tmpRadii[6] = tmpRadii[7] =
+                    tmpRadii[2] = tmpRadii[3] = tmpRadii[4] = tmpRadii[5] = radius * 0.7f * timestampsAppearing;
+                }
+                tmpPath.addRoundRect(AndroidUtilities.rectTmp, tmpRadii, Path.Direction.CW);
+
+                if (last) {
+                    break;
+                }
+            }
+            canvas.drawPath(tmpPath, paint);
+        }
+    }
+
+    private void drawTimestampLabel(Canvas canvas) {
+        if (timestamps == null || timestamps.isEmpty()) {
+            return;
+        }
+
+        float progress = getProgress();
+
+        int timestampIndex = -1;
+        for (int i = timestamps.size() - 1; i >= 0; --i) {
+            if (timestamps.get(i).first - 0.001f <= progress) {
+                timestampIndex = i;
+                break;
+            }
+        }
+
+        if (timestampLabel == null) {
+            timestampLabel = new StaticLayout[2];
+        }
+
+        float left = selectorWidth / 2f;
+        float right = getMeasuredWidth() - selectorWidth / 2f;
+        float rightPadded = right - (lastDuration > 1000L * 60 * 10 ? AndroidUtilities.dp(36) : 0);
+        float width = Math.abs(left - rightPadded) - AndroidUtilities.dp(16 + 50);
+
+        if (lastWidth > 0 && Math.abs(lastWidth - width) > 0.01f) {
+            if (timestampLabel[0] != null) {
+                timestampLabel[0] = makeStaticLayout(timestampLabel[0].getText(), (int) width);
+            }
+            if (timestampLabel[1] != null) {
+                timestampLabel[1] = makeStaticLayout(timestampLabel[1].getText(), (int) width);
+            }
+        }
+        lastWidth = width;
+
+        if (timestampIndex != currentTimestamp) {
+            timestampLabel[1] = timestampLabel[0];
+            if (pressed) {
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception ignore) {}
+            }
+            if (timestampIndex >= 0 && timestampIndex < timestamps.size()) {
+                CharSequence label = timestamps.get(timestampIndex).second;
+                if (label == null) {
+                    timestampLabel[0] = null;
+                } else {
+                    timestampLabel[0] = makeStaticLayout(label, (int) width);
+                }
+            } else {
+                timestampLabel[0] = null;
+            }
+            timestampChangeT = 0;
+            if (timestampIndex == -1) {
+                timestampChangeDirection = -1;
+            } else if (currentTimestamp == -1) {
+                timestampChangeDirection = 1;
+            } else if (timestampIndex < currentTimestamp) {
+                timestampChangeDirection = -1;
+            } else if (timestampIndex > currentTimestamp) {
+                timestampChangeDirection = 1;
+            }
+            lastTimestamp = currentTimestamp;
+            currentTimestamp = timestampIndex;
+        }
+        if (timestampChangeT < 1f) {
+            long tx = Math.min(17, Math.abs(SystemClock.elapsedRealtime() - lastTimestampUpdate));
+            float duration = timestamps.size() > 8 ? 160f : 220f;
+            timestampChangeT = Math.min(timestampChangeT + tx / duration, 1);
+            invalidate();
+            lastTimestampUpdate = SystemClock.elapsedRealtime();
+        }
+        if (timestampsAppearing < 1f) {
+            long tx = Math.min(17, Math.abs(SystemClock.elapsedRealtime() - lastTimestampUpdate));
+            timestampsAppearing = Math.min(timestampsAppearing + tx / 200f, 1);
+            invalidate();
+            lastTimestampsAppearingUpdate = SystemClock.elapsedRealtime();
+        }
+        float changeT = CubicBezierInterpolator.DEFAULT.getInterpolation(timestampChangeT);
+
+        canvas.save();
+        float bottom = getMeasuredHeight() / 2f + AndroidUtilities.dp(14);
+        canvas.translate(left + AndroidUtilities.dp(25), bottom);
+        timestampLabelPaint.setColor(getThemedColor(Theme.key_player_time));
+        if (timestampLabel[1] != null) {
+            canvas.save();
+            if (timestampChangeDirection != 0) {
+                canvas.translate(AndroidUtilities.dp(8) + AndroidUtilities.dp(16) * -timestampChangeDirection * changeT, 0);
+            }
+            canvas.translate(0, -timestampLabel[1].getHeight() / 2f);
+            timestampLabelPaint.setAlpha((int) (255 * (1f - changeT) * timestampsAppearing));
+            timestampLabel[1].draw(canvas);
+            canvas.restore();
+        }
+        if (timestampLabel[0] != null) {
+            canvas.save();
+            if (timestampChangeDirection != 0) {
+                canvas.translate(AndroidUtilities.dp(8) + AndroidUtilities.dp(16) * timestampChangeDirection * (1f - changeT), 0);
+            }
+            canvas.translate(0, -timestampLabel[0].getHeight() / 2f);
+            timestampLabelPaint.setAlpha((int) (255 * changeT * timestampsAppearing));
+            timestampLabel[0].draw(canvas);
+            canvas.restore();
+        }
+        canvas.restore();
+    }
+
+    private StaticLayout makeStaticLayout(CharSequence text, int width) {
+        if (timestampLabelPaint == null) {
+            timestampLabelPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            timestampLabelPaint.setTextSize(AndroidUtilities.dp(12));
+        }
+        timestampLabelPaint.setColor(getThemedColor(Theme.key_player_time));
+        if (text == null) {
+            text = "";
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return StaticLayout.Builder.obtain(text, 0, text.length(), timestampLabelPaint, width)
+                    .setMaxLines(1)
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setEllipsize(TextUtils.TruncateAt.END)
+                    .setEllipsizedWidth(Math.min(AndroidUtilities.dp(400), width))
+                    .build();
+        } else {
+            return new StaticLayout(
+                    text,
+                    0,
+                    text.length(),
+                    timestampLabelPaint,
+                    width,
+                    Layout.Alignment.ALIGN_CENTER,
+                    1,
+                    0,
+                    false,
+                    TextUtils.TruncateAt.END,
+                    Math.min(AndroidUtilities.dp(400), (int) width)
+            );
         }
     }
 

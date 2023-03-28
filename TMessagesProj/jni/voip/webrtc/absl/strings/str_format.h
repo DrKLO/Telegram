@@ -191,7 +191,7 @@ class FormatCountCapture {
 //   absl::StrFormat(formatString, "TheVillage", 6);
 //
 // A format string generally follows the POSIX syntax as used within the POSIX
-// `printf` specification.
+// `printf` specification. (Exceptions are noted below.)
 //
 // (See http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html.)
 //
@@ -211,6 +211,10 @@ class FormatCountCapture {
 //   * `n` for the special case of writing out the number of characters
 //     written to this point. The resulting value must be captured within an
 //     `absl::FormatCountCapture` type.
+//   * `v` for values using the default format for a deduced type. These deduced
+//     types include many of the primitive types denoted here as well as
+//     user-defined types containing the proper extensions. (See below for more
+//     information.)
 //
 // Implementation-defined behavior:
 //   * A null pointer provided to "%s" or "%p" is output as "(nil)".
@@ -238,6 +242,15 @@ class FormatCountCapture {
 //     std::string s = absl::StrFormat(
 //         "%s%d%n", "hello", 123, absl::FormatCountCapture(&n));
 //     EXPECT_EQ(8, n);
+//
+// NOTE: the `v` specifier (for "value") is a type specifier not present in the
+// POSIX specification. %v will format values according to their deduced type.
+// `v` uses `d` for signed integer values, `u` for unsigned integer values, `g`
+// for floating point values, and formats boolean values as "true"/"false"
+// (instead of 1 or 0 for booleans formatted using d). `const char*` is not
+// supported; please use `std:string` and `string_view`. `char` is also not
+// supported due to ambiguity of the type. This specifier does not support
+// modifiers.
 //
 // The `FormatSpec` intrinsically supports all of these fundamental C++ types:
 //
@@ -570,6 +583,41 @@ ABSL_MUST_USE_RESULT inline bool FormatUntyped(
 // StrFormat Extensions
 //------------------------------------------------------------------------------
 //
+// AbslStringify()
+//
+// A simpler customization API for formatting user-defined types using
+// absl::StrFormat(). The API relies on detecting an overload in the
+// user-defined type's namespace of a free (non-member) `AbslStringify()`
+// function as a friend definition with the following signature:
+//
+// template <typename Sink>
+// void AbslStringify(Sink& sink, const X& value);
+//
+// An `AbslStringify()` overload for a type should only be declared in the same
+// file and namespace as said type.
+//
+// Note that unlike with AbslFormatConvert(), AbslStringify() does not allow
+// customization of allowed conversion characters. AbslStringify() uses `%v` as
+// the underlying conversion specififer. Additionally, AbslStringify() supports
+// use with absl::StrCat while AbslFormatConvert() does not.
+//
+// Example:
+//
+// struct Point {
+//   // To add formatting support to `Point`, we simply need to add a free
+//   // (non-member) function `AbslStringify()`. This method prints in the
+//   // request format using the underlying `%v` specifier. You can add such a
+//   // free function using a friend declaration within the body of the class.
+//   // The sink parameter is a templated type to avoid requiring dependencies.
+//   template <typename Sink>
+//   friend void AbslStringify(Sink& sink, const Point& p) {
+//     absl::Format(&sink, "(%v, %v)", p.x, p.y);
+//   }
+//
+//   int x;
+//   int y;
+// };
+//
 // AbslFormatConvert()
 //
 // The StrFormat library provides a customization API for formatting
@@ -616,9 +664,9 @@ ABSL_MUST_USE_RESULT inline bool FormatUntyped(
 //   AbslFormatConvert(const Point& p, const absl::FormatConversionSpec& spec,
 //                     absl::FormatSink* s) {
 //     if (spec.conversion_char() == absl::FormatConversionChar::s) {
-//       s->Append(absl::StrCat("x=", p.x, " y=", p.y));
+//       absl::Format(s, "x=%vy=%v", p.x, p.y);
 //     } else {
-//       s->Append(absl::StrCat(p.x, ",", p.y));
+//       absl::Format(s, "%v,%v", p.x, p.y);
 //     }
 //     return {true};
 //   }
@@ -637,7 +685,7 @@ enum class FormatConversionChar : uint8_t {
   c, s,                    // text
   d, i, o, u, x, X,        // int
   f, F, e, E, g, G, a, A,  // float
-  n, p                     // misc
+  n, p, v                  // misc
 };
 // clang-format on
 
@@ -757,6 +805,7 @@ enum class FormatConversionCharSet : uint64_t {
   // misc
   n = str_format_internal::FormatConversionCharToConvInt('n'),
   p = str_format_internal::FormatConversionCharToConvInt('p'),
+  v = str_format_internal::FormatConversionCharToConvInt('v'),
 
   // Used for width/precision '*' specification.
   kStar = static_cast<uint64_t>(
@@ -771,21 +820,34 @@ enum class FormatConversionCharSet : uint64_t {
 
 // FormatSink
 //
-// An abstraction to which conversions write their string data.
+// A format sink is a generic abstraction to which conversions may write their
+// formatted string data. `absl::FormatConvert()` uses this sink to write its
+// formatted string.
 //
 class FormatSink {
  public:
-  // Appends `count` copies of `ch`.
+  // FormatSink::Append()
+  //
+  // Appends `count` copies of `ch` to the format sink.
   void Append(size_t count, char ch) { sink_->Append(count, ch); }
 
+  // Overload of FormatSink::Append() for appending the characters of a string
+  // view to a format sink.
   void Append(string_view v) { sink_->Append(v); }
 
-  // Appends the first `precision` bytes of `v`. If this is less than
-  // `width`, spaces will be appended first (if `left` is false), or
+  // FormatSink::PutPaddedString()
+  //
+  // Appends `precision` number of bytes of `v` to the format sink. If this is
+  // less than `width`, spaces will be appended first (if `left` is false), or
   // after (if `left` is true) to ensure the total amount appended is
   // at least `width`.
   bool PutPaddedString(string_view v, int width, int precision, bool left) {
     return sink_->PutPaddedString(v, width, precision, left);
+  }
+
+  // Support `absl::Format(&sink, format, args...)`.
+  friend void AbslFormatFlush(FormatSink* sink, absl::string_view v) {
+    sink->Append(v);
   }
 
  private:

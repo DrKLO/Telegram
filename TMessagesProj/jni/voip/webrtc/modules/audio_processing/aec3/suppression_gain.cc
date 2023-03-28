@@ -21,7 +21,6 @@
 #include "modules/audio_processing/aec3/subband_nearend_detector.h"
 #include "modules/audio_processing/aec3/vector_math.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-#include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
 #include "system_wrappers/include/field_trial.h"
 
@@ -102,7 +101,7 @@ void WeightEchoForAudibility(const EchoCanceller3Config& config,
 
 }  // namespace
 
-int SuppressionGain::instance_count_ = 0;
+std::atomic<int> SuppressionGain::instance_count_(0);
 
 float SuppressionGain::UpperBandsGain(
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> echo_spectrum,
@@ -110,13 +109,13 @@ float SuppressionGain::UpperBandsGain(
         comfort_noise_spectrum,
     const absl::optional<int>& narrow_peak_band,
     bool saturated_echo,
-    const std::vector<std::vector<std::vector<float>>>& render,
+    const Block& render,
     const std::array<float, kFftLengthBy2Plus1>& low_band_gain) const {
-  RTC_DCHECK_LT(0, render.size());
-  if (render.size() == 1) {
+  RTC_DCHECK_LT(0, render.NumBands());
+  if (render.NumBands() == 1) {
     return 1.f;
   }
-  const size_t num_render_channels = render[0].size();
+  const int num_render_channels = render.NumChannels();
 
   if (narrow_peak_band &&
       (*narrow_peak_band > static_cast<int>(kFftLengthBy2Plus1 - 10))) {
@@ -135,16 +134,17 @@ float SuppressionGain::UpperBandsGain(
   // Compute the upper and lower band energies.
   const auto sum_of_squares = [](float a, float b) { return a + b * b; };
   float low_band_energy = 0.f;
-  for (size_t ch = 0; ch < num_render_channels; ++ch) {
-    const float channel_energy = std::accumulate(
-        render[0][0].begin(), render[0][0].end(), 0.f, sum_of_squares);
+  for (int ch = 0; ch < num_render_channels; ++ch) {
+    const float channel_energy =
+        std::accumulate(render.begin(/*band=*/0, ch),
+                        render.end(/*band=*/0, ch), 0.0f, sum_of_squares);
     low_band_energy = std::max(low_band_energy, channel_energy);
   }
   float high_band_energy = 0.f;
-  for (size_t k = 1; k < render.size(); ++k) {
-    for (size_t ch = 0; ch < num_render_channels; ++ch) {
+  for (int k = 1; k < render.NumBands(); ++k) {
+    for (int ch = 0; ch < num_render_channels; ++ch) {
       const float energy = std::accumulate(
-          render[k][ch].begin(), render[k][ch].end(), 0.f, sum_of_squares);
+          render.begin(k, ch), render.end(k, ch), 0.f, sum_of_squares);
       high_band_energy = std::max(high_band_energy, energy);
     }
   }
@@ -325,8 +325,7 @@ SuppressionGain::SuppressionGain(const EchoCanceller3Config& config,
                                  Aec3Optimization optimization,
                                  int sample_rate_hz,
                                  size_t num_capture_channels)
-    : data_dumper_(
-          new ApmDataDumper(rtc::AtomicOps::Increment(&instance_count_))),
+    : data_dumper_(new ApmDataDumper(instance_count_.fetch_add(1) + 1)),
       optimization_(optimization),
       config_(config),
       num_capture_channels_(num_capture_channels),
@@ -372,7 +371,7 @@ void SuppressionGain::GetGain(
         comfort_noise_spectrum,
     const RenderSignalAnalyzer& render_signal_analyzer,
     const AecState& aec_state,
-    const std::vector<std::vector<std::vector<float>>>& render,
+    const Block& render,
     bool clock_drift,
     float* high_bands_gain,
     std::array<float, kFftLengthBy2Plus1>* low_band_gain) {
@@ -417,20 +416,17 @@ void SuppressionGain::SetInitialState(bool state) {
 
 // Detects when the render signal can be considered to have low power and
 // consist of stationary noise.
-bool SuppressionGain::LowNoiseRenderDetector::Detect(
-    const std::vector<std::vector<std::vector<float>>>& render) {
+bool SuppressionGain::LowNoiseRenderDetector::Detect(const Block& render) {
   float x2_sum = 0.f;
   float x2_max = 0.f;
-  for (const auto& x_ch : render[0]) {
-    for (const auto& x_k : x_ch) {
+  for (int ch = 0; ch < render.NumChannels(); ++ch) {
+    for (float x_k : render.View(/*band=*/0, ch)) {
       const float x2 = x_k * x_k;
       x2_sum += x2;
       x2_max = std::max(x2_max, x2);
     }
   }
-  const size_t num_render_channels = render[0].size();
-  x2_sum = x2_sum / num_render_channels;
-  ;
+  x2_sum = x2_sum / render.NumChannels();
 
   constexpr float kThreshold = 50.f * 50.f * 64.f;
   const bool low_noise_render =

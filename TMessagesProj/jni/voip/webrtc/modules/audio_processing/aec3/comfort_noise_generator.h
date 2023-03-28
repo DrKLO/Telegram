@@ -19,7 +19,6 @@
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec_state.h"
 #include "modules/audio_processing/aec3/fft_data.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/arch.h"
 
 namespace webrtc {

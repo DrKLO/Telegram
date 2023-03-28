@@ -20,6 +20,7 @@ import android.os.Parcelable;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.MediaMetadata;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
@@ -167,6 +168,16 @@ public final class IcyHeaders implements Metadata.Entry {
     url = in.readString();
     isPublic = Util.readBoolean(in);
     metadataInterval = in.readInt();
+  }
+
+  @Override
+  public void populateMediaMetadata(MediaMetadata.Builder builder) {
+    if (name != null) {
+      builder.setStation(name);
+    }
+    if (genre != null) {
+      builder.setGenre(genre);
+    }
   }
 
   @Override

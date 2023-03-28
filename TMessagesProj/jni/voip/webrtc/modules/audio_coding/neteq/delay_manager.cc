@@ -51,7 +51,6 @@ DelayManager::Config::Config() {
       "forget_factor", &forget_factor,                  //
       "start_forget_weight", &start_forget_weight,      //
       "resample_interval_ms", &resample_interval_ms,    //
-      "max_history_ms", &max_history_ms,                //
       "use_reorder_optimizer", &use_reorder_optimizer,  //
       "reorder_forget_factor", &reorder_forget_factor,  //
       "ms_per_loss_percent", &ms_per_loss_percent)
@@ -66,7 +65,6 @@ void DelayManager::Config::Log() {
                    << " start_forget_weight=" << start_forget_weight.value_or(0)
                    << " resample_interval_ms="
                    << resample_interval_ms.value_or(0)
-                   << " max_history_ms=" << max_history_ms
                    << " use_reorder_optimizer=" << use_reorder_optimizer
                    << " reorder_forget_factor=" << reorder_forget_factor
                    << " ms_per_loss_percent=" << ms_per_loss_percent;
@@ -80,7 +78,6 @@ DelayManager::DelayManager(const Config& config, const TickTimer* tick_timer)
                           config.start_forget_weight,
                           config.resample_interval_ms),
       reorder_optimizer_(MaybeCreateReorderOptimizer(config)),
-      relative_arrival_delay_tracker_(tick_timer, config.max_history_ms),
       base_minimum_delay_ms_(config.base_minimum_delay_ms),
       effective_minimum_delay_ms_(config.base_minimum_delay_ms),
       minimum_delay_ms_(0),
@@ -93,45 +90,28 @@ DelayManager::DelayManager(const Config& config, const TickTimer* tick_timer)
 
 DelayManager::~DelayManager() {}
 
-absl::optional<int> DelayManager::Update(uint32_t timestamp,
-                                         int sample_rate_hz,
-                                         bool reset) {
-  if (reset) {
-    relative_arrival_delay_tracker_.Reset();
-  }
-  absl::optional<int> relative_delay =
-      relative_arrival_delay_tracker_.Update(timestamp, sample_rate_hz);
-  if (!relative_delay) {
-    return absl::nullopt;
-  }
-
-  bool reordered =
-      relative_arrival_delay_tracker_.newest_timestamp() != timestamp;
+void DelayManager::Update(int arrival_delay_ms, bool reordered) {
   if (!reorder_optimizer_ || !reordered) {
-    underrun_optimizer_.Update(*relative_delay);
+    underrun_optimizer_.Update(arrival_delay_ms);
   }
   target_level_ms_ =
       underrun_optimizer_.GetOptimalDelayMs().value_or(kStartDelayMs);
   if (reorder_optimizer_) {
-    reorder_optimizer_->Update(*relative_delay, reordered, target_level_ms_);
+    reorder_optimizer_->Update(arrival_delay_ms, reordered, target_level_ms_);
     target_level_ms_ = std::max(
         target_level_ms_, reorder_optimizer_->GetOptimalDelayMs().value_or(0));
   }
+  unlimited_target_level_ms_ = target_level_ms_;
   target_level_ms_ = std::max(target_level_ms_, effective_minimum_delay_ms_);
   if (maximum_delay_ms_ > 0) {
     target_level_ms_ = std::min(target_level_ms_, maximum_delay_ms_);
   }
   if (packet_len_ms_ > 0) {
-    // Target level should be at least one packet.
-    target_level_ms_ = std::max(target_level_ms_, packet_len_ms_);
     // Limit to 75% of maximum buffer size.
     target_level_ms_ = std::min(
         target_level_ms_, 3 * max_packets_in_buffer_ * packet_len_ms_ / 4);
   }
-
-  return relative_delay;
 }
-
 
 int DelayManager::SetPacketAudioLength(int length_ms) {
   if (length_ms <= 0) {
@@ -145,7 +125,6 @@ int DelayManager::SetPacketAudioLength(int length_ms) {
 void DelayManager::Reset() {
   packet_len_ms_ = 0;
   underrun_optimizer_.Reset();
-  relative_arrival_delay_tracker_.Reset();
   target_level_ms_ = kStartDelayMs;
   if (reorder_optimizer_) {
     reorder_optimizer_->Reset();
@@ -154,6 +133,10 @@ void DelayManager::Reset() {
 
 int DelayManager::TargetDelayMs() const {
   return target_level_ms_;
+}
+
+int DelayManager::UnlimitedTargetLevelMs() const {
+  return unlimited_target_level_ms_;
 }
 
 bool DelayManager::IsValidMinimumDelay(int delay_ms) const {
@@ -178,8 +161,7 @@ bool DelayManager::SetMinimumDelay(int delay_ms) {
 bool DelayManager::SetMaximumDelay(int delay_ms) {
   // If `delay_ms` is zero then it unsets the maximum delay and target level is
   // unconstrained by maximum delay.
-  if (delay_ms != 0 &&
-      (delay_ms < minimum_delay_ms_ || delay_ms < packet_len_ms_)) {
+  if (delay_ms != 0 && delay_ms < minimum_delay_ms_) {
     // Maximum delay shouldn't be less than minimum delay or less than a packet.
     return false;
   }

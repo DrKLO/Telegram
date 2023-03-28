@@ -14,12 +14,15 @@ import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class TypefaceSpan extends MetricAffectingSpan {
 
     private Typeface typeface;
     private int textSize;
     private int color;
+    private String colorKey;
+    Theme.ResourcesProvider resourcesProvider;
 
     public TypefaceSpan(Typeface tf) {
         typeface = tf;
@@ -36,6 +39,16 @@ public class TypefaceSpan extends MetricAffectingSpan {
             textSize = size;
         }
         color = textColor;
+    }
+
+    public TypefaceSpan(Typeface tf, int size, String colorKey, Theme.ResourcesProvider resourcesProvider) {
+        typeface = tf;
+        if (size > 0) {
+            textSize = size;
+        }
+        this.resourcesProvider = resourcesProvider;
+        this.colorKey = colorKey;
+        color = Theme.getColor(colorKey, resourcesProvider);
     }
 
     public Typeface getTypeface() {
@@ -71,6 +84,9 @@ public class TypefaceSpan extends MetricAffectingSpan {
 
     @Override
     public void updateDrawState(TextPaint tp) {
+        if (colorKey != null) {
+            color = Theme.getColor(colorKey, resourcesProvider);
+        }
         if (typeface != null) {
             tp.setTypeface(typeface);
         }

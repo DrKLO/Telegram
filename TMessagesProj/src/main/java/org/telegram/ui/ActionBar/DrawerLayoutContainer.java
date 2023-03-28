@@ -40,6 +40,8 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.android.gms.vision.Frame;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
@@ -50,8 +52,8 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     private static final int MIN_DRAWER_MARGIN = 64;
 
-    private ViewGroup drawerLayout;
-    private ActionBarLayout parentActionBarLayout;
+    private FrameLayout drawerLayout;
+    private INavigationLayout parentActionBarLayout;
 
     private boolean maybeStartTracking;
     private boolean startedTracking;
@@ -174,7 +176,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         return 0;
     }
 
-    public void setDrawerLayout(ViewGroup layout) {
+    public void setDrawerLayout(FrameLayout layout) {
         drawerLayout = layout;
         addView(drawerLayout);
         drawerLayout.setVisibility(INVISIBLE);
@@ -204,8 +206,8 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (drawerLayout.getVisibility() != newVisibility) {
             drawerLayout.setVisibility(newVisibility);
         }
-        if (!parentActionBarLayout.fragmentsStack.isEmpty()) {
-            BaseFragment currentFragment = parentActionBarLayout.fragmentsStack.get(0);
+        if (!parentActionBarLayout.getFragmentStack().isEmpty()) {
+            BaseFragment currentFragment = parentActionBarLayout.getFragmentStack().get(0);
             if (drawerPosition == drawerLayout.getMeasuredWidth()) {
                 currentFragment.setProgressToDrawerOpened(1f);
             } else if (drawerPosition == 0) {
@@ -233,8 +235,8 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (!allowOpenDrawer || drawerLayout == null) {
             return;
         }
-        if (AndroidUtilities.isTablet() && parentActionBarLayout != null && parentActionBarLayout.parentActivity != null) {
-            AndroidUtilities.hideKeyboard(parentActionBarLayout.parentActivity.getCurrentFocus());
+        if (AndroidUtilities.isTablet() && parentActionBarLayout != null && parentActionBarLayout.getParentActivity() != null) {
+            AndroidUtilities.hideKeyboard(parentActionBarLayout.getParentActivity().getCurrentFocus());
         }
         cancelCurrentAnimation();
         AnimatorSet animatorSet = new AnimatorSet();
@@ -303,11 +305,11 @@ public class DrawerLayoutContainer extends FrameLayout {
         return scrimOpacity;
     }
 
-    public View getDrawerLayout() {
+    public FrameLayout getDrawerLayout() {
         return drawerLayout;
     }
 
-    public void setParentActionBarLayout(ActionBarLayout layout) {
+    public void setParentActionBarLayout(INavigationLayout layout) {
         parentActionBarLayout = layout;
     }
 
@@ -316,6 +318,10 @@ public class DrawerLayoutContainer extends FrameLayout {
             parentActionBarLayout.presentFragment(fragment);
         }
         closeDrawer(false);
+    }
+
+    public INavigationLayout getParentActionBarLayout() {
+        return parentActionBarLayout;
     }
 
     public void openStatusSelect() {
@@ -432,13 +438,13 @@ public class DrawerLayoutContainer extends FrameLayout {
                 return true;
             }
 
-            if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.fragmentsStack.size() == 1) {
+            if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.getFragmentStack().size() == 1) {
                 if (ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
                    View scrollingChild = findScrollingChild(this, ev.getX(),ev.getY());
                    if (scrollingChild != null) {
                        return false;
                    }
-                    parentActionBarLayout.getHitRect(rect);
+                    parentActionBarLayout.getView().getHitRect(rect);
                     startedTrackingX = (int) ev.getX();
                     startedTrackingY = (int) ev.getY();
                     if (rect.contains(startedTrackingX, startedTrackingY)) {

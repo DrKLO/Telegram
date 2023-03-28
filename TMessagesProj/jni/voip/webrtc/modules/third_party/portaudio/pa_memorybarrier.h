@@ -64,13 +64,23 @@
 #define MODULES_THIRD_PARTY_PORTAUDIO_PA_MEMORYBARRIER_H_
 
 #if defined(__APPLE__)
+/* Support for the atomic library was added in C11.
+ */
+#if (__STDC_VERSION__ < 201112L) || defined(__STDC_NO_ATOMICS__)
 #include <libkern/OSAtomic.h>
 /* Here are the memory barrier functions. Mac OS X only provides
    full memory barriers, so the three types of barriers are the same,
-   however, these barriers are superior to compiler-based ones. */
+   however, these barriers are superior to compiler-based ones.
+   These were deprecated in MacOS 10.12. */
 #define PaUtil_FullMemoryBarrier() OSMemoryBarrier()
 #define PaUtil_ReadMemoryBarrier() OSMemoryBarrier()
 #define PaUtil_WriteMemoryBarrier() OSMemoryBarrier()
+#else
+#include <stdatomic.h>
+#define PaUtil_FullMemoryBarrier() atomic_thread_fence(memory_order_seq_cst)
+#define PaUtil_ReadMemoryBarrier() atomic_thread_fence(memory_order_acquire)
+#define PaUtil_WriteMemoryBarrier() atomic_thread_fence(memory_order_release)
+#endif
 #elif defined(__GNUC__)
 /* GCC >= 4.1 has built-in intrinsics. We'll use those */
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)
@@ -98,7 +108,7 @@
 #define PaUtil_ReadMemoryBarrier()
 #define PaUtil_WriteMemoryBarrier()
 #else
-#         error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
+#           error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
 #endif
 #endif
 #elif (_MSC_VER >= 1400) && !defined(_WIN32_WCE)
@@ -106,6 +116,8 @@
 #pragma intrinsic(_ReadWriteBarrier)
 #pragma intrinsic(_ReadBarrier)
 #pragma intrinsic(_WriteBarrier)
+/* note that MSVC intrinsics _ReadWriteBarrier(), _ReadBarrier(),
+ * _WriteBarrier() are just compiler barriers *not* memory barriers */
 #define PaUtil_FullMemoryBarrier() _ReadWriteBarrier()
 #define PaUtil_ReadMemoryBarrier() _ReadBarrier()
 #define PaUtil_WriteMemoryBarrier() _WriteBarrier()
@@ -125,7 +137,7 @@
 #define PaUtil_ReadMemoryBarrier()
 #define PaUtil_WriteMemoryBarrier()
 #else
-#      error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
+#       error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
 #endif
 #endif
 

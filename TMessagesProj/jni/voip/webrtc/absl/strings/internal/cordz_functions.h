@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ABSL_STRINGS_CORDZ_FUNCTIONS_H_
-#define ABSL_STRINGS_CORDZ_FUNCTIONS_H_
+#ifndef ABSL_STRINGS_INTERNAL_CORDZ_FUNCTIONS_H_
+#define ABSL_STRINGS_INTERNAL_CORDZ_FUNCTIONS_H_
 
 #include <stdint.h>
 
@@ -82,4 +82,4 @@ inline void cordz_set_next_sample_for_testing(int64_t) {}
 ABSL_NAMESPACE_END
 }  // namespace absl
 
-#endif  // ABSL_STRINGS_CORDZ_FUNCTIONS_H_
+#endif  // ABSL_STRINGS_INTERNAL_CORDZ_FUNCTIONS_H_

@@ -101,7 +101,8 @@ class VideoQualityAnalyzerInterface
   virtual void OnFrameEncoded(absl::string_view peer_name,
                               uint16_t frame_id,
                               const EncodedImage& encoded_image,
-                              const EncoderStats& stats) {}
+                              const EncoderStats& stats,
+                              bool discarded) {}
   // Will be called for each frame dropped by encoder.
   // `peer_name` is name of the peer on which side frame drop was detected.
   virtual void OnFrameDropped(absl::string_view peer_name,
@@ -133,7 +134,8 @@ class VideoQualityAnalyzerInterface
   // `peer_name` is name of the peer on which side error acquired.
   virtual void OnDecoderError(absl::string_view peer_name,
                               uint16_t frame_id,
-                              int32_t error_code) {}
+                              int32_t error_code,
+                              const DecoderStats& stats) {}
   // Will be called every time new stats reports are available for the
   // Peer Connection identified by `pc_label`.
   void OnStatsReports(
@@ -142,6 +144,9 @@ class VideoQualityAnalyzerInterface
 
   // Will be called before test adds new participant in the middle of a call.
   virtual void RegisterParticipantInCall(absl::string_view peer_name) {}
+  // Will be called after test removed existing participant in the middle of the
+  // call.
+  virtual void UnregisterParticipantInCall(absl::string_view peer_name) {}
 
   // Tells analyzer that analysis complete and it should calculate final
   // statistics.
@@ -153,12 +158,6 @@ class VideoQualityAnalyzerInterface
   virtual std::string GetStreamLabel(uint16_t frame_id) = 0;
 };
 
-namespace webrtc_pc_e2e {
-
-// Temporary alias to make downstream projects able to migrate.
-using VideoQualityAnalyzerInterface = ::webrtc::VideoQualityAnalyzerInterface;
-
-}  // namespace webrtc_pc_e2e
 }  // namespace webrtc
 
 #endif  // API_TEST_VIDEO_QUALITY_ANALYZER_INTERFACE_H_

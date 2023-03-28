@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -99,7 +100,14 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             avatarImageView.setRoundRadius(AndroidUtilities.dp(23));
             addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 14, 9, LocaleController.isRTL ? 14 : 0, 0));
 
-            nameTextView = new SimpleTextView(context);
+            nameTextView = new SimpleTextView(context) {
+                @Override
+                public boolean setText(CharSequence value, boolean force) {
+                    value = Emoji.replaceEmoji(value, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
+                    return super.setText(value, force);
+                }
+            };
+            NotificationCenter.listenEmojiLoading(nameTextView);
             nameTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             nameTextView.setTextSize(16);
@@ -793,10 +801,11 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         }
 
                         int found = 0;
+                        String username;
                         for (String q : search) {
                             if (name2 != null && (name2.startsWith(q) || name2.contains(" " + q)) || tName2 != null && (tName2.startsWith(q) || tName2.contains(" " + q))) {
                                 found = 1;
-                            } else if (contact.user != null && contact.user.username != null && contact.user.username.startsWith(q)) {
+                            } else if (contact.user != null && (username = UserObject.getPublicUsername(contact.user)) != null && username.startsWith(q)) {
                                 found = 2;
                             } else if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 3;
@@ -807,7 +816,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                                 } else if (found == 1) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(contact.user.first_name, contact.user.last_name, q));
                                 } else {
-                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + contact.user.username, null, "@" + q));
+                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(contact.user), null, "@" + q));
                                 }
                                 if (contact.user != null) {
                                     foundUids.put(contact.user.id, 1);
@@ -831,10 +840,11 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         }
 
                         int found = 0;
+                        String username;
                         for (String q : search) {
                             if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 1;
-                            } else if (user.username != null && user.username.startsWith(q)) {
+                            } else if ((username = UserObject.getPublicUsername(user)) != null && username.startsWith(q)) {
                                 found = 2;
                             }
 
@@ -842,7 +852,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                                 if (found == 1) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
                                 } else {
-                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + UserObject.getPublicUsername(user), null, "@" + q));
                                 }
                                 resultArray.add(user);
                                 break;

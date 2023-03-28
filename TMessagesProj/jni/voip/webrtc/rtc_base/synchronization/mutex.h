@@ -72,41 +72,6 @@ class RTC_SCOPED_LOCKABLE MutexLock final {
   Mutex* mutex_;
 };
 
-// A mutex used to protect global variables. Do NOT use for other purposes.
-#if defined(WEBRTC_ABSL_MUTEX)
-using GlobalMutex = absl::Mutex;
-using GlobalMutexLock = absl::MutexLock;
-#else
-class RTC_LOCKABLE GlobalMutex final {
- public:
-  GlobalMutex(const GlobalMutex&) = delete;
-  GlobalMutex& operator=(const GlobalMutex&) = delete;
-
-  constexpr explicit GlobalMutex(absl::ConstInitType /*unused*/)
-      : mutex_locked_(0) {}
-
-  void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION();
-  void Unlock() RTC_UNLOCK_FUNCTION();
-
- private:
-  std::atomic<int> mutex_locked_;  // 0 means lock not taken, 1 means taken.
-};
-
-// GlobalMutexLock, for serializing execution through a scope.
-class RTC_SCOPED_LOCKABLE GlobalMutexLock final {
- public:
-  GlobalMutexLock(const GlobalMutexLock&) = delete;
-  GlobalMutexLock& operator=(const GlobalMutexLock&) = delete;
-
-  explicit GlobalMutexLock(GlobalMutex* mutex)
-      RTC_EXCLUSIVE_LOCK_FUNCTION(mutex_);
-  ~GlobalMutexLock() RTC_UNLOCK_FUNCTION();
-
- private:
-  GlobalMutex* mutex_;
-};
-#endif  // if defined(WEBRTC_ABSL_MUTEX)
-
 }  // namespace webrtc
 
 #endif  // RTC_BASE_SYNCHRONIZATION_MUTEX_H_

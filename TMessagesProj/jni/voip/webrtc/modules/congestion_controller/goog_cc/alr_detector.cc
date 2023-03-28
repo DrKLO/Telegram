@@ -24,8 +24,7 @@
 namespace webrtc {
 
 namespace {
-AlrDetectorConfig GetConfigFromTrials(
-    const WebRtcKeyValueConfig* key_value_config) {
+AlrDetectorConfig GetConfigFromTrials(const FieldTrialsView* key_value_config) {
   RTC_CHECK(AlrExperimentSettings::MaxOneFieldTrialEnabled(*key_value_config));
   absl::optional<AlrExperimentSettings> experiment_settings =
       AlrExperimentSettings::CreateFromFieldTrial(
@@ -61,10 +60,10 @@ std::unique_ptr<StructParametersParser> AlrDetectorConfig::Parser() {
 AlrDetector::AlrDetector(AlrDetectorConfig config, RtcEventLog* event_log)
     : conf_(config), alr_budget_(0, true), event_log_(event_log) {}
 
-AlrDetector::AlrDetector(const WebRtcKeyValueConfig* key_value_config)
+AlrDetector::AlrDetector(const FieldTrialsView* key_value_config)
     : AlrDetector(GetConfigFromTrials(key_value_config), nullptr) {}
 
-AlrDetector::AlrDetector(const WebRtcKeyValueConfig* key_value_config,
+AlrDetector::AlrDetector(const FieldTrialsView* key_value_config,
                          RtcEventLog* event_log)
     : AlrDetector(GetConfigFromTrials(key_value_config), event_log) {}
 AlrDetector::~AlrDetector() {}

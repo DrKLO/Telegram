@@ -15,6 +15,8 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -30,14 +32,20 @@ public class RoundVideoPlayingDrawable extends Drawable {
     private int progress2Direction = 1;
     private int progress3Direction = 1;
     private View parentView;
+    public float colorProgress;
+    public int timeColor;
     int alpha = 255;
 
-    private final Theme.ResourcesProvider resourcesProvider;
+    private Theme.ResourcesProvider resourcesProvider;
 
     public RoundVideoPlayingDrawable(View view, Theme.ResourcesProvider resourcesProvider) {
         super();
         this.resourcesProvider = resourcesProvider;
         parentView = view;
+    }
+
+    public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
     }
 
     private void update() {
@@ -95,7 +103,7 @@ public class RoundVideoPlayingDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        paint.setColor(getThemedColor(Theme.key_chat_serviceText));
+        paint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_serviceText), timeColor, colorProgress));
         if (alpha != 255) {
             paint.setAlpha((int) (alpha * (paint.getAlpha() / 255f)));
         }

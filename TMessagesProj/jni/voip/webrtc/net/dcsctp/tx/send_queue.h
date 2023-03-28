@@ -34,6 +34,10 @@ class SendQueue {
     // Partial reliability - RFC3758
     MaxRetransmits max_retransmissions = MaxRetransmits::NoLimit();
     TimeMs expires_at = TimeMs::InfiniteFuture();
+
+    // Lifecycle - set for the last fragment, and `LifecycleId::NotSet()` for
+    // all other fragments.
+    LifecycleId lifecycle_id = LifecycleId::NotSet();
   };
 
   virtual ~SendQueue() = default;
@@ -67,11 +71,11 @@ class SendQueue {
                        StreamID stream_id,
                        MID message_id) = 0;
 
-  // Prepares the streams to be reset. This is used to close a WebRTC data
+  // Prepares the stream to be reset. This is used to close a WebRTC data
   // channel and will be signaled to the other side.
   //
   // Concretely, it discards all whole (not partly sent) messages in the given
-  // streams and pauses those streams so that future added messages aren't
+  // stream and pauses that stream so that future added messages aren't
   // produced until `ResumeStreams` is called.
   //
   // TODO(boivie): Investigate if it really should discard any message at all.
@@ -82,24 +86,28 @@ class SendQueue {
   // reset, and paused while they are resetting. This is the first part of the
   // two-phase commit protocol to reset streams, where the caller completes the
   // procedure by either calling `CommitResetStreams` or `RollbackResetStreams`.
-  virtual void PrepareResetStreams(rtc::ArrayView<const StreamID> streams) = 0;
+  virtual void PrepareResetStream(StreamID stream_id) = 0;
 
-  // Returns true if all non-discarded messages during `PrepareResetStreams`
-  // (which are those that was partially sent before that method was called)
-  // have been sent.
-  virtual bool CanResetStreams() const = 0;
+  // Indicates if there are any streams that are ready to be reset.
+  virtual bool HasStreamsReadyToBeReset() const = 0;
 
-  // Called to commit to reset the streams provided to `PrepareResetStreams`.
-  // It will reset the stream sequence numbers (SSNs) and message identifiers
-  // (MIDs) and resume the paused streams.
+  // Returns a list of streams that are ready to be included in an outgoing
+  // stream reset request. Any streams that are returned here must be included
+  // in an outgoing stream reset request, and there must not be concurrent
+  // requests. Before calling this method again, you must have called
+  virtual std::vector<StreamID> GetStreamsReadyToBeReset() = 0;
+
+  // Called to commit to reset the streams returned by
+  // `GetStreamsReadyToBeReset`. It will reset the stream sequence numbers
+  // (SSNs) and message identifiers (MIDs) and resume the paused streams.
   virtual void CommitResetStreams() = 0;
 
-  // Called to abort the resetting of streams provided to `PrepareResetStreams`.
-  // Will resume the paused streams without resetting the stream sequence
-  // numbers (SSNs) or message identifiers (MIDs). Note that the non-partial
-  // messages that were discarded when calling `PrepareResetStreams` will not be
-  // recovered, to better match the intention from the sender to "close the
-  // channel".
+  // Called to abort the resetting of streams returned by
+  // `GetStreamsReadyToBeReset`. Will resume the paused streams without
+  // resetting the stream sequence numbers (SSNs) or message identifiers (MIDs).
+  // Note that the non-partial messages that were discarded when calling
+  // `PrepareResetStreams` will not be recovered, to better match the intention
+  // from the sender to "close the channel".
   virtual void RollbackResetStreams() = 0;
 
   // Resets all message identifier counters (MID, SSN) and makes all partially
@@ -122,6 +130,12 @@ class SendQueue {
   // Sets a limit for the `OnBufferedAmountLow` event.
   virtual void SetBufferedAmountLowThreshold(StreamID stream_id,
                                              size_t bytes) = 0;
+
+  // Configures the send queue to support interleaved message sending as
+  // described in RFC8260. Every send queue starts with this value set as
+  // disabled, but can later change it when the capabilities of the connection
+  // have been negotiated. This affects the behavior of the `Produce` method.
+  virtual void EnableMessageInterleaving(bool enabled) = 0;
 };
 }  // namespace dcsctp
 

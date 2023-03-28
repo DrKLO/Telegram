@@ -61,7 +61,7 @@ public interface TransferListener {
    * @param source The source performing the transfer.
    * @param dataSpec Describes the data being transferred.
    * @param isNetwork Whether the data is transferred through a network.
-   * @param bytesTransferred The number of bytes transferred since the previous call to this method
+   * @param bytesTransferred The number of bytes transferred since the previous call to this method.
    */
   void onBytesTransferred(
       DataSource source, DataSpec dataSpec, boolean isNetwork, int bytesTransferred);

@@ -185,6 +185,8 @@ TEST(HashValueTest, FloatingPoint) {
 
 TEST(HashValueTest, Pointer) {
   EXPECT_TRUE((is_hashable<int*>::value));
+  EXPECT_TRUE((is_hashable<int(*)(char, float)>::value));
+  EXPECT_TRUE((is_hashable<void(*)(int, int, ...)>::value));
 
   int i;
   int* ptr = &i;
@@ -220,8 +222,87 @@ TEST(HashValueTest, PointerAlignment) {
     // Limit the scope to the bits we would be using for Swisstable.
     constexpr size_t kMask = (1 << (kLog2NumValues + 7)) - 1;
     size_t stuck_bits = (~bits_or | bits_and) & kMask;
-    EXPECT_EQ(stuck_bits, 0) << "0x" << std::hex << stuck_bits;
+    EXPECT_EQ(stuck_bits, 0u) << "0x" << std::hex << stuck_bits;
   }
+}
+
+TEST(HashValueTest, PointerToMember) {
+  struct Bass {
+    void q() {}
+  };
+
+  struct A : Bass {
+    virtual ~A() = default;
+    virtual void vfa() {}
+
+    static auto pq() -> void (A::*)() { return &A::q; }
+  };
+
+  struct B : Bass {
+    virtual ~B() = default;
+    virtual void vfb() {}
+
+    static auto pq() -> void (B::*)() { return &B::q; }
+  };
+
+  struct Foo : A, B {
+    void f1() {}
+    void f2() const {}
+
+    int g1() & { return 0; }
+    int g2() const & { return 0; }
+    int g3() && { return 0; }
+    int g4() const && { return 0; }
+
+    int h1() & { return 0; }
+    int h2() const & { return 0; }
+    int h3() && { return 0; }
+    int h4() const && { return 0; }
+
+    int a;
+    int b;
+
+    const int c = 11;
+    const int d = 22;
+  };
+
+  EXPECT_TRUE((is_hashable<float Foo::*>::value));
+  EXPECT_TRUE((is_hashable<double (Foo::*)(int, int)&&>::value));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      std::make_tuple(&Foo::a, &Foo::b, static_cast<int Foo::*>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      std::make_tuple(&Foo::c, &Foo::d, static_cast<const int Foo::*>(nullptr),
+                      &Foo::a, &Foo::b)));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      &Foo::f1, static_cast<void (Foo::*)()>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      &Foo::f2, static_cast<void (Foo::*)() const>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      &Foo::g1, &Foo::h1, static_cast<int (Foo::*)() &>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      &Foo::g2, &Foo::h2, static_cast<int (Foo::*)() const &>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      &Foo::g3, &Foo::h3, static_cast<int (Foo::*)() &&>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      &Foo::g4, &Foo::h4, static_cast<int (Foo::*)() const &&>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      std::make_tuple(static_cast<void (Foo::*)()>(&Foo::vfa),
+                      static_cast<void (Foo::*)()>(&Foo::vfb),
+                      static_cast<void (Foo::*)()>(nullptr))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      std::make_tuple(static_cast<void (Foo::*)()>(Foo::A::pq()),
+                      static_cast<void (Foo::*)()>(Foo::B::pq()),
+                      static_cast<void (Foo::*)()>(nullptr))));
 }
 
 TEST(HashValueTest, PairAndTuple) {
@@ -656,10 +737,10 @@ TEST(HashValueTest, CombinePiecewiseBuffer) {
   //
   // This test is run on a buffer that is a multiple of the stride size, and one
   // that isn't.
-  for (size_t big_buffer_size : {1024 * 2 + 512, 1024 * 3}) {
+  for (size_t big_buffer_size : {1024u * 2 + 512u, 1024u * 3}) {
     SCOPED_TRACE(big_buffer_size);
     std::string big_buffer;
-    for (int i = 0; i < big_buffer_size; ++i) {
+    for (size_t i = 0; i < big_buffer_size; ++i) {
       // Arbitrary string
       big_buffer.push_back(32 + (i * (i / 3)) % 64);
     }
@@ -1054,10 +1135,10 @@ TEST(HashTest, HashNonUniquelyRepresentedType) {
   unsigned char buffer2[kNumStructs * sizeof(StructWithPadding)];
   std::memset(buffer2, 255, sizeof(buffer2));
   auto* s2 = reinterpret_cast<StructWithPadding*>(buffer2);
-  for (int i = 0; i < kNumStructs; ++i) {
+  for (size_t i = 0; i < kNumStructs; ++i) {
     SCOPED_TRACE(i);
-    s1[i].c = s2[i].c = '0' + i;
-    s1[i].i = s2[i].i = i;
+    s1[i].c = s2[i].c = static_cast<char>('0' + i);
+    s1[i].i = s2[i].i = static_cast<int>(i);
     ASSERT_FALSE(memcmp(buffer1 + i * sizeof(StructWithPadding),
                         buffer2 + i * sizeof(StructWithPadding),
                         sizeof(StructWithPadding)) == 0)
@@ -1145,7 +1226,9 @@ struct ValueWithBoolConversion {
 namespace std {
 template <>
 struct hash<ValueWithBoolConversion> {
-  size_t operator()(ValueWithBoolConversion v) { return v.i; }
+  size_t operator()(ValueWithBoolConversion v) {
+    return static_cast<size_t>(v.i);
+  }
 };
 }  // namespace std
 

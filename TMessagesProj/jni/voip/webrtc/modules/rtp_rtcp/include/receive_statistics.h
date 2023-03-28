@@ -43,8 +43,9 @@ class StreamStatistician {
   // Returns average over the stream life time.
   virtual absl::optional<int> GetFractionLostInPercent() const = 0;
 
-  // TODO(nisse): Delete, migrate users to the above the GetStats method.
-  // Gets received stream data counters (includes reset counter values).
+  // TODO(bugs.webrtc.org/10679): Delete, migrate users to the above GetStats
+  // method (and extend RtpReceiveStats if needed).
+  // Gets receive stream data counters.
   virtual StreamDataCounters GetReceiveStreamDataCounters() const = 0;
 
   virtual uint32_t BitrateReceived() const = 0;

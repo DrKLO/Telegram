@@ -8,9 +8,11 @@
 
 package org.telegram.ui.Components;
 
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.drawable.Drawable;
+
 import androidx.annotation.NonNull;
 
 public class CombinedDrawable extends Drawable implements Drawable.Callback {
@@ -26,6 +28,7 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     private int offsetX;
     private int offsetY;
     private boolean fullSize;
+    private boolean both;
 
     public CombinedDrawable(Drawable backgroundDrawable, Drawable iconDrawable, int leftOffset, int topOffset) {
         background = backgroundDrawable;
@@ -40,6 +43,15 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     public void setIconSize(int width, int height) {
         iconWidth = width;
         iconHeight = height;
+    }
+
+    public CombinedDrawable(Context context, int backgroundDrawableResId, int iconDrawableResId) {
+        background = context.getResources().getDrawable(backgroundDrawableResId);
+        icon = context.getResources().getDrawable(iconDrawableResId);
+        if (icon != null) {
+            icon.setCallback(this);
+        }
+        both = true;
     }
 
     public CombinedDrawable(Drawable backgroundDrawable, Drawable iconDrawable) {
@@ -75,6 +87,9 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     @Override
     public void setColorFilter(ColorFilter colorFilter) {
         icon.setColorFilter(colorFilter);
+        if (both) {
+            background.setColorFilter(colorFilter);
+        }
     }
 
     @Override
@@ -181,5 +196,9 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     @Override
     public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
         unscheduleSelf(what);
+    }
+
+    public Drawable getBackgroundDrawable() {
+        return background;
     }
 }

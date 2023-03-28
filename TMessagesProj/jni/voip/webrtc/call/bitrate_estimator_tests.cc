@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "api/test/create_frame_generator.h"
 #include "call/call.h"
 #include "call/fake_network_pipe.h"
@@ -40,7 +41,7 @@ class LogObserver {
 
   ~LogObserver() { rtc::LogMessage::RemoveLogToStream(&callback_); }
 
-  void PushExpectedLogLine(const std::string& expected_log_line) {
+  void PushExpectedLogLine(absl::string_view expected_log_line) {
     callback_.PushExpectedLogLine(expected_log_line);
   }
 
@@ -50,13 +51,17 @@ class LogObserver {
   class Callback : public rtc::LogSink {
    public:
     void OnLogMessage(const std::string& message) override {
+      OnLogMessage(absl::string_view(message));
+    }
+
+    void OnLogMessage(absl::string_view message) override {
       MutexLock lock(&mutex_);
       // Ignore log lines that are due to missing AST extensions, these are
       // logged when we switch back from AST to TOF until the wrapping bitrate
       // estimator gives up on using AST.
-      if (message.find("BitrateEstimator") != std::string::npos &&
-          message.find("packet is missing") == std::string::npos) {
-        received_log_lines_.push_back(message);
+      if (message.find("BitrateEstimator") != absl::string_view::npos &&
+          message.find("packet is missing") == absl::string_view::npos) {
+        received_log_lines_.push_back(std::string(message));
       }
 
       int num_popped = 0;
@@ -66,7 +71,7 @@ class LogObserver {
         received_log_lines_.pop_front();
         expected_log_lines_.pop_front();
         num_popped++;
-        EXPECT_TRUE(a.find(b) != std::string::npos) << a << " != " << b;
+        EXPECT_TRUE(a.find(b) != absl::string_view::npos) << a << " != " << b;
       }
       if (expected_log_lines_.empty()) {
         if (num_popped > 0) {
@@ -76,11 +81,11 @@ class LogObserver {
       }
     }
 
-    bool Wait() { return done_.Wait(test::CallTest::kDefaultTimeoutMs); }
+    bool Wait() { return done_.Wait(test::CallTest::kDefaultTimeout); }
 
-    void PushExpectedLogLine(const std::string& expected_log_line) {
+    void PushExpectedLogLine(absl::string_view expected_log_line) {
       MutexLock lock(&mutex_);
-      expected_log_lines_.push_back(expected_log_line);
+      expected_log_lines_.emplace_back(expected_log_line);
     }
 
    private:
@@ -105,7 +110,7 @@ class BitrateEstimatorTest : public test::CallTest {
   virtual ~BitrateEstimatorTest() { EXPECT_TRUE(streams_.empty()); }
 
   virtual void SetUp() {
-    SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+    SendTask(task_queue(), [this]() {
       CreateCalls();
 
       send_transport_.reset(new test::DirectTransport(
@@ -136,7 +141,8 @@ class BitrateEstimatorTest : public test::CallTest {
       test::FillEncoderConfiguration(kVideoCodecVP8, 1, &video_encoder_config);
       SetVideoEncoderConfig(video_encoder_config);
 
-      receive_config_ = VideoReceiveStream::Config(receive_transport_.get());
+      receive_config_ =
+          VideoReceiveStreamInterface::Config(receive_transport_.get());
       // receive_config_.decoders will be set by every stream separately.
       receive_config_.rtp.remote_ssrc = GetVideoSendConfig()->rtp.ssrcs[0];
       receive_config_.rtp.local_ssrc = kReceiverLocalVideoSsrc;
@@ -148,7 +154,7 @@ class BitrateEstimatorTest : public test::CallTest {
   }
 
   virtual void TearDown() {
-    SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+    SendTask(task_queue(), [this]() {
       for (auto* stream : streams_) {
         stream->StopSending();
         delete stream;
@@ -190,7 +196,7 @@ class BitrateEstimatorTest : public test::CallTest {
                               DegradationPreference::MAINTAIN_FRAMERATE);
       send_stream_->Start();
 
-      VideoReceiveStream::Decoder decoder;
+      VideoReceiveStreamInterface::Decoder decoder;
       test_->receive_config_.decoder_factory = &decoder_factory_;
       decoder.payload_type = test_->GetVideoSendConfig()->rtp.payload_type;
       decoder.video_format =
@@ -232,7 +238,7 @@ class BitrateEstimatorTest : public test::CallTest {
     BitrateEstimatorTest* test_;
     bool is_sending_receiving_;
     VideoSendStream* send_stream_;
-    VideoReceiveStream* video_receive_stream_;
+    VideoReceiveStreamInterface* video_receive_stream_;
     std::unique_ptr<test::FrameGeneratorCapturer> frame_generator_capturer_;
 
     test::FunctionVideoDecoderFactory decoder_factory_;
@@ -241,7 +247,7 @@ class BitrateEstimatorTest : public test::CallTest {
   LogObserver receiver_log_;
   std::unique_ptr<test::DirectTransport> send_transport_;
   std::unique_ptr<test::DirectTransport> receive_transport_;
-  VideoReceiveStream::Config receive_config_;
+  VideoReceiveStreamInterface::Config receive_config_;
   std::vector<Stream*> streams_;
 };
 
@@ -251,7 +257,7 @@ static const char* kSingleStreamLog =
     "RemoteBitrateEstimatorSingleStream: Instantiating.";
 
 TEST_F(BitrateEstimatorTest, InstantiatesTOFPerDefaultForVideo) {
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions.push_back(
         RtpExtension(RtpExtension::kTimestampOffsetUri, kTOFExtensionId));
     receiver_log_.PushExpectedLogLine(kSingleStreamLog);
@@ -262,7 +268,7 @@ TEST_F(BitrateEstimatorTest, InstantiatesTOFPerDefaultForVideo) {
 }
 
 TEST_F(BitrateEstimatorTest, ImmediatelySwitchToASTForVideo) {
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions.push_back(
         RtpExtension(RtpExtension::kAbsSendTimeUri, kASTExtensionId));
     receiver_log_.PushExpectedLogLine(kSingleStreamLog);
@@ -275,7 +281,7 @@ TEST_F(BitrateEstimatorTest, ImmediatelySwitchToASTForVideo) {
 }
 
 TEST_F(BitrateEstimatorTest, SwitchesToASTForVideo) {
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions.push_back(
         RtpExtension(RtpExtension::kTimestampOffsetUri, kTOFExtensionId));
     receiver_log_.PushExpectedLogLine(kSingleStreamLog);
@@ -284,7 +290,7 @@ TEST_F(BitrateEstimatorTest, SwitchesToASTForVideo) {
   });
   EXPECT_TRUE(receiver_log_.Wait());
 
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions[0] =
         RtpExtension(RtpExtension::kAbsSendTimeUri, kASTExtensionId);
     receiver_log_.PushExpectedLogLine("Switching to absolute send time RBE.");
@@ -296,7 +302,7 @@ TEST_F(BitrateEstimatorTest, SwitchesToASTForVideo) {
 
 // This test is flaky. See webrtc:5790.
 TEST_F(BitrateEstimatorTest, DISABLED_SwitchesToASTThenBackToTOFForVideo) {
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions.push_back(
         RtpExtension(RtpExtension::kTimestampOffsetUri, kTOFExtensionId));
     receiver_log_.PushExpectedLogLine(kSingleStreamLog);
@@ -306,7 +312,7 @@ TEST_F(BitrateEstimatorTest, DISABLED_SwitchesToASTThenBackToTOFForVideo) {
   });
   EXPECT_TRUE(receiver_log_.Wait());
 
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions[0] =
         RtpExtension(RtpExtension::kAbsSendTimeUri, kASTExtensionId);
     receiver_log_.PushExpectedLogLine(kAbsSendTimeLog);
@@ -315,7 +321,7 @@ TEST_F(BitrateEstimatorTest, DISABLED_SwitchesToASTThenBackToTOFForVideo) {
   });
   EXPECT_TRUE(receiver_log_.Wait());
 
-  SendTask(RTC_FROM_HERE, task_queue(), [this]() {
+  SendTask(task_queue(), [this]() {
     GetVideoSendConfig()->rtp.extensions[0] =
         RtpExtension(RtpExtension::kTimestampOffsetUri, kTOFExtensionId);
     receiver_log_.PushExpectedLogLine(kAbsSendTimeLog);

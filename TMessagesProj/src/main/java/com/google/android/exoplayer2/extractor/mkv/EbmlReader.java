@@ -37,8 +37,8 @@ import java.io.IOException;
 
   /**
    * Resets the state of the reader.
-   * <p>
-   * Subsequent calls to {@link #read(ExtractorInput)} will start reading a new EBML structure
+   *
+   * <p>Subsequent calls to {@link #read(ExtractorInput)} will start reading a new EBML structure
    * from scratch.
    */
   void reset();
@@ -50,8 +50,6 @@ import java.io.IOException;
    * @return True if data can continue to be read. False if the end of the input was encountered.
    * @throws ParserException If parsing fails.
    * @throws IOException If an error occurs reading from the input.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  boolean read(ExtractorInput input) throws IOException, InterruptedException;
-
+  boolean read(ExtractorInput input) throws IOException;
 }

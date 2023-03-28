@@ -205,7 +205,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         detailRow = rowCount++;
         if (!isChannel || chats.size() > 0 && info.linked_chat_id != 0) {
             TLRPC.Chat chat = isChannel ? chats.get(0) : currentChat;
-            if (chat != null && (TextUtils.isEmpty(chat.username) || isChannel) && (chat.creator || chat.admin_rights != null && chat.admin_rights.ban_users)) {
+            if (chat != null && (!ChatObject.isPublic(chat) || isChannel) && (chat.creator || chat.admin_rights != null && chat.admin_rights.ban_users)) {
                 joinToSendRow = rowCount++;
             }
         }
@@ -428,7 +428,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     builder.setMessage(AndroidUtilities.replaceTags(message));
                     builder.setPositiveButton(LocaleController.getString("DiscussionUnlink", R.string.DiscussionUnlink), (dialogInterface, i) -> {
                         if (!isChannel || info.linked_chat_id != 0) {
-                            final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), 3)};
+                            final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER)};
                             TLRPC.TL_channels_setDiscussionGroup req = new TLRPC.TL_channels_setDiscussionGroup();
                             if (isChannel) {
                                 req.broadcast = MessagesController.getInputChannel(currentChat);
@@ -465,7 +465,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     }
                 }
             }
@@ -481,7 +481,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             if (query) {
                 getMessagesController().loadFullChat(chat.id, 0, true);
                 waitingForFullChat = chat;
-                waitingForFullChatProgressAlert = new AlertDialog(getParentActivity(), 3);
+                waitingForFullChatProgressAlert = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                 AndroidUtilities.runOnUIThread(() -> {
                     if (waitingForFullChatProgressAlert == null) {
                         return;
@@ -499,10 +499,10 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         String message;
-        if (TextUtils.isEmpty(chat.username)) {
+        if (!ChatObject.isPublic(chat)) {
             message = LocaleController.formatString("DiscussionLinkGroupPublicPrivateAlert", R.string.DiscussionLinkGroupPublicPrivateAlert, chat.title, currentChat.title);
         } else {
-            if (TextUtils.isEmpty(currentChat.username)) {
+            if (!ChatObject.isPublic(currentChat)) {
                 message = LocaleController.formatString("DiscussionLinkGroupPrivateAlert", R.string.DiscussionLinkGroupPrivateAlert, chat.title, currentChat.title);
             } else {
                 message = LocaleController.formatString("DiscussionLinkGroupPublicAlert", R.string.DiscussionLinkGroupPublicAlert, chat.title, currentChat.title);
@@ -561,7 +561,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             });
             return;
         }
-        final AlertDialog[] progressDialog = new AlertDialog[]{createFragment != null ? null : new AlertDialog(getParentActivity(), 3)};
+        final AlertDialog[] progressDialog = new AlertDialog[]{createFragment != null ? null : new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER)};
         TLRPC.TL_channels_setDiscussionGroup req = new TLRPC.TL_channels_setDiscussionGroup();
         req.broadcast = MessagesController.getInputChannel(currentChat);
         req.group = MessagesController.getInputChannel(chat);
@@ -733,19 +733,30 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                             tName = null;
                         }
 
+                        String username = null;
                         int found = 0;
                         for (String q : search) {
                             if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 1;
                             } else if (chat.username != null && chat.username.startsWith(q)) {
                                 found = 2;
+                                username = chat.username;
+                            } else if (chat.usernames != null && !chat.usernames.isEmpty()) {
+                                for (int i = 0; i < chat.usernames.size(); ++i) {
+                                    TLRPC.TL_username u = chat.usernames.get(i);
+                                    if (u.active && u.username.startsWith(q)) {
+                                        found = 2;
+                                        username = u.username;
+                                        break;
+                                    }
+                                }
                             }
 
                             if (found != 0) {
                                 if (found == 1) {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName(chat.title, null, q));
                                 } else {
-                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + chat.username, null, "@" + q));
+                                    resultArrayNames.add(AndroidUtilities.generateSearchName("@" + username, null, "@" + q));
                                 }
                                 resultArray.add(chat);
                                 break;
@@ -800,7 +811,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             TLRPC.Chat chat = searchResult.get(position);
-            String un = chat.username;
+            String un = ChatObject.getPublicUsername(chat);
             CharSequence username = null;
             CharSequence name = searchResultNames.get(position);
             if (name != null && !TextUtils.isEmpty(un)) {
@@ -958,7 +969,8 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     ManageChatUserCell userCell = (ManageChatUserCell) holder.itemView;
                     userCell.setTag(position);
                     TLRPC.Chat chat = chats.get(position - chatStartRow);
-                    userCell.setData(chat, null, TextUtils.isEmpty(chat.username) ? null : "@" + chat.username, position != chatEndRow - 1 || info.linked_chat_id != 0);
+                    String username;
+                    userCell.setData(chat, null, TextUtils.isEmpty(username = ChatObject.getPublicUsername(chat)) ? null : "@" + username, position != chatEndRow - 1 || info.linked_chat_id != 0);
                     break;
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;

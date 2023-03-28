@@ -17,14 +17,19 @@
 #include "api/media_stream_track.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 
 namespace webrtc {
 
+// TODO(tommi): Instead of inheriting from `MediaStreamTrack<>`, implement the
+// properties directly in this class. `MediaStreamTrack` doesn't guard against
+// conflicting access, so we'd need to override those methods anyway in this
+// class in order to make sure things are correctly checked.
 class AudioTrack : public MediaStreamTrack<AudioTrackInterface>,
                    public ObserverInterface {
  protected:
   // Protected ctor to force use of factory method.
-  AudioTrack(const std::string& label,
+  AudioTrack(absl::string_view label,
              const rtc::scoped_refptr<AudioSourceInterface>& source);
 
   AudioTrack() = delete;
@@ -35,7 +40,7 @@ class AudioTrack : public MediaStreamTrack<AudioTrackInterface>,
 
  public:
   static rtc::scoped_refptr<AudioTrack> Create(
-      const std::string& id,
+      absl::string_view id,
       const rtc::scoped_refptr<AudioSourceInterface>& source);
 
   // MediaStreamTrack implementation.
@@ -53,7 +58,7 @@ class AudioTrack : public MediaStreamTrack<AudioTrackInterface>,
 
  private:
   const rtc::scoped_refptr<AudioSourceInterface> audio_source_;
-  SequenceChecker thread_checker_;
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker signaling_thread_checker_;
 };
 
 }  // namespace webrtc

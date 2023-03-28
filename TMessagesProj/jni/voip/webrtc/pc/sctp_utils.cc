@@ -11,12 +11,12 @@
 #include "pc/sctp_utils.h"
 
 #include <stddef.h>
-#include <stdint.h>
+
+#include <cstdint>
 
 #include "absl/types/optional.h"
 #include "api/priority.h"
 #include "rtc_base/byte_buffer.h"
-#include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/logging.h"
 

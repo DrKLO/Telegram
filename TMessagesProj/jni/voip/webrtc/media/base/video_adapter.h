@@ -13,13 +13,13 @@
 
 #include <stdint.h>
 
+#include <string>
 #include <utility>
 
 #include "absl/types/optional.h"
 #include "api/video/video_source_interface.h"
 #include "common_video/framerate_controller.h"
 #include "media/base/video_common.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/thread_annotations.h"
@@ -37,6 +37,9 @@ class RTC_EXPORT VideoAdapter {
   // by `source_resolution_alignment`.
   explicit VideoAdapter(int source_resolution_alignment);
   virtual ~VideoAdapter();
+
+  VideoAdapter(const VideoAdapter&) = delete;
+  VideoAdapter& operator=(const VideoAdapter&) = delete;
 
   // Return the adapted resolution and cropping parameters given the
   // input resolution. The input frame should first be cropped, then
@@ -131,23 +134,37 @@ class RTC_EXPORT VideoAdapter {
   // Max number of pixels/fps requested via calls to OnOutputFormatRequest,
   // OnResolutionFramerateRequest respectively.
   // The adapted output format is the minimum of these.
-  absl::optional<std::pair<int, int>> target_landscape_aspect_ratio_
-      RTC_GUARDED_BY(mutex_);
-  absl::optional<int> max_landscape_pixel_count_ RTC_GUARDED_BY(mutex_);
-  absl::optional<std::pair<int, int>> target_portrait_aspect_ratio_
-      RTC_GUARDED_BY(mutex_);
-  absl::optional<int> max_portrait_pixel_count_ RTC_GUARDED_BY(mutex_);
-  absl::optional<int> max_fps_ RTC_GUARDED_BY(mutex_);
+  struct OutputFormatRequest {
+    absl::optional<std::pair<int, int>> target_landscape_aspect_ratio;
+    absl::optional<int> max_landscape_pixel_count;
+    absl::optional<std::pair<int, int>> target_portrait_aspect_ratio;
+    absl::optional<int> max_portrait_pixel_count;
+    absl::optional<int> max_fps;
+
+    // For logging.
+    std::string ToString() const;
+  };
+
+  OutputFormatRequest output_format_request_ RTC_GUARDED_BY(mutex_);
   int resolution_request_target_pixel_count_ RTC_GUARDED_BY(mutex_);
   int resolution_request_max_pixel_count_ RTC_GUARDED_BY(mutex_);
   int max_framerate_request_ RTC_GUARDED_BY(mutex_);
+
+  // Stashed OutputFormatRequest that is used to save value of
+  // OnOutputFormatRequest in case all active encoders are using
+  // requested_resolution. I.e when all active encoders are using
+  // requested_resolution, the call to OnOutputFormatRequest is ignored
+  // and the value from requested_resolution is used instead (to scale/crop
+  // frame). This allows for an application to only use
+  // RtpEncodingParameters::request_resolution and get the same behavior as if
+  // it had used VideoAdapter::OnOutputFormatRequest.
+  absl::optional<OutputFormatRequest> stashed_output_format_request_
+      RTC_GUARDED_BY(mutex_);
 
   webrtc::FramerateController framerate_controller_ RTC_GUARDED_BY(mutex_);
 
   // The critical section to protect the above variables.
   mutable webrtc::Mutex mutex_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(VideoAdapter);
 };
 
 }  // namespace cricket

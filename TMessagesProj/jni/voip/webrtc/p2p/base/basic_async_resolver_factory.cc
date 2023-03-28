@@ -36,7 +36,17 @@ WrappingAsyncDnsResolverFactory::CreateAndResolve(
     const rtc::SocketAddress& addr,
     std::function<void()> callback) {
   std::unique_ptr<webrtc::AsyncDnsResolverInterface> resolver = Create();
-  resolver->Start(addr, callback);
+  resolver->Start(addr, std::move(callback));
+  return resolver;
+}
+
+std::unique_ptr<webrtc::AsyncDnsResolverInterface>
+WrappingAsyncDnsResolverFactory::CreateAndResolve(
+    const rtc::SocketAddress& addr,
+    int family,
+    std::function<void()> callback) {
+  std::unique_ptr<webrtc::AsyncDnsResolverInterface> resolver = Create();
+  resolver->Start(addr, family, std::move(callback));
   return resolver;
 }
 

@@ -66,10 +66,6 @@ class PerThreadSem {
   // REQUIRES: May only be called by ThreadIdentity.
   static void Init(base_internal::ThreadIdentity* identity);
 
-  // Destroy the PerThreadSem associated with "identity".
-  // REQUIRES: May only be called by ThreadIdentity.
-  static void Destroy(base_internal::ThreadIdentity* identity);
-
   // Increments "identity"'s count.
   static inline void Post(base_internal::ThreadIdentity* identity);
 
@@ -81,8 +77,7 @@ class PerThreadSem {
   // Permitted callers.
   friend class PerThreadSemTest;
   friend class absl::Mutex;
-  friend absl::base_internal::ThreadIdentity* CreateThreadIdentity();
-  friend void ReclaimThreadIdentity(void* v);
+  friend void OneTimeInitThreadIdentity(absl::base_internal::ThreadIdentity*);
 };
 
 }  // namespace synchronization_internal

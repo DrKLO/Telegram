@@ -15,9 +15,11 @@
  */
 package com.google.android.exoplayer2.extractor.mp3;
 
+import static java.lang.Math.max;
+
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.extractor.MpegAudioHeader;
+import com.google.android.exoplayer2.audio.MpegAudioUtil;
 import com.google.android.exoplayer2.extractor.SeekPoint;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
@@ -41,16 +43,21 @@ import com.google.android.exoplayer2.util.Util;
    * @return A {@link VbriSeeker} for seeking in the stream, or {@code null} if the required
    *     information is not present.
    */
-  public static @Nullable VbriSeeker create(
-      long inputLength, long position, MpegAudioHeader mpegAudioHeader, ParsableByteArray frame) {
+  @Nullable
+  public static VbriSeeker create(
+      long inputLength,
+      long position,
+      MpegAudioUtil.Header mpegAudioHeader,
+      ParsableByteArray frame) {
     frame.skipBytes(10);
     int numFrames = frame.readInt();
     if (numFrames <= 0) {
       return null;
     }
     int sampleRate = mpegAudioHeader.sampleRate;
-    long durationUs = Util.scaleLargeTimestamp(numFrames,
-        C.MICROS_PER_SECOND * (sampleRate >= 32000 ? 1152 : 576), sampleRate);
+    long durationUs =
+        Util.scaleLargeTimestamp(
+            numFrames, C.MICROS_PER_SECOND * (sampleRate >= 32000 ? 1152 : 576), sampleRate);
     int entryCount = frame.readUnsignedShort();
     int scale = frame.readUnsignedShort();
     int entrySize = frame.readUnsignedShort();
@@ -64,7 +71,7 @@ import com.google.android.exoplayer2.util.Util;
       timesUs[index] = (index * durationUs) / entryCount;
       // Ensure positions do not fall within the frame containing the VBRI header. This constraint
       // will normally only apply to the first entry in the table.
-      positions[index] = Math.max(position, minPosition);
+      positions[index] = max(position, minPosition);
       int segmentSize;
       switch (entrySize) {
         case 1:
@@ -82,7 +89,7 @@ import com.google.android.exoplayer2.util.Util;
         default:
           return null;
       }
-      position += segmentSize * scale;
+      position += segmentSize * ((long) scale);
     }
     if (inputLength != C.LENGTH_UNSET && inputLength != position) {
       Log.w(TAG, "VBRI data size mismatch: " + inputLength + ", " + position);

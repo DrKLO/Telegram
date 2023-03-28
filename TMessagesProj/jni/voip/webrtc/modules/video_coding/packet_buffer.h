@@ -82,6 +82,7 @@ class PacketBuffer {
   void Clear();
 
   void ForceSpsPpsIdrIsH264Keyframe();
+  void ResetSpsPpsIdrIsH264Keyframe();
 
  private:
   void ClearInternal();
@@ -116,6 +117,8 @@ class PacketBuffer {
 
   absl::optional<uint16_t> newest_inserted_seq_num_;
   std::set<uint16_t, DescendingSeqNumComp<uint16_t>> missing_packets_;
+
+  std::set<uint16_t, DescendingSeqNumComp<uint16_t>> received_padding_;
 
   // Indicates if we should require SPS, PPS, and IDR for a particular
   // RTP timestamp to treat the corresponding frame as a keyframe.

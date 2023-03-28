@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.RippleDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -34,11 +33,11 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
-import org.telegram.ui.Components.ThemeSmallPreviewView;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ThemeSmallPreviewView;
 
 import java.util.ArrayList;
 
@@ -130,6 +129,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                 editor.commit();
             }
 
+            Theme.turnOffAutoNight(parentFragment);
         });
 
         progressView = new FlickerLoadingView(getContext(), null);
@@ -146,7 +146,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
 
         recyclerView.setEmptyView(progressView);
-        recyclerView.setAnimateEmptyView(true, 0);
+        recyclerView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
 
         if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
             darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
@@ -207,7 +207,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                     pos[0] += dayNightCell.getImageView().getMeasuredWidth() / 2;
                     pos[1] += dayNightCell.getImageView().getMeasuredHeight() / 2 + AndroidUtilities.dp(3);
 
-                    Runnable then = () -> AndroidUtilities.runOnUIThread(() -> {
+                    Runnable then = () -> {
                         updateDayNightMode();
                         updateSelectedPosition();
 
@@ -265,7 +265,10 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                         } else {
                             dayNightCell.setTextAndIcon(LocaleController.getString("SettingsSwitchToDayMode", R.string.SettingsSwitchToDayMode), darkThemeDrawable, true);
                         }
-                    });
+
+                        Theme.turnOffAutoNight(parentFragment);
+                    };
+
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, dayNightCell.getImageView(), dayNightCell, then);
                 }
             });
@@ -434,15 +437,6 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, null, -1);
         }
-        //updateRows();
-
-        int count = getChildCount();
-//        for (int a = 0; a < count; a++) {
-//            View child = getChildAt(a);
-//            if (child instanceof ThemesHorizontalListCell.InnerThemeView) {
-//                ((ThemesHorizontalListCell.InnerThemeView) child).updateCurrentThemeCheck();
-//            }
-//        }
     }
 
     public void updateColors() {

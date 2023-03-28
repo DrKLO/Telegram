@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Editable;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -24,12 +25,14 @@ import androidx.recyclerview.widget.ChatListItemAnimator;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -38,10 +41,13 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.PaymentFormActivity;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -121,17 +127,22 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         }
     };
 
+    private void checkBotMenuItem() {
+        if (botMenuItem == null) {
+            ActionBarMenu menu = parentEnterView.getParentFragment().getActionBar().createMenu();
+            botMenuItem = menu.addItem(1000, R.drawable.ic_ab_other);
+            botMenuItem.setVisibility(GONE);
+
+            botMenuItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
+        }
+    }
+
     public BotWebViewMenuContainer(@NonNull Context context, ChatActivityEnterView parentEnterView) {
         super(context);
 
         this.parentEnterView = parentEnterView;
         ChatActivity chatActivity = parentEnterView.getParentFragment();
         ActionBar actionBar = chatActivity.getActionBar();
-        ActionBarMenu menu = actionBar.createMenu();
-        botMenuItem = menu.addItem(1000, R.drawable.ic_ab_other);
-        botMenuItem.setVisibility(GONE);
-
-        botMenuItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));
         actionBarOnItemClick = actionBar.getActionBarMenuOnItemClick();
 
         webViewContainer = new BotWebViewContainer(context, parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite));
@@ -190,6 +201,45 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     return;
                 }
                 swipeContainer.stickTo(-swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY());
+            }
+
+            @Override
+            public void onWebAppSwitchInlineQuery(TLRPC.User botUser, String query, List<String> chatTypes) {
+                if (chatTypes.isEmpty()) {
+                    parentEnterView.setFieldText("@" + UserObject.getPublicUsername(botUser) + " " + query);
+                    dismiss();
+                } else {
+                    Bundle args = new Bundle();
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_START_ATTACH_BOT);
+                    args.putBoolean("onlySelect", true);
+
+                    args.putBoolean("allowGroups", chatTypes.contains("groups"));
+                    args.putBoolean("allowUsers", chatTypes.contains("users"));
+                    args.putBoolean("allowChannels", chatTypes.contains("channels"));
+                    args.putBoolean("allowBots", chatTypes.contains("bots"));
+
+                    DialogsActivity dialogsActivity = new DialogsActivity(args);
+                    dialogsActivity.setDelegate((fragment, dids, message1, param, topicsFragment) -> {
+                        long did = dids.get(0).dialogId;
+
+                        Bundle args1 = new Bundle();
+                        args1.putBoolean("scrollToTopOnResume", true);
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
+                        } else if (DialogObject.isUserDialog(did)) {
+                            args1.putLong("user_id", did);
+                        } else {
+                            args1.putLong("chat_id", -did);
+                        }
+                        args1.putString("inline_query_input", "@" + UserObject.getPublicUsername(botUser) + " " + query);
+
+                        if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args1, fragment)) {
+                            fragment.presentFragment(new INavigationLayout.NavigationParams(new ChatActivity(args1)).setRemoveLast(true));
+                        }
+                        return true;
+                    });
+                    parentEnterView.getParentFragment().presentFragment(dialogsActivity);
+                }
             }
 
             @Override
@@ -445,6 +495,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                 ActionBar actionBar = chatActivity.getActionBar();
                 if (value == 100 && parentEnterView.hasBotWebView()) {
                     chatActivity.showHeaderItem(false);
+                    checkBotMenuItem();
                     botMenuItem.setVisibility(VISIBLE);
                     actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                         @Override
@@ -474,7 +525,9 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     });
                 } else {
                     chatActivity.showHeaderItem(true);
-                    botMenuItem.setVisibility(GONE);
+                    if (botMenuItem != null) {
+                        botMenuItem.setVisibility(GONE);
+                    }
                     actionBar.setActionBarMenuOnItemClick(actionBarOnItemClick);
                 }
             });
@@ -637,7 +690,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         this.botId = botId;
         this.botUrl = botUrl;
 
-        savedEditText = parentEnterView.getEditField().getText();
+        savedEditText = parentEnterView.getEditText();
         parentEnterView.getEditField().setText(null);
         savedReplyMessageObject = parentEnterView.getReplyingMessageObject();
         savedEditMessageObject = parentEnterView.getEditingMessageObject();
@@ -807,7 +860,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         }
 
         AndroidUtilities.runOnUIThread(()->{
-            if (savedEditText != null) {
+            if (savedEditText != null && parentEnterView.getEditField() != null) {
                 parentEnterView.getEditField().setText(savedEditText);
                 savedEditText = null;
             }

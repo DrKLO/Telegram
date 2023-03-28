@@ -16,10 +16,12 @@
 #include "api/dtls_transport_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/sctp_transport_interface.h"
+#include "api/sequence_checker.h"
+#include "api/transport/data_channel_transport_interface.h"
 #include "media/sctp/sctp_transport_internal.h"
 #include "p2p/base/dtls_transport_internal.h"
 #include "pc/dtls_transport.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -31,15 +33,25 @@ namespace webrtc {
 // the same thread as the one the cricket::SctpTransportInternal object
 // lives on.
 class SctpTransport : public SctpTransportInterface,
-                      public sigslot::has_slots<> {
+                      public DataChannelTransportInterface {
  public:
   explicit SctpTransport(
       std::unique_ptr<cricket::SctpTransportInternal> internal);
 
+  // SctpTransportInterface
   rtc::scoped_refptr<DtlsTransportInterface> dtls_transport() const override;
   SctpTransportInformation Information() const override;
   void RegisterObserver(SctpTransportObserverInterface* observer) override;
   void UnregisterObserver() override;
+
+  // DataChannelTransportInterface
+  RTCError OpenChannel(int channel_id) override;
+  RTCError SendData(int channel_id,
+                    const SendDataParams& params,
+                    const rtc::CopyOnWriteBuffer& buffer) override;
+  RTCError CloseChannel(int channel_id) override;
+  void SetDataSink(DataChannelSink* sink) override;
+  bool IsReadyToSend() const override;
 
   // Internal functions
   void Clear();

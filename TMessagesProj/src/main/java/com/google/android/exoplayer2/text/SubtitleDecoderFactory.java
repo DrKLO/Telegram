@@ -29,9 +29,7 @@ import com.google.android.exoplayer2.text.webvtt.Mp4WebvttDecoder;
 import com.google.android.exoplayer2.text.webvtt.WebvttDecoder;
 import com.google.android.exoplayer2.util.MimeTypes;
 
-/**
- * A factory for {@link SubtitleDecoder} instances.
- */
+/** A factory for {@link SubtitleDecoder} instances. */
 public interface SubtitleDecoderFactory {
 
   /**
@@ -68,6 +66,7 @@ public interface SubtitleDecoderFactory {
    *   <li>Cea708 ({@link Cea708Decoder})
    *   <li>DVB ({@link DvbDecoder})
    *   <li>PGS ({@link PgsDecoder})
+   *   <li>Exoplayer Cues ({@link ExoplayerCuesDecoder})
    * </ul>
    */
   SubtitleDecoderFactory DEFAULT =
@@ -86,7 +85,8 @@ public interface SubtitleDecoderFactory {
               || MimeTypes.APPLICATION_MP4CEA608.equals(mimeType)
               || MimeTypes.APPLICATION_CEA708.equals(mimeType)
               || MimeTypes.APPLICATION_DVBSUBS.equals(mimeType)
-              || MimeTypes.APPLICATION_PGS.equals(mimeType);
+              || MimeTypes.APPLICATION_PGS.equals(mimeType)
+              || MimeTypes.TEXT_EXOPLAYER_CUES.equals(mimeType);
         }
 
         @Override
@@ -108,13 +108,18 @@ public interface SubtitleDecoderFactory {
                 return new Tx3gDecoder(format.initializationData);
               case MimeTypes.APPLICATION_CEA608:
               case MimeTypes.APPLICATION_MP4CEA608:
-                return new Cea608Decoder(mimeType, format.accessibilityChannel);
+                return new Cea608Decoder(
+                    mimeType,
+                    format.accessibilityChannel,
+                    Cea608Decoder.MIN_DATA_CHANNEL_TIMEOUT_MS);
               case MimeTypes.APPLICATION_CEA708:
                 return new Cea708Decoder(format.accessibilityChannel, format.initializationData);
               case MimeTypes.APPLICATION_DVBSUBS:
                 return new DvbDecoder(format.initializationData);
               case MimeTypes.APPLICATION_PGS:
                 return new PgsDecoder();
+              case MimeTypes.TEXT_EXOPLAYER_CUES:
+                return new ExoplayerCuesDecoder();
               default:
                 break;
             }

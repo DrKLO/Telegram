@@ -1,9 +1,6 @@
 package org.telegram.ui.Components;
 
 import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -12,12 +9,13 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.View;
-import android.widget.ImageView;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+
+import java.util.ArrayList;
 
 public class ReplaceableIconDrawable extends Drawable implements Animator.AnimatorListener {
 
@@ -30,6 +28,7 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
 
     private ValueAnimator animation;
     private float progress = 1f;
+    ArrayList<View> parentViews = new ArrayList<>();
 
     public ReplaceableIconDrawable(Context context) {
         this.context = context;
@@ -197,5 +196,19 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
     @Override
     public void onAnimationRepeat(Animator animation) {
 
+    }
+
+    public void addView(View view) {
+        parentViews.add(view);
+    }
+
+    @Override
+    public void invalidateSelf() {
+        super.invalidateSelf();
+        if (parentViews != null) {
+            for (int i = 0; i < parentViews.size(); i++) {
+                parentViews.get(i).invalidate();
+            }
+        }
     }
 }

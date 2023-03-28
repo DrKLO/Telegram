@@ -11,6 +11,10 @@
 #ifndef RTC_BASE_NETWORK_MONITOR_FACTORY_H_
 #define RTC_BASE_NETWORK_MONITOR_FACTORY_H_
 
+namespace webrtc {
+class FieldTrialsView;
+}  // namespace webrtc
+
 namespace rtc {
 
 // Forward declaring this so it's not part of the API surface; it's only
@@ -24,7 +28,8 @@ class NetworkMonitorInterface;
  */
 class NetworkMonitorFactory {
  public:
-  virtual NetworkMonitorInterface* CreateNetworkMonitor() = 0;
+  virtual NetworkMonitorInterface* CreateNetworkMonitor(
+      const webrtc::FieldTrialsView& field_trials) = 0;
 
   virtual ~NetworkMonitorFactory();
 

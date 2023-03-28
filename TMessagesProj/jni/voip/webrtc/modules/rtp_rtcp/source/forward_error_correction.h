@@ -75,9 +75,6 @@ class ForwardErrorCorrection {
   };
 
   // Used for the input to DecodeFec().
-  //
-  // TODO(nisse): Delete class, instead passing `is_fec` and `pkt` as separate
-  // arguments.
   class ReceivedPacket : public SortablePacket {
    public:
     ReceivedPacket();

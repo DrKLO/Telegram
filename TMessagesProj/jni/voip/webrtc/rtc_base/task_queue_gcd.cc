@@ -19,9 +19,10 @@
 
 #include <memory>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
-#include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/system/gcd_helpers.h"
@@ -40,22 +41,24 @@ int TaskQueuePriorityToGCD(TaskQueueFactory::Priority priority) {
   }
 }
 
-class TaskQueueGcd : public TaskQueueBase {
+class TaskQueueGcd final : public TaskQueueBase {
  public:
   TaskQueueGcd(absl::string_view queue_name, int gcd_priority);
 
   void Delete() override;
-  void PostTask(std::unique_ptr<QueuedTask> task) override;
-  void PostDelayedTask(std::unique_ptr<QueuedTask> task,
-                       uint32_t milliseconds) override;
+  void PostTask(absl::AnyInvocable<void() &&> task) override;
+  void PostDelayedTask(absl::AnyInvocable<void() &&> task,
+                       TimeDelta delay) override;
+  void PostDelayedHighPrecisionTask(absl::AnyInvocable<void() &&> task,
+                                    TimeDelta delay) override;
 
  private:
   struct TaskContext {
-    TaskContext(TaskQueueGcd* queue, std::unique_ptr<QueuedTask> task)
+    TaskContext(TaskQueueGcd* queue, absl::AnyInvocable<void() &&> task)
         : queue(queue), task(std::move(task)) {}
 
     TaskQueueGcd* const queue;
-    std::unique_ptr<QueuedTask> task;
+    absl::AnyInvocable<void() &&> task;
   };
 
   ~TaskQueueGcd() override;
@@ -97,17 +100,22 @@ void TaskQueueGcd::Delete() {
   dispatch_release(queue_);
 }
 
-void TaskQueueGcd::PostTask(std::unique_ptr<QueuedTask> task) {
+void TaskQueueGcd::PostTask(absl::AnyInvocable<void() &&> task) {
   auto* context = new TaskContext(this, std::move(task));
   dispatch_async_f(queue_, context, &RunTask);
 }
 
-void TaskQueueGcd::PostDelayedTask(std::unique_ptr<QueuedTask> task,
-                                   uint32_t milliseconds) {
+void TaskQueueGcd::PostDelayedTask(absl::AnyInvocable<void() &&> task,
+                                   TimeDelta delay) {
   auto* context = new TaskContext(this, std::move(task));
-  dispatch_after_f(
-      dispatch_time(DISPATCH_TIME_NOW, milliseconds * NSEC_PER_MSEC), queue_,
-      context, &RunTask);
+  dispatch_after_f(dispatch_time(DISPATCH_TIME_NOW, delay.us() * NSEC_PER_USEC),
+                   queue_, context, &RunTask);
+}
+
+void TaskQueueGcd::PostDelayedHighPrecisionTask(
+    absl::AnyInvocable<void() &&> task,
+    TimeDelta delay) {
+  PostDelayedTask(std::move(task), delay);
 }
 
 // static
@@ -117,12 +125,10 @@ void TaskQueueGcd::RunTask(void* task_context) {
     return;
 
   CurrentTaskQueueSetter set_current(tc->queue);
-  auto* task = tc->task.release();
-  if (task->Run()) {
-    // Delete the task before CurrentTaskQueueSetter clears state that this code
-    // is running on the task queue.
-    delete task;
-  }
+  std::move(tc->task)();
+  // Delete the task before CurrentTaskQueueSetter clears state that this code
+  // is running on the task queue.
+  tc = nullptr;
 }
 
 // static

@@ -34,6 +34,7 @@ import java.util.List;
 public class AdjustPanLayoutHelper {
 
     public static boolean USE_ANDROID11_INSET_ANIMATOR = false;
+    private boolean useInsetsAnimator;
 
     public final static Interpolator keyboardInterpolator = ChatListItemAnimator.DEFAULT_INTERPOLATOR;
     public final static long keyboardDuration = 250;
@@ -85,10 +86,6 @@ public class AdjustPanLayoutHelper {
     ViewTreeObserver.OnPreDrawListener onPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
         @Override
         public boolean onPreDraw() {
-            if (!SharedConfig.smoothKeyboard) {
-                onDetach();
-                return true;
-            }
             int contentHeight = parent.getHeight();
             if (contentHeight - startOffset() == previousHeight - previousStartOffset || contentHeight == previousHeight || animator != null) {
                 if (animator == null) {
@@ -178,7 +175,7 @@ public class AdjustPanLayoutHelper {
         setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight));
         resizableView.requestLayout();
 
-        onTransitionStart(isKeyboardVisible, contentHeight);
+        onTransitionStart(isKeyboardVisible, previousHeight, contentHeight);
 
         float dy = contentHeight - previousHeight;
         keyboardSize = Math.abs(dy);
@@ -269,20 +266,16 @@ public class AdjustPanLayoutHelper {
     }
 
     public AdjustPanLayoutHelper(View parent) {
-        this.parent = parent;
-        onAttach();
+        this(parent, USE_ANDROID11_INSET_ANIMATOR);
     }
 
     public AdjustPanLayoutHelper(View parent, boolean useInsetsAnimator) {
-        USE_ANDROID11_INSET_ANIMATOR = USE_ANDROID11_INSET_ANIMATOR && useInsetsAnimator;
+        this.useInsetsAnimator = useInsetsAnimator;
         this.parent = parent;
-        onAttach();
+        AndroidUtilities.runOnUIThread(this::onAttach);
     }
 
     public void onAttach() {
-        if (!SharedConfig.smoothKeyboard) {
-            return;
-        }
         onDetach();
         Context context = parent.getContext();
         Activity activity = getActivity(context);
@@ -295,7 +288,7 @@ public class AdjustPanLayoutHelper {
             parentForListener = resizableView;
             resizableView.getViewTreeObserver().addOnPreDrawListener(onPreDrawListener);
         }
-        if (USE_ANDROID11_INSET_ANIMATOR && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (useInsetsAnimator && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             setupNewCallback();
         }
     }
@@ -335,7 +328,7 @@ public class AdjustPanLayoutHelper {
             parentForListener.getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
             parentForListener = null;
         }
-        if (parent != null && USE_ANDROID11_INSET_ANIMATOR && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (parent != null && useInsetsAnimator && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             parent.setWindowInsetsAnimationCallback(null);
         }
     }
@@ -366,6 +359,10 @@ public class AdjustPanLayoutHelper {
 
     protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
 
+    }
+
+    protected void onTransitionStart(boolean keyboardVisible, int previousHeight, int contentHeight) {
+        onTransitionStart(keyboardVisible, contentHeight);
     }
 
     protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {

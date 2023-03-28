@@ -16,8 +16,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -58,6 +56,7 @@ public class RadialProgress2 {
     private int circleRadius;
     private boolean isPressed;
     private boolean isPressedMini;
+    public float overrideCircleAlpha = 1f;
 
     private int backgroundStroke;
 
@@ -67,7 +66,9 @@ public class RadialProgress2 {
     private Canvas miniDrawCanvas;
 
     private float overrideAlpha = 1.0f;
-    private final Theme.ResourcesProvider resourcesProvider;
+    private Theme.ResourcesProvider resourcesProvider;
+    private int maxIconSize;
+    private float overlayImageAlpha = 1f;
 
     public RadialProgress2(View parentView) {
         this(parentView, null);
@@ -96,6 +97,10 @@ public class RadialProgress2 {
         overlayPaint.setColor(0x64000000);
     }
 
+    public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
+    }
+
     public void setAsMini() {
         mediaActionDrawable.setMini(true);
     }
@@ -110,6 +115,10 @@ public class RadialProgress2 {
         circlePaint.setStrokeWidth(value);
         circlePaint.setStyle(Paint.Style.STROKE);
         invalidateParent();
+    }
+
+    public int getRadius() {
+        return circleRadius;
     }
 
     public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
@@ -171,6 +180,10 @@ public class RadialProgress2 {
     }
 
     public void setProgressRect(int left, int top, int right, int bottom) {
+        progressRect.set(left, top, right, bottom);
+    }
+
+    public void setProgressRect(float left, float top, float right, float bottom) {
         progressRect.set(left, top, right, bottom);
     }
 
@@ -365,7 +378,7 @@ public class RadialProgress2 {
         }
 
         int originalAlpha = circlePaint.getAlpha();
-        circlePaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha));
+        circlePaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha * overrideCircleAlpha));
         originalAlpha = circleMiniPaint.getAlpha();
         circleMiniPaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha));
 
@@ -425,7 +438,7 @@ public class RadialProgress2 {
             }
         }
         if (overlayImageView.hasBitmapImage()) {
-            overlayImageView.setAlpha(wholeAlpha * overrideAlpha);
+            overlayImageView.setAlpha(wholeAlpha * overrideAlpha * overlayImageAlpha);
 
             if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
                 overlayImageView.draw(miniDrawCanvas);
@@ -435,7 +448,11 @@ public class RadialProgress2 {
                 canvas.drawCircle(centerX, centerY, circleRadius, overlayPaint);
             }
         }
-        mediaActionDrawable.setBounds(centerX - circleRadius, centerY - circleRadius, centerX + circleRadius, centerY + circleRadius);
+        int iconSize = circleRadius;
+        if (maxIconSize > 0 && iconSize > maxIconSize) {
+            iconSize = maxIconSize;
+        }
+        mediaActionDrawable.setBounds(centerX - iconSize, centerY - iconSize, centerX + iconSize, centerY + iconSize);
         mediaActionDrawable.setHasOverlayImage(overlayImageView.hasBitmapImage());
         if ((drawMiniIcon || circleCrossfadeColorKey != null)) {
             if (miniDrawCanvas != null) {
@@ -514,5 +531,13 @@ public class RadialProgress2 {
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    public void setMaxIconSize(int maxSize) {
+        this.maxIconSize = maxSize;
+    }
+
+    public void setOverlayImageAlpha(float overlayImageAlpha) {
+        this.overlayImageAlpha = overlayImageAlpha;
     }
 }

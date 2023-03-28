@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.metadata.icy;
 import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.MediaMetadata;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.Arrays;
@@ -50,6 +51,13 @@ public final class IcyInfo implements Metadata.Entry {
     rawMetadata = Assertions.checkNotNull(in.createByteArray());
     title = in.readString();
     url = in.readString();
+  }
+
+  @Override
+  public void populateMediaMetadata(MediaMetadata.Builder builder) {
+    if (title != null) {
+      builder.setTitle(title);
+    }
   }
 
   @Override

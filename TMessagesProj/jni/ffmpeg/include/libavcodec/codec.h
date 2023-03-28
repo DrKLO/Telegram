@@ -43,9 +43,11 @@
  */
 #define AV_CODEC_CAP_DRAW_HORIZ_BAND     (1 <<  0)
 /**
- * Codec uses get_buffer() for allocating buffers and supports custom allocators.
- * If not set, it might not use get_buffer() at all or use operations that
- * assume the buffer was allocated by avcodec_default_get_buffer.
+ * Codec uses get_buffer() or get_encode_buffer() for allocating buffers and
+ * supports custom allocators.
+ * If not set, it might not use get_buffer() or get_encode_buffer() at all, or
+ * use operations that assume the buffer was allocated by
+ * avcodec_default_get_buffer2 or avcodec_default_get_encode_buffer.
  */
 #define AV_CODEC_CAP_DR1                 (1 <<  1)
 #define AV_CODEC_CAP_TRUNCATED           (1 <<  3)
@@ -113,9 +115,14 @@
  */
 #define AV_CODEC_CAP_PARAM_CHANGE        (1 << 14)
 /**
- * Codec supports avctx->thread_count == 0 (auto).
+ * Codec supports multithreading through a method other than slice- or
+ * frame-level multithreading. Typically this marks wrappers around
+ * multithreading-capable external libraries.
  */
-#define AV_CODEC_CAP_AUTO_THREADS        (1 << 15)
+#define AV_CODEC_CAP_OTHER_THREADS       (1 << 15)
+#if FF_API_AUTO_THREADS
+#define AV_CODEC_CAP_AUTO_THREADS        AV_CODEC_CAP_OTHER_THREADS
+#endif
 /**
  * Audio encoder supports receiving a different number of samples in each call.
  */
@@ -236,7 +243,9 @@ typedef struct AVCodec {
      *****************************************************************
      */
     int priv_data_size;
+#if FF_API_NEXT
     struct AVCodec *next;
+#endif
     /**
      * @name Frame-level threading support functions
      * @{
@@ -257,7 +266,7 @@ typedef struct AVCodec {
     const AVCodecDefault *defaults;
 
     /**
-     * Initialize codec static data, called from avcodec_register().
+     * Initialize codec static data, called from av_codec_iterate().
      *
      * This is not intended for time consuming operations as it is
      * run for every codec regardless of that codec being used.
@@ -271,7 +280,7 @@ typedef struct AVCodec {
      * Encode data to an AVPacket.
      *
      * @param      avctx          codec context
-     * @param      avpkt          output AVPacket (may contain a user-provided buffer)
+     * @param      avpkt          output AVPacket
      * @param[in]  frame          AVFrame containing the raw data to be encoded
      * @param[out] got_packet_ptr encoder sets to 0 or 1 to indicate that a
      *                            non-empty packet was returned in avpkt.
@@ -279,17 +288,26 @@ typedef struct AVCodec {
      */
     int (*encode2)(struct AVCodecContext *avctx, struct AVPacket *avpkt,
                    const struct AVFrame *frame, int *got_packet_ptr);
-    int (*decode)(struct AVCodecContext *, void *outdata, int *outdata_size, struct AVPacket *avpkt);
+    /**
+     * Decode picture or subtitle data.
+     *
+     * @param      avctx          codec context
+     * @param      outdata        codec type dependent output struct
+     * @param[out] got_frame_ptr  decoder sets to 0 or 1 to indicate that a
+     *                            non-empty frame or subtitle was returned in
+     *                            outdata.
+     * @param[in]  avpkt          AVPacket containing the data to be decoded
+     * @return amount of bytes read from the packet on success, negative error
+     *         code on failure
+     */
+    int (*decode)(struct AVCodecContext *avctx, void *outdata,
+                  int *got_frame_ptr, struct AVPacket *avpkt);
     int (*close)(struct AVCodecContext *);
     /**
-     * Encode API with decoupled packet/frame dataflow. The API is the
-     * same as the avcodec_ prefixed APIs (avcodec_send_frame() etc.), except
-     * that:
-     * - never called if the codec is closed or the wrong type,
-     * - if AV_CODEC_CAP_DELAY is not set, drain frames are never sent,
-     * - only one drain frame is ever passed down,
+     * Encode API with decoupled frame/packet dataflow. This function is called
+     * to get one output packet. It should call ff_encode_get_frame() to obtain
+     * input data.
      */
-    int (*send_frame)(struct AVCodecContext *avctx, const struct AVFrame *frame);
     int (*receive_packet)(struct AVCodecContext *avctx, struct AVPacket *avpkt);
 
     /**
@@ -322,7 +340,7 @@ typedef struct AVCodec {
      *
      * The user can only access this field via avcodec_get_hw_config().
      */
-    const struct AVCodecHWConfigInternal **hw_configs;
+    const struct AVCodecHWConfigInternal *const *hw_configs;
 
     /**
      * List of supported codec_tags, terminated by FF_CODEC_TAGS_END.

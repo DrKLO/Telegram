@@ -448,8 +448,8 @@ public class VoIPToggleButton extends FrameLayout {
     }
 
     public void shakeView() {
-        AndroidUtilities.shakeView(textView[0], 2, 0);
-        AndroidUtilities.shakeView(textView[1], 2, 0);
+        AndroidUtilities.shakeView(textView[0]);
+        AndroidUtilities.shakeView(textView[1]);
     }
 
     public void showText(boolean show, boolean animated) {

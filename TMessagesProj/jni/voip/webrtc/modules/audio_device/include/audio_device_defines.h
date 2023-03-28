@@ -33,22 +33,43 @@ static const int kAdmMaxPlayoutBufferSizeMs = 250;
 
 class AudioTransport {
  public:
+  // TODO(bugs.webrtc.org/13620) Deprecate this function
   virtual int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                          const size_t nSamples,
-                                          const size_t nBytesPerSample,
-                                          const size_t nChannels,
-                                          const uint32_t samplesPerSec,
-                                          const uint32_t totalDelayMS,
-                                          const int32_t clockDrift,
-                                          const uint32_t currentMicLevel,
-                                          const bool keyPressed,
+                                          size_t nSamples,
+                                          size_t nBytesPerSample,
+                                          size_t nChannels,
+                                          uint32_t samplesPerSec,
+                                          uint32_t totalDelayMS,
+                                          int32_t clockDrift,
+                                          uint32_t currentMicLevel,
+                                          bool keyPressed,
                                           uint32_t& newMicLevel) = 0;  // NOLINT
 
+  virtual int32_t RecordedDataIsAvailable(
+      const void* audioSamples,
+      size_t nSamples,
+      size_t nBytesPerSample,
+      size_t nChannels,
+      uint32_t samplesPerSec,
+      uint32_t totalDelayMS,
+      int32_t clockDrift,
+      uint32_t currentMicLevel,
+      bool keyPressed,
+      uint32_t& newMicLevel,
+      int64_t estimatedCaptureTimeNS) {  // NOLINT
+    // TODO(webrtc:13620) Make the default behaver of the new API to behave as
+    // the old API. This can be pure virtual if all uses of the old API is
+    // removed.
+    return RecordedDataIsAvailable(
+        audioSamples, nSamples, nBytesPerSample, nChannels, samplesPerSec,
+        totalDelayMS, clockDrift, currentMicLevel, keyPressed, newMicLevel);
+  }
+
   // Implementation has to setup safe values for all specified out parameters.
-  virtual int32_t NeedMorePlayData(const size_t nSamples,
-                                   const size_t nBytesPerSample,
-                                   const size_t nChannels,
-                                   const uint32_t samplesPerSec,
+  virtual int32_t NeedMorePlayData(size_t nSamples,
+                                   size_t nBytesPerSample,
+                                   size_t nChannels,
+                                   uint32_t samplesPerSec,
                                    void* audioSamples,
                                    size_t& nSamplesOut,  // NOLINT
                                    int64_t* elapsed_time_ms,

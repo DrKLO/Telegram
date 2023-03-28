@@ -8,11 +8,7 @@
 
 package org.telegram.ui;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.View;
@@ -25,19 +21,14 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.camera.CameraController;
-import org.telegram.ui.ActionBar.ActionBarLayout;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PasscodeView;
@@ -45,13 +36,13 @@ import org.telegram.ui.Components.ThemeEditorView;
 
 import java.util.ArrayList;
 
-public class BubbleActivity extends BasePermissionsActivity implements ActionBarLayout.ActionBarLayoutDelegate {
+public class BubbleActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate {
 
     private boolean finished;
     private ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
 
     private PasscodeView passcodeView;
-    private ActionBarLayout actionBarLayout;
+    private INavigationLayout actionBarLayout;
     protected DrawerLayoutContainer drawerLayoutContainer;
 
     private Intent passcodeSaveIntent;
@@ -89,7 +80,7 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
         Theme.createDialogsResources(this);
         Theme.createChatResources(this, false);
 
-        actionBarLayout = new ActionBarLayout(this);
+        actionBarLayout = INavigationLayout.newLayout(this);
         actionBarLayout.setInBubbleMode(true);
         actionBarLayout.setRemoveActionBarExtraHeight(true);
 
@@ -99,11 +90,11 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
 
         RelativeLayout launchLayout = new RelativeLayout(this);
         drawerLayoutContainer.addView(launchLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        launchLayout.addView(actionBarLayout, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        launchLayout.addView(actionBarLayout.getView(), LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         drawerLayoutContainer.setParentActionBarLayout(actionBarLayout);
         actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
-        actionBarLayout.init(mainFragmentsStack);
+        actionBarLayout.setFragmentStack(mainFragmentsStack);
         actionBarLayout.setDelegate(this);
 
         passcodeView = new PasscodeView(this);
@@ -131,7 +122,7 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
         passcodeView.onShow(true, false);
         SharedConfig.isWaitingForPasscodeEnter = true;
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
-        passcodeView.setDelegate(() -> {
+        passcodeView.setDelegate(view -> {
             SharedConfig.isWaitingForPasscodeEnter = false;
             if (passcodeSaveIntent != null) {
                 handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true, passcodeSaveIntentAccount, passcodeSaveIntentState);
@@ -139,6 +130,8 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
             }
             drawerLayoutContainer.setAllowOpenDrawer(true, false);
             actionBarLayout.showLastFragment();
+
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.passcodeDismissed, view);
         });
     }
 
@@ -186,11 +179,6 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
         actionBarLayout.showLastFragment();
 
         return true;
-    }
-
-    @Override
-    public boolean onPreIme() {
-        return false;
     }
 
     @Override
@@ -246,8 +234,8 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
         if (editorView != null) {
             editorView.onActivityResult(requestCode, resultCode, data);
         }
-        if (actionBarLayout.fragmentsStack.size() != 0) {
-            BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+        if (actionBarLayout.getFragmentStack().size() != 0) {
+            BaseFragment fragment = actionBarLayout.getFragmentStack().get(actionBarLayout.getFragmentStack().size() - 1);
             fragment.onActivityResultFragment(requestCode, resultCode, data);
         }
     }
@@ -257,8 +245,8 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (!checkPermissionsResult(requestCode, permissions, grantResults)) return;
 
-        if (actionBarLayout.fragmentsStack.size() != 0) {
-            BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+        if (actionBarLayout.getFragmentStack().size() != 0) {
+            BaseFragment fragment = actionBarLayout.getFragmentStack().get(actionBarLayout.getFragmentStack().size() - 1);
             fragment.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
         }
 
@@ -361,27 +349,12 @@ public class BubbleActivity extends BasePermissionsActivity implements ActionBar
     }
 
     @Override
-    public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
-        return true;
-    }
-
-    @Override
-    public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
-        return true;
-    }
-
-    @Override
-    public boolean needCloseLastFragment(ActionBarLayout layout) {
-        if (layout.fragmentsStack.size() <= 1) {
+    public boolean needCloseLastFragment(INavigationLayout layout) {
+        if (layout.getFragmentStack().size() <= 1) {
             onFinish();
             finish();
             return false;
         }
         return true;
-    }
-
-    @Override
-    public void onRebuildAllFragments(ActionBarLayout layout, boolean last) {
-
     }
 }

@@ -128,7 +128,6 @@
 #include <stack>
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 
 #define BWE_TEST_LOGGING_GLOBAL_CONTEXT(name)                             \
@@ -341,6 +340,10 @@ class Logging {
 
   Logging();
   ~Logging();
+
+  Logging(const Logging&) = delete;
+  Logging& operator=(const Logging&) = delete;
+
   void PushState(const std::string& append_to_tag,
                  int64_t timestamp_ms,
                  bool enabled);
@@ -348,8 +351,6 @@ class Logging {
 
   Mutex mutex_;
   ThreadMap thread_map_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Logging);
 };
 }  // namespace bwe
 }  // namespace testing

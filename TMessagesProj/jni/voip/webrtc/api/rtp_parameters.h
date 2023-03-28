@@ -17,11 +17,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/media_types.h"
 #include "api/priority.h"
 #include "api/rtp_transceiver_direction.h"
+#include "api/video/resolution.h"
+#include "api/video_codecs/scalability_mode.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -186,6 +189,9 @@ struct RTC_EXPORT RtpCodecCapability {
   // TODO(deadbeef): Not implemented.
   bool svc_multi_stream_support = false;
 
+  // https://w3c.github.io/webrtc-svc/#dom-rtcrtpcodeccapability-scalabilitymodes
+  absl::InlinedVector<ScalabilityMode, kScalabilityModeCount> scalability_modes;
+
   bool operator==(const RtpCodecCapability& o) const {
     return name == o.name && kind == o.kind && clock_rate == o.clock_rate &&
            preferred_payload_type == o.preferred_payload_type &&
@@ -194,7 +200,8 @@ struct RTC_EXPORT RtpCodecCapability {
            parameters == o.parameters && options == o.options &&
            max_temporal_layer_extensions == o.max_temporal_layer_extensions &&
            max_spatial_layer_extensions == o.max_spatial_layer_extensions &&
-           svc_multi_stream_support == o.svc_multi_stream_support;
+           svc_multi_stream_support == o.svc_multi_stream_support &&
+           scalability_modes == o.scalability_modes;
   }
   bool operator!=(const RtpCodecCapability& o) const { return !(*this == o); }
 };
@@ -286,6 +293,9 @@ struct RTC_EXPORT RtpExtension {
       bool encrypt);
 
   // Returns a list of extensions where any extension URI is unique.
+  // The returned list will be sorted by uri first, then encrypt and id last.
+  // Having the list sorted allows the caller fo compare filtered lists for
+  // equality to detect when changes have been made.
   static const std::vector<RtpExtension> DeduplicateHeaderExtensions(
       const std::vector<RtpExtension>& extensions,
       Filter filter);
@@ -493,6 +503,24 @@ struct RTC_EXPORT RtpEncodingParameters {
   // https://w3c.github.io/webrtc-svc/#rtcrtpencodingparameters
   absl::optional<std::string> scalability_mode;
 
+  // Requested encode resolution.
+  //
+  // This field provides an alternative to `scale_resolution_down_by`
+  // that is not dependent on the video source.
+  //
+  // When setting requested_resolution it is not necessary to adapt the
+  // video source using OnOutputFormatRequest, since the VideoStreamEncoder
+  // will apply downscaling if necessary. requested_resolution will also be
+  // propagated to the video source, this allows downscaling earlier in the
+  // pipeline which can be beneficial if the source is consumed by multiple
+  // encoders, but is not strictly necessary.
+  //
+  // The `requested_resolution` is subject to resource adaptation.
+  //
+  // It is an error to set both `requested_resolution` and
+  // `scale_resolution_down_by`.
+  absl::optional<Resolution> requested_resolution;
+
   // For an RtpSender, set to true to cause this encoding to be encoded and
   // sent, and false for it not to be encoded and sent. This allows control
   // across multiple encodings of a sender for turning simulcast layers on and
@@ -518,7 +546,8 @@ struct RTC_EXPORT RtpEncodingParameters {
            num_temporal_layers == o.num_temporal_layers &&
            scale_resolution_down_by == o.scale_resolution_down_by &&
            active == o.active && rid == o.rid &&
-           adaptive_ptime == o.adaptive_ptime;
+           adaptive_ptime == o.adaptive_ptime &&
+           requested_resolution == o.requested_resolution;
   }
   bool operator!=(const RtpEncodingParameters& o) const {
     return !(*this == o);

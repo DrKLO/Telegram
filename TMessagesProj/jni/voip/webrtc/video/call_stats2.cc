@@ -15,10 +15,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
-#include "modules/utility/include/process_thread.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/location.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "system_wrappers/include/metrics.h"
 
 namespace webrtc {
@@ -148,7 +145,7 @@ void CallStats::OnRttUpdate(int64_t rtt) {
   if (task_queue_->IsCurrent()) {
     update();
   } else {
-    task_queue_->PostTask(ToQueuedTask(task_safety_, std::move(update)));
+    task_queue_->PostTask(SafeTask(task_safety_.flag(), std::move(update)));
   }
 }
 

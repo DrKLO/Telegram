@@ -164,8 +164,8 @@ VideoFrame::Builder::~Builder() = default;
 VideoFrame VideoFrame::Builder::build() {
   RTC_CHECK(video_frame_buffer_ != nullptr);
   return VideoFrame(id_, video_frame_buffer_, timestamp_us_, timestamp_rtp_,
-                    ntp_time_ms_, rotation_, color_space_, update_rect_,
-                    packet_infos_);
+                    ntp_time_ms_, rotation_, color_space_, render_parameters_,
+                    update_rect_, packet_infos_);
 }
 
 VideoFrame::Builder& VideoFrame::Builder::set_video_frame_buffer(
@@ -260,6 +260,7 @@ VideoFrame::VideoFrame(uint16_t id,
                        int64_t ntp_time_ms,
                        VideoRotation rotation,
                        const absl::optional<ColorSpace>& color_space,
+                       const RenderParameters& render_parameters,
                        const absl::optional<UpdateRect>& update_rect,
                        RtpPacketInfos packet_infos)
     : id_(id),
@@ -269,6 +270,7 @@ VideoFrame::VideoFrame(uint16_t id,
       timestamp_us_(timestamp_us),
       rotation_(rotation),
       color_space_(color_space),
+      render_parameters_(render_parameters),
       update_rect_(update_rect),
       packet_infos_(std::move(packet_infos)) {
   if (update_rect_) {

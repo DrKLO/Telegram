@@ -21,9 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.MentionsAdapter;
@@ -85,7 +83,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                 } else {
                     i--;
                 }
-                if (adapter.getBotContextSwitch() != null) {
+                if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                     i++;
                 }
                 size.width = 0;
@@ -136,7 +134,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
 
             @Override
             protected int getFlowItemCount() {
-                if (adapter.getBotContextSwitch() != null) {
+                if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                     return getItemCount() - 2;
                 }
                 return super.getFlowItemCount() - 1;
@@ -156,7 +154,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                 } else if (object instanceof TLRPC.Document) {
                     return 20;
                 } else {
-                    if (adapter.getBotContextSwitch() != null) {
+                    if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                         position--;
                     }
                     return gridLayoutManager.getSpanSizeForItem(position);
@@ -185,10 +183,14 @@ public class MentionsContainerView extends BlurredFrameLayout {
 
             @Override
             public void needChangePanelVisibility(boolean show) {
-                if (getNeededLayoutManager() != getCurrentLayoutManager() && canOpen() && adapter.getItemCountInternal() > 0) {
-                    switchLayoutManagerOnEnd = true;
-                    updateVisibility(false);
-                    return;
+                if (getNeededLayoutManager() != getCurrentLayoutManager() && canOpen()) {
+                    if (adapter.getLastItemCount() > 0) {
+                        switchLayoutManagerOnEnd = true;
+                        updateVisibility(false);
+                        return;
+                    } else {
+                        listView.setLayoutManager(getNeededLayoutManager());
+                    }
                 }
                 if (show && !canOpen()) {
                     show = false;
@@ -239,6 +241,9 @@ public class MentionsContainerView extends BlurredFrameLayout {
 
     public void onPanTransitionEnd() {}
 
+    protected void onScrolled(boolean atTop, boolean atBottom) {
+
+    }
 
     public MentionsListView getListView() {
         return listView;
@@ -287,7 +292,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
     @Override
     public void dispatchDraw(Canvas canvas) {
         boolean reversed = isReversed();
-        boolean topPadding = (adapter.isStickers() || adapter.isBotContext()) && adapter.isMediaLayout() && adapter.getBotContextSwitch() == null;
+        boolean topPadding = (adapter.isStickers() || adapter.isBotContext()) && adapter.isMediaLayout() && adapter.getBotContextSwitch() == null && adapter.getBotWebViewSwitch() == null;
         containerPadding = AndroidUtilities.dp(2 + (topPadding ? 2 : 0));
 
         float r = AndroidUtilities.dp(4);
@@ -413,12 +418,15 @@ public class MentionsContainerView extends BlurredFrameLayout {
     private boolean listViewHiding = false;
     private float hideT = 0;
     private boolean switchLayoutManagerOnEnd = false;
+    private int scrollRangeUpdateTries;
 
     private void updateListViewTranslation(boolean forceZeroHeight, boolean animated) {
         if (listView == null || paddedAdapter == null) {
+            scrollRangeUpdateTries = 0;
             return;
         }
         if (listViewHiding && listViewTranslationAnimator != null && listViewTranslationAnimator.isRunning() && forceZeroHeight) {
+            scrollRangeUpdateTries = 0;
             return;
         }
         boolean reversed = isReversed();
@@ -426,13 +434,20 @@ public class MentionsContainerView extends BlurredFrameLayout {
         if (forceZeroHeight) {
             itemHeight = - containerPadding - AndroidUtilities.dp(6);
         } else {
-            itemHeight = listView.computeVerticalScrollRange() - paddedAdapter.getPadding() + containerPadding;
+            int scrollRange = listView.computeVerticalScrollRange();
+            itemHeight = scrollRange - paddedAdapter.getPadding() + containerPadding;
+            if (scrollRange <= 0 && adapter.getItemCountInternal() > 0 && scrollRangeUpdateTries < 3) {
+                scrollRangeUpdateTries++;
+                updateVisibility(true);
+                return;
+            }
         }
+        scrollRangeUpdateTries = 0;
         float newTranslationY = (reversed ? -Math.max(0, listViewPadding - itemHeight) : -listViewPadding + Math.max(0, listViewPadding - itemHeight));
         if (forceZeroHeight && !reversed) {
-            newTranslationY += listView.computeVerticalScrollOffset(); // getMeasuredHeight() - containerTop;
+            newTranslationY += listView.computeVerticalScrollOffset();
         }
-        setVisibility(View.VISIBLE);
+        Integer updateVisibility = null;
         if (listViewTranslationAnimator != null) {
             listViewTranslationAnimator.cancel();
         }
@@ -444,15 +459,13 @@ public class MentionsContainerView extends BlurredFrameLayout {
             final float toHideT = forceZeroHeight ? 1 : 0;
             if (fromTranslation == toTranslation) {
                 listViewTranslationAnimator = null;
-                setVisibility(forceZeroHeight ? View.GONE : View.VISIBLE);
+                updateVisibility = forceZeroHeight ? View.GONE : View.VISIBLE;
                 if (switchLayoutManagerOnEnd && forceZeroHeight) {
                     switchLayoutManagerOnEnd = false;
                     listView.setLayoutManager(getNeededLayoutManager());
                     updateVisibility(shown = true);
                 }
             } else {
-                int account = UserConfig.selectedAccount;
-//                animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
                 listViewTranslationAnimator =
                     new SpringAnimation(new FloatValueHolder(fromTranslation))
                         .setSpring(
@@ -460,9 +473,6 @@ public class MentionsContainerView extends BlurredFrameLayout {
                                 .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)
                                 .setStiffness(550.0f)
                         );
-//                listViewTranslationAnimator = new SpringAnimation(listView, DynamicAnimation.TRANSLATION_Y, newTranslationY);
-//                listViewTranslationAnimator.getSpring().setStiffness(1500);
-//                listViewTranslationAnimator.getSpring().setDampingRatio(1);
                 listViewTranslationAnimator.addUpdateListener((anm, val, vel) -> {
                     listView.setTranslationY(val);
                     hideT = AndroidUtilities.lerp(fromHideT, toHideT, (val - fromTranslation) / (toTranslation - fromTranslation));
@@ -489,9 +499,12 @@ public class MentionsContainerView extends BlurredFrameLayout {
             hideT = forceZeroHeight ? 1 : 0;
             listView.setTranslationY(newTranslationY);
             if (forceZeroHeight) {
-                setVisibility(View.GONE);
+                updateVisibility = View.GONE;
 //                adapter.clear(true);
             }
+        }
+        if (updateVisibility != null && getVisibility() != updateVisibility) {
+            setVisibility(updateVisibility);
         }
     }
 
@@ -520,6 +533,8 @@ public class MentionsContainerView extends BlurredFrameLayout {
                     if (visibleItemCount > 0 && lastVisibleItem > adapter.getLastItemCount() - 5) {
                         adapter.searchForContextBotForNextOffset();
                     }
+
+                    MentionsContainerView.this.onScrolled(!canScrollVertically(-1), !canScrollVertically(1));
                 }
             });
             addItemDecoration(new RecyclerView.ItemDecoration() {
@@ -537,7 +552,7 @@ public class MentionsContainerView extends BlurredFrameLayout {
                         position--;
                         if (adapter.isStickers()) {
                             return;
-                        } else if (adapter.getBotContextSwitch() != null) {
+                        } else if (adapter.getBotContextSwitch() != null || adapter.getBotWebViewSwitch() != null) {
                             if (position == 0) {
                                 return;
                             }

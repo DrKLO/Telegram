@@ -151,7 +151,8 @@ FastUniformBits<UIntType>::Generate(URBG& g,  // NOLINT(runtime/references)
 
   result_type r = static_cast<result_type>(g() - kMin);
   for (size_t n = 1; n < kIters; ++n) {
-    r = (r << kShift) + static_cast<result_type>(g() - kMin);
+    r = static_cast<result_type>(r << kShift) +
+        static_cast<result_type>(g() - kMin);
   }
   return r;
 }

@@ -16,21 +16,19 @@
 package com.google.android.exoplayer2.metadata.icy;
 
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.metadata.Metadata;
-import com.google.android.exoplayer2.metadata.MetadataDecoder;
 import com.google.android.exoplayer2.metadata.MetadataInputBuffer;
-import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.metadata.SimpleMetadataDecoder;
+import com.google.common.base.Ascii;
+import com.google.common.base.Charsets;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Decodes ICY stream information. */
-public final class IcyDecoder implements MetadataDecoder {
+public final class IcyDecoder extends SimpleMetadataDecoder {
 
   private static final Pattern METADATA_ELEMENT = Pattern.compile("(.+?)='(.*?)';", Pattern.DOTALL);
   private static final String STREAM_KEY_NAME = "streamtitle";
@@ -40,14 +38,12 @@ public final class IcyDecoder implements MetadataDecoder {
   private final CharsetDecoder iso88591Decoder;
 
   public IcyDecoder() {
-    utf8Decoder = Charset.forName(C.UTF8_NAME).newDecoder();
-    iso88591Decoder = Charset.forName(C.ISO88591_NAME).newDecoder();
+    utf8Decoder = Charsets.UTF_8.newDecoder();
+    iso88591Decoder = Charsets.ISO_8859_1.newDecoder();
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray")
-  public Metadata decode(MetadataInputBuffer inputBuffer) {
-    ByteBuffer buffer = Assertions.checkNotNull(inputBuffer.data);
+  protected Metadata decode(MetadataInputBuffer inputBuffer, ByteBuffer buffer) {
     @Nullable String icyString = decodeToString(buffer);
     byte[] icyBytes = new byte[buffer.limit()];
     buffer.get(icyBytes);
@@ -61,15 +57,19 @@ public final class IcyDecoder implements MetadataDecoder {
     int index = 0;
     Matcher matcher = METADATA_ELEMENT.matcher(icyString);
     while (matcher.find(index)) {
-      @Nullable String key = Util.toLowerInvariant(matcher.group(1));
+      @Nullable String key = matcher.group(1);
       @Nullable String value = matcher.group(2);
-      switch (key) {
-        case STREAM_KEY_NAME:
-          name = value;
-          break;
-        case STREAM_KEY_URL:
-          url = value;
-          break;
+      if (key != null) {
+        switch (Ascii.toLowerCase(key)) {
+          case STREAM_KEY_NAME:
+            name = value;
+            break;
+          case STREAM_KEY_URL:
+            url = value;
+            break;
+          default:
+            break;
+        }
       }
       index = matcher.end();
     }

@@ -33,6 +33,8 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
@@ -49,9 +51,11 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     private int buttonY;
 
     private int titleY = AndroidUtilities.dp(9);
+    private AnimatedEmojiSpan.EmojiGroupedSpans titleLayoutEmojis;
     private StaticLayout titleLayout;
 
     private int descriptionY = AndroidUtilities.dp(29);
+    private AnimatedEmojiSpan.EmojiGroupedSpans descriptionLayoutEmojis;
     private StaticLayout descriptionLayout;
 
     private MessageObject currentMessageObject;
@@ -100,6 +104,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             int width = (int) Math.ceil(Theme.chat_contextResult_titleTextPaint.measureText(title));
             CharSequence titleFinal = TextUtils.ellipsize(title.replace('\n', ' '), Theme.chat_contextResult_titleTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.END);
             titleLayout = new StaticLayout(titleFinal, Theme.chat_contextResult_titleTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -111,6 +116,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             }
             CharSequence authorFinal = TextUtils.ellipsize(author, Theme.chat_contextResult_descriptionTextPaint, maxWidth, TextUtils.TruncateAt.END);
             descriptionLayout = new StaticLayout(authorFinal, Theme.chat_contextResult_descriptionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            descriptionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, descriptionLayoutEmojis, descriptionLayout);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -145,12 +151,18 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         super.onDetachedFromWindow();
         radialProgress.onDetachedFromWindow();
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+
+        AnimatedEmojiSpan.release(this, titleLayoutEmojis);
+        AnimatedEmojiSpan.release(this, descriptionLayoutEmojis);
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         radialProgress.onAttachedToWindow();
+
+        titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
+        descriptionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, descriptionLayoutEmojis, descriptionLayout);
     }
 
     public MessageObject getMessageObject() {
@@ -268,6 +280,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), titleY);
             titleLayout.draw(canvas);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, titleLayout, titleLayoutEmojis, 0, null, 0, 0, 0, 1f);
             canvas.restore();
         }
 
@@ -276,6 +289,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
             descriptionLayout.draw(canvas);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, descriptionLayout, descriptionLayoutEmojis, 0, null, 0, 0, 0, 1f);
             canvas.restore();
         }
 

@@ -39,8 +39,12 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.util.SparseArray;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -107,10 +111,10 @@ public class SvgHelper {
         protected int height;
         private static int[] parentPosition = new int[2];
 
-        private Bitmap[] backgroundBitmap = new Bitmap[2];
-        private Canvas[] backgroundCanvas = new Canvas[2];
-        private LinearGradient[] placeholderGradient = new LinearGradient[2];
-        private Matrix[] placeholderMatrix = new Matrix[2];
+        private Bitmap[] backgroundBitmap = new Bitmap[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private Canvas[] backgroundCanvas = new Canvas[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private LinearGradient[] placeholderGradient = new LinearGradient[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private Matrix[] placeholderMatrix = new Matrix[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         private static float totalTranslation;
         private static float gradientWidth;
         private static long lastUpdateTime;
@@ -119,11 +123,14 @@ public class SvgHelper {
         private ImageReceiver parentImageReceiver;
         private int[] currentColor = new int[2];
         private String currentColorKey;
+        private Integer overrideColor;
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
+        SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
 
         private boolean aspectFill = true;
+        private boolean aspectCenter = false;
 
         @Override
         public int getIntrinsicHeight() {
@@ -139,6 +146,10 @@ public class SvgHelper {
             aspectFill = value;
         }
 
+        public void setAspectCenter(boolean value) {
+            aspectCenter = value;
+        }
+
         public void overrideWidthAndHeight(int w, int h) {
             width = w;
             height = h;
@@ -146,16 +157,16 @@ public class SvgHelper {
 
         @Override
         public void draw(Canvas canvas) {
-            drawInternal(canvas, false, System.currentTimeMillis(), getBounds().left, getBounds().top, getBounds().width(), getBounds().height());
+            drawInternal(canvas, false, 0, System.currentTimeMillis(), getBounds().left, getBounds().top, getBounds().width(), getBounds().height());
         }
 
-        public void drawInternal(Canvas canvas, boolean drawInBackground, long time, float x, float y, float w, float h) {
+        public void drawInternal(Canvas canvas, boolean drawInBackground, int threadIndex, long time, float x, float y, float w, float h) {
             if (currentColorKey != null) {
                 setupGradient(currentColorKey, currentResourcesProvider, colorAlpha, drawInBackground);
             }
 
             float scale = getScale((int) w, (int) h);
-            if (placeholderGradient != null) {
+            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
                 if (drawInBackground) {
                     long dt = time - lastUpdateTime;
                     if (dt > 64) {
@@ -197,7 +208,7 @@ public class SvgHelper {
                     offset = 0;
                 }
 
-                int index = drawInBackground ? 1 : 0;
+                int index = drawInBackground ? 1 + threadIndex : 0;
                 if (placeholderMatrix[index] != null) {
                     placeholderMatrix[index].reset();
                     if (drawInBackground) {
@@ -217,7 +228,7 @@ public class SvgHelper {
 
             canvas.save();
             canvas.translate(x, y);
-            if (!aspectFill) {
+            if (!aspectFill || aspectCenter) {
                 canvas.translate((w - width * scale) / 2, (h - height * scale) / 2);
             }
             canvas.scale(scale, scale);
@@ -225,11 +236,15 @@ public class SvgHelper {
                 Object object = commands.get(a);
                 if (object instanceof Matrix) {
                     canvas.save();
-                //    canvas.concat((Matrix) object);
+                    canvas.concat((Matrix) object);
                 } else if (object == null) {
                     canvas.restore();
                 } else {
                     Paint paint;
+                    Paint overridePaint = overridePaintByPosition.get(a);
+                    if (overridePaint == null) {
+                        overridePaint = this.overridePaint;
+                    }
                     if (drawInBackground) {
                         paint = backgroundPaint;
                     } else if (overridePaint != null) {
@@ -303,7 +318,7 @@ public class SvgHelper {
         }
 
         public void setupGradient(String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
-            int color = Theme.getColor(colorKey, resourcesProvider);
+            int color = overrideColor == null ? Theme.getColor(colorKey, resourcesProvider) : overrideColor;
             int index = drawInBackground ? 1 : 0;
             currentResourcesProvider = resourcesProvider;
             if (currentColor[index] != color) {
@@ -311,6 +326,22 @@ public class SvgHelper {
                 currentColorKey = colorKey;
                 currentColor[index] = color;
                 gradientWidth = AndroidUtilities.displaySize.x * 2;
+                if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+                    int color2 = ColorUtils.setAlphaComponent(currentColor[index], 70);
+                    if (drawInBackground) {
+                        if (backgroundPaint == null) {
+                            backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        }
+                        backgroundPaint.setShader(null);
+                        backgroundPaint.setColor(color2);
+                    } else {
+                        for (Paint paint : paints.values()) {
+                            paint.setShader(null);
+                            paint.setColor(color2);
+                        }
+                    }
+                    return;
+                }
                 float w = AndroidUtilities.dp(180) / gradientWidth;
                 color = Color.argb((int) (Color.alpha(color) / 2 * colorAlpha), Color.red(color), Color.green(color), Color.blue(color));
                 float centerX = (1.0f - w) / 2;
@@ -349,8 +380,29 @@ public class SvgHelper {
             }
         }
 
+        public void setColorKey(String colorKey) {
+            currentColorKey = colorKey;
+        }
+
+        public void setColorKey(String colorKey, Theme.ResourcesProvider resourcesProvider) {
+            currentColorKey = colorKey;
+            currentResourcesProvider = resourcesProvider;
+        }
+
+        public void setColor(int color) {
+            overrideColor = color;
+        }
+
         public void setPaint(Paint paint) {
             overridePaint = paint;
+        }
+
+        public void setPaint(Paint paint, int position) {
+            overridePaintByPosition.put(position, paint);
+        }
+
+        public void copyCommandFromPosition(int position) {
+            commands.add(commands.get(position));
         }
     }
 
@@ -418,7 +470,7 @@ public class SvgHelper {
         }
     }
 
-    public static SvgDrawable getDrawable(int resId, int color) {
+    public static SvgDrawable getDrawable(int resId, Integer color) {
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
@@ -436,6 +488,20 @@ public class SvgHelper {
     public static SvgDrawable getDrawableByPath(String pathString, int w, int h) {
         try {
             Path path = doPath(pathString);
+            SvgDrawable drawable = new SvgDrawable();
+            drawable.commands.add(path);
+            drawable.paints.put(path, new Paint(Paint.ANTI_ALIAS_FLAG));
+            drawable.width = w;
+            drawable.height = h;
+            return drawable;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    public static SvgDrawable getDrawableByPath(Path path, int w, int h) {
+        try {
             SvgDrawable drawable = new SvgDrawable();
             drawable.commands.add(path);
             drawable.paints.put(path, new Paint(Paint.ANTI_ALIAS_FLAG));
@@ -614,7 +680,7 @@ public class SvgHelper {
         return null;
     }
 
-    private static Path doPath(String s) {
+    public static Path doPath(String s) {
         int n = s.length();
         ParserHelper ph = new ParserHelper(s, 0);
         ph.skipWhitespace();

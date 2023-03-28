@@ -15,33 +15,37 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
+import static com.google.android.exoplayer2.util.Assertions.checkNotNull;
+import static com.google.android.exoplayer2.util.Assertions.checkState;
+
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.FlacFrameReader;
 import com.google.android.exoplayer2.extractor.FlacMetadataReader;
 import com.google.android.exoplayer2.extractor.FlacSeekTableSeekMap;
+import com.google.android.exoplayer2.extractor.FlacStreamMetadata;
+import com.google.android.exoplayer2.extractor.FlacStreamMetadata.SeekTable;
 import com.google.android.exoplayer2.extractor.SeekMap;
-import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.FlacConstants;
-import com.google.android.exoplayer2.util.FlacStreamMetadata;
+import com.google.android.exoplayer2.extractor.flac.FlacConstants;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
-import java.io.IOException;
 import java.util.Arrays;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 
-/**
- * {@link StreamReader} to extract Flac data out of Ogg byte stream.
- */
+/** {@link StreamReader} to extract Flac data out of Ogg byte stream. */
 /* package */ final class FlacReader extends StreamReader {
 
   private static final byte AUDIO_PACKET_TYPE = (byte) 0xFF;
 
   private static final int FRAME_HEADER_SAMPLE_NUMBER_OFFSET = 4;
 
-  private FlacStreamMetadata streamMetadata;
-  private FlacOggSeeker flacOggSeeker;
+  @Nullable private FlacStreamMetadata streamMetadata;
+  @Nullable private FlacOggSeeker flacOggSeeker;
 
   public static boolean verifyBitstreamType(ParsableByteArray data) {
-    return data.bytesLeft() >= 5 && data.readUnsignedByte() == 0x7F && // packet type
+    return data.bytesLeft() >= 5
+        && data.readUnsignedByte() == 0x7F
+        && // packet type
         data.readUnsignedInt() == 0x464C4143; // ASCII signature "FLAC"
   }
 
@@ -60,36 +64,47 @@ import java.util.Arrays;
 
   @Override
   protected long preparePayload(ParsableByteArray packet) {
-    if (!isAudioPacket(packet.data)) {
+    if (!isAudioPacket(packet.getData())) {
       return -1;
     }
     return getFlacFrameBlockSize(packet);
   }
 
   @Override
+  @EnsuresNonNullIf(expression = "#3.format", result = false)
   protected boolean readHeaders(ParsableByteArray packet, long position, SetupData setupData) {
-    byte[] data = packet.data;
+    byte[] data = packet.getData();
+    @Nullable FlacStreamMetadata streamMetadata = this.streamMetadata;
     if (streamMetadata == null) {
       streamMetadata = new FlacStreamMetadata(data, 17);
+      this.streamMetadata = streamMetadata;
       byte[] metadata = Arrays.copyOfRange(data, 9, packet.limit());
       setupData.format = streamMetadata.getFormat(metadata, /* id3Metadata= */ null);
-    } else if ((data[0] & 0x7F) == FlacConstants.METADATA_TYPE_SEEK_TABLE) {
-      flacOggSeeker = new FlacOggSeeker();
-      FlacStreamMetadata.SeekTable seekTable =
-          FlacMetadataReader.readSeekTableMetadataBlock(packet);
+      return true;
+    }
+
+    if ((data[0] & 0x7F) == FlacConstants.METADATA_TYPE_SEEK_TABLE) {
+      SeekTable seekTable = FlacMetadataReader.readSeekTableMetadataBlock(packet);
       streamMetadata = streamMetadata.copyWithSeekTable(seekTable);
-    } else if (isAudioPacket(data)) {
+      this.streamMetadata = streamMetadata;
+      flacOggSeeker = new FlacOggSeeker(streamMetadata, seekTable);
+      return true;
+    }
+
+    if (isAudioPacket(data)) {
       if (flacOggSeeker != null) {
         flacOggSeeker.setFirstFrameOffset(position);
         setupData.oggSeeker = flacOggSeeker;
       }
+      checkNotNull(setupData.format);
       return false;
     }
+
     return true;
   }
 
   private int getFlacFrameBlockSize(ParsableByteArray packet) {
-    int blockSizeKey = (packet.data[2] & 0xFF) >> 4;
+    int blockSizeKey = (packet.getData()[2] & 0xFF) >> 4;
     if (blockSizeKey == 6 || blockSizeKey == 7) {
       // Skip the sample number.
       packet.skipBytes(FRAME_HEADER_SAMPLE_NUMBER_OFFSET);
@@ -100,12 +115,16 @@ import java.util.Arrays;
     return result;
   }
 
-  private class FlacOggSeeker implements OggSeeker {
+  private static final class FlacOggSeeker implements OggSeeker {
 
+    private FlacStreamMetadata streamMetadata;
+    private SeekTable seekTable;
     private long firstFrameOffset;
     private long pendingSeekGranule;
 
-    public FlacOggSeeker() {
+    public FlacOggSeeker(FlacStreamMetadata streamMetadata, SeekTable seekTable) {
+      this.streamMetadata = streamMetadata;
+      this.seekTable = seekTable;
       firstFrameOffset = -1;
       pendingSeekGranule = -1;
     }
@@ -115,7 +134,7 @@ import java.util.Arrays;
     }
 
     @Override
-    public long read(ExtractorInput input) throws IOException, InterruptedException {
+    public long read(ExtractorInput input) {
       if (pendingSeekGranule >= 0) {
         long result = -(pendingSeekGranule + 2);
         pendingSeekGranule = -1;
@@ -126,18 +145,17 @@ import java.util.Arrays;
 
     @Override
     public void startSeek(long targetGranule) {
-      Assertions.checkNotNull(streamMetadata.seekTable);
-      long[] seekPointGranules = streamMetadata.seekTable.pointSampleNumbers;
-      int index = Util.binarySearchFloor(seekPointGranules, targetGranule, true, true);
+      long[] seekPointGranules = seekTable.pointSampleNumbers;
+      int index =
+          Util.binarySearchFloor(
+              seekPointGranules, targetGranule, /* inclusive= */ true, /* stayInBounds= */ true);
       pendingSeekGranule = seekPointGranules[index];
     }
 
     @Override
     public SeekMap createSeekMap() {
-      Assertions.checkState(firstFrameOffset != -1);
+      checkState(firstFrameOffset != -1);
       return new FlacSeekTableSeekMap(streamMetadata, firstFrameOffset);
     }
-
   }
-
 }

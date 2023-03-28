@@ -10,68 +10,72 @@ import org.telegram.tgnet.TLObject;
 
 public class AvatarsImageView extends View {
 
-    public final AvatarsDarawable avatarsDarawable;
+    public final AvatarsDrawable avatarsDrawable;
 
     public AvatarsImageView(@NonNull Context context, boolean inCall) {
         super(context);
-        avatarsDarawable = new AvatarsDarawable(this, inCall);
+        avatarsDrawable = new AvatarsDrawable(this, inCall);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        avatarsDarawable.width = getMeasuredWidth();
-        avatarsDarawable.height = getMeasuredHeight();
+        avatarsDrawable.width = getMeasuredWidth();
+        avatarsDrawable.height = getMeasuredHeight();
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        avatarsDarawable.onAttachedToWindow();
+        avatarsDrawable.onAttachedToWindow();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        avatarsDarawable.onDraw(canvas);
+        avatarsDrawable.onDraw(canvas);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        avatarsDarawable.onDetachedFromWindow();
+        avatarsDrawable.onDetachedFromWindow();
     }
 
 
     public void setStyle(int style) {
-        avatarsDarawable.setStyle(style);
+        avatarsDrawable.setStyle(style);
     }
 
     public void setDelegate(Runnable delegate) {
-        avatarsDarawable.setDelegate(delegate);
+        avatarsDrawable.setDelegate(delegate);
     }
 
     public void setObject(int a, int currentAccount, TLObject object) {
-        avatarsDarawable.setObject(a, currentAccount, object);
+        avatarsDrawable.setObject(a, currentAccount, object);
+    }
+
+    public void setAvatarsTextSize(int size) {
+        avatarsDrawable.setAvatarsTextSize(size);
     }
 
     public void reset() {
-        avatarsDarawable.reset();
+        avatarsDrawable.reset();
     }
 
     public void setCount(int usersCount) {
-        avatarsDarawable.setCount(usersCount);
+        avatarsDrawable.setCount(usersCount);
     }
 
     public void commitTransition(boolean animated) {
-        avatarsDarawable.commitTransition(animated);
+        avatarsDrawable.commitTransition(animated);
     }
 
     public void updateAfterTransitionEnd() {
-        avatarsDarawable.updateAfterTransitionEnd();
+        avatarsDrawable.updateAfterTransitionEnd();
     }
 
     public void setCentered(boolean centered) {
-        avatarsDarawable.setCentered(centered);
+        avatarsDrawable.setCentered(centered);
     }
 }

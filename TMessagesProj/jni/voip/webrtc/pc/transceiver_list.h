@@ -43,9 +43,13 @@ class TransceiverStableState {
   void set_newly_created();
   void SetMSectionIfUnset(absl::optional<std::string> mid,
                           absl::optional<size_t> mline_index);
-  void SetRemoteStreamIdsIfUnset(const std::vector<std::string>& ids);
+  void SetRemoteStreamIds(const std::vector<std::string>& ids);
   void SetInitSendEncodings(
       const std::vector<RtpEncodingParameters>& encodings);
+  void SetFiredDirection(
+      absl::optional<RtpTransceiverDirection> fired_direction) {
+    fired_direction_ = fired_direction;
+  }
   absl::optional<std::string> mid() const { return mid_; }
   absl::optional<size_t> mline_index() const { return mline_index_; }
   absl::optional<std::vector<std::string>> remote_stream_ids() const {
@@ -57,6 +61,13 @@ class TransceiverStableState {
   }
   bool has_m_section() const { return has_m_section_; }
   bool newly_created() const { return newly_created_; }
+  bool did_set_fired_direction() const { return fired_direction_.has_value(); }
+  // Because fired_direction() is nullable, did_set_fired_direction() is used to
+  // distinguish beteen "no value" and "null value".
+  absl::optional<RtpTransceiverDirection> fired_direction() const {
+    RTC_DCHECK(did_set_fired_direction());
+    return fired_direction_.value();
+  }
 
  private:
   absl::optional<std::string> mid_;
@@ -71,6 +82,9 @@ class TransceiverStableState {
   // description to track potential need for removing transceiver during
   // rollback.
   bool newly_created_ = false;
+  // `fired_direction_` is nullable, so an optional of an optional is used to
+  // distinguish between null and not set (sorry if this hurts your eyes).
+  absl::optional<absl::optional<RtpTransceiverDirection>> fired_direction_;
 };
 
 // This class encapsulates the active list of transceivers on a

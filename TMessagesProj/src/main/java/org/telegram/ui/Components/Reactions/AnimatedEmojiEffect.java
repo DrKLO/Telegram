@@ -7,9 +7,11 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -42,7 +44,7 @@ public class AnimatedEmojiEffect {
         this.currentAccount = currentAccount;
         this.showGeneric = showGeneric;
         startTime = System.currentTimeMillis();
-        if (!longAnimation && showGeneric) {
+        if (!longAnimation && showGeneric && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_CHAT)) {
             effectImageReceiver = new ImageReceiver();
         }
     }
@@ -222,6 +224,7 @@ public class AnimatedEmojiEffect {
                 toY2 = toY1 + bounds.height();
                 duration = 1800;
             }
+            duration /= 1.75f;
             mirror = Utilities.fastRandom.nextBoolean();
             randomRotation = 20 * ((Utilities.fastRandom.nextInt() % 100) / 100f);
         }
@@ -243,7 +246,7 @@ public class AnimatedEmojiEffect {
         }
 
         public void draw(Canvas canvas) {
-            progress += 16f / duration;
+            progress += (float) Math.min(40, 1000f / AndroidUtilities.screenRefreshRate) / duration;
             progress = Utilities.clamp(progress, 1f, 0f);
             float progressInternal = CubicBezierInterpolator.EASE_OUT.getInterpolation(progress);
             float cx = AndroidUtilities.lerp(fromX, toX, progressInternal);

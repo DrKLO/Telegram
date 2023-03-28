@@ -23,17 +23,39 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace debugging_internal {
 
+// Type of function used for printing in stack trace dumping, etc.
+// We avoid closures to keep things simple.
+typedef void OutputWriter(const char*, void*);
+
+// RegisterDebugStackTraceHook() allows to register a single routine
+// `hook` that is called each time DumpStackTrace() is called.
+// `hook` may be called from a signal handler.
+typedef void (*SymbolizeUrlEmitter)(void* const stack[], int depth,
+                                    OutputWriter* writer, void* writer_arg);
+
+// Registration of SymbolizeUrlEmitter for use inside of a signal handler.
+// This is inherently unsafe and must be signal safe code.
+void RegisterDebugStackTraceHook(SymbolizeUrlEmitter hook);
+SymbolizeUrlEmitter GetDebugStackTraceHook();
+
 // Returns the program counter from signal context, or nullptr if
 // unknown. `vuc` is a ucontext_t*. We use void* to avoid the use of
 // ucontext_t on non-POSIX systems.
-void* GetProgramCounter(void* vuc);
+void* GetProgramCounter(void* const vuc);
 
-// Uses `writerfn` to dump the program counter, stack trace, and stack
+// Uses `writer` to dump the program counter, stack trace, and stack
 // frame sizes.
-void DumpPCAndFrameSizesAndStackTrace(
-    void* pc, void* const stack[], int frame_sizes[], int depth,
-    int min_dropped_frames, bool symbolize_stacktrace,
-    void (*writerfn)(const char*, void*), void* writerfn_arg);
+void DumpPCAndFrameSizesAndStackTrace(void* const pc, void* const stack[],
+                                      int frame_sizes[], int depth,
+                                      int min_dropped_frames,
+                                      bool symbolize_stacktrace,
+                                      OutputWriter* writer, void* writer_arg);
+
+// Dump current stack trace omitting the topmost `min_dropped_frames` stack
+// frames.
+void DumpStackTrace(int min_dropped_frames, int max_num_frames,
+                    bool symbolize_stacktrace, OutputWriter* writer,
+                    void* writer_arg);
 
 }  // namespace debugging_internal
 ABSL_NAMESPACE_END

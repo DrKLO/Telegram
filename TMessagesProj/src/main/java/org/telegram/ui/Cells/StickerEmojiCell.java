@@ -26,6 +26,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -143,6 +144,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         currentEmoji = emoji;
         isPremiumSticker = MessageObject.isPremiumSticker(document);
         drawInParentView = false;
+        imageView.setColorFilter(null);
         if (isPremiumSticker) {
             premiumIconView.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             premiumIconView.setWaitingImage();
@@ -167,6 +169,9 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f);
             String imageFilter = fromEmojiPanel ? "66_66_pcache_compress" : "66_66";
+            if (MessageObject.isTextColorEmoji(document)) {
+                imageView.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+            }
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
                 if (fromEmojiPanel) {
                     drawInParentView = true;
@@ -219,6 +224,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         updatePremiumStatus(false);
         imageView.setAlpha(alpha * premiumAlpha);
         if (drawInParentView) {
+            imageView.setInvalidateAll(true);
             imageView.setParentView((View) getParent());
         } else {
             imageView.setParentView(this);
@@ -314,7 +320,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             if (v != null) {
                 v.vibrate(200);
             }
-            AndroidUtilities.shakeView(premiumIconView, 2, 0);
+            AndroidUtilities.shakeView(premiumIconView);
         }
     }
 
@@ -322,6 +328,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         if (drawInParentView) {
+            imageView.setInvalidateAll(true);
             imageView.setParentView((View) getParent());
         } else {
             imageView.setParentView(this);

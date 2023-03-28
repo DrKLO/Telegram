@@ -44,8 +44,10 @@ import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -169,8 +171,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         };
         tabsContainer.setOrientation(LinearLayout.HORIZONTAL);
         tabsContainer.setPadding(AndroidUtilities.dp(9.5f), 0, AndroidUtilities.dp(9.5f), 0);
-        tabsContainer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        addView(tabsContainer);
+        addView(tabsContainer, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL));
 
         rectPaint = new Paint();
         rectPaint.setAntiAlias(true);
@@ -274,43 +275,6 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             prevTypes.remove(key);
         }
         futureTabsPositions.put(index, view);
-    }
-
-    public TextView addIconTabWithCounter(int id, Drawable drawable) {
-        String key = "textTab" + id;
-        final int position = tabCount++;
-
-        FrameLayout tab = (FrameLayout) prevTypes.get(key);
-        TextView textView;
-        if (tab != null) {
-            textView = (TextView) tab.getChildAt(1);
-            checkViewIndex(key, tab, position);
-        } else {
-            tab = new FrameLayout(getContext());
-            tab.setFocusable(true);
-            tabsContainer.addView(tab, position);
-
-            ImageView imageView = new ImageView(getContext());
-            imageView.setImageDrawable(drawable);
-            imageView.setScaleType(ImageView.ScaleType.CENTER);
-            tab.setOnClickListener(v -> delegate.onPageSelected((Integer) v.getTag(R.id.index_tag)));
-            tab.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-            textView = new TextView(getContext());
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelBadgeText));
-            textView.setGravity(Gravity.CENTER);
-            textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), getThemedColor(Theme.key_chat_emojiPanelBadgeBackground)));
-            textView.setMinWidth(AndroidUtilities.dp(18));
-            textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
-            tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
-        }
-        tab.setTag(R.id.index_tag, position);
-        tab.setSelected(position == currentPosition);
-
-        tabTypes.put(key, tab);
-        return textView;
     }
 
     public FrameLayout addIconTab(int id, Drawable drawable) {
@@ -651,7 +615,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                         thumbDrawable = (Drawable) thumb;
                     }
                     if (sticker instanceof TLRPC.Document) {
-                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), "36_36_nolimit", (Drawable) null, null);
+                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD) ? "36_36_firstframe" : "36_36_nolimit", (Drawable) null, null);
                     } else {
                         tabView.imageView.setImageDrawable(thumbDrawable);
                     }
@@ -662,11 +626,10 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     ImageLocation imageLocation;
 
                     if (object instanceof TLRPC.Document) {
-                        TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
                         if (!tabView.inited) {
                             tabView.svgThumb = DocumentObject.getSvgThumb((TLRPC.Document) object, Theme.key_emptyListPlaceholder, 0.2f);
                         }
-                        imageLocation = ImageLocation.getForDocument(thumb, sticker);
+                        imageLocation = ImageLocation.getForDocument(sticker);
                     } else if (object instanceof TLRPC.PhotoSize) {
                         TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
                         int thumbVersion = 0;
@@ -688,22 +651,27 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     tabView.inited = true;
                     SvgHelper.SvgDrawable svgThumb = tabView.svgThumb;
                     BackupImageView imageView = tabView.imageView;
-                    if (MessageObject.isVideoSticker(sticker)) {
-                        if (svgThumb != null) {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
+                    final boolean lite = !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD);
+                    String imageFilter = lite ? "40_40_firstframe" : "40_40";
+                    if (MessageObject.isVideoSticker(sticker) && sticker.thumbs != null && sticker.thumbs.size() > 0) {
+                        if (lite) {
+                            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+                            imageView.setImage(ImageLocation.getForDocument(thumb, sticker), "40_40", svgThumb, 0, parentObject);
+                        } else if (svgThumb != null) {
+                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, svgThumb, 0, parentObject);
                         } else {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", imageLocation, null, 0, parentObject);
+                            imageView.setImage(ImageLocation.getForDocument(sticker), imageFilter, imageLocation, null, 0, parentObject);
                         }
                     } else if (MessageObject.isAnimatedStickerDocument(sticker, true)) {
                         if (svgThumb != null) {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
+                            imageView.setImage(imageLocation, imageFilter, svgThumb, 0, parentObject);
                         } else {
-                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", imageLocation, null, 0, parentObject);
+                            imageView.setImage(imageLocation, imageFilter, imageLocation, null, 0, parentObject);
                         }
                     } else if (imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
-                        imageView.setImage(imageLocation, "40_40", "tgs", svgThumb, parentObject);
+                        imageView.setImage(imageLocation, imageFilter, "tgs", svgThumb, parentObject);
                     } else {
-                        imageView.setImage(imageLocation, null, "webp", svgThumb, parentObject);
+                        imageView.setImage(imageLocation, imageFilter, "webp", svgThumb, parentObject);
                     }
                     String title = null;
                     if (parentObject instanceof TLRPC.TL_messages_stickerSet) {
@@ -736,6 +704,14 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     private Paint selectorPaint = new Paint();
 
+    private boolean showSelected = true;
+    private AnimatedFloat showSelectedAlpha = new AnimatedFloat(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+    public void showSelected(boolean show) {
+        this.showSelected = show;
+        invalidate();
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         final float dif = (stickerTabWidth - stickerTabExpandedWidth);
@@ -756,6 +732,8 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         if (animateToExpanded) {
             height = getHeight() - AndroidUtilities.dp(50) * (1f - expandProgress);
         }
+
+        float selectedAlpha = showSelectedAlpha.set(showSelected ? 1 : 0);
 
         if (!(isInEditMode() || tabCount == 0) && indicatorHeight >= 0) {
             float position = currentPositionAnimated.set(currentPosition);
@@ -804,6 +782,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             tabBounds.set(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
 
             selectorPaint.setColor(0x2effffff & getThemedColor(Theme.key_chat_emojiPanelIcon));
+            selectorPaint.setAlpha((int) (selectorPaint.getAlpha() * selectedAlpha));
             canvas.drawRoundRect(tabBounds, AndroidUtilities.dp(8), AndroidUtilities.dp(8), selectorPaint);
         }
 
@@ -905,8 +884,10 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
     }
 
     public void setUnderlineHeight(int value) {
-        underlineHeight = value;
-        invalidate();
+        if (underlineHeight != value) {
+            underlineHeight = value;
+            invalidate();
+        }
     }
 
     protected void invalidateOverlays() {

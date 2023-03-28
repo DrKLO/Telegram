@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/rtc_error.h"
 #include "p2p/base/p2p_constants.h"
@@ -71,8 +72,8 @@ struct IceParameters {
   std::string pwd;
   bool renomination = false;
   IceParameters() = default;
-  IceParameters(const std::string& ice_ufrag,
-                const std::string& ice_pwd,
+  IceParameters(absl::string_view ice_ufrag,
+                absl::string_view ice_pwd,
                 bool ice_renomination)
       : ufrag(ice_ufrag), pwd(ice_pwd), renomination(ice_renomination) {}
 
@@ -97,30 +98,30 @@ extern const char CONNECTIONROLE_HOLDCONN_STR[];
 constexpr auto* ICE_OPTION_TRICKLE = "trickle";
 constexpr auto* ICE_OPTION_RENOMINATION = "renomination";
 
-bool StringToConnectionRole(const std::string& role_str, ConnectionRole* role);
+absl::optional<ConnectionRole> StringToConnectionRole(
+    absl::string_view role_str);
 bool ConnectionRoleToString(const ConnectionRole& role, std::string* role_str);
 
 struct TransportDescription {
   TransportDescription();
   TransportDescription(const std::vector<std::string>& transport_options,
-                       const std::string& ice_ufrag,
-                       const std::string& ice_pwd,
+                       absl::string_view ice_ufrag,
+                       absl::string_view ice_pwd,
                        IceMode ice_mode,
                        ConnectionRole role,
                        const rtc::SSLFingerprint* identity_fingerprint);
-  TransportDescription(const std::string& ice_ufrag,
-                       const std::string& ice_pwd);
+  TransportDescription(absl::string_view ice_ufrag, absl::string_view ice_pwd);
   TransportDescription(const TransportDescription& from);
   ~TransportDescription();
 
   TransportDescription& operator=(const TransportDescription& from);
 
   // TODO(deadbeef): Rename to HasIceOption, etc.
-  bool HasOption(const std::string& option) const {
+  bool HasOption(absl::string_view option) const {
     return absl::c_linear_search(transport_options, option);
   }
-  void AddOption(const std::string& option) {
-    transport_options.push_back(option);
+  void AddOption(absl::string_view option) {
+    transport_options.emplace_back(option);
   }
   bool secure() const { return identity_fingerprint != nullptr; }
 

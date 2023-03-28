@@ -144,7 +144,7 @@ std::unique_ptr<Timer> TimerManager::CreateTimer(absl::string_view name,
   // after 800 million reconnections on a single socket. Ensure this will never
   // happen.
   RTC_CHECK_NE(*id, std::numeric_limits<uint32_t>::max());
-  std::unique_ptr<Timeout> timeout = create_timeout_();
+  std::unique_ptr<Timeout> timeout = create_timeout_(options.precision);
   RTC_CHECK(timeout != nullptr);
   auto timer = absl::WrapUnique(new Timer(
       id, name, std::move(on_expired), [this, id]() { timers_.erase(id); },

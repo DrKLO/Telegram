@@ -39,6 +39,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
     private int topPadding = 10;
     private int bottomPadding = 17;
     private int fixedSize;
+    private boolean isRTL;
 
     private CharSequence text;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -76,7 +77,21 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, 0, padding, 0));
 
+        isRTL = LocaleController.isRTL;
+
         setWillNotDraw(false);
+    }
+
+    public void updateRTL() {
+        if (isRTL == LocaleController.isRTL) {
+            return;
+        }
+        isRTL = LocaleController.isRTL;
+
+        textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) textView.getLayoutParams();
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
+        textView.setLayoutParams(layoutParams);
     }
 
     @Override

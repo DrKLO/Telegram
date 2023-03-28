@@ -38,14 +38,14 @@ class DataGenerator {
   // "is_end" flag.
   Data Ordered(std::vector<uint8_t> payload,
                absl::string_view flags = "",
-               const DataGeneratorOptions opts = {});
+               DataGeneratorOptions opts = {});
 
   // Generates unordered "data" with the provided `payload` and flags, which can
   // contain "B" for setting the "is_beginning" flag, and/or "E" for setting the
   // "is_end" flag.
   Data Unordered(std::vector<uint8_t> payload,
                  absl::string_view flags = "",
-                 const DataGeneratorOptions opts = {});
+                 DataGeneratorOptions opts = {});
 
   // Resets the Message ID identifier - simulating a "stream reset".
   void ResetStream() { message_id_ = MID(0); }

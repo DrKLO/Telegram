@@ -47,6 +47,23 @@ std::unique_ptr<FrameGeneratorInterface> CreateFromYuvFileFrameGenerator(
                                             frame_repeat_count);
 }
 
+std::unique_ptr<FrameGeneratorInterface> CreateFromNV12FileFrameGenerator(
+    std::vector<std::string> filenames,
+    size_t width,
+    size_t height,
+    int frame_repeat_count) {
+  RTC_DCHECK(!filenames.empty());
+  std::vector<FILE*> files;
+  for (const std::string& filename : filenames) {
+    FILE* file = fopen(filename.c_str(), "rb");
+    RTC_DCHECK(file != nullptr) << "Failed to open: '" << filename << "'\n";
+    files.push_back(file);
+  }
+
+  return std::make_unique<NV12FileGenerator>(files, width, height,
+                                             frame_repeat_count);
+}
+
 std::unique_ptr<FrameGeneratorInterface> CreateFromIvfFileFrameGenerator(
     std::string filename) {
   return std::make_unique<IvfVideoFrameGenerator>(std::move(filename));

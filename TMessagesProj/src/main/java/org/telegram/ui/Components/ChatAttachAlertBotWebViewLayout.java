@@ -696,7 +696,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
                             ev.recycle();
 
                             return true;
-                        } else if (webView != null && webView.canScrollHorizontally(distanceX >= 0 ? 1 : -1)) {
+                        } else if (webView != null && webView.canScrollHorizontally(distanceX >= 0 ? 1 : -1) || Math.abs(distanceX) >= touchSlop && Math.abs(distanceX) * 1.5f >= Math.abs(distanceY)) {
                             isSwipeDisallowed = true;
                         }
                     }

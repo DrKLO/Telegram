@@ -10,7 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -19,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -34,7 +34,9 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ManageChatTextCell;
 import org.telegram.ui.Cells.ManageChatUserCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -55,6 +57,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
     private int usersStartRow;
     private int usersEndRow;
     private int usersDetailRow;
+    private int deleteAllRow;
 
     private boolean blockedUsersActivity;
 
@@ -165,7 +168,19 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setOnItemClickListener((view, position) -> {
-            if (position == blockUserRow) {
+            if (position == deleteAllRow) {
+                AlertDialog alert = AlertsCreator.createSimpleAlert(getContext(),
+                        LocaleController.getString(R.string.NotificationsDeleteAllExceptionTitle), LocaleController.getString(R.string.NotificationsDeleteAllExceptionAlert), LocaleController.getString(R.string.Delete), () -> {
+                            uidArray.clear();
+                            updateRows();
+                            finishFragment();
+                            if (delegate != null) {
+                                delegate.didUpdateUserList(uidArray, true);
+                            }
+                        }, null).create();
+                alert.show();
+                alert.redPositive();
+            } else if (position == blockUserRow) {
                 if (currentType == TYPE_BLOCKED) {
                     presentFragment(new DialogOrContactPickerActivity());
                 } else {
@@ -286,9 +301,14 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
 
     private void updateRows() {
         rowCount = 0;
+        usersHeaderRow = -1;
+        blockUserDetailRow = -1;
+        deleteAllRow = -1;
         if (!blockedUsersActivity || getMessagesController().totalBlockedCount >= 0) {
             blockUserRow = rowCount++;
-            blockUserDetailRow = rowCount++;
+            if (currentType == TYPE_BLOCKED) {
+                blockUserDetailRow = rowCount++;
+            }
 
             int count;
             if (currentType == TYPE_BLOCKED) {
@@ -297,17 +317,25 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                 count = uidArray.size();
             }
             if (count != 0) {
-                usersHeaderRow = rowCount++;
+                if (currentType == TYPE_BLOCKED) {
+                    usersHeaderRow = rowCount++;
+                }
                 usersStartRow = rowCount;
                 rowCount += count;
                 usersEndRow = rowCount;
                 usersDetailRow = rowCount++;
+                if (currentType != TYPE_BLOCKED) {
+                    deleteAllRow = rowCount++;
+                }
             } else {
                 usersHeaderRow = -1;
                 usersStartRow = -1;
                 usersEndRow = -1;
                 usersDetailRow = -1;
+                deleteAllRow = -1;
             }
+
+
         }
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
@@ -372,7 +400,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int viewType = holder.getItemViewType();
-            return viewType == 0 || viewType == 2;
+            return viewType == 0 || viewType == 2 || viewType == 4;
         }
 
         @Override
@@ -402,6 +430,13 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     headerCell.setHeight(43);
                     view = headerCell;
+                    break;
+                case 4:
+                    TextCell textCell = new TextCell(parent.getContext());
+                    textCell.setText(LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException), false);
+                    textCell.setColors(null, Theme.key_windowBackgroundWhiteRedText5);
+                    view = textCell;
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -440,7 +475,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                                 subtitle = LocaleController.formatPluralString("Members", chat.participants_count);
                             } else if (chat.has_geo) {
                                 subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                            } else if (TextUtils.isEmpty(chat.username)) {
+                            } else if (!ChatObject.isPublic(chat)) {
                                 subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate);
                             } else {
                                 subtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic);
@@ -453,8 +488,10 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == blockUserDetailRow) {
                         if (currentType == TYPE_BLOCKED) {
+                            privacyCell.setFixedSize(0);
                             privacyCell.setText(LocaleController.getString("BlockedUsersInfo", R.string.BlockedUsersInfo));
                         } else {
+                            privacyCell.setFixedSize(8);
                             privacyCell.setText(null);
                         }
                         if (usersStartRow == -1) {
@@ -463,6 +500,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                             privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                         }
                     } else if (position == usersDetailRow) {
+                        privacyCell.setFixedSize(12);
                         privacyCell.setText("");
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     }
@@ -473,7 +511,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     if (currentType == TYPE_BLOCKED) {
                         actionCell.setText(LocaleController.getString("BlockUser", R.string.BlockUser), null, R.drawable.msg_contact_add, false);
                     } else {
-                        actionCell.setText(LocaleController.getString("PrivacyAddAnException", R.string.PrivacyAddAnException), null, R.drawable.msg_contact_add, false);
+                        actionCell.setText(LocaleController.getString("PrivacyAddAnException", R.string.PrivacyAddAnException), null, R.drawable.msg_contact_add, uidArray.size() > 0);
                     }
                     break;
                 case 3:
@@ -491,7 +529,9 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getItemViewType(int position) {
-            if (position == usersHeaderRow) {
+            if (position == deleteAllRow) {
+                return 4;
+            } else if (position == usersHeaderRow) {
                 return 3;
             } else if (position == blockUserRow) {
                 return 2;

@@ -21,7 +21,6 @@
 #include "api/audio_codecs/opus/audio_decoder_multi_channel_opus_config.h"
 #include "modules/audio_coding/codecs/opus/opus_interface.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -31,6 +30,11 @@ class AudioDecoderMultiChannelOpusImpl final : public AudioDecoder {
       AudioDecoderMultiChannelOpusConfig config);
 
   ~AudioDecoderMultiChannelOpusImpl() override;
+
+  AudioDecoderMultiChannelOpusImpl(const AudioDecoderMultiChannelOpusImpl&) =
+      delete;
+  AudioDecoderMultiChannelOpusImpl& operator=(
+      const AudioDecoderMultiChannelOpusImpl&) = delete;
 
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
@@ -63,7 +67,6 @@ class AudioDecoderMultiChannelOpusImpl final : public AudioDecoder {
 
   OpusDecInst* dec_state_;
   const AudioDecoderMultiChannelOpusConfig config_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderMultiChannelOpusImpl);
 };
 
 }  // namespace webrtc

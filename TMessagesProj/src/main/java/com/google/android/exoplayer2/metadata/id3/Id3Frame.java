@@ -17,14 +17,10 @@ package com.google.android.exoplayer2.metadata.id3;
 
 import com.google.android.exoplayer2.metadata.Metadata;
 
-/**
- * Base class for ID3 frames.
- */
+/** Base class for ID3 frames. */
 public abstract class Id3Frame implements Metadata.Entry {
 
-  /**
-   * The frame ID.
-   */
+  /** The frame ID. */
   public final String id;
 
   public Id3Frame(String id) {
@@ -40,5 +36,4 @@ public abstract class Id3Frame implements Metadata.Entry {
   public int describeContents() {
     return 0;
   }
-
 }

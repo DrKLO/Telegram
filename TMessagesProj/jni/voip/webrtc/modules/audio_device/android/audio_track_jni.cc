@@ -15,7 +15,6 @@
 #include "modules/audio_device/android/audio_manager.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/format_macros.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/platform_thread.h"
 #include "system_wrappers/include/field_trial.h"
@@ -177,7 +176,7 @@ int32_t AudioTrackJni::StartPlayout() {
 int32_t AudioTrackJni::StopPlayout() {
   RTC_LOG(LS_INFO) << "StopPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
-  if (!initialized_ || !playing_) {
+  if (!initialized_ || !playing_ || j_audio_track_ == nullptr) {
     return 0;
   }
   if (!j_audio_track_->StopPlayout()) {

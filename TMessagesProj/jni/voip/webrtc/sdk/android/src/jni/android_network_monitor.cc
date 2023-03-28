@@ -11,6 +11,8 @@
 #include "sdk/android/src/jni/android_network_monitor.h"
 
 #include <dlfcn.h>
+
+#include "absl/strings/string_view.h"
 #ifndef RTLD_NOLOAD
 // This was added in Lollipop to dlfcn.h
 #define RTLD_NOLOAD 4
@@ -21,12 +23,10 @@
 #include "rtc_base/ip_address.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/strings/string_builder.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "sdk/android/generated_base_jni/NetworkChangeDetector_jni.h"
 #include "sdk/android/generated_base_jni/NetworkMonitor_jni.h"
 #include "sdk/android/native_api/jni/java_types.h"
 #include "sdk/android/src/jni/jni_helpers.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace jni {
@@ -133,14 +133,17 @@ static rtc::AdapterType AdapterTypeFromNetworkType(
     case NETWORK_UNKNOWN_CELLULAR:
       return rtc::ADAPTER_TYPE_CELLULAR;
     case NETWORK_VPN:
+      return rtc::ADAPTER_TYPE_VPN;
     case NETWORK_BLUETOOTH:
       // There is no corresponding mapping for bluetooth networks.
-      // Map it to VPN for now.
-      return rtc::ADAPTER_TYPE_VPN;
-    default:
-      RTC_DCHECK_NOTREACHED() << "Invalid network type " << network_type;
+      // Map it to UNKNOWN for now.
+      return rtc::ADAPTER_TYPE_UNKNOWN;
+    case NETWORK_NONE:
       return rtc::ADAPTER_TYPE_UNKNOWN;
   }
+
+  RTC_DCHECK_NOTREACHED() << "Invalid network type " << network_type;
+  return rtc::ADAPTER_TYPE_UNKNOWN;
 }
 
 static rtc::IPAddress JavaToNativeIpAddress(
@@ -225,11 +228,13 @@ std::string NetworkInformation::ToString() const {
 
 AndroidNetworkMonitor::AndroidNetworkMonitor(
     JNIEnv* env,
-    const JavaRef<jobject>& j_application_context)
+    const JavaRef<jobject>& j_application_context,
+    const FieldTrialsView& field_trials)
     : android_sdk_int_(Java_NetworkMonitor_androidSdkInt(env)),
       j_application_context_(env, j_application_context),
       j_network_monitor_(env, Java_NetworkMonitor_getInstance(env)),
-      network_thread_(rtc::Thread::Current()) {}
+      network_thread_(rtc::Thread::Current()),
+      field_trials_(field_trials) {}
 
 AndroidNetworkMonitor::~AndroidNetworkMonitor() {
   RTC_DCHECK(!started_);
@@ -240,14 +245,16 @@ void AndroidNetworkMonitor::Start() {
   if (started_) {
     return;
   }
+  reset();
   started_ = true;
   surface_cellular_types_ =
-      webrtc::field_trial::IsEnabled("WebRTC-SurfaceCellularTypes");
-  find_network_handle_without_ipv6_temporary_part_ =
-      webrtc::field_trial::IsEnabled(
-          "WebRTC-FindNetworkHandleWithoutIpv6TemporaryPart");
+      field_trials_.IsEnabled("WebRTC-SurfaceCellularTypes");
+  find_network_handle_without_ipv6_temporary_part_ = field_trials_.IsEnabled(
+      "WebRTC-FindNetworkHandleWithoutIpv6TemporaryPart");
   bind_using_ifname_ =
-      !webrtc::field_trial::IsDisabled("WebRTC-BindUsingInterfaceName");
+      !field_trials_.IsDisabled("WebRTC-BindUsingInterfaceName");
+  disable_is_adapter_available_ = field_trials_.IsDisabled(
+      "WebRTC-AndroidNetworkMonitor-IsAdapterAvailable");
 
   // This pointer is also accessed by the methods called from java threads.
   // Assigning it here is safe, because the java monitor is in a stopped state,
@@ -257,6 +264,14 @@ void AndroidNetworkMonitor::Start() {
   JNIEnv* env = AttachCurrentThreadIfNeeded();
   Java_NetworkMonitor_startMonitoring(
       env, j_network_monitor_, j_application_context_, jlongFromPointer(this));
+}
+
+void AndroidNetworkMonitor::reset() {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  network_handle_by_address_.clear();
+  network_handle_by_if_name_.clear();
+  network_info_by_handle_.clear();
+  network_preference_by_adapter_type_.clear();
 }
 
 void AndroidNetworkMonitor::Stop() {
@@ -275,8 +290,7 @@ void AndroidNetworkMonitor::Stop() {
   Java_NetworkMonitor_stopMonitoring(env, j_network_monitor_,
                                      jlongFromPointer(this));
 
-  network_handle_by_address_.clear();
-  network_info_by_handle_.clear();
+  reset();
 }
 
 // The implementation is largely taken from UDPSocketPosix::BindToNetwork in
@@ -284,7 +298,7 @@ void AndroidNetworkMonitor::Stop() {
 rtc::NetworkBindingResult AndroidNetworkMonitor::BindSocketToNetwork(
     int socket_fd,
     const rtc::IPAddress& address,
-    const std::string& if_name) {
+    absl::string_view if_name) {
   RTC_DCHECK_RUN_ON(network_thread_);
 
   // Android prior to Lollipop didn't have support for binding sockets to
@@ -400,24 +414,20 @@ void AndroidNetworkMonitor::OnNetworkConnected_n(
     const NetworkInformation& network_info) {
   RTC_DCHECK_RUN_ON(network_thread_);
   RTC_LOG(LS_INFO) << "Network connected: " << network_info.ToString();
-  adapter_type_by_name_[network_info.interface_name] =
-      AdapterTypeFromNetworkType(network_info.type, surface_cellular_types_);
-  if (network_info.type == NETWORK_VPN) {
-    vpn_underlying_adapter_type_by_name_[network_info.interface_name] =
-        AdapterTypeFromNetworkType(network_info.underlying_type_for_vpn,
-                                   surface_cellular_types_);
-  }
   network_info_by_handle_[network_info.handle] = network_info;
   for (const rtc::IPAddress& address : network_info.ip_addresses) {
     network_handle_by_address_[address] = network_info.handle;
   }
+  network_handle_by_if_name_[network_info.interface_name] = network_info.handle;
+  RTC_CHECK(network_info_by_handle_.size() >=
+            network_handle_by_if_name_.size());
   InvokeNetworksChangedCallback();
 }
 
 absl::optional<NetworkHandle>
 AndroidNetworkMonitor::FindNetworkHandleFromAddressOrName(
     const rtc::IPAddress& ip_address,
-    const std::string& if_name) const {
+    absl::string_view if_name) const {
   RTC_DCHECK_RUN_ON(network_thread_);
   RTC_LOG(LS_INFO) << "Find network handle.";
   if (find_network_handle_without_ipv6_temporary_part_) {
@@ -443,14 +453,20 @@ AndroidNetworkMonitor::FindNetworkHandleFromAddressOrName(
 
 absl::optional<NetworkHandle>
 AndroidNetworkMonitor::FindNetworkHandleFromIfname(
-    const std::string& if_name) const {
+    absl::string_view if_name) const {
   RTC_DCHECK_RUN_ON(network_thread_);
+
+  auto iter = network_handle_by_if_name_.find(if_name);
+  if (iter != network_handle_by_if_name_.end()) {
+    return iter->second;
+  }
+
   if (bind_using_ifname_) {
-    for (auto const& iter : network_info_by_handle_) {
-      if (if_name.find(iter.second.interface_name) != std::string::npos) {
-        // Use partial match so that e.g if_name="v4-wlan0" is matched
-        // agains iter.first="wlan0"
-        return absl::make_optional(iter.first);
+    for (auto const& iter : network_handle_by_if_name_) {
+      // Use substring match so that e.g if_name="v4-wlan0" is matched
+      // agains iter="wlan0"
+      if (if_name.find(iter.first) != absl::string_view::npos) {
+        return absl::make_optional(iter.second);
       }
     }
   }
@@ -462,12 +478,57 @@ void AndroidNetworkMonitor::OnNetworkDisconnected_n(NetworkHandle handle) {
   RTC_DCHECK_RUN_ON(network_thread_);
   RTC_LOG(LS_INFO) << "Network disconnected for handle " << handle;
   auto iter = network_info_by_handle_.find(handle);
-  if (iter != network_info_by_handle_.end()) {
-    for (const rtc::IPAddress& address : iter->second.ip_addresses) {
-      network_handle_by_address_.erase(address);
-    }
-    network_info_by_handle_.erase(iter);
+  if (iter == network_info_by_handle_.end()) {
+    return;
   }
+
+  for (const rtc::IPAddress& address : iter->second.ip_addresses) {
+    network_handle_by_address_.erase(address);
+  }
+
+  // We've discovered that the if_name is not always unique,
+  // i.e it can be several network conencted with same if_name.
+  //
+  // This is handled the following way,
+  // 1) OnNetworkConnected_n overwrites any previous "owner" of an interface
+  // name ("owner" == entry in network_handle_by_if_name_).
+  // 2) OnNetworkDisconnected_n, we scan and see if there are any remaining
+  // connected network with the interface name, and set it as owner.
+  //
+  // This means that network_info_by_handle can have more entries than
+  // network_handle_by_if_name_.
+
+  // Check if we are registered as "owner" of if_name.
+  const auto& if_name = iter->second.interface_name;
+  auto iter2 = network_handle_by_if_name_.find(if_name);
+  RTC_DCHECK(iter2 != network_handle_by_if_name_.end());
+  if (iter2 != network_handle_by_if_name_.end() && iter2->second == handle) {
+    // We are owner...
+    // Check if there is someone else we can set as owner.
+    bool found = false;
+    for (const auto& info : network_info_by_handle_) {
+      if (info.first == handle) {
+        continue;
+      }
+      if (info.second.interface_name == if_name) {
+        found = true;
+        network_handle_by_if_name_[if_name] = info.first;
+        break;
+      }
+    }
+    if (!found) {
+      // No new owner...
+      network_handle_by_if_name_.erase(iter2);
+    }
+  } else {
+    // We are not owner...don't do anything.
+#if RTC_DCHECK_IS_ON
+    auto owner_handle = FindNetworkHandleFromIfname(if_name);
+    RTC_DCHECK(owner_handle && *owner_handle != handle);
+#endif
+  }
+
+  network_info_by_handle_.erase(iter);
 }
 
 void AndroidNetworkMonitor::OnNetworkPreference_n(
@@ -485,8 +546,16 @@ void AndroidNetworkMonitor::OnNetworkPreference_n(
 void AndroidNetworkMonitor::SetNetworkInfos(
     const std::vector<NetworkInformation>& network_infos) {
   RTC_DCHECK_RUN_ON(network_thread_);
-  network_handle_by_address_.clear();
-  network_info_by_handle_.clear();
+
+  // We expect this method to be called once directly after startMonitoring.
+  // All the caches should be empty.
+  RTC_DCHECK(network_handle_by_if_name_.empty());
+  RTC_DCHECK(network_handle_by_address_.empty());
+  RTC_DCHECK(network_info_by_handle_.empty());
+  RTC_DCHECK(network_preference_by_adapter_type_.empty());
+
+  // ...but reset just in case.
+  reset();
   RTC_LOG(LS_INFO) << "Android network monitor found " << network_infos.size()
                    << " networks";
   for (const NetworkInformation& network : network_infos) {
@@ -494,68 +563,43 @@ void AndroidNetworkMonitor::SetNetworkInfos(
   }
 }
 
-rtc::AdapterType AndroidNetworkMonitor::GetAdapterType(
-    const std::string& if_name) {
+rtc::NetworkMonitorInterface::InterfaceInfo
+AndroidNetworkMonitor::GetInterfaceInfo(absl::string_view if_name) {
   RTC_DCHECK_RUN_ON(network_thread_);
-  auto iter = adapter_type_by_name_.find(if_name);
-  rtc::AdapterType type = (iter == adapter_type_by_name_.end())
-                              ? rtc::ADAPTER_TYPE_UNKNOWN
-                              : iter->second;
-
-  if (type == rtc::ADAPTER_TYPE_UNKNOWN && bind_using_ifname_) {
-    for (auto const& iter : adapter_type_by_name_) {
-      // Use partial match so that e.g if_name="v4-wlan0" is matched
-      // agains iter.first="wlan0"
-      if (if_name.find(iter.first) != std::string::npos) {
-        type = iter.second;
-        break;
-      }
-    }
+  auto handle = FindNetworkHandleFromIfname(if_name);
+  if (!handle) {
+    return {
+        .adapter_type = rtc::ADAPTER_TYPE_UNKNOWN,
+        .available = (disable_is_adapter_available_ ? true : false),
+    };
+  }
+  auto iter = network_info_by_handle_.find(*handle);
+  RTC_DCHECK(iter != network_info_by_handle_.end());
+  if (iter == network_info_by_handle_.end()) {
+    return {
+        .adapter_type = rtc::ADAPTER_TYPE_UNKNOWN,
+        .available = (disable_is_adapter_available_ ? true : false),
+    };
   }
 
-  if (type == rtc::ADAPTER_TYPE_UNKNOWN) {
-    RTC_LOG(LS_WARNING) << "Get an unknown type for the interface " << if_name;
-  }
-  return type;
-}
-
-rtc::AdapterType AndroidNetworkMonitor::GetVpnUnderlyingAdapterType(
-    const std::string& if_name) {
-  RTC_DCHECK_RUN_ON(network_thread_);
-  auto iter = vpn_underlying_adapter_type_by_name_.find(if_name);
-  rtc::AdapterType type = (iter == vpn_underlying_adapter_type_by_name_.end())
-                              ? rtc::ADAPTER_TYPE_UNKNOWN
-                              : iter->second;
-  if (type == rtc::ADAPTER_TYPE_UNKNOWN && bind_using_ifname_) {
-    // Use partial match so that e.g if_name="v4-wlan0" is matched
-    // agains iter.first="wlan0"
-    for (auto const& iter : vpn_underlying_adapter_type_by_name_) {
-      if (if_name.find(iter.first) != std::string::npos) {
-        type = iter.second;
-        break;
-      }
-    }
-  }
-
-  return type;
+  auto type =
+      AdapterTypeFromNetworkType(iter->second.type, surface_cellular_types_);
+  auto vpn_type =
+      (type == rtc::ADAPTER_TYPE_VPN)
+          ? AdapterTypeFromNetworkType(iter->second.underlying_type_for_vpn,
+                                       surface_cellular_types_)
+          : rtc::ADAPTER_TYPE_UNKNOWN;
+  return {
+      .adapter_type = type,
+      .underlying_type_for_vpn = vpn_type,
+      .network_preference = GetNetworkPreference(type),
+      .available = true,
+  };
 }
 
 rtc::NetworkPreference AndroidNetworkMonitor::GetNetworkPreference(
-    const std::string& if_name) {
+    rtc::AdapterType adapter_type) const {
   RTC_DCHECK_RUN_ON(network_thread_);
-  auto iter = adapter_type_by_name_.find(if_name);
-  if (iter == adapter_type_by_name_.end()) {
-    return rtc::NetworkPreference::NEUTRAL;
-  }
-
-  rtc::AdapterType adapter_type = iter->second;
-  if (adapter_type == rtc::ADAPTER_TYPE_VPN) {
-    auto iter2 = vpn_underlying_adapter_type_by_name_.find(if_name);
-    if (iter2 != vpn_underlying_adapter_type_by_name_.end()) {
-      adapter_type = iter2->second;
-    }
-  }
-
   auto preference_iter = network_preference_by_adapter_type_.find(adapter_type);
   if (preference_iter == network_preference_by_adapter_type_.end()) {
     return rtc::NetworkPreference::NEUTRAL;
@@ -575,15 +619,16 @@ AndroidNetworkMonitorFactory::AndroidNetworkMonitorFactory(
 AndroidNetworkMonitorFactory::~AndroidNetworkMonitorFactory() = default;
 
 rtc::NetworkMonitorInterface*
-AndroidNetworkMonitorFactory::CreateNetworkMonitor() {
+AndroidNetworkMonitorFactory::CreateNetworkMonitor(
+    const FieldTrialsView& field_trials) {
   return new AndroidNetworkMonitor(AttachCurrentThreadIfNeeded(),
-                                   j_application_context_);
+                                   j_application_context_, field_trials);
 }
 
 void AndroidNetworkMonitor::NotifyConnectionTypeChanged(
     JNIEnv* env,
     const JavaRef<jobject>& j_caller) {
-  network_thread_->PostTask(ToQueuedTask(safety_flag_, [this] {
+  network_thread_->PostTask(SafeTask(safety_flag_, [this] {
     RTC_LOG(LS_INFO)
         << "Android network monitor detected connection type change.";
     InvokeNetworksChangedCallback();
@@ -606,8 +651,8 @@ void AndroidNetworkMonitor::NotifyOfNetworkConnect(
     const JavaRef<jobject>& j_network_info) {
   NetworkInformation network_info =
       GetNetworkInformationFromJava(env, j_network_info);
-  network_thread_->PostTask(ToQueuedTask(
-      safety_flag_, [this, network_info = std::move(network_info)] {
+  network_thread_->PostTask(
+      SafeTask(safety_flag_, [this, network_info = std::move(network_info)] {
         OnNetworkConnected_n(network_info);
       }));
 }
@@ -616,7 +661,7 @@ void AndroidNetworkMonitor::NotifyOfNetworkDisconnect(
     JNIEnv* env,
     const JavaRef<jobject>& j_caller,
     jlong network_handle) {
-  network_thread_->PostTask(ToQueuedTask(safety_flag_, [this, network_handle] {
+  network_thread_->PostTask(SafeTask(safety_flag_, [this, network_handle] {
     OnNetworkDisconnected_n(static_cast<NetworkHandle>(network_handle));
   }));
 }
@@ -630,9 +675,9 @@ void AndroidNetworkMonitor::NotifyOfNetworkPreference(
   rtc::NetworkPreference preference =
       static_cast<rtc::NetworkPreference>(jpreference);
 
-  network_thread_->PostTask(ToQueuedTask(
-      safety_flag_,
-      [this, type, preference] { OnNetworkPreference_n(type, preference); }));
+  network_thread_->PostTask(SafeTask(safety_flag_, [this, type, preference] {
+    OnNetworkPreference_n(type, preference);
+  }));
 }
 
 }  // namespace jni

@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor.mkv;
 
+import static java.lang.annotation.ElementType.TYPE_USE;
+
 import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
@@ -25,15 +27,17 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayDeque;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
-/**
- * Default implementation of {@link EbmlReader}.
- */
+/** Default implementation of {@link EbmlReader}. */
 /* package */ final class DefaultEbmlReader implements EbmlReader {
 
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({ELEMENT_STATE_READ_ID, ELEMENT_STATE_READ_CONTENT_SIZE, ELEMENT_STATE_READ_CONTENT})
   private @interface ElementState {}
 
@@ -52,7 +56,7 @@ import java.util.ArrayDeque;
   private final ArrayDeque<MasterElement> masterElementsStack;
   private final VarintReader varintReader;
 
-  private EbmlProcessor processor;
+  private @MonotonicNonNull EbmlProcessor processor;
   private @ElementState int elementState;
   private int elementId;
   private long elementContentSize;
@@ -76,11 +80,11 @@ import java.util.ArrayDeque;
   }
 
   @Override
-  public boolean read(ExtractorInput input) throws IOException, InterruptedException {
-    Assertions.checkNotNull(processor);
+  public boolean read(ExtractorInput input) throws IOException {
+    Assertions.checkStateNotNull(processor);
     while (true) {
-      if (!masterElementsStack.isEmpty()
-          && input.getPosition() >= masterElementsStack.peek().elementEndPosition) {
+      MasterElement head = masterElementsStack.peek();
+      if (head != null && input.getPosition() >= head.elementEndPosition) {
         processor.endMasterElement(masterElementsStack.pop().elementId);
         return true;
       }
@@ -114,7 +118,8 @@ import java.util.ArrayDeque;
           return true;
         case EbmlProcessor.ELEMENT_TYPE_UNSIGNED_INT:
           if (elementContentSize > MAX_INTEGER_ELEMENT_SIZE_BYTES) {
-            throw new ParserException("Invalid integer size: " + elementContentSize);
+            throw ParserException.createForMalformedContainer(
+                "Invalid integer size: " + elementContentSize, /* cause= */ null);
           }
           processor.integerElement(elementId, readInteger(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
@@ -122,14 +127,16 @@ import java.util.ArrayDeque;
         case EbmlProcessor.ELEMENT_TYPE_FLOAT:
           if (elementContentSize != VALID_FLOAT32_ELEMENT_SIZE_BYTES
               && elementContentSize != VALID_FLOAT64_ELEMENT_SIZE_BYTES) {
-            throw new ParserException("Invalid float size: " + elementContentSize);
+            throw ParserException.createForMalformedContainer(
+                "Invalid float size: " + elementContentSize, /* cause= */ null);
           }
           processor.floatElement(elementId, readFloat(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
         case EbmlProcessor.ELEMENT_TYPE_STRING:
           if (elementContentSize > Integer.MAX_VALUE) {
-            throw new ParserException("String element size: " + elementContentSize);
+            throw ParserException.createForMalformedContainer(
+                "String element size: " + elementContentSize, /* cause= */ null);
           }
           processor.stringElement(elementId, readString(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
@@ -143,7 +150,8 @@ import java.util.ArrayDeque;
           elementState = ELEMENT_STATE_READ_ID;
           break;
         default:
-          throw new ParserException("Invalid element type " + type);
+          throw ParserException.createForMalformedContainer(
+              "Invalid element type " + type, /* cause= */ null);
       }
     }
   }
@@ -157,10 +165,9 @@ import java.util.ArrayDeque;
    * @throws EOFException If the end of input was encountered when searching for the next level 1
    *     element.
    * @throws IOException If an error occurs reading from the input.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  private long maybeResyncToNextLevel1Element(ExtractorInput input) throws IOException,
-      InterruptedException {
+  @RequiresNonNull("processor")
+  private long maybeResyncToNextLevel1Element(ExtractorInput input) throws IOException {
     input.resetPeekPosition();
     while (true) {
       input.peekFully(scratch, 0, MAX_ID_BYTES);
@@ -183,10 +190,8 @@ import java.util.ArrayDeque;
    * @param byteLength The length of the integer being read.
    * @return The read integer value.
    * @throws IOException If an error occurs reading from the input.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  private long readInteger(ExtractorInput input, int byteLength)
-      throws IOException, InterruptedException {
+  private long readInteger(ExtractorInput input, int byteLength) throws IOException {
     input.readFully(scratch, 0, byteLength);
     long value = 0;
     for (int i = 0; i < byteLength; i++) {
@@ -202,10 +207,8 @@ import java.util.ArrayDeque;
    * @param byteLength The length of the float being read.
    * @return The read float value.
    * @throws IOException If an error occurs reading from the input.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  private double readFloat(ExtractorInput input, int byteLength)
-      throws IOException, InterruptedException {
+  private double readFloat(ExtractorInput input, int byteLength) throws IOException {
     long integerValue = readInteger(input, byteLength);
     double floatValue;
     if (byteLength == VALID_FLOAT32_ELEMENT_SIZE_BYTES) {
@@ -224,10 +227,8 @@ import java.util.ArrayDeque;
    * @param byteLength The length of the string being read, including zero padding.
    * @return The read string value.
    * @throws IOException If an error occurs reading from the input.
-   * @throws InterruptedException If the thread is interrupted.
    */
-  private String readString(ExtractorInput input, int byteLength)
-      throws IOException, InterruptedException {
+  private static String readString(ExtractorInput input, int byteLength) throws IOException {
     if (byteLength == 0) {
       return "";
     }
@@ -254,7 +255,5 @@ import java.util.ArrayDeque;
       this.elementId = elementId;
       this.elementEndPosition = elementEndPosition;
     }
-
   }
-
 }

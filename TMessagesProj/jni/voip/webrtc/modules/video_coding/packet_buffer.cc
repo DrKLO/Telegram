@@ -113,6 +113,10 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
 
   UpdateMissingPackets(seq_num);
 
+  received_padding_.erase(
+      received_padding_.begin(),
+      received_padding_.lower_bound(seq_num - (buffer_.size() / 4)));
+
   result.packets = FindFrames(seq_num);
   return result;
 }
@@ -146,11 +150,11 @@ void PacketBuffer::ClearTo(uint16_t seq_num) {
   first_seq_num_ = seq_num;
 
   is_cleared_to_first_seq_num_ = true;
-  auto clear_to_it = missing_packets_.upper_bound(seq_num);
-  if (clear_to_it != missing_packets_.begin()) {
-    --clear_to_it;
-    missing_packets_.erase(missing_packets_.begin(), clear_to_it);
-  }
+  missing_packets_.erase(missing_packets_.begin(),
+                         missing_packets_.lower_bound(seq_num));
+
+  received_padding_.erase(received_padding_.begin(),
+                          received_padding_.lower_bound(seq_num));
 }
 
 void PacketBuffer::Clear() {
@@ -160,12 +164,17 @@ void PacketBuffer::Clear() {
 PacketBuffer::InsertResult PacketBuffer::InsertPadding(uint16_t seq_num) {
   PacketBuffer::InsertResult result;
   UpdateMissingPackets(seq_num);
+  received_padding_.insert(seq_num);
   result.packets = FindFrames(static_cast<uint16_t>(seq_num + 1));
   return result;
 }
 
 void PacketBuffer::ForceSpsPpsIdrIsH264Keyframe() {
   sps_pps_idr_is_h264_keyframe_ = true;
+}
+
+void PacketBuffer::ResetSpsPpsIdrIsH264Keyframe() {
+  sps_pps_idr_is_h264_keyframe_ = false;
 }
 
 void PacketBuffer::ClearInternal() {
@@ -177,6 +186,7 @@ void PacketBuffer::ClearInternal() {
   is_cleared_to_first_seq_num_ = false;
   newest_inserted_seq_num_.reset();
   missing_packets_.clear();
+  received_padding_.clear();
 }
 
 bool PacketBuffer::ExpandBufferSize() {
@@ -225,7 +235,18 @@ bool PacketBuffer::PotentialNewFrame(uint16_t seq_num) const {
 std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
     uint16_t seq_num) {
   std::vector<std::unique_ptr<PacketBuffer::Packet>> found_frames;
-  for (size_t i = 0; i < buffer_.size() && PotentialNewFrame(seq_num); ++i) {
+  auto start = seq_num;
+
+  for (size_t i = 0; i < buffer_.size(); ++i) {
+    if (received_padding_.find(seq_num) != received_padding_.end()) {
+      seq_num += 1;
+      continue;
+    }
+
+    if (!PotentialNewFrame(seq_num)) {
+      break;
+    }
+
     size_t index = seq_num % buffer_.size();
     buffer_[index]->continuous = true;
 
@@ -246,7 +267,7 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
       bool has_h264_pps = false;
       bool has_h264_idr = false;
       bool is_h264_keyframe = false;
-	  
+
 	  bool is_h265 = false;
 #ifndef DISABLE_H265
       is_h265 = buffer_[start_index]->codec() == kVideoCodecH265;
@@ -258,11 +279,17 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
 
       int idr_width = -1;
       int idr_height = -1;
+      bool full_frame_found = false;
       while (true) {
         ++tested_packets;
 
-        if (!is_h264 && !is_h265 && buffer_[start_index]->is_first_packet_in_frame())
-          break;
+        if (!is_h264 && !is_h265) {
+          if (buffer_[start_index] == nullptr ||
+              buffer_[start_index]->is_first_packet_in_frame()) {
+            full_frame_found = buffer_[start_index] != nullptr;
+            break;
+          }
+        }
 
         if (is_h264) {
           const auto* h264_header = absl::get_if<RTPVideoHeaderH264>(
@@ -416,22 +443,26 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
         }
       }
 #endif
-      const uint16_t end_seq_num = seq_num + 1;
-      // Use uint16_t type to handle sequence number wrap around case.
-      uint16_t num_packets = end_seq_num - start_seq_num;
-      found_frames.reserve(found_frames.size() + num_packets);
-      for (uint16_t i = start_seq_num; i != end_seq_num; ++i) {
-        std::unique_ptr<Packet>& packet = buffer_[i % buffer_.size()];
-        RTC_DCHECK(packet);
-        RTC_DCHECK_EQ(i, packet->seq_num);
-        // Ensure frame boundary flags are properly set.
-        packet->video_header.is_first_packet_in_frame = (i == start_seq_num);
-        packet->video_header.is_last_packet_in_frame = (i == seq_num);
-        found_frames.push_back(std::move(packet));
-      }
+      if (is_h264 || is_h265 || full_frame_found) {
+        const uint16_t end_seq_num = seq_num + 1;
+        // Use uint16_t type to handle sequence number wrap around case.
+        uint16_t num_packets = end_seq_num - start_seq_num;
+        found_frames.reserve(found_frames.size() + num_packets);
+        for (uint16_t i = start_seq_num; i != end_seq_num; ++i) {
+          std::unique_ptr<Packet>& packet = buffer_[i % buffer_.size()];
+          RTC_DCHECK(packet);
+          RTC_DCHECK_EQ(i, packet->seq_num);
+          // Ensure frame boundary flags are properly set.
+          packet->video_header.is_first_packet_in_frame = (i == start_seq_num);
+          packet->video_header.is_last_packet_in_frame = (i == seq_num);
+          found_frames.push_back(std::move(packet));
+        }
 
-      missing_packets_.erase(missing_packets_.begin(),
-                             missing_packets_.upper_bound(seq_num));
+        missing_packets_.erase(missing_packets_.begin(),
+                               missing_packets_.upper_bound(seq_num));
+        received_padding_.erase(received_padding_.lower_bound(start),
+                                received_padding_.upper_bound(seq_num));
+      }
     }
     ++seq_num;
   }

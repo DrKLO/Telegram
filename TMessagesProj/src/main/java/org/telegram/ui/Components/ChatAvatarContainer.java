@@ -46,18 +46,22 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.TopicsFragment;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private BackupImageView avatarImageView;
     private SimpleTextView titleTextView;
-    private SimpleTextView titleTextLargerCopyView;
+    private AtomicReference<SimpleTextView> titleTextLargerCopyView = new AtomicReference<>();
     private SimpleTextView subtitleTextView;
-    private SimpleTextView subtitleTextLargerCopyView;
+    private AtomicReference<SimpleTextView> subtitleTextLargerCopyView = new AtomicReference<>();
     private ImageView timeItem;
     private TimerDrawable timerDrawable;
     private ChatActivity parentFragment;
@@ -93,14 +97,47 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatusDrawable;
 
-    public ChatAvatarContainer(Context context, ChatActivity chatActivity, boolean needTime) {
-        this(context, chatActivity, needTime, null);
+    private class SimpleTextConnectedView extends SimpleTextView {
+
+        private AtomicReference<SimpleTextView> reference;
+        public SimpleTextConnectedView(Context context, AtomicReference<SimpleTextView> reference) {
+            super(context);
+            this.reference = reference;
+        }
+
+        @Override
+        public void setTranslationY(float translationY) {
+            if (reference != null) {
+                SimpleTextView connected = reference.get();
+                if (connected != null) {
+                    connected.setTranslationY(translationY);
+                }
+            }
+            super.setTranslationY(translationY);
+        }
+
+        @Override
+        public boolean setText(CharSequence value) {
+            if (reference != null) {
+                SimpleTextView connected = reference.get();
+                if (connected != null) {
+                    connected.setText(value);
+                }
+            }
+            return super.setText(value);
+        }
+    }
+
+    public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime) {
+        this(context, baseFragment, needTime, null);
     }
     
-    public ChatAvatarContainer(Context context, ChatActivity chatActivity, boolean needTime, Theme.ResourcesProvider resourcesProvider) {
+    public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        parentFragment = chatActivity;
+        if (baseFragment instanceof ChatActivity) {
+            parentFragment = (ChatActivity) baseFragment;
+        }
 
         final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
         avatarImageView = new BackupImageView(context) {
@@ -117,9 +154,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
             }
         };
-        if (parentFragment != null) {
-            sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(chatActivity);
-            if (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2) {
+        if (baseFragment instanceof ChatActivity || baseFragment instanceof TopicsFragment) {
+            sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(baseFragment);
+            if (parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2)) {
                 avatarImageView.setVisibility(GONE);
             }
         }
@@ -127,26 +164,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
         addView(avatarImageView);
         if (avatarClickable) {
-            avatarImageView.setOnClickListener(v -> openProfile(true));
+            avatarImageView.setOnClickListener(v -> {
+                if (!onAvatarClick()) {
+                    openProfile(true);
+                }
+            });
         }
 
-        titleTextView = new SimpleTextView(context) {
-            @Override
-            public boolean setText(CharSequence value) {
-                if (titleTextLargerCopyView != null) {
-                    titleTextLargerCopyView.setText(value);
-                }
-                return super.setText(value);
-            }
-
-            @Override
-            public void setTranslationY(float translationY) {
-                if (titleTextLargerCopyView != null) {
-                    titleTextLargerCopyView.setTranslationY(translationY);
-                }
-                super.setTranslationY(translationY);
-            }
-        };
+        titleTextView = new SimpleTextConnectedView(context, titleTextLargerCopyView);
         titleTextView.setEllipsizeByGradient(true);
         titleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         titleTextView.setTextSize(18);
@@ -155,27 +180,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         titleTextView.setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
         titleTextView.setCanHideRightDrawable(false);
         titleTextView.setRightDrawableOutside(true);
-        titleTextView.setEllipsizeByGradient(true);
         titleTextView.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(12));
         addView(titleTextView);
 
-        subtitleTextView = new SimpleTextView(context) {
-            @Override
-            public boolean setText(CharSequence value) {
-                if (subtitleTextLargerCopyView != null) {
-                    subtitleTextLargerCopyView.setText(value);
-                }
-                return super.setText(value);
-            }
-
-            @Override
-            public void setTranslationY(float translationY) {
-                if (subtitleTextLargerCopyView != null) {
-                    subtitleTextLargerCopyView.setTranslationY(translationY);
-                }
-                super.setTranslationY(translationY);
-            }
-        };
+        subtitleTextView = new SimpleTextConnectedView(context, subtitleTextLargerCopyView);
         subtitleTextView.setEllipsizeByGradient(true);
         subtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
         subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
@@ -211,7 +219,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
-            if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
+            if ((!parentFragment.isThreadChat() || parentFragment.isTopic) && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
                 setOnClickListener(v -> openProfile(false));
             }
 
@@ -228,6 +236,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         emojiStatusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, AndroidUtilities.dp(24));
+    }
+
+    protected boolean onAvatarClick() {
+        return false;
     }
 
     public void setTitleExpand(boolean titleExpand) {
@@ -281,11 +293,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 TLRPC.ChatFull chatInfo = parentFragment.getCurrentChatInfo();
                 TLRPC.UserFull userInfo = parentFragment.getCurrentUserInfo();
                 if (userInfo != null || chatInfo != null) {
-                    parentFragment.getUndoView().showWithAction(parentFragment.getDialogId(), action, parentFragment.getCurrentUser(), userInfo != null ? userInfo.ttl_period : chatInfo.ttl_period, null, null);
+                    UndoView undoView = parentFragment.getUndoView();
+                    if (undoView != null) {
+                        undoView.showWithAction(parentFragment.getDialogId(), action, parentFragment.getCurrentUser(), userInfo != null ? userInfo.ttl_period : chatInfo.ttl_period, null, null);
+                    }
                 }
 
             }
-        }, true, resourcesProvider);
+        }, true, 0, resourcesProvider);
         autoDeletePopupWrapper.updateItems(ttl);
 
         scrimPopupWindow[0] = new ActionBarPopupWindow(autoDeletePopupWrapper.windowLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
@@ -311,7 +326,11 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         return true;
     }
 
-    private void openProfile(boolean byAvatar) {
+    public void openProfile(boolean byAvatar) {
+        openProfile(byAvatar, true);
+    }
+
+    public void openProfile(boolean byAvatar, boolean fromChatAnimation) {
         if (byAvatar && (AndroidUtilities.isTablet() || AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y || !avatarImageView.getImageReceiver().hasNotThumb())) {
             byAvatar = false;
         }
@@ -345,15 +364,22 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 args.putInt("actionBarColor", getThemedColor(Theme.key_actionBarDefault));
                 ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
                 fragment.setUserInfo(parentFragment.getCurrentUserInfo());
-                fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+                if (fromChatAnimation) {
+                    fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+                }
                 parentFragment.presentFragment(fragment);
             }
         } else if (chat != null) {
             Bundle args = new Bundle();
             args.putLong("chat_id", chat.id);
+            if (parentFragment.isTopic) {
+                args.putInt("topic_id", parentFragment.getThreadMessage().getId());
+            }
             ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
             fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-            fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+            if (fromChatAnimation) {
+                fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+            }
             parentFragment.presentFragment(fragment);
         }
     }
@@ -382,6 +408,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (lastWidth != -1 && lastWidth != width && lastWidth > width) {
             fadeOutToLessWidth(lastWidth);
         }
+        SimpleTextView titleTextLargerCopyView = this.titleTextLargerCopyView.get();
         if (titleTextLargerCopyView != null) {
             int largerAvailableWidth = largerWidth - AndroidUtilities.dp((avatarImageView.getVisibility() == VISIBLE ? 54 : 0) + 16);
             titleTextLargerCopyView.measure(MeasureSpec.makeMeasureSpec(largerAvailableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.AT_MOST));
@@ -391,10 +418,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     private void fadeOutToLessWidth(int largerWidth) {
         this.largerWidth = largerWidth;
+        SimpleTextView titleTextLargerCopyView = this.titleTextLargerCopyView.get();
         if (titleTextLargerCopyView != null) {
             removeView(titleTextLargerCopyView);
         }
         titleTextLargerCopyView = new SimpleTextView(getContext());
+        this.titleTextLargerCopyView.set(titleTextLargerCopyView);
         titleTextLargerCopyView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         titleTextLargerCopyView.setTextSize(18);
         titleTextLargerCopyView.setGravity(Gravity.LEFT);
@@ -405,23 +434,30 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         titleTextLargerCopyView.setLeftDrawable(titleTextView.getLeftDrawable());
         titleTextLargerCopyView.setText(titleTextView.getText());
         titleTextLargerCopyView.animate().alpha(0).setDuration(350).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
-            if (titleTextLargerCopyView != null) {
-                removeView(titleTextLargerCopyView);
-                titleTextLargerCopyView = null;
+            SimpleTextView titleTextLargerCopyView2 = this.titleTextLargerCopyView.get();
+            if (titleTextLargerCopyView2 != null) {
+                removeView(titleTextLargerCopyView2);
+                this.titleTextLargerCopyView.set(null);
             }
         }).start();
         addView(titleTextLargerCopyView);
 
+        SimpleTextView subtitleTextLargerCopyView = this.subtitleTextLargerCopyView.get();
+        if (subtitleTextLargerCopyView != null) {
+            removeView(subtitleTextLargerCopyView);
+        }
         subtitleTextLargerCopyView = new SimpleTextView(getContext());
+        this.subtitleTextLargerCopyView.set(subtitleTextLargerCopyView);
         subtitleTextLargerCopyView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
         subtitleTextLargerCopyView.setTag(Theme.key_actionBarDefaultSubtitle);
         subtitleTextLargerCopyView.setTextSize(14);
         subtitleTextLargerCopyView.setGravity(Gravity.LEFT);
         subtitleTextLargerCopyView.setText(subtitleTextView.getText());
         subtitleTextLargerCopyView.animate().alpha(0).setDuration(350).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
-            if (subtitleTextLargerCopyView != null) {
-                removeView(subtitleTextLargerCopyView);
-                subtitleTextLargerCopyView = null;
+            SimpleTextView subtitleTextLargerCopyView2 = this.subtitleTextLargerCopyView.get();
+            if (subtitleTextLargerCopyView2 != null) {
+                removeView(subtitleTextLargerCopyView2);
+                this.subtitleTextLargerCopyView.set(null);
                 setClipChildren(true);
             }
         }).start();
@@ -436,6 +472,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         int viewTop = (actionBarHeight - AndroidUtilities.dp(42)) / 2 + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
         avatarImageView.layout(leftPadding, viewTop + 1, leftPadding + AndroidUtilities.dp(42), viewTop + 1 + AndroidUtilities.dp(42));
         int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE ? AndroidUtilities.dp( 54) : 0);
+        SimpleTextView titleTextLargerCopyView = this.titleTextLargerCopyView.get();
         if (subtitleTextView.getVisibility() != GONE) {
             titleTextView.layout(l, viewTop + AndroidUtilities.dp(1.3f) - titleTextView.getPaddingTop(), l + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + AndroidUtilities.dp(1.3f) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
             if (titleTextLargerCopyView != null) {
@@ -451,6 +488,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             timeItem.layout(leftPadding + AndroidUtilities.dp(16), viewTop + AndroidUtilities.dp(15), leftPadding + AndroidUtilities.dp(16 + 34), viewTop + AndroidUtilities.dp(15 + 34));
         }
         subtitleTextView.layout(l, viewTop + AndroidUtilities.dp(24), l + subtitleTextView.getMeasuredWidth(), viewTop + subtitleTextView.getTextHeight() + AndroidUtilities.dp(24));
+        SimpleTextView subtitleTextLargerCopyView = this.subtitleTextLargerCopyView.get();
         if (subtitleTextLargerCopyView != null) {
             subtitleTextLargerCopyView.layout(l, viewTop + AndroidUtilities.dp(24), l + subtitleTextLargerCopyView.getMeasuredWidth(), viewTop + subtitleTextLargerCopyView.getTextHeight() + AndroidUtilities.dp(24));
         }
@@ -672,7 +710,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         CharSequence newSubtitle;
         boolean useOnlineColor = false;
         if (printString == null || printString.length() == 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
-            if (parentFragment.isThreadChat()) {
+            if (parentFragment.isThreadChat() && !parentFragment.isTopic) {
                 if (titleTextView.getTag() != null) {
                     return;
                 }
@@ -710,7 +748,18 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 return;
             }
             setTypingAnimation(false);
-            if (chat != null) {
+            if (parentFragment.isTopic && chat != null) {
+                TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chat.id, parentFragment.getTopicId());
+                int count = 0;
+                if (topic != null) {
+                    count = topic.totalMessagesCount - 1;
+                }
+                if (count > 0) {
+                    newSubtitle = LocaleController.formatPluralString("messages", count, count);
+                } else {
+                    newSubtitle = LocaleController.formatString("TopicProfileStatus", R.string.TopicProfileStatus, chat.title);
+                }
+            } else if (chat != null) {
                 TLRPC.ChatFull info = parentFragment.getCurrentChatInfo();
                 if (ChatObject.isChannel(chat)) {
                     if (info != null && info.participants_count != 0) {
@@ -722,7 +771,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                             }
                         } else {
                             int[] result = new int[1];
-                            String shortNumber = LocaleController.formatShortNumber(info.participants_count, result);
+                            boolean ignoreShort = AndroidUtilities.isAccessibilityScreenReaderEnabled();
+                            String shortNumber = ignoreShort ? String.valueOf(result[0] = info.participants_count) : LocaleController.formatShortNumber(info.participants_count, result);
                             if (chat.megagroup) {
                                 newSubtitle = LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber);
                             } else {
@@ -736,14 +786,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                             } else {
                                 if (chat.has_geo) {
                                     newSubtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation).toLowerCase();
-                                } else if (!TextUtils.isEmpty(chat.username)) {
+                                } else if (ChatObject.isPublic(chat)) {
                                     newSubtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
                                 } else {
                                     newSubtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                                 }
                             }
                         } else {
-                            if ((chat.flags & TLRPC.CHAT_FLAG_IS_PUBLIC) != 0) {
+                            if (ChatObject.isPublic(chat)) {
                                 newSubtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
                             } else {
                                 newSubtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
@@ -849,6 +899,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         avatarDrawable.setInfo(chat);
         if (avatarImageView != null) {
             avatarImageView.setForUserOrChat(chat, avatarDrawable);
+            avatarImageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
         }
     }
 
@@ -860,18 +911,18 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         avatarDrawable.setInfo(user);
         if (UserObject.isReplyUser(user)) {
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
-            avatarDrawable.setSmallSize(true);
+            avatarDrawable.setScaleSize(.8f);
             if (avatarImageView != null) {
                 avatarImageView.setImage(null, null, avatarDrawable, user);
             }
         } else if (UserObject.isUserSelf(user) && !showSelf) {
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
-            avatarDrawable.setSmallSize(true);
+            avatarDrawable.setScaleSize(.8f);
             if (avatarImageView != null) {
                 avatarImageView.setImage(null, null, avatarDrawable, user);
             }
         } else {
-            avatarDrawable.setSmallSize(false);
+            avatarDrawable.setScaleSize(1f);
             if (avatarImageView != null) {
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
             }
@@ -887,21 +938,21 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (user != null) {
             avatarDrawable.setInfo(user);
             if (UserObject.isReplyUser(user)) {
-                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setScaleSize(.8f);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
                 if (avatarImageView != null) {
                     avatarImageView.setImage(null, null, avatarDrawable, user);
                 }
             } else if (UserObject.isUserSelf(user)) {
-                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setScaleSize(.8f);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                 if (avatarImageView != null) {
                     avatarImageView.setImage(null, null, avatarDrawable, user);
                 }
             } else {
-                avatarDrawable.setSmallSize(false);
+                avatarDrawable.setScaleSize(1f);
                 if (avatarImageView != null) {
-                    avatarImageView.imageReceiver.setForUserOrChat(user, avatarDrawable,  null, true);
+                    avatarImageView.imageReceiver.setForUserOrChat(user, avatarDrawable,  null, true, VectorAvatarThumbDrawable.TYPE_STATIC);
                 }
             }
         } else if (chat != null) {
@@ -909,6 +960,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (avatarImageView != null) {
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }
+            avatarImageView.setRoundRadius(chat.forum ? AndroidUtilities.dp(16) : AndroidUtilities.dp(21));
         }
     }
 
@@ -944,6 +996,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             currentConnectionState = ConnectionsManager.getInstance(currentAccount).getConnectionState();
             updateCurrentConnectionState();
         }
+        if (emojiStatusDrawable != null) {
+            emojiStatusDrawable.attach();
+        }
     }
 
     @Override
@@ -952,6 +1007,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (parentFragment != null) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateConnectionState);
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        }
+        if (emojiStatusDrawable != null) {
+            emojiStatusDrawable.detach();
         }
     }
 
@@ -1022,6 +1080,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         sb.append("\n");
         sb.append(subtitleTextView.getText());
         info.setContentDescription(sb);
+        setContentDescription(sb);
         if (info.isClickable() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("OpenProfile", R.string.OpenProfile)));
         }

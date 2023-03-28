@@ -174,6 +174,15 @@ TEST_F(PerThreadSemTest, Timeouts) {
   EXPECT_TRUE(Wait(negative_timeout));
 }
 
+TEST_F(PerThreadSemTest, ThreadIdentityReuse) {
+  // Create a base_internal::ThreadIdentity object and keep reusing it. There
+  // should be no memory or resource leaks.
+  for (int i = 0; i < 10000; i++) {
+    std::thread t([]() { GetOrCreateCurrentThreadIdentity(); });
+    t.join();
+  }
+}
+
 }  // namespace
 
 }  // namespace synchronization_internal

@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
@@ -21,6 +22,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -48,11 +50,14 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
@@ -73,6 +78,8 @@ public class CountrySelectActivity extends BaseFragment {
     private boolean searching;
     private boolean needPhoneCode;
 
+    private boolean disableAnonymousNumbers;
+
     private CountrySelectActivityDelegate delegate;
     private ArrayList<Country> existingCountries;
 
@@ -87,6 +94,10 @@ public class CountrySelectActivity extends BaseFragment {
         needPhoneCode = phoneCode;
     }
 
+    public void setDisableAnonymousNumbers(boolean disableAnonymousNumbers) {
+        this.disableAnonymousNumbers = disableAnonymousNumbers;
+    }
+
     @Override
     public boolean onFragmentCreate() {
         return super.onFragmentCreate();
@@ -98,8 +109,9 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     @Override
-    public boolean hasForceLightStatusBar() {
-        return true;
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 
     @Override
@@ -164,7 +176,7 @@ public class CountrySelectActivity extends BaseFragment {
         searching = false;
         searchWas = false;
 
-        listViewAdapter = new CountryAdapter(context, existingCountries);
+        listViewAdapter = new CountryAdapter(context, existingCountries, disableAnonymousNumbers);
         searchListViewAdapter = new CountrySearchAdapter(context, listViewAdapter.getCountries());
 
         fragmentView = new FrameLayout(context);
@@ -234,6 +246,7 @@ public class CountrySelectActivity extends BaseFragment {
 
     public static class Country {
         public String name;
+        public String defaultName;
         public String code;
         public String shortname;
 
@@ -258,7 +271,7 @@ public class CountrySelectActivity extends BaseFragment {
         private HashMap<String, ArrayList<Country>> countries = new HashMap<>();
         private ArrayList<String> sortedCountries = new ArrayList<>();
 
-        public CountryAdapter(Context context, ArrayList<Country> exisitingCountries) {
+        public CountryAdapter(Context context, ArrayList<Country> exisitingCountries, boolean disableAnonymousNumbers) {
             mContext = context;
 
             if (exisitingCountries != null) {
@@ -284,6 +297,9 @@ public class CountrySelectActivity extends BaseFragment {
                         c.name = args[2];
                         c.code = args[0];
                         c.shortname = args[1];
+                        if (c.shortname.equals("FT") && disableAnonymousNumbers) {
+                            continue;
+                        }
                         String n = c.name.substring(0, 1).toUpperCase();
                         ArrayList<Country> arr = countries.get(n);
                         if (arr == null) {
@@ -299,10 +315,17 @@ public class CountrySelectActivity extends BaseFragment {
                     FileLog.e(e);
                 }
             }
-            Collections.sort(sortedCountries, String::compareTo);
+            Comparator<String> comparator;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Collator collator = Collator.getInstance(LocaleController.getInstance().getCurrentLocale() != null ? LocaleController.getInstance().getCurrentLocale() : Locale.getDefault());
+                comparator = collator::compare;
+            } else {
+                comparator = String::compareTo;
+            }
+            Collections.sort(sortedCountries, comparator);
 
             for (ArrayList<Country> arr : countries.values()) {
-                Collections.sort(arr, (country, country2) -> country.name.compareTo(country2.name));
+                Collections.sort(arr, (country, country2) -> comparator.compare(country.name, country2.name));
             }
         }
 
@@ -409,7 +432,11 @@ public class CountrySelectActivity extends BaseFragment {
             for (List<Country> list : countries.values()) {
                 for (Country country : list) {
                     countryList.add(country);
-                    countrySearchMap.put(country, Arrays.asList(country.name.split(" ")));
+                    List<String> keys = new ArrayList<>(Arrays.asList(country.name.split(" ")));
+                    if (country.defaultName != null) {
+                        keys.addAll(Arrays.asList(country.defaultName.split(" ")));
+                    }
+                    countrySearchMap.put(country, keys);
                 }
             }
         }
@@ -490,7 +517,7 @@ public class CountrySelectActivity extends BaseFragment {
         }
 
         public Country getItem(int i) {
-            if (i < 0 || i >= searchResult.size()) {
+            if (searchResult == null || i < 0 || i >= searchResult.size()) {
                 return null;
             }
             return searchResult.get(i);

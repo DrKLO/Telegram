@@ -27,29 +27,6 @@
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
-// Implementation of the CoDel active queue management algorithm. Loosely based
-// on CoDel pseudocode from ACMQueue. CoDel keeps queuing delays low by dropping
-// packets when delay is high. For each packet ready for dequeue, call
-// DropDequeuePacket with the packet parameters to update the CoDel state.
-class CoDelSimulation {
- public:
-  CoDelSimulation();
-  ~CoDelSimulation();
-
-  // Returns true if packet should be dropped.
-  bool DropDequeuedPacket(Timestamp now,
-                          Timestamp enqueing_time,
-                          DataSize packet_size,
-                          DataSize queue_size);
-
- private:
-  enum State { kNormal, kPending, kDropping };
-  Timestamp enter_drop_state_at_ = Timestamp::PlusInfinity();
-  Timestamp last_drop_at_ = Timestamp::MinusInfinity();
-  int drop_count_ = 0;
-  int previous_drop_count_ = 0;
-  State state_ = State::kNormal;
-};
 
 // Class simulating a network link. This is a simple and naive solution just
 // faking capacity and adding an extra transport delay in addition to the
@@ -101,7 +78,6 @@ class SimulatedNetwork : public SimulatedNetworkInterface {
   // `process_checker_` guards the data structures involved in delay and loss
   // processes, such as the packet queues.
   rtc::RaceChecker process_checker_;
-  CoDelSimulation codel_controller_ RTC_GUARDED_BY(process_checker_);
   std::queue<PacketInfo> capacity_link_ RTC_GUARDED_BY(process_checker_);
   Random random_;
 

@@ -12,13 +12,13 @@
 
 namespace webrtc {
 
-AudioReceiveStream::Stats::Stats() = default;
-AudioReceiveStream::Stats::~Stats() = default;
+AudioReceiveStreamInterface::Stats::Stats() = default;
+AudioReceiveStreamInterface::Stats::~Stats() = default;
 
-AudioReceiveStream::Config::Config() = default;
-AudioReceiveStream::Config::~Config() = default;
+AudioReceiveStreamInterface::Config::Config() = default;
+AudioReceiveStreamInterface::Config::~Config() = default;
 
-AudioReceiveStream::Config::Rtp::Rtp() = default;
-AudioReceiveStream::Config::Rtp::~Rtp() = default;
+AudioReceiveStreamInterface::Config::Rtp::Rtp() = default;
+AudioReceiveStreamInterface::Config::Rtp::~Rtp() = default;
 
 }  // namespace webrtc

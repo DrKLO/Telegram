@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "modules/audio_coding/audio_network_adaptor/audio_network_adaptor_impl.h"
 #include "modules/audio_coding/audio_network_adaptor/controller_manager.h"
 #include "modules/audio_coding/codecs/opus/audio_coder_opus_common.h"
@@ -349,7 +350,7 @@ AudioEncoderOpusImpl::AudioEncoderOpusImpl(const AudioEncoderOpusConfig& config,
     : AudioEncoderOpusImpl(
           config,
           payload_type,
-          [this](const std::string& config_string, RtcEventLog* event_log) {
+          [this](absl::string_view config_string, RtcEventLog* event_log) {
             return DefaultAudioNetworkAdaptorCreator(config_string, event_log);
           },
           // We choose 5sec as initial time constant due to empirical data.
@@ -777,7 +778,7 @@ void AudioEncoderOpusImpl::ApplyAudioNetworkAdaptor() {
 
 std::unique_ptr<AudioNetworkAdaptor>
 AudioEncoderOpusImpl::DefaultAudioNetworkAdaptorCreator(
-    const std::string& config_string,
+    absl::string_view config_string,
     RtcEventLog* event_log) const {
   AudioNetworkAdaptorImpl::Config config;
   config.event_log = event_log;

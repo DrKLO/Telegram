@@ -20,9 +20,7 @@ import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.Subtitle;
 import java.util.List;
 
-/**
- * A representation of a DVB subtitle.
- */
+/** A representation of a DVB subtitle. */
 /* package */ final class DvbSubtitle implements Subtitle {
 
   private final List<Cue> cues;
@@ -50,5 +48,4 @@ import java.util.List;
   public List<Cue> getCues(long timeUs) {
     return cues;
   }
-
 }

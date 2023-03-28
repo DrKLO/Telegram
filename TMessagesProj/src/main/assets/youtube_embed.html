@@ -49,6 +49,9 @@
                    player.setSize(window.innerWidth, window.innerHeight);
                });
                function onError(event) {
+                   if (window.YoutubeProxy !== undefined) {
+                       YoutubeProxy.onPlayerError(event.data);
+                   }
                    if (!posted) {
                        if (window.YoutubeProxy !== undefined) {
                            YoutubeProxy.onPlayerLoaded();

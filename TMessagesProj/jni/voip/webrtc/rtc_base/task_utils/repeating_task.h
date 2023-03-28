@@ -15,11 +15,10 @@
 #include <type_traits>
 #include <utility>
 
-#include "api/task_queue/queued_task.h"
+#include "absl/functional/any_invocable.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/time_delta.h"
-#include "api/units/timestamp.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -31,57 +30,6 @@ void RepeatingTaskHandleDTraceProbeStart();
 void RepeatingTaskHandleDTraceProbeDelayedStart();
 void RepeatingTaskImplDTraceProbeRun();
 
-class RepeatingTaskBase : public QueuedTask {
- public:
-  RepeatingTaskBase(TaskQueueBase* task_queue,
-                    TimeDelta first_delay,
-                    Clock* clock,
-                    rtc::scoped_refptr<PendingTaskSafetyFlag> alive_flag);
-  ~RepeatingTaskBase() override;
-
- private:
-  virtual TimeDelta RunClosure() = 0;
-
-  bool Run() final;
-
-  TaskQueueBase* const task_queue_;
-  Clock* const clock_;
-  // This is always finite.
-  Timestamp next_run_time_ RTC_GUARDED_BY(task_queue_);
-  rtc::scoped_refptr<PendingTaskSafetyFlag> alive_flag_
-      RTC_GUARDED_BY(task_queue_);
-};
-
-// The template closure pattern is based on rtc::ClosureTask.
-template <class Closure>
-class RepeatingTaskImpl final : public RepeatingTaskBase {
- public:
-  RepeatingTaskImpl(TaskQueueBase* task_queue,
-                    TimeDelta first_delay,
-                    Closure&& closure,
-                    Clock* clock,
-                    rtc::scoped_refptr<PendingTaskSafetyFlag> alive_flag)
-      : RepeatingTaskBase(task_queue,
-                          first_delay,
-                          clock,
-                          std::move(alive_flag)),
-        closure_(std::forward<Closure>(closure)) {
-    static_assert(
-        std::is_same<TimeDelta,
-                     typename std::result_of<decltype (&Closure::operator())(
-                         Closure)>::type>::value,
-        "");
-  }
-
- private:
-  TimeDelta RunClosure() override {
-    RepeatingTaskImplDTraceProbeRun();
-    return closure_();
-  }
-
-  typename std::remove_const<
-      typename std::remove_reference<Closure>::type>::type closure_;
-};
 }  // namespace webrtc_repeating_task_impl
 
 // Allows starting tasks that repeat themselves on a TaskQueue indefinately
@@ -103,38 +51,22 @@ class RepeatingTaskHandle {
   // owned by the TaskQueue and will live until it has been stopped or the
   // TaskQueue deletes it. It's perfectly fine to destroy the handle while the
   // task is running, since the repeated task is owned by the TaskQueue.
-  template <class Closure>
+  // The tasks are scheduled onto the task queue using the specified precision.
   static RepeatingTaskHandle Start(TaskQueueBase* task_queue,
-                                   Closure&& closure,
-                                   Clock* clock = Clock::GetRealTimeClock()) {
-    auto alive_flag = PendingTaskSafetyFlag::CreateDetached();
-    webrtc_repeating_task_impl::RepeatingTaskHandleDTraceProbeStart();
-    task_queue->PostTask(
-        std::make_unique<
-            webrtc_repeating_task_impl::RepeatingTaskImpl<Closure>>(
-            task_queue, TimeDelta::Zero(), std::forward<Closure>(closure),
-            clock, alive_flag));
-    return RepeatingTaskHandle(std::move(alive_flag));
-  }
+                                   absl::AnyInvocable<TimeDelta()> closure,
+                                   TaskQueueBase::DelayPrecision precision =
+                                       TaskQueueBase::DelayPrecision::kLow,
+                                   Clock* clock = Clock::GetRealTimeClock());
 
   // DelayedStart is equivalent to Start except that the first invocation of the
   // closure will be delayed by the given amount.
-  template <class Closure>
   static RepeatingTaskHandle DelayedStart(
       TaskQueueBase* task_queue,
       TimeDelta first_delay,
-      Closure&& closure,
-      Clock* clock = Clock::GetRealTimeClock()) {
-    auto alive_flag = PendingTaskSafetyFlag::CreateDetached();
-    webrtc_repeating_task_impl::RepeatingTaskHandleDTraceProbeDelayedStart();
-    task_queue->PostDelayedTask(
-        std::make_unique<
-            webrtc_repeating_task_impl::RepeatingTaskImpl<Closure>>(
-            task_queue, first_delay, std::forward<Closure>(closure), clock,
-            alive_flag),
-        first_delay.ms());
-    return RepeatingTaskHandle(std::move(alive_flag));
-  }
+      absl::AnyInvocable<TimeDelta()> closure,
+      TaskQueueBase::DelayPrecision precision =
+          TaskQueueBase::DelayPrecision::kLow,
+      Clock* clock = Clock::GetRealTimeClock());
 
   // Stops future invocations of the repeating task closure. Can only be called
   // from the TaskQueue where the task is running. The closure is guaranteed to

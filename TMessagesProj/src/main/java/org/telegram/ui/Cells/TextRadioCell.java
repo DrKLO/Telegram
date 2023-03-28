@@ -24,7 +24,6 @@ import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadioButton;
-import org.telegram.ui.Components.Switch;
 
 import java.util.ArrayList;
 
@@ -42,6 +41,8 @@ public class TextRadioCell extends FrameLayout {
     private float lastTouchX;
     private ObjectAnimator animator;
     private boolean drawCheckRipple;
+    private boolean isRTL;
+    private int padding;
 
     public static final Property<TextRadioCell, Float> ANIMATION_PROGRESS = new AnimationProperties.FloatProperty<TextRadioCell>("animationProgress") {
         @Override
@@ -66,6 +67,8 @@ public class TextRadioCell extends FrameLayout {
 
     public TextRadioCell(Context context, int padding, boolean dialog) {
         super(context);
+
+        this.padding = padding;
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
@@ -94,7 +97,31 @@ public class TextRadioCell extends FrameLayout {
         radioButton.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
         addView(radioButton, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
 
+        isRTL = LocaleController.isRTL;
+
         setClipChildren(false);
+    }
+
+    public void updateRTL() {
+        if (isRTL == LocaleController.isRTL) {
+            return;
+        }
+        isRTL = LocaleController.isRTL;
+        textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        FrameLayout.LayoutParams textViewLayout = (FrameLayout.LayoutParams) textView.getLayoutParams();
+        textViewLayout.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
+        textViewLayout.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? padding : 64);
+        textViewLayout.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 64 : padding);
+        textView.setLayoutParams(textViewLayout);
+        valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        FrameLayout.LayoutParams valueTextViewLayout = (FrameLayout.LayoutParams) valueTextView.getLayoutParams();
+        valueTextViewLayout.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
+        valueTextViewLayout.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? padding : 64);
+        valueTextViewLayout.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 64 : padding);
+        valueTextView.setLayoutParams(valueTextViewLayout);
+        FrameLayout.LayoutParams radioButtonLayout = (FrameLayout.LayoutParams) radioButton.getLayoutParams();
+        radioButtonLayout.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
+        radioButton.setLayoutParams(radioButtonLayout);
     }
 
     @Override

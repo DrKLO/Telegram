@@ -10,18 +10,22 @@
 
 #include "rtc_base/null_socket_server.h"
 
+#include "api/units/time_delta.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/event.h"
+#include "rtc_base/socket_server.h"
 
 namespace rtc {
 
 NullSocketServer::NullSocketServer() = default;
 NullSocketServer::~NullSocketServer() {}
 
-bool NullSocketServer::Wait(int cms, bool process_io) {
+bool NullSocketServer::Wait(webrtc::TimeDelta max_wait_duration,
+                            bool process_io) {
   // Wait with the given timeout. Do not log a warning if we end up waiting for
   // a long time; that just means no one has any work for us, which is perfectly
   // legitimate.
-  event_.Wait(/*give_up_after_ms=*/cms, /*warn_after_ms=*/Event::kForever);
+  event_.Wait(max_wait_duration, /*warn_after=*/Event::kForever);
   return true;
 }
 

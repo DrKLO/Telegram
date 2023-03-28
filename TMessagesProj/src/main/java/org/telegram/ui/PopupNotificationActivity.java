@@ -857,7 +857,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ViewGroup view;
         MessageObject messageObject = popupMessages.get(num);
-        if ((messageObject.type == 1 || messageObject.type == 4) && !messageObject.isSecretMedia()) {
+        if ((messageObject.type == MessageObject.TYPE_PHOTO || messageObject.type == MessageObject.TYPE_GEO) && !messageObject.isSecretMedia()) {
             if (imageViews.size() > 0) {
                 view = imageViews.get(0);
                 imageViews.remove(0);
@@ -889,13 +889,13 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             BackupImageView imageView = view.findViewWithTag(311);
             imageView.setAspectFit(true);
 
-            if (messageObject.type == 1) {
+            if (messageObject.type == MessageObject.TYPE_PHOTO) {
                 TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100);
                 boolean photoSet = false;
                 if (currentPhotoObject != null) {
                     boolean photoExist = true;
-                    if (messageObject.type == 1) {
+                    if (messageObject.type == MessageObject.TYPE_PHOTO) {
                         File cacheFile = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(messageObject.messageOwner);
                         if (!cacheFile.exists()) {
                             photoExist = false;
@@ -922,7 +922,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     imageView.setVisibility(View.VISIBLE);
                     messageText.setVisibility(View.GONE);
                 }
-            } else if (messageObject.type == 4) {
+            } else if (messageObject.type == MessageObject.TYPE_GEO) {
                 messageText.setVisibility(View.GONE);
                 messageText.setText(messageObject.messageText);
                 imageView.setVisibility(View.VISIBLE);
@@ -937,7 +937,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     imageView.setImage(currentUrl, null, null);
                 }
             }
-        } else if (messageObject.type == 2) {
+        } else if (messageObject.type == MessageObject.TYPE_VOICE) {
             PopupAudioView cell;
             if (audioViews.size() > 0) {
                 view = audioViews.get(0);

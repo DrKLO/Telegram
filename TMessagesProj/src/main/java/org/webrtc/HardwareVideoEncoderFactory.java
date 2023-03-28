@@ -11,18 +11,21 @@
 package org.webrtc;
 
 import static org.webrtc.MediaCodecUtils.EXYNOS_PREFIX;
+import static org.webrtc.MediaCodecUtils.EXYNOS_PREFIX_C2;
+import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
 import static org.webrtc.MediaCodecUtils.INTEL_PREFIX;
 import static org.webrtc.MediaCodecUtils.QCOM_PREFIX;
-import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
+import static org.webrtc.MediaCodecUtils.SOFTWARE_IMPLEMENTATION_PREFIXES;
 
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.os.Build;
 
+import androidx.annotation.Nullable;
+
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 
-import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -160,20 +163,38 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   private @Nullable MediaCodecInfo findCodecForType(VideoCodecMimeType type) {
     ArrayList<MediaCodecInfo> infos = MediaCodecUtils.getSortedCodecsList();
     int count = infos.size();
+    MediaCodecInfo info2 = null;
     for (int i = 0; i < count; ++i) {
       MediaCodecInfo info = infos.get(i);
       if (info == null || !info.isEncoder()) {
         continue;
       }
-      if (isSupportedCodec(info, type)) {
+      if (isSupportedCodec(info, type, true)) {
         return info;
       }
+      if (info2 == null && isSupportedCodec(info, type, false)) {
+        info2 = info;
+      }
     }
-    return null; // No support for this type.
+    if (info2 == null) {
+      StringBuilder stringBuilder = new StringBuilder();
+      for (int i = 0; i < count; ++i) {
+        MediaCodecInfo info = infos.get(i);
+        if (info == null || !info.isEncoder()) {
+          continue;
+        }
+        if (MediaCodecUtils.codecSupportsType(info, type)) {
+          stringBuilder.append(info.getName()).append(", ");
+        }
+      }
+
+      FileLog.e("can't create video encoder " + type.mimeType() + ", supported codecs" + stringBuilder);
+    }
+    return info2;
   }
 
   // Returns true if the given MediaCodecInfo indicates a supported encoder for the given type.
-  private boolean isSupportedCodec(MediaCodecInfo info, VideoCodecMimeType type) {
+  private boolean isSupportedCodec(MediaCodecInfo info, VideoCodecMimeType type, boolean ensureHardwareSupportedInSdk) {
     if (!MediaCodecUtils.codecSupportsType(info, type)) {
       return false;
     }
@@ -183,12 +204,12 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
         == null) {
       return false;
     }
-    return isHardwareSupportedInCurrentSdk(info, type) && isMediaCodecAllowed(info);
+    return isHardwareSupportedInCurrentSdk(info, type, ensureHardwareSupportedInSdk) && isMediaCodecAllowed(info);
   }
 
   // Returns true if the given MediaCodecInfo indicates a hardware module that is supported on the
   // current SDK.
-  private boolean isHardwareSupportedInCurrentSdk(MediaCodecInfo info, VideoCodecMimeType type) {
+  private boolean isHardwareSupportedInCurrentSdk(MediaCodecInfo info, VideoCodecMimeType type, boolean ensureHardwareSupported) {
     if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
       return false;
     }
@@ -198,9 +219,9 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
     }
     switch (type) {
       case VP8:
-        return isHardwareSupportedInCurrentSdkVp8(info);
+        return isHardwareSupportedInCurrentSdkVp8(info, ensureHardwareSupported);
       case VP9:
-        return isHardwareSupportedInCurrentSdkVp9(info);
+        return isHardwareSupportedInCurrentSdkVp9(info, ensureHardwareSupported);
       case H264:
         return isHardwareSupportedInCurrentSdkH264(info);
       case H265:
@@ -209,30 +230,51 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
     return false;
   }
 
-  private boolean isHardwareSupportedInCurrentSdkVp8(MediaCodecInfo info) {
+  private boolean isHardwareSupportedInCurrentSdkVp8(MediaCodecInfo info, boolean ensureHardwareSupproted) {
     if (!Instance.getGlobalServerConfig().enable_vp8_encoder) {
       return false;
     }
     String name = info.getName();
     // QCOM Vp8 encoder is supported in KITKAT or later.
-    return (name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+    if ((name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
         // Hisi VP8 encoder seems to be supported. Needs more testing.
         || (name.startsWith(HISI_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
         // Exynos VP8 encoder is supported in M or later.
         || (name.startsWith(EXYNOS_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         // Intel Vp8 encoder is supported in LOLLIPOP or later, with the intel encoder enabled.
         || (name.startsWith(INTEL_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
-               && enableIntelVp8Encoder);
+               && enableIntelVp8Encoder)
+        || ((name.startsWith(EXYNOS_PREFIX_C2)  && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M))) {
+      return true;
+    }
+    if (!ensureHardwareSupproted) {
+      for (int i = 0; i < SOFTWARE_IMPLEMENTATION_PREFIXES.length; i++) {
+        if (name.startsWith(SOFTWARE_IMPLEMENTATION_PREFIXES[i])) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
-  private boolean isHardwareSupportedInCurrentSdkVp9(MediaCodecInfo info) {
+  private boolean isHardwareSupportedInCurrentSdkVp9(MediaCodecInfo info, boolean ensureHardwareSupproted) {
     if (!Instance.getGlobalServerConfig().enable_vp9_encoder) {
       return false;
     }
     String name = info.getName();
-    return (name.startsWith(QCOM_PREFIX) || name.startsWith(EXYNOS_PREFIX) || name.startsWith(HISI_PREFIX))
-        // Both QCOM and Exynos VP9 encoders are supported in N or later.
-        && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N;
+    if ((name.startsWith(QCOM_PREFIX) || name.startsWith(EXYNOS_PREFIX) || name.startsWith(HISI_PREFIX))
+            // Both QCOM and Exynos VP9 encoders are supported in N or later.
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      return true;
+    }
+    if (!ensureHardwareSupproted) {
+      for (int i = 0; i < SOFTWARE_IMPLEMENTATION_PREFIXES.length; i++) {
+        if (name.startsWith(SOFTWARE_IMPLEMENTATION_PREFIXES[i])) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private boolean isHardwareSupportedInCurrentSdkH264(MediaCodecInfo info) {

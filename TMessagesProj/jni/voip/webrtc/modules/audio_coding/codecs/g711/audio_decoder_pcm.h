@@ -19,7 +19,6 @@
 #include "api/audio_codecs/audio_decoder.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -28,6 +27,10 @@ class AudioDecoderPcmU final : public AudioDecoder {
   explicit AudioDecoderPcmU(size_t num_channels) : num_channels_(num_channels) {
     RTC_DCHECK_GE(num_channels, 1);
   }
+
+  AudioDecoderPcmU(const AudioDecoderPcmU&) = delete;
+  AudioDecoderPcmU& operator=(const AudioDecoderPcmU&) = delete;
+
   void Reset() override;
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
@@ -44,7 +47,6 @@ class AudioDecoderPcmU final : public AudioDecoder {
 
  private:
   const size_t num_channels_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderPcmU);
 };
 
 class AudioDecoderPcmA final : public AudioDecoder {
@@ -52,6 +54,10 @@ class AudioDecoderPcmA final : public AudioDecoder {
   explicit AudioDecoderPcmA(size_t num_channels) : num_channels_(num_channels) {
     RTC_DCHECK_GE(num_channels, 1);
   }
+
+  AudioDecoderPcmA(const AudioDecoderPcmA&) = delete;
+  AudioDecoderPcmA& operator=(const AudioDecoderPcmA&) = delete;
+
   void Reset() override;
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
@@ -68,7 +74,6 @@ class AudioDecoderPcmA final : public AudioDecoder {
 
  private:
   const size_t num_channels_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderPcmA);
 };
 
 }  // namespace webrtc

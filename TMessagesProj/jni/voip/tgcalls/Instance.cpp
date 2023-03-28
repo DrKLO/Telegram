@@ -41,7 +41,7 @@ std::unique_ptr<Instance> Meta::Create(
 	// Enforce correct protocol version.
 	if (version == "2.7.7") {
 		descriptor.config.protocolVersion = ProtocolVersion::V0;
-	} else if (version == "3.0.0") {
+	} else if (version == "5.0.0") {
 		descriptor.config.protocolVersion = ProtocolVersion::V1;
 	}
 

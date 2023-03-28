@@ -81,6 +81,7 @@ class ReassemblyStreams {
 
   virtual HandoverReadinessStatus GetHandoverReadiness() const = 0;
   virtual void AddHandoverState(DcSctpSocketHandoverState& state) = 0;
+  virtual void RestoreFromState(const DcSctpSocketHandoverState& state) = 0;
 };
 
 }  // namespace dcsctp

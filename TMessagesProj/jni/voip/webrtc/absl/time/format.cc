@@ -64,7 +64,8 @@ cctz_parts Split(absl::Time t) {
 // details about rep_hi and rep_lo.
 absl::Time Join(const cctz_parts& parts) {
   const int64_t rep_hi = (parts.sec - unix_epoch()).count();
-  const uint32_t rep_lo = parts.fem.count() / (1000 * 1000 / 4);
+  const uint32_t rep_lo =
+      static_cast<uint32_t>(parts.fem.count() / (1000 * 1000 / 4));
   const auto d = time_internal::MakeDuration(rep_hi, rep_lo);
   return time_internal::FromUnixDuration(d);
 }

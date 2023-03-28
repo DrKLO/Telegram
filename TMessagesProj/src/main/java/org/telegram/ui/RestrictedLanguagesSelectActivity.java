@@ -8,56 +8,55 @@
 
 package org.telegram.ui;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TranslateController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.LanguageCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.LanguageCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckbox2Cell;
-import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.TextRadioCell;
-import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.TranslateAlert2;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class RestrictedLanguagesSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -70,54 +69,25 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
     private boolean searching;
 
     private Timer searchTimer;
-    private ArrayList<LocaleController.LocaleInfo> searchResult;
-    private ArrayList<LocaleController.LocaleInfo> sortedLanguages;
-//    private ArrayList<LocaleController.LocaleInfo> unofficialLanguages;
+    private int separatorRow = -1;
+    private ArrayList<TranslateController.Language> searchResult;
+    private ArrayList<TranslateController.Language> allLanguages;
 
     private SharedPreferences preferences;
-    private SharedPreferences.OnSharedPreferenceChangeListener listener;
-    private HashSet<String> selectedLanguages = null;
+    private HashSet<String> firstSelectedLanguages;
+    private HashSet<String> selectedLanguages;
 
     public static HashSet<String> getRestrictedLanguages() {
-//        String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
-//        String[] onlyCurrentLang = new String[] { currentLangCode };
-        return new HashSet<>(MessagesController.getGlobalMainSettings().getStringSet("translate_button_restricted_languages", new HashSet<String>(/*Arrays.asList(onlyCurrentLang)*/)));
+        String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+        String[] onlyCurrentLang = new String[] { currentLangCode };
+        return new HashSet<>(MessagesController.getGlobalMainSettings().getStringSet("translate_button_restricted_languages", new HashSet<String>(Arrays.asList(onlyCurrentLang))));
     }
 
     @Override
     public boolean onFragmentCreate() {
         preferences = MessagesController.getGlobalMainSettings();
+        firstSelectedLanguages = getRestrictedLanguages();
         selectedLanguages = getRestrictedLanguages();
-        preferences.registerOnSharedPreferenceChangeListener(listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-            public int langPos(String lng) {
-                if (lng == null)
-                    return -1;
-                ArrayList<LocaleController.LocaleInfo> arr = (searching ? searchResult : sortedLanguages);
-                if (arr == null)
-                    return -1;
-                for (int i = 0; i < arr.size(); ++i)
-                    if (lng.equals(arr.get(i).pluralLangCode))
-                        return i;
-                return -1;
-            }
-
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-                preferences = sharedPreferences;
-                HashSet<String> newSelectedLanguages = getRestrictedLanguages();
-                if (listView != null && listView.getAdapter() != null) {
-                    RecyclerView.Adapter adapter = listView.getAdapter();
-                    int offset = !searching ? 1 : 0;
-                    for (String lng : selectedLanguages)
-                        if (!newSelectedLanguages.contains(lng))
-                            adapter.notifyItemChanged(langPos(lng) + offset);
-                    for (String lng : newSelectedLanguages)
-                        if (!selectedLanguages.contains(lng))
-                            adapter.notifyItemChanged(langPos(lng) + offset);
-                }
-                selectedLanguages = newSelectedLanguages;
-            }
-        });
 
         fillLanguages();
         LocaleController.getInstance().loadRemoteLanguages(currentAccount);
@@ -125,11 +95,55 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         return super.onFragmentCreate();
     }
 
+    private void rebind(int position) {
+        RecyclerView.Adapter adapter = listView.getAdapter();
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            View child = listView.getChildAt(i);
+            RecyclerView.ViewHolder holder = listView.getChildViewHolder(child);
+            if (holder == null) {
+                continue;
+            }
+            int childPosition = holder.getAdapterPosition();
+            if (childPosition == RecyclerView.NO_POSITION) {
+                continue;
+            }
+            if (childPosition == position) {
+                adapter.onBindViewHolder(holder, position);
+                return;
+            }
+        }
+    }
+
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        preferences.unregisterOnSharedPreferenceChangeListener(listener);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+    }
+
+    public static boolean toggleLanguage(String language, boolean doNotTranslate) {
+        if (language == null) {
+            return false;
+        }
+        language = language.toLowerCase();
+        LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        HashSet<String> selectedLanguages = getRestrictedLanguages();
+//        if (language != null && language.equals(currentLocaleInfo.pluralLangCode) && doNotTranslate) {
+////            AndroidUtilities.shakeViewSpring(view);
+////            BotWebViewVibrationEffect.APP_ERROR.vibrate();
+//            return false;
+//        }
+        if (!doNotTranslate) {
+            selectedLanguages.remove(language);
+        } else {
+            selectedLanguages.add(language);
+        }
+        if (selectedLanguages.size() == 1 && selectedLanguages.contains(currentLocaleInfo.pluralLangCode)) {
+            MessagesController.getGlobalMainSettings().edit().remove("translate_button_restricted_languages").commit();
+        } else {
+            MessagesController.getGlobalMainSettings().edit().putStringSet("translate_button_restricted_languages", selectedLanguages).commit();
+        }
+        TranslateController.invalidateSuggestedLanguageCodes();
+        return true;
     }
 
     @Override
@@ -214,76 +228,57 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 return;
             }
             boolean search = listView.getAdapter() == searchListViewAdapter;
-            if (!search)
-                position--;
-            LocaleController.LocaleInfo localeInfo;
-            if (search) {
-                localeInfo = searchResult.get(position);
+            final int realPosition = position;
+            TranslateController.Language language = null;
+            if (search && searchResult != null) {
+                language = searchResult.get(position);
             } else {
-                localeInfo = sortedLanguages.get(position);
+                if (separatorRow >= 0 && position > separatorRow) {
+                    position--;
+                }
+                if (position >= 0 && position < allLanguages.size()) {
+                    language = allLanguages.get(position);
+                }
             }
-            if (localeInfo != null) {
+            if (language != null && language.code != null) {
                 LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
-                String langCode = localeInfo.pluralLangCode;
-                if (langCode != null && langCode.equals(currentLocaleInfo.pluralLangCode)) {
-                    AndroidUtilities.shakeView(((TextCheckbox2Cell) view).checkbox, 2, 0);
-                    return;
-                }
+                String langCode = language.code;
                 boolean value = selectedLanguages.contains(langCode);
-                HashSet<String> newSelectedLanguages = new HashSet<String>(selectedLanguages);
-                if (value)
-                    newSelectedLanguages.removeIf(s -> s != null && s.equals(langCode));
-                else
-                    newSelectedLanguages.add(langCode);
-                if (newSelectedLanguages.size() == 1 && newSelectedLanguages.contains(currentLocaleInfo.pluralLangCode))
-                    preferences.edit().remove("translate_button_restricted_languages").apply();
-                else
-                    preferences.edit().putStringSet("translate_button_restricted_languages", newSelectedLanguages).apply();
-            }
-        });
+//                if (langCode != null && langCode.equals(currentLocaleInfo.pluralLangCode) && value) {
+//                    AndroidUtilities.shakeViewSpring(view);
+//                    BotWebViewVibrationEffect.APP_ERROR.vibrate();
+//                    return;
+//                }
+                if (value) {
+                    selectedLanguages.removeIf(s -> s != null && s.equals(langCode));
+                } else {
+                    selectedLanguages.add(langCode);
+                }
+                if (selectedLanguages.size() == 1 && selectedLanguages.contains(currentLocaleInfo.pluralLangCode)) {
+                    preferences.edit().remove("translate_button_restricted_languages").remove("translate_button_restricted_languages_changed").apply();
+                } else {
+                    preferences.edit().putStringSet("translate_button_restricted_languages", selectedLanguages).putBoolean("translate_button_restricted_languages_changed", true).apply();
+                }
 
-        listView.setOnItemLongClickListener((view, position) -> {
-            if (getParentActivity() == null || parentLayout == null || !(view instanceof TextCheckbox2Cell)) {
-                return false;
-            }
-            boolean search = listView.getAdapter() == searchListViewAdapter;
-            if (!search)
-                position--;
-            LocaleController.LocaleInfo localeInfo;
-            if (search) {
-                localeInfo = searchResult.get(position);
-            } else {
-                localeInfo = sortedLanguages.get(position);
-            }
-            if (localeInfo == null || localeInfo.pathToFile == null || localeInfo.isRemote() && localeInfo.serverIndex != Integer.MAX_VALUE) {
-                return false;
-            }
-            final LocaleController.LocaleInfo finalLocaleInfo = localeInfo;
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(LocaleController.getString("DeleteLocalizationTitle", R.string.DeleteLocalizationTitle));
-            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("DeleteLocalizationText", R.string.DeleteLocalizationText, localeInfo.name)));
-            builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
-                if (LocaleController.getInstance().deleteLanguage(finalLocaleInfo, currentAccount)) {
-                    fillLanguages();
-                    if (searchResult != null) {
-                        searchResult.remove(finalLocaleInfo);
+                if (search) {
+                    for (int i = 0, p = 0; i < searchResult.size(); ++i, ++p) {
+                        if (TextUtils.equals(langCode, searchResult.get(i).code)) {
+                            rebind(p);
+                        }
                     }
-                    if (listAdapter != null) {
-                        listAdapter.notifyDataSetChanged();
-                    }
-                    if (searchListViewAdapter != null) {
-                        searchListViewAdapter.notifyDataSetChanged();
+                } else {
+                    for (int i = 0, p = 0; i < allLanguages.size(); ++i, ++p) {
+                        if (p == separatorRow) {
+                            p++;
+                        }
+                        if (TextUtils.equals(langCode, allLanguages.get(i).code)) {
+                            rebind(p);
+                        }
                     }
                 }
-            });
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            AlertDialog alertDialog = builder.create();
-            showDialog(alertDialog);
-            TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-            if (button != null) {
-                button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+
+                MessagesController.getInstance(currentAccount).getTranslateController().checkRestrictedLanguagesUpdate();
             }
-            return true;
         });
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -309,33 +304,45 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
     }
 
     private void fillLanguages() {
-        final LocaleController.LocaleInfo currentLocale = LocaleController.getInstance().getCurrentLocaleInfo();
-        Comparator<LocaleController.LocaleInfo> comparator = (o, o2) -> {
-            if (o == currentLocale) {
-                return -1;
-            } else if (o2 == currentLocale) {
-                return 1;
-            } else if (o.serverIndex == o2.serverIndex) {
-                return o.name.compareTo(o2.name);
-            }
-            if (o.serverIndex > o2.serverIndex) {
-                return 1;
-            } else if (o.serverIndex < o2.serverIndex) {
-                return -1;
-            }
-            return 0;
-        };
+        allLanguages = TranslateController.getLanguages();
 
-        sortedLanguages = new ArrayList<>();
-
-        ArrayList<LocaleController.LocaleInfo> arrayList = LocaleController.getInstance().languages;
-        for (int a = 0, size = arrayList.size(); a < size; a++) {
-            LocaleController.LocaleInfo info = arrayList.get(a);
-            if (info != null && info.serverIndex != Integer.MAX_VALUE/* && (info.pluralLangCode == null || !info.pluralLangCode.equals(currentLocale.pluralLangCode))*/) {
-                sortedLanguages.add(info);
+        final String currentLanguageCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+        TranslateController.Language currentLanguage = null;
+        ArrayList<TranslateController.Language> selectedLanguages = new ArrayList<>();
+        ArrayList<String> notAddedSelectedLanguages = new ArrayList<>(firstSelectedLanguages);
+        for (int i = 0; i < allLanguages.size(); ++i) {
+            TranslateController.Language l = allLanguages.get(i);
+            if (TextUtils.equals(l.code, currentLanguageCode)) {
+                currentLanguage = l;
+                notAddedSelectedLanguages.remove(l.code);
+                allLanguages.remove(i);
+                i--;
+            } else if (firstSelectedLanguages.contains(l.code)) {
+                selectedLanguages.add(l);
+                notAddedSelectedLanguages.remove(l.code);
+                allLanguages.remove(i);
+                i--;
             }
         }
-        Collections.sort(sortedLanguages, comparator);
+
+        for (int i = 0; i < notAddedSelectedLanguages.size(); ++i) {
+            TranslateController.Language lang = new TranslateController.Language();
+            lang.code = notAddedSelectedLanguages.get(i);
+            lang.ownDisplayName = lang.displayName = lang.code.toUpperCase();
+            lang.q = lang.code.toLowerCase();
+            selectedLanguages.add(lang);
+        }
+
+        separatorRow = 0;
+        allLanguages.addAll(0, selectedLanguages);
+        separatorRow += selectedLanguages.size();
+        if (currentLanguage != null) {
+            allLanguages.add(0, currentLanguage);
+            separatorRow++;
+        }
+        if (separatorRow <= 0) {
+            separatorRow = -1;
+        }
     }
 
     @Override
@@ -357,56 +364,28 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
             } catch (Exception e) {
                 FileLog.e(e);
             }
-//            searchTimer = new Timer();
-//            searchTimer.schedule(new TimerTask() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        searchTimer.cancel();
-//                        searchTimer = null;
-//                    } catch (Exception e) {
-//                        FileLog.e(e);
-//                    }
-                    processSearch(query);
-//                }
-//            }, 100, 300);
+            processSearch(query);
         }
     }
 
     private void processSearch(final String query) {
-//        Utilities.searchQueue.postRunnable(() -> {
+        String q = query.trim().toLowerCase();
 
-            String q = query.trim().toLowerCase();
-            if (q.length() == 0) {
-                updateSearchResults(new ArrayList<>());
-                return;
+        if (searchResult == null) {
+            searchResult = new ArrayList<>();
+        } else {
+            searchResult.clear();
+        }
+        for (int i = 0; i < allLanguages.size(); ++i) {
+            TranslateController.Language l = allLanguages.get(i);
+            if (l.q.startsWith(q)) {
+                searchResult.add(0, l);
+            } else if (l.q.contains(q)) {
+                searchResult.add(l);
             }
-            long time = System.currentTimeMillis();
-            ArrayList<LocaleController.LocaleInfo> resultArray = new ArrayList<>();
+        }
 
-//            for (int a = 0, N = unofficialLanguages.size(); a < N; a++) {
-//                LocaleController.LocaleInfo c = unofficialLanguages.get(a);
-//                if (c.name.toLowerCase().startsWith(query) || c.nameEnglish.toLowerCase().startsWith(query)) {
-//                    resultArray.add(c);
-//                }
-//            }
-
-            for (int a = 0, N = sortedLanguages.size(); a < N; a++) {
-                LocaleController.LocaleInfo c = sortedLanguages.get(a);
-                if (c.name.toLowerCase().startsWith(query) || c.nameEnglish.toLowerCase().startsWith(query)) {
-                    resultArray.add(c);
-                }
-            }
-
-            updateSearchResults(resultArray);
-//        });
-    }
-
-    private void updateSearchResults(final ArrayList<LocaleController.LocaleInfo> arrCounties) {
-        AndroidUtilities.runOnUIThread(() -> {
-            searchResult = arrCounties;
-            searchListViewAdapter.notifyDataSetChanged();
-        });
+        searchListViewAdapter.notifyDataSetChanged();
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -432,8 +411,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 }
                 return searchResult.size();
             } else {
-                int count = sortedLanguages.size();
-                return 1 + count;
+                return (separatorRow >= 0 ? 1 : 0) + allLanguages.size();
             }
         }
 
@@ -465,46 +443,34 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0: {
-                    if (!search)
-                        position--;
-//                    LanguageCell textSettingsCell = (LanguageCell) holder.itemView;
                     TextCheckbox2Cell textSettingsCell = (TextCheckbox2Cell) holder.itemView;
-                    LocaleController.LocaleInfo localeInfo;
-                    boolean last;
+                    TranslateController.Language language = null;
+                    boolean last = false;
                     if (search) {
-                        localeInfo = searchResult.get(position);
+                        if (position >= 0 && position < searchResult.size()) {
+                            language = searchResult.get(position);
+                        }
                         last = position == searchResult.size() - 1;
-                    } /*else if (!unofficialLanguages.isEmpty() && position >= 0 && position < unofficialLanguages.size()) {
-                        localeInfo = unofficialLanguages.get(position);
-                        last = position == unofficialLanguages.size() - 1;
-                    } */else {
-//                        if (!unofficialLanguages.isEmpty()) {
-//                            position -= unofficialLanguages.size() + 1;
-//                        }
-                        localeInfo = sortedLanguages.get(position);
-                        last = position == sortedLanguages.size() - 1;
-                    }
-                    String langCode = localeInfo.pluralLangCode;
-                    boolean value = selectedLanguages.contains(langCode);
-                    if (localeInfo.isLocal()) {
-                        textSettingsCell.setTextAndValue(String.format("%1$s (%2$s)", localeInfo.name, LocaleController.getString("LanguageCustom", R.string.LanguageCustom)), localeInfo.nameEnglish, false, !last);
                     } else {
-                        textSettingsCell.setTextAndValue(localeInfo.name, localeInfo.nameEnglish, false, !last);
+                        if (separatorRow >= 0 && position > separatorRow) {
+                            position--;
+                        }
+                        if (position >= 0 && position < allLanguages.size()) {
+                            language = allLanguages.get(position);
+                            last = position == allLanguages.size() - 1;
+                        }
                     }
-
-                    boolean isCurrent = langCode != null && langCode.equals(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode);
-                    textSettingsCell.setChecked(value || isCurrent);
+                    if (language == null) {
+                        return;
+                    }
+                    String ownDisplayName = language.ownDisplayName == null ? language.displayName : language.ownDisplayName;
+                    textSettingsCell.setTextAndValue(ownDisplayName, language.displayName, false, !last);
+                    textSettingsCell.setChecked(selectedLanguages.contains(language.code));
                     break;
                 }
                 case 1: {
-                    if (!search)
-                        position--;
                     ShadowSectionCell sectionCell = (ShadowSectionCell) holder.itemView;
-//                    if (!unofficialLanguages.isEmpty() && position == unofficialLanguages.size()) {
-//                        sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-//                    } else {
-                        sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-//                    }
+                    sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     break;
                 }
                 case 2: {
@@ -515,17 +481,13 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
 
         @Override
         public int getItemViewType(int i) {
-            if (!search)
-                i--;
-            if (i == -1)
-                return 2;
             if (search) {
                 return 0;
+            } else if (i == separatorRow) {
+                return 1;
+            } else {
+                return 0;
             }
-//            if (!unofficialLanguages.isEmpty() && (i == unofficialLanguages.size() || i == unofficialLanguages.size() + sortedLanguages.size() + 1) || unofficialLanguages.isEmpty() && i == sortedLanguages.size()) {
-//                return 1;
-//            }
-            return 0;
         }
     }
 
@@ -557,5 +519,208 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{LanguageCell.class}, new String[]{"checkImage"}, null, null, null, Theme.key_featuredStickers_addedIcon));
 
         return themeDescriptions;
+    }
+
+    public static void cleanup() {
+        MessagesController.getGlobalMainSettings().edit()
+            .remove("translate_button_restricted_languages_changed")
+            .remove("translate_button_restricted_languages_version")
+            .remove("translate_button_restricted_languages")
+            .apply();
+        checkRestrictedLanguages(false);
+    }
+
+    public static final int LAST_DO_NOT_TRANSLATE_VERSION = 2;
+    public static void checkRestrictedLanguages(boolean accountsChanged) {
+        boolean manualChanged = MessagesController.getGlobalMainSettings().getBoolean("translate_button_restricted_languages_changed", false);
+        int version = MessagesController.getGlobalMainSettings().getInt("translate_button_restricted_languages_version", 0);
+
+        if (version != LAST_DO_NOT_TRANSLATE_VERSION || accountsChanged && !manualChanged) {
+            getExtendedDoNotTranslate(languages -> {
+                final String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+
+                languages.addAll(getRestrictedLanguages());
+                SharedPreferences.Editor edit = MessagesController.getGlobalMainSettings().edit();
+                if (languages.size() == 1 && TextUtils.equals(languages.iterator().next(), currentLangCode)) {
+                    edit.remove("translate_button_restricted_languages");
+                } else {
+                    edit.putStringSet("translate_button_restricted_languages", languages);
+                }
+                edit.putInt("translate_button_restricted_languages_version", LAST_DO_NOT_TRANSLATE_VERSION).apply();
+
+                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+                    final int account = i;
+                    try {
+                        MessagesController.getInstance(account).getTranslateController().checkRestrictedLanguagesUpdate();
+                    } catch (Exception ignore) {}
+                }
+            });
+        }
+    }
+
+    public static void getExtendedDoNotTranslate(Utilities.Callback<HashSet<String>> onDone) {
+        if (onDone == null) {
+            return;
+        }
+
+        final HashSet<String> result = new HashSet<>();
+
+        final HashMap<String, String> countries = new HashMap<>();
+//        final HashMap<String, String[]> languages = new HashMap<>();
+        final HashMap<String, String> uniquePhoneCodes = new HashMap<>();
+
+//        final Utilities.Callback<String> pushCountry = countryCode -> {
+//            if (countryCode == null) {
+//                return;
+//            }
+//            String[] countryLanguages = languages.get(countryCode.toUpperCase());
+//            if (countryLanguages == null) {
+//                return;
+//            }
+//            for (int j = 1; j < Math.min(2, countryLanguages.length); ++j) {
+//                String language = countryLanguages[j];
+//                if (language.contains("-")) {
+//                    language = language.split("-")[0];
+//                }
+//                if (TranslateAlert2.languageName(language) != null) {
+//                    result.add(language);
+//                }
+//            }
+//        };
+
+        Utilities.doCallbacks(
+            next -> {
+                try {
+                    String language = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+                    if (TranslateAlert2.languageName(language) != null) {
+                        result.add(language);
+                    }
+                } catch (Exception e0) {
+                    FileLog.e(e0);
+                }
+                next.run();
+            },
+            next -> {
+                try {
+                    String language = Resources.getSystem().getConfiguration().locale.getLanguage();
+                    if (TranslateAlert2.languageName(language) != null) {
+                        result.add(language);
+                    }
+                } catch (Exception e1) {
+                    FileLog.e(e1);
+                }
+                next.run();
+            },
+            next -> {
+                try {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt")));
+                    ArrayList<String> multipleCodes = new ArrayList<>();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        String[] args = line.split(";");
+                        if (args.length >= 3) {
+                            countries.put(args[2], args[1]);
+                            if (uniquePhoneCodes.containsKey(args[0]) && !"7".equals(args[0])) {
+                                multipleCodes.add(args[0]);
+                                uniquePhoneCodes.remove(args[0]);
+                            } else if (!multipleCodes.contains(args[0])) {
+                                uniquePhoneCodes.put(args[0], args[1]);
+                            }
+                        }
+                    }
+                    reader.close();
+
+//                    reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("languages.txt")));
+//                    while ((line = reader.readLine()) != null) {
+//                        String[] args = line.split(",");
+//                        if (args.length >= 2) {
+//                            languages.put(args[0], args);
+//                        }
+//                    }
+//                    reader.close();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                next.run();
+            },
+//            next -> {
+//                ArrayList<Utilities.Callback<Runnable>> getAuthorizationsCallbacks = new ArrayList<>();
+//                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+//                    final int account = i;
+//                    if (UserConfig.getInstance(account).getClientUserId() != 0 && !ConnectionsManager.getInstance(account).isTestBackend()) {
+//                        getAuthorizationsCallbacks.add(nextInternal -> {
+//                            try {
+//                                ConnectionsManager.getInstance(account).sendRequest(new TLRPC.TL_account_getAuthorizations(), (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+//                                    if (error == null) {
+//                                        TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
+//                                        if (!res.authorizations.isEmpty()) {
+//                                            TLRPC.TL_authorization auth = res.authorizations.get(0);
+//                                            String[] separated = auth.country.split(", ");
+//                                            if (separated.length > 0) {
+//                                                pushCountry.run(countries.get(separated[separated.length - 1]));
+//                                            }
+//                                        }
+//                                    }
+//                                    nextInternal.run();
+//                                }));
+//                            } catch (Exception e2) {
+//                                FileLog.e(e2);
+//                                nextInternal.run();
+//                            }
+//                        });
+//                    }
+//                }
+//                getAuthorizationsCallbacks.add(n -> next.run());
+//                Utilities.doCallbacks(getAuthorizationsCallbacks.toArray(new Utilities.Callback[0]));
+//            },
+//            next -> {
+//                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+//                    final int account = i;
+//                    try {
+//                        TLRPC.User user = UserConfig.getInstance(account).getCurrentUser();
+//                        if (user != null && user.phone != null) {
+//                            for (int j = 4; j > 0; j--) {
+//                                String code = user.phone.substring(0, j);
+//                                String countryCode = uniquePhoneCodes.get(code);
+//                                if (countryCode != null) {
+//                                    pushCountry.run(countryCode);
+//                                    break;
+//                                }
+//                            }
+//                        }
+//                    } catch (Exception e3) {
+//                        FileLog.e(e3);
+//                    }
+//                }
+//                next.run();
+//            },
+            next -> {
+                try {
+                    InputMethodManager imm = (InputMethodManager) ApplicationLoader.applicationContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    List<InputMethodInfo> ims = imm.getEnabledInputMethodList();
+
+                    for (InputMethodInfo method : ims) {
+                        List<InputMethodSubtype> submethods = imm.getEnabledInputMethodSubtypeList(method, true);
+                        for (InputMethodSubtype submethod : submethods) {
+                            if ("keyboard".equals(submethod.getMode())) {
+                                String currentLocale = submethod.getLocale();
+                                if (currentLocale != null && currentLocale.contains("_")) {
+                                    currentLocale = currentLocale.split("_")[0];
+                                }
+
+                                if (TranslateAlert2.languageName(currentLocale) != null) {
+                                    result.add(currentLocale);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e4) {
+                    FileLog.e(e4);
+                }
+
+                next.run();
+            },
+            next -> onDone.run(result)
+        );
     }
 }

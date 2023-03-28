@@ -15,6 +15,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #ifdef OPENSSL_IS_BORINGSSL
 #include "rtc_base/boringssl_identity.h"
@@ -169,30 +170,31 @@ KeyType IntKeyTypeFamilyToKeyType(int key_type_family) {
 // SSLIdentity
 //////////////////////////////////////////////////////////////////////
 
-bool SSLIdentity::PemToDer(const std::string& pem_type,
-                           const std::string& pem_string,
+bool SSLIdentity::PemToDer(absl::string_view pem_type,
+                           absl::string_view pem_string,
                            std::string* der) {
   // Find the inner body. We need this to fulfill the contract of returning
   // pem_length.
-  size_t header = pem_string.find("-----BEGIN " + pem_type + "-----");
-  if (header == std::string::npos) {
+  std::string pem_type_str(pem_type);
+  size_t header = pem_string.find("-----BEGIN " + pem_type_str + "-----");
+  if (header == absl::string_view::npos) {
     return false;
   }
   size_t body = pem_string.find('\n', header);
-  if (body == std::string::npos) {
+  if (body == absl::string_view::npos) {
     return false;
   }
-  size_t trailer = pem_string.find("-----END " + pem_type + "-----");
-  if (trailer == std::string::npos) {
+  size_t trailer = pem_string.find("-----END " + pem_type_str + "-----");
+  if (trailer == absl::string_view::npos) {
     return false;
   }
-  std::string inner = pem_string.substr(body + 1, trailer - (body + 1));
+  std::string inner(pem_string.substr(body + 1, trailer - (body + 1)));
   *der = Base64::Decode(inner, Base64::DO_PARSE_WHITE | Base64::DO_PAD_ANY |
                                    Base64::DO_TERM_BUFFER);
   return true;
 }
 
-std::string SSLIdentity::DerToPem(const std::string& pem_type,
+std::string SSLIdentity::DerToPem(absl::string_view pem_type,
                                   const unsigned char* data,
                                   size_t length) {
   rtc::StringBuilder result;
@@ -214,7 +216,7 @@ std::string SSLIdentity::DerToPem(const std::string& pem_type,
 }
 
 // static
-std::unique_ptr<SSLIdentity> SSLIdentity::Create(const std::string& common_name,
+std::unique_ptr<SSLIdentity> SSLIdentity::Create(absl::string_view common_name,
                                                  const KeyParams& key_param,
                                                  time_t certificate_lifetime) {
 #ifdef OPENSSL_IS_BORINGSSL
@@ -227,13 +229,13 @@ std::unique_ptr<SSLIdentity> SSLIdentity::Create(const std::string& common_name,
 }
 
 // static
-std::unique_ptr<SSLIdentity> SSLIdentity::Create(const std::string& common_name,
+std::unique_ptr<SSLIdentity> SSLIdentity::Create(absl::string_view common_name,
                                                  const KeyParams& key_param) {
   return Create(common_name, key_param, kDefaultCertificateLifetimeInSeconds);
 }
 
 // static
-std::unique_ptr<SSLIdentity> SSLIdentity::Create(const std::string& common_name,
+std::unique_ptr<SSLIdentity> SSLIdentity::Create(absl::string_view common_name,
                                                  KeyType key_type) {
   return Create(common_name, KeyParams(key_type),
                 kDefaultCertificateLifetimeInSeconds);
@@ -252,8 +254,8 @@ std::unique_ptr<SSLIdentity> SSLIdentity::CreateForTest(
 // Construct an identity from a private key and a certificate.
 // static
 std::unique_ptr<SSLIdentity> SSLIdentity::CreateFromPEMStrings(
-    const std::string& private_key,
-    const std::string& certificate) {
+    absl::string_view private_key,
+    absl::string_view certificate) {
 #ifdef OPENSSL_IS_BORINGSSL
   return BoringSSLIdentity::CreateFromPEMStrings(private_key, certificate);
 #else
@@ -264,8 +266,8 @@ std::unique_ptr<SSLIdentity> SSLIdentity::CreateFromPEMStrings(
 // Construct an identity from a private key and a certificate chain.
 // static
 std::unique_ptr<SSLIdentity> SSLIdentity::CreateFromPEMChainStrings(
-    const std::string& private_key,
-    const std::string& certificate_chain) {
+    absl::string_view private_key,
+    absl::string_view certificate_chain) {
 #ifdef OPENSSL_IS_BORINGSSL
   return BoringSSLIdentity::CreateFromPEMChainStrings(private_key,
                                                       certificate_chain);

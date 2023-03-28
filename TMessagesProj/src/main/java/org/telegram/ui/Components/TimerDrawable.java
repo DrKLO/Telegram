@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
@@ -45,6 +46,7 @@ public class TimerDrawable extends Drawable {
     Theme.ResourcesProvider resourcesProvider;
     private boolean overrideColor;
     private boolean isStaticIcon;
+    private boolean isDialog;
 
     public TimerDrawable(Context context, Theme.ResourcesProvider resourcesProvider) {
         this.context = context;
@@ -59,8 +61,12 @@ public class TimerDrawable extends Drawable {
         if (time != value) {
             time = value;
 
-            currentTtlIcon = ContextCompat.getDrawable(context, time == 0 ? R.drawable.msg_mini_autodelete : R.drawable.msg_mini_autodelete_empty).mutate();
-            currentTtlIcon.setColorFilter(currentColorFilter);
+            if (isDialog) {
+                currentTtlIcon = ContextCompat.getDrawable(context, R.drawable.msg_autodelete_badge2).mutate();
+            } else {
+                currentTtlIcon = ContextCompat.getDrawable(context, time == 0 ? R.drawable.msg_mini_autodelete : R.drawable.msg_mini_autodelete_empty).mutate();
+                currentTtlIcon.setColorFilter(currentColorFilter);
+            }
             invalidateSelf();
 
             String timeString;
@@ -132,12 +138,21 @@ public class TimerDrawable extends Drawable {
         return timerDrawable;
     }
 
+
+    public static TimerDrawable getTtlIconForDialogs(int ttl) {
+        TimerDrawable timerDrawable = new TimerDrawable(ApplicationLoader.applicationContext, null);
+        timerDrawable.isDialog = true;
+        timerDrawable.setTime(ttl);
+        return timerDrawable;
+    }
     @Override
     public void draw(Canvas canvas) {
         int width = getIntrinsicWidth();
         int height = getIntrinsicHeight();
 
-        if (!isStaticIcon) {
+        if (isDialog) {
+            timePaint.setColor(Color.WHITE);
+        } else if (!isStaticIcon) {
             if (!overrideColor) {
                 paint.setColor(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider));
             }
@@ -147,7 +162,7 @@ public class TimerDrawable extends Drawable {
         }
 
         if (currentTtlIcon != null) {
-            if (!isStaticIcon) {
+            if (!isStaticIcon && !isDialog) {
                 canvas.drawCircle(getBounds().centerX(), getBounds().centerY(), getBounds().width() / 2f, paint);
                 int iconColor = Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider);
                 if (this.iconColor != iconColor) {
@@ -155,11 +170,16 @@ public class TimerDrawable extends Drawable {
                     currentTtlIcon.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
                 }
             }
-            AndroidUtilities.rectTmp2.set((int) (getBounds().centerX() - AndroidUtilities.dp(10.5f)), (int) (getBounds().centerY() - AndroidUtilities.dp(10.5f)),
-                    (int) (getBounds().centerX() - AndroidUtilities.dp(10.5f)) + currentTtlIcon.getIntrinsicWidth(),
-                    (int) (getBounds().centerY() - AndroidUtilities.dp(10.5f)) + currentTtlIcon.getIntrinsicHeight());
-            currentTtlIcon.setBounds(AndroidUtilities.rectTmp2);
-            currentTtlIcon.draw(canvas);
+            if (isDialog) {
+                currentTtlIcon.setBounds(getBounds().left, getBounds().top, getBounds().left + currentTtlIcon.getIntrinsicWidth(),  getBounds().top + currentTtlIcon.getIntrinsicHeight());
+                currentTtlIcon.draw(canvas);
+            } else {
+                AndroidUtilities.rectTmp2.set((int) (getBounds().centerX() - AndroidUtilities.dp(10.5f)), (int) (getBounds().centerY() - AndroidUtilities.dp(10.5f)),
+                        (int) (getBounds().centerX() - AndroidUtilities.dp(10.5f)) + currentTtlIcon.getIntrinsicWidth(),
+                        (int) (getBounds().centerY() - AndroidUtilities.dp(10.5f)) + currentTtlIcon.getIntrinsicHeight());
+                currentTtlIcon.setBounds(AndroidUtilities.rectTmp2);
+                currentTtlIcon.draw(canvas);
+            }
         }
         if (time != 0) {
             if (timeLayout != null) {
@@ -167,8 +187,14 @@ public class TimerDrawable extends Drawable {
                 if (AndroidUtilities.density == 3) {
                     xOffxet = -1;
                 }
-                canvas.translate((int) (width / 2 - Math.ceil(timeWidth / 2)) + xOffxet, (height - timeHeight) / 2);
-                timeLayout.draw(canvas);
+                if (isDialog) {
+                    canvas.translate((float) ((getBounds().width() / 2 - Math.ceil(timeWidth / 2)) + xOffxet), (getBounds().height() - timeHeight) / 2f);
+                    timeLayout.draw(canvas);
+                } else {
+                    canvas.translate((int) (width / 2 - Math.ceil(timeWidth / 2)) + xOffxet, (height - timeHeight) / 2f);
+                    timeLayout.draw(canvas);
+                }
+
             }
         }
     }
@@ -205,5 +231,9 @@ public class TimerDrawable extends Drawable {
     public void setBackgroundColor(int currentActionBarColor) {
         overrideColor = true;
         paint.setColor(currentActionBarColor);
+    }
+
+    public int getTime() {
+        return time;
     }
 }

@@ -383,7 +383,9 @@ bool RtpPacketizerAv1::NextPacket(RtpPacketToSend* packet) {
     int payload_offset =
         std::max(0, obu_offset - (ObuHasExtension(obu.header) ? 2 : 1));
     size_t payload_size = obu.payload.size() - payload_offset;
-    memcpy(write_at, obu.payload.data() + payload_offset, payload_size);
+    if (!obu.payload.empty() && payload_size > 0) {
+      memcpy(write_at, obu.payload.data() + payload_offset, payload_size);
+    }
     write_at += payload_size;
     // All obus are stored from the beginning, except, may be, the first one.
     obu_offset = 0;

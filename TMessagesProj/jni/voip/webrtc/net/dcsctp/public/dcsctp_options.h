@@ -71,6 +71,11 @@ struct DcSctpOptions {
   // `max_receiver_window_buffer_size`).
   size_t max_message_size = 256 * 1024;
 
+  // The default stream priority, if not overridden by
+  // `SctpSocket::SetStreamPriority`. The default value is selected to be
+  // compatible with https://www.w3.org/TR/webrtc-priority/, section 4.2-4.3.
+  StreamPriority default_stream_priority = StreamPriority(256);
+
   // Maximum received window buffer size. This should be a bit larger than the
   // largest sized message you want to be able to receive. This essentially
   // limits the memory usage on the receive side. Note that memory is allocated

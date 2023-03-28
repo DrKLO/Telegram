@@ -23,7 +23,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
@@ -33,11 +35,16 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.Bulletin;
 
+import java.text.CollationKey;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ContactsController extends BaseController {
 
@@ -115,6 +122,47 @@ public class ContactsController extends BaseController {
         public boolean deliverSelfNotifications() {
             return false;
         }
+    }
+
+    private static Locale cachedCollatorLocale;
+    private static Collator cachedCollator;
+    public static Collator getLocaleCollator() {
+        if (cachedCollator == null || cachedCollatorLocale != Locale.getDefault()) {
+            try {
+                cachedCollator = Collator.getInstance(cachedCollatorLocale = Locale.getDefault());
+                cachedCollator.setStrength(Collator.SECONDARY);
+            } catch (Exception e) {
+                FileLog.e(e, true);
+            }
+        }
+        if (cachedCollator == null) {
+            try {
+                cachedCollator = Collator.getInstance();
+                cachedCollator.setStrength(Collator.SECONDARY);
+            } catch (Exception e) {
+                FileLog.e(e, true);
+            }
+        }
+        if (cachedCollator == null) {
+            cachedCollator = new Collator() {
+                @Override
+                public int compare(String source, String target) {
+                    if (source == null || target == null) {
+                        return 0;
+                    }
+                    return source.compareTo(target);
+                }
+                @Override
+                public CollationKey getCollationKey(String source) {
+                    return null;
+                }
+                @Override
+                public int hashCode() {
+                    return 0;
+                }
+            };
+        }
+        return cachedCollator;
     }
 
     public static class Contact {
@@ -556,7 +604,7 @@ public class ContactsController extends BaseController {
         return count > 3;
     }
 
-    private HashMap<String, Contact> readContactsFromPhoneBook() {
+    public HashMap<String, Contact> readContactsFromPhoneBook() {
         if (!getUserConfig().syncContacts) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("contacts sync disabled");
@@ -748,6 +796,69 @@ public class ContactsController extends BaseController {
                 }
                 pCur = null;
             }
+
+            Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null,ContactsContract.Contacts.HAS_PHONE_NUMBER + " = ?", new String[]{"0"}, null);
+            if (cur != null) {
+                String[] metadata = new String[5];
+                Pattern phonePattern = Pattern.compile(".*(\\+[0-9 \\-]+).*");
+                while (cur.moveToNext()) {
+                    String id = cur.getString(cur.getColumnIndex(ContactsContract.Contacts._ID));
+                    String lookup_key = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+                    String name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    String phone = null;
+                    if ((contactsMap != null && contactsMap.get(lookup_key) != null) || TextUtils.isEmpty(name)) {
+                        continue;
+                    }
+                    pCur = cr.query(
+                            ContactsContract.Data.CONTENT_URI,
+                            null,
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                            new String[]{id}, null);
+                    loop : while (pCur.moveToNext()) {
+                        metadata[0] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA1));
+                        metadata[1] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA2));
+                        metadata[2] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA3));
+                        metadata[3] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA4));
+                        metadata[4] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA5));
+                        for (int i = 0; i < metadata.length; i++) {
+                            if (metadata[i] == null) {
+                                continue;
+                            }
+                            Matcher matcher = phonePattern.matcher(metadata[i]);
+                            if (matcher.matches()) {
+                                phone = matcher.group(1).replace(" ", "").replace("-", "");
+                                break loop;
+                            }
+                        }
+                    }
+
+                    pCur.close();
+
+                    if (phone != null) {
+
+                        String shortNumber = phone;
+                        if (phone.startsWith("+")) {
+                            shortNumber = phone.substring(1);
+                        }
+
+                        Contact contact = new Contact();
+                        contact.first_name = name;
+                        contact.last_name = "";
+                        contact.contact_id = lastContactId++;
+                        contact.key = lookup_key;
+                        contact.phones.add(phone);
+                        contact.shortPhones.add(shortNumber);
+                        contact.phoneDeleted.add(0);
+                        contact.phoneTypes.add(LocaleController.getString("PhoneOther", R.string.PhoneOther));
+
+//                        contact.provider = accountType;
+//                        contact.isGoodProvider = isGoodAccountType;
+                        contactsMap.put(lookup_key, contact);
+                    }
+                }
+                cur.close();
+            }
+
         } catch (Throwable e) {
             FileLog.e(e);
             if (contactsMap != null) {
@@ -1456,12 +1567,13 @@ public class ContactsController extends BaseController {
                     getMessagesStorage().putContacts(contactsArr, from != 2);
                 }
 
+                final Collator collator = getLocaleCollator();
                 Collections.sort(contactsArr, (tl_contact, tl_contact2) -> {
                     TLRPC.User user1 = usersDict.get(tl_contact.user_id);
                     TLRPC.User user2 = usersDict.get(tl_contact2.user_id);
                     String name1 = UserObject.getFirstName(user1);
                     String name2 = UserObject.getFirstName(user2);
-                    return name1.compareTo(name2);
+                    return collator.compare(name1, name2);
                 });
 
                 final ConcurrentHashMap<Long, TLRPC.TL_contact> contactsDictionary = new ConcurrentHashMap<>(20, 1.0f, 2);
@@ -1531,7 +1643,7 @@ public class ContactsController extends BaseController {
                     } else if (cv2 == '#') {
                         return -1;
                     }
-                    return s.compareTo(s2);
+                    return collator.compare(s, s2);
                 });
 
                 Collections.sort(sortedSectionsArrayMutual, (s, s2) -> {
@@ -1542,7 +1654,7 @@ public class ContactsController extends BaseController {
                     } else if (cv2 == '#') {
                         return -1;
                     }
-                    return s.compareTo(s2);
+                    return collator.compare(s, s2);
                 });
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -1645,6 +1757,7 @@ public class ContactsController extends BaseController {
                     arrayList.add(user);
                 }
             }
+            final Collator collator = getLocaleCollator();
             for (ArrayList<Object> arrayList : phoneBookSectionsDictFinal.values()) {
                 Collections.sort(arrayList, (o1, o2) -> {
                     String name1;
@@ -1677,7 +1790,7 @@ public class ContactsController extends BaseController {
                         name2 = "";
                     }
 
-                    return name1.compareTo(name2);
+                    return collator.compare(name1, name2);
                 });
             }
             Collections.sort(phoneBookSectionsArrayFinal, (s, s2) -> {
@@ -1688,7 +1801,7 @@ public class ContactsController extends BaseController {
                 } else if (cv2 == '#') {
                     return -1;
                 }
-                return s.compareTo(s2);
+                return collator.compare(s, s2);
             });
             AndroidUtilities.runOnUIThread(() -> {
                 phoneBookSectionsArray = phoneBookSectionsArrayFinal;
@@ -1727,29 +1840,31 @@ public class ContactsController extends BaseController {
 
             sortedPhoneBookContacts.add(value);
         }
+        final Collator collator = getLocaleCollator();
         Collections.sort(sortedPhoneBookContacts, (contact, contact2) -> {
-            String toComapre1 = contact.first_name;
-            if (toComapre1.length() == 0) {
-                toComapre1 = contact.last_name;
+            String toCompare1 = contact.first_name;
+            if (toCompare1.length() == 0) {
+                toCompare1 = contact.last_name;
             }
-            String toComapre2 = contact2.first_name;
-            if (toComapre2.length() == 0) {
-                toComapre2 = contact2.last_name;
+            String toCompare2 = contact2.first_name;
+            if (toCompare2.length() == 0) {
+                toCompare2 = contact2.last_name;
             }
-            return toComapre1.compareTo(toComapre2);
+            return collator.compare(toCompare1, toCompare2);
         });
 
         phoneBookContacts = sortedPhoneBookContacts;
     }
 
     private void buildContactsSectionsArrays(boolean sort) {
+        final Collator collator = getLocaleCollator();
         if (sort) {
             Collections.sort(contacts, (tl_contact, tl_contact2) -> {
                 TLRPC.User user1 = getMessagesController().getUser(tl_contact.user_id);
                 TLRPC.User user2 = getMessagesController().getUser(tl_contact2.user_id);
                 String name1 = UserObject.getFirstName(user1);
                 String name2 = UserObject.getFirstName(user2);
-                return name1.compareTo(name2);
+                return collator.compare(name1, name2);
             });
         }
 
@@ -1793,7 +1908,7 @@ public class ContactsController extends BaseController {
             } else if (cv2 == '#') {
                 return -1;
             }
-            return s.compareTo(s2);
+            return collator.compare(s, s2);
         });
 
         usersSectionsDict = sectionsDict;
@@ -1828,7 +1943,8 @@ public class ContactsController extends BaseController {
     private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         Cursor cursor = null;
         try {
-            if (!hasContactsPermission()) {
+            Account account = systemAccount;
+            if (!hasContactsPermission() || account == null) {
                 return;
             }
             final SharedPreferences settings = MessagesController.getMainSettings(currentAccount);
@@ -2128,7 +2244,7 @@ public class ContactsController extends BaseController {
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.CALLER_IS_SYNCADAPTER, "true").appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type).build();
             int value = contentResolver.delete(rawContactUri, ContactsContract.RawContacts.SYNC2 + " = " + uid, null);
         } catch (Exception e) {
-            FileLog.e(e);
+            FileLog.e(e, false);
         }
         synchronized (observerLock) {
             ignoreChanges = false;
@@ -2169,13 +2285,14 @@ public class ContactsController extends BaseController {
                 return;
             }
             final TLRPC.Updates res = (TLRPC.Updates) response;
-            getMessagesController().processUpdates(res, false);
-
-            /*if (BuildVars.DEBUG_VERSION) {
-                for (TLRPC.User user : res.users) {
-                    FileLog.e("received user " + user.first_name + " " + user.last_name + " " + user.phone);
+            if (user.photo != null && user.photo.personal) {
+                for (int i = 0; i < res.users.size(); i++) {
+                    if (res.users.get(i).id == user.id) {
+                        res.users.get(i).photo = user.photo;
+                    }
                 }
-            }*/
+            }
+            getMessagesController().processUpdates(res, false);
 
             for (int a = 0; a < res.users.size(); a++) {
                 final TLRPC.User u = res.users.get(a);
@@ -2652,6 +2769,10 @@ public class ContactsController extends BaseController {
         } catch (Exception x) {
             FileLog.e(x);
         }
+    }
+
+    public static String formatName(TLRPC.User user) {
+        return formatName(user.first_name, user.last_name, 0);
     }
 
     public static String formatName(String firstName, String lastName) {

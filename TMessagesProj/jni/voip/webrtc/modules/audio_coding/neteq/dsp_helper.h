@@ -16,7 +16,6 @@
 
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
 #include "modules/audio_coding/neteq/audio_vector.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -150,11 +149,12 @@ class DspHelper {
                               bool compensate_delay,
                               int16_t* output);
 
+  DspHelper(const DspHelper&) = delete;
+  DspHelper& operator=(const DspHelper&) = delete;
+
  private:
   // Table of constants used in method DspHelper::ParabolicFit().
   static const int16_t kParabolaCoefficients[17][3];
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DspHelper);
 };
 
 }  // namespace webrtc

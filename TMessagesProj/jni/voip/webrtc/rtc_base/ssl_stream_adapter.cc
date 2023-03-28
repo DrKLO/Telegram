@@ -11,6 +11,7 @@
 #include "rtc_base/ssl_stream_adapter.h"
 
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "rtc_base/openssl_stream_adapter.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,7 +40,7 @@ std::string SrtpCryptoSuiteToName(int crypto_suite) {
   }
 }
 
-int SrtpCryptoSuiteFromName(const std::string& crypto_suite) {
+int SrtpCryptoSuiteFromName(absl::string_view crypto_suite) {
   if (crypto_suite == kCsAesCm128HmacSha1_32)
     return kSrtpAes128CmSha1_32;
   if (crypto_suite == kCsAesCm128HmacSha1_80)
@@ -85,7 +86,7 @@ bool IsGcmCryptoSuite(int crypto_suite) {
           crypto_suite == kSrtpAeadAes128Gcm);
 }
 
-bool IsGcmCryptoSuiteName(const std::string& crypto_suite) {
+bool IsGcmCryptoSuiteName(absl::string_view crypto_suite) {
   return (crypto_suite == kCsAeadAes256Gcm || crypto_suite == kCsAeadAes128Gcm);
 }
 
@@ -98,7 +99,7 @@ bool SSLStreamAdapter::GetSslCipherSuite(int* cipher_suite) {
   return false;
 }
 
-bool SSLStreamAdapter::ExportKeyingMaterial(const std::string& label,
+bool SSLStreamAdapter::ExportKeyingMaterial(absl::string_view label,
                                             const uint8_t* context,
                                             size_t context_len,
                                             bool use_context,
@@ -122,7 +123,7 @@ bool SSLStreamAdapter::IsBoringSsl() {
 bool SSLStreamAdapter::IsAcceptableCipher(int cipher, KeyType key_type) {
   return OpenSSLStreamAdapter::IsAcceptableCipher(cipher, key_type);
 }
-bool SSLStreamAdapter::IsAcceptableCipher(const std::string& cipher,
+bool SSLStreamAdapter::IsAcceptableCipher(absl::string_view cipher,
                                           KeyType key_type) {
   return OpenSSLStreamAdapter::IsAcceptableCipher(cipher, key_type);
 }

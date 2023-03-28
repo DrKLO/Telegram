@@ -11,11 +11,11 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_RTCP_TRANSCEIVER_H_
 #define MODULES_RTP_RTCP_SOURCE_RTCP_TRANSCEIVER_H_
 
-#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "api/task_queue/task_queue_base.h"
 #include "modules/rtp_rtcp/source/rtcp_transceiver_config.h"
 #include "modules/rtp_rtcp/source/rtcp_transceiver_impl.h"
@@ -44,7 +44,7 @@ class RtcpTransceiver : public RtcpFeedbackSenderInterface {
   // Note that interfaces provided in constructor or registered with AddObserver
   // still might be used by the transceiver on the task queue
   // until `on_destroyed` runs.
-  void Stop(std::function<void()> on_destroyed);
+  void Stop(absl::AnyInvocable<void() &&> on_destroyed);
 
   // Registers observer to be notified about incoming rtcp packets.
   // Calls to observer will be done on the `config.task_queue`.
@@ -52,9 +52,10 @@ class RtcpTransceiver : public RtcpFeedbackSenderInterface {
                                     MediaReceiverRtcpObserver* observer);
   // Deregisters the observer. Might return before observer is deregistered.
   // Runs `on_removed` when observer is deregistered.
-  void RemoveMediaReceiverRtcpObserver(uint32_t remote_ssrc,
-                                       MediaReceiverRtcpObserver* observer,
-                                       std::function<void()> on_removed);
+  void RemoveMediaReceiverRtcpObserver(
+      uint32_t remote_ssrc,
+      MediaReceiverRtcpObserver* observer,
+      absl::AnyInvocable<void() &&> on_removed);
 
   // Enables/disables sending rtcp packets eventually.
   // Packets may be sent after the SetReadyToSend(false) returns, but no new

@@ -31,7 +31,6 @@
 #include "modules/audio_processing/include/audio_processing.h"
 #include "rtc_base/event_tracer.h"
 #include "rtc_base/physical_socket_server.h"
-#include "rtc_base/system/thread_registry.h"
 #include "rtc_base/thread.h"
 #include "sdk/android/generated_peerconnection_jni/PeerConnectionFactory_jni.h"
 #include "sdk/android/native_api/jni/java_types.h"
@@ -73,31 +72,12 @@ typedef void (*JavaMethodPointer)(JNIEnv*, const JavaRef<jobject>&);
 // given Java object.
 void PostJavaCallback(JNIEnv* env,
                       rtc::Thread* queue,
-                      const rtc::Location& posted_from,
                       const JavaRef<jobject>& j_object,
                       JavaMethodPointer java_method_pointer) {
-  // One-off message handler that calls the Java method on the specified Java
-  // object before deleting itself.
-  class JavaAsyncCallback : public rtc::MessageHandler {
-   public:
-    JavaAsyncCallback(JNIEnv* env,
-                      const JavaRef<jobject>& j_object,
-                      JavaMethodPointer java_method_pointer)
-        : j_object_(env, j_object), java_method_pointer_(java_method_pointer) {}
-
-    void OnMessage(rtc::Message*) override {
-      java_method_pointer_(AttachCurrentThreadIfNeeded(), j_object_);
-      // The message has been delivered, clean up after ourself.
-      delete this;
-    }
-
-   private:
-    ScopedJavaGlobalRef<jobject> j_object_;
-    JavaMethodPointer java_method_pointer_;
-  };
-
-  queue->Post(posted_from,
-              new JavaAsyncCallback(env, j_object, java_method_pointer));
+  ScopedJavaGlobalRef<jobject> object(env, j_object);
+  queue->PostTask([object = std::move(object), java_method_pointer] {
+    java_method_pointer(AttachCurrentThreadIfNeeded(), object);
+  });
 }
 
 absl::optional<PeerConnectionFactoryInterface::Options>
@@ -148,11 +128,11 @@ ScopedJavaLocalRef<jobject> NativeToScopedJavaPeerConnectionFactory(
   ScopedJavaLocalRef<jobject> j_pcf = Java_PeerConnectionFactory_Constructor(
       env, NativeToJavaPointer(owned_factory));
 
-  PostJavaCallback(env, owned_factory->network_thread(), RTC_FROM_HERE, j_pcf,
+  PostJavaCallback(env, owned_factory->network_thread(), j_pcf,
                    &Java_PeerConnectionFactory_onNetworkThreadReady);
-  PostJavaCallback(env, owned_factory->worker_thread(), RTC_FROM_HERE, j_pcf,
+  PostJavaCallback(env, owned_factory->worker_thread(), j_pcf,
                    &Java_PeerConnectionFactory_onWorkerThreadReady);
-  PostJavaCallback(env, owned_factory->signaling_thread(), RTC_FROM_HERE, j_pcf,
+  PostJavaCallback(env, owned_factory->signaling_thread(), j_pcf,
                    &Java_PeerConnectionFactory_onSignalingThreadReady);
 
   return j_pcf;
@@ -351,11 +331,12 @@ JNI_PeerConnectionFactory_CreatePeerConnectionFactory(
     jlong native_network_controller_factory,
     jlong native_network_state_predictor_factory,
     jlong native_neteq_factory) {
-  rtc::scoped_refptr<AudioProcessing> audio_processor =
-      reinterpret_cast<AudioProcessing*>(native_audio_processor);
+  rtc::scoped_refptr<AudioProcessing> audio_processor(
+      reinterpret_cast<AudioProcessing*>(native_audio_processor));
   return CreatePeerConnectionFactoryForJava(
       jni, jcontext, joptions,
-      reinterpret_cast<AudioDeviceModule*>(native_audio_device_module),
+      rtc::scoped_refptr<AudioDeviceModule>(
+          reinterpret_cast<AudioDeviceModule*>(native_audio_device_module)),
       TakeOwnershipOfRefPtr<AudioEncoderFactory>(native_audio_encoder_factory),
       TakeOwnershipOfRefPtr<AudioDecoderFactory>(native_audio_decoder_factory),
       jencoder_factory, jdecoder_factory,
@@ -544,11 +525,6 @@ static void JNI_PeerConnectionFactory_DeleteLoggable(JNIEnv* jni) {
 
 static void JNI_PeerConnectionFactory_PrintStackTrace(JNIEnv* env, jint tid) {
   RTC_LOG(LS_WARNING) << StackTraceToString(GetStackTrace(tid));
-}
-
-static void JNI_PeerConnectionFactory_PrintStackTracesOfRegisteredThreads(
-    JNIEnv* env) {
-  PrintStackTracesOfRegisteredThreads();
 }
 
 }  // namespace jni

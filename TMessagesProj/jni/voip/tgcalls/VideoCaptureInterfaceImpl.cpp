@@ -22,7 +22,7 @@ VideoCaptureInterfaceObject::~VideoCaptureInterfaceObject() {
 	}
 }
 
-webrtc::VideoTrackSourceInterface *VideoCaptureInterfaceObject::source() {
+rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> VideoCaptureInterfaceObject::source() {
 	return _videoSource;
 }
 
@@ -177,47 +177,47 @@ _impl(threads->getMediaThread(), [deviceId, isScreenCapture, platformContext, th
 VideoCaptureInterfaceImpl::~VideoCaptureInterfaceImpl() = default;
 
 void VideoCaptureInterfaceImpl::switchToDevice(std::string deviceId, bool isScreenCapture) {
-	_impl.perform(RTC_FROM_HERE, [deviceId, isScreenCapture](VideoCaptureInterfaceObject *impl) {
+	_impl.perform([deviceId, isScreenCapture](VideoCaptureInterfaceObject *impl) {
 		impl->switchToDevice(deviceId, isScreenCapture);
 	});
 }
 
 void VideoCaptureInterfaceImpl::withNativeImplementation(std::function<void(void *)> completion) {
-    _impl.perform(RTC_FROM_HERE, [completion](VideoCaptureInterfaceObject *impl) {
+    _impl.perform([completion](VideoCaptureInterfaceObject *impl) {
         impl->withNativeImplementation(completion);
     });
 }
 
 void VideoCaptureInterfaceImpl::setState(VideoState state) {
-	_impl.perform(RTC_FROM_HERE, [state](VideoCaptureInterfaceObject *impl) {
+	_impl.perform([state](VideoCaptureInterfaceObject *impl) {
 		impl->setState(state);
 	});
 }
 
 void VideoCaptureInterfaceImpl::setPreferredAspectRatio(float aspectRatio) {
-    _impl.perform(RTC_FROM_HERE, [aspectRatio](VideoCaptureInterfaceObject *impl) {
+    _impl.perform([aspectRatio](VideoCaptureInterfaceObject *impl) {
         impl->setPreferredAspectRatio(aspectRatio);
     });
 }
 void VideoCaptureInterfaceImpl::setOnFatalError(std::function<void()> error) {
-    _impl.perform(RTC_FROM_HERE, [error](VideoCaptureInterfaceObject *impl) {
+    _impl.perform([error](VideoCaptureInterfaceObject *impl) {
         impl->setOnFatalError(error);
     });
 }
 void VideoCaptureInterfaceImpl::setOnPause(std::function<void(bool)> pause) {
-    _impl.perform(RTC_FROM_HERE, [pause](VideoCaptureInterfaceObject *impl) {
+    _impl.perform([pause](VideoCaptureInterfaceObject *impl) {
         impl->setOnPause(pause);
     });
 }
 
 void VideoCaptureInterfaceImpl::setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated) {
-    _impl.perform(RTC_FROM_HERE, [onIsActiveUpdated](VideoCaptureInterfaceObject *impl) {
+    _impl.perform([onIsActiveUpdated](VideoCaptureInterfaceObject *impl) {
         impl->setOnIsActiveUpdated(onIsActiveUpdated);
     });
 }
 
 void VideoCaptureInterfaceImpl::setOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
-	_impl.perform(RTC_FROM_HERE, [sink](VideoCaptureInterfaceObject *impl) {
+	_impl.perform([sink](VideoCaptureInterfaceObject *impl) {
 		impl->setOutput(sink);
 	});
 }

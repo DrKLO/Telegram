@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ABSL_BASE_INTERNAL_INLINE_VARIABLE_EMULATION_H_
-#define ABSL_BASE_INTERNAL_INLINE_VARIABLE_EMULATION_H_
+#ifndef ABSL_BASE_INTERNAL_INLINE_VARIABLE_H_
+#define ABSL_BASE_INTERNAL_INLINE_VARIABLE_H_
 
 #include <type_traits>
 
@@ -104,4 +104,4 @@
 
 #endif  // __cpp_inline_variables
 
-#endif  // ABSL_BASE_INTERNAL_INLINE_VARIABLE_EMULATION_H_
+#endif  // ABSL_BASE_INTERNAL_INLINE_VARIABLE_H_

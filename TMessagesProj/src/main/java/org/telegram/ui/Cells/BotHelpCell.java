@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -23,6 +24,8 @@ import android.text.style.URLSpan;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
+
+import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -40,6 +43,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LinkPath;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -58,8 +62,8 @@ public class BotHelpCell extends View {
     private int textY;
     public boolean wasDraw;
 
-    private ClickableSpan pressedLink;
-    private LinkPath urlPath = new LinkPath();
+    private LinkSpanDrawable<ClickableSpan> pressedLink;
+    private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
 
     private BotHelpCellDelegate delegate;
     private Theme.ResourcesProvider resourcesProvider;
@@ -84,6 +88,9 @@ public class BotHelpCell extends View {
         imageReceiver.setInvalidateAll(true);
         imageReceiver.setCrossfadeWithOldImage(true);
         imageReceiver.setCrossfadeDuration(300);
+
+        selectorDrawable = Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), selectorDrawableRadius = SharedConfig.bubbleRadius, SharedConfig.bubbleRadius);
+        selectorDrawable.setCallback(this);
     }
 
     public void setDelegate(BotHelpCellDelegate botHelpCellDelegate) {
@@ -94,6 +101,7 @@ public class BotHelpCell extends View {
         if (pressedLink != null) {
             pressedLink = null;
         }
+        links.clear();
         invalidate();
     }
 
@@ -195,6 +203,13 @@ public class BotHelpCell extends View {
         }
     }
 
+    public CharSequence getText() {
+        if (textLayout == null) {
+            return null;
+        }
+        return textLayout.getText();
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
@@ -217,15 +232,18 @@ public class BotHelpCell extends View {
                             ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
                             if (link.length != 0) {
                                 resetPressedLink();
-                                pressedLink = link[0];
+                                pressedLink = new LinkSpanDrawable<ClickableSpan>(link[0], resourcesProvider, x2, y2);
                                 result = true;
                                 try {
-                                    int start = buffer.getSpanStart(pressedLink);
-                                    urlPath.setCurrentLayout(textLayout, start, 0);
-                                    textLayout.getSelectionPath(start, buffer.getSpanEnd(pressedLink), urlPath);
+                                    int start = buffer.getSpanStart(link[0]);
+                                    LinkPath path = pressedLink.obtainNewPath();
+                                    path.setCurrentLayout(textLayout, start, 0);
+                                    textLayout.getSelectionPath(start, buffer.getSpanEnd(link[0]), path);
                                 } catch (Exception e) {
                                     FileLog.e(e);
                                 }
+                                links.addLink(pressedLink);
+                                invalidate();
                             } else {
                                 resetPressedLink();
                             }
@@ -238,21 +256,20 @@ public class BotHelpCell extends View {
                     }
                 } else if (pressedLink != null) {
                     try {
-                        if (pressedLink instanceof URLSpanNoUnderline) {
-                            String url = ((URLSpanNoUnderline) pressedLink).getURL();
+                        ClickableSpan span = pressedLink.getSpan();
+                        if (span instanceof URLSpanNoUnderline) {
+                            String url = ((URLSpanNoUnderline) span).getURL();
                             if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
                                 if (delegate != null) {
                                     delegate.didPressUrl(url);
                                 }
                             }
-                        } else {
-                            if (pressedLink instanceof URLSpan) {
-                                if (delegate != null) {
-                                    delegate.didPressUrl(((URLSpan) pressedLink).getURL());
-                                }
-                            } else {
-                                pressedLink.onClick(this);
+                        } else if (span instanceof URLSpan) {
+                            if (delegate != null) {
+                                delegate.didPressUrl(((URLSpan) span).getURL());
                             }
+                        } else if (span != null) {
+                            span.onClick(this);
                         }
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -264,6 +281,23 @@ public class BotHelpCell extends View {
                 resetPressedLink();
             }
         }
+        if (selectorDrawable != null) {
+            if (!result && y > 0 && event.getAction() == MotionEvent.ACTION_DOWN && isClickable()) {
+                selectorDrawable.setState(new int[]{android.R.attr.state_pressed, android.R.attr.state_enabled});
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    selectorDrawable.setHotspot(event.getX(), event.getY());
+                }
+                invalidate();
+                result = true;
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                selectorDrawable.setState(new int[]{});
+                invalidate();
+                if (!result && event.getAction() == MotionEvent.ACTION_UP) {
+                    performClick();
+                }
+                result = true;
+            }
+        }
         return result || super.onTouchEvent(event);
     }
 
@@ -271,6 +305,9 @@ public class BotHelpCell extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), height + AndroidUtilities.dp(8));
     }
+
+    private Drawable selectorDrawable;
+    private int selectorDrawableRadius;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -294,6 +331,15 @@ public class BotHelpCell extends View {
         drawable.setBounds(x, 0, width + x, height);
         drawable.draw(canvas);
 
+        if (selectorDrawable != null) {
+            if (selectorDrawableRadius != SharedConfig.bubbleRadius) {
+                selectorDrawableRadius = SharedConfig.bubbleRadius;
+                Theme.setMaskDrawableRad(selectorDrawable, selectorDrawableRadius, selectorDrawableRadius);
+            }
+            selectorDrawable.setBounds(x + AndroidUtilities.dp(2), AndroidUtilities.dp(2), width + x - AndroidUtilities.dp(2), height - AndroidUtilities.dp(2));
+            selectorDrawable.draw(canvas);
+        }
+
         imageReceiver.setImageCoords(x + imagePadding, imagePadding, width - imagePadding * 2, photoHeight - imagePadding);
         imageReceiver.draw(canvas);
 
@@ -301,8 +347,8 @@ public class BotHelpCell extends View {
         Theme.chat_msgTextPaint.linkColor = getThemedColor(Theme.key_chat_messageLinkIn);
         canvas.save();
         canvas.translate(textX = AndroidUtilities.dp(isPhotoVisible ? 14 : 11) + x, textY = AndroidUtilities.dp(11) + y);
-        if (pressedLink != null) {
-            canvas.drawPath(urlPath, Theme.chat_urlPaint);
+        if (links.draw(canvas)) {
+            invalidate();
         }
         if (textLayout != null) {
             textLayout.draw(canvas);
@@ -348,5 +394,10 @@ public class BotHelpCell extends View {
     private Drawable getThemedDrawable(String drawableKey) {
         Drawable drawable = resourcesProvider != null ? resourcesProvider.getDrawable(drawableKey) : null;
         return drawable != null ? drawable : Theme.getThemeDrawable(drawableKey);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return who == selectorDrawable || super.verifyDrawable(who);
     }
 }

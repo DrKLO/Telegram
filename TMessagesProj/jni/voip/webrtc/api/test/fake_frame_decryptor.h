@@ -19,7 +19,6 @@
 #include "api/array_view.h"
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/media_types.h"
-#include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
 
@@ -27,8 +26,7 @@ namespace webrtc {
 // FrameDecryptorInterface. It is constructed with a simple single digit key and
 // a fixed postfix byte. This is just to validate that the core code works
 // as expected.
-class FakeFrameDecryptor final
-    : public rtc::RefCountedObject<FrameDecryptorInterface> {
+class FakeFrameDecryptor : public FrameDecryptorInterface {
  public:
   // Provide a key (0,255) and some postfix byte (0,255) this should match the
   // byte you expect from the FakeFrameEncryptor.

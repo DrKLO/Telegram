@@ -11,13 +11,8 @@
 #ifndef API_CALL_AUDIO_SINK_H_
 #define API_CALL_AUDIO_SINK_H_
 
-#if defined(WEBRTC_POSIX) && !defined(__STDC_FORMAT_MACROS)
-// Avoid conflict with format_macros.h.
-#define __STDC_FORMAT_MACROS
-#endif
-
-#include <inttypes.h>
 #include <stddef.h>
+#include <stdint.h>
 
 namespace webrtc {
 

@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.extractor.mkv;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.io.IOException;
@@ -26,10 +27,9 @@ import java.io.IOException;
  */
 /* package */ final class Sniffer {
 
-  /**
-   * The number of bytes to search for a valid header in {@link #sniff(ExtractorInput)}.
-   */
+  /** The number of bytes to search for a valid header in {@link #sniff(ExtractorInput)}. */
   private static final int SEARCH_LENGTH = 1024;
+
   private static final int ID_EBML = 0x1A45DFA3;
 
   private final ParsableByteArray scratch;
@@ -39,24 +39,25 @@ import java.io.IOException;
     scratch = new ParsableByteArray(8);
   }
 
-  /**
-   * @see com.google.android.exoplayer2.extractor.Extractor#sniff(ExtractorInput)
-   */
-  public boolean sniff(ExtractorInput input) throws IOException, InterruptedException {
+  /** See {@link Extractor#sniff(ExtractorInput)}. */
+  public boolean sniff(ExtractorInput input) throws IOException {
     long inputLength = input.getLength();
-    int bytesToSearch = (int) (inputLength == C.LENGTH_UNSET || inputLength > SEARCH_LENGTH
-        ? SEARCH_LENGTH : inputLength);
+    int bytesToSearch =
+        (int)
+            (inputLength == C.LENGTH_UNSET || inputLength > SEARCH_LENGTH
+                ? SEARCH_LENGTH
+                : inputLength);
     // Find four bytes equal to ID_EBML near the start of the input.
-    input.peekFully(scratch.data, 0, 4);
+    input.peekFully(scratch.getData(), 0, 4);
     long tag = scratch.readUnsignedInt();
     peekLength = 4;
     while (tag != ID_EBML) {
       if (++peekLength == bytesToSearch) {
         return false;
       }
-      input.peekFully(scratch.data, 0, 1);
+      input.peekFully(scratch.getData(), 0, 1);
       tag = (tag << 8) & 0xFFFFFF00;
-      tag |= scratch.data[0] & 0xFF;
+      tag |= scratch.getData()[0] & 0xFF;
     }
 
     // Read the size of the EBML header and make sure it is within the stream.
@@ -86,12 +87,10 @@ import java.io.IOException;
     return peekLength == headerStart + headerSize;
   }
 
-  /**
-   * Peeks a variable-length unsigned EBML integer from the input.
-   */
-  private long readUint(ExtractorInput input) throws IOException, InterruptedException {
-    input.peekFully(scratch.data, 0, 1);
-    int value = scratch.data[0] & 0xFF;
+  /** Peeks a variable-length unsigned EBML integer from the input. */
+  private long readUint(ExtractorInput input) throws IOException {
+    input.peekFully(scratch.getData(), 0, 1);
+    int value = scratch.getData()[0] & 0xFF;
     if (value == 0) {
       return Long.MIN_VALUE;
     }
@@ -102,13 +101,12 @@ import java.io.IOException;
       length++;
     }
     value &= ~mask;
-    input.peekFully(scratch.data, 1, length);
+    input.peekFully(scratch.getData(), 1, length);
     for (int i = 0; i < length; i++) {
       value <<= 8;
-      value += scratch.data[i + 1] & 0xFF;
+      value += scratch.getData()[i + 1] & 0xFF;
     }
     peekLength += length + 1;
     return value;
   }
-
 }

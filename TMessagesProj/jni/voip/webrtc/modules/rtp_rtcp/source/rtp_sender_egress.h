@@ -20,6 +20,7 @@
 #include "api/call/transport.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/sequence_checker.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/data_rate.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
@@ -32,7 +33,6 @@
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/no_unique_address.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -90,6 +90,10 @@ class RtpSenderEgress {
   void SetFecProtectionParameters(const FecProtectionParams& delta_params,
                                   const FecProtectionParams& key_params);
   std::vector<std::unique_ptr<RtpPacketToSend>> FetchFecPackets();
+
+  // Clears pending status for these sequence numbers in the packet history.
+  void OnAbortedRetransmissions(
+      rtc::ArrayView<const uint16_t> sequence_numbers);
 
  private:
   // Maps capture time in milliseconds to send-side delay in milliseconds.
@@ -161,7 +165,6 @@ class RtpSenderEgress {
   SendDelayMap::const_iterator max_delay_it_ RTC_GUARDED_BY(lock_);
   // The sum of delays over a kSendSideDelayWindowMs sliding window.
   int64_t sum_delays_ms_ RTC_GUARDED_BY(lock_);
-  uint64_t total_packet_send_delay_ms_ RTC_GUARDED_BY(lock_);
   StreamDataCounters rtp_stats_ RTC_GUARDED_BY(lock_);
   StreamDataCounters rtx_rtp_stats_ RTC_GUARDED_BY(lock_);
   // One element per value in RtpPacketMediaType, with index matching value.

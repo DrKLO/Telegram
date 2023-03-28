@@ -12,11 +12,16 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -34,9 +39,13 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -45,7 +54,9 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.PhotoViewer;
 
 public class PhotoAttachPhotoCell extends FrameLayout {
@@ -74,6 +85,19 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private AnimatorSet animator;
     private final Theme.ResourcesProvider resourcesProvider;
 
+    private SpoilerEffect spoilerEffect = new SpoilerEffect();
+    private boolean hasSpoiler;
+
+    private Path path = new Path();
+    private float spoilerRevealX;
+    private float spoilerRevealY;
+    private float spoilerMaxRadius;
+    private float spoilerRevealProgress;
+
+    private Bitmap imageViewCrossfadeSnapshot;
+    private Float crossfadeDuration;
+    private float imageViewCrossfadeProgress = 1f;
+
     public interface PhotoAttachPhotoCellDelegate {
         void onCheckClick(PhotoAttachPhotoCell v);
     }
@@ -87,7 +111,62 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         container = new FrameLayout(context);
         addView(container, LayoutHelper.createFrame(80, 80));
 
-        imageView = new BackupImageView(context);
+        int sColor = Color.WHITE;
+        spoilerEffect.setColor(ColorUtils.setAlphaComponent(sColor, (int) (Color.alpha(sColor) * 0.325f)));
+        imageView = new BackupImageView(context) {
+            private Paint crossfadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private long lastUpdate;
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                ImageReceiver imageReceiver = animatedEmojiDrawable != null ? animatedEmojiDrawable.getImageReceiver() : this.imageReceiver;
+                if (imageReceiver == null) {
+                    return;
+                }
+                if (width != -1 && height != -1) {
+                    imageReceiver.setImageCoords((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+                    blurImageReceiver.setImageCoords((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+                } else {
+                    imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+                    blurImageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+                }
+                imageReceiver.draw(canvas);
+
+                if (hasSpoiler && spoilerRevealProgress != 1f && (photoEntry == null || !photoEntry.isAttachSpoilerRevealed)) {
+                    if (spoilerRevealProgress != 0f) {
+                        canvas.save();
+                        path.rewind();
+                        path.addCircle(spoilerRevealX, spoilerRevealY, spoilerMaxRadius * spoilerRevealProgress, Path.Direction.CW);
+                        canvas.clipPath(path, Region.Op.DIFFERENCE);
+                    }
+
+                    blurImageReceiver.draw(canvas);
+                    spoilerEffect.setBounds(0, 0, getWidth(), getHeight());
+                    spoilerEffect.draw(canvas);
+                    invalidate();
+
+                    if (spoilerRevealProgress != 0f) {
+                        canvas.restore();
+                    }
+                }
+
+                if (imageViewCrossfadeProgress != 1f && imageViewCrossfadeSnapshot != null) {
+                    crossfadePaint.setAlpha((int) (CubicBezierInterpolator.DEFAULT.getInterpolation(1f - imageViewCrossfadeProgress) * 0xFF));
+                    canvas.drawBitmap(imageViewCrossfadeSnapshot, 0, 0, crossfadePaint);
+                    long dt = Math.min(16, System.currentTimeMillis() - lastUpdate);
+                    float duration = crossfadeDuration == null ? 250f : crossfadeDuration;
+                    imageViewCrossfadeProgress = Math.min(1f, imageViewCrossfadeProgress + dt / duration);
+                    lastUpdate = System.currentTimeMillis();
+                    invalidate();
+                } else if (imageViewCrossfadeProgress == 1f && imageViewCrossfadeSnapshot != null) {
+                    imageViewCrossfadeSnapshot.recycle();
+                    imageViewCrossfadeSnapshot = null;
+                    crossfadeDuration = null;
+                    invalidate();
+                }
+            }
+        };
+        imageView.setBlurAllowed(true);
         container.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         videoInfoContainer = new FrameLayout(context) {
@@ -110,7 +189,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
         videoTextView = new TextView(context);
         videoTextView.setTextColor(0xffffffff);
-        videoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        videoTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 13, -0.7f, 0, 0));
@@ -126,6 +205,60 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
 
         itemSize = AndroidUtilities.dp(80);
+    }
+
+    public boolean canRevealSpoiler() {
+        return hasSpoiler && spoilerRevealProgress == 0f && (photoEntry == null || !photoEntry.isAttachSpoilerRevealed);
+    }
+
+    public void startRevealMedia(float x, float y) {
+        spoilerRevealX = x;
+        spoilerRevealY = y;
+
+        spoilerMaxRadius = (float) Math.sqrt(Math.pow(getWidth(), 2) + Math.pow(getHeight(), 2));
+        ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration((long) MathUtils.clamp(spoilerMaxRadius * 0.3f, 250, 550));
+        animator.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+        animator.addUpdateListener(animation -> {
+            spoilerRevealProgress = (float) animation.getAnimatedValue();
+            invalidate();
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                photoEntry.isAttachSpoilerRevealed = true;
+                invalidate();
+            }
+        });
+        animator.start();
+    }
+
+    public void setHasSpoiler(boolean hasSpoiler) {
+        setHasSpoiler(hasSpoiler, null);
+    }
+
+    public void setHasSpoiler(boolean hasSpoiler, Float crossfadeDuration) {
+        if (this.hasSpoiler != hasSpoiler) {
+            spoilerRevealProgress = 0f;
+            if (isLaidOut()) {
+                Bitmap prevSnapshot = imageViewCrossfadeSnapshot;
+                imageViewCrossfadeSnapshot = AndroidUtilities.snapshotView(imageView);
+                if (prevSnapshot != null) {
+                    prevSnapshot.recycle();
+                }
+                imageViewCrossfadeProgress = 0f;
+            } else {
+                if (imageViewCrossfadeSnapshot != null) {
+                    imageViewCrossfadeSnapshot.recycle();
+                    imageViewCrossfadeSnapshot = null;
+                }
+                imageViewCrossfadeProgress = 1f;
+            }
+
+            this.hasSpoiler = hasSpoiler;
+            this.crossfadeDuration = crossfadeDuration;
+            imageView.setHasBlur(hasSpoiler);
+            imageView.invalidate();
+        }
     }
 
     public void setIsVertical(boolean value) {
@@ -216,6 +349,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         checkBox.setAlpha(showing ? 0.0f : 1.0f);
         videoInfoContainer.setAlpha(showing ? 0.0f : 1.0f);
         requestLayout();
+        setHasSpoiler(entry.hasSpoiler);
     }
 
     public void setPhotoEntry(MediaController.SearchImage searchImage, boolean needCheckShow, boolean last) {
@@ -254,6 +388,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         checkBox.setAlpha(showing ? 0.0f : 1.0f);
         videoInfoContainer.setAlpha(showing ? 0.0f : 1.0f);
         requestLayout();
+        setHasSpoiler(false);
     }
 
     public boolean isChecked() {
@@ -404,11 +539,17 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
+        StringBuilder sb = new StringBuilder();
         if (photoEntry != null && photoEntry.isVideo) {
-            info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
+            sb.append(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
         } else {
-            info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+            sb.append(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
         }
+        if (photoEntry != null) {
+            sb.append(". ");
+            sb.append(LocaleController.getInstance().formatterStats.format(photoEntry.dateTaken * 1000L));
+        }
+        info.setText(sb);
         if (checkBox.isChecked()) {
             info.setSelected(true);
         }

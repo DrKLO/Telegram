@@ -60,6 +60,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/base/macros.h"
 #include "absl/base/optimization.h"
@@ -160,12 +161,12 @@ class Span {
 
   // Used to SFINAE-enable a function when the slice elements are const.
   template <typename U>
-  using EnableIfConstView =
+  using EnableIfValueIsConst =
       typename std::enable_if<std::is_const<T>::value, U>::type;
 
   // Used to SFINAE-enable a function when the slice elements are mutable.
   template <typename U>
-  using EnableIfMutableView =
+  using EnableIfValueIsMutable =
       typename std::enable_if<!std::is_const<T>::value, U>::type;
 
  public:
@@ -196,13 +197,34 @@ class Span {
   // Explicit reference constructor for a mutable `Span<T>` type. Can be
   // replaced with MakeSpan() to infer the type parameter.
   template <typename V, typename = EnableIfConvertibleFrom<V>,
-            typename = EnableIfMutableView<V>>
-  explicit Span(V& v) noexcept  // NOLINT(runtime/references)
+            typename = EnableIfValueIsMutable<V>,
+            typename = span_internal::EnableIfNotIsView<V>>
+  explicit Span(
+      V& v
+          ABSL_ATTRIBUTE_LIFETIME_BOUND) noexcept  // NOLINT(runtime/references)
       : Span(span_internal::GetData(v), v.size()) {}
 
   // Implicit reference constructor for a read-only `Span<const T>` type
   template <typename V, typename = EnableIfConvertibleFrom<V>,
-            typename = EnableIfConstView<V>>
+            typename = EnableIfValueIsConst<V>,
+            typename = span_internal::EnableIfNotIsView<V>>
+  constexpr Span(
+      const V& v
+          ABSL_ATTRIBUTE_LIFETIME_BOUND) noexcept  // NOLINT(runtime/explicit)
+      : Span(span_internal::GetData(v), v.size()) {}
+
+  // Overloads of the above two functions that are only enabled for view types.
+  // This is so we can drop the ABSL_ATTRIBUTE_LIFETIME_BOUND annotation. These
+  // overloads must be made unique by using a different template parameter list
+  // (hence the = 0 for the IsView enabler).
+  template <typename V, typename = EnableIfConvertibleFrom<V>,
+            typename = EnableIfValueIsMutable<V>,
+            span_internal::EnableIfIsView<V> = 0>
+  explicit Span(V& v) noexcept  // NOLINT(runtime/references)
+      : Span(span_internal::GetData(v), v.size()) {}
+  template <typename V, typename = EnableIfConvertibleFrom<V>,
+            typename = EnableIfValueIsConst<V>,
+            span_internal::EnableIfIsView<V> = 0>
   constexpr Span(const V& v) noexcept  // NOLINT(runtime/explicit)
       : Span(span_internal::GetData(v), v.size()) {}
 
@@ -242,7 +264,7 @@ class Span {
   //   Process(ints);
   //
   template <typename LazyT = T,
-            typename = EnableIfConstView<LazyT>>
+            typename = EnableIfValueIsConst<LazyT>>
   Span(std::initializer_list<value_type> v
            ABSL_ATTRIBUTE_LIFETIME_BOUND) noexcept  // NOLINT(runtime/explicit)
       : Span(v.begin(), v.size()) {}
@@ -398,7 +420,7 @@ class Span {
   //   absl::MakeSpan(vec).subspan(5);     // throws std::out_of_range
   constexpr Span subspan(size_type pos = 0, size_type len = npos) const {
     return (pos <= size())
-               ? Span(data() + pos, span_internal::Min(size() - pos, len))
+               ? Span(data() + pos, (std::min)(size() - pos, len))
                : (base_internal::ThrowStdOutOfRange("pos > size()"), Span());
   }
 

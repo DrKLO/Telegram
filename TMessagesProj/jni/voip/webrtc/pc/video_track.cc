@@ -10,24 +10,23 @@
 
 #include "pc/video_track.h"
 
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "api/notifier.h"
 #include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/location.h"
-#include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
 
-VideoTrack::VideoTrack(const std::string& label,
-                       VideoTrackSourceInterface* video_source,
-                       rtc::Thread* worker_thread)
+VideoTrack::VideoTrack(
+    absl::string_view label,
+    rtc::scoped_refptr<
+        VideoTrackSourceProxyWithInternal<VideoTrackSourceInterface>> source,
+    rtc::Thread* worker_thread)
     : MediaStreamTrack<VideoTrackInterface>(label),
       worker_thread_(worker_thread),
-      video_source_(video_source),
+      video_source_(std::move(source)),
       content_hint_(ContentHint::kNone) {
   RTC_DCHECK_RUN_ON(&signaling_thread_);
   // Detach the thread checker for VideoSourceBaseGuarded since we'll make calls
@@ -53,14 +52,19 @@ void VideoTrack::AddOrUpdateSink(rtc::VideoSinkInterface<VideoFrame>* sink,
   RTC_DCHECK_RUN_ON(worker_thread_);
   VideoSourceBaseGuarded::AddOrUpdateSink(sink, wants);
   rtc::VideoSinkWants modified_wants = wants;
-  modified_wants.black_frames = !enabled();
-  video_source_->AddOrUpdateSink(sink, modified_wants);
+  modified_wants.black_frames = !enabled_w_;
+  video_source_->internal()->AddOrUpdateSink(sink, modified_wants);
 }
 
 void VideoTrack::RemoveSink(rtc::VideoSinkInterface<VideoFrame>* sink) {
   RTC_DCHECK_RUN_ON(worker_thread_);
   VideoSourceBaseGuarded::RemoveSink(sink);
-  video_source_->RemoveSink(sink);
+  video_source_->internal()->RemoveSink(sink);
+}
+
+void VideoTrack::RequestRefreshFrame() {
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  video_source_->internal()->RequestRefreshFrame();
 }
 
 VideoTrackSourceInterface* VideoTrack::GetSource() const {
@@ -68,13 +72,17 @@ VideoTrackSourceInterface* VideoTrack::GetSource() const {
   return video_source_.get();
 }
 
+VideoTrackSourceInterface* VideoTrack::GetSourceInternal() const {
+  return video_source_->internal();
+}
+
 VideoTrackInterface::ContentHint VideoTrack::content_hint() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
   return content_hint_;
 }
 
 void VideoTrack::set_content_hint(ContentHint hint) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
   if (content_hint_ == hint)
     return;
   content_hint_ = hint;
@@ -82,17 +90,29 @@ void VideoTrack::set_content_hint(ContentHint hint) {
 }
 
 bool VideoTrack::set_enabled(bool enable) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
-  for (auto& sink_pair : sink_pairs()) {
-    rtc::VideoSinkWants modified_wants = sink_pair.wants;
-    modified_wants.black_frames = !enable;
-    video_source_->AddOrUpdateSink(sink_pair.sink, modified_wants);
-  }
-  return MediaStreamTrack<VideoTrackInterface>::set_enabled(enable);
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
+
+  bool ret = MediaStreamTrack<VideoTrackInterface>::set_enabled(enable);
+
+  worker_thread_->BlockingCall([&]() {
+    RTC_DCHECK_RUN_ON(worker_thread_);
+    enabled_w_ = enable;
+    for (auto& sink_pair : sink_pairs()) {
+      rtc::VideoSinkWants modified_wants = sink_pair.wants;
+      modified_wants.black_frames = !enable;
+      video_source_->AddOrUpdateSink(sink_pair.sink, modified_wants);
+    }
+  });
+
+  return ret;
 }
 
 bool VideoTrack::enabled() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  if (worker_thread_->IsCurrent()) {
+    RTC_DCHECK_RUN_ON(worker_thread_);
+    return enabled_w_;
+  }
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
   return MediaStreamTrack<VideoTrackInterface>::enabled();
 }
 
@@ -103,22 +123,22 @@ MediaStreamTrackInterface::TrackState VideoTrack::state() const {
 
 void VideoTrack::OnChanged() {
   RTC_DCHECK_RUN_ON(&signaling_thread_);
-  worker_thread_->Invoke<void>(
-      RTC_FROM_HERE, [this, state = video_source_->state()]() {
-        // TODO(tommi): Calling set_state() this way isn't ideal since we're
-        // currently blocking the signaling thread and set_state() may
-        // internally fire notifications via `FireOnChanged()` which may further
-        // amplify the blocking effect on the signaling thread.
-        rtc::Thread::ScopedDisallowBlockingCalls no_blocking_calls;
-        set_state(state == MediaSourceInterface::kEnded ? kEnded : kLive);
-      });
+  rtc::Thread::ScopedDisallowBlockingCalls no_blocking_calls;
+  MediaSourceInterface::SourceState state = video_source_->state();
+  set_state(state == MediaSourceInterface::kEnded ? kEnded : kLive);
 }
 
 rtc::scoped_refptr<VideoTrack> VideoTrack::Create(
-    const std::string& id,
-    VideoTrackSourceInterface* source,
+    absl::string_view id,
+    rtc::scoped_refptr<VideoTrackSourceInterface> source,
     rtc::Thread* worker_thread) {
-  return rtc::make_ref_counted<VideoTrack>(id, source, worker_thread);
+  rtc::scoped_refptr<
+      VideoTrackSourceProxyWithInternal<VideoTrackSourceInterface>>
+      source_proxy = VideoTrackSourceProxy::Create(
+          rtc::Thread::Current(), worker_thread, std::move(source));
+
+  return rtc::make_ref_counted<VideoTrack>(id, std::move(source_proxy),
+                                           worker_thread);
 }
 
 }  // namespace webrtc

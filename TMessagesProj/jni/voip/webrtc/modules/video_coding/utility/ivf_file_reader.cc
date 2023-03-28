@@ -15,12 +15,12 @@
 
 #include "api/video_codecs/video_codec.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
+#include "modules/video_coding/utility/ivf_defines.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
 namespace {
 
-constexpr size_t kIvfHeaderSize = 32;
 constexpr size_t kIvfFrameHeaderSize = 12;
 constexpr int kCodecTypeBytesCount = 4;
 

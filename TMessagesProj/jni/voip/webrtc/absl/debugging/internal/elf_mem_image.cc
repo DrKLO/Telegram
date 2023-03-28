@@ -91,7 +91,7 @@ int ElfMemImage::GetNumSymbols() const {
     return 0;
   }
   // See http://www.caldera.com/developers/gabi/latest/ch5.dynamic.html#hash
-  return hash_[1];
+  return static_cast<int>(hash_[1]);
 }
 
 const ElfW(Sym) *ElfMemImage::GetDynsym(int index) const {
@@ -105,11 +105,9 @@ const ElfW(Versym) *ElfMemImage::GetVersym(int index) const {
 }
 
 const ElfW(Phdr) *ElfMemImage::GetPhdr(int index) const {
-  ABSL_RAW_CHECK(index < ehdr_->e_phnum, "index out of range");
-  return GetTableElement<ElfW(Phdr)>(ehdr_,
-                                     ehdr_->e_phoff,
-                                     ehdr_->e_phentsize,
-                                     index);
+  ABSL_RAW_CHECK(index >= 0 && index < ehdr_->e_phnum, "index out of range");
+  return GetTableElement<ElfW(Phdr)>(ehdr_, ehdr_->e_phoff, ehdr_->e_phentsize,
+                                     static_cast<size_t>(index));
 }
 
 const char *ElfMemImage::GetDynstr(ElfW(Word) offset) const {
@@ -159,7 +157,8 @@ void ElfMemImage::Init(const void *base) {
   hash_      = nullptr;
   strsize_   = 0;
   verdefnum_ = 0;
-  link_base_ = ~0L;  // Sentinel: PT_LOAD .p_vaddr can't possibly be this.
+  // Sentinel: PT_LOAD .p_vaddr can't possibly be this.
+  link_base_ = ~ElfW(Addr){0};  // NOLINT(readability/braces)
   if (!base) {
     return;
   }
@@ -218,11 +217,11 @@ void ElfMemImage::Init(const void *base) {
   }
   ptrdiff_t relocation =
       base_as_char - reinterpret_cast<const char *>(link_base_);
-  ElfW(Dyn) *dynamic_entry =
-      reinterpret_cast<ElfW(Dyn) *>(dynamic_program_header->p_vaddr +
-                                    relocation);
+  ElfW(Dyn)* dynamic_entry = reinterpret_cast<ElfW(Dyn)*>(
+      static_cast<intptr_t>(dynamic_program_header->p_vaddr) + relocation);
   for (; dynamic_entry->d_tag != DT_NULL; ++dynamic_entry) {
-    const auto value = dynamic_entry->d_un.d_val + relocation;
+    const auto value =
+        static_cast<intptr_t>(dynamic_entry->d_un.d_val) + relocation;
     switch (dynamic_entry->d_tag) {
       case DT_HASH:
         hash_ = reinterpret_cast<ElfW(Word) *>(value);
@@ -240,10 +239,10 @@ void ElfMemImage::Init(const void *base) {
         verdef_ = reinterpret_cast<ElfW(Verdef) *>(value);
         break;
       case DT_VERDEFNUM:
-        verdefnum_ = dynamic_entry->d_un.d_val;
+        verdefnum_ = static_cast<size_t>(dynamic_entry->d_un.d_val);
         break;
       case DT_STRSZ:
-        strsize_ = dynamic_entry->d_un.d_val;
+        strsize_ = static_cast<size_t>(dynamic_entry->d_un.d_val);
         break;
       default:
         // Unrecognized entries explicitly ignored.
@@ -351,7 +350,11 @@ void ElfMemImage::SymbolIterator::Update(int increment) {
   const ElfW(Versym) *version_symbol = image->GetVersym(index_);
   ABSL_RAW_CHECK(symbol && version_symbol, "");
   const char *const symbol_name = image->GetDynstr(symbol->st_name);
+#if defined(__NetBSD__)
+  const int version_index = version_symbol->vs_vers & VERSYM_VERSION;
+#else
   const ElfW(Versym) version_index = version_symbol[0] & VERSYM_VERSION;
+#endif
   const ElfW(Verdef) *version_definition = nullptr;
   const char *version_name = "";
   if (symbol->st_shndx == SHN_UNDEF) {

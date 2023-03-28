@@ -3,6 +3,7 @@ package org.telegram.messenger;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 
 import androidx.annotation.IntDef;
@@ -264,6 +265,8 @@ public class PushListenerController {
                     long chat_id;
                     long user_id;
                     long dialogId = 0;
+
+                    int topicId = 0;
                     boolean scheduled;
                     if (custom.has("channel_id")) {
                         channel_id = custom.getLong("channel_id");
@@ -283,6 +286,10 @@ public class PushListenerController {
                     } else {
                         chat_id = 0;
                     }
+                    if (custom.has("topic_id")) {
+                        topicId = custom.getInt("topic_id");
+                    }
+                    FileLog.d( "recived push notification chatId " + chat_id + " custom topicId " + topicId);
                     if (custom.has("encryption_id")) {
                         dialogId = DialogObject.makeEncryptedDialogId(custom.getInt("encryption_id"));
                     }
@@ -350,7 +357,7 @@ public class PushListenerController {
                             deletedMessages.put(-channel_id, ids);
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, true);
 
-                            MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, sparseBooleanArray);
+                            MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                             }
@@ -1147,6 +1154,11 @@ public class PushListenerController {
                                     messageOwner.from_scheduled = scheduled;
 
                                     MessageObject messageObject = new MessageObject(currentAccount, messageOwner, messageText, name, userName, localMessage, channel, supergroup, edited);
+                                    if (topicId != 0) {
+                                        messageObject.messageOwner.reply_to = new TLRPC.TL_messageReplyHeader();
+                                        messageObject.messageOwner.reply_to.forum_topic = true;
+                                        messageObject.messageOwner.reply_to.reply_to_top_id = topicId;
+                                    }
                                     messageObject.isReactionPush = loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_");
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                                     arrayList.add(messageObject);

@@ -69,7 +69,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         } else if (document.mime_type.startsWith("audio")) {
             document.attributes.add(new TLRPC.TL_documentAttributeAudio());
         }
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset = dataSpec.position, false);
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset = dataSpec.position, false, FileLoader.PRIORITY_HIGH);
         bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? document.size - dataSpec.position : dataSpec.length;
         if (bytesRemaining < 0) {
             throw new EOFException();
@@ -98,7 +98,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                 while (availableLength == 0 && opened) {
                     availableLength = (int) loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
                     if (availableLength == 0) {
-                        FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false);
+                        FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, FileLoader.PRIORITY_HIGH);
                         countDownLatch = new CountDownLatch(1);
                         countDownLatch.await();
                     }

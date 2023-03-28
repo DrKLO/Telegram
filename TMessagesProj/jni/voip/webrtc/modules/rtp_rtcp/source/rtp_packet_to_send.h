@@ -19,6 +19,8 @@
 #include "api/array_view.h"
 #include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "api/video/video_timing.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
@@ -44,9 +46,8 @@ class RtpPacketToSend : public RtpPacket {
   ~RtpPacketToSend();
 
   // Time in local time base as close as it can to frame capture time.
-  int64_t capture_time_ms() const { return capture_time_ms_; }
-
-  void set_capture_time_ms(int64_t time) { capture_time_ms_ = time; }
+  webrtc::Timestamp capture_time() const { return capture_time_; }
+  void set_capture_time(webrtc::Timestamp time) { capture_time_ = time; }
 
   void set_packet_type(RtpPacketMediaType type) { packet_type_ = type; }
   absl::optional<RtpPacketMediaType> packet_type() const {
@@ -77,27 +78,27 @@ class RtpPacketToSend : public RtpPacket {
     additional_data_ = std::move(data);
   }
 
-  void set_packetization_finish_time_ms(int64_t time) {
+  void set_packetization_finish_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kPacketizationFinishDeltaOffset);
   }
 
-  void set_pacer_exit_time_ms(int64_t time) {
+  void set_pacer_exit_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kPacerExitDeltaOffset);
   }
 
-  void set_network_time_ms(int64_t time) {
+  void set_network_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kNetworkTimestampDeltaOffset);
   }
 
-  void set_network2_time_ms(int64_t time) {
+  void set_network2_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kNetwork2TimestampDeltaOffset);
   }
 
@@ -120,8 +121,17 @@ class RtpPacketToSend : public RtpPacket {
   void set_is_red(bool is_red) { is_red_ = is_red; }
   bool is_red() const { return is_red_; }
 
+  // The amount of time spent in the send queue, used for totalPacketSendDelay.
+  // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalpacketsenddelay
+  void set_time_in_send_queue(TimeDelta time_in_send_queue) {
+    time_in_send_queue_ = time_in_send_queue;
+  }
+  absl::optional<TimeDelta> time_in_send_queue() const {
+    return time_in_send_queue_;
+  }
+
  private:
-  int64_t capture_time_ms_ = 0;
+  webrtc::Timestamp capture_time_ = webrtc::Timestamp::Zero();
   absl::optional<RtpPacketMediaType> packet_type_;
   bool allow_retransmission_ = false;
   absl::optional<uint16_t> retransmitted_sequence_number_;
@@ -130,6 +140,7 @@ class RtpPacketToSend : public RtpPacket {
   bool is_key_frame_ = false;
   bool fec_protect_packet_ = false;
   bool is_red_ = false;
+  absl::optional<TimeDelta> time_in_send_queue_;
 };
 
 }  // namespace webrtc

@@ -251,6 +251,9 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             } else {
                 chatReactions.remove(react.reaction);
                 if (chatReactions.isEmpty()) {
+                    if (listAdapter != null) {
+                        listAdapter.notifyItemRangeRemoved((isChannel ? 1 : 2), 1 + availableReactions.size());
+                    }
                     setCheckedEnableReactionCell(SELECT_TYPE_NONE, true);
                 }
             }

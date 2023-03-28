@@ -68,7 +68,9 @@ public class ChatActivityMemberRequestsDelegate {
 
             View pendingRequestsSelector = new View(fragment.getParentActivity());
             pendingRequestsSelector.setBackground(Theme.getSelectorDrawable(false));
-            pendingRequestsSelector.setOnClickListener((v) -> showBottomSheet());
+            pendingRequestsSelector.setOnClickListener((v) -> {
+                showBottomSheet();
+            });
             root.addView(pendingRequestsSelector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 2));
 
             LinearLayout requestsDataLayout = new LinearLayout(fragment.getParentActivity());
@@ -78,7 +80,7 @@ public class ChatActivityMemberRequestsDelegate {
             avatarsView = new AvatarsImageView(fragment.getParentActivity(), false) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    int width = avatarsDarawable.count == 0 ? 0 : (20 * (avatarsDarawable.count - 1) + 24);
+                    int width = avatarsDrawable.count == 0 ? 0 : (20 * (avatarsDrawable.count - 1) + 24);
                     super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(width), MeasureSpec.EXACTLY), heightMeasureSpec);
                 }
             };
@@ -222,6 +224,9 @@ public class ChatActivityMemberRequestsDelegate {
                 public void onAnimationEnd(Animator animation) {
                     if (!appear) {
                         root.setVisibility(View.GONE);
+                    }
+                    if (callback != null) {
+                        callback.onEnterOffsetChanged();
                     }
                 }
             });

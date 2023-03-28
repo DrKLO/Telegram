@@ -92,6 +92,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private ArrayList<TLRPC.User> searchResultCommandsUsers;
     private ArrayList<TLRPC.BotInlineResult> searchResultBotContext;
     private TLRPC.TL_inlineBotSwitchPM searchResultBotContextSwitch;
+    private TLRPC.TL_inlineBotWebView searchResultBotWebViewSwitch;
     private MentionsAdapterDelegate delegate;
     private LongSparseArray<TLRPC.BotInfo> botInfo;
     private int resultStartPosition;
@@ -195,6 +196,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoadFailed);
         }
+    }
+
+    public TLRPC.User getFoundContextBot() {
+        return foundContextBot;
     }
 
     @Override
@@ -477,6 +482,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         return searchResultBotContextSwitch;
     }
 
+    public TLRPC.TL_inlineBotWebView getBotWebViewSwitch() {
+        return searchResultBotWebViewSwitch;
+    }
+
     public long getContextBotId() {
         return foundContextBot != null ? foundContextBot.id : 0;
     }
@@ -731,6 +740,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 if (searchResultBotContextSwitch == null) {
                     searchResultBotContextSwitch = res.switch_pm;
                 }
+                if (searchResultBotWebViewSwitch == null) {
+                    searchResultBotWebViewSwitch = res.switch_webview;
+                }
                 for (int a = 0; a < res.results.size(); a++) {
                     TLRPC.BotInlineResult result = res.results.get(a);
                     if (!(result.document instanceof TLRPC.TL_document) && !(result.photo instanceof TLRPC.TL_photo) && !"game".equals(result.type) && result.content == null && result.send_message instanceof TLRPC.TL_botInlineMessageMediaAuto) {
@@ -762,14 +774,14 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 searchResultSuggestions = null;
                 searchResultCommandsHelp = null;
                 searchResultCommandsUsers = null;
+                delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null);
                 if (added) {
-                    boolean hasTop = searchResultBotContextSwitch != null;
+                    boolean hasTop = searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null;
                     notifyItemChanged(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0) - 1);
                     notifyItemRangeInserted(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0), res.results.size());
                 } else {
                     notifyDataSetChanged();
                 }
-                delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null);
             }
         });
 
@@ -796,7 +808,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     }
 
     public void searchUsernameOrHashtag(CharSequence charSequence, int position, ArrayList<MessageObject> messageObjects, boolean usernameOnly, boolean forSearch) {
-        final String text = charSequence == null ? null : charSequence.toString();
+        final String text = charSequence == null ? "" : charSequence.toString();
         if (cancelDelayRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(cancelDelayRunnable);
             cancelDelayRunnable = null;
@@ -826,7 +838,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         StringBuilder result = new StringBuilder();
         int foundType = -1;
 
-        boolean searchEmoji = !usernameOnly && text != null && text.length() > 0 && text.length() <= 14;
+        boolean searchEmoji = !usernameOnly && text.length() > 0 && text.length() <= 14;
         String originalEmoji = "";
         if (searchEmoji) {
             CharSequence emoji = originalEmoji = text;
@@ -1076,7 +1088,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                     if (user == null) {
                         continue;
                     }
-                    if (!TextUtils.isEmpty(user.username) && (usernameString.length() == 0 || user.username.toLowerCase().startsWith(usernameString))) {
+                    String username = UserObject.getPublicUsername(user);
+                    if (!TextUtils.isEmpty(username) && (usernameString.length() == 0 || username.toLowerCase().startsWith(usernameString))) {
                         newResult.add(user);
                         newResultsHashMap.put(user.id, user);
                         newMap.put(user.id, user);
@@ -1113,7 +1126,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                         }
                         firstName = chat.title;
                         lastName = null;
-                        username = chat.username;
+                        username = ChatObject.getPublicUsername(chat);
                         object = chat;
                         id = -chat.id;
                     } else {
@@ -1130,7 +1143,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                         }
                         firstName = user.first_name;
                         lastName = user.last_name;
-                        username = user.username;
+                        username = UserObject.getPublicUsername(user);
                         object = user;
                         id = user.id;
                     }
@@ -1224,7 +1237,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                                         for (int a = 0; a < res.participants.size(); a++) {
                                             TLRPC.ChannelParticipant participant = res.participants.get(a);
                                             long peerId = MessageObject.getPeerId(participant.peer);
-                                            if (searchResultUsernamesMap.indexOfKey(peerId) >= 0 || !isSearchingMentions && peerId == currentUserId) {
+                                            if (searchResultUsernamesMap.indexOfKey(peerId) >= 0 || peerId == 0 && searchResultUsernamesMap.indexOfKey(currentUserId) >= 0 || !isSearchingMentions && (peerId == currentUserId || peerId == 0)) {
                                                 continue;
                                             }
                                             if (peerId >= 0) {
@@ -1387,7 +1400,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         if (stickers != null) {
             return stickers.size();
         } else if (searchResultBotContext != null) {
-            return searchResultBotContext.size() + (searchResultBotContextSwitch != null ? 1 : 0);
+            return searchResultBotContext.size() + (searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null ? 1 : 0);
         } else if (searchResultUsernames != null) {
             return searchResultUsernames.size();
         } else if (searchResultHashtags != null) {
@@ -1412,6 +1425,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             searchResultBotContext.clear();
         }
         searchResultBotContextSwitch = null;
+        searchResultBotWebViewSwitch = null;
         if (searchResultUsernames != null) {
             searchResultUsernames.clear();
         }
@@ -1434,7 +1448,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         } else if (foundContextBot != null && !inlineMediaEnabled) {
             return 3;
         } else if (searchResultBotContext != null) {
-            if (position == 0 && searchResultBotContextSwitch != null) {
+            if (position == 0 && (searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null)) {
                 return 2;
             }
             return 1;
@@ -1448,7 +1462,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     }
 
     public int getItemPosition(int i) {
-        if (searchResultBotContext != null && searchResultBotContextSwitch != null) {
+        if (searchResultBotContext != null && (searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null)) {
             i--;
         }
         return i;
@@ -1462,7 +1476,13 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         if (stickers != null) {
             return i >= 0 && i < stickers.size() ? stickers.get(i).sticker : null;
         } else if (searchResultBotContext != null) {
-            if (searchResultBotContextSwitch != null) {
+            if (searchResultBotWebViewSwitch != null) {
+                if (i == 0) {
+                    return searchResultBotWebViewSwitch;
+                } else {
+                    i--;
+                }
+            } else if (searchResultBotContextSwitch != null) {
                 if (i == 0) {
                     return searchResultBotContextSwitch;
                 } else {
@@ -1584,10 +1604,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 }
             }
         } else if (searchResultBotContext != null) {
-            boolean hasTop = searchResultBotContextSwitch != null;
+            boolean hasTop = searchResultBotContextSwitch != null || searchResultBotWebViewSwitch != null;
             if (holder.getItemViewType() == 2) {
                 if (hasTop) {
-                    ((BotSwitchCell) holder.itemView).setText(searchResultBotContextSwitch.text);
+                    ((BotSwitchCell) holder.itemView).setText(searchResultBotContextSwitch != null ? searchResultBotContextSwitch.text : searchResultBotWebViewSwitch.text);
                 }
             } else {
                 if (hasTop) {

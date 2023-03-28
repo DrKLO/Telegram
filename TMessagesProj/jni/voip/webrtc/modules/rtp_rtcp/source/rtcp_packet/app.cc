@@ -91,7 +91,9 @@ bool App::Create(uint8_t* packet,
 
   ByteWriter<uint32_t>::WriteBigEndian(&packet[*index + 0], sender_ssrc());
   ByteWriter<uint32_t>::WriteBigEndian(&packet[*index + 4], name_);
-  memcpy(&packet[*index + 8], data_.data(), data_.size());
+  if (!data_.empty()) {
+    memcpy(&packet[*index + 8], data_.data(), data_.size());
+  }
   *index += (8 + data_.size());
   RTC_DCHECK_EQ(index_end, *index);
   return true;

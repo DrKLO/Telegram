@@ -387,7 +387,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 presentFragment(chatActivity);
             } else if (position == chatsCreateRow) {
                 if (checkingCanCreate || currentGroupCreateAddress == null) {
-                    loadingDialog = new AlertDialog(getParentActivity(), 3);
+                    loadingDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                     loadingDialog.setOnCancelListener(dialog -> loadingDialog = null);
                     loadingDialog.show();
                     return;
@@ -701,7 +701,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    protected void onBecomeFullyHidden() {
+    public void onBecomeFullyHidden() {
         super.onBecomeFullyHidden();
         if (undoView != null) {
             undoView.hide(true, 0);
@@ -728,7 +728,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    protected void onBecomeFullyVisible() {
+    public void onBecomeFullyVisible() {
         super.onBecomeFullyVisible();
         groupCreateActivity = null;
     }

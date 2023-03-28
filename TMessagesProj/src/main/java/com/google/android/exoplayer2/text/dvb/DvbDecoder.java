@@ -26,9 +26,9 @@ public final class DvbDecoder extends SimpleSubtitleDecoder {
   private final DvbParser parser;
 
   /**
-   * @param initializationData The initialization data for the decoder. The initialization data
-   *     must consist of a single byte array containing 5 bytes: flag_pes_stripped (1),
-   *     composition_page (2), ancillary_page (2).
+   * @param initializationData The initialization data for the decoder. The initialization data must
+   *     consist of a single byte array containing 5 bytes: flag_pes_stripped (1), composition_page
+   *     (2), ancillary_page (2).
    */
   public DvbDecoder(List<byte[]> initializationData) {
     super("DvbDecoder");
@@ -45,5 +45,4 @@ public final class DvbDecoder extends SimpleSubtitleDecoder {
     }
     return new DvbSubtitle(parser.decode(data, length));
   }
-
 }

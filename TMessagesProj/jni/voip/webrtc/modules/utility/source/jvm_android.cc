@@ -17,6 +17,7 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/platform_thread.h"
+#include "tgnet/FileLog.h"
 
 namespace webrtc {
 
@@ -44,6 +45,7 @@ void LoadClasses(JNIEnv* jni) {
     RTC_LOG(LS_INFO) << "name: " << c.name;
     CHECK_EXCEPTION(jni) << "Error during FindClass: " << c.name;
     RTC_CHECK(localRef) << c.name;
+    DEBUG_REF("webrtc 4 globalref");
     jclass globalRef = reinterpret_cast<jclass>(jni->NewGlobalRef(localRef));
     CHECK_EXCEPTION(jni) << "Error during NewGlobalRef: " << c.name;
     RTC_CHECK(globalRef) << c.name;
@@ -53,6 +55,7 @@ void LoadClasses(JNIEnv* jni) {
 
 void FreeClassReferences(JNIEnv* jni) {
   for (auto& c : loaded_classes) {
+    DEBUG_DELREF("FreeClassReferences");
     jni->DeleteGlobalRef(c.clazz);
     c.clazz = nullptr;
   }
@@ -94,11 +97,13 @@ JvmThreadConnector::~JvmThreadConnector() {
 // GlobalRef implementation.
 GlobalRef::GlobalRef(JNIEnv* jni, jobject object)
     : jni_(jni), j_object_(NewGlobalRef(jni, object)) {
+  DEBUG_REF("webrtc jvm globalref");
   RTC_LOG(LS_INFO) << "GlobalRef::ctor";
 }
 
 GlobalRef::~GlobalRef() {
   RTC_LOG(LS_INFO) << "GlobalRef::dtor";
+  DEBUG_DELREF("webrtc jvm globalref");
   DeleteGlobalRef(jni_, j_object_);
 }
 
@@ -136,7 +141,7 @@ NativeRegistration::NativeRegistration(JNIEnv* jni, jclass clazz)
 
 NativeRegistration::~NativeRegistration() {
   RTC_LOG(LS_INFO) << "NativeRegistration::dtor";
-  jni_->UnregisterNatives(j_class_);
+  //jni_->UnregisterNatives(j_class_);
   CHECK_EXCEPTION(jni_) << "Error during UnregisterNatives";
 }
 

@@ -18,12 +18,11 @@ namespace webrtc {
 
 // An RtpStreamReceiver is responsible for the rtp-specific but
 // media-independent state needed for receiving an RTP stream.
-// TODO(nisse): Currently, only owns the association between ssrc and
-// the stream's RtpPacketSinkInterface. Ownership of corresponding
-// objects from modules/rtp_rtcp/ should move to this class (or
-// rather, the corresponding implementation class). We should add
-// methods for getting rtp receive stats, and for sending RTCP
-// messages related to the receive stream.
+// TODO(bugs.webrtc.org/7135): Currently, only owns the association between ssrc
+// and the stream's RtpPacketSinkInterface. Ownership of corresponding objects
+// from modules/rtp_rtcp/ should move to this class (or rather, the
+// corresponding implementation class). We should add methods for getting rtp
+// receive stats, and for sending RTCP messages related to the receive stream.
 class RtpStreamReceiverInterface {
  public:
   virtual ~RtpStreamReceiverInterface() {}
@@ -37,9 +36,6 @@ class RtpStreamReceiverControllerInterface {
   virtual std::unique_ptr<RtpStreamReceiverInterface> CreateReceiver(
       uint32_t ssrc,
       RtpPacketSinkInterface* sink) = 0;
-  // For registering additional sinks, needed for FlexFEC.
-  virtual bool AddSink(uint32_t ssrc, RtpPacketSinkInterface* sink) = 0;
-  virtual size_t RemoveSink(const RtpPacketSinkInterface* sink) = 0;
 };
 
 }  // namespace webrtc

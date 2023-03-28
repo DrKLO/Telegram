@@ -317,16 +317,6 @@ JNI_GENERATOR_EXPORT void Java_org_webrtc_PeerConnectionFactory_nativePrintStack
   return JNI_PeerConnectionFactory_PrintStackTrace(env, tid);
 }
 
-static void JNI_PeerConnectionFactory_PrintStackTracesOfRegisteredThreads(JNIEnv* env);
-
-JNI_GENERATOR_EXPORT void
-    Java_org_webrtc_PeerConnectionFactory_nativePrintStackTracesOfRegisteredThreads(
-    JNIEnv* env,
-    jclass jcaller) {
-  return JNI_PeerConnectionFactory_PrintStackTracesOfRegisteredThreads(env);
-}
-
-
 static std::atomic<jmethodID>
     g_org_webrtc_PeerConnectionFactory_00024Options_getNetworkIgnoreMask(nullptr);
 static jint Java_Options_getNetworkIgnoreMask(JNIEnv* env, const base::android::JavaRef<jobject>&

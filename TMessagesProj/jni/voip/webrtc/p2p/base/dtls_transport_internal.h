@@ -19,13 +19,13 @@
 #include <utility>
 
 #include "absl/base/attributes.h"
+#include "absl/strings/string_view.h"
 #include "api/crypto/crypto_options.h"
 #include "api/dtls_transport_interface.h"
 #include "api/scoped_refptr.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "rtc_base/callback_list.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "rtc_base/ssl_stream_adapter.h"
@@ -47,6 +47,9 @@ enum PacketFlags {
 class DtlsTransportInternal : public rtc::PacketTransportInternal {
  public:
   ~DtlsTransportInternal() override;
+
+  DtlsTransportInternal(const DtlsTransportInternal&) = delete;
+  DtlsTransportInternal& operator=(const DtlsTransportInternal&) = delete;
 
   virtual webrtc::DtlsTransportState dtls_state() const = 0;
 
@@ -79,7 +82,7 @@ class DtlsTransportInternal : public rtc::PacketTransportInternal {
   virtual std::unique_ptr<rtc::SSLCertChain> GetRemoteSSLCertChain() const = 0;
 
   // Allows key material to be extracted for external encryption.
-  virtual bool ExportKeyingMaterial(const std::string& label,
+  virtual bool ExportKeyingMaterial(absl::string_view label,
                                     const uint8_t* context,
                                     size_t context_len,
                                     bool use_context,
@@ -87,9 +90,17 @@ class DtlsTransportInternal : public rtc::PacketTransportInternal {
                                     size_t result_len) = 0;
 
   // Set DTLS remote fingerprint. Must be after local identity set.
-  virtual bool SetRemoteFingerprint(const std::string& digest_alg,
+  ABSL_DEPRECATED("Use SetRemoteParameters instead.")
+  virtual bool SetRemoteFingerprint(absl::string_view digest_alg,
                                     const uint8_t* digest,
                                     size_t digest_len) = 0;
+
+  // Set DTLS remote fingerprint and role. Must be after local identity set.
+  virtual webrtc::RTCError SetRemoteParameters(
+      absl::string_view digest_alg,
+      const uint8_t* digest,
+      size_t digest_len,
+      absl::optional<rtc::SSLRole> role) = 0;
 
   ABSL_DEPRECATED("Set the max version via construction.")
   bool SetSslMaxProtocolVersion(rtc::SSLProtocolVersion version) {
@@ -135,7 +146,6 @@ class DtlsTransportInternal : public rtc::PacketTransportInternal {
   DtlsTransportInternal();
 
  private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(DtlsTransportInternal);
   webrtc::CallbackList<const rtc::SSLHandshakeError>
       dtls_handshake_error_callback_list_;
   webrtc::CallbackList<DtlsTransportInternal*, const webrtc::DtlsTransportState>

@@ -78,9 +78,8 @@ class RTC_EXPORT EncodedImage {
   EncodedImage& operator=(EncodedImage&&);
   EncodedImage& operator=(const EncodedImage&);
 
-  // TODO(nisse): Change style to timestamp(), set_timestamp(), for consistency
-  // with the VideoFrame class.
-  // Set frame timestamp (90kHz).
+  // TODO(bugs.webrtc.org/9378): Change style to timestamp(), set_timestamp(),
+  // for consistency with the VideoFrame class. Set frame timestamp (90kHz).
   void SetTimestamp(uint32_t timestamp) { timestamp_rtp_ = timestamp; }
 
   // Get frame timestamp (90kHz).
@@ -95,6 +94,13 @@ class RTC_EXPORT EncodedImage {
     RTC_DCHECK_GE(spatial_index.value_or(0), 0);
     RTC_DCHECK_LT(spatial_index.value_or(0), kMaxSpatialLayers);
     spatial_index_ = spatial_index;
+  }
+
+  absl::optional<int> TemporalIndex() const { return temporal_index_; }
+  void SetTemporalIndex(absl::optional<int> temporal_index) {
+    RTC_DCHECK_GE(temporal_index_.value_or(0), 0);
+    RTC_DCHECK_LT(temporal_index_.value_or(0), kMaxTemporalStreams);
+    temporal_index_ = temporal_index;
   }
 
   // These methods can be used to set/get size of subframe with spatial index
@@ -154,6 +160,16 @@ class RTC_EXPORT EncodedImage {
     return encoded_data_ ? encoded_data_->data() : nullptr;
   }
 
+  // Returns whether the encoded image can be considered to be of target
+  // quality.
+  bool IsAtTargetQuality() const { return at_target_quality_; }
+
+  // Sets that the encoded image can be considered to be of target quality to
+  // true or false.
+  void SetAtTargetQuality(bool at_target_quality) {
+    at_target_quality_ = at_target_quality;
+  }
+
   uint32_t _encodedWidth = 0;
   uint32_t _encodedHeight = 0;
   // NTP time of the capture time in local timebase in milliseconds.
@@ -189,6 +205,7 @@ class RTC_EXPORT EncodedImage {
   size_t size_ = 0;  // Size of encoded frame data.
   uint32_t timestamp_rtp_ = 0;
   absl::optional<int> spatial_index_;
+  absl::optional<int> temporal_index_;
   std::map<int, size_t> spatial_layer_frame_size_bytes_;
   absl::optional<webrtc::ColorSpace> color_space_;
   // This field is meant for media quality testing purpose only. When enabled it
@@ -200,6 +217,8 @@ class RTC_EXPORT EncodedImage {
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-getcontributingsources
   RtpPacketInfos packet_infos_;
   bool retransmission_allowed_ = true;
+  // True if the encoded image can be considered to be of target quality.
+  bool at_target_quality_ = false;
 };
 
 }  // namespace webrtc

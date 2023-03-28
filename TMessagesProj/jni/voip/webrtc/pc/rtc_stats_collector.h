@@ -12,6 +12,8 @@
 #define PC_RTC_STATS_COLLECTOR_H_
 
 #include <stdint.h>
+
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -40,6 +42,7 @@
 #include "rtc_base/ref_count.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
+#include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/time_utils.h"
@@ -77,7 +80,11 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   void GetStatsReport(rtc::scoped_refptr<RtpReceiverInternal> selector,
                       rtc::scoped_refptr<RTCStatsCollectorCallback> callback);
   // Clears the cache's reference to the most recent stats report. Subsequently
-  // calling `GetStatsReport` guarantees fresh stats.
+  // calling `GetStatsReport` guarantees fresh stats. This method must be called
+  // any time the PeerConnection visibly changes as a result of an API call as
+  // per
+  // https://w3c.github.io/webrtc-stats/#guidelines-for-getstats-results-caching-throttling
+  // and it must be called any time negotiation happens.
   void ClearCachedStatsReport();
 
   // If there is a `GetStatsReport` requests in-flight, waits until it has been
@@ -91,6 +98,8 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   struct CertificateStatsPair {
     std::unique_ptr<rtc::SSLCertificateStats> local;
     std::unique_ptr<rtc::SSLCertificateStats> remote;
+
+    CertificateStatsPair Copy() const;
   };
 
   // Stats gathering on a particular thread. Virtual for the sake of testing.
@@ -160,7 +169,7 @@ class RTCStatsCollector : public rtc::RefCountInterface,
     cricket::MediaType media_type;
     absl::optional<std::string> mid;
     absl::optional<std::string> transport_name;
-    std::unique_ptr<TrackMediaInfoMap> track_media_info_map;
+    TrackMediaInfoMap track_media_info_map;
   };
 
   void DeliverCachedReport(
@@ -171,11 +180,6 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   void ProduceCertificateStats_n(
       int64_t timestamp_us,
       const std::map<std::string, CertificateStatsPair>& transport_cert_stats,
-      RTCStatsReport* report) const;
-  // Produces `RTCCodecStats`.
-  void ProduceCodecStats_n(
-      int64_t timestamp_us,
-      const std::vector<RtpTransceiverStatsInfo>& transceiver_stats_infos,
       RTCStatsReport* report) const;
   // Produces `RTCDataChannelStats`.
   void ProduceDataChannelStats_s(int64_t timestamp_us,
@@ -200,9 +204,11 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   // Produces `RTCPeerConnectionStats`.
   void ProducePeerConnectionStats_s(int64_t timestamp_us,
                                     RTCStatsReport* report) const;
-  // Produces `RTCInboundRTPStreamStats` and `RTCOutboundRTPStreamStats`.
-  // This has to be invoked after codecs and transport stats have been created
-  // because some metrics are calculated through lookup of other metrics.
+  // Produces `RTCInboundRTPStreamStats`, `RTCOutboundRTPStreamStats`,
+  // `RTCRemoteInboundRtpStreamStats`, `RTCRemoteOutboundRtpStreamStats` and any
+  // referenced `RTCCodecStats`. This has to be invoked after transport stats
+  // have been created because some metrics are calculated through lookup of
+  // other metrics.
   void ProduceRTPStreamStats_n(
       int64_t timestamp_us,
       const std::vector<RtpTransceiverStatsInfo>& transceiver_stats_infos,
@@ -225,7 +231,7 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   std::map<std::string, CertificateStatsPair>
   PrepareTransportCertificateStats_n(
       const std::map<std::string, cricket::TransportStats>&
-          transport_stats_by_name) const;
+          transport_stats_by_name);
   // The results are stored in `transceiver_stats_infos_` and `call_stats_`.
   void PrepareTransceiverStatsInfosAndCallStats_s_w_n();
 
@@ -277,6 +283,12 @@ class RTCStatsCollector : public rtc::RefCountInterface,
   // now get rid of the variable and keep the data scoped within a stats
   // collection sequence.
   std::vector<RtpTransceiverStatsInfo> transceiver_stats_infos_;
+  // This cache avoids having to call rtc::SSLCertChain::GetStats(), which can
+  // relatively expensive. ClearCachedStatsReport() needs to be called on
+  // negotiation to ensure the cache is not obsolete.
+  Mutex cached_certificates_mutex_;
+  std::map<std::string, CertificateStatsPair> cached_certificates_by_transport_
+      RTC_GUARDED_BY(cached_certificates_mutex_);
 
   Call::Stats call_stats_;
 

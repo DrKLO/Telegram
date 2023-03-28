@@ -68,7 +68,6 @@ AsyncTCPSocketBase::AsyncTCPSocketBase(Socket* socket,
       max_outsize_(max_packet_size) {
   inbuf_.EnsureCapacity(kMinimumRecvSize);
 
-  RTC_DCHECK(socket_.get() != nullptr);
   socket_->SignalConnectEvent.connect(this,
                                       &AsyncTCPSocketBase::OnConnectEvent);
   socket_->SignalReadEvent.connect(this, &AsyncTCPSocketBase::OnReadEvent);
@@ -237,7 +236,7 @@ void AsyncTCPSocketBase::OnWriteEvent(Socket* socket) {
 }
 
 void AsyncTCPSocketBase::OnCloseEvent(Socket* socket, int error) {
-  SignalClose(this, error);
+  NotifyClosed(error);
 }
 
 // AsyncTCPSocket

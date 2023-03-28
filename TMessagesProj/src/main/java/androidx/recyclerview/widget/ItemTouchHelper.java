@@ -32,14 +32,14 @@ import android.view.ViewConfiguration;
 import android.view.ViewParent;
 import android.view.animation.Interpolator;
 
-import org.telegram.messenger.AndroidUtilities;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView.OnItemTouchListener;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
+
+import org.telegram.messenger.AndroidUtilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -506,6 +506,10 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
         stopGestureDetection();
     }
 
+    public void clearRecoverAnimations() {
+        mRecoverAnimations.clear();
+    }
+
     private void startGestureDetection() {
         mItemTouchHelperGestureListener = new ItemTouchHelperGestureListener();
         mGestureDetector = new GestureDetectorCompat(mRecyclerView.getContext(),
@@ -561,6 +565,10 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
                 mRecoverAnimations, mActionState, dx, dy);
     }
 
+    protected boolean shouldSwipeBack() {
+        return false;
+    }
+
     /**
      * Starts dragging or swiping the given View. Call with null if you want to clear it.
      *
@@ -596,28 +604,33 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
         if (mSelected != null) {
             final ViewHolder prevSelected = mSelected;
             if (prevSelected.itemView.getParent() != null) {
+                final boolean swipeBack = shouldSwipeBack();
                 final int swipeDir = prevActionState == ACTION_STATE_DRAG ? 0
                         : swipeIfNecessary(prevSelected);
                 releaseVelocityTracker();
                 // find where we should animate to
                 final float targetTranslateX, targetTranslateY;
                 int animationType;
-                switch (swipeDir) {
-                    case LEFT:
-                    case RIGHT:
-                    case START:
-                    case END:
-                        targetTranslateY = 0;
-                        targetTranslateX = Math.signum(mDx) * mRecyclerView.getWidth();
-                        break;
-                    case UP:
-                    case DOWN:
-                        targetTranslateX = 0;
-                        targetTranslateY = Math.signum(mDy) * mRecyclerView.getHeight();
-                        break;
-                    default:
-                        targetTranslateX = 0;
-                        targetTranslateY = 0;
+                if (swipeBack) {
+                    targetTranslateX = targetTranslateY = 0;
+                } else {
+                    switch (swipeDir) {
+                        case LEFT:
+                        case RIGHT:
+                        case START:
+                        case END:
+                            targetTranslateY = 0;
+                            targetTranslateX = Math.signum(mDx) * mRecyclerView.getWidth();
+                            break;
+                        case UP:
+                        case DOWN:
+                            targetTranslateX = 0;
+                            targetTranslateY = Math.signum(mDy) * mRecyclerView.getHeight();
+                            break;
+                        default:
+                            targetTranslateX = 0;
+                            targetTranslateY = 0;
+                    }
                 }
                 if (prevActionState == ACTION_STATE_DRAG) {
                     animationType = ANIMATION_TYPE_DRAG;

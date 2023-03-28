@@ -89,11 +89,6 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
     }
 
     @Override
-    protected boolean isAllowSelectChildAtPosition(float x, float y) {
-        return y >= scrollOffsetY + frameLayout.getMeasuredHeight();
-    }
-
-    @Override
     protected void setTranslationY(int newOffset) {
         super.setTranslationY(newOffset);
         currentLoadingView.setTranslationY(newOffset + frameLayout.getMeasuredHeight());
@@ -132,7 +127,7 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
                 Activity activity = AndroidUtilities.findActivity(getContext());
                 BaseFragment fragment = null;
                 if (activity instanceof LaunchActivity) {
-                    fragment = ((LaunchActivity) activity).getActionBarLayout().fragmentsStack.get(((LaunchActivity) activity).getActionBarLayout().fragmentsStack.size() - 1);
+                    fragment = ((LaunchActivity) activity).getActionBarLayout().getFragmentStack().get(((LaunchActivity) activity).getActionBarLayout().getFragmentStack().size() - 1);
                 }
                 if (fragment instanceof ChatActivity) {
                     boolean keyboardVisible = ((ChatActivity) fragment).needEnterText();

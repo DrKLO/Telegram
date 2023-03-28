@@ -241,7 +241,7 @@ public class LinkActionView extends LinearLayout {
 
             FrameLayout container;
             if (bottomSheet == null) {
-                container = fragment.getParentLayout();
+                container = (FrameLayout) fragment.getParentLayout().getOverlayContainerView();
             } else {
                 container = bottomSheet.getContainer();
             }
@@ -344,6 +344,9 @@ public class LinkActionView extends LinearLayout {
             if (v instanceof ScrollView) {
                 y -= v.getScrollY();
             }
+            if (!(v.getParent() instanceof View)) {
+                break;
+            }
             v = (View) v.getParent();
             if (!(v instanceof ViewGroup)) {
                 return;
@@ -356,13 +359,14 @@ public class LinkActionView extends LinearLayout {
     }
 
     private void showQrCode() {
-        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), link, isChannel ? LocaleController.getString("QRCodeLinkHelpChannel", R.string.QRCodeLinkHelpChannel) : LocaleController.getString("QRCodeLinkHelpGroup", R.string.QRCodeLinkHelpGroup)) {
+        qrCodeBottomSheet = new QRCodeBottomSheet(getContext(), LocaleController.getString("InviteByQRCode", R.string.InviteByQRCode), link, isChannel ? LocaleController.getString("QRCodeLinkHelpChannel", R.string.QRCodeLinkHelpChannel) : LocaleController.getString("QRCodeLinkHelpGroup", R.string.QRCodeLinkHelpGroup), false) {
             @Override
             public void dismiss() {
                 super.dismiss();
                 qrCodeBottomSheet = null;
             }
         };
+        qrCodeBottomSheet.setCenterAnimation(R.raw.qr_code_logo);
         qrCodeBottomSheet.show();
         if (actionBarPopupWindow != null) {
             actionBarPopupWindow.dismiss();

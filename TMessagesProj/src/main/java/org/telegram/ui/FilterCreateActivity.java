@@ -322,7 +322,7 @@ public class FilterCreateActivity extends BaseFragment {
                 updateRows();
             } else if (position == includeAddRow || position == excludeAddRow) {
                 ArrayList<Long> arrayList = position == excludeAddRow ? newNeverShow : newAlwaysShow;
-                FilterUsersActivity fragment = new FilterUsersActivity(position == includeAddRow, arrayList, newFilterFlags);
+                UsersSelectActivity fragment = new UsersSelectActivity(position == includeAddRow, arrayList, newFilterFlags);
                 fragment.setDelegate((ids, flags) -> {
                     newFilterFlags = flags;
                     if (position == excludeAddRow) {
@@ -365,7 +365,7 @@ public class FilterCreateActivity extends BaseFragment {
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog, which) -> {
                     AlertDialog progressDialog = null;
                     if (getParentActivity() != null) {
-                        progressDialog = new AlertDialog(getParentActivity(), 3);
+                        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
                         progressDialog.setCanCancel(false);
                         progressDialog.show();
                     }
@@ -389,7 +389,7 @@ public class FilterCreateActivity extends BaseFragment {
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             } else if (position == nameRow) {
                 PollEditTextCell cell = (PollEditTextCell) view;
@@ -547,7 +547,7 @@ public class FilterCreateActivity extends BaseFragment {
         showDialog(alertDialog);
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
         }
     }
 
@@ -586,7 +586,7 @@ public class FilterCreateActivity extends BaseFragment {
         }
         AlertDialog progressDialog;
         if (progress) {
-            progressDialog = new AlertDialog(fragment.getParentActivity(), 3);
+            progressDialog = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setCanCancel(false);
             progressDialog.show();
         } else {
@@ -957,7 +957,7 @@ public class FilterCreateActivity extends BaseFragment {
                             String status;
                             if (chat.participants_count != 0) {
                                 status = LocaleController.formatPluralString("Members", chat.participants_count);
-                            } else if (TextUtils.isEmpty(chat.username)) {
+                            } else if (!ChatObject.isPublic(chat)) {
                                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
                                     status = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate);
                                 } else {

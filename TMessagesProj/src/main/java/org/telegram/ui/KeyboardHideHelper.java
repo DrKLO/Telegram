@@ -147,7 +147,7 @@ public class KeyboardHideHelper {
                     va.setDuration(200);
                     va.start();
                     if (end && startedAtBottom && ca != null) {
-                        ca.scrollToLastMessage(true);
+                        ca.scrollToLastMessage(true, false);
                     }
                     startedOutsideView = false;
                     return true;

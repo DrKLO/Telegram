@@ -373,7 +373,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                     }
                     themes.add(themeInfo);
                 }
-                ThemesHorizontalListCell cell = new ThemesHorizontalListCell(context, ThemeActivity.THEME_TYPE_OTHER, themes, new ArrayList<>()) {
+                ThemesHorizontalListCell cell = new ThemesHorizontalListCell(context, this, ThemeActivity.THEME_TYPE_OTHER, themes, new ArrayList<>()) {
                     @Override
                     protected void updateRows() {
                         builder.getDismissRunnable().run();
@@ -565,7 +565,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         if (creatingNewTheme) {
             String oldName = info.title;
             String oldSlug = info.slug;
-            progressDialog = new AlertDialog(getParentActivity(), 3);
+            progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             progressDialog.setOnCancelListener(dialog -> {
 
             });
@@ -584,7 +584,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
             return;
         }
 
-        progressDialog = new AlertDialog(getParentActivity(), 3);
+        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
 
         final TLRPC.TL_account_updateTheme req = new TLRPC.TL_account_updateTheme();
         TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();

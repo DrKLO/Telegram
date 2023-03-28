@@ -245,7 +245,12 @@ public class EmojiThemes {
         if (themeInfo == null) {
             int settingsIndex = getSettingsIndex(index);
             TLRPC.TL_theme tlTheme = getTlTheme(index);
-            Theme.ThemeInfo baseTheme = Theme.getTheme(Theme.getBaseThemeKey(tlTheme.settings.get(settingsIndex)));
+            Theme.ThemeInfo baseTheme;
+            if (tlTheme != null) {
+                baseTheme = Theme.getTheme(Theme.getBaseThemeKey(tlTheme.settings.get(settingsIndex)));
+            } else {
+                baseTheme = Theme.getTheme("Blue");
+            }
             themeInfo = new Theme.ThemeInfo(baseTheme);
             accent = themeInfo.createNewAccent(tlTheme, currentAccount, true, settingsIndex);
             themeInfo.setCurrentAccentId(accent.id);
@@ -363,6 +368,7 @@ public class EmojiThemes {
             }
             ImageLocation imageLocation = ImageLocation.getForDocument(wallPaper.document);
             ImageReceiver imageReceiver = new ImageReceiver();
+            imageReceiver.setAllowLoadingOnAttachedOnly(false);
 
             String imageFilter;
             int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
@@ -423,6 +429,7 @@ public class EmojiThemes {
         final TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(wallpaper.document.thumbs, 140);
         ImageLocation imageLocation = ImageLocation.getForDocument(thumbSize, wallpaper.document);
         ImageReceiver imageReceiver = new ImageReceiver();
+        imageReceiver.setAllowLoadingOnAttachedOnly(false);
         imageReceiver.setImage(imageLocation, "120_140", null, null, null, 1);
         imageReceiver.setDelegate((receiver, set, thumb, memCache) -> {
             ImageReceiver.BitmapHolder holder = receiver.getBitmapSafe();

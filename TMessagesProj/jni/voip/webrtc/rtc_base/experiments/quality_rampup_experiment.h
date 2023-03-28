@@ -12,7 +12,7 @@
 #define RTC_BASE_EXPERIMENTS_QUALITY_RAMPUP_EXPERIMENT_H_
 
 #include "absl/types/optional.h"
-#include "api/transport/webrtc_key_value_config.h"
+#include "api/field_trials_view.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
@@ -38,7 +38,7 @@ class QualityRampupExperiment final {
 
  private:
   explicit QualityRampupExperiment(
-      const WebRtcKeyValueConfig* const key_value_config);
+      const FieldTrialsView* const key_value_config);
 
   FieldTrialOptional<int> min_pixels_;
   FieldTrialOptional<int> min_duration_ms_;

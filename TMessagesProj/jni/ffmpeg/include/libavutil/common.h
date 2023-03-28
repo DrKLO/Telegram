@@ -81,6 +81,15 @@
 #define FFNABS(a) ((a) <= 0 ? (a) : (-(a)))
 
 /**
+ * Unsigned Absolute value.
+ * This takes the absolute value of a signed int and returns it as a unsigned.
+ * This also works with INT_MIN which would otherwise not be representable
+ * As with many macros, this evaluates its argument twice.
+ */
+#define FFABSU(a) ((a) <= 0 ? -(unsigned)(a) : (unsigned)(a))
+#define FFABS64U(a) ((a) <= 0 ? -(uint64_t)(a) : (uint64_t)(a))
+
+/**
  * Comparator.
  * For two numerical expressions x and y, gives 1 if x > y, -1 if x < y, and 0
  * if x == y. This is useful for instance in a qsort comparator callback.
@@ -106,8 +115,72 @@
 #   include "intmath.h"
 #endif
 
-/* Pull in unguarded fallback defines at the end of this file. */
-#include "common.h"
+#ifndef av_ceil_log2
+#   define av_ceil_log2     av_ceil_log2_c
+#endif
+#ifndef av_clip
+#   define av_clip          av_clip_c
+#endif
+#ifndef av_clip64
+#   define av_clip64        av_clip64_c
+#endif
+#ifndef av_clip_uint8
+#   define av_clip_uint8    av_clip_uint8_c
+#endif
+#ifndef av_clip_int8
+#   define av_clip_int8     av_clip_int8_c
+#endif
+#ifndef av_clip_uint16
+#   define av_clip_uint16   av_clip_uint16_c
+#endif
+#ifndef av_clip_int16
+#   define av_clip_int16    av_clip_int16_c
+#endif
+#ifndef av_clipl_int32
+#   define av_clipl_int32   av_clipl_int32_c
+#endif
+#ifndef av_clip_intp2
+#   define av_clip_intp2    av_clip_intp2_c
+#endif
+#ifndef av_clip_uintp2
+#   define av_clip_uintp2   av_clip_uintp2_c
+#endif
+#ifndef av_mod_uintp2
+#   define av_mod_uintp2    av_mod_uintp2_c
+#endif
+#ifndef av_sat_add32
+#   define av_sat_add32     av_sat_add32_c
+#endif
+#ifndef av_sat_dadd32
+#   define av_sat_dadd32    av_sat_dadd32_c
+#endif
+#ifndef av_sat_sub32
+#   define av_sat_sub32     av_sat_sub32_c
+#endif
+#ifndef av_sat_dsub32
+#   define av_sat_dsub32    av_sat_dsub32_c
+#endif
+#ifndef av_sat_add64
+#   define av_sat_add64     av_sat_add64_c
+#endif
+#ifndef av_sat_sub64
+#   define av_sat_sub64     av_sat_sub64_c
+#endif
+#ifndef av_clipf
+#   define av_clipf         av_clipf_c
+#endif
+#ifndef av_clipd
+#   define av_clipd         av_clipd_c
+#endif
+#ifndef av_popcount
+#   define av_popcount      av_popcount_c
+#endif
+#ifndef av_popcount64
+#   define av_popcount64    av_popcount64_c
+#endif
+#ifndef av_parity
+#   define av_parity        av_parity_c
+#endif
 
 #ifndef av_log2
 av_const int av_log2(unsigned v);
@@ -303,11 +376,10 @@ static av_always_inline int64_t av_sat_add64_c(int64_t a, int64_t b) {
     int64_t tmp;
     return !__builtin_add_overflow(a, b, &tmp) ? tmp : (tmp < 0 ? INT64_MAX : INT64_MIN);
 #else
-    if (b >= 0 && a >= INT64_MAX - b)
-        return INT64_MAX;
-    if (b <= 0 && a <= INT64_MIN - b)
-        return INT64_MIN;
-    return a + b;
+    int64_t s = a+(uint64_t)b;
+    if ((int64_t)(a^b | ~s^b) >= 0)
+        return INT64_MAX ^ (b >> 63);
+    return s;
 #endif
 }
 
@@ -534,75 +606,3 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* AVUTIL_COMMON_H */
-
-/*
- * The following definitions are outside the multiple inclusion guard
- * to ensure they are immediately available in intmath.h.
- */
-
-#ifndef av_ceil_log2
-#   define av_ceil_log2     av_ceil_log2_c
-#endif
-#ifndef av_clip
-#   define av_clip          av_clip_c
-#endif
-#ifndef av_clip64
-#   define av_clip64        av_clip64_c
-#endif
-#ifndef av_clip_uint8
-#   define av_clip_uint8    av_clip_uint8_c
-#endif
-#ifndef av_clip_int8
-#   define av_clip_int8     av_clip_int8_c
-#endif
-#ifndef av_clip_uint16
-#   define av_clip_uint16   av_clip_uint16_c
-#endif
-#ifndef av_clip_int16
-#   define av_clip_int16    av_clip_int16_c
-#endif
-#ifndef av_clipl_int32
-#   define av_clipl_int32   av_clipl_int32_c
-#endif
-#ifndef av_clip_intp2
-#   define av_clip_intp2    av_clip_intp2_c
-#endif
-#ifndef av_clip_uintp2
-#   define av_clip_uintp2   av_clip_uintp2_c
-#endif
-#ifndef av_mod_uintp2
-#   define av_mod_uintp2    av_mod_uintp2_c
-#endif
-#ifndef av_sat_add32
-#   define av_sat_add32     av_sat_add32_c
-#endif
-#ifndef av_sat_dadd32
-#   define av_sat_dadd32    av_sat_dadd32_c
-#endif
-#ifndef av_sat_sub32
-#   define av_sat_sub32     av_sat_sub32_c
-#endif
-#ifndef av_sat_dsub32
-#   define av_sat_dsub32    av_sat_dsub32_c
-#endif
-#ifndef av_sat_add64
-#   define av_sat_add64     av_sat_add64_c
-#endif
-#ifndef av_sat_sub64
-#   define av_sat_sub64     av_sat_sub64_c
-#endif
-#ifndef av_clipf
-#   define av_clipf         av_clipf_c
-#endif
-#ifndef av_clipd
-#   define av_clipd         av_clipd_c
-#endif
-#ifndef av_popcount
-#   define av_popcount      av_popcount_c
-#endif
-#ifndef av_popcount64
-#   define av_popcount64    av_popcount64_c
-#endif
-#ifndef av_parity
-#   define av_parity        av_parity_c
-#endif

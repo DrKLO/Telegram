@@ -353,7 +353,7 @@ public class PipVideoOverlay {
         }
 
         // Animate is a flag for PhotoViewer transition, not ours
-        if (animate) {
+        if (animate || contentView == null) {
             AndroidUtilities.runOnUIThread(this::onDismissedInternal, 100);
         } else {
             AnimatorSet set = new AnimatorSet();
@@ -376,10 +376,10 @@ public class PipVideoOverlay {
 
     private void onDismissedInternal() {
         try {
-            if (controlsView.getParent() != null) {
+            if (contentView != null && contentView.getParent() != null) {
                 windowManager.removeViewImmediate(contentView);
             }
-        } catch (IllegalArgumentException ignored) {}
+        } catch (Exception ignored) {}
 
         if (photoViewerWebView != null) {
             photoViewerWebView.showControls();

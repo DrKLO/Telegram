@@ -30,6 +30,7 @@
 #ifndef MODULES_THIRD_PARTY_G722_G722_H_
 #define MODULES_THIRD_PARTY_G722_G722_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 /*! \page g722_page G.722 encoding and decoding

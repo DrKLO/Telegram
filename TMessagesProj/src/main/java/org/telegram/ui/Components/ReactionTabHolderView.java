@@ -113,7 +113,7 @@ public class ReactionTabHolderView extends FrameLayout {
             for (TLRPC.TL_availableReaction r : MediaDataController.getInstance(currentAccount).getReactionsList()) {
                 if (r.reaction.equals(reaction.emojicon)) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-                    reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", "webp", svgThumb, r);
+                    reactView.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastreactframe", "webp", svgThumb, r);
                     reactView.setVisibility(VISIBLE);
                     iconView.setVisibility(GONE);
                     break;
@@ -150,7 +150,7 @@ public class ReactionTabHolderView extends FrameLayout {
         if (reaction != null) {
             info.setText(LocaleController.formatPluralString("AccDescrNumberOfPeopleReactions", count, reaction));
         } else {
-            info.setText(LocaleController.formatPluralString("AccDescrNumberOfReactions", count));
+            info.setText(LocaleController.formatPluralString("ReactionsCount", count));
         }
     }
 }

@@ -120,7 +120,7 @@ public class ChangeBioActivity extends BaseFragment {
                     if (v != null) {
                         v.vibrate(200);
                     }
-                    AndroidUtilities.shakeView(checkTextView, 2, 0);
+                    AndroidUtilities.shakeView(checkTextView);
                 }
                 return result;
             }
@@ -208,7 +208,7 @@ public class ChangeBioActivity extends BaseFragment {
             return;
         }
 
-        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
+        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
 
         final TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
         req.about = newName;

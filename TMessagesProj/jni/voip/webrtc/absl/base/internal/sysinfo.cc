@@ -117,19 +117,18 @@ int Win32NumCPUs() {
     }
   }
   free(info);
-  return logicalProcessorCount;
+  return static_cast<int>(logicalProcessorCount);
 }
 
 #endif
 
 }  // namespace
 
-
 static int GetNumCPUs() {
 #if defined(__myriad2__)
   return 1;
 #elif defined(_WIN32)
-  const unsigned hardware_concurrency = Win32NumCPUs();
+  const int hardware_concurrency = Win32NumCPUs();
   return hardware_concurrency ? hardware_concurrency : 1;
 #elif defined(_AIX)
   return sysconf(_SC_NPROCESSORS_ONLN);
@@ -137,7 +136,7 @@ static int GetNumCPUs() {
   // Other possibilities:
   //  - Read /sys/devices/system/cpu/online and use cpumask_parse()
   //  - sysconf(_SC_NPROCESSORS_ONLN)
-  return std::thread::hardware_concurrency();
+  return static_cast<int>(std::thread::hardware_concurrency());
 #endif
 }
 
@@ -190,12 +189,15 @@ static double GetNominalCPUFrequency() {
 // and the memory location pointed to by value is set to the value read.
 static bool ReadLongFromFile(const char *file, long *value) {
   bool ret = false;
-  int fd = open(file, O_RDONLY);
+  int fd = open(file, O_RDONLY | O_CLOEXEC);
   if (fd != -1) {
     char line[1024];
     char *err;
     memset(line, '\0', sizeof(line));
-    int len = read(fd, line, sizeof(line) - 1);
+    ssize_t len;
+    do {
+      len = read(fd, line, sizeof(line) - 1);
+    } while (len < 0 && errno == EINTR);
     if (len <= 0) {
       ret = false;
     } else {
@@ -377,7 +379,7 @@ pid_t GetTID() {
 #endif
 
 pid_t GetTID() {
-  return syscall(SYS_gettid);
+  return static_cast<pid_t>(syscall(SYS_gettid));
 }
 
 #elif defined(__akaros__)
@@ -430,11 +432,11 @@ static constexpr int kBitsPerWord = 32;  // tid_array is uint32_t.
 // Returns the TID to tid_array.
 static void FreeTID(void *v) {
   intptr_t tid = reinterpret_cast<intptr_t>(v);
-  int word = tid / kBitsPerWord;
+  intptr_t word = tid / kBitsPerWord;
   uint32_t mask = ~(1u << (tid % kBitsPerWord));
   absl::base_internal::SpinLockHolder lock(&tid_lock);
   assert(0 <= word && static_cast<size_t>(word) < tid_array->size());
-  (*tid_array)[word] &= mask;
+  (*tid_array)[static_cast<size_t>(word)] &= mask;
 }
 
 static void InitGetTID() {
@@ -456,7 +458,7 @@ pid_t GetTID() {
 
   intptr_t tid = reinterpret_cast<intptr_t>(pthread_getspecific(tid_key));
   if (tid != 0) {
-    return tid;
+    return static_cast<pid_t>(tid);
   }
 
   int bit;  // tid_array[word] = 1u << bit;
@@ -477,7 +479,8 @@ pid_t GetTID() {
     while (bit < kBitsPerWord && (((*tid_array)[word] >> bit) & 1) != 0) {
       ++bit;
     }
-    tid = (word * kBitsPerWord) + bit;
+    tid =
+        static_cast<intptr_t>((word * kBitsPerWord) + static_cast<size_t>(bit));
     (*tid_array)[word] |= 1u << bit;  // Mark the TID as allocated.
   }
 

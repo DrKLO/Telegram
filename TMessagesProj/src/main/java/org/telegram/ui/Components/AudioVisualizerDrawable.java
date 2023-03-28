@@ -5,8 +5,9 @@ import android.graphics.Paint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.Random;
 
@@ -52,6 +53,9 @@ public class AudioVisualizerDrawable {
 
 
     public void setWaveform(boolean playing, boolean animate, float[] waveform) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            return;
+        }
         if (!playing && !animate) {
             for (int i = 0; i < 8; i++) {
                 animateTo[i] = current[i] = 0;
@@ -110,7 +114,24 @@ public class AudioVisualizerDrawable {
 
     float rotation;
 
+    public void draw(Canvas canvas, float cx, float cy, boolean outOwner, float alpha, Theme.ResourcesProvider resourcesProvider) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            return;
+        }
+        if (outOwner) {
+            p1.setColor(Theme.getColor(Theme.key_chat_outLoader, resourcesProvider));
+            p1.setAlpha((int) (ALPHA * alpha));
+        } else {
+            p1.setColor(Theme.getColor(Theme.key_chat_inLoader, resourcesProvider));
+            p1.setAlpha((int) (ALPHA * alpha));
+        }
+        this.draw(canvas, cx, cy);
+    }
+
     public void draw(Canvas canvas, float cx, float cy, boolean outOwner, Theme.ResourcesProvider resourcesProvider) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            return;
+        }
         if (outOwner) {
             p1.setColor(Theme.getColor(Theme.key_chat_outLoader, resourcesProvider));
             p1.setAlpha(ALPHA);
@@ -122,6 +143,9 @@ public class AudioVisualizerDrawable {
     }
 
     public void draw(Canvas canvas, float cx, float cy) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            return;
+        }
         for (int i = 0; i < 8; i++) {
             if (animateTo[i] != current[i]) {
                 current[i] += dt[i] * 16;

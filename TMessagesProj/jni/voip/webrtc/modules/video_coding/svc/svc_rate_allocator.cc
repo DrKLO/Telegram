@@ -174,8 +174,10 @@ DataRate FindLayerTogglingThreshold(const VideoCodec& codec,
 SvcRateAllocator::NumLayers SvcRateAllocator::GetNumLayers(
     const VideoCodec& codec) {
   NumLayers layers;
-  if (!codec.ScalabilityMode().empty()) {
-    if (auto structure = CreateScalabilityStructure(codec.ScalabilityMode())) {
+  if (absl::optional<ScalabilityMode> scalability_mode =
+          codec.GetScalabilityMode();
+      scalability_mode.has_value()) {
+    if (auto structure = CreateScalabilityStructure(*scalability_mode)) {
       ScalableVideoController::StreamLayersConfig config =
           structure->StreamConfig();
       layers.spatial = config.num_spatial_layers;

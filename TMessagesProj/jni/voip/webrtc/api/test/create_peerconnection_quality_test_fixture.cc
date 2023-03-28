@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 
+#include "api/test/metrics/global_metrics_logger_and_exporter.h"
 #include "api/test/time_controller.h"
 #include "test/pc/e2e/peer_connection_quality_test.h"
 
@@ -27,7 +28,8 @@ CreatePeerConnectionE2EQualityTestFixture(
     std::unique_ptr<VideoQualityAnalyzerInterface> video_quality_analyzer) {
   return std::make_unique<PeerConnectionE2EQualityTest>(
       std::move(test_case_name), time_controller,
-      std::move(audio_quality_analyzer), std::move(video_quality_analyzer));
+      std::move(audio_quality_analyzer), std::move(video_quality_analyzer),
+      test::GetGlobalMetricsLogger());
 }
 
 }  // namespace webrtc_pc_e2e

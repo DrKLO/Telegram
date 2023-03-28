@@ -7,7 +7,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.os.Build;
-import android.os.Bundle;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -100,6 +99,8 @@ public class SwipeGestureSettingsView extends FrameLayout {
         picker.setDrawDividers(false);
         hasTabs = !MessagesController.getInstance(currentAccount).dialogFilters.isEmpty();
         picker.setMaxValue(hasTabs ? strings.length - 1 : strings.length - 2);
+        picker.setAllItemsCount(hasTabs ? strings.length : strings.length - 1);
+        picker.setWrapSelectorWheel(true);
         picker.setFormatter(value -> strings[value]);
         picker.setOnValueChangedListener((picker, oldVal, newVal) -> {
             swapIcons();

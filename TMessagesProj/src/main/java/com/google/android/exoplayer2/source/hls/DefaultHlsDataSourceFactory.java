@@ -15,11 +15,10 @@
  */
 package com.google.android.exoplayer2.source.hls;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.DataSource;
 
-/**
- * Default implementation of {@link HlsDataSourceFactory}.
- */
+/** Default implementation of {@link HlsDataSourceFactory}. */
 public final class DefaultHlsDataSourceFactory implements HlsDataSourceFactory {
 
   private final DataSource.Factory dataSourceFactory;
@@ -32,8 +31,7 @@ public final class DefaultHlsDataSourceFactory implements HlsDataSourceFactory {
   }
 
   @Override
-  public DataSource createDataSource(int dataType) {
+  public DataSource createDataSource(@C.DataType int dataType) {
     return dataSourceFactory.createDataSource();
   }
-
 }

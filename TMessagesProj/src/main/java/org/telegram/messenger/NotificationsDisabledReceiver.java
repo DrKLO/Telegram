@@ -8,6 +8,9 @@
 
 package org.telegram.messenger;
 
+import static android.app.NotificationManager.EXTRA_BLOCKED_STATE;
+import static android.app.NotificationManager.EXTRA_NOTIFICATION_CHANNEL_ID;
+
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -15,9 +18,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.text.TextUtils;
-
-import static android.app.NotificationManager.EXTRA_BLOCKED_STATE;
-import static android.app.NotificationManager.EXTRA_NOTIFICATION_CHANNEL_ID;
 
 @TargetApi(28)
 public class NotificationsDisabledReceiver extends BroadcastReceiver {
@@ -86,6 +86,8 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
             if (dialogId == 0) {
                 return;
             }
+            int topicId = 0;
+            String key = NotificationsController.getSharedPrefKey(dialogId, topicId);
             String currentChannel = preferences.getString("org.telegram.key" + dialogId, null);
             if (!channelId.equals(currentChannel)) {
                 return;
@@ -94,12 +96,12 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
                 FileLog.d("apply channel " + channelId + " state");
             }
             SharedPreferences.Editor editor = preferences.edit();
-            editor.putInt("notify2_" + dialogId, state ? 2 : 0);
+            editor.putInt("notify2_" + key, state ? 2 : 0);
             if (!state) {
-                editor.remove("notifyuntil_" + dialogId);
+                editor.remove("notifyuntil_" + key);
             }
             editor.commit();
-            AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(dialogId, true);
+            AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(dialogId, 0, true);
         }
         AccountInstance.getInstance(account).getConnectionsManager().resumeNetworkMaybe();
     }

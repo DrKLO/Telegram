@@ -69,7 +69,7 @@ private:
     std::function<void(float)> _remotePrefferedAspectRatioUpdated;
 	std::function<void(const std::vector<uint8_t> &)> _signalingDataEmitted;
     std::function<void(int)> _signalBarsUpdated;
-    std::function<void(float)> _audioLevelUpdated;
+    std::function<void(float, float)> _audioLevelsUpdated;
 	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
 	std::function<uint32_t(const Message &)> _sendSignalingMessage;
 	std::function<void(Message&&)> _sendTransportMessage;

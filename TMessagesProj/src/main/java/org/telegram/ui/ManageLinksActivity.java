@@ -661,7 +661,7 @@ public class ManageLinksActivity extends BaseFragment {
         info = chatFull;
         this.invite = (TLRPC.TL_chatInviteExported) invite;
 
-        isPublic = !TextUtils.isEmpty(currentChat.username);
+        isPublic = ChatObject.isPublic(currentChat);
         loadLinks(true);
     }
 
@@ -816,7 +816,7 @@ public class ManageLinksActivity extends BaseFragment {
                     linkActionView.setCanEdit(adminId == getAccountInstance().getUserConfig().clientUserId);
                     if (isPublic && adminId == getAccountInstance().getUserConfig().clientUserId) {
                         if (info != null) {
-                            linkActionView.setLink("https://teamgram.me/" + currentChat.username);
+                            linkActionView.setLink("https://teamgram.me/" + ChatObject.getPublicUsername(currentChat));
                             linkActionView.setUsers(0, null);
                             linkActionView.hideRevokeOption(true);
                         }
@@ -1121,7 +1121,7 @@ public class ManageLinksActivity extends BaseFragment {
                 AlertDialog alert = builder.create();
                 builder.show();
                 if (redLastItem) {
-                    alert.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                    alert.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
                 }
             });
             optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
@@ -1683,7 +1683,7 @@ public class ManageLinksActivity extends BaseFragment {
     int animationIndex = -1;
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
         if (isOpen) {
             isOpened = true;
@@ -1695,7 +1695,7 @@ public class ManageLinksActivity extends BaseFragment {
     }
 
     @Override
-    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
         animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
     }

@@ -3,12 +3,12 @@ from zipfile import ZipFile
 
 def compareFiles(first, second):
 	while True:
-		firstBytes = first.read(4096);
-		secondBytes = second.read(4096);
+		firstBytes = first.read(4096)
+		secondBytes = second.read(4096)
 		if firstBytes != secondBytes:
 			return False
 
-		if firstBytes == b"":
+		if firstBytes == b"" and secondBytes == b"":
 			break
 
 	return True

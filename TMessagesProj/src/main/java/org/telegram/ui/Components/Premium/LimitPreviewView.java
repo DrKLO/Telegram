@@ -54,7 +54,7 @@ public class LimitPreviewView extends LinearLayout {
     TextView defaultCount;
     private float position;
     private View parentVideForGradient;
-    PremiumGradient.GradientTools staticGradient;
+    PremiumGradient.PremiumGradientTools staticGradient;
     int gradientYOffset;
     boolean wasHaptic;
     boolean animationCanPlay = true;
@@ -272,6 +272,13 @@ public class LimitPreviewView extends LinearLayout {
                 limitIcon.setText(spannableStringBuilder);
             }
             premiumCount.setText("4 GB");
+        } else if (type == LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED) {
+            if (limitIcon != null) {
+                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                spannableStringBuilder.append("d").setSpan(new ColoredImageSpan(icon), 0, 1, 0);
+                limitIcon.setText(spannableStringBuilder);
+            }
+            premiumCount.setText("");
         }
     }
 
@@ -283,7 +290,7 @@ public class LimitPreviewView extends LinearLayout {
         parentVideForGradient = containerView;
     }
 
-    public void setStaticGradinet(PremiumGradient.GradientTools gradientTools) {
+    public void setStaticGradinet(PremiumGradient.PremiumGradientTools gradientTools) {
         staticGradient = gradientTools;
     }
 
@@ -368,7 +375,7 @@ public class LimitPreviewView extends LinearLayout {
                 h = getMeasuredHeight();
                 PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, LimitPreviewView.this.getMeasuredWidth(), LimitPreviewView.this.getMeasuredHeight(), getGlobalXOffset() - getX(), -getTop());
                 AndroidUtilities.rectTmp.set(0, AndroidUtilities.dp(3), getMeasuredWidth(), h - AndroidUtilities.dp(3));
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2f, h / 2f, PremiumGradient.getInstance().getMainGradientPaint());
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2f, h / 2f, PremiumGradient.getInstance().getPremiumLocakedPaint());
             } else {
                 if (invalidatePath) {
                     invalidatePath = false;

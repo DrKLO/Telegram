@@ -1,6 +1,10 @@
 package org.telegram.ui.Components.Paint.Views;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
@@ -10,12 +14,23 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Rect;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class EntityView extends FrameLayout {
+    private final static List<Integer> STICKY_ANGLES = Arrays.asList(
+            -90, 0, 90, 180
+    );
+    private final static float STICKY_THRESHOLD_ANGLE = 15;
+    private final static float STICKY_TRIGGER_ANGLE = 5;
+
+    private final static float STICKY_THRESHOLD_DP = 48;
+    private final static float STICKY_TRIGGER_DP = 16;
 
     public interface EntityViewDelegate {
         boolean onEntitySelected(EntityView entityView);
@@ -36,12 +51,27 @@ public class EntityView extends FrameLayout {
 
     private EntityViewDelegate delegate;
 
-    protected Point position;
+    private Point position;
     protected SelectionView selectionView;
 
     private GestureDetector gestureDetector;
 
     private UUID uuid;
+
+    private boolean hasStickyAngle = true;
+    private int currentStickyAngle = 0;
+
+    private float stickyAnimatedAngle;
+    private ValueAnimator angleAnimator;
+
+    private float fromStickyAnimatedAngle;
+    private float fromStickyToAngle;
+    private ValueAnimator fromStickyAngleAnimator;
+
+    private boolean hasStickyX, hasStickyY;
+    private float fromStickyX, fromStickyY;
+    private ValueAnimator stickyXAnimator, stickyYAnimator;
+    private boolean hasFromStickyXAnimation, hasFromStickyYAnimation;
 
     public EntityView(Context context, Point pos) {
         super(context);
@@ -96,6 +126,9 @@ public class EntityView extends FrameLayout {
     }
 
     private boolean onTouchMove(float x, float y) {
+        if (getParent() == null) {
+            return false;
+        }
         float scale = ((View) getParent()).getScaleX();
         float tx = (x - previousLocationX) / scale;
         float ty = (y - previousLocationY) / scale;
@@ -106,6 +139,11 @@ public class EntityView extends FrameLayout {
             previousLocationX = x;
             previousLocationY = y;
             hasPanned = true;
+
+            if (getParent() instanceof EntitiesContainerView && (hasStickyX || hasStickyY)) {
+                ((EntitiesContainerView) getParent()).invalidate();
+            }
+
             return true;
         }
         return false;
@@ -120,6 +158,34 @@ public class EntityView extends FrameLayout {
         hasTransformed = false;
         hasReleased = true;
         announcedSelection = false;
+
+        if (getParent() instanceof EntitiesContainerView) {
+            ((EntitiesContainerView) getParent()).invalidate();
+        }
+    }
+
+    public final boolean hasTouchDown() {
+        return !hasReleased;
+    }
+
+    public void setHasStickyX(boolean hasStickyX) {
+        this.hasStickyX = hasStickyX;
+    }
+
+    public final boolean hasStickyX() {
+        return hasStickyX;
+    }
+
+    public void setHasStickyY(boolean hasStickyY) {
+        this.hasStickyY = hasStickyY;
+    }
+
+    public final boolean hasStickyY() {
+        return hasStickyY;
+    }
+
+    public boolean hasPanned() {
+        return hasPanned;
     }
 
     @Override
@@ -143,6 +209,10 @@ public class EntityView extends FrameLayout {
                 previousLocationY = xy[1];
                 handled = true;
                 hasReleased = false;
+
+                if (getParent() instanceof EntitiesContainerView && (hasStickyX || hasStickyY)) {
+                    ((EntitiesContainerView) getParent()).invalidate();
+                }
             }
             break;
 
@@ -165,17 +235,153 @@ public class EntityView extends FrameLayout {
         return handled;
     }
 
+    private void runStickyXAnimator(float... values) {
+        stickyXAnimator = ValueAnimator.ofFloat(values).setDuration(150);
+        stickyXAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        stickyXAnimator.addUpdateListener(animation -> updatePosition());
+        stickyXAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation == stickyXAnimator) {
+                    stickyXAnimator = null;
+
+                    hasFromStickyXAnimation = false;
+                }
+            }
+        });
+        stickyXAnimator.start();
+    }
+
+    private void runStickyYAnimator(float... values) {
+        stickyYAnimator = ValueAnimator.ofFloat(values).setDuration(150);
+        stickyYAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        stickyYAnimator.addUpdateListener(animation -> updatePosition());
+        stickyYAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation == stickyYAnimator) {
+                    stickyYAnimator = null;
+
+                    hasFromStickyYAnimation = false;
+                }
+            }
+        });
+        stickyYAnimator.start();
+    }
+
     public void pan(float tx, float ty) {
         position.x += tx;
         position.y += ty;
+
+        if (hasFromStickyXAnimation) {
+            fromStickyX = position.x;
+        }
+        if (hasFromStickyYAnimation) {
+            fromStickyY = position.y;
+        }
+
+        View parent = (View) getParent();
+        if (parent != null) {
+            if (!hasStickyX) {
+                if (Math.abs(position.x - parent.getMeasuredWidth() / 2f) <= AndroidUtilities.dp(STICKY_TRIGGER_DP)) {
+                    hasStickyX = true;
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
+                    if (getParent() instanceof EntitiesContainerView) {
+                        ((EntitiesContainerView) getParent()).invalidate();
+                    }
+
+                    if (stickyXAnimator != null) {
+                        stickyXAnimator.cancel();
+                    }
+
+                    fromStickyX = position.x;
+                    hasFromStickyXAnimation = false;
+                    runStickyXAnimator(0, 1);
+                }
+            } else {
+                if (Math.abs(position.x - parent.getMeasuredWidth() / 2f) > AndroidUtilities.dp(STICKY_THRESHOLD_DP)) {
+                    hasStickyX = false;
+                    if (getParent() instanceof EntitiesContainerView) {
+                        ((EntitiesContainerView) getParent()).invalidate();
+                    }
+
+                    if (stickyXAnimator != null) {
+                        stickyXAnimator.cancel();
+                    }
+                    hasFromStickyXAnimation = true;
+                    runStickyXAnimator(1, 0);
+                }
+            }
+
+            if (!hasStickyY) {
+                if (Math.abs(position.y - parent.getMeasuredHeight() / 2f) <= AndroidUtilities.dp(STICKY_TRIGGER_DP)) {
+                    hasStickyY = true;
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
+                    if (getParent() instanceof EntitiesContainerView) {
+                        ((EntitiesContainerView) getParent()).invalidate();
+                    }
+
+                    if (stickyYAnimator != null) {
+                        stickyYAnimator.cancel();
+                    }
+                    fromStickyY = position.y;
+                    hasFromStickyYAnimation = false;
+                    runStickyYAnimator(0, 1);
+                }
+            } else {
+                if (Math.abs(position.y - parent.getMeasuredHeight() / 2f) > AndroidUtilities.dp(STICKY_THRESHOLD_DP)) {
+                    hasStickyY = false;
+                    if (getParent() instanceof EntitiesContainerView) {
+                        ((EntitiesContainerView) getParent()).invalidate();
+                    }
+
+                    if (stickyYAnimator != null) {
+                        stickyYAnimator.cancel();
+                    }
+                    hasFromStickyYAnimation = true;
+                    runStickyYAnimator(1, 0);
+                }
+            }
+        }
+
         updatePosition();
+    }
+
+    protected float getPositionX() {
+        float x = position.x;
+        if (getParent() != null) {
+            View parent = (View) getParent();
+            if (stickyXAnimator != null) {
+                x = AndroidUtilities.lerp(fromStickyX, parent.getMeasuredWidth() / 2f, (Float) stickyXAnimator.getAnimatedValue());
+            } else if (hasStickyX) {
+                x = parent.getMeasuredWidth() / 2f;
+            }
+        }
+        return x;
+    }
+
+    protected float getPositionY() {
+        float y = position.y;
+        if (getParent() != null) {
+            View parent = (View) getParent();
+            if (stickyYAnimator != null) {
+                y = AndroidUtilities.lerp(fromStickyY, parent.getMeasuredHeight() / 2f, (Float) stickyYAnimator.getAnimatedValue());
+            } else if (hasStickyY) {
+                y = parent.getMeasuredHeight() / 2f;
+            }
+        }
+        return y;
     }
 
     protected void updatePosition() {
         float halfWidth = getMeasuredWidth() / 2.0f;
         float halfHeight = getMeasuredHeight() / 2.0f;
-        setX(position.x - halfWidth);
-        setY(position.y - halfHeight);
+        setX(getPositionX() - halfWidth);
+        setY(getPositionY() - halfHeight);
         updateSelectionView();
     }
 
@@ -186,6 +392,84 @@ public class EntityView extends FrameLayout {
     }
 
     public void rotate(float angle) {
+        if (!hasStickyAngle) {
+            for (int stickyAngle : STICKY_ANGLES) {
+                if (Math.abs(stickyAngle - angle) < STICKY_TRIGGER_ANGLE) {
+                    currentStickyAngle = stickyAngle;
+                    hasStickyAngle = true;
+                    try {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
+
+                    if (angleAnimator != null) {
+                        angleAnimator.cancel();
+                    }
+                    if (fromStickyAngleAnimator != null) {
+                        fromStickyAngleAnimator.cancel();
+                    }
+                    angleAnimator = ValueAnimator.ofFloat(0, 1).setDuration(150);
+                    angleAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    float from = angle;
+                    angleAnimator.addUpdateListener(animation -> {
+                        stickyAnimatedAngle = AndroidUtilities.lerpAngle(from, currentStickyAngle, animation.getAnimatedFraction());
+                        rotateInternal(stickyAnimatedAngle);
+                    });
+                    angleAnimator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (animation == angleAnimator) {
+                                angleAnimator = null;
+                                stickyAnimatedAngle = 0;
+                            }
+                        }
+                    });
+                    angleAnimator.start();
+                    break;
+                }
+            }
+        } else {
+            if (Math.abs(currentStickyAngle - angle) >= STICKY_THRESHOLD_ANGLE) {
+                if (angleAnimator != null) {
+                    angleAnimator.cancel();
+                }
+
+                if (fromStickyAngleAnimator != null) {
+                    fromStickyAngleAnimator.cancel();
+                }
+
+                fromStickyAnimatedAngle = currentStickyAngle;
+                fromStickyToAngle = angle;
+
+                fromStickyAngleAnimator = ValueAnimator.ofFloat(0, 1).setDuration(150);
+                fromStickyAngleAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                fromStickyAngleAnimator.addUpdateListener(animation -> rotateInternal(AndroidUtilities.lerpAngle(fromStickyAnimatedAngle, fromStickyToAngle, fromStickyAngleAnimator.getAnimatedFraction())));
+                fromStickyAngleAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (animation == fromStickyAngleAnimator) {
+                            fromStickyAngleAnimator = null;
+                        }
+                    }
+                });
+                fromStickyAngleAnimator.start();
+
+                hasStickyAngle = false;
+            } else {
+                if (angleAnimator != null) {
+                    angle = stickyAnimatedAngle;
+                } else {
+                    angle = currentStickyAngle;
+                }
+            }
+        }
+        if (fromStickyAngleAnimator != null) {
+            fromStickyToAngle = angle;
+            angle = AndroidUtilities.lerpAngle(fromStickyAnimatedAngle, fromStickyToAngle, fromStickyAngleAnimator.getAnimatedFraction());
+        }
+        rotateInternal(angle);
+    }
+
+    private void rotateInternal(float angle) {
         setRotation(angle);
         updateSelectionView();
     }
@@ -210,6 +494,11 @@ public class EntityView extends FrameLayout {
 
     public void select(ViewGroup selectionContainer) {
         SelectionView selectionView = createSelectionView();
+        selectionView.setAlpha(0f);
+        selectionView.setScaleX(0.9f);
+        selectionView.setScaleY(0.9f);
+        selectionView.animate().cancel();
+        selectionView.animate().alpha(1f).scaleX(1).scaleY(1).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(null).start();
         this.selectionView = selectionView;
         selectionContainer.addView(selectionView);
         selectionView.updatePosition();
@@ -220,9 +509,15 @@ public class EntityView extends FrameLayout {
             return;
         }
         if (selectionView.getParent() != null) {
-            ((ViewGroup) selectionView.getParent()).removeView(selectionView);
+            selectionView.animate().cancel();
+            selectionView.animate().alpha(0f).scaleX(0.9f).scaleY(0.9f).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    AndroidUtilities.removeFromParent(selectionView);
+                    selectionView = null;
+                }
+            }).start();
         }
-        selectionView = null;
     }
 
     public void setSelectionVisibility(boolean visible) {
@@ -249,11 +544,17 @@ public class EntityView extends FrameLayout {
             setWillNotDraw(false);
 
             paint.setColor(0xffffffff);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(AndroidUtilities.dp(2));
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setPathEffect(new DashPathEffect(new float[]{AndroidUtilities.dp(10), AndroidUtilities.dp(10)}, .5f));
+            paint.setShadowLayer(AndroidUtilities.dp(0.75f), 0, AndroidUtilities.dp(1), 0x70000000);
 
             dotPaint.setColor(0xff3ccaef);
             dotStrokePaint.setColor(0xffffffff);
             dotStrokePaint.setStyle(Paint.Style.STROKE);
-            dotStrokePaint.setStrokeWidth(AndroidUtilities.dp(1));
+            dotStrokePaint.setStrokeWidth(AndroidUtilities.dp(2));
+            dotStrokePaint.setShadowLayer(AndroidUtilities.dp(0.75f), 0, AndroidUtilities.dp(1), 0x70000000);
         }
 
         protected void updatePosition() {
@@ -291,6 +592,10 @@ public class EntityView extends FrameLayout {
                         previousLocationY = y;
                         hasReleased = false;
                         handled = true;
+
+                        if (getParent() instanceof EntitiesContainerView) {
+                            ((EntitiesContainerView) getParent()).invalidate();
+                        }
                     }
                 }
                 break;
@@ -311,8 +616,10 @@ public class EntityView extends FrameLayout {
                                 delta *= -1;
                             }
 
-                            float scaleDelta = 1 + (delta * 2) / getMeasuredWidth();
-                            scale(scaleDelta);
+                            if (getMeasuredWidth() != 0) {
+                                float scaleDelta = 1 + (delta * 2) / getMeasuredWidth();
+                                scale(scaleDelta);
+                            }
 
                             int[] pos = delegate.getCenterLocation(EntityView.this);
                             float angle = 0;

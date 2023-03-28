@@ -12,6 +12,8 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.Layout;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -23,7 +25,9 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.TopicsFragment;
 
 public class PullForegroundDrawable {
 
@@ -44,8 +48,10 @@ public class PullForegroundDrawable {
     private final Paint paintBackgroundAccent = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint backgroundPaint = new Paint();
     private final RectF rectF = new RectF();
-    private final Paint tooltipTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private final TextPaint tooltipTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final ArrowDrawable arrowDrawable = new ArrowDrawable();
+    private int generalTopicDrawableColor;
+    private Drawable generalTopicDrawable;
     private final Path circleClipPath = new Path();
 
     private float textSwappingProgress = 1f;
@@ -82,8 +88,10 @@ public class PullForegroundDrawable {
     public float outImageSize;
     public float outOverScroll;
 
-    private String pullTooltip;
-    private String releaseTooltip;
+    private StaticLayout pullTooltipLayout;
+    private float pullTooltipLayoutWidth;
+    private StaticLayout releaseTooltipLayout;
+    private float releaseTooltipLayoutWidth;
     private boolean willDraw;
 
     private boolean isOut;
@@ -104,16 +112,22 @@ public class PullForegroundDrawable {
         }
     };
 
-    public PullForegroundDrawable(String pullText, String releaseText) {
+    public PullForegroundDrawable(CharSequence pullText, CharSequence releaseText) {
         tooltipTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        tooltipTextPaint.setTextAlign(Paint.Align.CENTER);
+//        tooltipTextPaint.setTextAlign(Paint.Align.CENTER);
         tooltipTextPaint.setTextSize(AndroidUtilities.dp(16));
 
         final ViewConfiguration vc = ViewConfiguration.get(ApplicationLoader.applicationContext);
         touchSlop = vc.getScaledTouchSlop();
 
-        pullTooltip = pullText;
-        releaseTooltip = releaseText;
+        pullTooltipLayout = new StaticLayout(pullText, 0, pullText.length(), tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
+        pullTooltipLayoutWidth = pullTooltipLayout.getLineWidth(0);
+        releaseTooltipLayout = new StaticLayout(releaseText, 0, releaseText.length(), tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1, 0, false);
+        releaseTooltipLayoutWidth = releaseTooltipLayout.getLineWidth(0);
+
+        try {
+            generalTopicDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.msg_filled_general).mutate();
+        } catch (Exception ignore) {}
     }
 
     public static int getMaxOverscroll() {
@@ -164,7 +178,8 @@ public class PullForegroundDrawable {
         if (!willDraw || isOut || cell == null || listView == null) {
             return;
         }
-        int startPadding = AndroidUtilities.dp(28);
+        boolean isTopic = cell instanceof TopicsFragment.TopicDialogCell;
+        int startPadding = AndroidUtilities.dp(isTopic ? 15 : 28);
         int smallMargin = AndroidUtilities.dp(8);
         int radius = AndroidUtilities.dp(9);
         int diameter = AndroidUtilities.dp(18);
@@ -205,11 +220,12 @@ public class PullForegroundDrawable {
                 canvas.drawPaint(backgroundPaint);
             }
         } else {
-            float outBackgroundRadius = outRadius + (cell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
+            float outBackgroundRadius = outRadius + (outRadius * bounceP) + (cell.getWidth() - outRadius) * (1f - outProgress);
 
             if (!(accentRevalProgress == 1f || accentRevalProgressOut == 1)) {
                 canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
             }
+
             circleClipPath.reset();
             rectF.set(cX - outBackgroundRadius, cY - outBackgroundRadius, cX + outBackgroundRadius, cY + outBackgroundRadius);
             circleClipPath.addOval(rectF, Path.Direction.CW);
@@ -259,8 +275,11 @@ public class PullForegroundDrawable {
             return;
         }
 
-        if (outProgress == 0f) {
-            paintWhite.setAlpha((int) (startPullProgress * 255));
+        if (isTopic) {
+            smallCircleY -= (cell.getMeasuredHeight() - AndroidUtilities.dp(41)) * outProgress;
+        }
+        if (outProgress == 0f || isTopic) {
+            paintWhite.setAlpha((int) (startPullProgress * 255 * (1f - outProgress)));
             canvas.drawCircle(smallCircleX, smallCircleY, radius, paintWhite);
 
             int ih = arrowDrawable.getIntrinsicHeight();
@@ -277,19 +296,16 @@ public class PullForegroundDrawable {
             canvas.rotate(180 * rotateProgress, smallCircleX, smallCircleY);
             canvas.translate(0, AndroidUtilities.dpf2(1f) * 1f - rotateProgress);
             arrowDrawable.setColor(animateToColorize ? paintBackgroundAccent.getColor() : Theme.getColor(backgroundColorKey));
+            arrowDrawable.setAlpha((int) (255 * (1f - outProgress)));
             arrowDrawable.draw(canvas);
             canvas.restore();
         }
-
 
         if (pullProgress > 0f) {
             textIn();
         }
 
         float textY = cell.getHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
-
-        tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * startPullProgress * textInProgress));
-
         float textCx = cell.getWidth() / 2f - AndroidUtilities.dp(2);
 
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
@@ -297,7 +313,10 @@ public class PullForegroundDrawable {
             float scale = 0.8f + 0.2f * textSwappingProgress;
             canvas.scale(scale, scale, textCx, textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress));
         }
-        canvas.drawText(pullTooltip, textCx, textY + AndroidUtilities.dp(8) * (1f - textSwappingProgress), tooltipTextPaint);
+        canvas.saveLayerAlpha(0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), (int) (255 * textSwappingProgress * startPullProgress * textInProgress), Canvas.ALL_SAVE_FLAG);
+        canvas.translate(textCx - pullTooltipLayoutWidth / 2f, textY + AndroidUtilities.dp(8) * (1f - textSwappingProgress) - tooltipTextPaint.getTextSize());
+        pullTooltipLayout.draw(canvas);
+        canvas.restore();
 
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
             canvas.restore();
@@ -308,15 +327,17 @@ public class PullForegroundDrawable {
             float scale = 0.9f + 0.1f * (1f - textSwappingProgress);
             canvas.scale(scale, scale, textCx, textY - AndroidUtilities.dp(8) * (textSwappingProgress));
         }
-        tooltipTextPaint.setAlpha((int) (255 * (1f - textSwappingProgress) * startPullProgress * textInProgress));
-        canvas.drawText(releaseTooltip, textCx, textY - AndroidUtilities.dp(8) * (textSwappingProgress), tooltipTextPaint);
+        canvas.saveLayerAlpha(0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), (int) (255 * (1f - textSwappingProgress) * startPullProgress * textInProgress), Canvas.ALL_SAVE_FLAG);
+        canvas.translate(textCx - releaseTooltipLayoutWidth / 2f, textY + AndroidUtilities.dp(8) * (textSwappingProgress) - tooltipTextPaint.getTextSize());
+        releaseTooltipLayout.draw(canvas);
+        canvas.restore();
 
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
             canvas.restore();
         }
         canvas.restore();
 
-        if (changeAvatarColor && outProgress > 0) {
+        if (!isTopic && changeAvatarColor && outProgress > 0) {
             canvas.save();
             int iw = Theme.dialogs_archiveAvatarDrawable.getIntrinsicWidth();
 
@@ -345,6 +366,19 @@ public class PullForegroundDrawable {
 
             canvas.restore();
         }
+
+//        if (isTopic) {
+//            int color = arrowDrawable.paint.getColor();
+//            if (generalTopicDrawableColor != color) {
+//                generalTopicDrawable.setColorFilter(new PorterDuffColorFilter(generalTopicDrawableColor = color, PorterDuff.Mode.MULTIPLY));
+//            }
+//
+//            int ih = AndroidUtilities.lerp(AndroidUtilities.dp(14), AndroidUtilities.dp(28), outProgress);
+//            int iw = AndroidUtilities.lerp(AndroidUtilities.dp(14), AndroidUtilities.dp(28), outProgress);
+//            generalTopicDrawable.setBounds(smallCircleX - (iw >> 1), smallCircleY - (ih >> 1), smallCircleX + (iw >> 1), smallCircleY + (ih >> 1));
+//            generalTopicDrawable.setAlpha((int) (255 * outProgress));
+//            generalTopicDrawable.draw(canvas);
+//        }
     }
 
 
@@ -539,6 +573,7 @@ public class PullForegroundDrawable {
             Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", color);
             Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", color);
             Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+            Theme.dialogs_archiveAvatarDrawableRecolored = true;
         }
     }
 

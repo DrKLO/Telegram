@@ -194,7 +194,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
-        if (!passwordEntered) {
+        if (!passwordEntered || delegate != null) {
             actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
@@ -405,7 +405,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                 }
             }
         });
@@ -427,13 +427,15 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         updateRows();
 
-        if (passwordEntered) {
+        if (passwordEntered && delegate == null) {
             actionBar.setTitle(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle));
         } else {
             actionBar.setTitle(null);
         }
         if (delegate != null) {
-            titleTextView.setText(LocaleController.getString("PleaseEnterCurrentPasswordTransfer", R.string.PleaseEnterCurrentPasswordTransfer));
+            titleTextView.setText(LocaleController.getString(R.string.YourPassword));
+            subtitleTextView.setText(LocaleController.getString(R.string.PleaseEnterCurrentPasswordTransfer));
+            subtitleTextView.setVisibility(View.VISIBLE);
         } else {
             titleTextView.setText(LocaleController.getString(R.string.YourPassword));
             subtitleTextView.setVisibility(View.VISIBLE);
@@ -615,7 +617,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     }
                 } else {
                     cancelPasswordReset();
@@ -725,7 +727,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     }
 
     @Override
-    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
         if (isOpen) {
             if (forgotPasswordOnShow) {
@@ -852,7 +854,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             set.start();
             return;
         }
-        progressDialog = new AlertDialog(getParentActivity(), 3);
+        progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progressDialog.setCanCancel(false);
         if (delay) {
             progressDialog.showDelayed(300);
@@ -1278,7 +1280,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         builder.setNegativeButton(LocaleController.getString("ForceSetPasswordCancel", R.string.ForceSetPasswordCancel), (a1, a2) -> finishFragment());
         AlertDialog alertDialog = builder.show();
-        ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed));
     }
 
     public void setBlockingAlert(int otherwiseRelogin) {

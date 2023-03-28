@@ -218,13 +218,11 @@ void ForwardErrorCorrection::GenerateFecPayloads(
         ParseSequenceNumber((*media_packets_it)->data.data());
     while (media_packets_it != media_packets.end()) {
       Packet* const media_packet = media_packets_it->get();
-      const uint8_t* media_packet_data = media_packet->data.cdata();
       // Should `media_packet` be protected by `fec_packet`?
       if (packet_masks_[pkt_mask_idx] & (1 << (7 - media_pkt_idx))) {
         size_t media_payload_length =
             media_packet->data.size() - kRtpHeaderSize;
 
-        bool first_protected_packet = (fec_packet->data.size() == 0);
         size_t fec_packet_length = fec_header_size + media_payload_length;
         if (fec_packet_length > fec_packet->data.size()) {
           // Recall that XORing with zero (which the FEC packets are prefilled
@@ -232,26 +230,9 @@ void ForwardErrorCorrection::GenerateFecPayloads(
           // still correct even though we expand the packet length here.
           fec_packet->data.SetSize(fec_packet_length);
         }
-        if (first_protected_packet) {
-          uint8_t* data = fec_packet->data.MutableData();
-          // Write P, X, CC, M, and PT recovery fields.
-          // Note that bits 0, 1, and 16 are overwritten in FinalizeFecHeaders.
-          memcpy(&data[0], &media_packet_data[0], 2);
-          // Write length recovery field. (This is a temporary location for
-          // ULPFEC.)
-          ByteWriter<uint16_t>::WriteBigEndian(&data[2], media_payload_length);
-          // Write timestamp recovery field.
-          memcpy(&data[4], &media_packet_data[4], 4);
-          // Write payload.
-          if (media_payload_length > 0) {
-            memcpy(&data[fec_header_size], &media_packet_data[kRtpHeaderSize],
-                   media_payload_length);
-          }
-        } else {
-          XorHeaders(*media_packet, fec_packet);
-          XorPayloads(*media_packet, media_payload_length, fec_header_size,
-                      fec_packet);
-        }
+        XorHeaders(*media_packet, fec_packet);
+        XorPayloads(*media_packet, media_payload_length, fec_header_size,
+                    fec_packet);
       }
       media_packets_it++;
       if (media_packets_it != media_packets.end()) {
@@ -651,10 +632,10 @@ bool ForwardErrorCorrection::RecoverPacket(const ReceivedFecPacket& fec_packet,
       // This is the packet we're recovering.
       recovered_packet->seq_num = protected_packet->seq_num;
     } else {
-      XorHeaders(*protected_packet->pkt, recovered_packet->pkt);
+      XorHeaders(*protected_packet->pkt, recovered_packet->pkt.get());
       XorPayloads(*protected_packet->pkt,
                   protected_packet->pkt->data.size() - kRtpHeaderSize,
-                  kRtpHeaderSize, recovered_packet->pkt);
+                  kRtpHeaderSize, recovered_packet->pkt.get());
     }
   }
   if (!FinishPacketRecovery(fec_packet, recovered_packet)) {

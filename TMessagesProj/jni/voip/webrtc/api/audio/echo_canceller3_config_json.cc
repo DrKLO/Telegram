@@ -220,6 +220,7 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
               &cfg.delay.render_alignment_mixing);
     ReadParam(section, "capture_alignment_mixing",
               &cfg.delay.capture_alignment_mixing);
+    ReadParam(section, "detect_pre_echo", &cfg.delay.detect_pre_echo);
   }
 
   if (rtc::GetValueFromJsonObject(aec3_root, "filter", &section)) {
@@ -415,6 +416,17 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
     ReadParam(section, "conservative_hf_suppression",
               &cfg.suppressor.conservative_hf_suppression);
   }
+
+  if (rtc::GetValueFromJsonObject(aec3_root, "multi_channel", &section)) {
+    ReadParam(section, "detect_stereo_content",
+              &cfg.multi_channel.detect_stereo_content);
+    ReadParam(section, "stereo_detection_threshold",
+              &cfg.multi_channel.stereo_detection_threshold);
+    ReadParam(section, "stereo_detection_timeout_threshold_seconds",
+              &cfg.multi_channel.stereo_detection_timeout_threshold_seconds);
+    ReadParam(section, "stereo_detection_hysteresis_seconds",
+              &cfg.multi_channel.stereo_detection_hysteresis_seconds);
+  }
 }
 
 EchoCanceller3Config Aec3ConfigFromJsonString(absl::string_view json_string) {
@@ -494,7 +506,9 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
       << (config.delay.capture_alignment_mixing.prefer_first_two_channels
               ? "true"
               : "false");
-  ost << "}";
+  ost << "},";
+  ost << "\"detect_pre_echo\": "
+      << (config.delay.detect_pre_echo ? "true" : "false");
   ost << "},";
 
   ost << "\"filter\": {";
@@ -574,7 +588,8 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
   ost << "\"erle_onset_compensation_in_dominant_nearend\": "
       << (config.ep_strength.erle_onset_compensation_in_dominant_nearend
               ? "true"
-              : "false") << ",";
+              : "false")
+      << ",";
   ost << "\"use_conservative_tail_frequency_response\": "
       << (config.ep_strength.use_conservative_tail_frequency_response
               ? "true"
@@ -736,7 +751,19 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
       << ",";
   ost << "\"conservative_hf_suppression\": "
       << config.suppressor.conservative_hf_suppression;
+  ost << "},";
+
+  ost << "\"multi_channel\": {";
+  ost << "\"detect_stereo_content\": "
+      << (config.multi_channel.detect_stereo_content ? "true" : "false") << ",";
+  ost << "\"stereo_detection_threshold\": "
+      << config.multi_channel.stereo_detection_threshold << ",";
+  ost << "\"stereo_detection_timeout_threshold_seconds\": "
+      << config.multi_channel.stereo_detection_timeout_threshold_seconds << ",";
+  ost << "\"stereo_detection_hysteresis_seconds\": "
+      << config.multi_channel.stereo_detection_hysteresis_seconds;
   ost << "}";
+
   ost << "}";
   ost << "}";
 

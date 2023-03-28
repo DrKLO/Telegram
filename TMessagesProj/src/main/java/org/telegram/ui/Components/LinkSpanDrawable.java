@@ -2,33 +2,38 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
-import android.graphics.Region;
-import android.os.Build;
 import android.os.SystemClock;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
-import android.text.StaticLayout;
+import android.text.Spanned;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 
 import java.util.ArrayList;
 
 public class LinkSpanDrawable<S extends CharacterStyle> {
+
+    private static final int CORNER_RADIUS_DP = 4;
 
     private int cornerRadius;
     private int color;
@@ -58,6 +63,8 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
     private final float selectionAlpha = 0.2f;
     private final float rippleAlpha = 0.8f;
 
+    private final boolean isLite = !LiteMode.isEnabled(LiteMode.FLAGS_CHAT);
+
     public LinkSpanDrawable(S span, Theme.ResourcesProvider resourcesProvider, float touchX, float touchY) {
         this(span, resourcesProvider, touchX, touchY, true);
     }
@@ -78,11 +85,11 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         this.color = color;
         if (mSelectionPaint != null) {
             mSelectionPaint.setColor(color);
-            mSelectionAlpha = mSelectionPaint.getAlpha();
+            mSelectionAlpha = Color.alpha(color);
         }
         if (mRipplePaint != null) {
             mRipplePaint.setColor(color);
-            mRippleAlpha = mRipplePaint.getAlpha();
+            mRippleAlpha = Color.alpha(color);
         }
     }
 
@@ -117,20 +124,29 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
     }
 
     public boolean draw(Canvas canvas) {
-        boolean cornerRadiusUpdate = cornerRadius != AndroidUtilities.dp(4);
-        if (mSelectionPaint == null || cornerRadiusUpdate) {
+        final int radius = isLite ? 0 : AndroidUtilities.dp(CORNER_RADIUS_DP);
+        boolean cornerRadiusUpdate = cornerRadius != radius;
+        if (mSelectionPaint == null) {
             mSelectionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             mSelectionPaint.setStyle(Paint.Style.FILL_AND_STROKE);
             mSelectionPaint.setColor(color);
-            mSelectionAlpha = mSelectionPaint.getAlpha();
-            mSelectionPaint.setPathEffect(new CornerPathEffect(cornerRadius = AndroidUtilities.dp(4)));
+            mSelectionAlpha = Color.alpha(color);
         }
-        if (mRipplePaint == null || cornerRadiusUpdate) {
+        if (mRipplePaint == null) {
             mRipplePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             mRipplePaint.setStyle(Paint.Style.FILL_AND_STROKE);
             mRipplePaint.setColor(color);
-            mRippleAlpha = mRipplePaint.getAlpha();
-            mRipplePaint.setPathEffect(new CornerPathEffect(cornerRadius = AndroidUtilities.dp(4)));
+            mRippleAlpha = Color.alpha(color);
+        }
+        if (cornerRadiusUpdate) {
+            cornerRadius = radius;
+            if (radius <= 0) {
+                mSelectionPaint.setPathEffect(null);
+                mRipplePaint.setPathEffect(null);
+            } else {
+                mSelectionPaint.setPathEffect(new CornerPathEffect(cornerRadius));
+                mRipplePaint.setPathEffect(new CornerPathEffect(cornerRadius));
+            }
         }
         if (mBounds == null && mPathesCount > 0) {
             mPathes.get(0).computeBounds(AndroidUtilities.rectTmp, false);
@@ -159,6 +175,13 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                     )
                 )
             );
+        }
+
+        if (isLite) {
+            for (int i = 0; i < mPathesCount; ++i) {
+                canvas.drawPath(mPathes.get(i), mRipplePaint);
+            }
+            return false;
         }
 
         final long now = SystemClock.elapsedRealtime();
@@ -219,6 +242,9 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         private ArrayList<Pair<LinkSpanDrawable, Object>> mLinks = new ArrayList<>();
         private int mLinksCount = 0;
 
+        private ArrayList<Pair<LoadingDrawable, Object>> mLoading = new ArrayList<>();
+        private int mLoadingCount = 0;
+
         public void addLink(LinkSpanDrawable link) {
             addLink(link, null);
         }
@@ -226,6 +252,38 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         public void addLink(LinkSpanDrawable link, Object obj) {
             mLinks.add(new Pair<>(link, obj));
             mLinksCount++;
+            invalidate(obj);
+        }
+
+        public static LoadingDrawable makeLoading(Layout layout, CharacterStyle span) {
+            return makeLoading(layout, span, 0);
+        }
+
+        public static LoadingDrawable makeLoading(Layout layout, CharacterStyle span, float yOffset) {
+            if (layout == null || span == null || !(layout.getText() instanceof Spanned)) {
+                return null;
+            }
+            Spanned spanned = (Spanned) layout.getText();
+            LinkPath path = new LinkPath(true);
+            int start = spanned.getSpanStart(span);
+            int end = spanned.getSpanEnd(span);
+            path.setCurrentLayout(layout, start, yOffset);
+            layout.getSelectionPath(start, end, path);
+            LoadingDrawable loadingDrawable = new LoadingDrawable();
+            loadingDrawable.usePath(path);
+            loadingDrawable.setAppearByGradient(true);
+            loadingDrawable.setRadiiDp(CORNER_RADIUS_DP);
+            loadingDrawable.updateBounds();
+            return loadingDrawable;
+        }
+
+        public void addLoading(LoadingDrawable loadingDrawable) {
+            addLoading(loadingDrawable, null);
+        }
+
+        public void addLoading(LoadingDrawable loadingDrawable, Object obj) {
+            mLoading.add(new Pair<>(loadingDrawable, obj));
+            mLoadingCount++;
             invalidate(obj);
         }
 
@@ -290,6 +348,46 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             }
         }
 
+        public void removeLoading(LoadingDrawable loadingDrawable, boolean animated) {
+            if (loadingDrawable == null) {
+                return;
+            }
+            for (int i = 0; i < mLoadingCount; ++i) {
+                if (mLoading.get(i).first == loadingDrawable) {
+                    removeLoadingAt(i, animated);
+                    break;
+                }
+            }
+        }
+
+        private void removeLoadingAt(int index, boolean animated) {
+            if (index < 0 || index >= mLoadingCount) {
+                return;
+            }
+            Pair<LoadingDrawable, Object> pair = mLoading.get(index);
+            if (pair == null) {
+                return;
+            }
+            LoadingDrawable loadingDrawable = pair.first;
+            if (animated) {
+                if (!loadingDrawable.isDisappeared()) {
+                    if (!loadingDrawable.isDisappearing())
+                        loadingDrawable.disappear();
+                    AndroidUtilities.runOnUIThread(() -> {
+                        removeLoading(loadingDrawable, false);
+                    }, loadingDrawable.timeToDisappear());
+                } else {
+                    removeLoading(loadingDrawable, false);
+                }
+            } else {
+                mLoading.remove(pair);
+                loadingDrawable.reset();
+                loadingDrawable.resetDisappear();
+                mLoadingCount = mLoading.size();
+                invalidate(pair.second);
+            }
+        }
+
         public void clear() {
             clear(true);
         }
@@ -310,6 +408,22 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             }
         }
 
+        public void clearLoading(boolean animated) {
+            if (animated) {
+                for (int i = 0; i < mLoadingCount; ++i) {
+                    removeLoadingAt(i, true);
+                }
+            } else if (mLoadingCount > 0) {
+                for (int i = 0; i < mLoadingCount; ++i) {
+                    mLoading.get(i).first.reset();
+                    invalidate(mLoading.get(i).second, false);
+                }
+                mLoading.clear();
+                mLoadingCount = 0;
+                invalidate();
+            }
+        }
+
         public void removeLinks(Object obj) {
             removeLinks(obj, true);
         }
@@ -324,6 +438,10 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
 
         public boolean draw(Canvas canvas) {
             boolean invalidate = false;
+            for (int i = 0; i < mLoadingCount; ++i) {
+                mLoading.get(i).first.draw(canvas);
+                invalidate = true;
+            }
             for (int i = 0; i < mLinksCount; ++i) {
                 invalidate = mLinks.get(i).first.draw(canvas) || invalidate;
             }
@@ -332,6 +450,12 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
 
         public boolean draw(Canvas canvas, Object obj) {
             boolean invalidate = false;
+            for (int i = 0; i < mLoadingCount; ++i) {
+                if (mLoading.get(i).second == obj) {
+                    mLoading.get(i).first.draw(canvas);
+                    invalidate = true;
+                }
+            }
             for (int i = 0; i < mLinksCount; ++i) {
                 if (mLinks.get(i).second == obj) {
                     invalidate = mLinks.get(i).first.draw(canvas) || invalidate;
@@ -379,6 +503,10 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         private OnLinkPress onPressListener;
         private OnLinkPress onLongPressListener;
 
+        private boolean disablePaddingsOffset;
+        private boolean disablePaddingsOffsetX;
+        private boolean disablePaddingsOffsetY;
+
         public LinksTextView(Context context) {
             this(context, null);
         }
@@ -397,6 +525,18 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             this.resourcesProvider = resourcesProvider;
         }
 
+        public void setDisablePaddingsOffset(boolean disablePaddingsOffset) {
+            this.disablePaddingsOffset = disablePaddingsOffset;
+        }
+
+        public void setDisablePaddingsOffsetX(boolean disablePaddingsOffsetX) {
+            this.disablePaddingsOffsetX = disablePaddingsOffsetX;
+        }
+
+        public void setDisablePaddingsOffsetY(boolean disablePaddingsOffsetY) {
+            this.disablePaddingsOffsetY = disablePaddingsOffsetY;
+        }
+
         public void setOnLinkPressListener(OnLinkPress listener) {
             onPressListener = listener;
         }
@@ -405,38 +545,50 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             onLongPressListener = listener;
         }
 
+        public ClickableSpan hit(int x, int y) {
+            Layout textLayout = getLayout();
+            if (textLayout == null) {
+                return null;
+            }
+            x -= getPaddingLeft();
+            y -= getPaddingTop();
+            final int line = textLayout.getLineForVertical(y);
+            final int off = textLayout.getOffsetForHorizontal(line, x);
+            final float left = getLayout().getLineLeft(line);
+            if (left <= x && left + textLayout.getLineWidth(line) >= x && y >= 0 && y <= textLayout.getHeight()) {
+                Spannable buffer = new SpannableString(textLayout.getText());
+                ClickableSpan[] spans = buffer.getSpans(off, off, ClickableSpan.class);
+                if (spans.length != 0 && !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+                    return spans[0];
+                }
+            }
+            return null;
+        }
+
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             if (links != null) {
                 Layout textLayout = getLayout();
-                int x = (int) (event.getX() - getPaddingLeft());
-                int y = (int) (event.getY() - getPaddingTop());
-                final int line = textLayout.getLineForVertical(y);
-                final int off = textLayout.getOffsetForHorizontal(line, x);
-                final float left = getLayout().getLineLeft(line);
-                ClickableSpan span = null;
-                if (left <= x && left + textLayout.getLineWidth(line) >= x && y >= 0 && y <= textLayout.getHeight()) {
-                    Spannable buffer = new SpannableString(textLayout.getText());
-                    ClickableSpan[] spans = buffer.getSpans(off, off, ClickableSpan.class);
-                    if (spans.length != 0 && !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
-                        span = spans[0];
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            pressedLink = new LinkSpanDrawable<ClickableSpan>(span, resourcesProvider, event.getX(), event.getY());
-                            links.addLink(pressedLink);
-                            int start = buffer.getSpanStart(pressedLink.getSpan());
-                            int end = buffer.getSpanEnd(pressedLink.getSpan());
-                            LinkPath path = pressedLink.obtainNewPath();
-                            path.setCurrentLayout(textLayout, start, getPaddingTop());
-                            textLayout.getSelectionPath(start, end, path);
-                            AndroidUtilities.runOnUIThread(() -> {
-                                if (onLongPressListener != null) {
-                                    onLongPressListener.run(spans[0]);
-                                    pressedLink = null;
-                                    links.clear();
-                                }
-                            }, ViewConfiguration.getLongPressTimeout());
-                            return true;
-                        }
+                ClickableSpan span;
+                if ((span = hit((int) event.getX(), (int) event.getY())) != null) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        final LinkSpanDrawable link = new LinkSpanDrawable<ClickableSpan>(span, resourcesProvider, event.getX(), event.getY());
+                        pressedLink = link;
+                        links.addLink(pressedLink);
+                        Spannable buffer = new SpannableString(textLayout.getText());
+                        int start = buffer.getSpanStart(pressedLink.getSpan());
+                        int end = buffer.getSpanEnd(pressedLink.getSpan());
+                        LinkPath path = pressedLink.obtainNewPath();
+                        path.setCurrentLayout(textLayout, start, getPaddingTop());
+                        textLayout.getSelectionPath(start, end, path);
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (onLongPressListener != null && pressedLink == link) {
+                                onLongPressListener.run(span);
+                                pressedLink = null;
+                                links.clear();
+                            }
+                        }, ViewConfiguration.getLongPressTimeout());
+                        return true;
                     }
                 }
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -447,6 +599,97 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                         } else if (pressedLink.getSpan() != null) {
                             pressedLink.getSpan().onClick(this);
                         }
+                        pressedLink = null;
+                        return true;
+                    }
+                    pressedLink = null;
+                }
+                if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    links.clear();
+                    pressedLink = null;
+                }
+            }
+            return pressedLink != null || super.onTouchEvent(event);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (!isCustomLinkCollector) {
+                canvas.save();
+                if (!disablePaddingsOffset) {
+                    canvas.translate(disablePaddingsOffsetX ? 0 : getPaddingLeft(), disablePaddingsOffsetY ? 0 : getPaddingTop());
+                }
+                if (links.draw(canvas)) {
+                    invalidate();
+                }
+                canvas.restore();
+            }
+            super.onDraw(canvas);
+        }
+    }
+
+    public static class ClickableSmallTextView extends SimpleTextView {
+        private Theme.ResourcesProvider resourcesProvider;
+        public ClickableSmallTextView(Context context) {
+            this(context, null);
+        }
+
+        public ClickableSmallTextView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+        }
+
+        private int getLinkColor() {
+            return ColorUtils.setAlphaComponent(getTextColor(), (int) (Color.alpha(getTextColor()) * .1175f));
+        }
+
+        private LinkCollector links = new LinkCollector(this);
+        private Paint linkBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (isClickable()) {
+                AndroidUtilities.rectTmp.set(0, 0, getPaddingLeft() + getTextWidth() + getPaddingRight(), getHeight());
+                linkBackgroundPaint.setColor(getLinkColor());
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(CORNER_RADIUS_DP), AndroidUtilities.dp(CORNER_RADIUS_DP), linkBackgroundPaint);
+            }
+
+            super.onDraw(canvas);
+
+            if (isClickable() && links.draw(canvas)) {
+                invalidate();
+            }
+        }
+
+        private LinkSpanDrawable pressedLink;
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (!isClickable()) {
+                return super.onTouchEvent(event);
+            }
+            if (links != null) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    final LinkSpanDrawable link = new LinkSpanDrawable<ClickableSpan>(null, resourcesProvider, event.getX(), event.getY());
+                    link.setColor(getLinkColor());
+                    pressedLink = link;
+                    links.addLink(pressedLink);
+                    LinkPath path = pressedLink.obtainNewPath();
+                    path.setCurrentLayout(null, 0, 0, 0);
+                    path.addRect(0, 0, getPaddingLeft() + getTextWidth() + getPaddingRight(), getHeight(), Path.Direction.CW);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (pressedLink == link) {
+                            performLongClick();
+                            pressedLink = null;
+                            links.clear();
+                        }
+                    }, ViewConfiguration.getLongPressTimeout());
+                    return true;
+                }
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    links.clear();
+                    if (pressedLink != null) {
+                        performClick();
                     }
                     pressedLink = null;
                     return true;
@@ -458,19 +701,6 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                 }
             }
             return pressedLink != null || super.onTouchEvent(event);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            if (!isCustomLinkCollector) {
-                canvas.save();
-                canvas.translate(getPaddingLeft(), getPaddingTop());
-                if (links.draw(canvas)) {
-                    invalidate();
-                }
-                canvas.restore();
-            }
-            super.onDraw(canvas);
         }
     }
 }

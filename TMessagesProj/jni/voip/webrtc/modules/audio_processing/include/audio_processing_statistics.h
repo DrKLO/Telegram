@@ -24,6 +24,8 @@ struct RTC_EXPORT AudioProcessingStats {
   AudioProcessingStats(const AudioProcessingStats& other);
   ~AudioProcessingStats();
 
+  // Deprecated.
+  // TODO(bugs.webrtc.org/11226): Remove.
   // True if voice is detected in the last capture frame, after processing.
   // It is conservative in flagging audio as speech, with low likelihood of
   // incorrectly flagging a frame as voice.

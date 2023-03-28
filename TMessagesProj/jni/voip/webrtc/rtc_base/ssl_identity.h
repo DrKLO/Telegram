@@ -14,10 +14,12 @@
 #define RTC_BASE_SSL_IDENTITY_H_
 
 #include <stdint.h>
+
 #include <ctime>
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {
@@ -108,12 +110,12 @@ class RTC_EXPORT SSLIdentity {
   // should be a non-negative number.
   // Returns null on failure.
   // Caller is responsible for freeing the returned object.
-  static std::unique_ptr<SSLIdentity> Create(const std::string& common_name,
+  static std::unique_ptr<SSLIdentity> Create(absl::string_view common_name,
                                              const KeyParams& key_param,
                                              time_t certificate_lifetime);
-  static std::unique_ptr<SSLIdentity> Create(const std::string& common_name,
+  static std::unique_ptr<SSLIdentity> Create(absl::string_view common_name,
                                              const KeyParams& key_param);
-  static std::unique_ptr<SSLIdentity> Create(const std::string& common_name,
+  static std::unique_ptr<SSLIdentity> Create(absl::string_view common_name,
                                              KeyType key_type);
 
   // Allows fine-grained control over expiration time.
@@ -122,13 +124,13 @@ class RTC_EXPORT SSLIdentity {
 
   // Construct an identity from a private key and a certificate.
   static std::unique_ptr<SSLIdentity> CreateFromPEMStrings(
-      const std::string& private_key,
-      const std::string& certificate);
+      absl::string_view private_key,
+      absl::string_view certificate);
 
   // Construct an identity from a private key and a certificate chain.
   static std::unique_ptr<SSLIdentity> CreateFromPEMChainStrings(
-      const std::string& private_key,
-      const std::string& certificate_chain);
+      absl::string_view private_key,
+      absl::string_view certificate_chain);
 
   virtual ~SSLIdentity() {}
 
@@ -144,10 +146,10 @@ class RTC_EXPORT SSLIdentity {
   virtual std::string PublicKeyToPEMString() const = 0;
 
   // Helpers for parsing converting between PEM and DER format.
-  static bool PemToDer(const std::string& pem_type,
-                       const std::string& pem_string,
+  static bool PemToDer(absl::string_view pem_type,
+                       absl::string_view pem_string,
                        std::string* der);
-  static std::string DerToPem(const std::string& pem_type,
+  static std::string DerToPem(absl::string_view pem_type,
                               const unsigned char* data,
                               size_t length);
 

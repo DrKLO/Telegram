@@ -13,6 +13,9 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
+#include "rtc_base/containers/flat_set.h"
+
 // Field trials allow webrtc clients (such as Chrome) to turn on feature code
 // in binaries out in the field and gather information with that.
 //
@@ -24,7 +27,7 @@
 //    WEBRTC_EXCLUDE_FIELD_TRIAL_DEFAULT (if GN is used this can be achieved
 //    by setting the GN arg rtc_exclude_field_trial_default to true).
 // 2. Provide an implementation of:
-//    std::string webrtc::field_trial::FindFullName(const std::string& trial).
+//    std::string webrtc::field_trial::FindFullName(absl::string_view trial).
 //
 // They are designed to wire up directly to chrome field trials and to speed up
 // developers by reducing the need to wire APIs to control whether a feature is
@@ -61,18 +64,18 @@ namespace field_trial {
 // if the trial does not exists.
 //
 // Note: To keep things tidy append all the trial names with WebRTC.
-std::string FindFullName(const std::string& name);
+std::string FindFullName(absl::string_view name);
 
 // Convenience method, returns true iff FindFullName(name) return a string that
 // starts with "Enabled".
 // TODO(tommi): Make sure all implementations support this.
-inline bool IsEnabled(const char* name) {
+inline bool IsEnabled(absl::string_view name) {
   return FindFullName(name).find("Enabled") == 0;
 }
 
 // Convenience method, returns true iff FindFullName(name) return a string that
 // starts with "Disabled".
-inline bool IsDisabled(const char* name) {
+inline bool IsDisabled(absl::string_view name) {
   return FindFullName(name).find("Disabled") == 0;
 }
 
@@ -84,17 +87,23 @@ void InitFieldTrialsFromString(const char* trials_string);
 
 const char* GetFieldTrialString();
 
-#ifndef WEBRTC_EXCLUDE_FIELD_TRIAL_DEFAULT
 // Validates the given field trial string.
-bool FieldTrialsStringIsValid(const char* trials_string);
+bool FieldTrialsStringIsValid(absl::string_view trials_string);
 
 // Merges two field trial strings.
 //
 // If a key (trial) exists twice with conflicting values (groups), the value
 // in 'second' takes precedence.
 // Shall only be called with valid FieldTrial strings.
-std::string MergeFieldTrialsStrings(const char* first, const char* second);
-#endif  // WEBRTC_EXCLUDE_FIELD_TRIAL_DEFAULT
+std::string MergeFieldTrialsStrings(absl::string_view first,
+                                    absl::string_view second);
+
+// RAII type that ensures global state is consistent between tests.
+class ScopedGlobalFieldTrialsForTesting {
+ public:
+  explicit ScopedGlobalFieldTrialsForTesting(flat_set<std::string> keys);
+  ~ScopedGlobalFieldTrialsForTesting();
+};
 
 }  // namespace field_trial
 }  // namespace webrtc

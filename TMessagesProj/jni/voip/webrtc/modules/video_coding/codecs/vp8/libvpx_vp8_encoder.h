@@ -25,11 +25,12 @@
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "modules/video_coding/utility/framerate_controller_deprecated.h"
+#include "modules/video_coding/utility/vp8_constants.h"
 #include "rtc_base/experiments/cpu_speed_experiment.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
 #include "rtc_base/experiments/rate_control_settings.h"
-#include "libvpx/vp8cx.h"
-#include "libvpx/vpx_encoder.h"
+#include <libvpx/vp8cx.h>
+#include <libvpx/vpx_encoder.h>
 
 namespace webrtc {
 
@@ -138,7 +139,7 @@ class LibvpxVp8Encoder : public VideoEncoder {
     // Framerate is limited to this value in steady state.
     float framerate_limit = 5.0;
     // This qp or below is considered a steady state.
-    int steady_state_qp = 15;
+    int steady_state_qp = kVp8SteadyStateQpThreshold;
     // Frames of at least this percentage below ideal for configured bitrate are
     // considered in a steady state.
     int steady_state_undershoot_percentage = 30;

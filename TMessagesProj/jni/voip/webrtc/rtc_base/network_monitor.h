@@ -14,6 +14,7 @@
 #include <functional>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/network_constants.h"
 
 namespace rtc {
@@ -72,18 +73,38 @@ class NetworkBinderInterface {
 // changes, and fires the SignalNetworksChanged event when networks change.
 class NetworkMonitorInterface {
  public:
+  struct InterfaceInfo {
+    // The type of adapter if known.
+    AdapterType adapter_type;
+
+    // Is ADAPTER_TYPE_UNKNOWN unless adapter_type == ADAPTER_TYPE_VPN.
+    AdapterType underlying_type_for_vpn = ADAPTER_TYPE_UNKNOWN;
+
+    // The OS/firmware specific preference of this interface.
+    NetworkPreference network_preference = NetworkPreference::NEUTRAL;
+
+    // Is this interface available to use? WebRTC shouldn't attempt to use it if
+    // this returns false.
+    //
+    // It's possible for this status to change, in which case
+    // SignalNetworksChanged will be fired.
+    //
+    // The specific use case this was added for was a phone with two SIM
+    // cards, where attempting to use all interfaces returned from getifaddrs
+    // caused the connection to be dropped.
+    bool available = true;
+  };
+
   NetworkMonitorInterface();
   virtual ~NetworkMonitorInterface();
 
   virtual void Start() = 0;
   virtual void Stop() = 0;
 
-  virtual AdapterType GetAdapterType(const std::string& interface_name) = 0;
-  virtual AdapterType GetVpnUnderlyingAdapterType(
-      const std::string& interface_name) = 0;
-
-  virtual NetworkPreference GetNetworkPreference(
-      const std::string& interface_name) = 0;
+  // Get information about an interface.
+  // If the interface is not known, the return struct will have set
+  // `adapter_type` to ADAPTER_TYPE_UNKNOWN and `available` to false.
+  virtual InterfaceInfo GetInterfaceInfo(absl::string_view interface_name) = 0;
 
   // Does `this` NetworkMonitorInterface implement BindSocketToNetwork?
   // Only Android returns true.
@@ -94,21 +115,8 @@ class NetworkMonitorInterface {
   virtual NetworkBindingResult BindSocketToNetwork(
       int socket_fd,
       const IPAddress& address,
-      const std::string& interface_name) {
+      absl::string_view interface_name) {
     return NetworkBindingResult::NOT_IMPLEMENTED;
-  }
-
-  // Is this interface available to use? WebRTC shouldn't attempt to use it if
-  // this returns false.
-  //
-  // It's possible for this status to change, in which case
-  // SignalNetworksChanged will be fired.
-  //
-  // These specific use case this was added for was a phone with two SIM cards,
-  // where attempting to use all interfaces returned from getifaddrs caused the
-  // connection to be dropped.
-  virtual bool IsAdapterAvailable(const std::string& interface_name) {
-    return true;
   }
 
   void SetNetworksChangedCallback(std::function<void()> callback) {

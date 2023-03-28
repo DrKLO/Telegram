@@ -56,17 +56,17 @@ int32_t WebRtcIsacfix_InitBandwidthEstimator(BwEstimatorstr* bwest_str);
  */
 
 int32_t WebRtcIsacfix_UpdateUplinkBwImpl(BwEstimatorstr* bwest_str,
-                                         const uint16_t rtp_number,
-                                         const int16_t frameSize,
-                                         const uint32_t send_ts,
-                                         const uint32_t arr_ts,
-                                         const size_t pksize,
-                                         const uint16_t Index);
+                                         uint16_t rtp_number,
+                                         int16_t frameSize,
+                                         uint32_t send_ts,
+                                         uint32_t arr_ts,
+                                         size_t pksize,
+                                         uint16_t Index);
 
 /* Update receiving estimates. Used when we only receive BWE index, no iSAC data
  * packet. */
 int16_t WebRtcIsacfix_UpdateUplinkBwRec(BwEstimatorstr* bwest_str,
-                                        const int16_t Index);
+                                        int16_t Index);
 
 /****************************************************************************
  * WebRtcIsacfix_GetDownlinkBwIndexImpl(...)
@@ -100,19 +100,19 @@ int16_t WebRtcIsacfix_GetUplinkMaxDelay(const BwEstimatorstr* bwest_str);
  */
 uint16_t WebRtcIsacfix_GetMinBytes(
     RateModel* State,
-    int16_t StreamSize,          /* bytes in bitstream */
-    const int16_t FrameLen,      /* ms per frame */
-    const int16_t BottleNeck,    /* bottle neck rate; excl headers (bps) */
-    const int16_t DelayBuildUp); /* max delay from bottle neck buffering (ms) */
+    int16_t StreamSize,    /* bytes in bitstream */
+    int16_t FrameLen,      /* ms per frame */
+    int16_t BottleNeck,    /* bottle neck rate; excl headers (bps) */
+    int16_t DelayBuildUp); /* max delay from bottle neck buffering (ms) */
 
 /*
  * update long-term average bitrate and amount of data in buffer
  */
 void WebRtcIsacfix_UpdateRateModel(
     RateModel* State,
-    int16_t StreamSize,         /* bytes in bitstream */
-    const int16_t FrameSamples, /* samples per frame */
-    const int16_t BottleNeck);  /* bottle neck rate; excl headers (bps) */
+    int16_t StreamSize,   /* bytes in bitstream */
+    int16_t FrameSamples, /* samples per frame */
+    int16_t BottleNeck);  /* bottle neck rate; excl headers (bps) */
 
 void WebRtcIsacfix_InitRateModel(RateModel* State);
 

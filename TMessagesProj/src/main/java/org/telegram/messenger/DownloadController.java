@@ -24,6 +24,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -1107,14 +1108,26 @@ public class DownloadController extends BaseController implements NotificationCe
 
 
     public void startDownloadFile(TLRPC.Document document, MessageObject parentObject) {
-        if (parentObject.getDocument() == null) {
+        if (parentObject == null) {
+            return;
+        }
+        TLRPC.Document parentDocument = parentObject.getDocument();
+        if (parentDocument == null) {
             return;
         }
         AndroidUtilities.runOnUIThread(() -> {
+            if (parentDocument == null) {
+                return;
+            }
             boolean contains = false;
 
             for (int i = 0; i < recentDownloadingFiles.size(); i++) {
-                if (recentDownloadingFiles.get(i).getDocument() != null && recentDownloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                MessageObject messageObject = recentDownloadingFiles.get(i);
+                if (messageObject == null) {
+                    continue;
+                }
+                TLRPC.Document document1 = messageObject.getDocument();
+                if (document1 != null && document1.id == parentDocument.id) {
                     contains = true;
                     break;
                 }
@@ -1122,7 +1135,12 @@ public class DownloadController extends BaseController implements NotificationCe
 
             if (!contains) {
                 for (int i = 0; i < downloadingFiles.size(); i++) {
-                    if (downloadingFiles.get(i).getDocument() != null && downloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                    MessageObject messageObject = downloadingFiles.get(i);
+                    if (messageObject == null) {
+                        continue;
+                    }
+                    TLRPC.Document document1 = messageObject.getDocument();
+                    if (document1 != null && document1.id == parentDocument.id) {
                         contains = true;
                         break;
                     }
@@ -1237,8 +1255,10 @@ public class DownloadController extends BaseController implements NotificationCe
 
         AndroidUtilities.runOnUIThread(() -> {
             boolean removed = false;
+            TLRPC.Document parentDocument = parentObject.getDocument();
             for (int i = 0; i < downloadingFiles.size(); i++) {
-                if (downloadingFiles.get(i).getDocument().id == parentObject.getDocument().id) {
+                TLRPC.Document downloadingDocument = downloadingFiles.get(i).getDocument();
+                if (downloadingDocument == null || parentDocument != null && downloadingDocument.id == parentDocument.id) {
                     downloadingFiles.remove(i);
                     removed = true;
                     break;
@@ -1248,6 +1268,8 @@ public class DownloadController extends BaseController implements NotificationCe
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
                 if (reason == 0) {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.formatString("MessageNotFound", R.string.MessageNotFound));
+                } else if (reason == -1) {
+                    LaunchActivity.checkFreeDiscSpaceStatic(2);
                 }
             }
         });

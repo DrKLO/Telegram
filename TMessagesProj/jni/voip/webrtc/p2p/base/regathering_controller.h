@@ -13,9 +13,9 @@
 
 #include <memory>
 
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/port_allocator.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/thread.h"
 
 namespace webrtc {

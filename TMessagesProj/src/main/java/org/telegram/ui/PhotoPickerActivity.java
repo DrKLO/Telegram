@@ -110,6 +110,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         default void onOpenInPressed() {
 
         }
+
+        default boolean canFinishFragment() {
+            return true;
+        }
     }
 
     public interface PhotoPickerActivitySearchDelegate {
@@ -629,7 +633,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 setMeasuredDimension(widthSize, heightSize);
 
                 int kbHeight = measureKeyboardHeight();
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : kbHeight;
+                int keyboardSize = 0;
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow && commentTextView != null && frameLayout2.getParent() == this) {
                         heightSize -= commentTextView.getEmojiPadding();
@@ -642,7 +646,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     ignoreLayout = false;
                 }
 
-                if (SharedConfig.smoothKeyboard && commentTextView != null && commentTextView.isPopupShowing()) {
+                if (commentTextView != null && commentTextView.isPopupShowing()) {
                     fragmentView.setTranslationY(0);
                     listView.setTranslationY(0);
                     emptyView.setTranslationY(0);
@@ -683,7 +687,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
+                int keyboardSize = 0;
                 int paddingBottom = commentTextView != null && frameLayout2.getParent() == this && keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
@@ -799,7 +803,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("ClearSearchAlertTitle", R.string.ClearSearchAlertTitle));
                     builder.setMessage(LocaleController.getString("ClearSearchAlert", R.string.ClearSearchAlert));
-                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> {
+                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface, i) -> {
                         if (searchDelegate != null) {
                             searchDelegate.shouldClearRecentSearch();
                         } else {
@@ -811,7 +815,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     }
                     return;
                 }
@@ -900,7 +904,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             public void onStartStopSelection(boolean start) {
                 alertOnlyOnce = start ? 1 : 0;
                 if (start) {
-                    parentLayout.requestDisallowInterceptTouchEvent(true);
+                    parentLayout.getView().requestDisallowInterceptTouchEvent(true);
                 }
                 listView.hideSelector(true);
             }
@@ -1188,7 +1192,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         allowIndices = (selectedAlbum != null || type == 0 || type == 1) && allowOrder;
 
         listView.setEmptyView(emptyView);
-        listView.setAnimateEmptyView(true, 0);
+        listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
         updatePhotosButton(0);
 
         return fragmentView;
@@ -1275,7 +1279,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 initialSearchString = null;
                 processSearch(searchItem.getSearchField());
             }
-            getParentActivity().getWindow().setSoftInputMode(SharedConfig.smoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         }
     }
 
@@ -1287,7 +1291,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
-            removeSelfFromStack();
+            removeSelfFromStack(true);
         }
     }
 
@@ -1720,7 +1724,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     image.params = new HashMap<>();
                     image.params.put("id", result.id);
                     image.params.put("query_id", "" + res.query_id);
-                    image.params.put("bot_name", user.username);
+                    image.params.put("bot_name", UserObject.getPublicUsername(user));
 
                     searchResult.add(image);
 
@@ -1757,7 +1761,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         applyCaption();
         sendPressed = true;
         delegate.actionButtonPressed(false, notify, scheduleDate);
-        if (selectPhotoType != PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER) {
+        if (selectPhotoType != PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER && (delegate == null || delegate.canFinishFragment())) {
             finishFragment();
         }
     }
@@ -1983,5 +1987,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, null, null, Theme.key_chat_attachPhotoBackground));
 
         return themeDescriptions;
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        return AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f;
     }
 }

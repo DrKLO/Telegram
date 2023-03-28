@@ -28,7 +28,9 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 
 import java.lang.ref.WeakReference;
@@ -52,6 +54,7 @@ public class MotionBackgroundDrawable extends Drawable {
     private long lastUpdateTime;
     private WeakReference<View> parentView;
 
+    private boolean ignoreInterpolator;
     private final CubicBezierInterpolator interpolator = new CubicBezierInterpolator(0.33, 0.0, 0.0, 1.0);
 
     private int translationY;
@@ -110,6 +113,7 @@ public class MotionBackgroundDrawable extends Drawable {
     private ColorFilter legacyBitmapColorFilter;
     private int legacyBitmapColor;
 
+    private float indeterminateSpeedScale = 1f;
     private boolean isIndeterminateAnimation;
     private Paint overrideBitmapPaint;
 
@@ -160,6 +164,10 @@ public class MotionBackgroundDrawable extends Drawable {
 
     public Bitmap getBitmap() {
         return currentBitmap;
+    }
+
+    public Bitmap getPatternBitmap() {
+        return patternBitmap;
     }
 
     public int getIntensity() {
@@ -250,7 +258,7 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public void switchToNextPosition(boolean fast) {
-        if (posAnimationProgress < 1.0f) {
+        if (posAnimationProgress < 1.0f || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
         rotatingPreview = false;
@@ -266,7 +274,7 @@ public class MotionBackgroundDrawable extends Drawable {
         generateNextGradient();
     }
 
-    private void generateNextGradient() {
+    public void generateNextGradient() {
         if (useLegacyBitmap && intensity < 0) {
             try {
                 if (legacyBitmap != null) {
@@ -281,7 +289,7 @@ public class MotionBackgroundDrawable extends Drawable {
                     }
                     legacyCanvas2.drawBitmap(legacyBitmap, 0, 0, null);
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 FileLog.e(e);
                 if (legacyBitmap2 != null) {
                     legacyBitmap2.recycle();
@@ -292,9 +300,9 @@ public class MotionBackgroundDrawable extends Drawable {
             Utilities.generateGradient(currentBitmap, true, phase, 1f, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
             invalidateLegacy = true;
         }
-        for (int i = 0; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
+        for (int i = -1; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
             float p = (i + 1) / (float) ANIMATION_CACHE_BITMAPS_COUNT;
-            Utilities.generateGradient(gradientToBitmap[i], true, phase, p, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+            Utilities.generateGradient(i < 0 ? gradientFromBitmap : gradientToBitmap[i], true, phase, p, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
         }
     }
 
@@ -475,7 +483,7 @@ public class MotionBackgroundDrawable extends Drawable {
                     legacyBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                     legacyCanvas = new Canvas(legacyBitmap);
                     invalidateLegacy = true;
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     if (legacyBitmap != null) {
                         legacyBitmap.recycle();
                         legacyBitmap = null;
@@ -861,7 +869,7 @@ public class MotionBackgroundDrawable extends Drawable {
             float progress;
             boolean isNeedGenerateGradient = postInvalidateParent || rotatingPreview;
             if (isIndeterminateAnimation) {
-                posAnimationProgress += dt / 12000f;
+                posAnimationProgress += (dt / 12000f) * indeterminateSpeedScale;
                 if (posAnimationProgress >= 1.0f) {
                     posAnimationProgress = 0.0f;
                 }
@@ -890,10 +898,13 @@ public class MotionBackgroundDrawable extends Drawable {
                     if (posAnimationProgress > 1.0f) {
                         posAnimationProgress = 1.0f;
                     }
-                    if (animationProgressProvider == null) {
+                    if (animationProgressProvider == null && !ignoreInterpolator) {
                         progress = interpolator.getInterpolation(posAnimationProgress);
                     } else {
                         progress = posAnimationProgress;
+                    }
+                    if (ignoreInterpolator && (progress == 0 || progress == 1)) {
+                        ignoreInterpolator = false;
                     }
                     if (stageBefore == 0 && progress > 0.25f ||
                             stageBefore == 1 && progress > 0.5f ||
@@ -939,10 +950,13 @@ public class MotionBackgroundDrawable extends Drawable {
                     if (posAnimationProgress > 1.0f) {
                         posAnimationProgress = 1.0f;
                     }
-                    if (animationProgressProvider == null) {
+                    if (animationProgressProvider == null && !ignoreInterpolator) {
                         progress = interpolator.getInterpolation(posAnimationProgress);
                     } else {
                         progress = posAnimationProgress;
+                    }
+                    if (ignoreInterpolator && (progress == 0 || progress == 1)) {
+                        ignoreInterpolator = false;
                     }
                     if (rotationBack) {
                         progress = 1.0f - progress;
@@ -1007,7 +1021,25 @@ public class MotionBackgroundDrawable extends Drawable {
         return colors[0] == colors[1] && colors[0] == colors[2] && colors[0] == colors[3];
     }
 
+    public float getIndeterminateSpeedScale() {
+        return indeterminateSpeedScale;
+    }
+
+    public void setIndeterminateSpeedScale(float indeterminateSpeedScale) {
+        this.indeterminateSpeedScale = indeterminateSpeedScale;
+    }
+
+    public boolean isIndeterminateAnimation() {
+        return isIndeterminateAnimation;
+    }
+
     public void setIndeterminateAnimation(boolean isIndeterminateAnimation) {
+        if (!isIndeterminateAnimation && this.isIndeterminateAnimation) {
+            float progressPerPhase = 1f / 8f;
+            int phase = (int) (posAnimationProgress / progressPerPhase);
+            posAnimationProgress = 1f - (posAnimationProgress - phase * progressPerPhase) / progressPerPhase;
+            ignoreInterpolator = true;
+        }
         this.isIndeterminateAnimation = isIndeterminateAnimation;
     }
 

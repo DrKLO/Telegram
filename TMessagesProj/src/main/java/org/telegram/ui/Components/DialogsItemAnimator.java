@@ -62,6 +62,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     private final RecyclerListView listView;
 
     public DialogsItemAnimator(RecyclerListView listView) {
+        setSupportsChangeAnimations(false);
         this.listView = listView;
     }
 
@@ -622,7 +623,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
         return (!mPendingAdditions.isEmpty()
                 || !mPendingChanges.isEmpty()
                 || !mPendingMoves.isEmpty()
-                || !mPendingRemovals.isEmpty()
+                || !mPendingChanges.isEmpty()
                 || !mMoveAnimations.isEmpty()
                 || !mRemoveAnimations.isEmpty()
                 || !mAddAnimations.isEmpty()

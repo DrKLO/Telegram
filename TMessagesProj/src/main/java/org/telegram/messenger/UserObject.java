@@ -43,6 +43,46 @@ public class UserObject {
         return name.length() != 0 || TextUtils.isEmpty(user.phone) ? name : PhoneFormat.getInstance().format("+" + user.phone);
     }
 
+    public static String getPublicUsername(TLRPC.User user, boolean editable) {
+        if (user == null) {
+            return null;
+        }
+        if (!TextUtils.isEmpty(user.username)) {
+            return user.username;
+        }
+        if (user.usernames != null) {
+            for (int i = 0; i < user.usernames.size(); ++i) {
+                TLRPC.TL_username u = user.usernames.get(i);
+                if (u != null && (u.active && !editable || u.editable) && !TextUtils.isEmpty(u.username)) {
+                    return u.username;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getPublicUsername(TLRPC.User user) {
+        return getPublicUsername(user, false);
+    }
+
+    public static boolean hasPublicUsername(TLRPC.User user, String username) {
+        if (user == null || username == null) {
+            return false;
+        }
+        if (username.equalsIgnoreCase(user.username)) {
+            return true;
+        }
+        if (user.usernames != null) {
+            for (int i = 0; i < user.usernames.size(); ++i) {
+                TLRPC.TL_username u = user.usernames.get(i);
+                if (u != null && u.active && username.equalsIgnoreCase(u.username)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static String getFirstName(TLRPC.User user) {
         return getFirstName(user, true);
     }
@@ -66,5 +106,31 @@ public class UserObject {
 
     public static TLRPC.UserProfilePhoto getPhoto(TLRPC.User user) {
         return hasPhoto(user) ? user.photo : null;
+    }
+
+    public static boolean hasFallbackPhoto(TLRPC.UserFull userInfo) {
+        return userInfo != null && userInfo.fallback_photo != null && !(userInfo.fallback_photo instanceof TLRPC.TL_photoEmpty);
+    }
+
+    public static Long getEmojiStatusDocumentId(TLRPC.User user) {
+        if (user == null) {
+            return null;
+        }
+        return getEmojiStatusDocumentId(user.emoji_status);
+    }
+
+    public static Long getEmojiStatusDocumentId(TLRPC.EmojiStatus emojiStatus) {
+        if (emojiStatus == null) {
+            return null;
+        }
+        if (emojiStatus instanceof TLRPC.TL_emojiStatus)
+            return ((TLRPC.TL_emojiStatus) emojiStatus).document_id;
+        if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil) {
+            TLRPC.TL_emojiStatusUntil untilStatus = (TLRPC.TL_emojiStatusUntil) emojiStatus;
+            if (untilStatus.until > (int) (System.currentTimeMillis() / 1000)) {
+                return untilStatus.document_id;
+            }
+        }
+        return null;
     }
 }

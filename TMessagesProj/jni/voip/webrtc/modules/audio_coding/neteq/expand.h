@@ -15,7 +15,6 @@
 #include <memory>
 
 #include "modules/audio_coding/neteq/audio_vector.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -40,6 +39,9 @@ class Expand {
          size_t num_channels);
 
   virtual ~Expand();
+
+  Expand(const Expand&) = delete;
+  Expand& operator=(const Expand&) = delete;
 
   // Resets the object.
   virtual void Reset();
@@ -134,8 +136,6 @@ class Expand {
   bool stop_muting_;
   size_t expand_duration_samples_;
   std::unique_ptr<ChannelParameters[]> channel_parameters_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Expand);
 };
 
 struct ExpandFactory {

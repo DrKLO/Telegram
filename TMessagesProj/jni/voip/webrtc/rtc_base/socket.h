@@ -25,7 +25,6 @@
 #include "rtc_base/win32.h"
 #endif
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 
@@ -83,6 +82,9 @@ class Socket {
  public:
   virtual ~Socket() {}
 
+  Socket(const Socket&) = delete;
+  Socket& operator=(const Socket&) = delete;
+
   // Returns the address to which the socket is bound.  If the socket is not
   // bound, then the any-address is returned.
   virtual SocketAddress GetLocalAddress() const = 0;
@@ -138,9 +140,6 @@ class Socket {
 
  protected:
   Socket() {}
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(Socket);
 };
 
 }  // namespace rtc

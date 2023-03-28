@@ -29,8 +29,8 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 31
-    buildToolsVersion '31.0.0'
+    compileSdkVersion 33
+    buildToolsVersion '33.0.0'
 
     defaultConfig.applicationId = APP_PACKAGE
 
@@ -137,7 +137,7 @@ android {
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionName APP_VERSION_NAME
         ndkVersion "21.4.7075529"
 

@@ -17,7 +17,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -25,11 +24,12 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -39,6 +39,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -48,8 +49,10 @@ import org.telegram.ui.Cells.ArchiveHintCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.DialogMeUrlCell;
 import org.telegram.ui.Cells.DialogsEmptyCell;
+import org.telegram.ui.Cells.DialogsRequestedEmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
+import org.telegram.ui.Cells.RequestPeerRequirementsCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -58,6 +61,7 @@ import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.PullForegroundDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.DialogsActivity;
@@ -65,23 +69,26 @@ import org.telegram.ui.DialogsActivity;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 
-public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
+public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements DialogCell.DialogCellDelegate {
     public final static int VIEW_TYPE_DIALOG = 0,
-        VIEW_TYPE_FLICKER = 1,
-        VIEW_TYPE_RECENTLY_VIEWED = 2,
-        VIEW_TYPE_DIVIDER = 3,
-        VIEW_TYPE_ME_URL = 4,
-        VIEW_TYPE_EMPTY = 5,
-        VIEW_TYPE_USER = 6,
-        VIEW_TYPE_HEADER = 7,
-        VIEW_TYPE_SHADOW = 8,
-        VIEW_TYPE_ARCHIVE = 9,
-        VIEW_TYPE_LAST_EMPTY = 10,
-        VIEW_TYPE_NEW_CHAT_HINT = 11,
-        VIEW_TYPE_TEXT = 12,
-        VIEW_TYPE_CONTACTS_FLICKER = 13,
-        VIEW_TYPE_HEADER_2 = 14;
+            VIEW_TYPE_FLICKER = 1,
+            VIEW_TYPE_RECENTLY_VIEWED = 2,
+            VIEW_TYPE_DIVIDER = 3,
+            VIEW_TYPE_ME_URL = 4,
+            VIEW_TYPE_EMPTY = 5,
+            VIEW_TYPE_USER = 6,
+            VIEW_TYPE_HEADER = 7,
+            VIEW_TYPE_SHADOW = 8,
+            VIEW_TYPE_ARCHIVE = 9,
+            VIEW_TYPE_LAST_EMPTY = 10,
+            VIEW_TYPE_NEW_CHAT_HINT = 11,
+            VIEW_TYPE_TEXT = 12,
+            VIEW_TYPE_CONTACTS_FLICKER = 13,
+            VIEW_TYPE_HEADER_2 = 14,
+            VIEW_TYPE_REQUIREMENTS = 15,
+            VIEW_TYPE_REQUIRED_EMPTY = 16;
 
     private Context mContext;
     private ArchiveHintCell archiveHintCell;
@@ -102,7 +109,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private boolean showArchiveHint;
     private boolean isReordering;
     private long lastSortTime;
+    private boolean collapsedView;
+    RecyclerListView recyclerListView;
     private PullForegroundDrawable pullForegroundDrawable;
+    ArrayList<ItemInternal> itemInternals = new ArrayList<>();
+    ArrayList<ItemInternal> oldItems = new ArrayList<>();
 
     private Drawable arrowDrawable;
 
@@ -110,8 +121,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private boolean forceShowEmptyCell;
 
     private DialogsActivity parentFragment;
+    private boolean isTransitionSupport;
+    private boolean fromDiffUtils;
 
-    public DialogsAdapter(DialogsActivity fragment, Context context, int type, int folder, boolean onlySelect, ArrayList<Long> selected, int account) {
+    private TLRPC.RequestPeerType requestPeerType;
+    public boolean isEmpty;
+
+    public DialogsAdapter(DialogsActivity fragment, Context context, int type, int folder, boolean onlySelect, ArrayList<Long> selected, int account, TLRPC.RequestPeerType requestPeerType) {
         mContext = context;
         parentFragment = fragment;
         dialogsType = type;
@@ -128,6 +144,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (folder == 0) {
             this.preloader = new DialogsPreloader();
         }
+        this.requestPeerType = requestPeerType;
+    }
+
+    public void setRecyclerListView(RecyclerListView recyclerListView) {
+        this.recyclerListView = recyclerListView;
     }
 
     public void setOpenedDialogId(long id) {
@@ -144,17 +165,16 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         }
         if (showArchiveHint) {
             position -= 2;
-        } else if (dialogsType == 11 || dialogsType == 13) {
+        } else if (dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_GROUPS || dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY) {
             position -= 2;
-        } else if (dialogsType == 12) {
+        } else if (dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_USERS) {
             position -= 1;
         }
         return position;
     }
 
     public boolean isDataSetChanged() {
-        int current = currentCount;
-        return current != getItemCount() || current == 1;
+        return true;
     }
 
     public void setDialogsType(int type) {
@@ -172,140 +192,120 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public int getItemCount() {
-        MessagesController messagesController = MessagesController.getInstance(currentAccount);
-        ArrayList<TLRPC.Dialog> array = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen);
-        dialogsCount = array.size();
-        if (!forceUpdatingContacts && !forceShowEmptyCell && dialogsType != 7 && dialogsType != 8 && dialogsType != 11 && dialogsCount == 0 && (folderId != 0 || messagesController.isLoadingDialogs(folderId) || !MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId))) {
-            onlineContacts = null;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("DialogsAdapter dialogsCount=" + dialogsCount + " dialogsType=" + dialogsType + " isLoadingDialogs=" + messagesController.isLoadingDialogs(folderId) + " isDialogsEndReached=" + MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId));
+        currentCount = itemInternals.size();
+        return currentCount;
+    }
+
+    public int findDialogPosition(long dialogId) {
+        for (int i = 0; i < itemInternals.size(); i++) {
+            if (itemInternals.get(i).dialog != null && itemInternals.get(i).dialog.id == dialogId) {
+                return i;
             }
-            if (folderId == 1 && showArchiveHint) {
-                return (currentCount = 2);
-            }
-            return (currentCount = 0);
         }
-        if (dialogsCount == 0 && messagesController.isLoadingDialogs(folderId)) {
-            return (currentCount = 0);
-        }
-        int count = dialogsCount;
-        if (dialogsType == 7 || dialogsType == 8) {
-            if (dialogsCount == 0) {
-                count++;
-            }
+        return -1;
+    }
+
+    public int fixScrollGap(RecyclerListView animationSupportListView, int p, int offset, boolean hasHidenArchive, boolean oppened) {
+        int itemsToEnd = getItemCount() - p ;
+        int cellHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72);
+        int bottom = offset + animationSupportListView.getPaddingTop() + itemsToEnd * cellHeight + itemsToEnd - 1;
+        //fix height changed
+        int top =  offset + animationSupportListView.getPaddingTop() - p * cellHeight - p;
+        if (oppened) {
+            bottom -= AndroidUtilities.dp(44);
         } else {
-            if (!messagesController.isDialogsEndReached(folderId) || dialogsCount == 0) {
-                count++;
-            }
+            bottom += AndroidUtilities.dp(44);
         }
-        boolean hasContacts = false;
-        if (hasHints) {
-            count += 2 + messagesController.hintDialogs.size();
-        } else if (dialogsType == 0 && folderId == 0 && messagesController.isDialogsEndReached(folderId)) {
-            if (ContactsController.getInstance(currentAccount).contacts.isEmpty() && !ContactsController.getInstance(currentAccount).doneLoadingContacts && !forceUpdatingContacts) {
-                onlineContacts = null;
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("DialogsAdapter loadingContacts=" + (ContactsController.getInstance(currentAccount).contacts.isEmpty() && !ContactsController.getInstance(currentAccount).doneLoadingContacts) + "dialogsCount=" + dialogsCount + " dialogsType=" + dialogsType);
+        if (hasHidenArchive) {
+            top += cellHeight;
+        }
+        if (top > animationSupportListView.getPaddingTop()) {
+            return offset + animationSupportListView.getPaddingTop() - top;
+        }
+        if (bottom < animationSupportListView.getMeasuredHeight()) {
+            return offset + (animationSupportListView.getMeasuredHeight() - bottom);
+        }
+        return offset;
+    }
+
+    private class ItemInternal extends AdapterWithDiffUtils.Item {
+
+        TLRPC.Dialog dialog;
+        TLRPC.RecentMeUrl recentMeUrl;
+        TLRPC.TL_contact contact;
+        boolean isForumCell;
+        private boolean pinned;
+        private boolean isFolder;
+
+        public ItemInternal(int viewType, TLRPC.Dialog dialog) {
+            super(viewType, true);
+            this.dialog = dialog;
+            if (dialog != null) {
+                if (dialogsType == 7 || dialogsType == 8) {
+                    MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+                    pinned = filter != null && filter.pinnedDialogs.indexOfKey(dialog.id) >= 0;
+                } else {
+                    pinned = dialog.pinned;
                 }
-                return (currentCount = 0);
-            }
-
-            if (messagesController.getAllFoldersDialogsCount() <= 10 && ContactsController.getInstance(currentAccount).doneLoadingContacts && !ContactsController.getInstance(currentAccount).contacts.isEmpty()) {
-                if (onlineContacts == null || prevDialogsCount != dialogsCount || prevContactsCount != ContactsController.getInstance(currentAccount).contacts.size()) {
-                    onlineContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
-                    prevContactsCount = onlineContacts.size();
-                    prevDialogsCount = messagesController.dialogs_dict.size();
-                    long selfId = UserConfig.getInstance(currentAccount).clientUserId;
-                    for (int a = 0, N = onlineContacts.size(); a < N; a++) {
-                        long userId = onlineContacts.get(a).user_id;
-                        if (userId == selfId || messagesController.dialogs_dict.get(userId) != null) {
-                            onlineContacts.remove(a);
-                            a--;
-                            N--;
-                        }
-                    }
-                    if (onlineContacts.isEmpty()) {
-                        onlineContacts = null;
-                    }
-                    sortOnlineContacts(false);
-
-                    if (parentFragment.getContactsAlpha() == 0f) {
-                        registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
-                            @Override
-                            public void onChanged() {
-                                parentFragment.setContactsAlpha(0f);
-                                parentFragment.animateContactsAlpha(1f);
-
-                                unregisterAdapterDataObserver(this);
-                            }
-                        });
-                    }
-                }
-                if (onlineContacts != null) {
-                    count += onlineContacts.size() + 2;
-                    hasContacts = true;
-                }
+                isFolder = dialog.isFolder;
+                isForumCell = MessagesController.getInstance(currentAccount).isForum(dialog.id);
             }
         }
-        if (folderId == 0 && !hasContacts && dialogsCount == 0 && forceUpdatingContacts) {
-            count += 3;
-        }
-        if (folderId == 0 && onlineContacts != null) {
-            if (!hasContacts) {
-                onlineContacts = null;
-            }
-        }
-        if (folderId == 1 && showArchiveHint) {
-            count += 2;
-        }
-        if (folderId == 0 && dialogsCount != 0) {
-            count++;
-            if (dialogsCount > 10 && dialogsType == 0) {
-                count++;
-            }
-        }
-        if (dialogsType == 11 || dialogsType == 13) {
-            count += 2;
-        } else if (dialogsType == 12) {
-            count += 1;
-        }
-        currentCount = count;
 
-        return count;
+        public ItemInternal(int viewTypeMeUrl, TLRPC.RecentMeUrl recentMeUrl) {
+            super(viewTypeMeUrl, true);
+            this.recentMeUrl = recentMeUrl;
+        }
+
+        public ItemInternal(int viewTypeEmpty) {
+            super(viewTypeEmpty, true);
+        }
+
+        public ItemInternal(int viewTypeUser, TLRPC.TL_contact tl_contact) {
+            super(viewTypeUser, true);
+            contact = tl_contact;
+        }
+
+        boolean compare(ItemInternal itemInternal) {
+            if (viewType != itemInternal.viewType) {
+                return false;
+            }
+            if (viewType == VIEW_TYPE_DIALOG) {
+                return dialog != null && itemInternal.dialog != null && dialog.id == itemInternal.dialog.id
+                        && isFolder == itemInternal.isFolder &&
+                        isForumCell == itemInternal.isForumCell &&
+                        pinned == itemInternal.pinned;
+            }
+            if (viewType == VIEW_TYPE_HEADER_2) {
+                return dialog != null && itemInternal.dialog != null && dialog.id == itemInternal.dialog.id && dialog.isFolder == itemInternal.dialog.isFolder;
+            }
+            if (viewType == VIEW_TYPE_ME_URL) {
+                return recentMeUrl != null && itemInternal.recentMeUrl != null && recentMeUrl.url != null && recentMeUrl.url.equals(recentMeUrl.url);
+            }
+            if (viewType == VIEW_TYPE_USER) {
+                return contact != null && itemInternal.contact != null && contact.user_id == itemInternal.contact.user_id;
+            }
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dialog, recentMeUrl, contact);
+        }
     }
 
     public TLObject getItem(int i) {
-        if (onlineContacts != null && (dialogsCount == 0 || i >= dialogsCount)) {
-            if (dialogsCount == 0) {
-                i -= 3;
-            } else {
-                i -= dialogsCount + 2;
-            }
-            if (i < 0 || i >= onlineContacts.size()) {
-                return null;
-            }
-            return MessagesController.getInstance(currentAccount).getUser(onlineContacts.get(i).user_id);
-        }
-        if (showArchiveHint) {
-            i -= 2;
-        } else if (dialogsType == 11 || dialogsType == 13) {
-            i -= 2;
-        } else if (dialogsType == 12) {
-            i -= 1;
-        }
-        ArrayList<TLRPC.Dialog> arrayList = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen);
-        if (hasHints) {
-            int count = MessagesController.getInstance(currentAccount).hintDialogs.size();
-            if (i < 2 + count) {
-                return MessagesController.getInstance(currentAccount).hintDialogs.get(i - 1);
-            } else {
-                i -= count + 2;
-            }
-        }
-        if (i < 0 || i >= arrayList.size()) {
+        if (i < 0 || i >= itemInternals.size()) {
             return null;
         }
-        return arrayList.get(i);
+        if (itemInternals.get(i).dialog != null) {
+            return itemInternals.get(i).dialog;
+        } else if (itemInternals.get(i).contact != null) {
+            return MessagesController.getInstance(currentAccount).getUser(itemInternals.get(i).contact.user_id);
+        } else if (itemInternals.get(i).recentMeUrl != null) {
+            return itemInternals.get(i).recentMeUrl;
+        }
+        return null;
     }
 
     public void sortOnlineContacts(boolean notify) {
@@ -368,19 +368,79 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         dialogsListFrozen = frozen;
     }
 
+    public boolean getDialogsListIsFrozen() {
+        return dialogsListFrozen;
+    }
+
     public ViewPager getArchiveHintCellPager() {
         return archiveHintCell != null ? archiveHintCell.getViewPager() : null;
     }
 
     public void updateHasHints() {
-        hasHints = folderId == 0 && dialogsType == 0 && !isOnlySelect && !MessagesController.getInstance(currentAccount).hintDialogs.isEmpty();
+        hasHints = folderId == 0 && dialogsType == DialogsActivity.DIALOGS_TYPE_DEFAULT && !isOnlySelect && !MessagesController.getInstance(currentAccount).hintDialogs.isEmpty();
+    }
+
+    public void updateList(RecyclerListView recyclerListView, boolean hasHiddenArchive, float tabsTranslation) {
+        oldItems.clear();
+        oldItems.addAll(itemInternals);
+        updateItemList();
+
+        if (recyclerListView != null && recyclerListView.getScrollState() == RecyclerView.SCROLL_STATE_IDLE && recyclerListView.getChildCount() > 0 && recyclerListView.getLayoutManager() != null) {
+            LinearLayoutManager layoutManager = ((LinearLayoutManager) recyclerListView.getLayoutManager());
+            View view = null;
+            int position = -1;
+            int top = Integer.MAX_VALUE;
+            for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+                int childPosition = recyclerListView.getChildAdapterPosition(recyclerListView.getChildAt(i));
+                View child = recyclerListView.getChildAt(i);
+                if (childPosition != RecyclerListView.NO_POSITION && child != null && child.getTop() < top) {
+                    view = child;
+                    position = childPosition;
+                    top = child.getTop();
+                }
+            }
+            if (view != null) {
+                float offset = view.getTop() - recyclerListView.getPaddingTop() + tabsTranslation;
+                if (hasHiddenArchive && position == 0 && view.getTop() - recyclerListView.getPaddingTop() + tabsTranslation < AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72)) {
+                    position = 1;
+                    offset = tabsTranslation;
+                }
+                layoutManager.scrollToPositionWithOffset(position, (int) offset);
+            }
+        }
+
+
+        fromDiffUtils = true;
+        DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return oldItems.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return itemInternals.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                return oldItems.get(oldItemPosition).compare(itemInternals.get(newItemPosition));
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                return oldItems.get(oldItemPosition).viewType == itemInternals.get(newItemPosition).viewType;
+            }
+        }).dispatchUpdatesTo(this);
+        fromDiffUtils = false;
     }
 
     @Override
     public void notifyDataSetChanged() {
-        updateHasHints();
+        updateItemList();
         super.notifyDataSetChanged();
     }
+
 
     @Override
     public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
@@ -388,7 +448,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             DialogCell dialogCell = (DialogCell) holder.itemView;
             dialogCell.onReorderStateChanged(isReordering, false);
             int position = fixPosition(holder.getAdapterPosition());
-            dialogCell.setDialogIndex(position);
+            //    dialogCell.setDialogIndex(position);
+            //   dialogCell.collapsed = collapsedView;
             dialogCell.checkCurrentDialogIndex(dialogsListFrozen);
             dialogCell.setChecked(selectedDialogs.contains(dialogCell.getDialogId()), false);
         }
@@ -399,7 +460,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         int viewType = holder.getItemViewType();
         return viewType != VIEW_TYPE_FLICKER && viewType != VIEW_TYPE_EMPTY && viewType != VIEW_TYPE_DIVIDER &&
                 viewType != VIEW_TYPE_SHADOW && viewType != VIEW_TYPE_HEADER && viewType != VIEW_TYPE_ARCHIVE &&
-                viewType != VIEW_TYPE_LAST_EMPTY && viewType != VIEW_TYPE_NEW_CHAT_HINT && viewType != VIEW_TYPE_CONTACTS_FLICKER;
+                viewType != VIEW_TYPE_LAST_EMPTY && viewType != VIEW_TYPE_NEW_CHAT_HINT && viewType != VIEW_TYPE_CONTACTS_FLICKER &&
+                viewType != VIEW_TYPE_REQUIREMENTS && viewType != VIEW_TYPE_REQUIRED_EMPTY;
     }
 
     @Override
@@ -407,14 +469,23 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case VIEW_TYPE_DIALOG:
-                if (dialogsType == 2) {
+                if (dialogsType == DialogsActivity.DIALOGS_TYPE_ADD_USERS_TO ||
+                    dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
                     view = new ProfileSearchCell(mContext);
                 } else {
                     DialogCell dialogCell = new DialogCell(parentFragment, mContext, true, false, currentAccount, null);
                     dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
                     dialogCell.setPreloader(preloader);
+                    dialogCell.setDialogCellDelegate(this);
+                    dialogCell.setIsTransitionSupport(isTransitionSupport);
                     view = dialogCell;
                 }
+                if (dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                }
+                break;
+            case VIEW_TYPE_REQUIREMENTS:
+                view = new RequestPeerRequirementsCell(mContext);
                 break;
             case VIEW_TYPE_FLICKER:
             case VIEW_TYPE_CONTACTS_FLICKER:
@@ -469,6 +540,14 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 break;
             case VIEW_TYPE_EMPTY:
                 view = new DialogsEmptyCell(mContext);
+                break;
+            case VIEW_TYPE_REQUIRED_EMPTY:
+                view = new DialogsRequestedEmptyCell(mContext) {
+                    @Override
+                    protected void onButtonClick() {
+                        onCreateGroupForThisClick();
+                    }
+                };
                 break;
             case VIEW_TYPE_USER:
                 view = new UserCell(mContext, 8, 0, false);
@@ -557,13 +636,21 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case VIEW_TYPE_TEXT:
             default: {
                 view = new TextCell(mContext);
+                if (dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                }
             }
         }
         view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, viewType == 5 ? RecyclerView.LayoutParams.MATCH_PARENT : RecyclerView.LayoutParams.WRAP_CONTENT));
         return new RecyclerListView.Holder(view);
     }
 
+    public void onCreateGroupForThisClick() {
+
+    }
+
     public int lastDialogsEmptyType = -1;
+
     public int dialogsEmptyType() {
         if (dialogsType == 7 || dialogsType == 8) {
             if (MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
@@ -582,10 +669,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case VIEW_TYPE_DIALOG: {
                 TLRPC.Dialog dialog = (TLRPC.Dialog) getItem(i);
                 TLRPC.Dialog nextDialog = (TLRPC.Dialog) getItem(i + 1);
-                if (dialogsType == 2) {
+                if (dialogsType == DialogsActivity.DIALOGS_TYPE_ADD_USERS_TO || dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
                     ProfileSearchCell cell = (ProfileSearchCell) holder.itemView;
                     long oldDialogId = cell.getDialogId();
 
+                    TLObject object = null;
                     TLRPC.Chat chat = null;
                     CharSequence title = null;
                     CharSequence subtitle;
@@ -602,12 +690,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                     }
 
                     if (chat != null) {
+                        object = chat;
                         title = chat.title;
                         if (ChatObject.isChannel(chat) && !chat.megagroup) {
                             if (chat.participants_count != 0) {
                                 subtitle = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
                             } else {
-                                if (TextUtils.isEmpty(chat.username)) {
+                                if (!ChatObject.isPublic(chat)) {
                                     subtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
                                 } else {
                                     subtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
@@ -619,7 +708,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                             } else {
                                 if (chat.has_geo) {
                                     subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                                } else if (TextUtils.isEmpty(chat.username)) {
+                                } else if (!ChatObject.isPublic(chat)) {
                                     subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                                 } else {
                                     subtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
@@ -628,21 +717,38 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                         }
                     } else {
                         subtitle = "";
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialog.id);
+                        if (user != null) {
+                            object = user;
+                            title = UserObject.getUserName(user);
+                            if (!UserObject.isReplyUser(user)) {
+                                if (user.bot) {
+                                    subtitle = LocaleController.getString("Bot", R.string.Bot);
+                                } else {
+                                    subtitle = LocaleController.formatUserStatus(currentAccount, user);
+                                }
+                            }
+                        }
                     }
                     cell.useSeparator = nextDialog != null;
-                    cell.setData(chat, null, title, subtitle, isRecent, false);
+                    cell.setData(object, null, title, subtitle, isRecent, false);
                     cell.setChecked(selectedDialogs.contains(cell.getDialogId()), oldDialogId == cell.getDialogId());
                 } else {
                     DialogCell cell = (DialogCell) holder.itemView;
                     cell.useSeparator = nextDialog != null;
                     cell.fullSeparator = dialog.pinned && nextDialog != null && !nextDialog.pinned;
-                    if (dialogsType == 0) {
+                    if (dialogsType == DialogsActivity.DIALOGS_TYPE_DEFAULT) {
                         if (AndroidUtilities.isTablet()) {
                             cell.setDialogSelected(dialog.id == openedDialogId);
                         }
                     }
                     cell.setChecked(selectedDialogs.contains(dialog.id), false);
                     cell.setDialog(dialog, dialogsType, folderId);
+                    cell.checkHeight();
+                    if (cell.collapsed != collapsedView) {
+                        cell.collapsed = collapsedView;
+                        cell.requestLayout();
+                    }
                     if (preloader != null && i < 10) {
                         preloader.add(dialog.id);
                     }
@@ -674,6 +780,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 break;
             }
+            case VIEW_TYPE_REQUIRED_EMPTY: {
+                ((DialogsRequestedEmptyCell) holder.itemView).set(requestPeerType);
+                break;
+            }
             case VIEW_TYPE_ME_URL: {
                 DialogMeUrlCell cell = (DialogMeUrlCell) holder.itemView;
                 cell.setRecentMeUrl((TLRPC.RecentMeUrl) getItem(i));
@@ -681,19 +791,17 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             case VIEW_TYPE_USER: {
                 UserCell cell = (UserCell) holder.itemView;
-                int position;
-                if (dialogsCount == 0) {
-                    position = i - 3;
-                } else {
-                    position = i - dialogsCount - 2;
-                }
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(onlineContacts.get(position).user_id);
+                TLRPC.User user = (TLRPC.User) getItem(i);
                 cell.setData(user, null, null, 0);
                 break;
             }
             case VIEW_TYPE_HEADER: {
                 HeaderCell cell = (HeaderCell) holder.itemView;
-                if (dialogsType == 11 || dialogsType == 12 || dialogsType == 13) {
+                if (
+                        dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_GROUPS ||
+                                dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_USERS ||
+                                dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY
+                ) {
                     if (i == 0) {
                         cell.setText(LocaleController.getString("ImportHeader", R.string.ImportHeader));
                     } else {
@@ -738,9 +846,22 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case VIEW_TYPE_TEXT: {
                 TextCell cell = (TextCell) holder.itemView;
                 cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                cell.setTextAndIcon(LocaleController.getString("CreateGroupForImport", R.string.CreateGroupForImport), R.drawable.msg_groups_create, dialogsCount != 0);
+                if (requestPeerType != null) {
+                    if (requestPeerType instanceof TLRPC.TL_requestPeerTypeBroadcast) {
+                        cell.setTextAndIcon(LocaleController.getString("CreateChannelForThis", R.string.CreateChannelForThis), R.drawable.msg_channel_create, true);
+                    } else {
+                        cell.setTextAndIcon(LocaleController.getString("CreateGroupForThis", R.string.CreateGroupForThis), R.drawable.msg_groups_create, true);
+                    }
+                } else {
+                    cell.setTextAndIcon(LocaleController.getString("CreateGroupForImport", R.string.CreateGroupForImport), R.drawable.msg_groups_create, dialogsCount != 0);
+                }
                 cell.setIsInDialogs();
                 cell.setOffsetFromImage(75);
+                break;
+            }
+            case VIEW_TYPE_REQUIREMENTS: {
+                RequestPeerRequirementsCell cell = (RequestPeerRequirementsCell) holder.itemView;
+                cell.set(requestPeerType);
                 break;
             }
         }
@@ -755,96 +876,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public int getItemViewType(int i) {
-        if (dialogsCount == 0 && forceUpdatingContacts) {
-            switch (i) {
-                case 0:
-                    return VIEW_TYPE_EMPTY;
-                case 1:
-                    return VIEW_TYPE_SHADOW;
-                case 2:
-                    return VIEW_TYPE_HEADER;
-                case 3:
-                    return VIEW_TYPE_CONTACTS_FLICKER;
-            }
-        } else if (onlineContacts != null) {
-            if (dialogsCount == 0) {
-                if (i == 0) {
-                    return VIEW_TYPE_EMPTY;
-                } else if (i == 1) {
-                    return VIEW_TYPE_SHADOW;
-                } else if (i == 2) {
-                    return VIEW_TYPE_HEADER;
-                }
-            } else {
-                if (i < dialogsCount) {
-                    return VIEW_TYPE_DIALOG;
-                } else if (i == dialogsCount) {
-                    return VIEW_TYPE_SHADOW;
-                } else if (i == dialogsCount + 1) {
-                    return VIEW_TYPE_HEADER;
-                } else if (i == currentCount - 1) {
-                    return VIEW_TYPE_LAST_EMPTY;
-                }
-            }
-            return VIEW_TYPE_USER;
-        } else if (hasHints) {
-            int count = MessagesController.getInstance(currentAccount).hintDialogs.size();
-            if (i < 2 + count) {
-                if (i == 0) {
-                    return VIEW_TYPE_RECENTLY_VIEWED;
-                } else if (i == 1 + count) {
-                    return VIEW_TYPE_DIVIDER;
-                }
-                return VIEW_TYPE_ME_URL;
-            } else {
-                i -= 2 + count;
-            }
-        } else if (showArchiveHint) {
-            if (i == 0) {
-                return VIEW_TYPE_ARCHIVE;
-            } else if (i == 1) {
-                return VIEW_TYPE_SHADOW;
-            } else {
-                i -= 2;
-            }
-        } else if (dialogsType == 11 || dialogsType == 13) {
-            if (i == 0) {
-                return VIEW_TYPE_HEADER;
-            } else if (i == 1) {
-                return VIEW_TYPE_TEXT;
-            } else {
-                i -= 2;
-            }
-        } else if (dialogsType == 12) {
-            if (i == 0) {
-                return VIEW_TYPE_HEADER;
-            } else {
-                i -= 1;
-            }
-        }
-        if (folderId == 0 && dialogsCount > 10 && i == currentCount - 2 && dialogsType == 0) {
-            return VIEW_TYPE_NEW_CHAT_HINT;
-        }
-        int size = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen).size();
-        if (i == size) {
-            if (!forceShowEmptyCell && dialogsType != 7 && dialogsType != 8 && !MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
-                return VIEW_TYPE_FLICKER;
-            } else if (size == 0) {
-                return VIEW_TYPE_EMPTY;
-            } else {
-                return VIEW_TYPE_LAST_EMPTY;
-            }
-        } else if (i > size) {
-            return VIEW_TYPE_LAST_EMPTY;
-        }
-        if (dialogsType == 2 && getItem(i) instanceof DialogsActivity.DialogsHeader) {
-            return VIEW_TYPE_HEADER_2;
-        }
-        return VIEW_TYPE_DIALOG;
+        return itemInternals.get(i).viewType;
     }
 
-    @Override
-    public void notifyItemMoved(int fromPosition, int toPosition) {
+    public void moveDialogs(RecyclerListView recyclerView, int fromPosition, int toPosition) {
         ArrayList<TLRPC.Dialog> dialogs = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, false);
         int fromIndex = fixPosition(fromPosition);
         int toIndex = fixPosition(toPosition);
@@ -862,6 +897,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             toDialog.pinnedNum = oldNum;
         }
         Collections.swap(dialogs, fromIndex, toIndex);
+        updateList(recyclerView, false, 0);
+    }
+    @Override
+    public void notifyItemMoved(int fromPosition, int toPosition) {
         super.notifyItemMoved(fromPosition, toPosition);
     }
 
@@ -884,6 +923,49 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     public void pause() {
         if (preloader != null) {
             preloader.pause();
+        }
+    }
+
+    @Override
+    public void onButtonClicked(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public void onButtonLongPress(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public boolean canClickButtonInside() {
+        return selectedDialogs.isEmpty();
+    }
+
+    public void setIsTransitionSupport() {
+        this.isTransitionSupport = true;
+    }
+
+    public void setCollapsedView(boolean collapsedView, RecyclerListView listView) {
+        this.collapsedView = collapsedView;
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            if (listView.getChildAt(i) instanceof DialogCell) {
+                ((DialogCell) listView.getChildAt(i)).collapsed = collapsedView;
+            }
+        }
+        for (int i = 0; i < listView.getCachedChildCount(); i++) {
+            if (listView.getCachedChildAt(i) instanceof DialogCell) {
+                ((DialogCell) listView.getCachedChildAt(i)).collapsed = collapsedView;
+            }
+        }
+        for (int i = 0; i < listView.getHiddenChildCount(); i++) {
+            if (listView.getHiddenChildAt(i) instanceof DialogCell) {
+                ((DialogCell) listView.getHiddenChildAt(i)).collapsed = collapsedView;
+            }
+        }
+        for (int i = 0; i < listView.getAttachedScrapChildCount(); i++) {
+            if (listView.getAttachedScrapChildAt(i) instanceof DialogCell) {
+                ((DialogCell) listView.getAttachedScrapChildAt(i)).collapsed = collapsedView;
+            }
         }
     }
 
@@ -958,7 +1040,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
         private boolean preloadIsAvilable() {
             return false;
-           // return DownloadController.getInstance(UserConfig.selectedAccount).getCurrentDownloadMask() != 0;
+            // return DownloadController.getInstance(UserConfig.selectedAccount).getCurrentDownloadMask() != 0;
         }
 
         public void updateList() {
@@ -1014,7 +1096,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         }
 
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            int size = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen).size();
+            int size = itemInternals.size();
             boolean hasArchive = dialogsType == 0 && MessagesController.getInstance(currentAccount).dialogs_dict.get(DialogObject.makeFolderDialogId(1)) != null;
             View parent = (View) getParent();
             int height;
@@ -1036,7 +1118,17 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 height -= blurOffset;
                 int cellHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72);
-                int dialogsHeight = size * cellHeight + (size - 1);
+                int dialogsHeight = 0;
+                for (int i = 0; i < size; i++) {
+                    if (itemInternals.get(i).viewType == VIEW_TYPE_DIALOG) {
+                        if (itemInternals.get(i).isForumCell && !collapsedView) {
+                            dialogsHeight += AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 86 : 91);
+                        } else {
+                            dialogsHeight += cellHeight;
+                        }
+                    }
+                }
+                dialogsHeight += size - 1;
                 if (onlineContacts != null) {
                     dialogsHeight += onlineContacts.size() * AndroidUtilities.dp(58) + (onlineContacts.size() - 1) + AndroidUtilities.dp(52);
                 }
@@ -1063,6 +1155,123 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height);
         }
+    }
 
+
+    private void updateItemList() {
+        itemInternals.clear();
+        updateHasHints();
+
+        MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        ArrayList<TLRPC.Dialog> array = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen);
+        dialogsCount = array.size();
+        isEmpty = false;
+
+        if (!hasHints && dialogsType == 0 && folderId == 0 && messagesController.isDialogsEndReached(folderId) && !forceUpdatingContacts) {
+            if (messagesController.getAllFoldersDialogsCount() <= 10 && ContactsController.getInstance(currentAccount).doneLoadingContacts && !ContactsController.getInstance(currentAccount).contacts.isEmpty()) {
+                onlineContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
+                long selfId = UserConfig.getInstance(currentAccount).clientUserId;
+                for (int a = 0, N = onlineContacts.size(); a < N; a++) {
+                    long userId = onlineContacts.get(a).user_id;
+                    if (userId == selfId || messagesController.dialogs_dict.get(userId) != null) {
+                        onlineContacts.remove(a);
+                        a--;
+                        N--;
+                    }
+                }
+                if (onlineContacts.isEmpty()) {
+                    onlineContacts = null;
+                } else {
+                    sortOnlineContacts(false);
+                }
+            } else {
+                onlineContacts = null;
+            }
+        }
+
+        if (requestPeerType != null) {
+            itemInternals.add(new ItemInternal(VIEW_TYPE_REQUIREMENTS));
+        }
+
+        boolean stopUpdate = false;
+        if (collapsedView || isTransitionSupport) {
+            for (int k = 0; k < array.size(); k++) {
+                if (dialogsType == 2 && array.get(k) instanceof DialogsActivity.DialogsHeader) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER_2, array.get(k)));
+                } else {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_DIALOG, array.get(k)));
+                }
+            }
+            return;
+        }
+
+        if (dialogsCount == 0 && forceUpdatingContacts) {
+            isEmpty = true;
+            itemInternals.add(new ItemInternal(requestPeerType == null ? VIEW_TYPE_EMPTY : VIEW_TYPE_REQUIRED_EMPTY));
+            itemInternals.add(new ItemInternal(VIEW_TYPE_SHADOW));
+            itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
+            itemInternals.add(new ItemInternal(VIEW_TYPE_CONTACTS_FLICKER));
+        } else if (onlineContacts != null && !onlineContacts.isEmpty()) {
+            if (dialogsCount == 0) {
+                isEmpty = true;
+                itemInternals.add(new ItemInternal(requestPeerType == null ? VIEW_TYPE_EMPTY : VIEW_TYPE_REQUIRED_EMPTY));
+                itemInternals.add(new ItemInternal(VIEW_TYPE_SHADOW));
+                itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
+            } else {
+                for (int k = 0; k < array.size(); k++) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_DIALOG, array.get(k)));
+                }
+                itemInternals.add(new ItemInternal(VIEW_TYPE_SHADOW));
+                itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
+            }
+            for (int k = 0; k < onlineContacts.size(); k++) {
+                itemInternals.add(new ItemInternal(VIEW_TYPE_USER, onlineContacts.get(k)));
+            }
+            itemInternals.add(new ItemInternal(VIEW_TYPE_LAST_EMPTY));
+            stopUpdate = true;
+        } else if (hasHints) {
+            int count = MessagesController.getInstance(currentAccount).hintDialogs.size();
+            itemInternals.add(new ItemInternal(VIEW_TYPE_RECENTLY_VIEWED));
+            for (int k = 0; k < count; k++) {
+                itemInternals.add(new ItemInternal(VIEW_TYPE_ME_URL, MessagesController.getInstance(currentAccount).hintDialogs.get(k)));
+            }
+            itemInternals.add(new ItemInternal(VIEW_TYPE_DIVIDER));
+        } else if (showArchiveHint) {
+            itemInternals.add(new ItemInternal(VIEW_TYPE_ARCHIVE));
+            itemInternals.add(new ItemInternal(VIEW_TYPE_SHADOW));
+        } else if (dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_GROUPS || dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY) {
+            itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
+            itemInternals.add(new ItemInternal(VIEW_TYPE_TEXT));
+        } else if (dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_USERS) {
+            itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
+        }
+
+        if ((requestPeerType instanceof TLRPC.TL_requestPeerTypeBroadcast || requestPeerType instanceof TLRPC.TL_requestPeerTypeChat) && dialogsCount > 0) {
+            itemInternals.add(new ItemInternal(VIEW_TYPE_TEXT));
+        }
+
+        if (!stopUpdate) {
+            for (int k = 0; k < array.size(); k++) {
+                if (dialogsType == DialogsActivity.DIALOGS_TYPE_ADD_USERS_TO && array.get(k) instanceof DialogsActivity.DialogsHeader) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER_2, array.get(k)));
+                } else {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_DIALOG, array.get(k)));
+                }
+            }
+
+            if (!forceShowEmptyCell && dialogsType != 7 && dialogsType != 8 && !MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
+                if (dialogsCount != 0) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_FLICKER));
+                }
+            } else if (dialogsCount == 0) {
+                isEmpty = true;
+                itemInternals.add(new ItemInternal(requestPeerType == null ? VIEW_TYPE_EMPTY : VIEW_TYPE_REQUIRED_EMPTY));
+            } else {
+                if (folderId == 0 && dialogsCount > 10 && dialogsType == DialogsActivity.DIALOGS_TYPE_DEFAULT) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_NEW_CHAT_HINT));
+                }
+                itemInternals.add(new ItemInternal(VIEW_TYPE_LAST_EMPTY));
+            }
+        }
     }
 }

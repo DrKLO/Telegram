@@ -36,7 +36,6 @@
 #include "pc/rtp_receiver.h"
 #include "pc/video_rtp_track_source.h"
 #include "pc/video_track.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
@@ -88,7 +87,6 @@ class VideoRtpReceiver : public RtpReceiverInternal {
 
   // RtpReceiverInternal implementation.
   void Stop() override;
-  void StopAndEndTrack() override;
   void SetupMediaChannel(uint32_t ssrc) override;
   void SetupUnsignaledMediaChannel() override;
   uint32_t ssrc() const override;
@@ -110,8 +108,17 @@ class VideoRtpReceiver : public RtpReceiverInternal {
 
   std::vector<RtpSource> GetSources() const override;
 
+  // Combines SetMediaChannel, SetupMediaChannel and
+  // SetupUnsignaledMediaChannel.
+  void SetupMediaChannel(absl::optional<uint32_t> ssrc,
+                         cricket::MediaChannel* media_channel);
+
  private:
-  void RestartMediaChannel(absl::optional<uint32_t> ssrc);
+  void RestartMediaChannel(absl::optional<uint32_t> ssrc)
+      RTC_RUN_ON(&signaling_thread_checker_);
+  void RestartMediaChannel_w(absl::optional<uint32_t> ssrc,
+                             MediaSourceInterface::SourceState state)
+      RTC_RUN_ON(worker_thread_);
   void SetSink(rtc::VideoSinkInterface<VideoFrame>* sink)
       RTC_RUN_ON(worker_thread_);
   void SetMediaChannel_w(cricket::MediaChannel* media_channel)
@@ -141,8 +148,6 @@ class VideoRtpReceiver : public RtpReceiverInternal {
   rtc::Thread* const worker_thread_;
 
   const std::string id_;
-  // See documentation for `stopped_` below for when a valid media channel
-  // has been assigned and when this pointer will be null.
   cricket::VideoMediaChannel* media_channel_ RTC_GUARDED_BY(worker_thread_) =
       nullptr;
   absl::optional<uint32_t> ssrc_ RTC_GUARDED_BY(worker_thread_);
@@ -152,15 +157,6 @@ class VideoRtpReceiver : public RtpReceiverInternal {
   const rtc::scoped_refptr<VideoTrackProxyWithInternal<VideoTrack>> track_;
   std::vector<rtc::scoped_refptr<MediaStreamInterface>> streams_
       RTC_GUARDED_BY(&signaling_thread_checker_);
-  // `stopped` is state that's used on the signaling thread to indicate whether
-  // a valid `media_channel_` has been assigned and configured. When an instance
-  // of VideoRtpReceiver is initially created, `stopped_` is true and will
-  // remain true until either `SetupMediaChannel` or
-  // `SetupUnsignaledMediaChannel` is called after assigning a media channel.
-  // After that, `stopped_` will remain false until `Stop()` is called.
-  // Note, for checking the state of the class on the worker thread,
-  // check `media_channel_` instead, as that's the main worker thread state.
-  bool stopped_ RTC_GUARDED_BY(&signaling_thread_checker_) = true;
   RtpReceiverObserverInterface* observer_
       RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
   bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =

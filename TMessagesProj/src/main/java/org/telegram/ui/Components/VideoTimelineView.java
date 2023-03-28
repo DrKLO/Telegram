@@ -40,9 +40,8 @@ public class VideoTimelineView extends View {
     private long videoLength;
     private float progressLeft;
     private float progressRight = 1;
-    private Paint paint;
-    private Paint paint2;
-    private Paint backgroundGrayPaint;
+    private final Paint paint2 = new Paint();
+    private final Paint backgroundGrayPaint = new Paint();
     private boolean pressedLeft;
     private boolean pressedRight;
     private float pressDx;
@@ -69,7 +68,6 @@ public class VideoTimelineView extends View {
     private TimeHintView timeHintView;
 
     Paint thumbPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    Paint thumbRipplePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public void setKeyframes(ArrayList<Bitmap> keyframes) {
         this.keyframes.clear();
@@ -85,13 +83,8 @@ public class VideoTimelineView extends View {
 
     public VideoTimelineView(Context context) {
         super(context);
-        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(0xffffffff);
 
-        paint2 = new Paint();
         paint2.setColor(0x7f000000);
-
-        backgroundGrayPaint = new Paint();
 
         thumbPaint.setColor(Color.WHITE);
         thumbPaint.setStrokeWidth(AndroidUtilities.dpf2(2f));
@@ -103,7 +96,6 @@ public class VideoTimelineView extends View {
 
     public void updateColors() {
         backgroundGrayPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        thumbRipplePaint.setColor(Theme.getColor(Theme.key_chat_recordedVoiceHighlight));
         roundCornersSize = 0;
         if (timeHintView != null) {
             timeHintView.updateColors();
@@ -252,11 +244,6 @@ public class VideoTimelineView extends View {
             }
         }
         return false;
-    }
-
-    public void setColor(int color) {
-        paint.setColor(color);
-        invalidate();
     }
 
     public void setVideoPath(String path) {

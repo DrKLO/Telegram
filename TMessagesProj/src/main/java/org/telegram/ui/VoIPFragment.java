@@ -847,7 +847,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
         callingUserTitle = new TextView(context);
         callingUserTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
-        callingUserTitle.setText(ContactsController.formatName(callingUser.first_name, callingUser.last_name));
+        CharSequence name = ContactsController.formatName(callingUser.first_name, callingUser.last_name);
+        name = Emoji.replaceEmoji(name, callingUserTitle.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+        callingUserTitle.setText(name);
         callingUserTitle.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
         callingUserTitle.setTextColor(Color.WHITE);
         callingUserTitle.setGravity(Gravity.CENTER_HORIZONTAL);

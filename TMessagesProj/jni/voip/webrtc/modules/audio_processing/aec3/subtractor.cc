@@ -176,11 +176,11 @@ void Subtractor::ExitInitialState() {
 }
 
 void Subtractor::Process(const RenderBuffer& render_buffer,
-                         const std::vector<std::vector<float>>& capture,
+                         const Block& capture,
                          const RenderSignalAnalyzer& render_signal_analyzer,
                          const AecState& aec_state,
                          rtc::ArrayView<SubtractorOutput> outputs) {
-  RTC_DCHECK_EQ(num_capture_channels_, capture.size());
+  RTC_DCHECK_EQ(num_capture_channels_, capture.NumChannels());
 
   // Compute the render powers.
   const bool same_filter_sizes = refined_filters_[0]->SizePartitions() ==
@@ -204,9 +204,8 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
 
   // Process all capture channels
   for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
-    RTC_DCHECK_EQ(kBlockSize, capture[ch].size());
     SubtractorOutput& output = outputs[ch];
-    rtc::ArrayView<const float> y = capture[ch];
+    rtc::ArrayView<const float> y = capture.View(/*band=*/0, ch);
     FftData& E_refined = output.E_refined;
     FftData E_coarse;
     std::array<float, kBlockSize>& e_refined = output.e_refined;

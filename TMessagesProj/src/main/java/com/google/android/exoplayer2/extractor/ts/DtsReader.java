@@ -15,17 +15,21 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static java.lang.Math.min;
+
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.DtsUtil;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
-/**
- * Parses a continuous DTS byte stream and extracts individual samples.
- */
+/** Parses a continuous DTS byte stream and extracts individual samples. */
 public final class DtsReader implements ElementaryStreamReader {
 
   private static final int STATE_FINDING_SYNC = 0;
@@ -35,10 +39,10 @@ public final class DtsReader implements ElementaryStreamReader {
   private static final int HEADER_SIZE = 18;
 
   private final ParsableByteArray headerScratchBytes;
-  private final String language;
+  @Nullable private final String language;
 
-  private String formatId;
-  private TrackOutput output;
+  private @MonotonicNonNull String formatId;
+  private @MonotonicNonNull TrackOutput output;
 
   private int state;
   private int bytesRead;
@@ -48,7 +52,7 @@ public final class DtsReader implements ElementaryStreamReader {
 
   // Used when parsing the header.
   private long sampleDurationUs;
-  private Format format;
+  private @MonotonicNonNull Format format;
   private int sampleSize;
 
   // Used when reading the samples.
@@ -59,9 +63,10 @@ public final class DtsReader implements ElementaryStreamReader {
    *
    * @param language Track language.
    */
-  public DtsReader(String language) {
+  public DtsReader(@Nullable String language) {
     headerScratchBytes = new ParsableByteArray(new byte[HEADER_SIZE]);
     state = STATE_FINDING_SYNC;
+    timeUs = C.TIME_UNSET;
     this.language = language;
   }
 
@@ -70,6 +75,7 @@ public final class DtsReader implements ElementaryStreamReader {
     state = STATE_FINDING_SYNC;
     bytesRead = 0;
     syncBytes = 0;
+    timeUs = C.TIME_UNSET;
   }
 
   @Override
@@ -81,11 +87,14 @@ public final class DtsReader implements ElementaryStreamReader {
 
   @Override
   public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
-    timeUs = pesTimeUs;
+    if (pesTimeUs != C.TIME_UNSET) {
+      timeUs = pesTimeUs;
+    }
   }
 
   @Override
   public void consume(ParsableByteArray data) {
+    Assertions.checkStateNotNull(output); // Asserts that createTracks has been called.
     while (data.bytesLeft() > 0) {
       switch (state) {
         case STATE_FINDING_SYNC:
@@ -94,7 +103,7 @@ public final class DtsReader implements ElementaryStreamReader {
           }
           break;
         case STATE_READING_HEADER:
-          if (continueRead(data, headerScratchBytes.data, HEADER_SIZE)) {
+          if (continueRead(data, headerScratchBytes.getData(), HEADER_SIZE)) {
             parseHeader();
             headerScratchBytes.setPosition(0);
             output.sampleData(headerScratchBytes, HEADER_SIZE);
@@ -102,12 +111,14 @@ public final class DtsReader implements ElementaryStreamReader {
           }
           break;
         case STATE_READING_SAMPLE:
-          int bytesToRead = Math.min(data.bytesLeft(), sampleSize - bytesRead);
+          int bytesToRead = min(data.bytesLeft(), sampleSize - bytesRead);
           output.sampleData(data, bytesToRead);
           bytesRead += bytesToRead;
           if (bytesRead == sampleSize) {
-            output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
-            timeUs += sampleDurationUs;
+            if (timeUs != C.TIME_UNSET) {
+              output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+              timeUs += sampleDurationUs;
+            }
             state = STATE_FINDING_SYNC;
           }
           break;
@@ -132,7 +143,7 @@ public final class DtsReader implements ElementaryStreamReader {
    * @return Whether the target length was reached.
    */
   private boolean continueRead(ParsableByteArray source, byte[] target, int targetLength) {
-    int bytesToRead = Math.min(source.bytesLeft(), targetLength - bytesRead);
+    int bytesToRead = min(source.bytesLeft(), targetLength - bytesRead);
     source.readBytes(target, bytesRead, bytesToRead);
     bytesRead += bytesToRead;
     return bytesRead == targetLength;
@@ -150,10 +161,11 @@ public final class DtsReader implements ElementaryStreamReader {
       syncBytes <<= 8;
       syncBytes |= pesBuffer.readUnsignedByte();
       if (DtsUtil.isSyncWord(syncBytes)) {
-        headerScratchBytes.data[0] = (byte) ((syncBytes >> 24) & 0xFF);
-        headerScratchBytes.data[1] = (byte) ((syncBytes >> 16) & 0xFF);
-        headerScratchBytes.data[2] = (byte) ((syncBytes >> 8) & 0xFF);
-        headerScratchBytes.data[3] = (byte) (syncBytes & 0xFF);
+        byte[] headerData = headerScratchBytes.getData();
+        headerData[0] = (byte) ((syncBytes >> 24) & 0xFF);
+        headerData[1] = (byte) ((syncBytes >> 16) & 0xFF);
+        headerData[2] = (byte) ((syncBytes >> 8) & 0xFF);
+        headerData[3] = (byte) (syncBytes & 0xFF);
         bytesRead = 4;
         syncBytes = 0;
         return true;
@@ -162,11 +174,10 @@ public final class DtsReader implements ElementaryStreamReader {
     return false;
   }
 
-  /**
-   * Parses the sample header.
-   */
+  /** Parses the sample header. */
+  @RequiresNonNull("output")
   private void parseHeader() {
-    byte[] frameData = headerScratchBytes.data;
+    byte[] frameData = headerScratchBytes.getData();
     if (format == null) {
       format = DtsUtil.parseDtsFormat(frameData, formatId, language, null);
       output.format(format);
@@ -174,8 +185,8 @@ public final class DtsReader implements ElementaryStreamReader {
     sampleSize = DtsUtil.getDtsFrameSize(frameData);
     // In this class a sample is an access unit (frame in DTS), but the format's sample rate
     // specifies the number of PCM audio samples per second.
-    sampleDurationUs = (int) (C.MICROS_PER_SECOND
-        * DtsUtil.parseDtsAudioSampleCount(frameData) / format.sampleRate);
+    sampleDurationUs =
+        (int)
+            (C.MICROS_PER_SECOND * DtsUtil.parseDtsAudioSampleCount(frameData) / format.sampleRate);
   }
-
 }

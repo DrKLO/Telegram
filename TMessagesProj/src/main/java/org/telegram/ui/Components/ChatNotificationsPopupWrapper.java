@@ -2,7 +2,12 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.Path;
+import android.util.TypedValue;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -13,6 +18,8 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+
+import java.util.HashSet;
 
 public class ChatNotificationsPopupWrapper {
 
@@ -32,12 +39,32 @@ public class ChatNotificationsPopupWrapper {
     private final boolean isProfile;
     private int muteForLastSelected2Time;
     private int muteForLastSelected1Time;
+    private final View gap;
+    private final TextView topicsExceptionsTextView;
+
+    public final static int TYPE_PREVIEW_MENU = 1;
+
+    public int type;
 
     public ChatNotificationsPopupWrapper(Context context, int currentAccount, PopupSwipeBackLayout swipeBackLayout, boolean createBackground, boolean isProfile, Callback callback, Theme.ResourcesProvider resourcesProvider) {
         this.currentAccount = currentAccount;
         this.callback = callback;
         this.isProfile = isProfile;
-        windowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, createBackground ? R.drawable.popup_fixed_alert : 0, resourcesProvider);
+        windowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, createBackground ? R.drawable.popup_fixed_alert : 0, resourcesProvider) {
+            Path path = new Path();
+
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                canvas.save();
+                path.rewind();
+                AndroidUtilities.rectTmp.set(child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+                path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Path.Direction.CW);
+                canvas.clipPath(path);
+                boolean draw = super.drawChild(canvas, child, drawingTime);
+                canvas.restore();
+                return draw;
+            }
+        };
         windowLayout.setFitItems(true);
 
         if (swipeBackLayout != null) {
@@ -46,7 +73,6 @@ public class ChatNotificationsPopupWrapper {
                 swipeBackLayout.closeForeground();
             });
         }
-
 
         soundToggle = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_tone_on, LocaleController.getString("SoundOn", R.string.SoundOn), false, resourcesProvider);
         soundToggle.setOnClickListener(view -> {
@@ -93,14 +119,33 @@ public class ChatNotificationsPopupWrapper {
             callback.showCustomize();
         });
 
-
         muteUnmuteButton = ActionBarMenuItem.addItem(windowLayout, 0, "", false, resourcesProvider);
         muteUnmuteButton.setOnClickListener(view -> {
             dismiss();
             AndroidUtilities.runOnUIThread(() -> {
                 callback.toggleMute();
             });
+        });
 
+        gap = new FrameLayout(context);
+        gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
+        windowLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+
+        topicsExceptionsTextView = new TextView(context);
+        topicsExceptionsTextView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
+        topicsExceptionsTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        topicsExceptionsTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+
+        gap.setTag(R.id.fit_width_tag, 1);
+        topicsExceptionsTextView.setTag(R.id.fit_width_tag, 1);
+        windowLayout.addView(topicsExceptionsTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        topicsExceptionsTextView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0,6));
+        topicsExceptionsTextView.setOnClickListener(v -> {
+            if (callback != null) {
+                callback.openExceptions();
+            }
+            dismiss();
         });
     }
 
@@ -113,25 +158,26 @@ public class ChatNotificationsPopupWrapper {
         lastDismissTime = System.currentTimeMillis();
     }
 
-    public void update(long dialogId) {
+    public void update(long dialogId, int topicId, HashSet<Integer> topicExceptions) {
         if (System.currentTimeMillis() - lastDismissTime < 200) {
+            //do on popup close
             AndroidUtilities.runOnUIThread(() -> {
-                update(dialogId);
+                update(dialogId, topicId, topicExceptions);
             });
             return;
         }
-        boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialogId);
+        boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialogId, topicId);
 
         int color;
         if (muted) {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString("UnmuteNotifications", R.string.UnmuteNotifications), R.drawable.msg_unmute);
-            color = Theme.getColor(Theme.key_wallet_greenText);
+            color = Theme.getColor(Theme.key_windowBackgroundWhiteGreenText2);
             soundToggle.setVisibility(View.GONE);
         } else {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString("MuteNotifications", R.string.MuteNotifications), R.drawable.msg_mute);
             color = Theme.getColor(Theme.key_dialogTextRed);
             soundToggle.setVisibility(View.VISIBLE);
-            boolean soundOn = MessagesController.getInstance(currentAccount).isDialogNotificationsSoundEnabled(dialogId);
+            boolean soundOn = MessagesController.getInstance(currentAccount).isDialogNotificationsSoundEnabled(dialogId, topicId);
             if (soundOn) {
                 soundToggle.setTextAndIcon(LocaleController.getString("SoundOff", R.string.SoundOff), R.drawable.msg_tone_off);
             } else {
@@ -139,9 +185,13 @@ public class ChatNotificationsPopupWrapper {
             }
         }
 
+        if (type == TYPE_PREVIEW_MENU) {
+            backItem.setVisibility(View.GONE);
+        }
+
         int time1;
         int time2;
-        if (muted) {
+        if (muted || type == TYPE_PREVIEW_MENU) {
             time1 = 0;
             time2 = 0;
         } else {
@@ -167,9 +217,22 @@ public class ChatNotificationsPopupWrapper {
             muteForLastSelected2.setVisibility(View.GONE);
         }
 
-
         muteUnmuteButton.setColors(color, color);
+        muteUnmuteButton.setSelectorColor(Theme.multAlpha(color, .1f));
 
+        if (topicExceptions == null || topicExceptions.isEmpty()) {
+            gap.setVisibility(View.GONE);
+            topicsExceptionsTextView.setVisibility(View.GONE);
+        } else {
+            gap.setVisibility(View.VISIBLE);
+            topicsExceptionsTextView.setVisibility(View.VISIBLE);
+            topicsExceptionsTextView.setText(AndroidUtilities.replaceSingleTag(
+                    LocaleController.formatPluralString("TopicNotificationsExceptions", topicExceptions.size()),
+                    Theme.key_windowBackgroundWhiteBlueText,
+                    AndroidUtilities.REPLACING_TAG_TYPE_BOLD,
+                    null
+            ));
+        }
     }
 
     private String formatMuteForTime(int time) {
@@ -216,6 +279,9 @@ public class ChatNotificationsPopupWrapper {
         float x = touchedX, y = touchedY;
         View view = anchorView;
         while (view != parentFragment.getFragmentView()) {
+            if (view.getParent() == null) {
+                return;
+            }
             x += view.getX();
             y += view.getY();
             view = (View) view.getParent();
@@ -237,6 +303,10 @@ public class ChatNotificationsPopupWrapper {
         void showCustomize();
 
         void toggleMute();
+
+        default void openExceptions() {
+
+        }
     }
 
 }
