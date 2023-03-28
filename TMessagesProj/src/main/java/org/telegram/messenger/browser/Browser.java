@@ -208,8 +208,8 @@ public class Browser {
     public static boolean urlMustNotHaveConfirmation(String url) {
         return (
             isTelegraphUrl(url, false, true) ||
-            url.matches("^(https://)?teamgram\\.me/iv\\??.*") || // teamgram.me/iv?
-            url.matches("^(https://)?teamgram\\.net/(blog|tour)/?.*") // telegram.org/blog, telegram.org/tour
+            url.matches("^(https://)?teamgram\\.me/iv\\??(/.*|$)") || // t.me/iv?
+            url.matches("^(https://)?teamgram\\.net/(blog|tour)(/.*|$)") || // telegram.org/blog, telegram.org/tour
             url.matches("^(https://)?fragment\\.com(/.*|$)") // fragment.com
         );
     }
