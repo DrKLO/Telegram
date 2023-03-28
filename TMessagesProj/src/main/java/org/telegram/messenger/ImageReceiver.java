@@ -305,8 +305,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private ArrayList<Runnable> loadingOperations = new ArrayList<>();
     private boolean attachedToWindow;
     private boolean videoThumbIsSame;
-    private boolean allowLoadingOnAttachedOnly;
-    private boolean shouldLoadOnAttach;
+    private boolean allowLoadingOnAttachedOnly = false;
     private boolean skipUpdateFrame;
     public boolean clip = true;
 

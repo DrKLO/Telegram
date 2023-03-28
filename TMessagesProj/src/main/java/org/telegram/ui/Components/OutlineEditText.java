@@ -7,6 +7,7 @@ import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 public class OutlineEditText extends OutlineTextContainerView {
@@ -32,6 +33,9 @@ public class OutlineEditText extends OutlineTextContainerView {
         editText.setTypeface(Typeface.DEFAULT);
         editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
         editText.setCursorWidth(1.5f);
+        editText.setPadding(
+                AndroidUtilities.dp(15), 0, AndroidUtilities.dp(15), 0
+        );
         attachEditText(editText);
 
         addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));

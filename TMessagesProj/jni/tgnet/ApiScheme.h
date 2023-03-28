@@ -50,6 +50,7 @@ public:
     bool cdn;
     bool isStatic;
     bool thisPortOnly;
+    bool force_try_ipv6;
     int32_t id;
     std::string ip_address;
     int32_t port;

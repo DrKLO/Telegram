@@ -13137,6 +13137,7 @@ public class MessagesStorage extends BaseController {
                 try {
                     cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, read_state, custom_params FROM messages_v2 WHERE mid = %d AND uid = %d LIMIT 1", message.id, MessageObject.getDialogId(message)));
                     if (!cursor.next()) {
+                        cursor.dispose();
                         return;
                     }
                     readState = cursor.intValue(1);

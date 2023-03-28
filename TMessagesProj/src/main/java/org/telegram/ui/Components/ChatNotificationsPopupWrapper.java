@@ -218,6 +218,7 @@ public class ChatNotificationsPopupWrapper {
         }
 
         muteUnmuteButton.setColors(color, color);
+        muteUnmuteButton.setSelectorColor(Theme.multAlpha(color, .1f));
 
         if (topicExceptions == null || topicExceptions.isEmpty()) {
             gap.setVisibility(View.GONE);

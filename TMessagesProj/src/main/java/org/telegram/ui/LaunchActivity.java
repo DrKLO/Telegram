@@ -4981,12 +4981,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             visibleDialog.setOnDismissListener(dialog -> {
                 if (visibleDialog != null) {
                     if (visibleDialog == localeDialog) {
+                        BaseFragment fragment = actionBarLayout == null ? null : actionBarLayout.getLastFragment();
                         try {
                             String shorname = LocaleController.getInstance().getCurrentLocaleInfo().shortName;
-                            BulletinFactory.of(Bulletin.BulletinWindow.make(LaunchActivity.this), null).createSimpleBulletin(
-                                R.raw.msg_translate,
-                                getStringForLanguageAlert(shorname.equals("en") ? englishLocaleStrings : systemLocaleStrings, "ChangeLanguageLater", R.string.ChangeLanguageLater)
-                            ).setDuration(Bulletin.DURATION_PROLONG).show();
+                            if (fragment != null) {
+                                BulletinFactory.of(fragment).createSimpleBulletin(
+                                    R.raw.msg_translate,
+                                    getStringForLanguageAlert(shorname.equals("en") ? englishLocaleStrings : systemLocaleStrings, "ChangeLanguageLater", R.string.ChangeLanguageLater)
+                                ).setDuration(Bulletin.DURATION_PROLONG).show();
+                            } else {
+                                BulletinFactory.of(Bulletin.BulletinWindow.make(LaunchActivity.this), null).createSimpleBulletin(
+                                    R.raw.msg_translate,
+                                    getStringForLanguageAlert(shorname.equals("en") ? englishLocaleStrings : systemLocaleStrings, "ChangeLanguageLater", R.string.ChangeLanguageLater)
+                                ).setDuration(Bulletin.DURATION_PROLONG).show();
+                            }
                         } catch (Exception e) {
                             FileLog.e(e);
                         }

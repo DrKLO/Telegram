@@ -22,6 +22,8 @@ bool LOGS_ENABLED = true;
 bool LOGS_ENABLED = false;
 #endif
 
+bool REF_LOGS_ENABLED = false;
+
 FileLog &FileLog::getInstance() {
     static FileLog instance;
     return instance;
@@ -164,5 +166,45 @@ void FileLog::d(const char *message, ...) {
         fflush(logFile);
     }
     
+    va_end(argptr);
+}
+
+static int refsCount = 0;
+
+void FileLog::ref(const char *message, ...) {
+    if (!REF_LOGS_ENABLED) {
+        return;
+    }
+    va_list argptr;
+    va_start(argptr, message);
+    time_t t = time(0);
+    struct tm *now = localtime(&t);
+    refsCount++;
+#ifdef ANDROID
+    std::ostringstream s;
+    s << refsCount << " refs (+ref): " << message;
+    __android_log_vprint(ANDROID_LOG_VERBOSE, "tgnetREF", s.str().c_str(), argptr);
+    va_end(argptr);
+    va_start(argptr, message);
+#endif
+    va_end(argptr);
+}
+
+void FileLog::delref(const char *message, ...) {
+    if (!REF_LOGS_ENABLED) {
+        return;
+    }
+    va_list argptr;
+    va_start(argptr, message);
+    time_t t = time(0);
+    struct tm *now = localtime(&t);
+    refsCount--;
+#ifdef ANDROID
+    std::ostringstream s;
+    s << refsCount << " refs (-ref): " << message;
+    __android_log_vprint(ANDROID_LOG_VERBOSE, "tgnetREF", s.str().c_str(), argptr);
+    va_end(argptr);
+    va_start(argptr, message);
+#endif
     va_end(argptr);
 }

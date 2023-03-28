@@ -17,6 +17,7 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/platform_thread.h"
+#include "tgnet/FileLog.h"
 
 #define TAG "HelpersAndroid"
 #define ALOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
@@ -76,6 +77,7 @@ jclass FindClass(JNIEnv* jni, const char* name) {
 }
 
 jobject NewGlobalRef(JNIEnv* jni, jobject o) {
+  DEBUG_REF("webrtc new global ref");
   jobject ret = jni->NewGlobalRef(o);
   CHECK_EXCEPTION(jni) << "Error during NewGlobalRef";
   RTC_CHECK(ret);
@@ -83,6 +85,7 @@ jobject NewGlobalRef(JNIEnv* jni, jobject o) {
 }
 
 void DeleteGlobalRef(JNIEnv* jni, jobject o) {
+  DEBUG_DELREF("webrtc remove global ref");
   jni->DeleteGlobalRef(o);
   CHECK_EXCEPTION(jni) << "Error during DeleteGlobalRef";
 }

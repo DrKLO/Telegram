@@ -1433,52 +1433,8 @@ public class ImageLoader {
                                 Utilities.loadWebpImage(image, buffer, buffer.limit(), null, !opts.inPurgeable);
                                 file.close();
                             } else {
-                                String DEBUG_TAG = "secured_document_image";
-                                try {
-                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
-                                        FileLog.d( DEBUG_TAG + " try get image from secured document " + secureDocumentKey + " encryption path " + cacheImage.encryptionKeyPath);
-                                    }
-                                    RandomAccessFile f = new RandomAccessFile(cacheFileFinal, "r");
-                                    int len = (int) f.length();
-                                    int offset = 0;
-                                    byte[] bytes = bytesLocal.get();
-                                    byte[] data = bytes != null && bytes.length >= len ? bytes : null;
-                                    if (data == null) {
-                                        bytes = data = new byte[len];
-                                        bytesLocal.set(bytes);
-                                    }
-                                    f.readFully(data, 0, len);
-                                    f.close();
-                                    boolean error = false;
-                                    if (secureDocumentKey != null) {
-                                        EncryptedFileInputStream.decryptBytesWithKeyFile(data, 0, len, secureDocumentKey);
-                                        byte[] hash = Utilities.computeSHA256(data, 0, len);
-                                        if (secureDocumentHash == null || !Arrays.equals(hash, secureDocumentHash)) {
-                                            error = true;
-                                        }
-                                        offset = (data[0] & 0xff);
-                                        len -= offset;
-                                    } else if (inEncryptedFile) {
-                                        EncryptedFileInputStream.decryptBytesWithKeyFile(data, 0, len, cacheImage.encryptionKeyPath);
-                                    }
-                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
-                                        FileLog.d(DEBUG_TAG + " check error " + error);
-                                    }
-                                    if (!error) {
-                                        image = BitmapFactory.decodeByteArray(data, offset, len, opts);
-                                        if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
-                                            FileLog.d( DEBUG_TAG + " image " + image);
-                                        }
-                                    }
-                                } catch (Throwable e) {
-                                    FileLog.e(e);
-                                }
-
                                 if (image == null) {
                                     FileInputStream is;
-                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
-                                        FileLog.d(DEBUG_TAG + " try get image from stream ");
-                                    }
                                     if (secureDocumentKey != null) {
                                         is = new EncryptedFileInputStream(cacheFileFinal, secureDocumentKey);
                                     } else if (inEncryptedFile) {
@@ -1517,9 +1473,38 @@ public class ImageLoader {
                                     }
                                     image = BitmapFactory.decodeStream(is, null, opts);
                                     is.close();
+                                }
 
-                                    if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
-                                        FileLog.d(DEBUG_TAG + " image2 " + image);
+                                if (image == null) {
+                                    try {
+                                        RandomAccessFile f = new RandomAccessFile(cacheFileFinal, "r");
+                                        int len = (int) f.length();
+                                        int offset = 0;
+                                        byte[] bytes = bytesLocal.get();
+                                        byte[] data = bytes != null && bytes.length >= len ? bytes : null;
+                                        if (data == null) {
+                                            bytes = data = new byte[len];
+                                            bytesLocal.set(bytes);
+                                        }
+                                        f.readFully(data, 0, len);
+                                        f.close();
+                                        boolean error = false;
+                                        if (secureDocumentKey != null) {
+                                            EncryptedFileInputStream.decryptBytesWithKeyFile(data, 0, len, secureDocumentKey);
+                                            byte[] hash = Utilities.computeSHA256(data, 0, len);
+                                            if (secureDocumentHash == null || !Arrays.equals(hash, secureDocumentHash)) {
+                                                error = true;
+                                            }
+                                            offset = (data[0] & 0xff);
+                                            len -= offset;
+                                        } else if (inEncryptedFile) {
+                                            EncryptedFileInputStream.decryptBytesWithKeyFile(data, 0, len, cacheImage.encryptionKeyPath);
+                                        }
+                                        if (!error) {
+                                            image = BitmapFactory.decodeByteArray(data, offset, len, opts);
+                                        }
+                                    } catch (Throwable e) {
+                                        FileLog.e(e);
                                     }
                                 }
                             }

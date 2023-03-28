@@ -899,6 +899,11 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     }
                     break;
                 }
+                case VIEW_TYPE_SHADOW: {
+                    ShadowSectionCell shadowCell = (ShadowSectionCell) holder.itemView;
+                    shadowCell.setTopBottom(position > 0, position < getItemCount() - 1);
+                    break;
+                }
             }
         }
 

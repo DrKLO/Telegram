@@ -2445,6 +2445,8 @@
     <string name="ClearCache">Clear Cache</string>
     <string name="ClearSelectedCache">Clear Selected</string>
     <string name="ClearCacheInfo">Free up disk space on your device; your media will stay in the cloud.</string>
+    <string name="ClearingCache">Clearing cache…</string>
+    <string name="ClearingCacheDescription">Please keep this window open while Telegram is clearing your cache.</string>
     <string name="ChangePhoneNumber">Change Phone Number</string>
     <string name="ChangePhoneNumberInfo">Move your account, chats and media to a new number.</string>
     <string name="ChangePhoneNumberSuccessWithPhone">Your phone number has been successfully changed to %1$s.</string>
@@ -3490,6 +3492,7 @@
     <string name="BotStatusCantRead">has no access to messages</string>
     <string name="BotInfoTitle">What can this bot do?</string>
     <string name="BotStart">START</string>
+    <string name="BotStartButton">Start bot</string>
     <string name="BotUnblock">RESTART</string>
     <string name="BotStop">Stop bot</string>
     <string name="BotRestart">Restart bot</string>
@@ -6353,8 +6356,9 @@
     <string name="ChannelInviteViaLinkRestricted">You can\'t create a link</string>
     <string name="ChannelInviteViaLinkRestricted2">This user can\'t be invited</string>
     <string name="ChannelInviteViaLinkRestricted3">This users can\'t be invited</string>
-    <string name="StoragePathFree">%1$s free</string>
-    <string name="StoragePathFreeValue">%1$s free, %2$s</string>
+    <string name="StoragePathFreeInternal">%1$s free, high speed</string>
+    <string name="StoragePathFreeExternal">%1$s free, slow speed</string>\
+    <string name="StoragePathFreeValueExternal">%1$s free, slow speed %2$s</string>
     <string name="AccDescrLiteBatteryWhenBelow">enabled when below %s%%</string>
     <string name="AccDescrLiteBatteryLevelAnnounce">%s%%</string>
     <string name="AccDescrRateTranscriptionUp">Rate up</string>
@@ -6371,4 +6375,10 @@
     <string name="LoginEmailResetPremiumRequiredTitle">Telegram Premium Required</string>
     <string name="LoginEmailResetPremiumRequiredMessage">Due to the high cost of SMS in your country, you need a **Telegram Premium** account to immediately reset this email via an SMS code.\n\nYou can ask a friend to gift a Premium subscription for your account **%1$s**</string>
     <string name="LoginEmailResetPleaseWait">Resetting email, please wait...</string>
+    <string name="DecreaseSpeed">Decrease speed</string>
+    <string name="SdCardAlert">Storing on SD card will make Telegram slow. Proceed anyway?</string>
+    <string name="Proceed">Proceed</string>
+    <string name="SdCardError">SD Card Error</string>
+    <string name="SdCardErrorDescription">Telegram is unable to save data on your SD card.</string>
+    <string name="DoNotUseSDCard">Do not use SD card</string>
 </resources>

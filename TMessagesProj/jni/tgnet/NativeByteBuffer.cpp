@@ -14,6 +14,8 @@
 #include "ConnectionsManager.h"
 #include "BuffersStorage.h"
 
+static int buffersCount = 0;
+
 NativeByteBuffer::NativeByteBuffer(uint32_t size) {
 #ifdef ANDROID
     if (jclass_ByteBuffer != nullptr) {
@@ -27,6 +29,7 @@ NativeByteBuffer::NativeByteBuffer(uint32_t size) {
             if (LOGS_ENABLED) DEBUG_E("can't create javaByteBuffer");
             exit(1);
         }
+        DEBUG_REF("nativebytebuffer");
         jobject globalRef = env->NewGlobalRef(javaByteBuffer);
         env->DeleteLocalRef(javaByteBuffer);
         javaByteBuffer = globalRef;
@@ -43,6 +46,7 @@ NativeByteBuffer::NativeByteBuffer(uint32_t size) {
         if (LOGS_ENABLED) DEBUG_E("can't allocate NativeByteBuffer buffer");
         exit(1);
     }
+
     _limit = _capacity = size;
 }
 
@@ -64,6 +68,7 @@ NativeByteBuffer::~NativeByteBuffer() {
 		    if (LOGS_ENABLED) DEBUG_E("can't get jnienv");
             exit(1);
 	    }
+        DEBUG_DELREF("nativebytebuffer");
         env->DeleteGlobalRef(javaByteBuffer);
         javaByteBuffer = nullptr;
     }
@@ -694,6 +699,7 @@ jobject NativeByteBuffer::getJavaByteBuffer() {
             if (LOGS_ENABLED) DEBUG_E("can't allocate NativeByteBuffer buffer");
             exit(1);
         }
+        DEBUG_REF("nativebytebuffer");
         jobject globalRef = env->NewGlobalRef(javaByteBuffer);
         env->DeleteLocalRef(javaByteBuffer);
         javaByteBuffer = globalRef;
