@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.os.Build;
@@ -31,7 +30,6 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.ui.LaunchActivity;
 
@@ -180,7 +178,7 @@ public class SharedConfig {
     public static boolean streamMkv = false;
     public static boolean saveStreamMedia = true;
     public static boolean pauseMusicOnRecord = false;
-    public static boolean pauseMusicOnMedia = true;
+    public static boolean pauseMusicOnMedia = false;
     public static boolean noiseSupression;
     public static final boolean noStatusBar = true;
     public static boolean debugWebView;
@@ -511,7 +509,7 @@ public class SharedConfig {
             streamMedia = preferences.getBoolean("streamMedia", true);
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", false);
-            pauseMusicOnMedia = preferences.getBoolean("pauseMusicOnMedia", true);
+            pauseMusicOnMedia = preferences.getBoolean("pauseMusicOnMedia", false);
             forceDisableTabletMode = preferences.getBoolean("forceDisableTabletMode", false);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
             streamMkv = preferences.getBoolean("streamMkv", false);
@@ -1170,7 +1168,7 @@ public class SharedConfig {
                         info.ping = data.readInt64(false);
                         info.availableCheckTime = data.readInt64(false);
 
-                        proxyList.add(info);
+                        proxyList.add(0, info);
                         if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
                             if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
                                 currentProxy = info;
@@ -1188,7 +1186,7 @@ public class SharedConfig {
                             data.readString(false),
                             data.readString(false),
                             data.readString(false));
-                    proxyList.add(info);
+                    proxyList.add(0, info);
                     if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
                         if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
                             currentProxy = info;
@@ -1222,7 +1220,7 @@ public class SharedConfig {
         serializedData.writeByte(PROXY_CURRENT_SCHEMA_VERSION);
         int count = infoToSerialize.size();
         serializedData.writeInt32(count);
-        for (int a = 0; a < count; a++) {
+        for (int a = count - 1; a >= 0; a--) {
             ProxyInfo info = infoToSerialize.get(a);
             serializedData.writeString(info.address != null ? info.address : "");
             serializedData.writeInt32(info.port);

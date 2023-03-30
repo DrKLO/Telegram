@@ -6665,6 +6665,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 chatActivity.setPreloadedSticker(sticker, true);
                             }
                         }
+                        if (AndroidUtilities.isTablet()) {
+                            if (rightSlidingDialogContainer.currentFragment != null) {
+                                rightSlidingDialogContainer.finishPreview();
+                            }
+                        }
                         presentFragment(chatActivity);
                     }
                 }
@@ -8797,7 +8802,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             long dialogId = (Long) args[0];
             TLRPC.User user = (TLRPC.User) args[1];
             TLRPC.Chat chat = (TLRPC.Chat) args[2];
-            boolean revoke = (Boolean) args[3];
+            boolean revoke;
+            boolean botBlock;
+            if (user != null && user.bot) {
+                revoke = false;
+                botBlock = (Boolean) args[3];
+            } else {
+                revoke = (Boolean) args[3];
+                botBlock = false;
+            }
+
             Runnable deleteRunnable = () -> {
                 if (chat != null) {
                     if (ChatObject.isNotInChat(chat)) {
@@ -8807,7 +8821,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 } else {
                     getMessagesController().deleteDialog(dialogId, 0, revoke);
-                    if (user != null && user.bot) {
+                    if (user != null && user.bot && botBlock) {
                         getMessagesController().blockPeer(user.id);
                     }
                 }

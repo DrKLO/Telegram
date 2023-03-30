@@ -1949,20 +1949,18 @@ public class AndroidUtilities {
             FileLog.d("external dir mounted");
             try {
                 File file;
-                if (Build.VERSION.SDK_INT >= 19) {
-                    File[] dirs = ApplicationLoader.applicationContext.getExternalCacheDirs();
-                    file = dirs[0];
-                    if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
-                        for (int a = 0; a < dirs.length; a++) {
-                            if (dirs[a] != null && dirs[a].getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
-                                file = dirs[a];
-                                break;
-                            }
+
+                File[] dirs = ApplicationLoader.applicationContext.getExternalCacheDirs();
+                file = dirs[0];
+                if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                    for (int a = 0; a < dirs.length; a++) {
+                        if (dirs[a] != null && dirs[a].getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
+                            file = dirs[a];
+                            break;
                         }
                     }
-                } else {
-                    file = ApplicationLoader.applicationContext.getExternalCacheDir();
                 }
+
                 FileLog.d("check dir " + (file == null ? null : file.getPath()) + " ");
                 if (file != null && (file.exists() || file.mkdirs()) && file.canWrite()) {
 //                    boolean canWrite = true;

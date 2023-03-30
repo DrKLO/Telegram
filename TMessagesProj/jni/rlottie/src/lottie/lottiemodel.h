@@ -98,9 +98,9 @@ public:
 
 inline void getColorReplacement(std::map<int32_t, int32_t> *colorMap, const LottieColor &c, float &r, float &g, float &b) {
     if (colorMap != nullptr && !colorMap->empty()) {
-        int32_t rr = (int32_t) (c.r * 255);
-        int32_t gg = (int32_t) (c.g * 255);
-        int32_t bb = (int32_t) (c.b * 255);
+        int32_t rr = (int32_t) round(c.r * 255);
+        int32_t gg = (int32_t) round(c.g * 255);
+        int32_t bb = (int32_t) round(c.b * 255);
         int32_t cc = (int32_t) (((bb & 0xff) << 16) | ((gg & 0xff) << 8) | (rr & 0xff));
         std::map<int32_t, int32_t>::iterator iter = colorMap->find(cc);
         if (iter != colorMap->end()) {

@@ -3514,27 +3514,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
             }));
         } else if (username != null) {
-            TLObject req;
-            if (AndroidUtilities.isNumeric(username)) {
-                TLRPC.TL_contacts_resolvePhone resolvePhone = new TLRPC.TL_contacts_resolvePhone();
-                resolvePhone.phone = username;
-                req = resolvePhone;
-            } else {
-                TLRPC.TL_contacts_resolveUsername resolveUsername = new TLRPC.TL_contacts_resolveUsername();
-                resolveUsername.username = username;
-                req = resolveUsername;
-            }
-            requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            MessagesController.getInstance(intentAccount).getUserNameResolver().resolve(username, (peerId) -> {
                 if (!LaunchActivity.this.isFinishing()) {
                     boolean hideProgressDialog = true;
-                    TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
-                    if (error == null && actionBarLayout != null && (game == null && voicechat == null || game != null && !res.users.isEmpty() || voicechat != null && !res.chats.isEmpty() || livestream != null && !res.chats.isEmpty())) {
-                        MessagesController.getInstance(intentAccount).putUsers(res.users, false);
-                        MessagesController.getInstance(intentAccount).putChats(res.chats, false);
-                        MessagesStorage.getInstance(intentAccount).putUsersAndChats(res.users, res.chats, false, true);
-
+                    if (peerId != null && actionBarLayout != null && (game == null && voicechat == null || game != null && peerId > 0 || voicechat != null && peerId > 0 || livestream != null && peerId < 0)) {
                         if (!TextUtils.isEmpty(botAppMaybe)) {
-                            TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(res.peer.user_id);
+                            TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
                             if (user != null && user.bot) {
                                 TLRPC.TL_messages_getBotApp getBotApp = new TLRPC.TL_messages_getBotApp();
                                 TLRPC.TL_inputBotAppShortName app = new TLRPC.TL_inputBotAppShortName();
@@ -3593,11 +3578,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         }
 
                         if (setAsAttachBot != null && attachMenuBotToOpen == null) {
-                            TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(res.peer.user_id);
+                            TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
                             if (user != null && user.bot) {
                                 if (user.bot_attach_menu) {
                                     TLRPC.TL_messages_getAttachMenuBot getAttachMenuBot = new TLRPC.TL_messages_getAttachMenuBot();
-                                    getAttachMenuBot.bot = MessagesController.getInstance(intentAccount).getInputUser(res.peer.user_id);
+                                    getAttachMenuBot.bot = MessagesController.getInstance(intentAccount).getInputUser(peerId);
                                     ConnectionsManager.getInstance(intentAccount).sendRequest(getAttachMenuBot, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
                                         if (response1 instanceof TLRPC.TL_attachMenuBotsBot) {
                                             TLRPC.TL_attachMenuBotsBot attachMenuBotsBot = (TLRPC.TL_attachMenuBotsBot) response1;
@@ -3677,7 +3662,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                         .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BotRequestAttachPermission", R.string.BotRequestAttachPermission, UserObject.getUserName(user))))
                                                         .setPositiveButton(LocaleController.getString(R.string.BotAddToMenu), (dialog, which) -> {
                                                             TLRPC.TL_messages_toggleBotInAttachMenu botRequest = new TLRPC.TL_messages_toggleBotInAttachMenu();
-                                                            botRequest.bot = MessagesController.getInstance(intentAccount).getInputUser(res.peer.user_id);
+                                                            botRequest.bot = MessagesController.getInstance(intentAccount).getInputUser(peerId);
                                                             botRequest.enabled = true;
                                                             botRequest.write_allowed = allowWrite.get();
 
@@ -3723,8 +3708,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             } else {
                                 BulletinFactory.of(mainFragmentsStack.get(mainFragmentsStack.size() - 1)).createErrorBulletin(LocaleController.getString(R.string.BotSetAttachLinkNotBot)).show();
                             }
-                        } else if (messageId != null && (commentId != null || threadId != null) && !res.chats.isEmpty()) {
-                            requestId[0] = runCommentRequest(intentAccount, dismissLoading, messageId, commentId, threadId, res.chats.get(0));
+                        } else if (messageId != null && (commentId != null || threadId != null) && peerId < 0) {
+                            TLRPC.Chat chat = MessagesController.getInstance(intentAccount).getChat(-peerId);
+                            requestId[0] = runCommentRequest(intentAccount, dismissLoading, messageId, commentId, threadId, chat);
                             if (requestId[0] != 0) {
                                 hideProgressDialog = false;
                             }
@@ -3736,12 +3722,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             args.putString("selectAlertString", LocaleController.getString("SendGameToText", R.string.SendGameToText));
                             args.putString("selectAlertStringGroup", LocaleController.getString("SendGameToGroupText", R.string.SendGameToGroupText));
                             DialogsActivity fragment = new DialogsActivity(args);
+                            TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
                             fragment.setDelegate((fragment1, dids, message1, param, topicsFragment) -> {
                                 long did = dids.get(0).dialogId;
                                 TLRPC.TL_inputMediaGame inputMediaGame = new TLRPC.TL_inputMediaGame();
                                 inputMediaGame.id = new TLRPC.TL_inputGameShortName();
                                 inputMediaGame.id.short_name = game;
-                                inputMediaGame.id.bot_id = MessagesController.getInstance(intentAccount).getInputUser(res.users.get(0));
+                                inputMediaGame.id.bot_id = MessagesController.getInstance(intentAccount).getInputUser(user);
                                 SendMessagesHelper.getInstance(intentAccount).sendGame(MessagesController.getInstance(intentAccount).getInputPeer(did), inputMediaGame, 0, 0);
 
                                 Bundle args1 = new Bundle();
@@ -3784,7 +3771,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 drawerLayoutContainer.setAllowOpenDrawer(true, false);
                             }
                         } else if (botChat != null || botChannel != null) {
-                            final TLRPC.User user = !res.users.isEmpty() ? res.users.get(0) : null;
+                            final TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
                             if (user == null || user.bot && user.bot_nochats) {
                                 try {
                                     if (!mainFragmentsStack.isEmpty()) {
@@ -3936,14 +3923,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             long dialog_id;
                             boolean isBot = false;
                             Bundle args = new Bundle();
-                            if (!res.chats.isEmpty()) {
-                                args.putLong("chat_id", res.chats.get(0).id);
-                                dialog_id = -res.chats.get(0).id;
+                            TLRPC.User user = MessagesController.getInstance(intentAccount).getUser(peerId);
+                            if (peerId < 0) {
+                                args.putLong("chat_id", -peerId);
+                                dialog_id = peerId;
                             } else {
-                                args.putLong("user_id", res.users.get(0).id);
-                                dialog_id = res.users.get(0).id;
+                                args.putLong("user_id", peerId);
+                                dialog_id = peerId;
                             }
-                            if (botUser != null && res.users.size() > 0 && res.users.get(0).bot) {
+                            if (botUser != null && user != null && user.bot) {
                                 args.putString("botUser", botUser);
                                 isBot = true;
                             }
@@ -4080,17 +4068,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         }
                     } else {
                         try {
-                            if (!mainFragmentsStack.isEmpty()) {
-                                BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-                                if (fragment instanceof ChatActivity) {
-                                    ((ChatActivity) fragment).shakeContent();
+                            BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                            if (lastFragment != null) {
+                                if (lastFragment instanceof ChatActivity) {
+                                    ((ChatActivity) lastFragment).shakeContent();
                                 }
-                                if (error != null && error.text != null && error.text.startsWith("FLOOD_WAIT")) {
-                                    BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("FloodWait", R.string.FloodWait)).show();
-                                } else if (AndroidUtilities.isNumeric(username)) {
-                                    BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("NoPhoneFound", R.string.NoPhoneFound)).show();
+                                if (AndroidUtilities.isNumeric(username)) {
+                                    BulletinFactory.of(lastFragment).createErrorBulletin(LocaleController.getString("NoPhoneFound", R.string.NoPhoneFound)).show();
                                 } else {
-                                    BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("NoUsernameFound", R.string.NoUsernameFound)).show();
+                                    BulletinFactory.of(lastFragment).createErrorBulletin(LocaleController.getString("NoUsernameFound", R.string.NoUsernameFound)).show();
                                 }
                             }
                         } catch (Exception e) {
@@ -4106,7 +4092,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         }
                     }
                 }
-            }, ConnectionsManager.RequestFlagFailOnServerErrors));
+            });
         } else if (group != null) {
             if (state == 0) {
                 final TLRPC.TL_messages_checkChatInvite req = new TLRPC.TL_messages_checkChatInvite();

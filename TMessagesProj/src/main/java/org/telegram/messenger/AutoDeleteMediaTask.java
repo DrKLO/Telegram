@@ -14,7 +14,7 @@ public class AutoDeleteMediaTask {
 
     public static void run() {
         int time = (int) (System.currentTimeMillis() / 1000);
-        if (!BuildVars.DEBUG_PRIVATE_VERSION && Math.abs(time - SharedConfig.lastKeepMediaCheckTime) < 24 * 60 * 60) {
+        if (Math.abs(time - SharedConfig.lastKeepMediaCheckTime) < 24 * 60 * 60) {
             return;
         }
         SharedConfig.lastKeepMediaCheckTime = time;

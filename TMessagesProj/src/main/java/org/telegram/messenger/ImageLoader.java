@@ -582,7 +582,7 @@ public class ImageLoader {
                         }
                     }
                 } catch (Exception e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 }
                 if (imageSize == 0 && httpConnection != null) {
                     try {
@@ -2230,6 +2230,8 @@ public class ImageLoader {
             FileLog.d("cache path = " + cachePath);
         }
 
+        FileLog.d("selected SD card = " + SharedConfig.storageCacheDir);
+
         try {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
                 File path = Environment.getExternalStorageDirectory();
@@ -2238,13 +2240,27 @@ public class ImageLoader {
                     if (dirs != null) {
                         for (int a = 0, N = dirs.size(); a < N; a++) {
                             File dir = dirs.get(a);
+                            FileLog.d("root dir " + a + " " + dir);
                             if (dir.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
                                 path = dir;
                                 break;
                             }
                         }
                     }
+                    if (!path.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
+                        File[] dirsDebug = ApplicationLoader.applicationContext.getExternalFilesDirs(null);
+                        if (dirsDebug != null) {
+                            for (int a = 0; a < dirsDebug.length; a++) {
+                                if (dirsDebug[a] == null) {
+                                    continue;
+                                }
+                                FileLog.d("dirsDebug " + a + " " + dirsDebug[a]);
+                            }
+                        }
+                    }
                 }
+
+                FileLog.d("external storage = " + path);
 
                 File publicMediaDir = null;
                 if (Build.VERSION.SDK_INT >= 30) {

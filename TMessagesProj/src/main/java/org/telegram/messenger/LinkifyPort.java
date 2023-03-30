@@ -162,7 +162,7 @@ public class LinkifyPort {
             + "\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@";
     private static final String PORT_NUMBER = "\\:\\d{1,5}";
     private static final String PATH_AND_QUERY = "[/\\?](?:(?:[" + LABEL_CHAR + ";/\\?:@&=#~" + "\\-\\.\\+!\\*'\\(\\),_\\$])|(?:%[a-fA-F0-9]{2}))*";
-    private static final String RELAXED_DOMAIN_NAME = "(?:" + "(?:" + IRI_LABEL + "(?:\\.(?=\\S))" + "?)+" + "|" + IP_ADDRESS_STRING + ")";
+    private static final String RELAXED_DOMAIN_NAME = "(?:" + "(?:" + IRI_LABEL + "(?:\\.(?=\\S))" + ")*" + "(?:" + IRI_LABEL + "(?:\\.(?=\\S))" + "?)" + "|" + IP_ADDRESS_STRING + ")";
 
     private static final String WEB_URL_WITHOUT_PROTOCOL = "("
             + WORD_BOUNDARY

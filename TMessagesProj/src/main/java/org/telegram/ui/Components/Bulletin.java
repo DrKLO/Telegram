@@ -93,7 +93,7 @@ public class Bulletin {
     @SuppressLint("RtlHardcoded")
     public static Bulletin make(@NonNull BaseFragment fragment, @NonNull Layout contentLayout, int duration) {
         if (fragment instanceof ChatActivity) {
-            contentLayout.setWideScreenParams(ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT);
+            contentLayout.setWideScreenParams(ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
         } else if (fragment instanceof DialogsActivity) {
             contentLayout.setWideScreenParams(ViewGroup.LayoutParams.MATCH_PARENT, Gravity.NO_GRAVITY);
         }

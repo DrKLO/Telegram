@@ -82,6 +82,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -3889,9 +3890,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.userInfoDidLoad);
 
         cancelShakeAnimation();
-        if (animationRunning) {
-            return;
-        }
         if (checkBox != null) {
             checkBox.onDetachedFromWindow();
         }
@@ -3948,9 +3946,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
 
-//        if (currentMessageObject != null) {
-//            currentMessageObject.onAttachedWindow(this);
-//        }
         if (currentMessageObject != null) {
             currentMessageObject.animateComments = false;
         }
@@ -4103,7 +4098,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void cancelLoading(MessageObject messageObject) {
-        if (messageObject != null && !messageObject.mediaExists && !messageObject.putInDownloadsStore && !DownloadController.getInstance(currentAccount).isDownloading(messageObject.messageOwner.id)) {
+        if (messageObject != null && !messageObject.mediaExists && !messageObject.putInDownloadsStore && !DownloadController.getInstance(currentAccount).isDownloading(messageObject.messageOwner.id) && !PhotoViewer.getInstance().isVisible()) {
             TLRPC.Document document = messageObject.getDocument();
             boolean loadDocumentFromImageReceiver = MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isGifDocument(document) || MessageObject.isRoundVideoDocument(document);
             if (!loadDocumentFromImageReceiver) {

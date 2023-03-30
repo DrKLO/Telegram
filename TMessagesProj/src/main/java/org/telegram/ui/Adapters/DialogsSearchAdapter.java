@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -285,6 +287,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         if (reqForumId != 0 && reqId != 0) {
             return;
         }
+        if (lastMessagesSearchId != lastSearchId) {
+            return;
+        }
         if (delegate != null && delegate.getSearchForumDialogId() != 0 && !localMessagesSearchEndReached) {
             searchForumMessagesInternal(lastMessagesSearchString, lastMessagesSearchId);
         } else {
@@ -457,7 +462,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
         req.flags |= 1;
         req.folder_id = folderId;
-        if (query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
+        if (query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty() && lastMessagesSearchId == lastSearchId) {
             MessageObject lastMessage = searchResultMessages.get(searchResultMessages.size() - 1);
             req.offset_id = lastMessage.getId();
             req.offset_rate = nextSearchRate;
@@ -469,7 +474,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         }
         lastMessagesSearchString = query;
-        final int currentReqId = ++lastReqId;
+        lastReqId++;
+        final int currentReqId = lastReqId;
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             final ArrayList<MessageObject> messageObjects = new ArrayList<>();
             if (error == null) {
@@ -1034,7 +1040,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 searchResultHashtags.clear();
             }
 
-            final int searchId = ++lastSearchId;
+            lastSearchId++;
+            final int searchId = lastSearchId;
             waitingResponseCount = 3;
             globalSearchCollapsed = true;
             phoneCollapsed = true;

@@ -284,6 +284,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private String uploadingWallpaper;
     private Theme.OverrideWallpaperInfo uploadingWallpaperInfo;
 
+    private UserNameResolver userNameResolver;
+
     private boolean loadingAppConfig;
     private Fetcher<Integer, TLRPC.TL_help_appConfig> appConfigFetcher = new Fetcher<Integer, TLRPC.TL_help_appConfig>() {
         @Override
@@ -737,6 +739,13 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         return null;
+    }
+
+    public UserNameResolver getUserNameResolver() {
+        if (userNameResolver == null) {
+            userNameResolver = new UserNameResolver(currentAccount);
+        }
+        return userNameResolver;
     }
 
     public class SponsoredMessagesInfo {
@@ -4113,6 +4122,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (user.min) {
             if (oldUser != null) {
                 if (!fromCache) {
+                    getUserNameResolver().update(oldUser, user);
                     if (user.bot) {
                         if (user.username != null) {
                             oldUser.username = user.username;
@@ -4142,6 +4152,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     getUserConfig().setCurrentUser(user);
                     getUserConfig().saveConfig(true);
                 }
+                getUserNameResolver().update(oldUser, user);
                 if (oldUser != null && user.status != null && oldUser.status != null && user.status.expires != oldUser.status.expires) {
                     return true;
                 }
@@ -4222,6 +4233,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (chat.min) {
             if (oldChat != null) {
                 if (!fromCache) {
+                    getUserNameResolver().update(oldChat, chat);
                     oldChat.title = chat.title;
                     oldChat.photo = chat.photo;
                     oldChat.broadcast = chat.broadcast;
@@ -5501,6 +5513,10 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void unblockPeer(long id) {
+        unblockPeer(id, null);
+    }
+
+    public void unblockPeer(long id, Runnable callback) {
         TLRPC.TL_contacts_unblock req = new TLRPC.TL_contacts_unblock();
         TLRPC.User user = null;
         TLRPC.Chat chat = null;
@@ -5523,9 +5539,11 @@ public class MessagesController extends BaseController implements NotificationCe
             req.id = getInputPeer(chat);
         }
         getNotificationCenter().postNotificationName(NotificationCenter.blockedUsersDidLoad);
-        getConnectionsManager().sendRequest(req, (response, error) -> {
-
-        });
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (callback != null) {
+                callback.run();
+            }
+        }));
     }
 
     public void getBlockedPeers(boolean reset) {
@@ -15467,13 +15485,18 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
                             boolean callStateIsIdle = true;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                //TODO check
-                                if (ActivityCompat.checkSelfPermission(ApplicationLoader.applicationContext, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                            try {
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    //TODO check
+                                    if (ActivityCompat.checkSelfPermission(ApplicationLoader.applicationContext, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                                        callStateIsIdle = tm.getCallStateForSubscription() == TelephonyManager.CALL_STATE_IDLE;
+                                    }
+                                } else {
                                     callStateIsIdle = tm.getCallState() == TelephonyManager.CALL_STATE_IDLE;
                                 }
-                            } else {
-                                callStateIsIdle = tm.getCallState() == TelephonyManager.CALL_STATE_IDLE;
+                            } catch (Throwable e) {
+                                FileLog.e(e);
                             }
                             if (svc != null || VoIPService.callIShouldHavePutIntoIntent != null || !callStateIsIdle) {
                                 if (BuildVars.LOGS_ENABLED) {
@@ -17132,10 +17155,8 @@ public class MessagesController extends BaseController implements NotificationCe
             AlertDialog[] progressDialog = new AlertDialog[] {
                 new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER)
             };
-
-            TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
-            req.username = username;
-            int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            boolean[] canceled = new boolean[]{false};
+            getMessagesController().getUserNameResolver().resolve(username, (peerId) -> {
                 try {
                     if (progress != null) {
                         progress.end();
@@ -17145,15 +17166,14 @@ public class MessagesController extends BaseController implements NotificationCe
                 } catch (Exception ignored) {}
                 progressDialog[0] = null;
                 fragment.setVisibleDialog(null);
-                if (error == null) {
-                    TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
-                    putUsers(res.users, false);
-                    putChats(res.chats, false);
-                    getMessagesStorage().putUsersAndChats(res.users, res.chats, false, true);
-                    if (!res.chats.isEmpty()) {
-                        openChatOrProfileWith(null, res.chats.get(0), fragment, 1, false);
-                    } else if (!res.users.isEmpty()) {
-                        openChatOrProfileWith(res.users.get(0), null, fragment, type, false);
+                if (canceled[0]) {
+                    return;
+                }
+                if (peerId != null) {
+                    if (peerId < 0) {
+                        openChatOrProfileWith(null, getChat(-peerId), fragment, 1, false);
+                    } else {
+                        openChatOrProfileWith(getUser(peerId), null, fragment, type, false);
                     }
                 } else {
                     if (fragment.getParentActivity() != null) {
@@ -17167,16 +17187,16 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                     }
                 }
-            }));
+            });
             if (progress != null) {
-                progress.onCancel(() -> getConnectionsManager().cancelRequest(reqId, true));
+                progress.onCancel(() -> canceled[0] = true);
                 progress.init();
             } else {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (progressDialog[0] == null) {
                         return;
                     }
-                    progressDialog[0].setOnCancelListener(dialog -> getConnectionsManager().cancelRequest(reqId, true));
+                    progressDialog[0].setOnCancelListener(dialog -> canceled[0] = true);
                     fragment.showDialog(progressDialog[0]);
                 }, 500);
             }

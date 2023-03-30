@@ -147,6 +147,7 @@ public class TopicsController extends BaseController {
         }
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
         ArrayList<TLRPC.TL_forumTopic> topicsToReload = null;
+        ArrayList<Integer> deletedTopics = null;
         LongSparseArray<TLRPC.TL_forumTopic> topicsMap = topicsMapByChatId.get(chatId);
 
         if (topics == null) {
@@ -163,6 +164,10 @@ public class TopicsController extends BaseController {
             for (int i = 0; i < newTopics.size(); i++) {
                 TLRPC.TL_forumTopic newTopic = newTopics.get(i);
                 if (newTopic instanceof TLRPC.TL_forumTopicDeleted) {
+                    if (deletedTopics == null) {
+                        deletedTopics = new ArrayList<>();
+                    }
+                    deletedTopics.add(newTopic.id);
                     continue;
                 }
                 if (!topicsMap.containsKey(newTopic.id)) {
@@ -204,6 +209,17 @@ public class TopicsController extends BaseController {
             }
         }
 
+        if (deletedTopics != null && loadType == LOAD_TYPE_LOAD_UNKNOWN) {
+           for (int i = 0; i < deletedTopics.size(); i++) {
+               for (int j = 0; j < topics.size(); j++) {
+                   if (topics.get(j).id == deletedTopics.get(i)) {
+                       topics.remove(j);
+                       break;
+                   }
+               }
+           }
+           getMessagesStorage().removeTopics(chatId, deletedTopics);
+        }
         if (topicsToReload != null && loadType != LOAD_TYPE_LOAD_UNKNOWN) {
             reloadTopics(chatId, topicsToReload, null);
         } else if (((loadType == LOAD_TYPE_PRELOAD && !fromCache) || loadType == LOAD_TYPE_LOAD_NEXT) && topics.size() >= totalCount && totalCount >= 0) {

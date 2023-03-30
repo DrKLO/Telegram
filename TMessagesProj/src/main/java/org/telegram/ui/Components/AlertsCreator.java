@@ -1508,7 +1508,19 @@ public class AlertsCreator {
             lastMessageIsJoined = true;
         }
 
-        if (!second && (secret && !clear || canDeleteInbox) && !UserObject.isDeleted(user) && !lastMessageIsJoined || (deleteChatForAll = checkDeleteForAll && !clear && chat != null && chat.creator)) {
+        if (user != null && user.bot) {
+            cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
+            cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            cell[0].setText(LocaleController.getString(R.string.BlockBot), "", false, false);
+            cell[0].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
+            cell[0].setChecked(deleteForAll[0] = true, false);
+            frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
+            cell[0].setOnClickListener(v -> {
+                CheckBoxCell cell1 = (CheckBoxCell) v;
+                deleteForAll[0] = !deleteForAll[0];
+                cell1.setChecked(deleteForAll[0], true);
+            });
+        } else if (!second && (secret && !clear || canDeleteInbox) && !UserObject.isDeleted(user) && !lastMessageIsJoined || (deleteChatForAll = checkDeleteForAll && !clear && chat != null && chat.creator)) {
             cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
             cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
             if (deleteChatForAll) {
@@ -1601,7 +1613,7 @@ public class AlertsCreator {
                                 messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("AreYouSureDeleteThisChatSavedMessages", R.string.AreYouSureDeleteThisChatSavedMessages)));
                             } else {
                                 if (user.bot && !user.support) {
-                                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithBot", R.string.AreYouSureDeleteThisChatWithBot, UserObject.getUserName(user))));
+                                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.AreYouSureDeleteThisChatWithBotWithCheckmark, UserObject.getUserName(user))));
                                 } else {
                                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithUser", R.string.AreYouSureDeleteThisChatWithUser, UserObject.getUserName(user))));
                                 }

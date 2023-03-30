@@ -70,7 +70,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 156;
+    public static final int LAYER = 157;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
@@ -24362,6 +24362,8 @@ public class TLRPC {
         public int score;
         public boolean video;
         public int months;
+        public String cryptoCurrency;
+        public long cryptoAmount;
 
         public static MessageAction TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             MessageAction result = null;
@@ -24528,7 +24530,7 @@ public class TLRPC {
                 case 0x8f31b327:
                     result = new TL_messageActionPaymentSentMe();
                     break;
-                case 0xaba0f5c6:
+                case 0xc83d6aec:
                     result = new TL_messageActionGiftPremium();
                     break;
                 case 0xfe77345d:
@@ -25504,19 +25506,29 @@ public class TLRPC {
     }
 
     public static class TL_messageActionGiftPremium extends MessageAction {
-        public static int constructor = 0xaba0f5c6;
+        public static int constructor = 0xc83d6aec;
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
             currency = stream.readString(exception);
             amount = stream.readInt64(exception);
             months = stream.readInt32(exception);
+            if ((flags & 1) != 0) {
+                cryptoCurrency = stream.readString(exception);
+                cryptoAmount = stream.readInt64(exception);
+            }
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeInt32(flags);
             stream.writeString(currency);
             stream.writeInt64(amount);
             stream.writeInt32(months);
+            if ((flags & 1) != 0) {
+                stream.writeString(cryptoCurrency);
+                stream.writeInt64(cryptoAmount);
+            }
         }
     }
 
