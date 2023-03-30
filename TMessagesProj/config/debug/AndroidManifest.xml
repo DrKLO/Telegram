@@ -8,13 +8,10 @@
     <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.LOCATION" android:required="false" />
 
-    <uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-
-    <permission android:name="${applicationId}.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
 
     <application
         android:icon="@mipmap/ic_launcher"
