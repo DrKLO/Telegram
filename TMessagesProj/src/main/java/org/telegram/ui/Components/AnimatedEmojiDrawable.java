@@ -462,6 +462,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
                 }
             };
+            imageReceiver.setAllowLoadingOnAttachedOnly(true);
         };
         if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
             imageReceiver.ignoreNotifications = true;

@@ -404,6 +404,26 @@ public class SvgHelper {
         public void copyCommandFromPosition(int position) {
             commands.add(commands.get(position));
         }
+
+        public SvgDrawable clone() {
+            SvgDrawable drawable = new SvgDrawable();
+            for (int i = 0; i < commands.size(); i++) {
+                drawable.commands.add(commands.get(i));
+                Paint fromPaint = paints.get(commands.get(i));
+                if (fromPaint != null) {
+                    Paint toPaint = new Paint();
+                    toPaint.setColor(fromPaint.getColor());
+                    toPaint.setStrokeCap(fromPaint.getStrokeCap());
+                    toPaint.setStrokeJoin(fromPaint.getStrokeJoin());
+                    toPaint.setStrokeWidth(fromPaint.getStrokeWidth());
+                    toPaint.setStyle(fromPaint.getStyle());
+                    drawable.paints.put(commands.get(i), toPaint);
+                }
+            }
+            drawable.width = width;
+            drawable.height = height;
+            return drawable;
+        }
     }
 
     public static Bitmap getBitmap(int res, int width, int height, int color) {

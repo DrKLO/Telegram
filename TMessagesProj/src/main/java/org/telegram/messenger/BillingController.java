@@ -315,6 +315,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     @Override
     public void onBillingSetupFinished(@NonNull BillingResult setupBillingResult) {
+        FileLog.d("Billing setup finished with result " + setupBillingResult);
         if (setupBillingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
             queryProductDetails(Collections.singletonList(PREMIUM_PRODUCT), (billingResult, list) -> {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {

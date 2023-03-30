@@ -23,12 +23,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
-import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.ConnectionsManager;
@@ -628,6 +628,7 @@ public class ContactsController extends BaseController {
             ArrayList<String> idsArr = new ArrayList<>();
             pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projectionPhones, null, null, null);
 
+            long time = System.currentTimeMillis();
             int lastContactId = 1;
             if (pCur != null) {
                 int count = pCur.getCount();
@@ -796,68 +797,96 @@ public class ContactsController extends BaseController {
                 }
                 pCur = null;
             }
+            FileLog.d("loading contacts 1 query time = " + (System.currentTimeMillis() - time) + " contactsSize = " + (contactsMap == null ? 0 : contactsMap.size()));
+            time = System.currentTimeMillis();
 
-            Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null,ContactsContract.Contacts.HAS_PHONE_NUMBER + " = ?", new String[]{"0"}, null);
+            HashMap<String, PhoneBookContact> phoneBookContactHashMap = new HashMap<>();
+            ArrayList<String> phonebookContactsId = new ArrayList<>();
+
+            Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, new String[]{
+                    ContactsContract.Contacts._ID,
+                    ContactsContract.Contacts.LOOKUP_KEY,
+                    ContactsContract.Contacts.DISPLAY_NAME
+            }, ContactsContract.Contacts.HAS_PHONE_NUMBER + " = ?", new String[]{"0"}, null);
+
             if (cur != null) {
-                String[] metadata = new String[5];
-                Pattern phonePattern = Pattern.compile(".*(\\+[0-9 \\-]+).*");
                 while (cur.moveToNext()) {
-                    String id = cur.getString(cur.getColumnIndex(ContactsContract.Contacts._ID));
-                    String lookup_key = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
-                    String name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    String phone = null;
-                    if ((contactsMap != null && contactsMap.get(lookup_key) != null) || TextUtils.isEmpty(name)) {
+                    PhoneBookContact phoneBookContact = new PhoneBookContact();
+                    phoneBookContact.id = cur.getString(0);
+                    phoneBookContact.lookup_key = cur.getString(1);
+                    phoneBookContact.name = cur.getString(2);
+                    if ((contactsMap != null && contactsMap.get(phoneBookContact.lookup_key) != null) || TextUtils.isEmpty(phoneBookContact.name)) {
                         continue;
                     }
-                    pCur = cr.query(
-                            ContactsContract.Data.CONTENT_URI,
-                            null,
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                            new String[]{id}, null);
-                    loop : while (pCur.moveToNext()) {
-                        metadata[0] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA1));
-                        metadata[1] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA2));
-                        metadata[2] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA3));
-                        metadata[3] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA4));
-                        metadata[4] = pCur.getString(pCur.getColumnIndex(ContactsContract.Data.DATA5));
-                        for (int i = 0; i < metadata.length; i++) {
-                            if (metadata[i] == null) {
-                                continue;
-                            }
-                            Matcher matcher = phonePattern.matcher(metadata[i]);
-                            if (matcher.matches()) {
-                                phone = matcher.group(1).replace(" ", "").replace("-", "");
-                                break loop;
-                            }
-                        }
-                    }
-
-                    pCur.close();
-
-                    if (phone != null) {
-
-                        String shortNumber = phone;
-                        if (phone.startsWith("+")) {
-                            shortNumber = phone.substring(1);
-                        }
-
-                        Contact contact = new Contact();
-                        contact.first_name = name;
-                        contact.last_name = "";
-                        contact.contact_id = lastContactId++;
-                        contact.key = lookup_key;
-                        contact.phones.add(phone);
-                        contact.shortPhones.add(shortNumber);
-                        contact.phoneDeleted.add(0);
-                        contact.phoneTypes.add(LocaleController.getString("PhoneOther", R.string.PhoneOther));
-
-//                        contact.provider = accountType;
-//                        contact.isGoodProvider = isGoodAccountType;
-                        contactsMap.put(lookup_key, contact);
-                    }
+                    phoneBookContactHashMap.put(phoneBookContact.id, phoneBookContact);
+                    phonebookContactsId.add(phoneBookContact.id);
                 }
                 cur.close();
             }
+            FileLog.d("loading contacts 2 query time = " + (System.currentTimeMillis() - time) + " phoneBookConacts size = " + phonebookContactsId.size());
+            time = System.currentTimeMillis();
+
+            if (!phonebookContactsId.isEmpty()) {
+                String[] metadata = new String[4];
+                Pattern phonePattern = Pattern.compile(".*(\\+[0-9 \\-]+).*");
+                pCur = cr.query(
+                        ContactsContract.Data.CONTENT_URI,
+                        new String[]{
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                                ContactsContract.Data.DATA1,
+                                ContactsContract.Data.DATA2,
+                                ContactsContract.Data.DATA3,
+                                ContactsContract.Data.DATA4,
+                        },
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID  + " IN (" + TextUtils.join(", ", phonebookContactsId) + ")",
+                        null, null);
+                if (pCur != null) {
+                    while (pCur.moveToNext()) {
+                        String id = pCur.getString(0);
+                        PhoneBookContact phoneBookContact = phoneBookContactHashMap.get(id);
+                        if (phoneBookContact != null) {
+                            metadata[0] = pCur.getString(1);
+                            metadata[1] = pCur.getString(2);
+                            metadata[2] = pCur.getString(3);
+                            metadata[3] = pCur.getString(4);
+                            for (int i = 0; i < metadata.length; i++) {
+                                if (metadata[i] == null) {
+                                    continue;
+                                }
+                                Matcher matcher = phonePattern.matcher(metadata[i]);
+                                if (matcher.matches()) {
+                                    phoneBookContact.phone = matcher.group(1).replace(" ", "").replace("-", "");
+                                }
+
+                                if (phoneBookContact.phone != null) {
+                                    String shortNumber = phoneBookContact.phone;
+                                    if (phoneBookContact.phone.startsWith("+")) {
+                                        shortNumber = phoneBookContact.phone.substring(1);
+                                    }
+
+                                    Contact contact = new Contact();
+                                    contact.first_name = phoneBookContact.name;
+                                    contact.last_name = "";
+                                    contact.contact_id = lastContactId++;
+                                    contact.key = phoneBookContact.lookup_key;
+                                    contact.phones.add(phoneBookContact.phone);
+                                    contact.shortPhones.add(shortNumber);
+                                    contact.phoneDeleted.add(0);
+                                    contact.phoneTypes.add(LocaleController.getString("PhoneOther", R.string.PhoneOther));
+                                    if (contactsMap == null) {
+                                        contactsMap = new HashMap<>();
+                                    }
+                                    contactsMap.put(phoneBookContact.lookup_key, contact);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    pCur.close();
+                }
+            }
+
+            FileLog.d("loading contacts 3 query time = " + (System.currentTimeMillis() - time));
 
         } catch (Throwable e) {
             FileLog.e(e);
@@ -1942,6 +1971,7 @@ public class ContactsController extends BaseController {
 
     private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         Cursor cursor = null;
+        long time = System.currentTimeMillis();
         try {
             Account account = systemAccount;
             if (!hasContactsPermission() || account == null) {
@@ -1953,7 +1983,7 @@ public class ContactsController extends BaseController {
                 settings.edit().putBoolean("contacts_updated_v7", true).commit();
             }
             final ContentResolver contentResolver = ApplicationLoader.applicationContext.getContentResolver();
-            Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type).build();
+            Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI;
             cursor = contentResolver.query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
             LongSparseArray<Long> bookContacts = new LongSparseArray<>();
             if (cursor != null) {
@@ -1963,12 +1993,26 @@ public class ContactsController extends BaseController {
                 cursor.close();
                 cursor = null;
 
+                FileLog.d("performWriteContactsToPhoneBookInternal contacts array " + contactsArray.size() + " " + forceUpdate + " bookContactsSize=" + bookContacts.size() + " currentAccount=" + currentAccount);
+                ArrayList<ContentProviderOperation> query = null;
                 for (int a = 0; a < contactsArray.size(); a++) {
                     TLRPC.TL_contact u = contactsArray.get(a);
                     if (forceUpdate || bookContacts.indexOfKey(u.user_id) < 0) {
-                        addContactToPhoneBook(getMessagesController().getUser(u.user_id), forceUpdate);
+                        if (query == null) {
+                            query = new ArrayList<>();
+                        }
+                        applyContactToPhoneBook(query, getMessagesController().getUser(u.user_id));
+                        if (query.size() > 450) {
+                            contentResolver.applyBatch(ContactsContract.AUTHORITY, query);
+                            query.clear();
+                        }
                     }
                 }
+                if (query != null && !query.isEmpty()) {
+                    contentResolver.applyBatch(ContactsContract.AUTHORITY, query);
+                    query.clear();
+                }
+
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -1977,6 +2021,8 @@ public class ContactsController extends BaseController {
                 cursor.close();
             }
         }
+
+        FileLog.d("performWriteContactsToPhoneBookInternal " + (System.currentTimeMillis() - time)) ;
     }
 
     private void performWriteContactsToPhoneBook() {
@@ -2167,56 +2213,7 @@ public class ContactsController extends BaseController {
         }
 
         ArrayList<ContentProviderOperation> query = new ArrayList<>();
-
-        ContentProviderOperation.Builder builder = ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI);
-        builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name);
-        builder.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type);
-        builder.withValue(ContactsContract.RawContacts.SYNC1, TextUtils.isEmpty(user.phone) ? "" : user.phone);
-        builder.withValue(ContactsContract.RawContacts.SYNC2, user.id);
-        query.add(builder.build());
-
-        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
-        builder.withValueBackReference(ContactsContract.CommonDataKinds.StructuredName.RAW_CONTACT_ID, 0);
-        builder.withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
-        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, user.first_name);
-        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME, user.last_name);
-        query.add(builder.build());
-
-//        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
-//        builder.withValueBackReference(ContactsContract.CommonDataKinds.StructuredName.RAW_CONTACT_ID, 0);
-//        builder.withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
-//        builder.withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, "+" + user.phone);
-//        builder.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE);
-//        query.add(builder.build());
-
-        final String phoneOrName = TextUtils.isEmpty(user.phone) ? ContactsController.formatName(user.first_name, user.last_name) : "+" + user.phone;
-
-        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
-        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile");
-        builder.withValue(ContactsContract.Data.DATA1, user.id);
-        builder.withValue(ContactsContract.Data.DATA2, "Telegram Profile");
-        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutMessage", R.string.ContactShortcutMessage, phoneOrName));
-        builder.withValue(ContactsContract.Data.DATA4, user.id);
-        query.add(builder.build());
-
-        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
-        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call");
-        builder.withValue(ContactsContract.Data.DATA1, user.id);
-        builder.withValue(ContactsContract.Data.DATA2, "Telegram Voice Call");
-        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVoiceCall", R.string.ContactShortcutVoiceCall, phoneOrName));
-        builder.withValue(ContactsContract.Data.DATA4, user.id);
-        query.add(builder.build());
-
-        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
-        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video");
-        builder.withValue(ContactsContract.Data.DATA1, user.id);
-        builder.withValue(ContactsContract.Data.DATA2, "Telegram Video Call");
-        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVideoCall", R.string.ContactShortcutVideoCall, phoneOrName));
-        builder.withValue(ContactsContract.Data.DATA4, user.id);
-        query.add(builder.build());
+        applyContactToPhoneBook(query, user);
 
         try {
             ContentProviderResult[] result = contentResolver.applyBatch(ContactsContract.AUTHORITY, query);
@@ -2230,6 +2227,55 @@ public class ContactsController extends BaseController {
             ignoreChanges = false;
         }
         return res;
+    }
+
+    private void applyContactToPhoneBook(ArrayList<ContentProviderOperation> query, TLRPC.User user) {
+        if (user == null) {
+            return;
+        }
+        int rawContactId = query.size();
+        ContentProviderOperation.Builder builder = ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI);
+        builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name);
+        builder.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type);
+        builder.withValue(ContactsContract.RawContacts.SYNC1, TextUtils.isEmpty(user.phone) ? "" : user.phone);
+        builder.withValue(ContactsContract.RawContacts.SYNC2, user.id);
+        query.add(builder.build());
+
+        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
+        builder.withValueBackReference(ContactsContract.CommonDataKinds.StructuredName.RAW_CONTACT_ID, rawContactId);
+        builder.withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
+        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, user.first_name);
+        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME, user.last_name);
+        query.add(builder.build());
+
+        final String phoneOrName = TextUtils.isEmpty(user.phone) ? ContactsController.formatName(user.first_name, user.last_name) : "+" + user.phone;
+
+        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
+        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile");
+        builder.withValue(ContactsContract.Data.DATA1, user.id);
+        builder.withValue(ContactsContract.Data.DATA2, "Telegram Profile");
+        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutMessage", R.string.ContactShortcutMessage, phoneOrName));
+        builder.withValue(ContactsContract.Data.DATA4, user.id);
+        query.add(builder.build());
+
+        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
+        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call");
+        builder.withValue(ContactsContract.Data.DATA1, user.id);
+        builder.withValue(ContactsContract.Data.DATA2, "Telegram Voice Call");
+        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVoiceCall", R.string.ContactShortcutVoiceCall, phoneOrName));
+        builder.withValue(ContactsContract.Data.DATA4, user.id);
+        query.add(builder.build());
+
+        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
+        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video");
+        builder.withValue(ContactsContract.Data.DATA1, user.id);
+        builder.withValue(ContactsContract.Data.DATA2, "Telegram Video Call");
+        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVideoCall", R.string.ContactShortcutVideoCall, phoneOrName));
+        builder.withValue(ContactsContract.Data.DATA4, user.id);
+        query.add(builder.build());
     }
 
     private void deleteContactFromPhoneBook(long uid) {
@@ -2832,5 +2878,12 @@ public class ContactsController extends BaseController {
             }
         }
         return result.toString();
+    }
+
+    private class PhoneBookContact {
+        String id;
+        String lookup_key;
+        String name;
+        String phone;
     }
 }

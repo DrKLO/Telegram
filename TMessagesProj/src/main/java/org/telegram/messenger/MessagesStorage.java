@@ -15,7 +15,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -84,6 +83,7 @@ public class MessagesStorage extends BaseController {
     private int archiveUnreadCount;
     private volatile int pendingMainUnreadCount;
     private volatile int pendingArchiveUnreadCount;
+    private boolean databaseCreated;
 
     private CountDownLatch openSync = new CountDownLatch(1);
 
@@ -95,7 +95,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 115;
+    public final static int LAST_DB_VERSION = 116;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -287,6 +287,7 @@ public class MessagesStorage extends BaseController {
 
         boolean createTable = false;
 
+        databaseCreated = false;
         if (!cacheFile.exists()) {
             createTable = true;
         }
@@ -353,6 +354,7 @@ public class MessagesStorage extends BaseController {
                     }
                 }
             }
+            databaseCreated = true;
         } catch (Exception e) {
             FileLog.e(e);
             if (openTries < 3 && e.getMessage() != null && e.getMessage().contains("malformed")) {
@@ -363,6 +365,7 @@ public class MessagesStorage extends BaseController {
                     cleanupInternal(false);
                 }
                 openDatabase(openTries == 1 ? 2 : 3);
+                return;
             }
         }
 
@@ -399,6 +402,7 @@ public class MessagesStorage extends BaseController {
     private boolean recoverDatabase() {
         database.close();
         boolean restored = DatabaseMigrationHelper.recoverDatabase(cacheFile, walCacheFile, shmCacheFile, currentAccount);
+        FileLog.e("Database restored = " + restored);
         if (restored) {
             try {
                 database = new SQLiteDatabase(cacheFile.getPath());
@@ -412,9 +416,14 @@ public class MessagesStorage extends BaseController {
             }
         }
         if (!restored) {
+            cleanupInternal(true);
             openDatabase(1);
+            restored = databaseCreated;
+            FileLog.e("Try create new database = " + restored);
         }
-        reset();
+        if (restored) {
+            reset();
+        }
         return restored;
     }
 
@@ -501,6 +510,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_scheduled_messages_v2 ON scheduled_messages_v2(mid, send_state, date);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_date_idx_scheduled_messages_v2 ON scheduled_messages_v2(uid, date);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS reply_to_idx_scheduled_messages_v2 ON scheduled_messages_v2(mid, reply_to_message_id);").stepThis().dispose();
+        database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_scheduled_messages_v2 ON scheduled_messages_v2(reply_to_message_id, mid);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE messages_v2(mid INTEGER, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER, media INTEGER, replydata BLOB, imp INTEGER, mention INTEGER, forwards INTEGER, replies_data BLOB, thread_reply_id INTEGER, is_channel INTEGER, reply_to_message_id INTEGER, custom_params BLOB, group_id INTEGER, PRIMARY KEY(mid, uid))").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_read_out_idx_messages_v2 ON messages_v2(uid, mid, read_state, out);").stepThis().dispose();
@@ -511,6 +521,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_mention_idx_messages_v2 ON messages_v2(uid, mention, read_state);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS is_channel_idx_messages_v2 ON messages_v2(mid, is_channel);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS reply_to_idx_messages_v2 ON messages_v2(mid, reply_to_message_id);").stepThis().dispose();
+        database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_messages_v2 ON messages_v2(reply_to_message_id, mid);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_groupid_messages_v2 ON messages_v2(uid, mid, group_id);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, parent TEXT, PRIMARY KEY (uid, type));").stepThis().dispose();
@@ -633,6 +644,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages_topics ON messages_topics(mid, send_state, date);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS is_channel_idx_messages_topics ON messages_topics(mid, is_channel);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS reply_to_idx_messages_topics ON messages_topics(mid, reply_to_message_id);").stepThis().dispose();
+        database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_messages_topics ON messages_topics(reply_to_message_id, mid);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS mid_uid_messages_topics ON messages_topics(mid, uid);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_read_out_idx_messages_topics ON messages_topics(uid, topic_id, mid, read_state, out);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS uid_mention_idx_messages_topics ON messages_topics(uid, topic_id, mention, read_state);").stepThis().dispose();
@@ -781,6 +793,7 @@ public class MessagesStorage extends BaseController {
     private void checkSQLException(Throwable e, boolean logToAppCenter) {
         if (e instanceof SQLiteException && e.getMessage() != null && e.getMessage().contains("is malformed") && !tryRecover) {
             tryRecover = true;
+            FileLog.e("disk image malformed detected, try recover");
             if (recoverDatabase()) {
                 tryRecover = false;
                 clearLoadingDialogsOffsets();
@@ -1797,6 +1810,18 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    public void removeTopics(long dialogId, ArrayList<Integer> topicIds) {
+        storageQueue.postRunnable(() -> {
+            try {
+                String topics = TextUtils.join(", ", topicIds);
+                database.executeFast(String.format(Locale.US, "DELETE FROM topics WHERE did = %d AND topic_id IN (%s)", dialogId, topics)).stepThis().dispose();
+                database.executeFast(String.format(Locale.US, "DELETE FROM messages_topics WHERE uid = %d AND topic_id = IN (%s)", dialogId, topics)).stepThis().dispose();
+            } catch (SQLiteException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     public void updateTopicsWithReadMessages(HashMap<TopicKey, Integer> topicsReadOutbox) {
         storageQueue.postRunnable(() -> {
             for (TopicKey topicKey : topicsReadOutbox.keySet()) {
@@ -2789,6 +2814,293 @@ public class MessagesStorage extends BaseController {
         }
         return array;
     }
+
+//    public void checkLoadedRemoteFilter(TLRPC.DialogFilter newFilter) {
+//        storageQueue.postRunnable(() -> {
+//            try {
+//                SparseArray<MessagesController.DialogFilter> filtersToDelete = new SparseArray<>();
+//                for (int a = 0, N = dialogFilters.size(); a < N; a++) {
+//                    MessagesController.DialogFilter filter = dialogFilters.get(a);
+//                    filtersToDelete.put(filter.id, filter);
+//                }
+//                ArrayList<Integer> filtersOrder = new ArrayList<>();
+//
+//                ArrayList<Long> usersToLoad = new ArrayList<>();
+//                HashMap<Long, TLRPC.InputPeer> usersToLoadMap = new HashMap<>();
+//                ArrayList<Long> chatsToLoad = new ArrayList<>();
+//                HashMap<Long, TLRPC.InputPeer> chatsToLoadMap = new HashMap<>();
+//                ArrayList<Long> dialogsToLoad = new ArrayList<>();
+//                HashMap<Long, TLRPC.InputPeer> dialogsToLoadMap = new HashMap<>();
+//
+//                ArrayList<MessagesController.DialogFilter> filtersToSave = new ArrayList<>();
+//                HashMap<Integer, HashSet<Long>> filterDialogRemovals = new HashMap<>();
+//                HashSet<Integer> filtersUnreadCounterReset = new HashSet<>();
+//                for (int a = 0, N = vector.objects.size(); a < N; a++) {
+//                    TLRPC.DialogFilter newFilter = (TLRPC.DialogFilter) vector.objects.get(a);
+//                    filtersOrder.add(newFilter.id);
+//                    int newFlags = 0;
+//                    if (newFilter.contacts) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
+//                    }
+//                    if (newFilter.non_contacts) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS;
+//                    }
+//                    if (newFilter.groups) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_GROUPS;
+//                    }
+//                    if (newFilter.broadcasts) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_CHANNELS;
+//                    }
+//                    if (newFilter.bots) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_BOTS;
+//                    }
+//                    if (newFilter.exclude_muted) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
+//                    }
+//                    if (newFilter.exclude_read) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_READ;
+//                    }
+//                    if (newFilter.exclude_archived) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
+//                    }
+//                    if (newFilter instanceof TLRPC.TL_dialogFilterCommunity) {
+//                        newFlags |= MessagesController.DIALOG_FILTER_FLAG_COMMUNITY;
+//                        if (newFilter.community_can_admin) {
+//                            newFlags |= MessagesController.DIALOG_FILTER_FLAG_COMMUNITY_ADMIN;
+//                        }
+//                    }
+//
+//                    MessagesController.DialogFilter filter = dialogFiltersMap.get(newFilter.id);
+//                    if (filter != null) {
+//                        filtersToDelete.remove(newFilter.id);
+//                        boolean changed = false;
+//                        boolean unreadChanged = false;
+//                        if (!TextUtils.equals(filter.name, newFilter.title)) {
+//                            changed = true;
+//                            filter.name = newFilter.title;
+//                        }
+//                        if (filter.flags != newFlags) {
+//                            filter.flags = newFlags;
+//                            changed = true;
+//                            unreadChanged = true;
+//                        }
+//
+//                        HashSet<Long> existingIds = new HashSet<>(filter.alwaysShow);
+//                        existingIds.addAll(filter.neverShow);
+//                        HashSet<Long> existingDialogsIds = new HashSet<>();
+//
+//                        LinkedHashMap<Integer, Long> secretChatsMap = null;
+//                        if (filter.pinnedDialogs.size() != 0) {
+//                            ArrayList<Long> pinArray = new ArrayList<>();
+//                            boolean hasSecret = false;
+//                            for (int c = 0, N2 = filter.pinnedDialogs.size(); c < N2; c++) {
+//                                long did = filter.pinnedDialogs.keyAt(c);
+//                                if (DialogObject.isEncryptedDialog(did)) {
+//                                    hasSecret = true;
+//                                }
+//                                pinArray.add(did);
+//                            }
+//                            if (hasSecret) {
+//                                secretChatsMap = new LinkedHashMap<>();
+//                                LongSparseIntArray pinnedDialogs = filter.pinnedDialogs;
+//                                Collections.sort(pinArray, (o1, o2) -> {
+//                                    int idx1 = pinnedDialogs.get(o1);
+//                                    int idx2 = pinnedDialogs.get(o2);
+//                                    if (idx1 > idx2) {
+//                                        return 1;
+//                                    } else if (idx1 < idx2) {
+//                                        return -1;
+//                                    }
+//                                    return 0;
+//                                });
+//                                for (int c = 0, N2 = pinArray.size(); c < N2; c++) {
+//                                    long did = pinArray.get(c);
+//                                    if (!DialogObject.isEncryptedDialog(did)) {
+//                                        continue;
+//                                    }
+//                                    secretChatsMap.put(c, did);
+//                                }
+//                            }
+//                        }
+//                        for (int c = 0, N2 = filter.pinnedDialogs.size(); c < N2; c++) {
+//                            long did = filter.pinnedDialogs.keyAt(c);
+//                            if (DialogObject.isEncryptedDialog(did)) {
+//                                continue;
+//                            }
+//                            existingDialogsIds.add(did);
+//                            existingIds.remove(did);
+//                        }
+//
+//                        filter.pinnedDialogs.clear();
+//                        for (int b = 0, N2 = newFilter.pinned_peers.size(); b < N2; b++) {
+//                            TLRPC.InputPeer peer = newFilter.pinned_peers.get(b);
+//                            Long id;
+//                            if (peer.user_id != 0) {
+//                                id = peer.user_id;
+//                            } else {
+//                                id = -(peer.chat_id != 0 ? peer.chat_id : peer.channel_id);
+//                            }
+//                            int index = filter.pinnedDialogs.size();
+//                            if (secretChatsMap != null) {
+//                                Long did;
+//                                while ((did = secretChatsMap.remove(index)) != null) {
+//                                    filter.pinnedDialogs.put(did, index);
+//                                    index++;
+//                                }
+//                            }
+//                            filter.pinnedDialogs.put(id, index);
+//                            existingIds.remove(id);
+//                            if (!existingDialogsIds.remove(id)) {
+//                                changed = true;
+//                                if (!dialogsToLoadMap.containsKey(id)) {
+//                                    dialogsToLoad.add(id);
+//                                    dialogsToLoadMap.put(id, peer);
+//                                }
+//                            }
+//                        }
+//                        if (secretChatsMap != null) {
+//                            for (LinkedHashMap.Entry<Integer, Long> entry : secretChatsMap.entrySet()) {
+//                                filter.pinnedDialogs.put(entry.getValue(), filter.pinnedDialogs.size());
+//                            }
+//                        }
+//
+//                        for (int c = 0; c < 2; c++) {
+//                            ArrayList<Long> fromArray = toPeerIds(c == 0 ? newFilter.include_peers : newFilter.exclude_peers);
+//                            ArrayList<Long> toArray = c == 0 ? filter.alwaysShow : filter.neverShow;
+//
+//                            if (c == 0) {
+//                                // put pinned_peers into include_peers (alwaysShow)
+//                                ArrayList<Long> pinnedArray = toPeerIds(newFilter.pinned_peers);
+//                                for (int i = 0; i < pinnedArray.size(); ++i) {
+//                                    fromArray.remove(pinnedArray.get(i));
+//                                }
+//                                fromArray.addAll(0, pinnedArray);
+//                            }
+//
+//                            final int fromArrayCount = fromArray.size();
+//                            boolean isDifferent = fromArray.size() != toArray.size();
+//                            if (!isDifferent) {
+//                                for (int i = 0; i < fromArrayCount; ++i) {
+//                                    if (!toArray.contains(fromArray.get(i))) {
+//                                        isDifferent = true;
+//                                        break;
+//                                    }
+//                                }
+//                            }
+//
+//                            if (isDifferent) {
+//                                unreadChanged = true;
+//                                changed = true;
+//                                if (c == 0) {
+//                                    filter.alwaysShow = fromArray;
+//                                } else {
+//                                    filter.neverShow = fromArray;
+//                                }
+//                            }
+//                        }
+//                        if (!existingDialogsIds.isEmpty()) {
+//                            filterDialogRemovals.put(filter.id, existingDialogsIds);
+//                            changed = true;
+//                        }
+//                        if (changed) {
+//                            filtersToSave.add(filter);
+//                        }
+//                        if (unreadChanged) {
+//                            filtersUnreadCounterReset.add(filter.id);
+//                        }
+//                    } else {
+//                        filter = new MessagesController.DialogFilter();
+//                        filter.id = newFilter.id;
+//                        filter.flags = newFlags;
+//                        filter.name = newFilter.title;
+//                        filter.pendingUnreadCount = -1;
+//                        for (int c = 0; c < 2; c++) {
+//                            if (c == 0) {
+//                                for (int b = 0, N2 = newFilter.pinned_peers.size(); b < N2; b++) {
+//                                    TLRPC.InputPeer peer = newFilter.pinned_peers.get(b);
+//                                    Long id;
+//                                    if (peer.user_id != 0) {
+//                                        id = peer.user_id;
+//                                    } else {
+//                                        id = -(peer.chat_id != 0 ? peer.chat_id : peer.channel_id);
+//                                    }
+//                                    if (!filter.alwaysShow.contains(id)) {
+//                                        filter.alwaysShow.add(id);
+//                                    }
+//                                    filter.pinnedDialogs.put(id, filter.pinnedDialogs.size() + 1);
+//                                    if (!dialogsToLoadMap.containsKey(id)) {
+//                                        dialogsToLoad.add(id);
+//                                        dialogsToLoadMap.put(id, peer);
+//                                    }
+//                                }
+//                            }
+//                            ArrayList<TLRPC.InputPeer> fromArray = c == 0 ? newFilter.include_peers : newFilter.exclude_peers;
+//                            ArrayList<Long> toArray = c == 0 ? filter.alwaysShow : filter.neverShow;
+//                            for (int b = 0, N2 = fromArray.size(); b < N2; b++) {
+//                                TLRPC.InputPeer peer = fromArray.get(b);
+//                                if (peer.user_id != 0) {
+//                                    Long uid = peer.user_id;
+//                                    if (!toArray.contains(uid)) {
+//                                        toArray.add(uid);
+//                                    }
+//                                    if (!usersToLoadMap.containsKey(uid)) {
+//                                        usersToLoad.add(uid);
+//                                        usersToLoadMap.put(uid, peer);
+//                                    }
+//                                } else {
+//                                    Long chatId = peer.chat_id != 0 ? peer.chat_id : peer.channel_id;
+//                                    Long dialogId = -chatId;
+//                                    if (!toArray.contains(dialogId)) {
+//                                        toArray.add(dialogId);
+//                                    }
+//                                    if (!chatsToLoadMap.containsKey(chatId)) {
+//                                        chatsToLoad.add(chatId);
+//                                        chatsToLoadMap.put(chatId, peer);
+//                                    }
+//                                }
+//                            }
+//                        }
+//                        filtersToSave.add(filter);
+//                    }
+//                }
+//
+//                TLRPC.messages_Dialogs dialogs;
+//                if (!dialogsToLoad.isEmpty()) {
+//                    dialogs = loadDialogsByIds(TextUtils.join(",", dialogsToLoad), usersToLoad, chatsToLoad, new ArrayList<>());
+//                    for (int a = 0, N = dialogs.dialogs.size(); a < N; a++) {
+//                        TLRPC.Dialog dialog = dialogs.dialogs.get(a);
+//                        dialogsToLoadMap.remove(dialog.id);
+//                    }
+//                } else {
+//                    dialogs = new TLRPC.TL_messages_dialogs();
+//                }
+//                ArrayList<TLRPC.User> users = new ArrayList<>();
+//                if (!usersToLoad.isEmpty()) {
+//                    getUsersInternal(TextUtils.join(",", usersToLoad), users);
+//                    for (int a = 0, N = users.size(); a < N; a++) {
+//                        TLRPC.User user = users.get(a);
+//                        usersToLoadMap.remove(user.id);
+//                    }
+//                }
+//                ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+//                if (!chatsToLoad.isEmpty()) {
+//                    getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
+//                    for (int a = 0, N = chats.size(); a < N; a++) {
+//                        TLRPC.Chat chat = chats.get(a);
+//                        chatsToLoadMap.remove(chat.id);
+//                    }
+//                }
+//
+//                if (usersToLoadMap.isEmpty() && chatsToLoadMap.isEmpty() && dialogsToLoadMap.isEmpty()) {
+//                    processLoadedFilterPeersInternal(dialogs, null, users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filtersUnreadCounterReset);
+//                } else {
+//                    getMessagesController().loadFilterPeers(dialogsToLoadMap, usersToLoadMap, chatsToLoadMap, dialogs, new TLRPC.TL_messages_dialogs(), users, chats, filtersToSave, filtersToDelete, filtersOrder, filterDialogRemovals, filtersUnreadCounterReset);
+//                }
+//            } catch (Exception e) {
+//                checkSQLException(e);
+//            }
+//        });
+//    }
 
     public void checkLoadedRemoteFilters(TLRPC.Vector vector) {
         storageQueue.postRunnable(() -> {

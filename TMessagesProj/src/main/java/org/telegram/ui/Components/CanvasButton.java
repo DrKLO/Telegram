@@ -29,7 +29,7 @@ public class CanvasButton {
     ArrayList<RectF> drawingRects = new ArrayList<>();
     int usingRectCount;
     boolean buttonPressed;
-    RippleDrawable selectorDrawable;
+    Drawable selectorDrawable;
     private final static int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
 
     private final View parent;
@@ -256,7 +256,9 @@ public class CanvasButton {
     public void setRoundRadius(int radius) {
         roundRadius = radius;
         pathEffect = new CornerPathEffect(radius);
-        maskPaint.setPathEffect(new CornerPathEffect(radius));
+        if (maskPaint != null) {
+            maskPaint.setPathEffect(new CornerPathEffect(radius));
+        }
     }
 
     public void cancelRipple() {

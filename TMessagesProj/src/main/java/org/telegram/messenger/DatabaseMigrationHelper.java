@@ -1247,6 +1247,13 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 115").stepThis().dispose();
             version = 115;
         }
+        if (version == 115) {
+            database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_messages_v2 ON messages_v2(reply_to_message_id, mid);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_scheduled_messages_v2 ON scheduled_messages_v2(reply_to_message_id, mid);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_messages_topics ON messages_topics(reply_to_message_id, mid);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 116").stepThis().dispose();
+            version = 116;
+        }
         return version;
     }
 

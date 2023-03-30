@@ -3492,7 +3492,6 @@
     <string name="BotStatusCantRead">has no access to messages</string>
     <string name="BotInfoTitle">What can this bot do?</string>
     <string name="BotStart">START</string>
-    <string name="BotStartButton">Start bot</string>
     <string name="BotUnblock">RESTART</string>
     <string name="BotStop">Stop bot</string>
     <string name="BotRestart">Restart bot</string>
@@ -5842,6 +5841,7 @@
     <string name="TelegramPremiumUserStatusDialogSubtitle">Emoji status is a premium feature. Other features included in **Telegram Premium**:</string>
     <string name="TelegramPremiumUserStatusDefaultDialogTitle">This is %1$s\'s current status.</string>
     <string name="TelegramPremiumUserGiftedPremiumDialogTitleWithPlural">**%1$s** has gifted you a %2$s subscription for Telegram Premium.</string>
+    <string name="TelegramPremiumUserGiftedPremiumDialogTitleWithPluralSomeone">Someone has gifted you a %1$s subscription for Telegram Premium.</string>
     <string name="TelegramPremiumUserGiftedPremiumDialogSubtitle">You now have access to additional features.</string>
     <string name="TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural">You gifted **%1$s** a %2$s subscription for Telegram Premium.</string>
     <string name="TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle">**%1$s** now have access to additional features.</string>
@@ -6375,6 +6375,9 @@
     <string name="LoginEmailResetPremiumRequiredTitle">Telegram Premium Required</string>
     <string name="LoginEmailResetPremiumRequiredMessage">Due to the high cost of SMS in your country, you need a **Telegram Premium** account to immediately reset this email via an SMS code.\n\nYou can ask a friend to gift a Premium subscription for your account **%1$s**</string>
     <string name="LoginEmailResetPleaseWait">Resetting email, please wait...</string>
+    <string name="DeleteAndBlock">Delete and Block</string>
+    <string name="BlockBot">Block bot</string>
+    <string name="AreYouSureDeleteThisChatWithBotWithCheckmark">Are you sure you want to delete the chat with **%1$s**?</string>
     <string name="DecreaseSpeed">Decrease speed</string>
     <string name="SdCardAlert">Storing on SD card will make Telegram slow. Proceed anyway?</string>
     <string name="Proceed">Proceed</string>
