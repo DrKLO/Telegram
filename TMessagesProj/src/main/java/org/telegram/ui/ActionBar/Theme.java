@@ -6277,6 +6277,7 @@ public class Theme {
         public static Drawable rect(String backgroundColorKey) {
             return rect(Theme.getColor(backgroundColorKey));
         }
+
         public static Drawable rect(String backgroundColorKey, float ...radii) {
             return rect(Theme.getColor(backgroundColorKey), radii);
         }
@@ -10878,13 +10879,27 @@ public class Theme {
         return false;
     }
 
-    public static void turnOffAutoNight(BaseFragment fragment) {
-        turnOffAutoNight(fragment != null ? fragment.getLayoutContainer() : null, () -> {
-            INavigationLayout nav = fragment != null ? fragment.getParentLayout() : null;
-            if (nav != null) {
-                nav.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
+    public static void turnOffAutoNight(@NonNull BaseFragment fragment) {
+        if (selectedAutoNightType != AUTO_NIGHT_TYPE_NONE) {
+            if (fragment != null) {
+                try {
+                    BulletinFactory.of(fragment).createSimpleBulletin(
+                        R.raw.auto_night_off,
+                        selectedAutoNightType == AUTO_NIGHT_TYPE_SYSTEM ?
+                                LocaleController.getString("AutoNightSystemModeOff", R.string.AutoNightSystemModeOff) :
+                                LocaleController.getString("AutoNightModeOff", R.string.AutoNightModeOff),
+                        LocaleController.getString("Settings", R.string.Settings),
+                        Bulletin.DURATION_PROLONG,
+                        () -> fragment.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT))
+                    ).show();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
             }
-        });
+            selectedAutoNightType = AUTO_NIGHT_TYPE_NONE;
+            saveAutoNightThemeConfig();
+            cancelAutoNightThemeCallbacks();
+        }
     }
 
     public static void turnOffAutoNight(FrameLayout container, Runnable openSettings) {

@@ -6649,7 +6649,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
                 cursor.moveToFirst();
                 len = cursor.getLong(sizeIndex);
-
+                cursor.close();
             } catch (Exception e) {
                 FileLog.e(e);
             }

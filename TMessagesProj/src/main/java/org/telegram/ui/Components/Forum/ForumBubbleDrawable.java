@@ -35,6 +35,7 @@ public class ForumBubbleDrawable extends Drawable {
 
     private final Paint strokePaint;
     private final Paint topPaint;
+    private static SvgHelper.SvgDrawable mainDrawable;
 
     private int currentColors[];
 
@@ -60,7 +61,10 @@ public class ForumBubbleDrawable extends Drawable {
 
 
     public ForumBubbleDrawable(int color) {
-        svgDrawable = SvgHelper.getDrawable(R.raw.topic_bubble, Color.WHITE);
+        if (mainDrawable == null) {
+            mainDrawable = SvgHelper.getDrawable(R.raw.topic_bubble, Color.WHITE);
+        }
+        svgDrawable = mainDrawable.clone();
         svgDrawable.copyCommandFromPosition(0);
         topPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);

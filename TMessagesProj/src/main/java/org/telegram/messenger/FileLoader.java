@@ -801,7 +801,7 @@ public class FileLoader extends BaseController {
             public void didPreFinishLoading(FileLoadOperation operation, File finalFile) {
                 FileLoaderPriorityQueue queue = operation.getQueue();
                 fileLoaderQueue.postRunnable(() -> {
-                    FileLoadOperation currentOperation = loadOperationPaths.remove(fileName);
+                    FileLoadOperation currentOperation = loadOperationPaths.get(fileName);
                     if (currentOperation != null) {
                         currentOperation.preFinished = true;
                         queue.checkLoadingOperations();

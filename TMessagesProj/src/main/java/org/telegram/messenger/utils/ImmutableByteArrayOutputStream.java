@@ -90,4 +90,7 @@ public class ImmutableByteArrayOutputStream extends OutputStream {
         count = 0;
     }
 
+    public int count() {
+        return count;
+    }
 }

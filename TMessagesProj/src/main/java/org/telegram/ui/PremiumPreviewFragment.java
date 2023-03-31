@@ -664,10 +664,13 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
         if (tier == null) {
             forcePremium = true;
-            for (TLRPC.TL_premiumSubscriptionOption option : fragment.getAccountInstance().getMediaDataController().getPremiumPromo().period_options) {
-                if (option.months == 1) {
-                    tier = new SubscriptionTier(option);
-                    break;
+            TLRPC.TL_help_premiumPromo promo = fragment.getAccountInstance().getMediaDataController().getPremiumPromo();
+            if (promo != null) {
+                for (TLRPC.TL_premiumSubscriptionOption option : promo.period_options) {
+                    if (option.months == 1) {
+                        tier = new SubscriptionTier(option);
+                        break;
+                    }
                 }
             }
         }

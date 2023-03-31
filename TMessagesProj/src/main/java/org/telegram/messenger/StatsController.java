@@ -11,6 +11,8 @@ package org.telegram.messenger;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.telegram.messenger.utils.ImmutableByteArrayOutputStream;
+
 import java.io.File;
 import java.io.RandomAccessFile;
 
@@ -78,6 +80,7 @@ public class StatsController extends BaseController {
         return ((long) bytes[0] & 0xFF) << 56 | ((long) bytes[1] & 0xFF) << 48 | ((long) bytes[2] & 0xFF) << 40 | ((long) bytes[3] & 0xFF) << 32 | ((long) bytes[4] & 0xFF) << 24 | ((long) bytes[5] & 0xFF) << 16 | ((long) bytes[6] & 0xFF) << 8 | ((long) bytes[7] & 0xFF);
     }
 
+    ImmutableByteArrayOutputStream byteArrayOutputStream = new ImmutableByteArrayOutputStream();
     private Runnable saveRunnable = new Runnable() {
         @Override
         public void run() {
@@ -87,25 +90,27 @@ public class StatsController extends BaseController {
             }
             lastInternalStatsSaveTime = newTime;
             try {
-                statsFile.seek(0);
+                byteArrayOutputStream.reset();
                 for (int a = 0; a < 3; a++) {
                     for (int b = 0; b < OLD_TYPES_COUNT; b++) {
-                        statsFile.write(longToBytes(sentBytes[a][b]), 0, 8);
-                        statsFile.write(longToBytes(receivedBytes[a][b]), 0, 8);
-                        statsFile.write(intToBytes(sentItems[a][b]), 0, 4);
-                        statsFile.write(intToBytes(receivedItems[a][b]), 0, 4);
+                        byteArrayOutputStream.write(longToBytes(sentBytes[a][b]), 0, 8);
+                        byteArrayOutputStream.write(longToBytes(receivedBytes[a][b]), 0, 8);
+                        byteArrayOutputStream.write(intToBytes(sentItems[a][b]), 0, 4);
+                        byteArrayOutputStream.write(intToBytes(receivedItems[a][b]), 0, 4);
                     }
-                    statsFile.write(intToBytes(callsTotalTime[a]), 0, 4);
-                    statsFile.write(longToBytes(resetStatsDate[a]), 0, 8);
+                    byteArrayOutputStream.write(intToBytes(callsTotalTime[a]), 0, 4);
+                    byteArrayOutputStream.write(longToBytes(resetStatsDate[a]), 0, 8);
                 }
                 for (int b = OLD_TYPES_COUNT; b < TYPES_COUNT; ++b) {
                     for (int a = 0; a < 3; ++a) {
-                        statsFile.write(longToBytes(sentBytes[a][b]), 0, 8);
-                        statsFile.write(longToBytes(receivedBytes[a][b]), 0, 8);
-                        statsFile.write(intToBytes(sentItems[a][b]), 0, 4);
-                        statsFile.write(intToBytes(receivedItems[a][b]), 0, 4);
+                        byteArrayOutputStream.write(longToBytes(sentBytes[a][b]), 0, 8);
+                        byteArrayOutputStream.write(longToBytes(receivedBytes[a][b]), 0, 8);
+                        byteArrayOutputStream.write(intToBytes(sentItems[a][b]), 0, 4);
+                        byteArrayOutputStream.write(intToBytes(receivedItems[a][b]), 0, 4);
                     }
                 }
+                statsFile.seek(0);
+                statsFile.write(byteArrayOutputStream.buf, 0, byteArrayOutputStream.count());
                 statsFile.getFD().sync();
             } catch (Exception ignore) {
 
@@ -280,6 +285,7 @@ public class StatsController extends BaseController {
         long newTime = System.currentTimeMillis();
         if (Math.abs(newTime - lastStatsSaveTime.get()) >= 2000) {
             lastStatsSaveTime.set(newTime);
+            statsSaveQueue.cancelRunnable(saveRunnable);
             statsSaveQueue.postRunnable(saveRunnable);
         }
     }
