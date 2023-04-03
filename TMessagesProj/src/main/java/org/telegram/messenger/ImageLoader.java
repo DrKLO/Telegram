@@ -2277,7 +2277,8 @@ public class ImageLoader {
                     newPath = ApplicationLoader.applicationContext.getExternalFilesDir(null);
                     telegramPath = new File(newPath, "Teamgram");
                 } else {
-                    if (!(path.exists() ? path.isDirectory() : path.mkdirs()) || !path.canWrite()) {
+                    boolean isSdCard = !TextUtils.isEmpty(SharedConfig.storageCacheDir) && path.getAbsolutePath().startsWith(SharedConfig.storageCacheDir);
+                    if (!isSdCard && !(path.exists() ? path.isDirectory() : path.mkdirs()) || !path.canWrite()) {
                         path = ApplicationLoader.applicationContext.getExternalFilesDir(null);
                     }
                     telegramPath = new File(path, "Teamgram");

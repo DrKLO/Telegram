@@ -29,13 +29,13 @@
 #define ALOGV(...) \
   ((void)__android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__))
 
-#define DECODER_FUNC(RETURN_TYPE, NAME, ...)                               \
-  extern "C" {                                                             \
-  JNIEXPORT RETURN_TYPE                                                    \
+#define DECODER_FUNC(RETURN_TYPE, NAME, ...)                             \
+  extern "C" {                                                           \
+  JNIEXPORT RETURN_TYPE                                                  \
       Java_com_google_android_exoplayer2_ext_flac_FlacDecoderJni_##NAME( \
-          JNIEnv *env, jobject thiz, ##__VA_ARGS__);                       \
-  }                                                                        \
-  JNIEXPORT RETURN_TYPE                                                    \
+          JNIEnv *env, jobject thiz, ##__VA_ARGS__);                     \
+  }                                                                      \
+  JNIEXPORT RETURN_TYPE                                                  \
       Java_com_google_android_exoplayer2_ext_flac_FlacDecoderJni_##NAME( \
           JNIEnv *env, jobject thiz, ##__VA_ARGS__)
 
@@ -47,6 +47,7 @@ public:
       if (mid == NULL) {
         jclass cls = env->GetObjectClass(flacDecoderJni);
         mid = env->GetMethodID(cls, "read", "(Ljava/nio/ByteBuffer;)I");
+        env->DeleteLocalRef(cls);
       }
     }
 
@@ -57,6 +58,7 @@ public:
         // Exception is thrown in Java when returning from the native call.
         result = -1;
       }
+      env->DeleteLocalRef(byteBuffer);
       return result;
     }
 
@@ -147,7 +149,7 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
           context->parser->getStreamInfo();
 
   jclass flacStreamMetadataClass = env->FindClass(
-          "com/google/android/exoplayer2/util/"
+          "com/google/android/exoplayer2/extractor/"
           "FlacStreamMetadata");
   jmethodID flacStreamMetadataConstructor =
           env->GetMethodID(flacStreamMetadataClass, "<init>",
