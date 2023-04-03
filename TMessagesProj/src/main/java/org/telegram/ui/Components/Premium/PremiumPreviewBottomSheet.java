@@ -16,6 +16,7 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -357,11 +358,11 @@ public class PremiumPreviewBottomSheet extends BottomSheetWithRecyclerListView i
             if (isOutboundGift) {
                 titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
                 subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumOutboundDialogSubtitle, user != null ? user.first_name : ""), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
-            } else if (user != null && user.id == 777000) {
+            } else if (user == null || TextUtils.isEmpty(user.first_name) || user.id == 777000) {
                 titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPluralSomeone, LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
             } else {
-                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user != null ? user.first_name : "", LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
+                titleView[0].setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.TelegramPremiumUserGiftedPremiumDialogTitleWithPlural, user.first_name, LocaleController.formatPluralString("GiftMonths", giftTier.getMonths())), Theme.key_windowBackgroundWhiteBlueButton,  AndroidUtilities.REPLACING_TAG_TYPE_LINK, null));
                 subtitleView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.TelegramPremiumUserGiftedPremiumDialogSubtitle)));
             }
         } else {

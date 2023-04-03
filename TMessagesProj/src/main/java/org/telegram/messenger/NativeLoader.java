@@ -22,7 +22,7 @@ import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
-    private final static int LIB_VERSION = 43;
+    private final static int LIB_VERSION = 44;
     private final static String LIB_NAME = "tmessages." + LIB_VERSION;
     private final static String LIB_SO_NAME = "lib" + LIB_NAME + ".so";
     private final static String LOCALE_LIB_SO_NAME = "lib" + LIB_NAME + "loc.so";
@@ -127,36 +127,7 @@ public class NativeLoader {
                 FileLog.e(e);
             }
 
-            String folder;
-            try {
-                String str = Build.CPU_ABI;
-                if (Build.CPU_ABI.equalsIgnoreCase("x86_64")) {
-                    folder = "x86_64";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("arm64-v8a")) {
-                    folder = "arm64-v8a";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
-                    folder = "armeabi-v7a";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
-                    folder = "armeabi";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
-                    folder = "x86";
-                } else if (Build.CPU_ABI.equalsIgnoreCase("mips")) {
-                    folder = "mips";
-                } else {
-                    folder = "armeabi";
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Unsupported arch: " + Build.CPU_ABI);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-                folder = "armeabi";
-            }
-
-            String javaArch = System.getProperty("os.arch");
-            if (javaArch != null && javaArch.contains("686")) {
-                folder = "x86";
-            }
+            String folder = getAbiFolder();
 
             /*File destFile = getNativeLibraryDir(context);
             if (destFile != null) {
@@ -207,6 +178,40 @@ public class NativeLoader {
         } catch (Error e) {
             FileLog.e(e);
         }
+    }
+
+    public static String getAbiFolder() {
+        String folder;
+        try {
+            String str = Build.CPU_ABI;
+            if (Build.CPU_ABI.equalsIgnoreCase("x86_64")) {
+                folder = "x86_64";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("arm64-v8a")) {
+                folder = "arm64-v8a";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
+                folder = "armeabi-v7a";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
+                folder = "armeabi";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("x86")) {
+                folder = "x86";
+            } else if (Build.CPU_ABI.equalsIgnoreCase("mips")) {
+                folder = "mips";
+            } else {
+                folder = "armeabi";
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("Unsupported arch: " + Build.CPU_ABI);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            folder = "armeabi";
+        }
+
+        String javaArch = System.getProperty("os.arch");
+        if (javaArch != null && javaArch.contains("686")) {
+            folder = "x86";
+        }
+        return folder;
     }
 
     private static native void init(String path, boolean enable);

@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.util;
 
+import static java.lang.System.loadLibrary;
+
 import java.util.Arrays;
 
 /** Configurable loader for native libraries. */
@@ -72,5 +74,5 @@ public abstract class LibraryLoader {
    *
    * @param name The name of the library to load.
    */
-  protected abstract void loadLibrary(String name);
+  protected abstract void oadLibrary(String name);
 }

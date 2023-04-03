@@ -16,9 +16,8 @@
 
 #include "include/flac_parser.h"
 
-#include <jni.h>
-
 #include <android/log.h>
+#include <jni.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -431,7 +430,7 @@ bool FLACParser::getSeekPositions(int64_t timeUs,
     targetSampleNumber = totalSamples - 1;
   }
 
-  FLAC__StreamMetadata_SeekPoint* points = mSeekTable->points;
+  FLAC__StreamMetadata_SeekPoint *points = mSeekTable->points;
   unsigned length = mSeekTable->num_points;
 
   for (unsigned i = length; i != 0; i--) {

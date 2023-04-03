@@ -94,7 +94,7 @@ public class StickerCategoriesListView extends RecyclerListView {
 
     public static void preload(int account, @CategoriesType int type) {
         fetcher.fetch(account, type, emojiGroups -> {
-            if (emojiGroups.groups == null) {
+            if (emojiGroups == null || emojiGroups.groups == null) {
                 return;
             }
             for (TLRPC.TL_emojiGroup group : emojiGroups.groups) {

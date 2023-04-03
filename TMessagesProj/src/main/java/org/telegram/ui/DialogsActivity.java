@@ -8683,13 +8683,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (id == NotificationCenter.dialogsUnreadReactionsCounterChanged) {
             updateVisibleRows(0);
         } else if (id == NotificationCenter.emojiLoaded) {
-            for (int i = 0; i < viewPages.length; ++i) {
-                final RecyclerListView listView = viewPages[i].listView;
-                if (listView != null) {
-                    for (int a = 0; a < listView.getChildCount(); ++a) {
-                        View child = listView.getChildAt(a);
-                        if (child != null) {
-                            child.invalidate();
+            if (viewPages != null) {
+                for (int i = 0; i < viewPages.length; ++i) {
+                    final RecyclerListView listView = viewPages[i].listView;
+                    if (listView != null) {
+                        for (int a = 0; a < listView.getChildCount(); ++a) {
+                            View child = listView.getChildAt(a);
+                            if (child != null) {
+                                child.invalidate();
+                            }
                         }
                     }
                 }
