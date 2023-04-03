@@ -2229,6 +2229,10 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
         }
     }
 
+    public boolean hasPendingScrollPosition() {
+        return mPendingScrollPosition >= 0;
+    }
+
     /**
      * Helper class that keeps temporary state while {LayoutManager} is filling out the empty
      * space.

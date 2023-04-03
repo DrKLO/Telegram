@@ -22,6 +22,7 @@ import com.google.android.exoplayer2.util.LibraryLoader;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.MimeTypes;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.telegram.messenger.NativeLoader;
 
 /** Configures and queries the underlying native library. */
 public final class FfmpegLibrary {
@@ -31,14 +32,6 @@ public final class FfmpegLibrary {
   }
 
   private static final String TAG = "FfmpegLibrary";
-
-  private static final LibraryLoader LOADER =
-      new LibraryLoader("ffmpegJNI") {
-        @Override
-        protected void loadLibrary(String name) {
-          System.loadLibrary(name);
-        }
-      };
 
   private static @MonotonicNonNull String version;
   private static int inputBufferPaddingSize = C.LENGTH_UNSET;
@@ -53,12 +46,12 @@ public final class FfmpegLibrary {
    * @param libraries The names of the FFmpeg native libraries.
    */
   public static void setLibraries(String... libraries) {
-    LOADER.setLibraries(libraries);
+
   }
 
   /** Returns whether the underlying library is available, loading it if necessary. */
   public static boolean isAvailable() {
-    return LOADER.isAvailable();
+    return NativeLoader.loaded();
   }
 
   /** Returns the version of the underlying library if available, or null otherwise. */

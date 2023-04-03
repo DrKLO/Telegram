@@ -4837,7 +4837,7 @@ public class DialogCell extends BaseCell {
                 }
                 return false;
             }
-            int messageHash = message == null ? 0 : message.getId();
+            int messageHash = message == null ? 0 : message.getId() + message.hashCode();
             Integer printingType = null;
             long readHash = dialog.read_inbox_max_id + ((long) dialog.read_outbox_max_id << 8) + ((long) (dialog.unread_count + (dialog.unread_mark ? -1 : 0)) << 16) +
                     (dialog.unread_reactions_count > 0 ? (1 << 18) : 0) +
