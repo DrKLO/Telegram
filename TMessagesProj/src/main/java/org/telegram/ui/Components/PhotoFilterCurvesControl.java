@@ -307,7 +307,6 @@ public class PhotoFilterCurvesControl extends View {
         }
 
         float[] points = curvesValue.interpolateCurve();
-        invalidate();
         path.reset();
         for (int a = 0; a < points.length / 2; a++) {
             if (a == 0) {
