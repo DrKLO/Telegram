@@ -7957,19 +7957,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             videoPlayerTotalTime[0] = (int) (total / 60);
             videoPlayerTotalTime[1] = (int) (total % 60);
         }
-        String current, total;
-        if (videoPlayerCurrentTime[0] >= 60) {
-            current = String.format(Locale.ROOT, "%02d:%02d:%02d", videoPlayerCurrentTime[0] / 60, videoPlayerCurrentTime[0] % 60, videoPlayerCurrentTime[1]);
-        } else {
-            current = String.format(Locale.ROOT, "%02d:%02d", videoPlayerCurrentTime[0], videoPlayerCurrentTime[1]);
-        }
-        if (videoPlayerTotalTime[0] >= 60) {
-            total = String.format(Locale.ROOT, "%02d:%02d:%02d", videoPlayerTotalTime[0] / 60, videoPlayerTotalTime[0] % 60, videoPlayerTotalTime[1]);
-        } else {
-            total = String.format(Locale.ROOT, "%02d:%02d", videoPlayerTotalTime[0], videoPlayerTotalTime[1]);
-        }
-
-        videoPlayerTime.setText(String.format(Locale.ROOT, "%s / %s", current, total));
+        String current = AndroidUtilities.formatVideoDurationFast(videoPlayerCurrentTime[0], videoPlayerCurrentTime[1]);
+        String total = AndroidUtilities.formatVideoDurationFast(videoPlayerTotalTime[0], videoPlayerTotalTime[1]);
+        videoPlayerTime.setText(current + " / " + total);
         if (!Objects.equals(lastControlFrameDuration, total)) {
             lastControlFrameDuration = total;
             videoPlayerControlFrameLayout.requestLayout();

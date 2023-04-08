@@ -3180,6 +3180,31 @@ public class AndroidUtilities {
         }
     }
 
+    public static String formatVideoDurationFast(int minutes, int seconds) {
+        if (minutes >= 60) {
+            return normalizeTimePart(minutes / 60) + ":" + normalizeTimePart(minutes % 60) + ":" + normalizeTimePart(seconds);
+        } else {
+            return normalizeTimePart(minutes) + ":" + normalizeTimePart(seconds);
+        }
+    }
+
+    public static String formatTimerDurationFast(long seconds, int ms) {
+        long minutes = seconds / 60;
+        if (minutes >= 60) {
+            return minutes / 60 + ":" + normalizeTimePart(minutes % 60) + ":" + normalizeTimePart(seconds % 60) + "," + ms / 10;
+        } else {
+            return minutes + ":" + normalizeTimePart(seconds % 60) + "," + ms / 10;
+        }
+    }
+
+    public static String normalizeTimePart(int time) {
+        return time < 10 ? "0" + time : String.valueOf(time);
+    }
+
+    public static String normalizeTimePart(long time) {
+        return time < 10 ? "0" + time : String.valueOf(time);
+    }
+
     public static String formatCount(int count) {
         if (count < 1000) return Integer.toString(count);
 
