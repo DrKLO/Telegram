@@ -1773,7 +1773,6 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                             public void onSeekBarDrag(boolean stop, float progress) {
                                 currentIntensity = progress;
                                 backgroundImage.getImageReceiver().setAlpha(Math.abs(currentIntensity));
-                                backgroundImage.invalidate();
                                 patternsListView.invalidateViews();
                                 if (currentIntensity >= 0) {
                                     if (Build.VERSION.SDK_INT >= 29 && backgroundImage.getBackground() instanceof MotionBackgroundDrawable) {
@@ -1789,6 +1788,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                                         backgroundImage.getImageReceiver().setGradientBitmap(motionBackgroundDrawable.getBitmap());
                                     }
                                 }
+                                backgroundImage.invalidate();
                             }
 
                             @Override
@@ -3435,6 +3435,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             } else {
                 backgroundImage.getImageReceiver().setBlendMode(null);
             }
+            backgroundImage.invalidate();
         }
 
         if (backgroundPlayAnimationView != null) {

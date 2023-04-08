@@ -1626,7 +1626,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public void setBlendMode(Object mode) {
         blendMode = mode;
-        invalidate();
     }
 
     public void setGradientBitmap(Bitmap bitmap) {
