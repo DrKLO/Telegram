@@ -1306,7 +1306,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 int maxTextSize = 0;
                 if (textsCount != 0) {
                     backgroundButtonsContainer = new FrameLayout(context);
-                    if (screenType == SCREEN_TYPE_ACCENT_COLOR || currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
+                    if (canSetColors()) {
                         texts[0] = LocaleController.getString("BackgroundColors", R.string.BackgroundColors);
                         texts[1] = LocaleController.getString("BackgroundPattern", R.string.BackgroundPattern);
                         texts[2] = LocaleController.getString("BackgroundMotion", R.string.BackgroundMotion);
@@ -1925,7 +1925,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         actionBar2.setTranslationY(-loc[1]);
                         page2.invalidate();
                     }
-                    if (SystemClock.elapsedRealtime() < watchForKeyboardEndTime) {
+                    if (canSetColors() && SystemClock.elapsedRealtime() < watchForKeyboardEndTime) {
                         invalidate();
                     }
                 }
@@ -1934,8 +1934,10 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         frameLayout.setWillNotDraw(false);
         fragmentView = frameLayout;
         frameLayout.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener = () -> {
-            watchForKeyboardEndTime = SystemClock.elapsedRealtime() + 1500;
-            frameLayout.invalidate();
+            if (canSetColors()) {
+                watchForKeyboardEndTime = SystemClock.elapsedRealtime() + 1500;
+                frameLayout.invalidate();
+            }
         });
 
         viewPager = new ViewPager(context);
@@ -4628,6 +4630,10 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 }
             }
         }
+    }
+
+    private boolean canSetColors() {
+        return screenType == SCREEN_TYPE_ACCENT_COLOR || currentWallpaper instanceof WallpapersListActivity.ColorWallpaper;
     }
 
     private List<ThemeDescription> getThemeDescriptionsInternal() {
