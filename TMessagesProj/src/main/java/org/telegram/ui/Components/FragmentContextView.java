@@ -146,6 +146,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private MessageObject lastMessageObject;
     protected float topPadding;
     private boolean visible;
+    private boolean isResumed;
     @Style
     private int currentStyle = STYLE_NOT_SET;
     private String lastString;
@@ -164,7 +165,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private final Runnable updateScheduleTimeRunnable = new Runnable() {
         @Override
         public void run() {
-            if (gradientTextPaint == null || !(fragment instanceof ChatActivity)) {
+            if (!isResumed || gradientTextPaint == null || !(fragment instanceof ChatActivity)) {
                 scheduleRunnableScheduled = false;
                 return;
             }
@@ -263,6 +264,22 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
 
         setTag(1);
+    }
+
+    public void onResume() {
+        isResumed = true;
+        if (currentStyle == STYLE_INACTIVE_GROUP_CALL && !scheduleRunnableScheduled) {
+            scheduleRunnableScheduled = true;
+            updateScheduleTimeRunnable.run();
+        }
+    }
+
+    public void onPause() {
+        isResumed = false;
+        if (scheduleRunnableScheduled) {
+            AndroidUtilities.cancelRunOnUIThread(updateScheduleTimeRunnable);
+            scheduleRunnableScheduled = false;
+        }
     }
 
     public void setSupportsCalls(boolean value) {
@@ -1231,10 +1248,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             animatorSet.cancel();
             animatorSet = null;
         }
-        if (scheduleRunnableScheduled) {
-            AndroidUtilities.cancelRunOnUIThread(updateScheduleTimeRunnable);
-            scheduleRunnableScheduled = false;
-        }
         visible = false;
         NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
         topPadding = 0;
@@ -1320,11 +1333,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 muteDrawable.setCustomEndFrame(isMuted ? 15 : 29);
                 muteDrawable.setCurrentFrame(muteDrawable.getCustomEndFrame() - 1, false, true);
                 muteButton.invalidate();
-            }
-        } else if (currentStyle == STYLE_INACTIVE_GROUP_CALL) {
-            if (!scheduleRunnableScheduled) {
-                scheduleRunnableScheduled = true;
-                updateScheduleTimeRunnable.run();
             }
         }
 

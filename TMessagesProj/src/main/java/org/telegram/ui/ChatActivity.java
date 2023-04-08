@@ -22450,6 +22450,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             pullingDownOffset = 0;
             chatListView.invalidate();
         }
+        if (fragmentContextView != null) {
+            fragmentContextView.onResume();
+        }
 
         flagSecure.attach();
     }
@@ -22617,6 +22620,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (AvatarPreviewer.hasVisibleInstance()) {
             AvatarPreviewer.getInstance().close();
+        }
+        if (fragmentContextView != null) {
+            fragmentContextView.onPause();
         }
     }
 
