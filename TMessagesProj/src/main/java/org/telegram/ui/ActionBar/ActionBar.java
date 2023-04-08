@@ -1415,7 +1415,13 @@ public class ActionBar extends FrameLayout {
         }
     }
 
+    protected void onResume() {
+        ellipsizeSpanAnimator.onAttachedToWindow();
+    }
+
     protected void onPause() {
+        ellipsizeSpanAnimator.onDetachedFromWindow();
+
         if (menu != null) {
             menu.hideAllPopupMenus();
         }
@@ -1700,7 +1706,6 @@ public class ActionBar extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attached = true;
-        ellipsizeSpanAnimator.onAttachedToWindow();
         if (SharedConfig.noStatusBar && actionModeVisible) {
             if (ColorUtils.calculateLuminance(actionModeColor) < 0.7f) {
                 AndroidUtilities.setLightStatusBar(((Activity) getContext()).getWindow(), false);
@@ -1717,7 +1722,6 @@ public class ActionBar extends FrameLayout {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attached = false;
-        ellipsizeSpanAnimator.onDetachedFromWindow();
         if (SharedConfig.noStatusBar && actionModeVisible) {
             if (actionBarColor == 0) {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors);

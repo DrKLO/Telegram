@@ -366,6 +366,9 @@ public abstract class BaseFragment {
 
     @CallSuper
     public void onResume() {
+        if (actionBar != null) {
+            actionBar.onResume();
+        }
         isPaused = false;
     }
 
