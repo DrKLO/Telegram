@@ -275,8 +275,6 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         getNotificationCenter().addObserver(this, NotificationCenter.newPeopleNearbyAvailable);
         getNotificationCenter().addObserver(this, NotificationCenter.needDeleteDialog);
         checkCanCreateGroup();
-        sendRequest(false, 0);
-        AndroidUtilities.runOnUIThread(shortPollRunnable, SHORT_POLL_TIMEOUT);
         return true;
     }
 
@@ -674,7 +672,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             if (saveConfig) {
                 userConfig.saveConfig(false);
             }
-            if (shortPollRunnable != null) {
+            if (shortPollRunnable != null && !isPaused) {
                 AndroidUtilities.cancelRunOnUIThread(shortPollRunnable);
                 AndroidUtilities.runOnUIThread(shortPollRunnable, SHORT_POLL_TIMEOUT);
             }
@@ -689,6 +687,8 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             listViewAdapter.notifyDataSetChanged();
         }
         getLocationController().startLocationLookupForPeopleNearby(false);
+        sendRequest(false, 0);
+        AndroidUtilities.runOnUIThread(shortPollRunnable, SHORT_POLL_TIMEOUT);
     }
 
     @Override
@@ -698,6 +698,9 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             undoView.hide(true, 0);
         }
         getLocationController().startLocationLookupForPeopleNearby(true);
+        if (shortPollRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(shortPollRunnable);
+        }
     }
 
     @Override
