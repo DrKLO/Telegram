@@ -480,9 +480,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
                 ((View) obj).invalidate();
             } else if (obj instanceof ArticleViewer.DrawingText) {
                 ArticleViewer.DrawingText text = (ArticleViewer.DrawingText) obj;
-                if (text.latestParentView != null) {
-                    text.latestParentView.invalidate();
-                }
+                text.invalidateParent();
             } else if (tryParent && mParent != null) {
                 mParent.invalidate();
             }

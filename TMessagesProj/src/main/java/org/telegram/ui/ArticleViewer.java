@@ -385,7 +385,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     }
 
     public class DrawingText implements TextSelectionHelper.TextLayoutBlock {
-        public View latestParentView;
+        private View latestParentView;
 
         public StaticLayout textLayout;
         public LinkPath textPath;
@@ -398,8 +398,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public int y;
         public int row;
         public CharSequence prefix;
+        public boolean isDrawing;
 
         public void draw(Canvas canvas, View view) {
+            isDrawing = true;
             latestParentView = view;
 
             if (!searchResults.isEmpty()) {
@@ -446,6 +448,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 canvas.drawRect(-AndroidUtilities.dp(2) + x, 0, x + width + AndroidUtilities.dp(2), getHeight(), urlPaint);
             }
             textLayout.draw(canvas);
+            isDrawing = false;
+        }
+
+        public void invalidateParent() {
+            if (!isDrawing && latestParentView != null) {
+                latestParentView.invalidate();
+            }
         }
 
         public CharSequence getText() {
