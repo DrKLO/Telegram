@@ -43,6 +43,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
@@ -596,6 +597,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     protected void dispatchDraw(Canvas canvas) {
         long dt = Math.min(16, System.currentTimeMillis() - lastUpdate);
         lastUpdate = System.currentTimeMillis();
+        boolean needInvalidate = false;
 
         if (isFlippedVertically && flipVerticalProgress != 1f) {
             flipVerticalProgress = Math.min(1f, flipVerticalProgress + dt / 220f);
@@ -704,6 +706,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     } else if (!view.isEnter) {
                         view.resetAnimation();
                     }
+                    if (!needInvalidate && view.isAnimating()) {
+                        needInvalidate = true;
+                    }
                 } else {
                     if (child == premiumLockContainer) {
                         if (child.getX() + child.getMeasuredWidth() / 2f > 0 && child.getX() + child.getMeasuredWidth() / 2f < recyclerListView.getWidth()) {
@@ -786,7 +791,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         canvas.restoreToCount(s);
 
         drawBubbles(canvas, br, cPr, sr, 255);
-        invalidate();
+        if (needInvalidate) {
+            invalidate();
+        }
     }
 
     public void drawBubbles(Canvas canvas) {
@@ -1275,18 +1282,28 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 @Override
                 protected void dispatchDraw(Canvas canvas) {
                     super.dispatchDraw(canvas);
+                    boolean needInvalidate = true;
                     if (imageReceiver.getLottieAnimation() != null && !waitingAnimation) {
-                        imageReceiver.getLottieAnimation().start();
+                        if (isAnimating()) {
+                            imageReceiver.getLottieAnimation().start();
+                        } else {
+                            imageReceiver.getLottieAnimation().stop();
+                            needInvalidate = false;
+                        }
                     }
                     if (shouldSwitchToLoopView && !switchedToLoopView && imageReceiver.getLottieAnimation() != null && imageReceiver.getLottieAnimation().isLastFrame() && loopImageView.imageReceiver.getLottieAnimation() != null && loopImageView.imageReceiver.getLottieAnimation().hasBitmap()) {
                         switchedToLoopView = true;
                         loopImageView.imageReceiver.getLottieAnimation().setCurrentFrame(0, false, true);
                         loopImageView.setVisibility(View.VISIBLE);
+                        needInvalidate = false;
                         AndroidUtilities.runOnUIThread(() -> {
                             enterImageView.setVisibility(View.INVISIBLE);
                         });
                     }
-                    invalidate();
+
+                    if (needInvalidate) {
+                        invalidate();
+                    }
                 }
 
                 @Override
@@ -1318,6 +1335,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             enterImageView.setLayerNum(Integer.MAX_VALUE);
             loopImageView.setLayerNum(Integer.MAX_VALUE);
             pressedBackupImageView.setLayerNum(Integer.MAX_VALUE);
+        }
+
+        private boolean isAnimating() {
+            return shouldSwitchToLoopView || (enterImageView.getImageReceiver().getLottieAnimation() != null && !enterImageView.getImageReceiver().getLottieAnimation().isLastFrame());
         }
 
         private void setReaction(ReactionsLayoutInBubble.VisibleReaction react, int position) {
