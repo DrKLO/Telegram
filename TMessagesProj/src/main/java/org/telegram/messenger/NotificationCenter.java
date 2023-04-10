@@ -250,6 +250,8 @@ public class NotificationCenter {
     public static final int didClearDatabase = totalEvents++;
     public static final int voipServiceCreated = totalEvents++;
     public static final int webRtcMicAmplitudeEvent = totalEvents++;
+    public static final int voipViewFullyVisible = totalEvents++;
+    public static final int voipViewNotFullyVisible = totalEvents++;
     public static final int webRtcSpeakerAmplitudeEvent = totalEvents++;
     public static final int showBulletin = totalEvents++;
     public static final int appUpdateAvailable = totalEvents++;

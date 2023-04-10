@@ -2259,6 +2259,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().addObserver(this, NotificationCenter.dialogIsTranslatable);
         getNotificationCenter().addObserver(this, NotificationCenter.messageTranslated);
         getNotificationCenter().addObserver(this, NotificationCenter.messageTranslating);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.voipViewFullyVisible);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.voipViewNotFullyVisible);
 
         super.onFragmentCreate();
 
@@ -2614,6 +2616,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().removeObserver(this, NotificationCenter.dialogIsTranslatable);
         getNotificationCenter().removeObserver(this, NotificationCenter.messageTranslated);
         getNotificationCenter().removeObserver(this, NotificationCenter.messageTranslating);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.voipViewFullyVisible);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.voipViewNotFullyVisible);
         if (currentEncryptedChat != null) {
             getNotificationCenter().removeObserver(this, NotificationCenter.didVerifyMessagesStickers);
         }
@@ -18259,6 +18263,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             updateTopPanel(true);
             updateTranslateItemVisibility();
+        } else if (id == NotificationCenter.voipViewFullyVisible) {
+            setIsVisibleForUser(false);
+        } else if (id == NotificationCenter.voipViewNotFullyVisible) {
+            setIsVisibleForUser(true);
         }
     }
 

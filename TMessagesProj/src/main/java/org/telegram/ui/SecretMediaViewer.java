@@ -541,6 +541,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     public void setParentActivity(Activity activity) {
         currentAccount = UserConfig.selectedAccount;
         centerImage.setCurrentAccount(currentAccount);
+        centerImage.setLayerNum(8);
         if (parentActivity == activity) {
             return;
         }
