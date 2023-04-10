@@ -41,7 +41,7 @@ public class VoIPWindowView extends FrameLayout {
         if (!enterAnimation) {
             runEnterTransition = true;
         }
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewFullyVisible);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewVisibilityChanged, true);
     }
 
     boolean runEnterTransition;
@@ -86,7 +86,7 @@ public class VoIPWindowView extends FrameLayout {
                 startX = event.getX();
                 dx = 0;
                 startDragging = true;
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewNotFullyVisible);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewVisibilityChanged, false);
             }
             if (startDragging) {
                 if (dx < 0) {
@@ -114,7 +114,7 @@ public class VoIPWindowView extends FrameLayout {
                 float distToMove = getMeasuredWidth() - getTranslationX();
                 finish(Math.max((int) (200.0f / getMeasuredWidth() * distToMove), 50));
             } else {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewFullyVisible);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewVisibilityChanged, true);
                 animate().translationX(0).start();
             }
             startDragging = false;
@@ -130,7 +130,7 @@ public class VoIPWindowView extends FrameLayout {
         if (!finished) {
             finished = true;
             VoIPFragment.clearInstance();
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewNotFullyVisible);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewVisibilityChanged, false);
 
             if (lockOnScreen) {
                 try {
@@ -217,7 +217,7 @@ public class VoIPWindowView extends FrameLayout {
 
     public void finishImmediate() {
         if (getParent() != null) {
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewNotFullyVisible);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.voipViewVisibilityChanged, false);
             activity.setRequestedOrientation(orientationBefore);
             WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
             setVisibility(View.GONE);
