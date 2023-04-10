@@ -67,7 +67,7 @@ public class StickerTabView extends FrameLayout {
             visibleView = iconView;
         } else {
             imageView = new BackupImageView(getContext());
-            imageView.setLayerNum(1);
+            imageView.setLayerNum(8);
             imageView.setAspectFit(true);
             imageView.setRoundRadius(AndroidUtilities.dp(6));
             addView(imageView, LayoutHelper.createFrame(IMAGE_SMALL_SIZE, IMAGE_SMALL_SIZE, Gravity.CENTER));

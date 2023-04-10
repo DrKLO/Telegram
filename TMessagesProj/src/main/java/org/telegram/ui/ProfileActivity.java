@@ -10297,6 +10297,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         scrimAnimatorSet.start();
     }
 
+    public void setIsVisibleForUser(boolean visible) {
+        if (visible) {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4);
+        } else {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4);
+        }
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         if (resourcesProvider != null) {

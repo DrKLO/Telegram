@@ -3242,6 +3242,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         blackPaint.setColor(0xff000000);
         videoFrameBitmapPaint.setColor(0xffffffff);
         centerImage.setFileLoadingPriority(FileLoader.PRIORITY_HIGH);
+
+        leftImage.setLayerNum(8);
+        centerImage.setLayerNum(8);
+        rightImage.setLayerNum(8);
     }
 
     @SuppressWarnings("unchecked")
@@ -13686,6 +13690,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         parentChatActivity = chatActivity;
         lastTitle = null;
         isEmbedVideo = embedSeekTime != null;
+        setParentIsVisibleForUser(false);
 
         actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
         actionBar.setTitleScrollNonFitText(false);
@@ -14366,6 +14371,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (parentChatActivity != null && parentChatActivity.getFragmentView() != null) {
             parentChatActivity.getFragmentView().invalidate();
         }
+        setParentIsVisibleForUser(true);
         parentChatActivity = null;
         removeObservers();
 
@@ -15109,6 +15115,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         togglePhotosListView(false, true);
                         toggleCheckImageView(false);
                     }
+                    setParentIsVisibleForUser(true);
                     return true;
                 } else if (draggingDown) {
                     translationY = ev.getY() - dragY;
@@ -15226,6 +15233,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         toggleCheckImageView(true);
                     }
                     animateTo(1, 0, 0, false);
+                    setParentIsVisibleForUser(false);
                 }
                 draggingDown = false;
             } else if (moving) {
@@ -17571,6 +17579,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    private void setParentIsVisibleForUser(boolean visible) {
+        if (parentChatActivity != null && parentChatActivity.getFragmentView() != null) {
+            parentChatActivity.setIsVisibleForUser(visible);
+        }
+        if (parentFragment instanceof ProfileActivity && parentFragment.getFragmentView() != null) {
+            ((ProfileActivity) parentFragment).setIsVisibleForUser(visible);
+        }
+    }
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);

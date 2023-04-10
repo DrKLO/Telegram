@@ -22335,7 +22335,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatAttachAlert.onResume();
         }
         if (contentView != null) {
-            contentView.onResume();
+            contentView.onResume(1);
         }
         checkChecksHint();
 
@@ -22513,7 +22513,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
         if (contentView != null) {
-            contentView.onPause();
+            contentView.onPause(1);
         }
         if (chatMode == 0) {
             CharSequence[] message = new CharSequence[]{draftMessage};
@@ -29950,6 +29950,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         forceHistoryEmpty = historyEmpty;
     }
 
+    public void setIsVisibleForUser(boolean visible) {
+        if (visible) {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4);
+            if (contentView != null) {
+                contentView.onResume(2);
+            }
+        } else {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4);
+            if (contentView != null) {
+                contentView.onPause(2);
+            }
+        }
+    }
     public class ChatScrollCallback extends RecyclerAnimationScrollHelper.AnimationCallback {
 
         private MessageObject scrollTo;

@@ -56,7 +56,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private float bgAngle;
     private float parallaxScale = 1.0f;
     private int backgroundTranslationY;
-    private boolean paused = true;
+    private int pausedFlags;
     private Drawable oldBackgroundDrawable;
     private INavigationLayout parentLayout;
     public AdjustPanLayoutHelper adjustPanLayoutHelper;
@@ -271,7 +271,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     parallaxScale = parallaxEffect.getScale(getMeasuredWidth(), getMeasuredHeight());
                 }
             }
-            if (!paused) {
+            if (pausedFlags != 0) {
                 parallaxEffect.setEnabled(true);
             }
         } else if (parallaxEffect != null) {
@@ -306,17 +306,24 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     }
 
     public void onPause() {
+        onPause(4096);
+    }
+
+    public void onPause(int flag) {
+        pausedFlags |= flag;
         if (parallaxEffect != null) {
             parallaxEffect.setEnabled(false);
         }
-        paused = true;
+    }
+    public void onResume() {
+       onResume(4096);
     }
 
-    public void onResume() {
-        if (parallaxEffect != null) {
+    public void onResume(int flag) {
+        pausedFlags &= ~flag;
+        if (pausedFlags == 0 && parallaxEffect != null) {
             parallaxEffect.setEnabled(true);
         }
-        paused = false;
     }
 
     @Override

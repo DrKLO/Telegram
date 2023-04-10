@@ -824,7 +824,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 fileDrawable.addParent(this);
             }
             fileDrawable.setUseSharedQueue(useSharedAnimationQueue || fileDrawable.isWebmSticker);
-            if (allowStartAnimation && currentOpenedLayerFlags == 0) {
+            if (allowStartAnimation && currentLayerNum >= currentOpenedLayerFlags) {
                 fileDrawable.checkRepeat();
             }
             fileDrawable.setAllowDecodeSingleFrame(allowDecodeSingleFrame);
@@ -833,10 +833,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (attachedToWindow) {
                 fileDrawable.addParentView(this);
             }
-            if (fileDrawable != null) {
-                fileDrawable.setAllowVibration(allowLottieVibration);
-            }
-            if (allowStartLottieAnimation && (!fileDrawable.isHeavyDrawable() || currentOpenedLayerFlags == 0)) {
+            fileDrawable.setAllowVibration(allowLottieVibration);
+            if (allowStartLottieAnimation && (!fileDrawable.isHeavyDrawable() || currentLayerNum >= currentOpenedLayerFlags)) {
                 fileDrawable.start();
             }
             fileDrawable.setAllowDecodeSingleFrame(true);
@@ -1047,7 +1045,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (lottieDrawable != null) {
                 lottieDrawable.setAllowVibration(allowLottieVibration);
             }
-            if (lottieDrawable != null && allowStartLottieAnimation && (!lottieDrawable.isHeavyDrawable() || currentOpenedLayerFlags == 0)) {
+            if (lottieDrawable != null && allowStartLottieAnimation && (!lottieDrawable.isHeavyDrawable() || currentLayerNum >= currentOpenedLayerFlags)) {
                 lottieDrawable.start();
             }
             return true;
@@ -1094,14 +1092,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             lottieDrawable.addParentView(this);
             lottieDrawable.setAllowVibration(allowLottieVibration);
         }
-        if (lottieDrawable != null && allowStartLottieAnimation && (!lottieDrawable.isHeavyDrawable() || currentOpenedLayerFlags == 0)) {
+        if (lottieDrawable != null && allowStartLottieAnimation && (!lottieDrawable.isHeavyDrawable() || currentLayerNum >= currentOpenedLayerFlags)) {
             lottieDrawable.start();
         }
         AnimatedFileDrawable animatedFileDrawable = getAnimation();
         if (animatedFileDrawable != null) {
             animatedFileDrawable.addParent(this);
         }
-        if (animatedFileDrawable != null && allowStartAnimation && currentOpenedLayerFlags == 0) {
+        if (animatedFileDrawable != null && allowStartAnimation && currentLayerNum >= currentOpenedLayerFlags) {
             animatedFileDrawable.checkRepeat();
             invalidate();
         }
@@ -2728,7 +2726,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (attachedToWindow) {
                 fileDrawable.addParent(this);
             }
-            if (allowStartAnimation && currentOpenedLayerFlags == 0) {
+            if (allowStartAnimation && currentLayerNum >= currentOpenedLayerFlags) {
                 fileDrawable.checkRepeat();
             }
             fileDrawable.setAllowDecodeSingleFrame(allowDecodeSingleFrame);
@@ -2741,7 +2739,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (attachedToWindow) {
                 fileDrawable.addParentView(this);
             }
-            if (allowStartLottieAnimation && (!fileDrawable.isHeavyDrawable() || currentOpenedLayerFlags == 0)) {
+            if (allowStartLottieAnimation && (!fileDrawable.isHeavyDrawable() || currentLayerNum >= currentOpenedLayerFlags)) {
                 fileDrawable.start();
             }
             fileDrawable.setAllowDecodeSingleFrame(true);
@@ -2904,7 +2902,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
             currentOpenedLayerFlags &= ~layer;
-            if (currentOpenedLayerFlags == 0) {
+            if (currentLayerNum >= currentOpenedLayerFlags) {
                 RLottieDrawable lottieDrawable = getLottieAnimation();
                 if (lottieDrawable != null) {
                     lottieDrawable.setAllowVibration(allowLottieVibration);

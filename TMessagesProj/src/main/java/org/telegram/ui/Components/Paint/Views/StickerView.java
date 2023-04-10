@@ -70,6 +70,7 @@ public class StickerView extends EntityView {
         centerImage.setAspectFit(true);
         centerImage.setInvalidateAll(true);
         centerImage.setParentView(containerView);
+        centerImage.setLayerNum(8);
         TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
         centerImage.setImage(ImageLocation.getForDocument(sticker), null, ImageLocation.getForDocument(thumb, sticker), null, "webp", parentObject, 1);
         centerImage.setDelegate((imageReceiver, set, isThumb, memCache) -> {

@@ -1384,7 +1384,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = new ImageViewEmoji(context);
                     break;
                 case 0:
-                    view = new StickerEmojiCell(context, false) {
+                    view = new StickerEmojiCell(context, false, 8) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
                                 super.onMeasure(widthMeasureSpec, widthMeasureSpec);
