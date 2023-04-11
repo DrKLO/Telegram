@@ -102,6 +102,8 @@
             android:enabled="true"
             android:name="org.telegram.messenger.DefaultIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:icon="@mipmap/gexgram"
+            android:roundIcon="@mipmap/gexgram"
             android:exported="true">
 
             <intent-filter>
