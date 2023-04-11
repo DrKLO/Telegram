@@ -347,6 +347,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private float lastStickersX;
     private boolean expandStickersByDragg;
     private BaseFragment fragment;
+    private int layerNum;
     private final Theme.ResourcesProvider resourcesProvider;
     private Drawable searchIconDrawable;
     private Drawable searchIconDotDrawable;
@@ -1630,10 +1631,15 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     }
 
     public EmojiView(BaseFragment fragment, boolean needAnimatedEmoji, boolean needStickers, boolean needGif, final Context context, boolean needSearch, final TLRPC.ChatFull chatFull, ViewGroup parentView, Theme.ResourcesProvider resourcesProvider) {
+        this(fragment, needAnimatedEmoji, needStickers, needGif, context, needSearch, chatFull, parentView, resourcesProvider, 1);
+    }
+
+    public EmojiView(BaseFragment fragment, boolean needAnimatedEmoji, boolean needStickers, boolean needGif, final Context context, boolean needSearch, final TLRPC.ChatFull chatFull, ViewGroup parentView, Theme.ResourcesProvider resourcesProvider, int layerNum) {
         super(context);
         this.fragment = fragment;
         this.allowAnimatedEmoji = needAnimatedEmoji;
         this.resourcesProvider = resourcesProvider;
+        this.layerNum = layerNum;
 
         int color = getThemedColor(Theme.key_chat_emojiBottomPanelIcon);
         color = Color.argb(30, Color.red(color), Color.green(color), Color.blue(color));
@@ -3231,6 +3237,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     imageView.drawable = drawable;
                     imageView.drawable.setColorFilter(animatedEmojiTextColorFilter);
                     imageView.imageReceiver = drawable.getImageReceiver();
+                    imageView.imageReceiver.setLayerNum(layerNum);
                     drawInBackgroundViews.add(imageView);
                 }
             }
@@ -6153,7 +6160,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
             };
             imageView.setSize(AndroidUtilities.dp(emoji ? 24 : 30), AndroidUtilities.dp(emoji ? 24 : 30));
-            imageView.setLayerNum(1);
+            imageView.setLayerNum(layerNum);
             imageView.setAspectFit(true);
             imageView.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(emoji ? 34 : 42), AndroidUtilities.dp(emoji ? 34 : 42)));
             return new RecyclerListView.Holder(imageView);

@@ -4675,6 +4675,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             PipInstance = Instance;
                             Instance = null;
                             isVisible = false;
+                            setParentIsVisibleForUser(true);
                             if (currentPlaceObject != null && !currentPlaceObject.imageReceiver.getVisible()) {
                                 currentPlaceObject.imageReceiver.setVisible(true, true);
                             }
@@ -7091,6 +7092,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         Instance = null;
         switchingInlineMode = true;
         isVisible = false;
+        setParentIsVisibleForUser(true);
         AndroidUtilities.cancelRunOnUIThread(hideActionBarRunnable);
         if (currentPlaceObject != null && !currentPlaceObject.imageReceiver.getVisible()) {
             currentPlaceObject.imageReceiver.setVisible(true, true);
@@ -7454,6 +7456,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
             wm.addView(windowView, windowLayoutParams);
             onShowView();
+            setParentIsVisibleForUser(false);
             if (currentPlaceObject != null) {
                 currentPlaceObject.imageReceiver.setVisible(false, false);
             }
@@ -7507,6 +7510,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 PipInstance = Instance;
                 Instance = null;
                 isVisible = false;
+                setParentIsVisibleForUser(true);
                 if (currentPlaceObject != null && !currentPlaceObject.imageReceiver.getVisible()) {
                     currentPlaceObject.imageReceiver.setVisible(true, true);
                 }

@@ -1030,6 +1030,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                 imageView.drawable = drawable;
     //                imageView.drawable.setColorFilter(animatedEmojiTextColorFilter);
                 imageView.imageReceiver = drawable.getImageReceiver();
+                imageView.imageReceiver.setLayerNum(8);
                 drawInBackgroundViews.add(imageView);
             }
         }

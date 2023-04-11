@@ -624,7 +624,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, resourcesProvider);
+        emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, resourcesProvider, 8);
         emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
             @Override
             public boolean onBackspace() {
