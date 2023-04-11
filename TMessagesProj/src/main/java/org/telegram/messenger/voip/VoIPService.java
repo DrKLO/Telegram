@@ -397,14 +397,16 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 				if (isHeadsetPlugged) {
 					AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-					if (am.isSpeakerphoneOn()) {
+					boolean isSpeakerphoneOn = am.isSpeakerphoneOn();
+					boolean isBluetoothScoOn = am.isBluetoothScoOn();
+					if (isSpeakerphoneOn) {
 						previousAudioOutput = 0;
-					} else if (am.isBluetoothScoOn()) {
+					} else if (isBluetoothScoOn) {
 						previousAudioOutput = 2;
 					} else {
 						previousAudioOutput = 1;
 					}
-					setAudioOutput(1);
+					setAudioOutput(1, isBluetoothScoOn, isSpeakerphoneOn);
 				} else {
 					if (previousAudioOutput >= 0) {
 						setAudioOutput(previousAudioOutput);
@@ -422,6 +424,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				updateBluetoothHeadsetState(intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED) == BluetoothProfile.STATE_CONNECTED);
 			} else if (AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED.equals(intent.getAction())) {
 				int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_DISCONNECTED);
+				Boolean isBluetoothScoOn = null;
+				Boolean isSpeakerphoneOn = null;
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.e("Bluetooth SCO state updated: " + state);
 				}
@@ -438,12 +442,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					if (needSwitchToBluetoothAfterScoActivates) {
 						needSwitchToBluetoothAfterScoActivates = false;
 						AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-						am.setSpeakerphoneOn(false);
-						am.setBluetoothScoOn(true);
+						isSpeakerphoneOn = false;
+						isBluetoothScoOn = true;
+						am.setSpeakerphoneOn(isSpeakerphoneOn);
+						am.setBluetoothScoOn(isBluetoothScoOn);
 					}
 				}
 				for (VoIPService.StateListener l : stateListeners) {
-					l.onAudioSettingsChanged();
+					l.onAudioSettingsChanged(isBluetoothScoOn, isSpeakerphoneOn);
 				}
 			} else if (TelephonyManager.ACTION_PHONE_STATE_CHANGED.equals(intent.getAction())) {
 				String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
@@ -2694,6 +2700,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void toggleSpeakerphoneOrShowRouteSheet(Context context, boolean fromOverlayWindow) {
+		Boolean isSpeakerphoneOn = null;
+		Boolean isBluetoothScoOn = null;
 		if (isBluetoothHeadsetConnected() && hasEarpiece()) {
 			BottomSheet.Builder builder = new BottomSheet.Builder(context)
 					.setTitle(LocaleController.getString("VoipOutputDevices", R.string.VoipOutputDevices), true)
@@ -2729,24 +2737,33 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		} else if (audioConfigured && !USE_CONNECTION_SERVICE) {
 			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			isSpeakerphoneOn = am.isSpeakerphoneOn();
+			isBluetoothScoOn = am.isBluetoothScoOn();
 			if (hasEarpiece()) {
-				am.setSpeakerphoneOn(!am.isSpeakerphoneOn());
+				isSpeakerphoneOn = !isSpeakerphoneOn;
+				am.setSpeakerphoneOn(isSpeakerphoneOn);
 			} else {
-				am.setBluetoothScoOn(!am.isBluetoothScoOn());
+				isBluetoothScoOn = !isBluetoothScoOn;
+				am.setBluetoothScoOn(isBluetoothScoOn);
 			}
-			updateOutputGainControlState();
+			updateOutputGainControlState(isBluetoothScoOn, isSpeakerphoneOn);
 		} else {
 			speakerphoneStateToSet = !speakerphoneStateToSet;
 		}
 		for (StateListener l : stateListeners) {
-			l.onAudioSettingsChanged();
+			l.onAudioSettingsChanged(isBluetoothScoOn, isSpeakerphoneOn);
 		}
 	}
 
 	public void setAudioOutput(int which) {
+		setAudioOutput(which, null, null);
+	}
+	public void setAudioOutput(int which, Boolean isBluetoothScoOn, Boolean isSpeakerphoneOn) {
 		if (BuildVars.LOGS_ENABLED) {
 			FileLog.d("setAudioOutput " + which);
 		}
+		Boolean speakerphoneOn = isSpeakerphoneOn;
+		Boolean bluetoothScoOn = isBluetoothScoOn;
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			switch (which) {
@@ -2771,8 +2788,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							FileLog.e(e);
 						}
 					} else {
-						am.setBluetoothScoOn(true);
-						am.setSpeakerphoneOn(false);
+						bluetoothScoOn = true;
+						speakerphoneOn = false;
+						am.setBluetoothScoOn(bluetoothScoOn);
+						am.setSpeakerphoneOn(speakerphoneOn);
 					}
 					audioRouteToSet = AUDIO_ROUTE_BLUETOOTH;
 					break;
@@ -2783,8 +2802,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						bluetoothScoActive = false;
 						bluetoothScoConnecting = false;
 					}
-					am.setSpeakerphoneOn(false);
-					am.setBluetoothScoOn(false);
+					bluetoothScoOn = false;
+					speakerphoneOn = false;
+					am.setSpeakerphoneOn(speakerphoneOn);
+					am.setBluetoothScoOn(bluetoothScoOn);
 					audioRouteToSet = AUDIO_ROUTE_EARPIECE;
 					break;
 				case 0:
@@ -2794,12 +2815,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						bluetoothScoActive = false;
 						bluetoothScoConnecting = false;
 					}
-					am.setBluetoothScoOn(false);
-					am.setSpeakerphoneOn(true);
+					bluetoothScoOn = false;
+					speakerphoneOn = true;
+					am.setBluetoothScoOn(bluetoothScoOn);
+					am.setSpeakerphoneOn(speakerphoneOn);
 					audioRouteToSet = AUDIO_ROUTE_SPEAKER;
 					break;
 			}
-			updateOutputGainControlState();
+			updateOutputGainControlState(bluetoothScoOn, speakerphoneOn);
 		} else {
 			switch (which) {
 				case 2:
@@ -2817,7 +2840,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		}
 		for (StateListener l : stateListeners) {
-			l.onAudioSettingsChanged();
+			l.onAudioSettingsChanged(bluetoothScoOn, speakerphoneOn);
 		}
 	}
 
@@ -4369,14 +4392,36 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void updateOutputGainControlState() {
+		updateOutputGainControlState(null, null);
+	}
+
+	public void updateOutputGainControlState(Boolean isBluetoothScoOn, Boolean isSpeakerphoneOn) {
 		if (hasRtmpStream()) {
 			return;
 		}
+
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 			if (!USE_CONNECTION_SERVICE) {
-				final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged);
-				tgVoip[CAPTURE_DEVICE_CAMERA].setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
+				boolean bluetoothScoOn;
+				boolean speakerphoneOn;
+				AudioManager am = null;
+
+				if (isBluetoothScoOn == null) {
+					am = (AudioManager) getSystemService(AUDIO_SERVICE);
+					bluetoothScoOn = am.isBluetoothScoOn();
+				} else {
+					bluetoothScoOn = isBluetoothScoOn;
+				}
+				if (isSpeakerphoneOn == null) {
+					if (am == null) {
+						am = (AudioManager) getSystemService(AUDIO_SERVICE);
+					}
+					speakerphoneOn = am.isSpeakerphoneOn();
+				} else {
+					speakerphoneOn = isSpeakerphoneOn;
+				}
+				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(hasEarpiece() && !speakerphoneOn && !bluetoothScoOn && !isHeadsetPlugged);
+				tgVoip[CAPTURE_DEVICE_CAMERA].setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !speakerphoneOn && !bluetoothScoOn && !isHeadsetPlugged) ? 0 : 1);
 			} else {
 				final boolean isEarpiece = systemCallConnection.getCallAudioState().getRoute() == CallAudioState.ROUTE_EARPIECE;
 				tgVoip[CAPTURE_DEVICE_CAMERA].setAudioOutputGainControlEnabled(isEarpiece);
@@ -4457,6 +4502,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 
 		default void onAudioSettingsChanged() {
+
+		}
+
+		default void onAudioSettingsChanged(Boolean isBluetoothOn, Boolean isSpeakerphoneOn) {
 
 		}
 

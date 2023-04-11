@@ -480,6 +480,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     @Override
+    public void onAudioSettingsChanged(Boolean isBluetoothOn, Boolean isSpeakerphoneOn) {
+        updateButtons(true, isBluetoothOn, isSpeakerphoneOn);
+    }
+
+    @Override
     public void onMediaStateUpdated(int audioState, int videoState) {
         previousState = currentState;
         if (videoState == Instance.VIDEO_STATE_ACTIVE && !isVideoCall) {
@@ -1962,6 +1967,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     private void updateButtons(boolean animated) {
+        updateButtons(animated, null, null);
+    }
+
+    private void updateButtons(boolean animated, Boolean isBluetoothOn, Boolean isSpeakerphoneOn) {
         VoIPService service = VoIPService.getSharedInstance();
         if (service == null) {
             return;
@@ -1999,7 +2008,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                         speakerPhoneIcon.animate().alpha(1f).start();
                     }
                 } else {
-                    setSpeakerPhoneAction(bottomButtons[0], service, animated);
+                    setSpeakerPhoneAction(bottomButtons[0], service, animated, isBluetoothOn, isSpeakerphoneOn);
                     speakerPhoneIcon.animate().alpha(0).start();
                 }
                 setVideoAction(bottomButtons[1], service, animated);
@@ -2021,7 +2030,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     speakerPhoneIcon.animate().alpha(1f).start();
                 }
             } else {
-                setSpeakerPhoneAction(bottomButtons[0], service, animated);
+                setSpeakerPhoneAction(bottomButtons[0], service, animated, isBluetoothOn, isSpeakerphoneOn);
                 speakerPhoneIcon.setTag(null);
                 speakerPhoneIcon.animate().alpha(0f).start();
             }
@@ -2043,7 +2052,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 animationDelay += 16;
             }
         }
-        updateSpeakerPhoneIcon();
+        updateSpeakerPhoneIcon(isBluetoothOn, isSpeakerphoneOn);
     }
 
     private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
@@ -2114,13 +2123,17 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     }
 
     private void updateSpeakerPhoneIcon() {
+        updateSpeakerPhoneIcon(null, null);
+    }
+
+    private void updateSpeakerPhoneIcon(Boolean isBluetoothOn, Boolean isSpeakerphoneOn) {
         VoIPService service = VoIPService.getSharedInstance();
         if (service == null) {
             return;
         }
-        if (service.isBluetoothOn()) {
+        if (isBluetoothOn == null ? service.isBluetoothOn() : isBluetoothOn) {
             speakerPhoneIcon.setImageResource(R.drawable.calls_bluetooth);
-        } else if (service.isSpeakerphoneOn()) {
+        } else if (isSpeakerphoneOn == null ? service.isSpeakerphoneOn() : isSpeakerphoneOn) {
             speakerPhoneIcon.setImageResource(R.drawable.calls_speaker);
         } else {
             if (service.isHeadsetPlugged()) {
@@ -2131,11 +2144,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
     }
 
-    private void setSpeakerPhoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
-        if (service.isBluetoothOn()) {
+    private void setSpeakerPhoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated, Boolean isBluetoothOn, Boolean isSpeakerphoneOn) {
+        if (isBluetoothOn == null ? service.isBluetoothOn(): isBluetoothOn) {
             bottomButton.setData(R.drawable.calls_bluetooth, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth), false, animated);
             bottomButton.setChecked(false, animated);
-        } else if (service.isSpeakerphoneOn()) {
+        } else if (isSpeakerphoneOn == null ? service.isSpeakerphoneOn() : isSpeakerphoneOn) {
             bottomButton.setData(R.drawable.calls_speaker, Color.BLACK, Color.WHITE, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
             bottomButton.setChecked(true, animated);
         } else {
