@@ -23,6 +23,7 @@ dependencies {
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation "androidx.sharetarget:sharetarget:1.2.0"
+    implementation 'io.github.cdimascio:java-dotenv:5.2.2'
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
@@ -95,6 +96,8 @@ android {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
+        buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
+        buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
     }
 
     buildTypes {
@@ -110,6 +113,9 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
+            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
+            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+
         }
 
         HA_private {
@@ -123,6 +129,9 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
+            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
+            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+
         }
 
         HA_public {
@@ -136,6 +145,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
+            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
+            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
         }
 
         standalone {
@@ -149,6 +160,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
+            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
+            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
         }
 
         release {
@@ -163,6 +176,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
+            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
+            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
         }
     }
 }
