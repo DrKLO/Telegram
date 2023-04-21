@@ -10,6 +10,7 @@ package org.telegram.ui.ActionBar;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -563,5 +564,18 @@ public class ActionBarMenu extends LinearLayout {
 
     public void clearSearchFilters() {
 
+    }
+
+    private Runnable onLayoutListener;
+    public void setOnLayoutListener(Runnable listener) {
+        this.onLayoutListener = listener;
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        if (onLayoutListener != null) {
+            onLayoutListener.run();
+        }
     }
 }

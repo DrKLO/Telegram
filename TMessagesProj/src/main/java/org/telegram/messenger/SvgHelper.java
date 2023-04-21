@@ -129,6 +129,11 @@ public class SvgHelper {
         private float crossfadeAlpha = 1.0f;
         SparseArray<Paint> overridePaintByPosition = new SparseArray<>();
 
+        private static boolean lite = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
+        public static void updateLiteValues() {
+            lite = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
+        }
+
         private boolean aspectFill = true;
         private boolean aspectCenter = false;
 
@@ -166,7 +171,7 @@ public class SvgHelper {
             }
 
             float scale = getScale((int) w, (int) h);
-            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+            if (placeholderGradient[threadIndex] != null && gradientWidth > 0 && lite) {
                 if (drawInBackground) {
                     long dt = time - lastUpdateTime;
                     if (dt > 64) {
@@ -326,7 +331,7 @@ public class SvgHelper {
                 currentColorKey = colorKey;
                 currentColor[index] = color;
                 gradientWidth = AndroidUtilities.displaySize.x * 2;
-                if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+                if (!lite) {
                     int color2 = ColorUtils.setAlphaComponent(currentColor[index], 70);
                     if (drawInBackground) {
                         if (backgroundPaint == null) {

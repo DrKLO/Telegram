@@ -610,7 +610,7 @@ public class DialogCell extends BaseCell {
     private void checkChatTheme() {
         if (message != null && message.messageOwner != null && message.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme && lastUnreadState) {
             TLRPC.TL_messageActionSetChatTheme setThemeAction = (TLRPC.TL_messageActionSetChatTheme) message.messageOwner.action;
-            ChatThemeController.getInstance(currentAccount).setDialogTheme(currentDialogId, setThemeAction.emoticon, false);
+            ChatThemeController.getInstance(currentAccount).setDialogTheme(currentDialogId, setThemeAction.emoticon,false);
         }
     }
 
@@ -808,23 +808,27 @@ public class DialogCell extends BaseCell {
     }
 
     private CharSequence formatArchivedDialogNames() {
-        ArrayList<TLRPC.Dialog> dialogs = MessagesController.getInstance(currentAccount).getDialogs(currentDialogFolderId);
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        ArrayList<TLRPC.Dialog> dialogs = messagesController.getDialogs(currentDialogFolderId);
         currentDialogFolderDialogsCount = dialogs.size();
         SpannableStringBuilder builder = new SpannableStringBuilder();
         for (int a = 0, N = dialogs.size(); a < N; a++) {
             TLRPC.Dialog dialog = dialogs.get(a);
             TLRPC.User currentUser = null;
             TLRPC.Chat currentChat = null;
+            if (messagesController.isHiddenByUndo(dialog.id)) {
+                continue;
+            }
             if (DialogObject.isEncryptedDialog(dialog.id)) {
-                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(DialogObject.getEncryptedChatId(dialog.id));
+                TLRPC.EncryptedChat encryptedChat = messagesController.getEncryptedChat(DialogObject.getEncryptedChatId(dialog.id));
                 if (encryptedChat != null) {
-                    currentUser = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
+                    currentUser = messagesController.getUser(encryptedChat.user_id);
                 }
             } else {
                 if (DialogObject.isUserDialog(dialog.id)) {
-                    currentUser = MessagesController.getInstance(currentAccount).getUser(dialog.id);
+                    currentUser = messagesController.getUser(dialog.id);
                 } else {
-                    currentChat = MessagesController.getInstance(currentAccount).getChat(-dialog.id);
+                    currentChat = messagesController.getChat(-dialog.id);
                 }
             }
             String title;
@@ -2367,7 +2371,7 @@ public class DialogCell extends BaseCell {
 
             if (!MessagesController.getInstance(currentAccount).getTopicsController().endIsReached(chat.id)) {
                 MessagesController.getInstance(currentAccount).getTopicsController().preloadTopics(chat.id);
-                return "Loading...";
+                return LocaleController.getString("Loading", R.string.Loading);
             } else {
                 return "no created topics";
             }
@@ -4811,6 +4815,7 @@ public class DialogCell extends BaseCell {
 
         public long lastDrawnDialogId;
         public long lastDrawnMessageId;
+        public boolean lastDrawnTranslated;
         public boolean lastDrawnDialogIsFolder;
         public long lastDrawnReadState;
         public int lastDrawnDraftHash;
@@ -4870,8 +4875,10 @@ public class DialogCell extends BaseCell {
             }
             int draftHash = draftMessage == null ? 0 : draftMessage.message.hashCode() + (draftMessage.reply_to_msg_id << 16);
             boolean hasCall = chat != null && chat.call_active && chat.call_not_empty;
+            boolean translated = MessagesController.getInstance(currentAccount).getTranslateController().isTranslatingDialog(currentDialogId);
             if (lastDrawnSizeHash == sizeHash &&
                     lastDrawnMessageId == messageHash &&
+                    lastDrawnTranslated == translated &&
                     lastDrawnDialogId == currentDialogId &&
                     lastDrawnDialogIsFolder == dialog.isFolder &&
                     lastDrawnReadState == readHash &&
@@ -4914,6 +4921,7 @@ public class DialogCell extends BaseCell {
             lastTopicsCount = topicCount;
             lastDrawnPinned = drawPin;
             lastDrawnHasCall = hasCall;
+            lastDrawnTranslated = translated;
 
             return true;
         }

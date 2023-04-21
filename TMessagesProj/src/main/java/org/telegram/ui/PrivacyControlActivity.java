@@ -69,6 +69,7 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
@@ -481,7 +482,13 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new RecyclerListView(context);
+        listView = new RecyclerListView(context) {
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                drawSectionBackground(canvas, shareSectionRow, shareDetailRow - 1, getThemedColor(Theme.key_windowBackgroundWhite));
+                super.dispatchDraw(canvas);
+            }
+        };
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setVerticalScrollBarEnabled(false);
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
@@ -620,6 +627,17 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_P2P));
             }
         });
+        DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
+            @Override
+            protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                super.onMoveAnimationUpdate(holder);
+                listView.invalidate();
+            }
+        };
+        itemAnimator.setDurations(350);
+        itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        itemAnimator.setDelayAnimations(false);
+        listView.setItemAnimator(itemAnimator);
 
         setMessageText();
 
@@ -890,11 +908,19 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         sectionRow = rowCount++;
         everybodyRow = rowCount++;
         myContactsRow = rowCount++;
-        if (rulesType != PRIVACY_RULES_TYPE_PHOTO && rulesType != PRIVACY_RULES_TYPE_LASTSEEN && rulesType != PRIVACY_RULES_TYPE_CALLS && rulesType != PRIVACY_RULES_TYPE_P2P &&
-                rulesType != PRIVACY_RULES_TYPE_FORWARDS && rulesType != PRIVACY_RULES_TYPE_PHONE && rulesType != PRIVACY_RULES_TYPE_VOICE_MESSAGES) {
-            nobodyRow = -1;
-        } else {
+        if (
+            rulesType == PRIVACY_RULES_TYPE_PHOTO ||
+            rulesType == PRIVACY_RULES_TYPE_LASTSEEN ||
+            rulesType == PRIVACY_RULES_TYPE_CALLS ||
+            rulesType == PRIVACY_RULES_TYPE_P2P ||
+            rulesType == PRIVACY_RULES_TYPE_FORWARDS ||
+            rulesType == PRIVACY_RULES_TYPE_PHONE ||
+            rulesType == PRIVACY_RULES_TYPE_VOICE_MESSAGES ||
+            rulesType == PRIVACY_RULES_TYPE_INVITE
+        ) {
             nobodyRow = rowCount++;
+        } else {
+            nobodyRow = -1;
         }
         if (rulesType == PRIVACY_RULES_TYPE_PHONE && currentType == TYPE_NOBODY) {
             phoneDetailRow = rowCount++;
@@ -1130,7 +1156,6 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     setAvatarCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     setAvatarCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                     cameraDrawable = new RLottieDrawable(R.raw.camera_outline, "" + R.raw.camera_outline, AndroidUtilities.dp(50), AndroidUtilities.dp(50), false, null);
-                    setAvatarCell.imageView.setTranslationY(-AndroidUtilities.dp(9));
                     setAvatarCell.imageView.setTranslationX(-AndroidUtilities.dp(8));
                     setAvatarCell.imageView.setAnimation(cameraDrawable);
                     setAvatarCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -1166,7 +1191,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     oldPhotoCell.setText(LocaleController.getString("RemovePublicPhoto", R.string.RemovePublicPhoto), false);
                     oldPhotoCell.getImageView().setVisibility(View.VISIBLE);
                     oldPhotoCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                    oldPhotoCell.setColors(Theme.key_windowBackgroundWhiteRedText, Theme.key_windowBackgroundWhiteRedText);
+                    oldPhotoCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
                     oldPhotoCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     view = oldPhotoCell;
                     break;

@@ -6,6 +6,7 @@ import android.graphics.fonts.Font;
 import android.graphics.fonts.SystemFonts;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
@@ -36,7 +37,7 @@ public class PaintTypeface {
     public static final PaintTypeface MW_BOLD = new PaintTypeface("mw_bold", "PhotoEditorTypefaceMerriweather", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_MERRIWEATHER_BOLD));
     public static final PaintTypeface COURIER_NEW_BOLD = new PaintTypeface("courier_new_bold", "PhotoEditorTypefaceCourierNew", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_COURIER_NEW_BOLD));
 
-    private final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
+    public final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
 
     private static final List<String> preferable = Arrays.asList(
         "Google Sans",
@@ -125,22 +126,13 @@ public class PaintTypeface {
                     }
                 }
 
-//                if (BuildVars.DEBUG_PRIVATE_VERSION) {
-//                    for (Family family : families.values()) {
-//                        if (family != null) {
-//                            FontData regular = family.getRegular();
-//                            typefaces.add(new PaintTypeface(regular.font, regular.getName()));
-//                        }
-//                    }
-//                } else {
-                    for (String familyName : preferable) {
-                        Family family = families.get(familyName);
-                        if (family != null) {
-                            FontData regular = family.getRegular();
-                            typefaces.add(new PaintTypeface(regular.font, regular.getName()));
-                        }
+                for (String familyName : preferable) {
+                    Family family = families.get(familyName);
+                    if (family != null) {
+                        FontData regular = family.getRegular();
+                        typefaces.add(new PaintTypeface(regular.font, regular.getName()));
                     }
-//                }
+                }
             }
         }
         return typefaces;

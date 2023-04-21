@@ -72,7 +72,7 @@ public class AutoDeletePopupWrapper {
             callback.setAutoDeleteHistory(0, UndoView.ACTION_AUTO_DELETE_OFF);
         });
         if (type != TYPE_GROUP_CREATE) {
-            disableItem.setColors(Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogTextRed));
+            disableItem.setColors(Theme.getColor(Theme.key_text_RedBold), Theme.getColor(Theme.key_text_RedBold));
         }
 
         if (type != TYPE_GROUP_CREATE) {

@@ -29,6 +29,7 @@ public class EmojiThemes {
 
     public boolean showAsDefaultStub;
     public String emoji;
+    public TLRPC.WallPaper wallpaper;
     int currentIndex = 0;
     public ArrayList<ThemeItem> items = new ArrayList<>();
 
@@ -43,7 +44,7 @@ public class EmojiThemes {
             Theme.key_chat_wallpaper_gradient_rotation
     };
 
-    private EmojiThemes() {
+    public EmojiThemes() {
     }
 
     public EmojiThemes(TLRPC.TL_theme chatThemeObject, boolean isDefault) {
@@ -361,9 +362,13 @@ public class EmojiThemes {
         }
 
         long themeId = getTlTheme(index).id;
-        ChatThemeController.getWallpaperBitmap(themeId, cachedBitmap -> {
+        loadWallpaperImage(themeId, wallPaper, callback);
+    }
+
+    public static void loadWallpaperImage(long hash, TLRPC.WallPaper wallPaper, ResultCallback<Pair<Long, Bitmap>> callback) {
+        ChatThemeController.getWallpaperBitmap(hash, cachedBitmap -> {
             if (cachedBitmap != null && callback != null) {
-                callback.onComplete(new Pair<>(themeId, cachedBitmap));
+                callback.onComplete(new Pair<>(hash, cachedBitmap));
                 return;
             }
             ImageLocation imageLocation = ImageLocation.getForDocument(wallPaper.document);
@@ -386,9 +391,9 @@ public class EmojiThemes {
                     bitmap = ((BitmapDrawable) holder.drawable).getBitmap();
                 }
                 if (callback != null) {
-                    callback.onComplete(new Pair<>(themeId, bitmap));
+                    callback.onComplete(new Pair<>(hash, bitmap));
                 }
-                ChatThemeController.saveWallpaperBitmap(bitmap, themeId);
+                ChatThemeController.saveWallpaperBitmap(bitmap, hash);
             });
             ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
         });

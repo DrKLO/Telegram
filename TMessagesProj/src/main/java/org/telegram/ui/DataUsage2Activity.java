@@ -252,7 +252,7 @@ public class DataUsage2Activity extends BaseFragment {
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                 }
             });
@@ -584,7 +584,7 @@ public class DataUsage2Activity extends BaseFragment {
                         break;
                     case VIEW_TYPE_RESET_BUTTON:
                         TextCell textCell = new TextCell(getContext());
-                        textCell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText5));
+                        textCell.setTextColor(getThemedColor(Theme.key_text_RedRegular));
                         textCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                         view = textCell;
                         break;

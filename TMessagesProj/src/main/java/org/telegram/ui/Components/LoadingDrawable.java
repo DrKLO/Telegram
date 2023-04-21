@@ -23,6 +23,8 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
+import java.util.Arrays;
+
 public class LoadingDrawable extends Drawable {
 
     private static final float APPEAR_DURATION = 550;
@@ -171,6 +173,24 @@ public class LoadingDrawable extends Drawable {
         }
     }
 
+    public void setRadii(float[] radii) {
+        if (radii == null || radii.length != 8) {
+            return;
+        }
+        boolean changed = false;
+        for (int i = 0; i < 8; ++i) {
+            if (this.radii[i] != radii[i]) {
+                this.radii[i] = radii[i];
+                changed = true;
+            }
+        }
+        if (lastBounds != null && changed) {
+            path.rewind();
+            rectF.set(lastBounds);
+            path.addRoundRect(rectF, radii, Path.Direction.CW);
+        }
+    }
+
     public void setBounds(@NonNull RectF bounds) {
         super.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
     }
@@ -235,6 +255,7 @@ public class LoadingDrawable extends Drawable {
         float appearT = (now - start) / APPEAR_DURATION;
         float disappearT = disappearStart > 0 ? 1f - CubicBezierInterpolator.EASE_OUT.getInterpolation(Math.min(1, (now - disappearStart) / DISAPPEAR_DURATION)) : 0;
 
+        boolean disappearRestore = false;
         if (isDisappearing()) {
             int disappearGradientWidthNow = Math.max(AndroidUtilities.dp(200), bounds.width() / 3);
 
@@ -255,8 +276,10 @@ public class LoadingDrawable extends Drawable {
                 rectF.set(bounds);
                 rectF.inset(-strokePaint.getStrokeWidth(), -strokePaint.getStrokeWidth());
                 canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
+                disappearRestore = true;
             }
         }
+        boolean appearRestore = false;
         if (appearByGradient) {
             int appearGradientWidthNow = Math.max(AndroidUtilities.dp(200), bounds.width() / 3);
 
@@ -277,6 +300,7 @@ public class LoadingDrawable extends Drawable {
                 rectF.set(bounds);
                 rectF.inset(-strokePaint.getStrokeWidth(), -strokePaint.getStrokeWidth());
                 canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
+                appearRestore = true;
             }
         }
 
@@ -305,23 +329,23 @@ public class LoadingDrawable extends Drawable {
             canvas.drawPath(drawPath, strokePaint);
         }
 
-        if (isDisappearing() && disappearT < 1) {
-            canvas.save();
-            float appearOffset = disappearT * (disappearGradientWidth + bounds.width() + disappearGradientWidth) - disappearGradientWidth;
-            disappearMatrix.setTranslate(bounds.right - appearOffset, 0);
-            disappearGradient.setLocalMatrix(disappearMatrix);
-            int inset = (int) strokePaint.getStrokeWidth();
-            canvas.drawRect(bounds.left - inset, bounds.top - inset, bounds.right + inset, bounds.bottom + inset, disappearPaint);
-            canvas.restore();
-            canvas.restore();
-        }
-        if (appearByGradient && appearT < 1) {
+        if (appearRestore) {
             canvas.save();
             float appearOffset = appearT * (appearGradientWidth + bounds.width() + appearGradientWidth) - appearGradientWidth;
             appearMatrix.setTranslate(bounds.left + appearOffset, 0);
             appearGradient.setLocalMatrix(appearMatrix);
             int inset = (int) strokePaint.getStrokeWidth();
             canvas.drawRect(bounds.left - inset, bounds.top - inset, bounds.right + inset, bounds.bottom + inset, appearPaint);
+            canvas.restore();
+            canvas.restore();
+        }
+        if (disappearRestore) {
+            canvas.save();
+            float appearOffset = disappearT * (disappearGradientWidth + bounds.width() + disappearGradientWidth) - disappearGradientWidth;
+            disappearMatrix.setTranslate(bounds.right - appearOffset, 0);
+            disappearGradient.setLocalMatrix(disappearMatrix);
+            int inset = (int) strokePaint.getStrokeWidth();
+            canvas.drawRect(bounds.left - inset, bounds.top - inset, bounds.right + inset, bounds.bottom + inset, disappearPaint);
             canvas.restore();
             canvas.restore();
         }

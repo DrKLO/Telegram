@@ -22,13 +22,13 @@ import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
-    private final static int LIB_VERSION = 44;
+    private final static int LIB_VERSION = 45;
     private final static String LIB_NAME = "tmessages." + LIB_VERSION;
     private final static String LIB_SO_NAME = "lib" + LIB_NAME + ".so";
     private final static String LOCALE_LIB_SO_NAME = "lib" + LIB_NAME + "loc.so";
-    private String crashPath = "";
 
     private static volatile boolean nativeLoaded = false;
+    public static StringBuilder log = new StringBuilder();
 
     private static File getNativeLibraryDir(Context context) {
         File f = null;
@@ -125,6 +125,7 @@ public class NativeLoader {
                 return;
             } catch (Error e) {
                 FileLog.e(e);
+                log.append("129: ").append(e).append("\n");
             }
 
             String folder = getAbiFolder();
@@ -156,6 +157,7 @@ public class NativeLoader {
                     nativeLoaded = true;
                     return;
                 } catch (Error e) {
+                    log.append(e).append("\n");
                     FileLog.e(e);
                 }
                 destLocalFile.delete();
@@ -163,6 +165,7 @@ public class NativeLoader {
 
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.e("Library not found, arch = " + folder);
+                log.append("Library not found, arch = " + folder).append("\n");
             }
 
             if (loadFromZip(context, destDir, destLocalFile, folder)) {
@@ -170,6 +173,7 @@ public class NativeLoader {
             }
         } catch (Throwable e) {
             e.printStackTrace();
+            log.append("177: ").append(e).append("\n");
         }
 
         try {
@@ -177,6 +181,7 @@ public class NativeLoader {
             nativeLoaded = true;
         } catch (Error e) {
             FileLog.e(e);
+            log.append("185: ").append(e).append("\n");
         }
     }
 

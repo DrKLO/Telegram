@@ -87,43 +87,43 @@ public class GroupCreateSpan extends View {
             switch (str) {
                 case "contacts":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
-                    uid = Integer.MIN_VALUE;
+                    uid = Long.MIN_VALUE;
                     firstName = LocaleController.getString("FilterContacts", R.string.FilterContacts);
                     break;
                 case "non_contacts":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_NON_CONTACTS);
-                    uid = Integer.MIN_VALUE + 1;
+                    uid = Long.MIN_VALUE + 1;
                     firstName = LocaleController.getString("FilterNonContacts", R.string.FilterNonContacts);
                     break;
                 case "groups":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
-                    uid = Integer.MIN_VALUE + 2;
+                    uid = Long.MIN_VALUE + 2;
                     firstName = LocaleController.getString("FilterGroups", R.string.FilterGroups);
                     break;
                 case "channels":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);
-                    uid = Integer.MIN_VALUE + 3;
+                    uid = Long.MIN_VALUE + 3;
                     firstName = LocaleController.getString("FilterChannels", R.string.FilterChannels);
                     break;
                 case "bots":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_BOTS);
-                    uid = Integer.MIN_VALUE + 4;
+                    uid = Long.MIN_VALUE + 4;
                     firstName = LocaleController.getString("FilterBots", R.string.FilterBots);
                     break;
                 case "muted":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_MUTED);
-                    uid = Integer.MIN_VALUE + 5;
+                    uid = Long.MIN_VALUE + 5;
                     firstName = LocaleController.getString("FilterMuted", R.string.FilterMuted);
                     break;
                 case "read":
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_READ);
-                    uid = Integer.MIN_VALUE + 6;
+                    uid = Long.MIN_VALUE + 6;
                     firstName = LocaleController.getString("FilterRead", R.string.FilterRead);
                     break;
                 case "archived":
                 default:
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
-                    uid = Integer.MIN_VALUE + 7;
+                    uid = Long.MIN_VALUE + 7;
                     firstName = LocaleController.getString("FilterArchived", R.string.FilterArchived);
                     break;
             }

@@ -1761,7 +1761,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 
@@ -1892,8 +1892,8 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         if (ChatObject.canDeleteTopic(currentAccount, getCurrentChat(), topic)) {
             ActionBarMenuSubItem deleteItem = new ActionBarMenuSubItem(getParentActivity(), false, true);
             deleteItem.setTextAndIcon(LocaleController.getPluralString("DeleteTopics", 1), R.drawable.msg_delete);
-            deleteItem.setIconColor(getThemedColor(Theme.key_dialogRedIcon));
-            deleteItem.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+            deleteItem.setIconColor(getThemedColor(Theme.key_text_RedRegular));
+            deleteItem.setTextColor(getThemedColor(Theme.key_text_RedBold));
             deleteItem.setMinimumWidth(160);
             deleteItem.setOnClickListener(e -> {
                 HashSet<Integer> hashSet = new HashSet();
@@ -2449,7 +2449,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     private void setButtonType(int bottomButtonType) {
         if (this.bottomButtonType != bottomButtonType) {
             this.bottomButtonType = bottomButtonType;
-            bottomOverlayChatText.setTextColorKey(bottomButtonType == BOTTOM_BUTTON_TYPE_JOIN ? Theme.key_chat_fieldOverlayText : Theme.key_chat_reportSpam);
+            bottomOverlayChatText.setTextColorKey(bottomButtonType == BOTTOM_BUTTON_TYPE_JOIN ? Theme.key_chat_fieldOverlayText : Theme.key_text_RedBold);
             closeReportSpam.setVisibility(bottomButtonType == BOTTOM_BUTTON_TYPE_REPORT ? View.VISIBLE : View.GONE);
             updateChatInfo();
         }

@@ -135,6 +135,14 @@ public class GroupCreateUserCell extends FrameLayout {
         update(0);
     }
 
+    public void setForbiddenCheck(boolean forbidden) {
+        checkBox.setForbidden(forbidden);
+    }
+
+    public CheckBox2 getCheckBox() {
+        return checkBox;
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox != null) {
             checkBox.setChecked(checked, animated);
@@ -266,9 +274,9 @@ public class GroupCreateUserCell extends FrameLayout {
             if (checkBox != null) {
                 ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(29) + padding;
                 if (LocaleController.isRTL) {
-                    ((LayoutParams) checkBox.getLayoutParams()).rightMargin = AndroidUtilities.dp(39) + padding;
+                    ((LayoutParams) checkBox.getLayoutParams()).rightMargin = AndroidUtilities.dp(40) + padding;
                 } else {
-                    ((LayoutParams) checkBox.getLayoutParams()).leftMargin = AndroidUtilities.dp(45) + padding;
+                    ((LayoutParams) checkBox.getLayoutParams()).leftMargin = AndroidUtilities.dp(40) + padding;
                 }
             }
 

@@ -23,6 +23,8 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.common.collect.Sets;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
@@ -56,6 +58,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 
 public class RestrictedLanguagesSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -65,27 +68,51 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
     private ListAdapter searchListViewAdapter;
     private EmptyTextProgressView emptyView;
 
-    private boolean searchWas;
-    private boolean searching;
-
-    private Timer searchTimer;
     private int separatorRow = -1;
     private ArrayList<TranslateController.Language> searchResult;
     private ArrayList<TranslateController.Language> allLanguages;
 
-    private SharedPreferences preferences;
     private HashSet<String> firstSelectedLanguages;
     private HashSet<String> selectedLanguages;
 
+    private static boolean gotRestrictedLanguages;
+    private static HashSet<String> restrictedLanguages;
+
     public static HashSet<String> getRestrictedLanguages() {
-        String currentLangCode = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
-        String[] onlyCurrentLang = new String[] { currentLangCode };
-        return new HashSet<>(MessagesController.getGlobalMainSettings().getStringSet("translate_button_restricted_languages", new HashSet<String>(Arrays.asList(onlyCurrentLang))));
+        if (!gotRestrictedLanguages) {
+            Set<String> set = MessagesController.getGlobalMainSettings().getStringSet("translate_button_restricted_languages", null);
+            restrictedLanguages = set == null ? null : new HashSet<>(set);
+            gotRestrictedLanguages = true;
+        }
+        if (restrictedLanguages == null) {
+            restrictedLanguages = Sets.newHashSet(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode);
+        }
+        return restrictedLanguages;
+    }
+
+    public static void invalidateRestrictedLanguages() {
+        gotRestrictedLanguages = false;
+    }
+
+    public static void updateRestrictedLanguages(HashSet<String> value, Boolean changed) {
+        restrictedLanguages = value;
+        gotRestrictedLanguages = true;
+        SharedPreferences.Editor edit = MessagesController.getGlobalMainSettings().edit();
+        if (value == null) {
+            edit.remove("translate_button_restricted_languages");
+        } else {
+            edit.putStringSet("translate_button_restricted_languages", value);
+        }
+        if (changed == null) {
+            edit.remove("translate_button_restricted_languages_changed");
+        } else if (changed) {
+            edit.putBoolean("translate_button_restricted_languages_changed", true);
+        }
+        edit.apply();
     }
 
     @Override
     public boolean onFragmentCreate() {
-        preferences = MessagesController.getGlobalMainSettings();
         firstSelectedLanguages = getRestrictedLanguages();
         selectedLanguages = getRestrictedLanguages();
 
@@ -138,9 +165,9 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
             selectedLanguages.add(language);
         }
         if (selectedLanguages.size() == 1 && selectedLanguages.contains(currentLocaleInfo.pluralLangCode)) {
-            MessagesController.getGlobalMainSettings().edit().remove("translate_button_restricted_languages").commit();
+            updateRestrictedLanguages(null, false);
         } else {
-            MessagesController.getGlobalMainSettings().edit().putStringSet("translate_button_restricted_languages", selectedLanguages).commit();
+            updateRestrictedLanguages(selectedLanguages, false);
         }
         TranslateController.invalidateSuggestedLanguageCodes();
         return true;
@@ -148,9 +175,6 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
 
     @Override
     public View createView(Context context) {
-        searching = false;
-        searchWas = false;
-
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("DoNotTranslate", R.string.DoNotTranslate));
@@ -168,14 +192,11 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
-                searching = true;
             }
 
             @Override
             public void onSearchCollapse() {
                 search(null);
-                searching = false;
-                searchWas = false;
                 if (listView != null) {
                     emptyView.setVisibility(View.GONE);
                     listView.setAdapter(listAdapter);
@@ -187,13 +208,10 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 String text = editText.getText().toString();
                 search(text);
                 if (text.length() != 0) {
-                    searchWas = true;
                     if (listView != null) {
                         listView.setAdapter(searchListViewAdapter);
                     }
                 } else {
-                    searching = false;
-                    searchWas = false;
                     if (listView != null) {
                         emptyView.setVisibility(View.GONE);
                         listView.setAdapter(listAdapter);
@@ -255,9 +273,9 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                     selectedLanguages.add(langCode);
                 }
                 if (selectedLanguages.size() == 1 && selectedLanguages.contains(currentLocaleInfo.pluralLangCode)) {
-                    preferences.edit().remove("translate_button_restricted_languages").remove("translate_button_restricted_languages_changed").apply();
+                    updateRestrictedLanguages(null, null);
                 } else {
-                    preferences.edit().putStringSet("translate_button_restricted_languages", selectedLanguages).putBoolean("translate_button_restricted_languages_changed", true).apply();
+                    updateRestrictedLanguages(selectedLanguages, true);
                 }
 
                 if (search) {
@@ -357,13 +375,6 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         if (query == null) {
             searchResult = null;
         } else {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
             processSearch(query);
         }
     }
@@ -522,6 +533,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
     }
 
     public static void cleanup() {
+        invalidateRestrictedLanguages();
         MessagesController.getGlobalMainSettings().edit()
             .remove("translate_button_restricted_languages_changed")
             .remove("translate_button_restricted_languages_version")
@@ -547,6 +559,7 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                     edit.putStringSet("translate_button_restricted_languages", languages);
                 }
                 edit.putInt("translate_button_restricted_languages_version", LAST_DO_NOT_TRANSLATE_VERSION).apply();
+                invalidateRestrictedLanguages();
 
                 for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
                     final int account = i;
@@ -564,29 +577,6 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
         }
 
         final HashSet<String> result = new HashSet<>();
-
-        final HashMap<String, String> countries = new HashMap<>();
-//        final HashMap<String, String[]> languages = new HashMap<>();
-        final HashMap<String, String> uniquePhoneCodes = new HashMap<>();
-
-//        final Utilities.Callback<String> pushCountry = countryCode -> {
-//            if (countryCode == null) {
-//                return;
-//            }
-//            String[] countryLanguages = languages.get(countryCode.toUpperCase());
-//            if (countryLanguages == null) {
-//                return;
-//            }
-//            for (int j = 1; j < Math.min(2, countryLanguages.length); ++j) {
-//                String language = countryLanguages[j];
-//                if (language.contains("-")) {
-//                    language = language.split("-")[0];
-//                }
-//                if (TranslateAlert2.languageName(language) != null) {
-//                    result.add(language);
-//                }
-//            }
-//        };
 
         Utilities.doCallbacks(
             next -> {
@@ -611,89 +601,6 @@ public class RestrictedLanguagesSelectActivity extends BaseFragment implements N
                 }
                 next.run();
             },
-            next -> {
-                try {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt")));
-                    ArrayList<String> multipleCodes = new ArrayList<>();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        String[] args = line.split(";");
-                        if (args.length >= 3) {
-                            countries.put(args[2], args[1]);
-                            if (uniquePhoneCodes.containsKey(args[0]) && !"7".equals(args[0])) {
-                                multipleCodes.add(args[0]);
-                                uniquePhoneCodes.remove(args[0]);
-                            } else if (!multipleCodes.contains(args[0])) {
-                                uniquePhoneCodes.put(args[0], args[1]);
-                            }
-                        }
-                    }
-                    reader.close();
-
-//                    reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("languages.txt")));
-//                    while ((line = reader.readLine()) != null) {
-//                        String[] args = line.split(",");
-//                        if (args.length >= 2) {
-//                            languages.put(args[0], args);
-//                        }
-//                    }
-//                    reader.close();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                next.run();
-            },
-//            next -> {
-//                ArrayList<Utilities.Callback<Runnable>> getAuthorizationsCallbacks = new ArrayList<>();
-//                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
-//                    final int account = i;
-//                    if (UserConfig.getInstance(account).getClientUserId() != 0 && !ConnectionsManager.getInstance(account).isTestBackend()) {
-//                        getAuthorizationsCallbacks.add(nextInternal -> {
-//                            try {
-//                                ConnectionsManager.getInstance(account).sendRequest(new TLRPC.TL_account_getAuthorizations(), (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-//                                    if (error == null) {
-//                                        TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
-//                                        if (!res.authorizations.isEmpty()) {
-//                                            TLRPC.TL_authorization auth = res.authorizations.get(0);
-//                                            String[] separated = auth.country.split(", ");
-//                                            if (separated.length > 0) {
-//                                                pushCountry.run(countries.get(separated[separated.length - 1]));
-//                                            }
-//                                        }
-//                                    }
-//                                    nextInternal.run();
-//                                }));
-//                            } catch (Exception e2) {
-//                                FileLog.e(e2);
-//                                nextInternal.run();
-//                            }
-//                        });
-//                    }
-//                }
-//                getAuthorizationsCallbacks.add(n -> next.run());
-//                Utilities.doCallbacks(getAuthorizationsCallbacks.toArray(new Utilities.Callback[0]));
-//            },
-//            next -> {
-//                for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
-//                    final int account = i;
-//                    try {
-//                        TLRPC.User user = UserConfig.getInstance(account).getCurrentUser();
-//                        if (user != null && user.phone != null) {
-//                            for (int j = 4; j > 0; j--) {
-//                                String code = user.phone.substring(0, j);
-//                                String countryCode = uniquePhoneCodes.get(code);
-//                                if (countryCode != null) {
-//                                    pushCountry.run(countryCode);
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                    } catch (Exception e3) {
-//                        FileLog.e(e3);
-//                    }
-//                }
-//                next.run();
-//            },
             next -> {
                 try {
                     InputMethodManager imm = (InputMethodManager) ApplicationLoader.applicationContext.getSystemService(Context.INPUT_METHOD_SERVICE);

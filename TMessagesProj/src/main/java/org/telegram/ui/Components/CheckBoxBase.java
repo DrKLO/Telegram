@@ -1,10 +1,13 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.lerp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -17,9 +20,11 @@ import android.text.TextPaint;
 import android.view.View;
 
 import androidx.annotation.Keep;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.GenericProvider;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CheckBoxBase {
@@ -33,6 +38,13 @@ public class CheckBoxBase {
     private Paint checkPaint;
     private Paint backgroundPaint;
     private TextPaint textPaint;
+    private static Paint forbidPaint;
+
+    private float alpha = 1;
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+        invalidate();
+    }
 
     private Path path = new Path();
 
@@ -42,6 +54,7 @@ public class CheckBoxBase {
 
     private float backgroundAlpha = 1.0f;
 
+    private boolean forbidden;
     private float progress;
     private ObjectAnimator checkAnimator;
 
@@ -128,6 +141,14 @@ public class CheckBoxBase {
         }
     }
 
+    public void setForbidden(boolean value) {
+        if (forbidden == value) {
+            return;
+        }
+        forbidden = value;
+        invalidate();
+    }
+
     private void invalidate() {
         if (parentView.getParent() != null) {
             View parent = (View) parentView.getParent();
@@ -163,7 +184,7 @@ public class CheckBoxBase {
                 checkPaint.setStrokeWidth(AndroidUtilities.dp(1.5f));
             }
         } else if (type == 3) {
-            backgroundPaint.setStrokeWidth(AndroidUtilities.dp(1.2f));
+            backgroundPaint.setStrokeWidth(AndroidUtilities.dp(3f));
         } else if (type != 0) {
             backgroundPaint.setStrokeWidth(AndroidUtilities.dp(1.5f));
         }
@@ -256,6 +277,7 @@ public class CheckBoxBase {
             }
         }
 
+        float progress = forbidden ? 1f : this.progress;
         float roundProgress = progress >= 0.5f ? 1.0f : progress / 0.5f;
 
         int cx = bounds.centerX();
@@ -336,6 +358,9 @@ public class CheckBoxBase {
                 } else {
                     startAngle = 90;
                     sweepAngle = (int) (270 * progress);
+                    if (LocaleController.isRTL) {
+                        sweepAngle = -sweepAngle;
+                    }
                 }
 
                 if (backgroundType == 6) {
@@ -363,10 +388,18 @@ public class CheckBoxBase {
             } else {
                 paint.setColor(getThemedColor(enabled ? Theme.key_checkbox : Theme.key_checkboxDisabled));
             }
+            if (forbidden) {
+                paint.setColor(backgroundPaint.getColor());
+            } else if (alpha < 1) {
+                paint.setColor(ColorUtils.blendARGB(backgroundPaint.getColor(), paint.getColor(), alpha));
+            }
             if (!useDefaultCheck && checkColorKey != null) {
                 checkPaint.setColor(getThemedColor(checkColorKey));
             } else {
                 checkPaint.setColor(getThemedColor(Theme.key_checkboxCheck));
+            }
+            if (alpha < 1 && Theme.isCurrentThemeDark()) {
+                checkPaint.setColor(ColorUtils.blendARGB(paint.getColor(), checkPaint.getColor(), alpha));
             }
 
             if (backgroundType != -1) {
@@ -389,7 +422,19 @@ public class CheckBoxBase {
                 }
                 canvas.restoreToCount(restoreCount);
             }
-            if (checkProgress != 0) {
+
+            if (forbidden) {
+                if (forbidPaint == null) {
+                    forbidPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    forbidPaint.setStyle(Paint.Style.STROKE);
+                    forbidPaint.setStrokeCap(Paint.Cap.ROUND);
+                    forbidPaint.setStrokeJoin(Paint.Join.ROUND);
+                    forbidPaint.setPathEffect(new DashPathEffect(new float[] { AndroidUtilities.dp(0.66f), AndroidUtilities.dp(4) }, 0));
+                }
+                forbidPaint.setStrokeWidth(AndroidUtilities.dp(1.66f));
+                forbidPaint.setColor(getThemedColor(Theme.key_switchTrack));
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(9), forbidPaint);
+            } else if (checkProgress != 0) {
                 if (checkedText != null) {
                     if (textPaint == null) {
                         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);

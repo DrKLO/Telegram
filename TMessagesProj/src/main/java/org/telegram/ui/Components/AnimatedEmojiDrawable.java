@@ -318,6 +318,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             if (!checkThread()) {
                 return;
             }
+            updateLiteModeValues();
             for (int i = 0; i < documents.size(); ++i) {
                 if (documents.get(i) instanceof TLRPC.Document) {
                     TLRPC.Document document = (TLRPC.Document) documents.get(i);
@@ -420,6 +421,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         this.currentAccount = currentAccount;
         this.document = document;
         updateSize();
+        updateLiteModeValues();
         this.initDocument(false);
     }
 
@@ -438,6 +440,12 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
     public long getDocumentId() {
         return this.document != null ? this.document.id : this.documentId;
+    }
+
+    private static boolean liteModeKeyboard, liteModeReactions;
+    private static void updateLiteModeValues() {
+        liteModeKeyboard = LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD);
+        liteModeReactions = LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
     }
 
     public TLRPC.Document getDocument() {
@@ -478,7 +486,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             imageReceiver.setUniqKeyPrefix(cacheType + "_");
         }
         imageReceiver.setVideoThumbIsSame(true);
-        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_KEYBOARD && !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) || cacheType == CACHE_TYPE_ALERT_PREVIEW && !LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
+        boolean onlyStaticPreview = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW && cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_KEYBOARD && !liteModeKeyboard || cacheType == CACHE_TYPE_ALERT_PREVIEW && !liteModeReactions;
         if (cacheType == CACHE_TYPE_ALERT_PREVIEW_STATIC) {
             onlyStaticPreview = true;
         }
@@ -530,7 +538,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         } else if (cacheType == STANDARD_LOTTIE_FRAME) {
             imageReceiver.setImage(null, null, mediaLocation, mediaFilter, null, null, thumbDrawable, document.size, null, document, 1);
         } else {
-            if (onlyStaticPreview || (!LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD) && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW)) {
+            if (onlyStaticPreview || (!liteModeKeyboard && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW)) {
                 if ("video/webm".equals(document.mime_type)) {
                     imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
                 } else if (MessageObject.isAnimatedStickerDocument(document, true)){
@@ -1207,6 +1215,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (globalEmojiCache == null) {
             return;
         }
+        updateLiteModeValues();
         for (int i = 0; i < globalEmojiCache.size(); i++) {
             LongSparseArray<AnimatedEmojiDrawable> map = globalEmojiCache.valueAt(i);
             for (int j = 0; j < map.size(); j++) {

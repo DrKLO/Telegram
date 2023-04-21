@@ -281,7 +281,7 @@ public class DataSettingsActivity extends BaseFragment {
             @Override
             public Integer getSelectorColor(int position) {
                 if (position == resetDownloadRow) {
-                    return Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteRedText2), .1f);
+                    return Theme.multAlpha(getThemedColor(Theme.key_text_RedRegular), .1f);
                 }
                 return getThemedColor(Theme.key_listSelector);
             }
@@ -416,7 +416,7 @@ public class DataSettingsActivity extends BaseFragment {
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                    button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
             } else if (position == storageUsageRow) {
                 presentFragment(new CacheControlActivity());
@@ -586,7 +586,7 @@ public class DataSettingsActivity extends BaseFragment {
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                    button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
             }
         });
@@ -718,7 +718,7 @@ public class DataSettingsActivity extends BaseFragment {
                     } else if (position == resetDownloadRow) {
                         textCell.setIcon(0);
                         textCell.setCanDisable(true);
-                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                        textCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         textCell.setText(LocaleController.getString("ResetAutomaticMediaDownload", R.string.ResetAutomaticMediaDownload), false);
                     } else if (position == quickRepliesRow){
                         textCell.setIcon(0);

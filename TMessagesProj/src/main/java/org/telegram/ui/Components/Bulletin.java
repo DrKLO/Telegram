@@ -1374,6 +1374,7 @@ public class Bulletin {
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
+                textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 12 + 56 + 2, 0, 8, 0));
             } else {
                 linearLayout = new LinearLayout(getContext());
@@ -1625,7 +1626,7 @@ public class Bulletin {
             rect.set(AndroidUtilities.dp(1), AndroidUtilities.dp(1), getMeasuredWidth() - AndroidUtilities.dp(1), getMeasuredHeight() - AndroidUtilities.dp(1));
             if (prevSeconds != newSeconds) {
                 prevSeconds = newSeconds;
-                timeLeftString = String.format("%d", Math.max(0, newSeconds));
+                timeLeftString = String.valueOf(Math.max(0, newSeconds));
                 if (timeLayout != null) {
                     timeLayoutOut = timeLayout;
                     timeReplaceProgress = 0;

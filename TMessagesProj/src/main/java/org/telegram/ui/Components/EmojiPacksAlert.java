@@ -481,8 +481,8 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         removeButtonView = new TextView(context);
         removeButtonView.setVisibility(View.GONE);
-        removeButtonView.setBackground(Theme.createRadSelectorDrawable(0x0fffffff & getThemedColor(Theme.key_dialogTextRed), 0, 0));
-        removeButtonView.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+        removeButtonView.setBackground(Theme.createRadSelectorDrawable(0x0fffffff & getThemedColor(Theme.key_text_RedBold), 0, 0));
+        removeButtonView.setTextColor(getThemedColor(Theme.key_text_RedBold));
         removeButtonView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         removeButtonView.setGravity(Gravity.CENTER);
         removeButtonView.setClickable(true);

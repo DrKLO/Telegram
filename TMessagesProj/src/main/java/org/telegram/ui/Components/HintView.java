@@ -404,7 +404,7 @@ public class HintView extends FrameLayout {
             }
         }
         setTranslationX(offset);
-        float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2;
+        float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2f;
         if (currentType == 7) {
             arrowX += AndroidUtilities.dp(2);
         }

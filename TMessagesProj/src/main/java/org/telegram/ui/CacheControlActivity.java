@@ -119,6 +119,7 @@ import java.util.Objects;
 
 public class CacheControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
+    private static final int VIEW_TYPE_TEXT_SETTINGS = 0;
     private static final int VIEW_TYPE_INFO = 1;
     private static final int VIEW_TYPE_STORAGE = 2;
     private static final int VIEW_TYPE_HEADER = 3;
@@ -126,12 +127,10 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     private static final int VIEW_TYPE_CHAT = 5;
     private static final int VIEW_FLICKER_LOADING_DIALOG = 6;
     private static final int VIEW_TYPE_KEEP_MEDIA_CELL = 7;
-    private static final int VIEW_TYPE_TEXT_SETTINGS = 0;
     private static final int VIEW_TYPE_CACHE_VIEW_PAGER = 8;
-
     private static final int VIEW_TYPE_CHART = 9;
     private static final int VIEW_TYPE_CHART_HEADER = 10;
-    public static final int VIEW_TYPE_SECTION = 11;
+    private static final int VIEW_TYPE_SECTION = 11;
     private static final int VIEW_TYPE_SECTION_LOADING = 12;
     private static final int VIEW_TYPE_CLEAR_CACHE_BUTTON = 13;
     private static final int VIEW_TYPE_MAX_CACHE_SIZE = 14;
@@ -228,7 +227,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 return;
             }
         }
-        Utilities.globalQueue.postRunnable(() -> {
+        Utilities.cacheClearQueue.postRunnable(() -> {
             canceled = false;
             long cacheSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), 5);
             long cacheTempSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), 4);
@@ -264,53 +263,56 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
             return;
         }
-        File path;
-        if (Build.VERSION.SDK_INT >= 19) {
-            ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
-            String dir = (path = storageDirs.get(0)).getAbsolutePath();
-            if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
-                for (int a = 0, N = storageDirs.size(); a < N; a++) {
-                    File file = storageDirs.get(a);
-                    if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir) && file.canWrite()) {
-                        path = file;
-                        break;
+        Utilities.cacheClearQueue.postRunnable(() -> {
+            File path;
+            if (Build.VERSION.SDK_INT >= 19) {
+                ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
+                String dir = (path = storageDirs.get(0)).getAbsolutePath();
+                if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                    for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                        File file = storageDirs.get(a);
+                        if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir) && file.canWrite()) {
+                            path = file;
+                            break;
+                        }
                     }
                 }
-            }
-        } else {
-            path = new File(SharedConfig.storageCacheDir);
-        }
-        try {
-            StatFs stat = new StatFs(path.getPath());
-            long blockSize;
-            long blockSizeExternal;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                blockSize = stat.getBlockSizeLong();
             } else {
-                blockSize = stat.getBlockSize();
+                path = new File(SharedConfig.storageCacheDir);
             }
-            long availableBlocks;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                availableBlocks = stat.getAvailableBlocksLong();
-            } else {
-                availableBlocks = stat.getAvailableBlocks();
-            }
-            long blocksTotal;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                blocksTotal = stat.getBlockCountLong();
-            } else {
-                blocksTotal = stat.getBlockCount();
-            }
+            try {
+                StatFs stat = new StatFs(path.getPath());
+                long blockSize;
+                long blockSizeExternal;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    blockSize = stat.getBlockSizeLong();
+                } else {
+                    blockSize = stat.getBlockSize();
+                }
+                long availableBlocks;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    availableBlocks = stat.getAvailableBlocksLong();
+                } else {
+                    availableBlocks = stat.getAvailableBlocks();
+                }
+                long blocksTotal;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    blocksTotal = stat.getBlockCountLong();
+                } else {
+                    blocksTotal = stat.getBlockCount();
+                }
 
-            lastDeviceTotalSize = blocksTotal * blockSize;
-            lastDeviceTotalFreeSize = availableBlocks * blockSize;
-            if (onDone != null) {
-                onDone.run(lastDeviceTotalSize, lastDeviceTotalFreeSize);
+                AndroidUtilities.runOnUIThread(() -> {
+                    lastDeviceTotalSize = blocksTotal * blockSize;
+                    lastDeviceTotalFreeSize = availableBlocks * blockSize;
+                    if (onDone != null) {
+                        onDone.run(lastDeviceTotalSize, lastDeviceTotalFreeSize);
+                    }
+                });
+            } catch (Exception e) {
+                FileLog.e(e);
             }
-            return;
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
+        });
     }
 
     @Override
@@ -1237,8 +1239,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         ActionBarMenuItem otherItem = actionBar.createMenu().addItem(other_id, R.drawable.ic_ab_other);
         clearDatabaseItem = otherItem.addSubItem(clear_database_id, R.drawable.msg_delete, LocaleController.getString("ClearLocalDatabase", R.string.ClearLocalDatabase));
-        clearDatabaseItem.setIconColor(Theme.getColor(Theme.key_dialogRedIcon));
-        clearDatabaseItem.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+        clearDatabaseItem.setIconColor(Theme.getColor(Theme.key_text_RedRegular));
+        clearDatabaseItem.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        clearDatabaseItem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
         updateDatabaseItemSize();
 
         listAdapter = new ListAdapter(context);
@@ -1379,7 +1382,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         showDialog(dialog);
         TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 
@@ -1549,7 +1552,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         showDialog(alertDialog);
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 
@@ -1906,48 +1909,69 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             super(context);
             ((MarginLayoutParams) button.getLayoutParams()).topMargin = AndroidUtilities.dp(5);
             button.setOnClickListener(e -> {
-                BottomSheet bottomSheet = new BottomSheet(getContext(), false) {
-                    @Override
-                    protected boolean canDismissWithTouchOutside() {
-                        return false;
-                    }
-                };
-                bottomSheet.fixNavigationBar();
-                bottomSheet.setCanDismissWithSwipe(false);
-                bottomSheet.setCancelable(false);
-                ClearingCacheView cacheView = new ClearingCacheView(getContext());
-                bottomSheet.setCustomView(cacheView);
-
-                final boolean[] done = new boolean[] { false };
-                final float[] progress = new float[] { 0 };
-                final boolean[] nextSection = new boolean[] { false };
-                Runnable updateProgress = () -> {
-                    cacheView.setProgress(progress[0]);
-                    if (nextSection[0]) {
-                        updateRows();
-                    }
-                };
-
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (!done[0]) {
-                        showDialog(bottomSheet);
-                    }
-                }, 150);
-
-                cleanupFolders(
-                    (progressValue, next) -> {
-                        progress[0] = progressValue;
-                        nextSection[0] = next;
-                        AndroidUtilities.cancelRunOnUIThread(updateProgress);
-                        AndroidUtilities.runOnUIThread(updateProgress);
-                    },
-                    () -> AndroidUtilities.runOnUIThread(() -> {
-                        done[0] = true;
-                        cacheView.setProgress(1F);
-                        bottomSheet.dismiss();
-                    })
-                );
+                AlertDialog dialog =  new AlertDialog.Builder(getContext())
+                    .setTitle(LocaleController.getString("ClearCache", R.string.ClearCache) + (TextUtils.isEmpty(valueTextView.getText()) ? "" : " (" + valueTextView.getText() + ")"))
+                    .setMessage(LocaleController.getString("StorageUsageInfo", R.string.StorageUsageInfo))
+                    .setPositiveButton(textView.getText(), (di, v) -> doClearCache())
+                    .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                    .create();
+                showDialog(dialog);
+                View clearButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                if (clearButton instanceof TextView) {
+                    ((TextView) clearButton).setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                    clearButton.setBackground(Theme.getRoundRectSelectorDrawable(AndroidUtilities.dp(6), Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f)));
+                }
             });
+        }
+
+        private void doClearCache() {
+            BottomSheet bottomSheet = new BottomSheet(getContext(), false) {
+                @Override
+                protected boolean canDismissWithTouchOutside() {
+                    return false;
+                }
+            };
+            bottomSheet.fixNavigationBar();
+            bottomSheet.setCanDismissWithSwipe(false);
+            bottomSheet.setCancelable(false);
+            ClearingCacheView cacheView = new ClearingCacheView(getContext());
+            bottomSheet.setCustomView(cacheView);
+
+            final boolean[] done = new boolean[] { false };
+            final float[] progress = new float[] { 0 };
+            final boolean[] nextSection = new boolean[] { false };
+            Runnable updateProgress = () -> {
+                cacheView.setProgress(progress[0]);
+                if (nextSection[0]) {
+                    updateRows();
+                }
+            };
+
+            final long[] start = new long[] { -1 };
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!done[0]) {
+                    start[0] = System.currentTimeMillis();
+                    showDialog(bottomSheet);
+                }
+            }, 150);
+
+            cleanupFolders(
+                (progressValue, next) -> {
+                    progress[0] = progressValue;
+                    nextSection[0] = next;
+                    AndroidUtilities.cancelRunOnUIThread(updateProgress);
+                    AndroidUtilities.runOnUIThread(updateProgress);
+                },
+                () -> AndroidUtilities.runOnUIThread(() -> {
+                    done[0] = true;
+                    cacheView.setProgress(1F);
+                    if (start[0] > 0) {
+                        AndroidUtilities.runOnUIThread(bottomSheet::dismiss, Math.max(0, 1000 - (System.currentTimeMillis() - start[0])));
+                    } else {
+                        bottomSheet.dismiss();
+                    }
+                })
+            );
         }
 
         public void updateSize() {
@@ -2514,7 +2538,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_GROUP) {
                         textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("GroupChats", R.string.GroupChats), value, true, R.drawable.msg_filled_menu_groups, getThemedColor(Theme.key_statisticChartLine_green), true);
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_CHANNEL) {
-                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("CacheChannels", R.string.CacheChannels), value, true, R.drawable.msg_filled_menu_channels, getThemedColor(Theme.key_statisticChartLine_golden), true);
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("CacheChannels", R.string.CacheChannels), value, true, R.drawable.msg_filled_menu_channels, getThemedColor(Theme.key_statisticChartLine_golden), false);
                     }
                     textCell2.setSubtitle(subtitle);
                     break;

@@ -1297,6 +1297,12 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                     request->serverFailureCount++;
                                 }
                                 discardResponse = true;
+                            } else if (error->error_code == -504) {
+                                discardResponse = (request->requestFlags & RequestFlagIgnoreFloodWait) == 0;
+                                request->failedByFloodWait = 2;
+                                request->startTime = 0;
+                                request->startTimeMillis = 0;
+                                request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + 2);
                             } else if (error->error_code == 420) {
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";

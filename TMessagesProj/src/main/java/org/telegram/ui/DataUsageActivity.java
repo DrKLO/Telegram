@@ -483,7 +483,7 @@ public class DataUsageActivity extends BaseFragment {
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                 }
             });
@@ -744,9 +744,9 @@ public class DataUsageActivity extends BaseFragment {
                 case 1: {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == resetRow) {
-                        textCell.setTag(Theme.key_windowBackgroundWhiteRedText2);
+                        textCell.setTag(Theme.key_text_RedRegular);
                         textCell.setText(LocaleController.getString("ResetStatistics", R.string.ResetStatistics), false);
-                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText2));
+                        textCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     } else {
                         int type;
                         textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
@@ -889,7 +889,7 @@ public class DataUsageActivity extends BaseFragment {
 
             arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
             arrayList.add(new ThemeDescription(viewPages[a].listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
-            arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText2));
+            arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
         }
 
         return arrayList;

@@ -25,6 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -61,9 +62,14 @@ public class LimitPreviewView extends LinearLayout {
     LinearLayout limitsContainer;
     private boolean premiumLocked;
 
-    @SuppressLint("SetTextI18n")
     public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit) {
+        this(context, icon, currentValue, premiumLimit, .5f);
+    }
+
+    @SuppressLint("SetTextI18n")
+    public LimitPreviewView(@NonNull Context context, int icon, int currentValue, int premiumLimit, float inputPercent) {
         super(context);
+        final float percent = MathUtils.clamp(inputPercent, 0.1f, 0.9f);
         this.icon = icon;
         setOrientation(VERTICAL);
         setClipChildren(false);
@@ -88,7 +94,7 @@ public class LimitPreviewView extends LinearLayout {
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), grayPaint);
 
                 canvas.save();
-                canvas.clipRect(getMeasuredWidth() / 2f, 0, getMeasuredWidth(), getMeasuredHeight());
+                canvas.clipRect(getMeasuredWidth() * percent, 0, getMeasuredWidth(), getMeasuredHeight());
                 Paint paint = PremiumGradient.getInstance().getMainGradientPaint();
                 if (parentVideForGradient != null) {
                     View parent = parentVideForGradient;
@@ -133,10 +139,12 @@ public class LimitPreviewView extends LinearLayout {
         defaultCount.setGravity(Gravity.CENTER_VERTICAL);
         defaultCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
 
-        limitLayout.addView(freeTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
-        limitLayout.addView(defaultCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+        if (percent > .3f) {
+            limitLayout.addView(freeTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
+            limitLayout.addView(defaultCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+        }
 
-        limitsContainer.addView(limitLayout, LayoutHelper.createLinear(0, 30, 1f));
+        limitsContainer.addView(limitLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 2f * (1f - percent)));
 
         FrameLayout limitLayout2 = new FrameLayout(context);
 
@@ -153,10 +161,12 @@ public class LimitPreviewView extends LinearLayout {
         premiumCount.setGravity(Gravity.CENTER_VERTICAL);
         premiumCount.setTextColor(Color.WHITE);
 
-        limitLayout2.addView(limitTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
-        limitLayout2.addView(premiumCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+        if (percent < .7f) {
+            limitLayout2.addView(limitTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
+            limitLayout2.addView(premiumCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+        }
 
-        limitsContainer.addView(limitLayout2, LayoutHelper.createLinear(0, 30, 1f));
+        limitsContainer.addView(limitLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 2f * percent));
 
         addView(limitsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 14, icon == 0 ? 0 : 12, 14, 0));
     }
@@ -283,7 +293,7 @@ public class LimitPreviewView extends LinearLayout {
     }
 
     public void setBagePosition(float position) {
-        this.position = position;
+        this.position = MathUtils.clamp(position, 0.1f, 0.9f);
     }
 
     public void setParentViewForGradien(ViewGroup containerView) {
@@ -307,14 +317,6 @@ public class LimitPreviewView extends LinearLayout {
         limitsContainer.setVisibility(View.GONE);
         limitIcon.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(3), AndroidUtilities.dp(24), AndroidUtilities.dp(3));
         premiumLocked = true;
-    }
-
-    private class LimitTextView extends LinearLayout {
-
-        public LimitTextView(Context context) {
-            super(context);
-        }
-
     }
 
     private class CounterView extends View {

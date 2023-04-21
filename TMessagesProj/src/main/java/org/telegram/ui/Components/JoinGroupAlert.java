@@ -292,6 +292,15 @@ public class JoinGroupAlert extends BottomSheet {
     }
 
     public static void showBulletin(Context context, BaseFragment fragment, boolean isChannel) {
+        if (context == null) {
+            if (fragment != null) {
+                context = fragment.getContext();
+            }
+            if (context == null) {
+                return;
+            }
+            return;
+        }
         Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(context, fragment.getResourceProvider());
         layout.imageView.setAnimation(R.raw.timer_3, 28, 28);
         layout.titleTextView.setText(LocaleController.getString("RequestToJoinSent", R.string.RequestToJoinSent));

@@ -59,8 +59,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     public static final int TYPE_GIFS = 9;
     public static final int TYPE_STICKERS = 10;
 
-
     public static final int TYPE_ADD_MEMBERS_RESTRICTED = 11;
+    public static final int TYPE_FOLDER_INVITES = 12;
+    public static final int TYPE_SHARED_FOLDERS = 13;
+
     private boolean canSendLink;
     private TLRPC.TL_webPage linkPreview;
 
@@ -84,6 +86,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 return "double_limits__saved_gifs";
             case TYPE_STICKERS:
                 return "double_limits__stickers_faved";
+            case TYPE_FOLDER_INVITES:
+                return "double_limits__chatlist_invites";
+            case TYPE_SHARED_FOLDERS:
+                return "double_limits__chatlists_joined";
         }
         return null;
     }
@@ -273,7 +279,21 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             premiumButtonView.hideIcon();
         } else {
             premiumButtonView.buttonTextView.setText(LocaleController.getString("IncreaseLimit", R.string.IncreaseLimit));
-            premiumButtonView.setIcon(type == TYPE_ACCOUNTS ? R.raw.addone_icon : R.raw.double_icon);
+            if (limitParams != null) {
+                if (limitParams.defaultLimit + 1 == limitParams.premiumLimit) {
+                    premiumButtonView.setIcon(R.raw.addone_icon);
+                } else if (
+                    limitParams.defaultLimit != 0 && limitParams.premiumLimit != 0 &&
+                    limitParams.premiumLimit / (float) limitParams.defaultLimit >= 1.6f &&
+                    limitParams.premiumLimit / (float) limitParams.defaultLimit <= 2.5f
+                ) {
+                    premiumButtonView.setIcon(R.raw.double_icon);
+                } else {
+                    premiumButtonView.hideIcon();
+                }
+            } else {
+                premiumButtonView.hideIcon();
+            }
         }
     }
 
@@ -304,7 +324,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 
@@ -336,7 +356,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     private static boolean hasFixedSize(int type) {
-        if (type == TYPE_PIN_DIALOGS || type == TYPE_FOLDERS || type == TYPE_CHATS_IN_FOLDER || type == TYPE_LARGE_FILE || type == TYPE_ACCOUNTS) {
+        if (type == TYPE_PIN_DIALOGS || type == TYPE_FOLDERS || type == TYPE_CHATS_IN_FOLDER || type == TYPE_LARGE_FILE || type == TYPE_ACCOUNTS || type == TYPE_FOLDER_INVITES || type == TYPE_SHARED_FOLDERS) {
             return true;
         }
         return false;
@@ -611,7 +631,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
                 }
             }
 
-            limitPreviewView = new LimitPreviewView(context, icon, currentValue, premiumLimit);
+            limitPreviewView = new LimitPreviewView(context, icon, currentValue, premiumLimit, position);
             limitPreviewView.setBagePosition(position);
             limitPreviewView.setType(type);
             limitPreviewView.defaultCount.setVisibility(View.GONE);
@@ -659,6 +679,8 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             description.setGravity(Gravity.CENTER_HORIZONTAL);
             description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             addView(description, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 24, 24));
+
+            updatePremiumButtonText();
         }
     }
 
@@ -678,6 +700,20 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
             limitParams.descriptionStr = LocaleController.formatString("LimitReachedPublicLinks", R.string.LimitReachedPublicLinks, limitParams.defaultLimit, limitParams.premiumLimit);
             limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedPublicLinksPremium", R.string.LimitReachedPublicLinksPremium, limitParams.premiumLimit);
             limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedPublicLinksLocked", R.string.LimitReachedPublicLinksLocked, limitParams.defaultLimit);
+        } else if (type == TYPE_FOLDER_INVITES) {
+            limitParams.defaultLimit = MessagesController.getInstance(currentAccount).chatlistInvitesLimitDefault;
+            limitParams.premiumLimit = MessagesController.getInstance(currentAccount).chatlistInvitesLimitPremium;
+            limitParams.icon = R.drawable.msg_limit_links;
+            limitParams.descriptionStr = LocaleController.formatString("LimitReachedFolderLinks", R.string.LimitReachedFolderLinks, limitParams.defaultLimit, limitParams.premiumLimit);
+            limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedFolderLinksPremium", R.string.LimitReachedFolderLinksPremium, limitParams.premiumLimit);
+            limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedFolderLinksLocked", R.string.LimitReachedFolderLinksLocked, limitParams.defaultLimit);
+        } else if (type == TYPE_SHARED_FOLDERS) {
+            limitParams.defaultLimit = MessagesController.getInstance(currentAccount).chatlistJoinedLimitDefault;
+            limitParams.premiumLimit = MessagesController.getInstance(currentAccount).chatlistJoinedLimitPremium;
+            limitParams.icon = R.drawable.msg_limit_folder;
+            limitParams.descriptionStr = LocaleController.formatString("LimitReachedSharedFolders", R.string.LimitReachedSharedFolders, limitParams.defaultLimit, limitParams.premiumLimit);
+            limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedSharedFoldersPremium", R.string.LimitReachedSharedFoldersPremium, limitParams.premiumLimit);
+            limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedSharedFoldersLocked", R.string.LimitReachedSharedFoldersLocked, limitParams.defaultLimit);
         } else if (type == TYPE_FOLDERS) {
             limitParams.defaultLimit = MessagesController.getInstance(currentAccount).dialogFiltersLimitDefault;
             limitParams.premiumLimit = MessagesController.getInstance(currentAccount).dialogFiltersLimitPremium;
@@ -835,7 +871,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 

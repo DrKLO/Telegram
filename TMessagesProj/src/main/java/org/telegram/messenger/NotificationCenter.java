@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -278,6 +279,9 @@ public class NotificationCenter {
     public static int chatSwithcedToForum = totalEvents++;
     public static int didUpdateGlobalAutoDeleteTimer = totalEvents++;
     public static int onDatabaseReset = totalEvents++;
+    public static int wallpaperSettedToUser = totalEvents++;
+
+    public static int chatlistFolderUpdate = totalEvents++;
 
     public static boolean alreadyLogged;
 
@@ -507,13 +511,37 @@ public class NotificationCenter {
             Integer flags = (Integer) args[0];
             currentHeavyOperationFlags |= flags;
         }
-        postNotificationNameInternal(id, allowDuringAnimation, args);
+        if (shouldDebounce(id, args) && BuildVars.DEBUG_VERSION) {
+            postNotificationDebounced(id, args);
+        } else {
+            postNotificationNameInternal(id, allowDuringAnimation, args);
+        }
 
         if (expiredIndices != null) {
             for (int i = 0; i < expiredIndices.size(); i++) {
                 onAnimationFinish(expiredIndices.get(i));
             }
         }
+    }
+
+    SparseArray<Runnable> alreadyPostedRannubles = new SparseArray<>();
+
+    private void postNotificationDebounced(int id, Object[] args) {
+        int hash = id + (Arrays.hashCode(args) << 16);
+        if (alreadyPostedRannubles.indexOfKey(hash) >= 0) {
+            //skip
+        } else {
+            Runnable runnable = () -> {
+                postNotificationNameInternal(id, false, args);
+                alreadyPostedRannubles.remove(hash);
+            };
+            alreadyPostedRannubles.put(hash, runnable);
+            AndroidUtilities.runOnUIThread(runnable, 250);
+        }
+    }
+
+    private boolean shouldDebounce(int id, Object[] args) {
+        return id == updateInterfaces;
     }
 
     @UiThread
@@ -705,6 +733,20 @@ public class NotificationCenter {
                 NotificationCenter.getGlobalInstance().removeObserver(delegate, NotificationCenter.emojiLoaded);
             }
         });
+    }
+
+    public void listenOnce(int id, Runnable callback) {
+        final NotificationCenterDelegate[] observer = new NotificationCenterDelegate[1];
+        observer[0] = (nid, account, args) -> {
+            if (nid == id && observer[0] != null) {
+                if (callback != null) {
+                    callback.run();
+                }
+                removeObserver(observer[0], id);
+                observer[0] = null;
+            }
+        };
+        addObserver(observer[0], id);
     }
 
     private class UniqArrayList<T> extends ArrayList<T> {

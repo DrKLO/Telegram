@@ -336,9 +336,9 @@ public class CalendarActivity extends BaseFragment {
 
 
             selectDaysButton.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_fieldOverlayText), (int) (0.2f * 255)), 2));
-            removeDaysButton.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_dialogTextRed), (int) (0.2f * 255)), 2));
+            removeDaysButton.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_text_RedBold), (int) (0.2f * 255)), 2));
             selectDaysButton.setTextColor(Theme.getColor(Theme.key_chat_fieldOverlayText));
-            removeDaysButton.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            removeDaysButton.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
 
         return fragmentView;

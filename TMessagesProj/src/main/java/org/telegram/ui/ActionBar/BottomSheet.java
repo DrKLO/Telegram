@@ -169,6 +169,7 @@ public class BottomSheet extends Dialog {
     protected Theme.ResourcesProvider resourcesProvider;
     protected boolean isPortrait;
     public boolean pauseAllHeavyOperations = true;
+    private int animationIndex;
 
     public void setDisableScroll(boolean b) {
         disableScroll = b;
@@ -181,6 +182,15 @@ public class BottomSheet extends Dialog {
     private float hideSystemVerticalInsetsProgress;
     public boolean useBackgroundTopPadding = true;
     protected int customViewGravity = Gravity.LEFT | Gravity.TOP;
+    private boolean transitionFromRight;
+
+    public void transitionFromRight(boolean transitionFromRight) {
+        this.transitionFromRight = transitionFromRight;
+    }
+
+    public void onOpenAnimationEnd() {
+
+    }
 
     public class ContainerView extends FrameLayout implements NestedScrollingParent {
 
@@ -688,6 +698,9 @@ public class BottomSheet extends Dialog {
             } else {
                 backgroundPaint.setColor(0xff000000);
             }
+            if (transitionFromRight && containerView.getVisibility() != View.VISIBLE) {
+                return;
+            }
             if ((drawNavigationBar && bottomInset != 0) || currentPanTranslationY != 0) {
                 float translation = 0;
                 int navBarHeight = drawNavigationBar ? getBottomInset() : 0;
@@ -700,10 +713,14 @@ public class BottomSheet extends Dialog {
                     }
                 }
                 int wasAlpha = backgroundPaint.getAlpha();
+                if (transitionFromRight) {
+                    alpha *= containerView.getAlpha();
+                }
+                int left = transitionFromRight ? (int) containerView.getX() : containerView.getLeft();
                 if (alpha < 1f) {
                     backgroundPaint.setAlpha((int) (wasAlpha * alpha));
                 }
-                canvas.drawRect(containerView.getLeft() + backgroundPaddingLeft, getMeasuredHeight() - navBarHeight + translation - currentPanTranslationY, containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() + translation, backgroundPaint);
+                canvas.drawRect(left + backgroundPaddingLeft, getMeasuredHeight() - navBarHeight + translation - currentPanTranslationY, containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() + translation, backgroundPaint);
                 backgroundPaint.setAlpha(wasAlpha);
 
                 if (overlayDrawNavBarColor != 0) {
@@ -713,7 +730,7 @@ public class BottomSheet extends Dialog {
                         backgroundPaint.setAlpha((int) (wasAlpha * alpha));
                         translation = 0;
                     }
-                    canvas.drawRect(containerView.getLeft() + backgroundPaddingLeft, getMeasuredHeight() - navBarHeight + translation - currentPanTranslationY, containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() + translation, backgroundPaint);
+                    canvas.drawRect(left  + backgroundPaddingLeft, getMeasuredHeight() - navBarHeight + translation - currentPanTranslationY, containerView.getRight() - backgroundPaddingLeft, getMeasuredHeight() + translation, backgroundPaint);
                     backgroundPaint.setAlpha(wasAlpha);
                 }
             }
@@ -987,7 +1004,7 @@ public class BottomSheet extends Dialog {
     }
 
     public void fixNavigationBar() {
-        fixNavigationBar(getThemedColor(Theme.key_dialogBackground));
+        fixNavigationBar(getThemedColor(Theme.key_windowBackgroundGray));
     }
 
     public void fixNavigationBar(int bgColor) {
@@ -1208,26 +1225,22 @@ public class BottomSheet extends Dialog {
             return;
         }
         backDrawable.setAlpha(0);
-        if (Build.VERSION.SDK_INT >= 18) {
-            layoutCount = 2;
-            containerView.setTranslationY((Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight * (1f - hideSystemVerticalInsetsProgress) : 0) + containerView.getMeasuredHeight() + (scrollNavBar ? getBottomInset() : 0));
-            long delay = openNoDelay ? 0 : 150;
-            if (waitingKeyboard) {
-                delay = 500;
-            }
-            AndroidUtilities.runOnUIThread(startAnimationRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (startAnimationRunnable != this || dismissed) {
-                        return;
-                    }
-                    startAnimationRunnable = null;
-                    startOpenAnimation();
-                }
-            }, delay);
-        } else {
-            startOpenAnimation();
+        layoutCount = 2;
+        containerView.setTranslationY((Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight * (1f - hideSystemVerticalInsetsProgress) : 0) + containerView.getMeasuredHeight() + (scrollNavBar ? getBottomInset() : 0));
+        long delay = openNoDelay ? 0 : 150;
+        if (waitingKeyboard) {
+            delay = 500;
         }
+        AndroidUtilities.runOnUIThread(startAnimationRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (startAnimationRunnable != this || dismissed) {
+                    return;
+                }
+                startAnimationRunnable = null;
+                startOpenAnimation();
+            }
+        }, delay);
     }
 
     public ColorDrawable getBackDrawable() {
@@ -1335,7 +1348,13 @@ public class BottomSheet extends Dialog {
             if (Build.VERSION.SDK_INT >= 20 && useHardwareLayer) {
                 container.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             }
-            containerView.setTranslationY(getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0));
+            if (transitionFromRight) {
+                containerView.setTranslationX(AndroidUtilities.dp(48));
+                containerView.setAlpha(0);
+                containerView.setTranslationY(0);
+            } else {
+                containerView.setTranslationY(getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0));
+            }
             currentSheetAnimationType = 1;
             if (navigationBarAnimation != null) {
                 navigationBarAnimation.cancel();
@@ -1349,19 +1368,30 @@ public class BottomSheet extends Dialog {
             });
             currentSheetAnimation = new AnimatorSet();
             currentSheetAnimation.playTogether(
+                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0),
+                    ObjectAnimator.ofFloat(containerView, View.ALPHA, 1f),
                     ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, 0),
                     ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, dimBehind ? dimBehindAlpha : 0),
                     navigationBarAnimation
             );
-            currentSheetAnimation.setDuration(400);
+            if (transitionFromRight) {
+                currentSheetAnimation.setDuration(250);
+                currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            } else {
+                currentSheetAnimation.setDuration(400);
+                currentSheetAnimation.setInterpolator(openInterpolator);
+            }
             currentSheetAnimation.setStartDelay(waitingKeyboard ? 0 : 20);
             currentSheetAnimation.setInterpolator(openInterpolator);
+            int finalAccount = currentAccount;
+            animationIndex = NotificationCenter.getInstance(finalAccount).setAnimationInProgress(animationIndex, null);
             currentSheetAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
                         currentSheetAnimation = null;
                         currentSheetAnimationType = 0;
+                        onOpenAnimationEnd();
                         if (delegate != null) {
                             delegate.onOpenAnimationEnd();
                         }
@@ -1378,6 +1408,7 @@ public class BottomSheet extends Dialog {
                     if (pauseAllHeavyOperations) {
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     }
+                    NotificationCenter.getInstance(finalAccount).onAnimationFinish(animationIndex);
                 }
 
                 @Override
@@ -1553,20 +1584,24 @@ public class BottomSheet extends Dialog {
             currentSheetAnimation = new AnimatorSet();
             ArrayList<Animator> animators = new ArrayList<>();
             if (containerView != null) {
-                animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
+                if (transitionFromRight) {
+                    animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, AndroidUtilities.dp(48)));
+                    animators.add(ObjectAnimator.ofFloat(containerView, View.ALPHA, 0));
+                } else {
+                    animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + container.keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
+                }
             }
             animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
             animators.add(navigationBarAnimation);
             currentSheetAnimation.playTogether(animators);
-//            if (useFastDismiss) {
-//                int height = containerView.getMeasuredHeight();
-//                duration = Math.max(60, (int) (250 * (height - containerView.getTranslationY()) / (float) height));
-//                currentSheetAnimation.setDuration(duration);
-//                useFastDismiss = false;
-//            } else {
+
+            if (transitionFromRight) {
+                currentSheetAnimation.setDuration(200);
+                currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            } else {
                 currentSheetAnimation.setDuration(duration = 250);
-//            }
-            currentSheetAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+                currentSheetAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+            }
             currentSheetAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {

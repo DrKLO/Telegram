@@ -543,7 +543,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
                 default:
                 case 0:
                     HeaderCell headerCell = new HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, true);
-                    headerCell.getTextView2().setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                    headerCell.getTextView2().setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     headerCell.getTextView2().setTextSize(15);
                     headerCell.getTextView2().setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                     view = headerCell;
@@ -791,7 +791,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
                             privacyCell.setText(LocaleController.getString("LinkIsExpiredLimitReached", R.string.LinkIsExpiredLimitReached));
                         } else {
                             privacyCell.setText(LocaleController.getString("LinkIsExpired", R.string.LinkIsExpired));
-                            privacyCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                            privacyCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         }
 
                     } else if (invite.expire_date > 0) {

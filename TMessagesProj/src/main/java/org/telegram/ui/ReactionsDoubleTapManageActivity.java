@@ -372,7 +372,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
                 Theme.key_listSelector,
                 Theme.key_windowBackgroundGray,
                 Theme.key_windowBackgroundWhiteGrayText4,
-                Theme.key_windowBackgroundWhiteRedText4,
+                Theme.key_text_RedRegular,
                 Theme.key_windowBackgroundChecked,
                 Theme.key_windowBackgroundCheckText,
                 Theme.key_switchTrackBlue,

@@ -43,8 +43,8 @@ public class TextCell extends FrameLayout {
     private ImageView valueImageView;
     private int leftPadding;
     private boolean needDivider;
-    private int offsetFromImage = 71;
-    public int heightDp = 48;
+    public int offsetFromImage = 71;
+    public int heightDp = 50;
     public int imageLeft = 21;
     private boolean inDialogs;
     private boolean prioritizeTitleOverValue;
@@ -193,7 +193,7 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(37), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
         }
-        setMeasuredDimension(width, AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
+        setMeasuredDimension(width, height + (needDivider ? 1 : 0));
     }
 
     @Override
@@ -224,16 +224,17 @@ public class TextCell extends FrameLayout {
             viewLeft = AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? offsetFromImage : leftPadding);
         }
         if (subtitleView.getVisibility() == View.VISIBLE) {
-            viewTop = (height - textView.getTextHeight() - subtitleView.getTextHeight() - AndroidUtilities.dp(2)) / 2;
+            int margin = heightDp > 50 ? 4 : 2;
+            viewTop = (height - textView.getTextHeight() - subtitleView.getTextHeight() - AndroidUtilities.dp(margin)) / 2;
             textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
-            viewTop = viewTop + textView.getTextHeight() + AndroidUtilities.dp(2);
+            viewTop = viewTop + textView.getTextHeight() + AndroidUtilities.dp(margin);
             subtitleView.layout(viewLeft, viewTop, viewLeft + subtitleView.getMeasuredWidth(), viewTop + subtitleView.getMeasuredHeight());
         } else {
             viewTop = (height - textView.getTextHeight()) / 2;
             textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
         }
         if (imageView.getVisibility() == VISIBLE) {
-            viewTop = AndroidUtilities.dp(5);
+            viewTop = AndroidUtilities.dp(heightDp > 50 ? 0 : 2) + (height - imageView.getMeasuredHeight()) / 2 - imageView.getPaddingTop();
             viewLeft = !LocaleController.isRTL ? AndroidUtilities.dp(imageLeft) : width - imageView.getMeasuredWidth() - AndroidUtilities.dp(imageLeft);
             imageView.layout(viewLeft, viewTop, viewLeft + imageView.getMeasuredWidth(), viewTop + imageView.getMeasuredHeight());
         }
@@ -279,7 +280,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndIcon(String text, int resId, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setText(valueText = null, false);
         imageView.setImageResource(resId);
@@ -337,7 +338,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndValue(String text, String value, boolean animated, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setText(TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
         valueTextView.setVisibility(VISIBLE);
@@ -353,7 +354,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndValueAndColorfulIcon(String text, CharSequence value, boolean animated, int resId, int color, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setText(TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
         valueTextView.setVisibility(VISIBLE);
@@ -369,7 +370,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndSpoilersValueAndIcon(String text, CharSequence value, int resId, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueSpoilersTextView.setVisibility(VISIBLE);
         valueSpoilersTextView.setText(value);
@@ -389,7 +390,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndSpoilersValueAndColorfulIcon(String text, CharSequence value, int resId, int color, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueSpoilersTextView.setVisibility(VISIBLE);
         valueSpoilersTextView.setText(value);
@@ -409,7 +410,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndValueAndIcon(String text, String value, boolean animated, int resId, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setText(TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
         valueTextView.setVisibility(VISIBLE);
@@ -428,11 +429,10 @@ public class TextCell extends FrameLayout {
     }
 
     public void setColorfulIcon(int color, int resId) {
-        offsetFromImage = 65;
+        offsetFromImage = getOffsetFromImage(true);
         imageView.setVisibility(VISIBLE);
         imageView.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
         imageView.setTranslationX(AndroidUtilities.dp(LocaleController.isRTL ? 0 : -3));
-        imageView.setTranslationY(AndroidUtilities.dp(6));
         imageView.setImageResource(resId);
         imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         imageView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), color));
@@ -440,7 +440,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndCheck(CharSequence text, boolean checked, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         imageView.setVisibility(GONE);
         valueImageView.setVisibility(GONE);
@@ -455,7 +455,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndCheckAndIcon(CharSequence text, boolean checked, int resId, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setVisibility(GONE);
         valueSpoilersTextView.setVisibility(GONE);
@@ -473,7 +473,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndCheckAndIcon(String text, boolean checked, Drawable resDrawable, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setVisibility(GONE);
         valueSpoilersTextView.setVisibility(GONE);
@@ -491,7 +491,7 @@ public class TextCell extends FrameLayout {
 
     public void setTextAndValueDrawable(String text, Drawable drawable, boolean divider) {
         imageLeft = 21;
-        offsetFromImage = 71;
+        offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         valueTextView.setText(valueText = null, false);
         valueImageView.setVisibility(VISIBLE);
@@ -505,6 +505,10 @@ public class TextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.setVisibility(GONE);
         }
+    }
+
+    protected int getOffsetFromImage(boolean colourful) {
+        return colourful ? 65 : 71;
     }
 
     @Override

@@ -46,6 +46,10 @@ public class CheckBox2 extends View {
         checkBoxBase.setChecked(checked, animated);
     }
 
+    public CheckBoxBase getCheckBoxBase() {
+        return checkBoxBase;
+    }
+
     public void setNum(int num) {
         checkBoxBase.setNum(num);
     }
@@ -113,6 +117,10 @@ public class CheckBox2 extends View {
         } else {
             checkBoxBase.draw(canvas);
         }
+    }
+
+    public void setForbidden(boolean forbidden) {
+        checkBoxBase.setForbidden(forbidden);
     }
 
     @Override

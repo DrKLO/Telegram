@@ -49,6 +49,7 @@ import org.telegram.ui.Cells.ArchiveHintCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.DialogMeUrlCell;
 import org.telegram.ui.Cells.DialogsEmptyCell;
+import org.telegram.ui.Cells.DialogsHintCell;
 import org.telegram.ui.Cells.DialogsRequestedEmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
@@ -88,7 +89,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             VIEW_TYPE_CONTACTS_FLICKER = 13,
             VIEW_TYPE_HEADER_2 = 14,
             VIEW_TYPE_REQUIREMENTS = 15,
-            VIEW_TYPE_REQUIRED_EMPTY = 16;
+            VIEW_TYPE_REQUIRED_EMPTY = 16,
+            VIEW_TYPE_FOLDER_UPDATE_HINT = 17;
 
     private Context mContext;
     private ArchiveHintCell archiveHintCell;
@@ -104,6 +106,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     private boolean isOnlySelect;
     private ArrayList<Long> selectedDialogs;
     private boolean hasHints;
+    private boolean hasChatlistHint;
     private int currentAccount;
     private boolean dialogsListFrozen;
     private boolean showArchiveHint;
@@ -160,6 +163,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     }
 
     public int fixPosition(int position) {
+        if (hasChatlistHint) {
+            position--;
+        }
         if (hasHints) {
             position -= 2 + MessagesController.getInstance(currentAccount).hintDialogs.size();
         }
@@ -236,6 +242,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         boolean isForumCell;
         private boolean pinned;
         private boolean isFolder;
+        TLRPC.TL_chatlists_chatlistUpdates chatlistUpdates;
+        private int emptyType;
+
+        public ItemInternal(TLRPC.TL_chatlists_chatlistUpdates updates) {
+            super(VIEW_TYPE_FOLDER_UPDATE_HINT, true);
+            this.chatlistUpdates = updates;
+        }
 
         public ItemInternal(int viewType, TLRPC.Dialog dialog) {
             super(viewType, true);
@@ -259,6 +272,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
 
         public ItemInternal(int viewTypeEmpty) {
             super(viewTypeEmpty, true);
+            this.emptyType = emptyType;
+        }
+
+        public ItemInternal(int viewTypeEmpty, int emptyType) {
+            super(viewTypeEmpty, true);
+            this.emptyType = emptyType;
         }
 
         public ItemInternal(int viewTypeUser, TLRPC.TL_contact tl_contact) {
@@ -284,6 +303,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             }
             if (viewType == VIEW_TYPE_USER) {
                 return contact != null && itemInternal.contact != null && contact.user_id == itemInternal.contact.user_id;
+            }
+            if (viewType == VIEW_TYPE_EMPTY) {
+                return emptyType == itemInternal.emptyType;
             }
             return true;
         }
@@ -633,6 +655,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 view.setBackgroundDrawable(combinedDrawable);
                 break;
             }
+            case VIEW_TYPE_FOLDER_UPDATE_HINT:
+                view = new DialogsHintCell(mContext);
+                break;
             case VIEW_TYPE_TEXT:
             default: {
                 view = new TextCell(mContext);
@@ -658,6 +683,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             } else {
                 return DialogsEmptyCell.TYPE_FILTER_ADDING_CHATS;
             }
+        } else if (folderId == 1) {
+            return DialogsEmptyCell.TYPE_FILTER_NO_CHATS_TO_DISPLAY;
         } else {
             return onlineContacts != null ? DialogsEmptyCell.TYPE_WELCOME_WITH_CONTACTS : DialogsEmptyCell.TYPE_WELCOME_NO_CONTACTS;
         }
@@ -758,7 +785,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             case VIEW_TYPE_EMPTY: {
                 DialogsEmptyCell cell = (DialogsEmptyCell) holder.itemView;
                 int fromDialogsEmptyType = lastDialogsEmptyType;
-                cell.setType(lastDialogsEmptyType = dialogsEmptyType());
+                cell.setType(lastDialogsEmptyType = dialogsEmptyType(), isOnlySelect);
                 if (dialogsType != 7 && dialogsType != 8) {
                     cell.setOnUtyanAnimationEndListener(() -> parentFragment.setScrollDisabled(false));
                     cell.setOnUtyanAnimationUpdateListener(progress -> parentFragment.setContactsAlpha(progress));
@@ -798,9 +825,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             case VIEW_TYPE_HEADER: {
                 HeaderCell cell = (HeaderCell) holder.itemView;
                 if (
-                        dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_GROUPS ||
-                                dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_USERS ||
-                                dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY
+                    dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_GROUPS ||
+                    dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY_USERS ||
+                    dialogsType == DialogsActivity.DIALOGS_TYPE_IMPORT_HISTORY
                 ) {
                     if (i == 0) {
                         cell.setText(LocaleController.getString("ImportHeader", R.string.ImportHeader));
@@ -864,10 +891,35 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 cell.set(requestPeerType);
                 break;
             }
+            case VIEW_TYPE_FOLDER_UPDATE_HINT: {
+                DialogsHintCell hintCell = (DialogsHintCell) holder.itemView;
+                ItemInternal item = itemInternals.get(i);
+                if (item.chatlistUpdates != null) {
+                    int count = item.chatlistUpdates.missing_peers.size();
+                    hintCell.setText(
+                        AndroidUtilities.replaceSingleTag(
+                            LocaleController.formatPluralString("FolderUpdatesTitle", count),
+                            Theme.key_windowBackgroundWhiteValueText,
+                            0,
+                            null
+                        ),
+                        LocaleController.formatPluralString("FolderUpdatesSubtitle", count)
+                    );
+                }
+                break;
+            }
         }
         if (i >= dialogsCount + 1) {
             holder.itemView.setAlpha(1f);
         }
+    }
+
+    public TLRPC.TL_chatlists_chatlistUpdates getChatlistUpdate() {
+        ItemInternal item = itemInternals.get(0);
+        if (item != null && item.viewType == VIEW_TYPE_FOLDER_UPDATE_HINT) {
+            return item.chatlistUpdates;
+        }
+        return null;
     }
 
     public void setForceUpdatingContacts(boolean forceUpdatingContacts) {
@@ -1189,11 +1241,23 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             }
         }
 
+        hasChatlistHint = false;
+        if (dialogsType == 7 || dialogsType == 8) {
+            MessagesController.DialogFilter filter = messagesController.selectedDialogFilter[dialogsType - 7];
+            if (filter != null && filter.isChatlist()) {
+                messagesController.checkChatlistFolderUpdate(filter.id, false);
+                TLRPC.TL_chatlists_chatlistUpdates updates = messagesController.getChatlistFolderUpdates(filter.id);
+                if (updates != null && updates.missing_peers.size() > 0) {
+                    hasChatlistHint = true;
+                    itemInternals.add(new ItemInternal(updates));
+                }
+            }
+        }
+
         if (requestPeerType != null) {
             itemInternals.add(new ItemInternal(VIEW_TYPE_REQUIREMENTS));
         }
 
-        boolean stopUpdate = false;
         if (collapsedView || isTransitionSupport) {
             for (int k = 0; k < array.size(); k++) {
                 if (dialogsType == 2 && array.get(k) instanceof DialogsActivity.DialogsHeader) {
@@ -1205,16 +1269,25 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             return;
         }
 
+        boolean stopUpdate = false;
         if (dialogsCount == 0 && forceUpdatingContacts) {
             isEmpty = true;
-            itemInternals.add(new ItemInternal(requestPeerType == null ? VIEW_TYPE_EMPTY : VIEW_TYPE_REQUIRED_EMPTY));
+            if (requestPeerType != null) {
+                itemInternals.add(new ItemInternal(VIEW_TYPE_REQUIRED_EMPTY));
+            } else {
+                itemInternals.add(new ItemInternal(VIEW_TYPE_EMPTY, dialogsEmptyType()));
+            }
             itemInternals.add(new ItemInternal(VIEW_TYPE_SHADOW));
             itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
             itemInternals.add(new ItemInternal(VIEW_TYPE_CONTACTS_FLICKER));
-        } else if (onlineContacts != null && !onlineContacts.isEmpty()) {
+        } else if (onlineContacts != null && !onlineContacts.isEmpty() && dialogsType != 7 && dialogsType != 8) {
             if (dialogsCount == 0) {
                 isEmpty = true;
-                itemInternals.add(new ItemInternal(requestPeerType == null ? VIEW_TYPE_EMPTY : VIEW_TYPE_REQUIRED_EMPTY));
+                if (requestPeerType != null) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_REQUIRED_EMPTY));
+                } else {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_EMPTY, dialogsEmptyType()));
+                }
                 itemInternals.add(new ItemInternal(VIEW_TYPE_SHADOW));
                 itemInternals.add(new ItemInternal(VIEW_TYPE_HEADER));
             } else {
@@ -1265,12 +1338,26 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 }
             } else if (dialogsCount == 0) {
                 isEmpty = true;
-                itemInternals.add(new ItemInternal(requestPeerType == null ? VIEW_TYPE_EMPTY : VIEW_TYPE_REQUIRED_EMPTY));
+                if (requestPeerType != null) {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_REQUIRED_EMPTY));
+                } else {
+                    itemInternals.add(new ItemInternal(VIEW_TYPE_EMPTY, dialogsEmptyType()));
+                }
             } else {
                 if (folderId == 0 && dialogsCount > 10 && dialogsType == DialogsActivity.DIALOGS_TYPE_DEFAULT) {
                     itemInternals.add(new ItemInternal(VIEW_TYPE_NEW_CHAT_HINT));
                 }
                 itemInternals.add(new ItemInternal(VIEW_TYPE_LAST_EMPTY));
+            }
+        }
+
+        if (!messagesController.hiddenUndoChats.isEmpty()) {
+            for (int i = 0; i < itemInternals.size(); ++i) {
+                ItemInternal item = itemInternals.get(i);
+                if (item.viewType == VIEW_TYPE_DIALOG && item.dialog != null && messagesController.isHiddenByUndo(item.dialog.id)) {
+                    itemInternals.remove(i);
+                    i--;
+                }
             }
         }
     }

@@ -55,7 +55,7 @@ public class Switch extends View {
 
     private OnCheckedChangeListener onCheckedChangeListener;
 
-    private String trackColorKey = Theme.key_switch2Track;
+    private String trackColorKey = Theme.key_fill_RedNormal;
     private String trackCheckedColorKey = Theme.key_switch2TrackChecked;
     private String thumbColorKey = Theme.key_windowBackgroundWhite;
     private String thumbCheckedColorKey = Theme.key_windowBackgroundWhite;
