@@ -96,32 +96,27 @@ public class CellFlickerDrawable {
     }
 
     private void update(View view) {
-        if (progress > 1f && !repeatEnabled) {
-            return;
-        }
-        if (view != null) {
-            view.invalidate();
-        }
-        long currentTime = System.currentTimeMillis();
-        if (lastUpdateTime != 0) {
-            long dt = currentTime - lastUpdateTime;
-            if (dt > 10) {
-                progress += (dt / 1200f) * animationSpeedScale;
-                if (progress > repeatProgress) {
-                    progress = 0;
-                    if (onRestartCallback != null) {
-                        onRestartCallback.run();
+        if (repeatEnabled || progress < 1) {
+            if (view != null) {
+                view.invalidate();
+            }
+            long currentTime = System.currentTimeMillis();
+            if (lastUpdateTime != 0) {
+                long dt = currentTime - lastUpdateTime;
+                if (dt > 10) {
+                    progress += (dt / 1200f) * animationSpeedScale;
+                    if (progress > repeatProgress) {
+                        progress = 0;
+                        if (onRestartCallback != null) {
+                            onRestartCallback.run();
+                        }
                     }
+                    lastUpdateTime = currentTime;
                 }
+            } else {
                 lastUpdateTime = currentTime;
             }
-        } else {
-            lastUpdateTime = currentTime;
         }
-
-//        if (progress > 1f) {
-//            return;
-//        }
 
         float x = (parentWidth + size * 2) * progress - size;
         matrix.reset();

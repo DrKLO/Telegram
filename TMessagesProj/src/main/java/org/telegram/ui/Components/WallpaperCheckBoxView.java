@@ -17,6 +17,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class WallpaperCheckBoxView extends View {
 
+    Theme.ResourcesProvider resourcesProvider;
     private Paint eraserPaint;
     private Paint checkPaint;
     private TextPaint textPaint;
@@ -52,8 +53,9 @@ public class WallpaperCheckBoxView extends View {
         }
     };
 
-    public WallpaperCheckBoxView(Context context, boolean check, View parent) {
+    public WallpaperCheckBoxView(Context context, boolean check, View parent, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+       // this.resourcesProvider = resourcesProvider;
         rect = new RectF();
 
         if (check) {
@@ -107,14 +109,15 @@ public class WallpaperCheckBoxView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-        Theme.applyServiceShaderMatrixForView(this, parentView);
-        canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundPaint);
-        if (Theme.hasGradientService()) {
+        Theme.applyServiceShaderMatrixForView(this, parentView, resourcesProvider);
+        canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, getThemedPaint(Theme.key_paint_chatActionBackground));
+        boolean hasGradient = resourcesProvider == null ? Theme.hasGradientService() : resourcesProvider.hasGradientService();
+        if (hasGradient) {
             canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundGradientDarkenPaint);
         }
 
 
-        textPaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
+        textPaint.setColor(Theme.getColor(Theme.key_chat_serviceText, resourcesProvider));
         int x = (getMeasuredWidth() - currentTextSize - AndroidUtilities.dp(28)) / 2;
         canvas.drawText(currentText, x + AndroidUtilities.dp(28), AndroidUtilities.dp(21), textPaint);
 
@@ -134,7 +137,7 @@ public class WallpaperCheckBoxView extends View {
             rect.set(bounce, bounce, AndroidUtilities.dp(18) - bounce, AndroidUtilities.dp(18) - bounce);
 
             drawBitmap.eraseColor(0);
-            backgroundPaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
+            backgroundPaint.setColor(Theme.getColor(Theme.key_chat_serviceText, resourcesProvider));
             drawCanvas.drawRoundRect(rect, rect.width() / 2, rect.height() / 2, backgroundPaint);
 
             if (checkProgress != 1) {
@@ -218,5 +221,10 @@ public class WallpaperCheckBoxView extends View {
 
     public boolean isChecked() {
         return isChecked;
+    }
+
+    private Paint getThemedPaint(String paintKey) {
+        Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
+        return paint != null ? paint : Theme.getThemePaint(paintKey);
     }
 }

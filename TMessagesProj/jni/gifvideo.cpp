@@ -40,6 +40,7 @@ static const std::string av_make_error_str(int errnum) {
 jclass jclass_AnimatedFileDrawableStream;
 jmethodID jclass_AnimatedFileDrawableStream_read;
 jmethodID jclass_AnimatedFileDrawableStream_cancel;
+jmethodID jclass_AnimatedFileDrawableStream_isCanceled;
 jmethodID jclass_AnimatedFileDrawableStream_isFinishedLoadingFile;
 jmethodID jclass_AnimatedFileDrawableStream_getFinishedFilePath;
 
@@ -792,7 +793,7 @@ int readCallback(void *opaque, uint8_t *buf, int buf_size) {
                     javaVm->DetachCurrentThread();
                 }
                 if (buf_size == 0) {
-                    return AVERROR_EOF;
+                    return AVERROR_EXIT;
                 }
                 int ret = (int) read(info->fd, buf, (size_t) buf_size);
                 if (ret <= 0) {
@@ -1102,7 +1103,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
             return;
         }
         int got_frame = 0;
-        int32_t tries = 1000;
+        int32_t tries = 100;
         while (tries > 0) {
             if (info->pkt.size == 0) {
                 ret = av_read_frame(info->fmt_ctx, &info->pkt);
@@ -1235,6 +1236,26 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
         int32_t tries = 1000;
         bool readNextPacket = true;
         while (tries > 0) {
+            if (info->stream != nullptr) {
+                JNIEnv *jniEnv = nullptr;
+                JavaVMAttachArgs jvmArgs;
+                jvmArgs.version = JNI_VERSION_1_6;
+
+                bool attached;
+                if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
+                    javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
+                    attached = true;
+                } else {
+                    attached = false;
+                }
+                jboolean canceled = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
+                if (attached) {
+                    javaVm->DetachCurrentThread();
+                }
+                if (canceled) {
+                    return 0;
+                }
+            }
             if (info->pkt.size == 0 && readNextPacket) {
                 ret = av_read_frame(info->fmt_ctx, &info->pkt);
                 if (ret >= 0) {
@@ -1309,6 +1330,26 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
     int32_t triesCount = preview ? 50 : 6;
     //info->has_decoded_frames = false;
     while (!info->stopped && triesCount != 0) {
+        if (info->stream != nullptr) {
+            JNIEnv *jniEnv = nullptr;
+            JavaVMAttachArgs jvmArgs;
+            jvmArgs.version = JNI_VERSION_1_6;
+
+            bool attached;
+            if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
+                javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
+                attached = true;
+            } else {
+                attached = false;
+            }
+            jboolean canceled = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
+            if (attached) {
+                javaVm->DetachCurrentThread();
+            }
+            if (canceled) {
+                return 0;
+            }
+        }
         if (info->pkt.size == 0) {
             ret = av_read_frame(info->fmt_ctx, &info->pkt);
             if (ret >= 0) {
@@ -1398,6 +1439,10 @@ extern "C" jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     }
     jclass_AnimatedFileDrawableStream_isFinishedLoadingFile = env->GetMethodID(jclass_AnimatedFileDrawableStream, "isFinishedLoadingFile", "()Z");
     if (jclass_AnimatedFileDrawableStream_isFinishedLoadingFile == 0) {
+        return JNI_FALSE;
+    }
+    jclass_AnimatedFileDrawableStream_isCanceled = env->GetMethodID(jclass_AnimatedFileDrawableStream, "isCanceled", "()Z");
+    if (jclass_AnimatedFileDrawableStream_isCanceled == 0) {
         return JNI_FALSE;
     }
     jclass_AnimatedFileDrawableStream_getFinishedFilePath = env->GetMethodID(jclass_AnimatedFileDrawableStream, "getFinishedFilePath", "()Ljava/lang/String;");

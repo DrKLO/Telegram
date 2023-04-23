@@ -381,7 +381,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                    button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
             } else if (position == soundRow) {
                 Bundle bundle = new Bundle();
@@ -738,7 +738,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     if (position == customResetRow) {
                         textCell.setText(LocaleController.getString(R.string.ResetCustomNotifications), false);
-                        textCell.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+                        textCell.setTextColor(getThemedColor(Theme.key_text_RedBold));
                     } else {
                         textCell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                         if (position == soundRow) {

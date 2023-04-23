@@ -8,9 +8,14 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -26,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,6 +91,17 @@ public class AnimatedTextView extends View {
         private boolean allowCancel;
         public boolean ignoreRTL;
 
+        private int overrideFullWidth;
+        public void setOverrideFullWidth(int value) {
+            overrideFullWidth = value;
+        }
+
+        private float rightPadding;
+        private boolean ellipsizeByGradient;
+        private LinearGradient ellipsizeGradient;
+        private Matrix ellipsizeGradientMatrix;
+        private Paint ellipsizePaint;
+
         public AnimatedTextDrawable() {
             this(false, false, false);
         }
@@ -99,12 +116,22 @@ public class AnimatedTextView extends View {
             this.allowCancel = allowCancel;
         }
 
+        public void setEllipsizeByGradient(boolean enabled) {
+            ellipsizeByGradient = enabled;
+            invalidateSelf();
+        }
+
         public void setOnAnimationFinishListener(Runnable listener) {
             onAnimationFinishListener = listener;
         }
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            if (ellipsizeByGradient) {
+                AndroidUtilities.rectTmp.set(bounds);
+                AndroidUtilities.rectTmp.right -= rightPadding;
+                canvas.saveLayerAlpha(AndroidUtilities.rectTmp, 255, Canvas.ALL_SAVE_FLAG);
+            }
             canvas.save();
             canvas.translate(bounds.left, bounds.top);
             int fullWidth = bounds.width();
@@ -207,6 +234,28 @@ public class AnimatedTextView extends View {
                 }
             }
             canvas.restore();
+            if (ellipsizeByGradient) {
+                final float w = AndroidUtilities.dp(16);
+                if (ellipsizeGradient == null) {
+                    ellipsizeGradient = new LinearGradient(0, 0, w, 0, new int[] {0x00ff0000, 0xffff0000}, new float[] {0, 1}, Shader.TileMode.CLAMP);
+                    ellipsizeGradientMatrix = new Matrix();
+                    ellipsizePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    ellipsizePaint.setShader(ellipsizeGradient);
+                    ellipsizePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+                }
+                ellipsizeGradientMatrix.reset();
+                ellipsizeGradientMatrix.postTranslate(bounds.right - rightPadding - w, 0);
+                ellipsizeGradient.setLocalMatrix(ellipsizeGradientMatrix);
+                canvas.save();
+                canvas.drawRect(bounds.right - rightPadding - w, bounds.top, bounds.right - rightPadding, bounds.bottom, ellipsizePaint);
+                canvas.restore();
+                canvas.restore();
+            }
+        }
+
+        public void setRightPadding(float rightPadding) {
+            this.rightPadding = rightPadding;
+            invalidateSelf();
         }
 
         public void cancelAnimation() {
@@ -234,6 +283,7 @@ public class AnimatedTextView extends View {
             if (text == null) {
                 text = "";
             }
+            final int width = overrideFullWidth > 0 ? overrideFullWidth : bounds.width();
             if (animated) {
                 if (allowCancel) {
                     if (animator != null) {
@@ -268,7 +318,7 @@ public class AnimatedTextView extends View {
 
                 // order execution matters
                 RegionCallback onEqualRegion = (part, from, to) -> {
-                    StaticLayout layout = makeLayout(part, bounds.width() - (int) Math.ceil(Math.min(currentWidth, oldWidth)));
+                    StaticLayout layout = makeLayout(part, width - (int) Math.ceil(Math.min(currentWidth, oldWidth)));
                     final Part currentPart = new Part(layout, currentWidth, oldParts.size());
                     final Part oldPart = new Part(layout, oldWidth, oldParts.size());
                     currentParts.add(currentPart);
@@ -280,14 +330,14 @@ public class AnimatedTextView extends View {
                     oldHeight = Math.max(oldHeight, layout.getHeight());
                 };
                 RegionCallback onNewPart = (part, from, to) -> {
-                    StaticLayout layout = makeLayout(part, bounds.width() - (int) Math.ceil(currentWidth));
+                    StaticLayout layout = makeLayout(part, width - (int) Math.ceil(currentWidth));
                     final Part currentPart = new Part(layout, currentWidth, -1);
                     currentParts.add(currentPart);
                     currentWidth += currentPart.width;
                     currentHeight = Math.max(currentHeight, layout.getHeight());
                 };
                 RegionCallback onOldPart = (part, from, to) -> {
-                    StaticLayout layout = makeLayout(part, bounds.width() - (int) Math.ceil(oldWidth));
+                    StaticLayout layout = makeLayout(part, width - (int) Math.ceil(oldWidth));
                     final Part oldPart = new Part(layout, oldWidth, -1);
                     oldParts.add(oldPart);
                     oldWidth += oldPart.width;
@@ -352,7 +402,7 @@ public class AnimatedTextView extends View {
 
                 if (!text.equals(currentText)) {
                     currentParts = new Part[1];
-                    currentParts[0] = new Part(makeLayout(currentText = text, bounds.width()), 0, -1);
+                    currentParts[0] = new Part(makeLayout(currentText = text, width), 0, -1);
                     currentWidth = currentParts[0].width;
                     currentHeight = currentParts[0].layout.getHeight();
                     isRTL = AndroidUtilities.isRTL(currentText);
@@ -871,5 +921,13 @@ public class AnimatedTextView extends View {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setClassName("android.widget.TextView");
         info.setText(getText());
+    }
+
+    public void setEllipsizeByGradient(boolean enabled) {
+        drawable.setEllipsizeByGradient(enabled);
+    }
+
+    public void setRightPadding(float rightPadding) {
+        drawable.setRightPadding(rightPadding);
     }
 }

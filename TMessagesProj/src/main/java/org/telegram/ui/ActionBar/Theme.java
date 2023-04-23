@@ -66,7 +66,6 @@ import android.util.SparseArray;
 import android.util.StateSet;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -99,6 +98,7 @@ import org.telegram.messenger.time.SunDate;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AudioVisualizerDrawable;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.Bulletin;
@@ -120,6 +120,7 @@ import org.telegram.ui.Components.SendingFileDrawable;
 import org.telegram.ui.Components.StatusDrawable;
 import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.TypingDotsDrawable;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.RoundVideoProgressShadow;
 import org.telegram.ui.ThemeActivity;
 
@@ -151,6 +152,7 @@ public class Theme {
     public static final int MSG_OUT_COLOR_BLACK = 0xff212121;
     public static final int MSG_OUT_COLOR_WHITE = 0xffffffff;
     public static final int default_shadow_color = ColorUtils.setAlphaComponent(Color.BLACK, 27);
+    public static boolean disallowChangeServiceMessageColor;
 
     public static void applyDefaultShadow(Paint paint) {
         paint.setShadowLayer(dpf2(1), 0, dpf2(0.33f), default_shadow_color);
@@ -189,12 +191,13 @@ public class Theme {
 
         private Rect backupRect = new Rect();
 
-        private final ResourcesProvider resourcesProvider;
+        private ResourcesProvider resourcesProvider;
         private final boolean isOut;
 
         private int topY;
         private boolean isTopNear;
         private boolean isBottomNear;
+        private boolean botButtonsBottom;
         public boolean themePreview;
 
         public static MotionBackgroundDrawable[] motionBackground = new MotionBackgroundDrawable[3];
@@ -206,11 +209,17 @@ public class Theme {
 
         private int[][] currentBackgroundDrawableRadius = new int[][]{
                 {-1, -1, -1, -1},
-                {-1, -1, -1, -1}};
-        private Drawable[][] backgroundDrawable = new Drawable[2][4];
+                {-1, -1, -1, -1},
+                {-1, -1, -1, -1},
+                {-1, -1, -1, -1}
+        };
+        private Drawable[][] backgroundDrawable = new Drawable[4][4];
         private int[][] backgroundDrawableColor = new int[][]{
                 {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff},
-                {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}};
+                {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff},
+                {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff},
+                {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}
+        };
 
         public static final int TYPE_TEXT = 0;
         public static final int TYPE_MEDIA = 1;
@@ -297,6 +306,10 @@ public class Theme {
                 return Theme.getColor(key);
             }
             return resourcesProvider != null ? resourcesProvider.getCurrentColor(key) : Theme.currentColors.get(key);
+        }
+
+        public void setBotButtonsBottom(boolean botButtonsBottom) {
+            this.botButtonsBottom = botButtonsBottom;
         }
 
         public void setTop(int top, int backgroundWidth, int backgroundHeight, boolean topNear, boolean bottomNear) {
@@ -468,7 +481,16 @@ public class Theme {
             } else {
                 idx = 0;
             }
-            int idx2 = isSelected ? 1 : 0;
+            int idx2;
+            if (isSelected && botButtonsBottom) {
+                idx2 = 3;
+            } else if (isSelected) {
+                idx2 = 1;
+            } else if (botButtonsBottom) {
+                idx2 = 2;
+            } else {
+                idx2 = 0;
+            }
             boolean forceSetColor = false;
 
             boolean drawWithShadow = gradientShader == null && !isSelected && !isCrossfadeBackground;
@@ -768,13 +790,14 @@ public class Theme {
                 }
                 if (isOut) {
                     if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
+                        int radToUse = botButtonsBottom ? nearRad : rad;
                         if (currentType == TYPE_MEDIA) {
-                            path.moveTo(bounds.right - dp(8) - rad, bounds.bottom - padding);
+                            path.moveTo(bounds.right - dp(8) - radToUse, bounds.bottom - padding);
                         } else {
                             path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
                         }
-                        path.lineTo(bounds.left + padding + rad, bounds.bottom - padding);
-                        rect.set(bounds.left + padding, bounds.bottom - padding - rad * 2, bounds.left + padding + rad * 2, bounds.bottom - padding);
+                        path.lineTo(bounds.left + padding + radToUse, bounds.bottom - padding);
+                        rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
                         path.arcTo(rect, 90, 90, false);
                     } else {
                         path.moveTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
@@ -823,13 +846,15 @@ public class Theme {
                     }
                 } else {
                     if (drawFullBubble || currentType == TYPE_PREVIEW || paintToUse != null || drawFullBottom) {
+                        int radToUse = botButtonsBottom ? nearRad : rad;
+
                         if (currentType == TYPE_MEDIA) {
-                            path.moveTo(bounds.left + dp(8) + rad, bounds.bottom - padding);
+                            path.moveTo(bounds.left + dp(8) + radToUse, bounds.bottom - padding);
                         } else {
                             path.moveTo(bounds.left + dp(2.6f), bounds.bottom - padding);
                         }
-                        path.lineTo(bounds.right - padding - rad, bounds.bottom - padding);
-                        rect.set(bounds.right - padding - rad * 2, bounds.bottom - padding - rad * 2, bounds.right - padding, bounds.bottom - padding);
+                        path.lineTo(bounds.right - padding - radToUse, bounds.bottom - padding);
+                        rect.set(bounds.right - padding - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - padding, bounds.bottom - padding);
                         path.arcTo(rect, 90, -90, false);
                     } else {
                         path.moveTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
@@ -942,6 +967,10 @@ public class Theme {
 
         public void setRoundingRadius(float rounding) {
             this.overrideRounding = rounding;
+        }
+
+        public void setResourceProvider(ResourcesProvider resourcesProvider) {
+            this.resourcesProvider = resourcesProvider;
         }
 
         public static class PathDrawParams {
@@ -1109,7 +1138,7 @@ public class Theme {
         private void checkCurrentWallpaperInternal(ArrayList<ThemeAccent> accents, boolean load) {
             if (accents != null && currentTheme.themeAccents != null && !currentTheme.themeAccents.isEmpty()) {
                 if (accents.contains(currentTheme.getAccent(false))) {
-                    reloadWallpaper();
+                    reloadWallpaper(true);
                 }
             }
             if (load) {
@@ -1926,9 +1955,13 @@ public class Theme {
         public float intensity;
         public long wallpaperId;
         public long accessHash;
+        public long dialogId;
 
         public ThemeInfo parentTheme;
         public ThemeAccent parentAccent;
+        public float uploadingProgress;
+        public ArrayList<Integer> requestIds;
+        public TLRPC.WallPaper prevUserWallpaper;
 
         public OverrideWallpaperInfo() {
 
@@ -3210,7 +3243,6 @@ public class Theme {
     public static final String key_dialogTextBlack = "dialogTextBlack";
     public static final String key_dialogTextLink = "dialogTextLink";
     public static final String key_dialogLinkSelection = "dialogLinkSelection";
-    public static final String key_dialogTextRed = "dialogTextRed";
     public static final String key_dialogTextBlue = "dialogTextBlue";
     public static final String key_dialogTextBlue2 = "dialogTextBlue2";
     public static final String key_dialogTextBlue4 = "dialogTextBlue4";
@@ -3235,7 +3267,6 @@ public class Theme {
     public static final String key_dialogButton = "dialogButton";
     public static final String key_dialogButtonSelector = "dialogButtonSelector";
     public static final String key_dialogIcon = "dialogIcon";
-    public static final String key_dialogRedIcon = "dialogRedIcon";
     public static final String key_dialogGrayLine = "dialogGrayLine";
     public static final String key_dialogTopBackground = "dialogTopBackground";
     public static final String key_dialogCameraIcon = "dialogCameraIcon";
@@ -3274,11 +3305,6 @@ public class Theme {
     public static final String key_windowBackgroundWhiteBlueIcon = "windowBackgroundWhiteBlueIcon";
     public static final String key_windowBackgroundWhiteGreenText = "windowBackgroundWhiteGreenText";
     public static final String key_windowBackgroundWhiteGreenText2 = "windowBackgroundWhiteGreenText2";
-    public static final String key_windowBackgroundWhiteRedText = "windowBackgroundWhiteRedText";
-    public static final String key_windowBackgroundWhiteRedText2 = "windowBackgroundWhiteRedText2";
-    public static final String key_windowBackgroundWhiteRedText3 = "windowBackgroundWhiteRedText3";
-    public static final String key_windowBackgroundWhiteRedText4 = "windowBackgroundWhiteRedText4";
-    public static final String key_windowBackgroundWhiteRedText5 = "windowBackgroundWhiteRedText5";
     public static final String key_windowBackgroundWhiteGrayText = "windowBackgroundWhiteGrayText";
     public static final String key_windowBackgroundWhiteGrayText2 = "windowBackgroundWhiteGrayText2";
     public static final String key_windowBackgroundWhiteGrayText3 = "windowBackgroundWhiteGrayText3";
@@ -3321,6 +3347,11 @@ public class Theme {
     public static final String key_fastScrollActive = "fastScrollActive";
     public static final String key_fastScrollInactive = "fastScrollInactive";
     public static final String key_fastScrollText = "fastScrollText";
+
+    public static final String key_text_RedRegular = "text_RedRegular";
+    public static final String key_text_RedBold = "text_RedBold";
+    public static final String key_fill_RedNormal = "fill_RedNormal";
+    public static final String key_fill_RedDark = "fill_RedDark";
 
     public static final String key_inappPlayerPerformer = "inappPlayerPerformer";
     public static final String key_inappPlayerTitle = "inappPlayerTitle";
@@ -3492,7 +3523,6 @@ public class Theme {
     public static final String key_chat_attachPollText = "chat_attachPollText";
 
     public static final String key_chat_status = "chat_status";
-    public static final String key_chat_inRedCall = "chat_inUpCall";
     public static final String key_chat_inGreenCall = "chat_inDownCall";
     public static final String key_chat_outGreenCall = "chat_outUpCall";
     public static final String key_chat_inBubble = "chat_inBubble";
@@ -3669,7 +3699,6 @@ public class Theme {
     public static final String key_chat_topPanelLine = "chat_topPanelLine";
     public static final String key_chat_topPanelTitle = "chat_topPanelTitle";
     public static final String key_chat_topPanelMessage = "chat_topPanelMessage";
-    public static final String key_chat_reportSpam = "chat_reportSpam";
     public static final String key_chat_addContact = "chat_addContact";
     public static final String key_chat_inLoader = "chat_inLoader";
     public static final String key_chat_inLoaderSelected = "chat_inLoaderSelected";
@@ -4028,6 +4057,7 @@ public class Theme {
     public static final String key_paint_chatActionText2 = "paintChatActionText2";
     public static final String key_paint_chatBotButton = "paintChatBotButton";
     public static final String key_paint_chatComposeBackground = "paintChatComposeBackground";
+    public static final String key_paint_divider = "paintDivider";
     public static final String key_paint_chatTimeBackground = "paintChatTimeBackground";
     private static final HashMap<String, Paint> defaultChatPaints = new HashMap<>();
     private static final HashMap<String, String> defaultChatPaintColors = new HashMap<>();
@@ -4058,7 +4088,6 @@ public class Theme {
         defaultColors.put(key_dialogTextBlack, 0xff222222);
         defaultColors.put(key_dialogTextLink, 0xff2678b6);
         defaultColors.put(key_dialogLinkSelection, 0x3362a9e3);
-        defaultColors.put(key_dialogTextRed, 0xffcd5a5a);
         defaultColors.put(key_dialogTextBlue, 0xff2f8cc9);
         defaultColors.put(key_dialogTextBlue2, 0xff3a95d5);
         defaultColors.put(key_dialogTextBlue4, 0xff19a7e8);
@@ -4068,7 +4097,6 @@ public class Theme {
         defaultColors.put(key_dialogTextGray4, 0xffb3b3b3);
         defaultColors.put(key_dialogTextHint, 0xff979797);
         defaultColors.put(key_dialogIcon, 0xff676b70);
-        defaultColors.put(key_dialogRedIcon, 0xffe14d4d);
         defaultColors.put(key_dialogGrayLine, 0xffd2d2d2);
         defaultColors.put(key_dialogTopBackground, 0xff6fb2e5);
         defaultColors.put(key_dialogInputField, 0xffdbdbdb);
@@ -4119,11 +4147,9 @@ public class Theme {
         defaultColors.put(key_windowBackgroundWhiteBlueIcon, 0xff379de5);
         defaultColors.put(key_windowBackgroundWhiteGreenText, 0xff26972c);
         defaultColors.put(key_windowBackgroundWhiteGreenText2, 0xff37a818);
-        defaultColors.put(key_windowBackgroundWhiteRedText, 0xffcd5a5a);
-        defaultColors.put(key_windowBackgroundWhiteRedText2, 0xffdb5151);
-        defaultColors.put(key_windowBackgroundWhiteRedText3, 0xffd24949);
-        defaultColors.put(key_windowBackgroundWhiteRedText4, 0xffcf3030);
-        defaultColors.put(key_windowBackgroundWhiteRedText5, 0xffed3939);
+        defaultColors.put(key_text_RedRegular, 0xffcc2929);
+        defaultColors.put(key_text_RedBold, 0xffcc4747);
+        defaultColors.put(key_fill_RedNormal, 0xffeb5e5e);
         defaultColors.put(key_windowBackgroundWhiteGrayText, 0xff838c96);
         defaultColors.put(key_windowBackgroundWhiteGrayText2, 0xff82868a);
         defaultColors.put(key_windowBackgroundWhiteGrayText3, 0xff999999);
@@ -4321,7 +4347,6 @@ public class Theme {
 
         defaultColors.put(key_chat_status, 0xffd5e8f7);
         defaultColors.put(key_chat_inGreenCall, 0xff00c853);
-        defaultColors.put(key_chat_inRedCall, 0xffff4848);
         defaultColors.put(key_chat_outGreenCall, 0xff00c853);
         defaultColors.put(key_chat_lockIcon, 0xffffffff);
         defaultColors.put(key_chat_muteIcon, 0xffb1cce3);
@@ -4541,7 +4566,6 @@ public class Theme {
         defaultColors.put(key_chat_topPanelLine, 0xff6c9fd2);
         defaultColors.put(key_chat_topPanelTitle, 0xff3a8ccf);
         defaultColors.put(key_chat_topPanelMessage, 0xff878e91);
-        defaultColors.put(key_chat_reportSpam, 0xffcf5957);
         defaultColors.put(key_chat_addContact, 0xff4a82b5);
         defaultColors.put(key_chat_inLoader, 0xff72b5e8);
         defaultColors.put(key_chat_inLoaderSelected, 0xff65abe0);
@@ -4871,7 +4895,6 @@ public class Theme {
         fallbackKeys.put(key_checkboxDisabled, key_chats_unreadCounterMuted);
         fallbackKeys.put(key_chat_status, key_actionBarDefaultSubtitle);
         fallbackKeys.put(key_chat_inGreenCall, key_calls_callReceivedGreenIcon);
-        fallbackKeys.put(key_chat_inRedCall, key_calls_callReceivedRedIcon);
         fallbackKeys.put(key_chat_outGreenCall, key_calls_callReceivedGreenIcon);
         fallbackKeys.put(key_actionBarTabActiveText, key_actionBarDefaultTitle);
         fallbackKeys.put(key_actionBarTabUnactiveText, key_actionBarDefaultSubtitle);
@@ -6681,7 +6704,7 @@ public class Theme {
     public static void resetCustomWallpaper(boolean temporary) {
         if (temporary) {
             isApplyingAccent = false;
-            reloadWallpaper();
+            reloadWallpaper(true);
         } else {
             currentTheme.setOverrideWallpaper(null);
         }
@@ -6860,7 +6883,7 @@ public class Theme {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                     SharedPreferences.Editor editor = preferences.edit();
                     editor.putString("theme", themeInfo.getKey());
-                    editor.commit();
+                    editor.apply();
                 }
                 String[] wallpaperLink = new String[1];
                 if (themeInfo.assetName != null) {
@@ -7160,7 +7183,8 @@ public class Theme {
             shouldDrawGradientIcons = accent.fillAccentColors(currentColorsNoAccent, currentColors);
         }
         if (!messages) {
-            reloadWallpaper();
+            boolean async = !(LaunchActivity.getLastFragment() instanceof ChatActivity);
+            reloadWallpaper(async);
         }
         applyCommonTheme();
         applyDialogsTheme();
@@ -9523,12 +9547,12 @@ public class Theme {
             }
 
             setDrawableColorByKey(chat_msgCallUpGreenDrawable, key_chat_outGreenCall);
-            setDrawableColorByKey(chat_msgCallDownRedDrawable, key_chat_inRedCall);
+            setDrawableColorByKey(chat_msgCallDownRedDrawable, key_fill_RedNormal);
             setDrawableColorByKey(chat_msgCallDownGreenDrawable, key_chat_inGreenCall);
 
-            setDrawableColorByKey(calllog_msgCallUpRedDrawable, key_calls_callReceivedRedIcon);
+            setDrawableColorByKey(calllog_msgCallUpRedDrawable, key_fill_RedNormal);
             setDrawableColorByKey(calllog_msgCallUpGreenDrawable, key_calls_callReceivedGreenIcon);
-            setDrawableColorByKey(calllog_msgCallDownRedDrawable, key_calls_callReceivedRedIcon);
+            setDrawableColorByKey(calllog_msgCallDownRedDrawable, key_fill_RedNormal);
             setDrawableColorByKey(calllog_msgCallDownGreenDrawable, key_calls_callReceivedGreenIcon);
 
             for (int i = 0; i < chat_status_drawables.length; i++) {
@@ -9570,7 +9594,7 @@ public class Theme {
 
             setDrawableColor(chat_attachEmptyDrawable, getColor(key_chat_attachEmptyImage));
 
-            if (!bg) {
+            if (!bg && !disallowChangeServiceMessageColor) {
                 applyChatServiceMessageColor();
                 applyChatMessageSelectedBackgroundColor();
             }
@@ -9579,7 +9603,9 @@ public class Theme {
     }
 
     public static void applyChatServiceMessageColor() {
-        applyChatServiceMessageColor(null, null, wallpaper);
+        if (wallpaper != null) {
+            applyChatServiceMessageColor(null, null, wallpaper);
+        }
     }
 
     public static boolean hasGradientService() {
@@ -9587,7 +9613,12 @@ public class Theme {
     }
 
     private static int[] viewPos = new int[2];
+
     public static void applyServiceShaderMatrixForView(View view, View background) {
+        applyServiceShaderMatrixForView(view, background, null);
+    }
+
+    public static void applyServiceShaderMatrixForView(View view, View background, ResourcesProvider resourcesProvider) {
         if (view == null || background == null) {
             return;
         }
@@ -9595,7 +9626,11 @@ public class Theme {
         int x = viewPos[0];
         int y = viewPos[1];
         background.getLocationOnScreen(viewPos);
-        applyServiceShaderMatrix(background.getMeasuredWidth(), background.getMeasuredHeight(), x, y - viewPos[1]);
+        if (resourcesProvider != null) {
+            resourcesProvider.applyServiceShaderMatrix(background.getMeasuredWidth(), background.getMeasuredHeight(), x, y - viewPos[1]);
+        } else {
+            applyServiceShaderMatrix(background.getMeasuredWidth(), background.getMeasuredHeight(), x, y - viewPos[1]);
+        }
     }
 
     public static void applyServiceShaderMatrix(int w, int h, float translationX, float translationY) {
@@ -10002,7 +10037,7 @@ public class Theme {
             case key_chat_wallpaper_gradient_to2:
             case key_chat_wallpaper_gradient_to3:
             case key_chat_wallpaper_gradient_rotation:
-                reloadWallpaper();
+                reloadWallpaper(true);
                 break;
             case key_actionBarDefault:
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -10040,7 +10075,7 @@ public class Theme {
             themedWallpaper = null;
             wallpaper = null;
             saveCurrentTheme(themeInfo, false, false, false);
-            reloadWallpaper();
+            reloadWallpaper(true);
         }
     }
 
@@ -10160,7 +10195,7 @@ public class Theme {
         return isCustomTheme;
     }
 
-    public static void reloadWallpaper() {
+    public static void reloadWallpaper(boolean async) {
         if (backgroundGradientDisposable != null) {
             backgroundGradientDisposable.dispose();
             backgroundGradientDisposable = null;
@@ -10172,7 +10207,7 @@ public class Theme {
         }
         wallpaper = null;
         themedWallpaper = null;
-        loadWallpaper();
+        loadWallpaper(async);
     }
 
     private static void calcBackgroundColor(Drawable drawable, int save) {
@@ -10190,7 +10225,7 @@ public class Theme {
         return serviceColor == null ? serviceMessageColor : serviceColor;
     }
 
-    public static void loadWallpaper() {
+    public static void loadWallpaper(boolean async) {
         if (wallpaper != null) {
             return;
         }
@@ -10222,39 +10257,56 @@ public class Theme {
         }
 
         TLRPC.Document finalWallpaperDocument = wallpaperDocument;
-        Utilities.themeQueue.postRunnable(wallpaperLoadTask = () -> {
-            BackgroundDrawableSettings settings = createBackgroundDrawable(
-                    currentTheme,
-                    overrideWallpaper,
-                    currentColors,
-                    wallpaperFile,
-                    themedWallpaperLink,
-                    themedWallpaperFileOffset,
-                    intensity,
-                    previousPhase,
-                    defaultTheme,
-                    hasPreviousTheme,
-                    isApplyingAccent,
-                    wallpaperMotion,
-                    finalWallpaperDocument
-            );
-            isWallpaperMotion = settings.isWallpaperMotion != null ? settings.isWallpaperMotion : isWallpaperMotion;
-            isPatternWallpaper = settings.isPatternWallpaper != null ? settings.isPatternWallpaper : isPatternWallpaper;
-            isCustomTheme = settings.isCustomTheme != null ? settings.isCustomTheme : isCustomTheme;
-            patternIntensity = intensity;
-            wallpaper = settings.wallpaper != null ? settings.wallpaper : wallpaper;
-            Drawable drawable = settings.wallpaper;
-            calcBackgroundColor(drawable, 1);
-
-            AndroidUtilities.runOnUIThread(() -> {
-                wallpaperLoadTask = null;
-                createCommonChatResources();
+        if (async) {
+            Utilities.themeQueue.postRunnable(wallpaperLoadTask = () -> {
+                Drawable drawable = loadWallpaperInternal(overrideWallpaper, wallpaperFile, intensity, wallpaperMotion, finalWallpaperDocument, defaultTheme);
+                AndroidUtilities.runOnUIThread(() -> {
+                    wallpaperLoadTask = null;
+                    createCommonChatResources();
+                    if (!disallowChangeServiceMessageColor) {
+                        applyChatServiceMessageColor(null, null, drawable);
+                        applyChatMessageSelectedBackgroundColor(null, drawable);
+                    }
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
+                });
+            });
+        } else {
+            Drawable drawable = loadWallpaperInternal(overrideWallpaper, wallpaperFile, intensity, wallpaperMotion, finalWallpaperDocument, defaultTheme);
+            createCommonChatResources();
+            if (!disallowChangeServiceMessageColor) {
                 applyChatServiceMessageColor(null, null, drawable);
                 applyChatMessageSelectedBackgroundColor(null, drawable);
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
-            });
-        });
+            }
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
+        }
     }
+
+    private static Drawable loadWallpaperInternal(OverrideWallpaperInfo overrideWallpaper, File wallpaperFile, int intensity, boolean wallpaperMotion, TLRPC.Document finalWallpaperDocument, boolean defaultTheme) {
+        BackgroundDrawableSettings settings = createBackgroundDrawable(
+                currentTheme,
+                overrideWallpaper,
+                currentColors,
+                wallpaperFile,
+                themedWallpaperLink,
+                themedWallpaperFileOffset,
+                intensity,
+                previousPhase,
+                defaultTheme,
+                hasPreviousTheme,
+                isApplyingAccent,
+                wallpaperMotion,
+                finalWallpaperDocument
+        );
+        isWallpaperMotion = settings.isWallpaperMotion != null ? settings.isWallpaperMotion : isWallpaperMotion;
+        isPatternWallpaper = settings.isPatternWallpaper != null ? settings.isPatternWallpaper : isPatternWallpaper;
+        isCustomTheme = settings.isCustomTheme != null ? settings.isCustomTheme : isCustomTheme;
+        patternIntensity = intensity;
+        wallpaper = settings.wallpaper != null ? settings.wallpaper : wallpaper;
+        Drawable drawable = settings.wallpaper;
+        calcBackgroundColor(drawable, 1);
+        return drawable;
+    }
+
 
     public static BackgroundDrawableSettings createBackgroundDrawable(
             ThemeInfo currentTheme,
@@ -10423,6 +10475,16 @@ public class Theme {
                                 }
                             }
                             settings.wallpaper = motionBackgroundDrawable;
+                        } else if (settings.isPatternWallpaper) {
+                            File toFile = new File(ApplicationLoader.getFilesDirFixed(), overrideWallpaper.fileName);
+                            if (toFile.exists()) {
+                                Bitmap bitmap = loadScreenSizedBitmap(new FileInputStream(toFile), 0);
+                                if (bitmap != null) {
+                                    settings.wallpaper = new BitmapDrawable(bitmap);
+                                    settings.wallpaper.setFilterBitmap(true);
+                                    settings.isCustomTheme = true;
+                                }
+                            }
                         } else if (overrideWallpaper.gradientColor1 != 0) {
                             final int[] colors = {selectedColor, overrideWallpaper.gradientColor1};
                             final BackgroundGradientDrawable.Orientation orientation = BackgroundGradientDrawable.getGradientOrientation(overrideWallpaper.rotation);

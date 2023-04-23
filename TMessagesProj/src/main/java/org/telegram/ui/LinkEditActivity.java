@@ -458,7 +458,7 @@ public class LinkEditActivity extends BaseFragment {
             revokeLink = new TextSettingsCell(context);
             revokeLink.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             revokeLink.setText(LocaleController.getString("RevokeLink", R.string.RevokeLink), false);
-            revokeLink.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText5));
+            revokeLink.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
             revokeLink.setOnClickListener(view -> {
                 AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity());
                 builder2.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
@@ -829,7 +829,7 @@ public class LinkEditActivity extends BaseFragment {
                 timeEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
                 buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
                 if (revokeLink != null) {
-                    revokeLink.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText5));
+                    revokeLink.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                 }
 
                 createTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
@@ -866,7 +866,7 @@ public class LinkEditActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhiteGrayText));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_featuredStickers_buttonText));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhiteRedText5));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_text_RedRegular));
 
         return themeDescriptions;
     }

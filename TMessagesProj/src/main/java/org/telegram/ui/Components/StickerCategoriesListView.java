@@ -129,7 +129,6 @@ public class StickerCategoriesListView extends RecyclerListView {
 //        setSelectorType(Theme.RIPPLE_MASK_CIRCLE_20DP);
 //        setSelectorDrawableColor(getThemedColor(Theme.key_listSelector));
         selectedPaint.setColor(getThemedColor(Theme.key_listSelector));
-        setSelectorDrawableColor(0);
 
         setWillNotDraw(false);
 
@@ -153,6 +152,11 @@ public class StickerCategoriesListView extends RecyclerListView {
                 updateCategoriesShown(categoriesShouldShow, System.currentTimeMillis() - start > 16);
             }
         });
+    }
+
+    @Override
+    public Integer getSelectorColor(int position) {
+        return 0;
     }
 
     public void setShownButtonsAtStart(float buttonsCount) {

@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.ContentProviderOperation;
@@ -1969,12 +1970,19 @@ public class ContactsController extends BaseController {
         return true;
     }
 
+    private boolean hasContactsWritePermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            return ApplicationLoader.applicationContext.checkSelfPermission(Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED;
+        }
+        return true;
+    }
+
     private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         Cursor cursor = null;
         long time = System.currentTimeMillis();
         try {
             Account account = systemAccount;
-            if (!hasContactsPermission() || account == null) {
+            if (!hasContactsPermission() || account == null || !hasContactsWritePermission()) {
                 return;
             }
             final SharedPreferences settings = MessagesController.getMainSettings(currentAccount);

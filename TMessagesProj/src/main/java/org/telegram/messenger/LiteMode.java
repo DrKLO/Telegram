@@ -304,7 +304,10 @@ public class LiteMode {
             AnimatedEmojiDrawable.updateAll();
         }
         if ((changedFlags & FLAG_CHAT_BACKGROUND) > 0) {
-            Theme.reloadWallpaper();
+            SvgHelper.SvgDrawable.updateLiteValues();
+        }
+        if ((changedFlags & FLAG_CHAT_BACKGROUND) > 0) {
+            Theme.reloadWallpaper(true);
         }
     }
 

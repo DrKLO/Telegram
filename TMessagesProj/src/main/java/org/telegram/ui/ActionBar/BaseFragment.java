@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -77,6 +78,7 @@ public abstract class BaseFragment {
     protected boolean fragmentBeginToShow;
     private boolean removingFromStack;
     private PreviewDelegate previewDelegate;
+    private Theme.ResourcesProvider resourceProvider;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.generateClassGuid();
@@ -395,6 +397,10 @@ public abstract class BaseFragment {
         } else {
             onResume();
         }
+    }
+
+    public boolean isPaused() {
+        return isPaused;
     }
 
     public BaseFragment getFragmentForAlert(int offset) {
@@ -743,20 +749,37 @@ public abstract class BaseFragment {
     }
 
     public INavigationLayout[] showAsSheet(BaseFragment fragment) {
+        return showAsSheet(fragment, null);
+    }
+
+    public INavigationLayout[] showAsSheet(BaseFragment fragment, BottomSheetParams params) {
         if (getParentActivity() == null) {
             return null;
         }
-        INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(getParentActivity())};
-        BottomSheet bottomSheet = new BottomSheet(getParentActivity(), true) {
+        BottomSheet[] bottomSheet = new BottomSheet[1];
+        INavigationLayout[] actionBarLayout = new INavigationLayout[]{INavigationLayout.newLayout(getParentActivity(), () -> bottomSheet[0])};
+        bottomSheet[0] = new BottomSheet(getParentActivity(), true, fragment.getResourceProvider()) {
             {
+                drawNavigationBar = true;
                 actionBarLayout[0].setFragmentStack(new ArrayList<>());
                 actionBarLayout[0].addFragmentToStack(fragment);
                 actionBarLayout[0].showLastFragment();
                 actionBarLayout[0].getView().setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
                 containerView = actionBarLayout[0].getView();
                 setApplyBottomPadding(false);
-                setApplyBottomPadding(false);
-                setOnDismissListener(dialog -> fragment.onFragmentDestroy());
+                setOnDismissListener(dialog -> {
+                    fragment.onPause();
+                    fragment.onFragmentDestroy();
+                    if (params != null && params.onDismiss != null) {
+                        params.onDismiss.run();
+                    }
+                });
+            }
+
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                fixNavigationBar(Theme.getColor(Theme.key_dialogBackgroundGray, fragment.getResourceProvider()));
             }
 
             @Override
@@ -775,17 +798,39 @@ public abstract class BaseFragment {
 
             @Override
             public void dismiss() {
+                if (!isDismissed()) {
+                    if (params != null && params.onPreFinished != null) {
+                        params.onPreFinished.run();
+                    }
+                }
                 super.dismiss();
                 actionBarLayout[0] = null;
             }
+
+            @Override
+            public void onOpenAnimationEnd() {
+                if (params != null && params.onOpenAnimationFinished != null) {
+                    params.onOpenAnimationFinished.run();
+                }
+            }
         };
-        fragment.setParentDialog(bottomSheet);
-        bottomSheet.show();
+        if (params != null) {
+            bottomSheet[0].setAllowNestedScroll(params.allowNestedScroll);
+            bottomSheet[0].transitionFromRight(params.transitionFromLeft);
+        }
+        fragment.setParentDialog(bottomSheet[0]);
+        bottomSheet[0].show();
+
         return actionBarLayout;
     }
 
     public int getThemedColor(String key) {
         return Theme.getColor(key, getResourceProvider());
+    }
+
+    public Paint getThemedPaint(String paintKey) {
+        Paint paint = getResourceProvider() != null ? getResourceProvider().getPaint(paintKey) : null;
+        return paint != null ? paint : Theme.getThemePaint(paintKey);
     }
 
     public Drawable getThemedDrawable(String key) {
@@ -800,7 +845,7 @@ public abstract class BaseFragment {
     }
 
     public int getNavigationBarColor() {
-        return Theme.getColor(Theme.key_windowBackgroundGray);
+        return Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider);
     }
 
     public void setNavigationBarColor(int color) {
@@ -824,7 +869,7 @@ public abstract class BaseFragment {
     }
 
     public Theme.ResourcesProvider getResourceProvider() {
-        return null;
+        return resourceProvider;
     }
 
     protected boolean allowPresentFragment() {
@@ -885,9 +930,25 @@ public abstract class BaseFragment {
         }
     }
 
+    public void setResourceProvider(Theme.ResourcesProvider resourceProvider) {
+        this.resourceProvider = resourceProvider;
+    }
+
+    public void onFragmentClosed() {
+
+    }
+
 
     public interface PreviewDelegate {
         void finishFragment();
+    }
+
+    public static class BottomSheetParams {
+        public boolean transitionFromLeft;
+        public boolean allowNestedScroll;
+        public Runnable onDismiss;
+        public Runnable onOpenAnimationFinished;
+        public Runnable onPreFinished;
     }
 
 }

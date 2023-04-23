@@ -35,6 +35,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -412,7 +413,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         addView(subtitleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 35, 10, 36, 0));
 
         joinButtonFlicker = new CellFlickerDrawable();
-        joinButtonFlicker.setProgress(2f);
+        joinButtonFlicker.setProgress(1);
         joinButtonFlicker.repeatEnabled = false;
         joinButton = new TextView(context) {
             @Override
@@ -422,9 +423,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 final int halfOutlineWidth = AndroidUtilities.dp(1);
                 AndroidUtilities.rectTmp.set(halfOutlineWidth, halfOutlineWidth, getWidth() - halfOutlineWidth, getHeight() - halfOutlineWidth);
                 joinButtonFlicker.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(16), this);
-                if (joinButtonFlicker.getProgress() < 1f && !joinButtonFlicker.repeatEnabled) {
-                    invalidate();
-                }
             }
 
             @Override
@@ -470,6 +468,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         joinButton.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
         addView(joinButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 10, 14, 0));
         joinButton.setOnClickListener(v -> FragmentContextView.this.callOnClick());
+        if (flickOnAttach) {
+            startJoinFlickerAnimation();
+        }
 
         silentButton = new FrameLayout(context);
         silentButtonImage = new ImageView(context);
@@ -663,7 +664,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 builder.show();
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+                    button.setTextColor(getThemedColor(Theme.key_text_RedBold));
                 }
             } else {
                 MediaController.getInstance().cleanupPlayer(true, true);
@@ -2199,12 +2200,16 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
     }
 
+    private boolean flickOnAttach;
     private void startJoinFlickerAnimation() {
-        if (joinButtonFlicker != null && joinButtonFlicker.getProgress() > 1) {
+        if (joinButtonFlicker != null && joinButtonFlicker.getProgress() >= 1) {
+            flickOnAttach = false;
             AndroidUtilities.runOnUIThread(() -> {
                 joinButtonFlicker.setProgress(0);
                 joinButton.invalidate();
             }, 150);
+        } else {
+            flickOnAttach = true;
         }
     }
 

@@ -74,6 +74,7 @@ public class UndoView extends FrameLayout {
     private BaseFragment parentFragment;
 
     private Object currentInfoObject;
+    private Object currentInfoObject2;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -180,6 +181,7 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_PREMIUM_ALL_FOLDER = 86;
 
     public final static int ACTION_PROXY_ADDED = 87;
+    public final static int ACTION_SHARED_FOLDER_DELETED = 88;
 
     private CharSequence infoText;
     private int hideAnimationType = 1;
@@ -337,7 +339,8 @@ public class UndoView extends FrameLayout {
     private boolean hasSubInfo() {
         return currentAction == ACTION_QR_SESSION_ACCEPTED || currentAction == ACTION_PROXIMITY_SET || currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT ||
                 currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT ||
-                currentAction == ACTION_REPORT_SENT || currentAction == ACTION_ARCHIVE_PINNED && MessagesController.getInstance(currentAccount).dialogFilters.isEmpty() || currentAction == ACTION_RINGTONE_ADDED || currentAction == ACTION_HINT_SWIPE_TO_REPLY;
+                currentAction == ACTION_REPORT_SENT || currentAction == ACTION_ARCHIVE_PINNED && MessagesController.getInstance(currentAccount).dialogFilters.isEmpty() || currentAction == ACTION_RINGTONE_ADDED || currentAction == ACTION_HINT_SWIPE_TO_REPLY ||
+                currentAction == ACTION_SHARED_FOLDER_DELETED && currentInfoObject2 != null && ((Integer) currentInfoObject2) > 0;
     }
 
     public boolean isMultilineSubInfo() {
@@ -361,6 +364,7 @@ public class UndoView extends FrameLayout {
             return;
         }
         currentInfoObject = null;
+        currentInfoObject2 = null;
         isShown = false;
         if (currentActionRunnable != null) {
             if (apply) {
@@ -455,8 +459,9 @@ public class UndoView extends FrameLayout {
         currentAction = action;
         timeLeft = 5000;
         currentInfoObject = infoObject;
+        currentInfoObject2 = infoObject2;
         lastUpdateTime = SystemClock.elapsedRealtime();
-        undoTextView.setText(LocaleController.getString("Undo", R.string.Undo).toUpperCase());
+        undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
         undoImageView.setVisibility(VISIBLE);
         leftImageView.setPadding(0, 0, 0, 0);
         leftImageView.setScaleX(1);
@@ -465,7 +470,12 @@ public class UndoView extends FrameLayout {
         avatarImageView.setVisibility(GONE);
 
         infoTextView.setGravity(Gravity.LEFT | Gravity.TOP);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
+        FrameLayout.LayoutParams layoutParams;
+
+        layoutParams = (FrameLayout.LayoutParams) subinfoTextView.getLayoutParams();
+        layoutParams.leftMargin = AndroidUtilities.dp(58);
+
+        layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
         layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(13);
         layoutParams.bottomMargin = 0;
@@ -1158,7 +1168,7 @@ public class UndoView extends FrameLayout {
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
-            undoTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText2));
+            undoTextView.setTextColor(getThemedColor(Theme.key_text_RedRegular));
             undoImageView.setVisibility(GONE);
             undoButton.setVisibility(VISIBLE);
             leftImageView.setVisibility(VISIBLE);
@@ -1396,7 +1406,30 @@ public class UndoView extends FrameLayout {
             subinfoTextView.setVisibility(GONE);
             leftImageView.setVisibility(GONE);
 
-            if (currentAction == ACTION_CLEAR_DATES || currentAction == ACTION_CLEAR || currentAction == ACTION_CLEAR_FEW) {
+            if (currentAction == ACTION_SHARED_FOLDER_DELETED) {
+                String folderName = (String) infoObject;
+                int chatsCount = (Integer) infoObject2;
+                if (chatsCount > 0) {
+                    int margin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+
+                    layoutParams.leftMargin = AndroidUtilities.dp(48);
+                    layoutParams.rightMargin = margin;
+                    layoutParams.topMargin = AndroidUtilities.dp(6);
+
+                    layoutParams = (FrameLayout.LayoutParams) subinfoTextView.getLayoutParams();
+                    layoutParams.leftMargin = AndroidUtilities.dp(48);
+                    layoutParams.rightMargin = margin;
+
+                    infoTextView.setText(LocaleController.formatString("FolderLinkDeletedTitle", R.string.FolderLinkDeletedTitle, folderName));
+                    infoTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+
+                    subinfoTextView.setVisibility(VISIBLE);
+                    subinfoTextView.setText(LocaleController.formatPluralString("FolderLinkDeletedSubtitle", chatsCount));
+                } else {
+                    infoTextView.setTypeface(Typeface.DEFAULT);
+                    infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FolderLinkDeleted", R.string.FolderLinkDeleted, (folderName == null ? "" : folderName).replace('*', '✱'))));
+                }
+            } else if (currentAction == ACTION_CLEAR_DATES || currentAction == ACTION_CLEAR || currentAction == ACTION_CLEAR_FEW) {
                 infoTextView.setText(LocaleController.getString("HistoryClearedUndo", R.string.HistoryClearedUndo));
             } else if (currentAction == ACTION_DELETE_FEW) {
                 infoTextView.setText(LocaleController.getString("ChatsDeletedUndo", R.string.ChatsDeletedUndo));
@@ -1515,7 +1548,7 @@ public class UndoView extends FrameLayout {
             backgroundDrawable.draw(canvas);
         }
 
-        if (currentAction == ACTION_DELETE || currentAction == ACTION_CLEAR || currentAction == ACTION_DELETE_FEW || currentAction == ACTION_CLEAR_FEW || currentAction == ACTION_CLEAR_DATES) {
+        if (currentAction == ACTION_DELETE || currentAction == ACTION_CLEAR || currentAction == ACTION_DELETE_FEW || currentAction == ACTION_CLEAR_FEW || currentAction == ACTION_CLEAR_DATES || currentAction == ACTION_SHARED_FOLDER_DELETED) {
             int newSeconds = timeLeft > 0 ? (int) Math.ceil(timeLeft / 1000.0f) : 0;
             if (prevSeconds != newSeconds) {
                 prevSeconds = newSeconds;

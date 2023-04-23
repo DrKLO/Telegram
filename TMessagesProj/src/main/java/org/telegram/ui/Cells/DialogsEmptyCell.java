@@ -125,7 +125,7 @@ public class DialogsEmptyCell extends LinearLayout {
         this.onUtyanAnimationUpdateListener = onUtyanAnimationUpdateListener;
     }
 
-    public void setType(@EmptyType int value) {
+    public void setType(@EmptyType int value, boolean forward) {
         if (currentType == value) {
             return;
         }
@@ -142,8 +142,13 @@ public class DialogsEmptyCell extends LinearLayout {
             case TYPE_FILTER_NO_CHATS_TO_DISPLAY:
                 imageView.setAutoRepeat(false);
                 icon = R.raw.filter_no_chats;
-                help = LocaleController.getString("FilterNoChatsToDisplayInfo", R.string.FilterNoChatsToDisplayInfo);
-                titleView.setText(LocaleController.getString("FilterNoChatsToDisplay", R.string.FilterNoChatsToDisplay));
+                if (forward) {
+                    titleView.setText(LocaleController.getString("FilterNoChatsToForward", R.string.FilterNoChatsToForward));
+                    help = LocaleController.getString("FilterNoChatsToForwardInfo", R.string.FilterNoChatsToForwardInfo);
+                } else {
+                    titleView.setText(LocaleController.getString("FilterNoChatsToDisplay", R.string.FilterNoChatsToDisplay));
+                    help = LocaleController.getString("FilterNoChatsToDisplayInfo", R.string.FilterNoChatsToDisplayInfo);
+                }
                 break;
             default:
             case TYPE_FILTER_ADDING_CHATS:

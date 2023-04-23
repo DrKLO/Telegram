@@ -98,6 +98,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
     private int resetInfoRow;
 
     private int currentType;
+    private final long dialogId;
 
     private Paint colorPaint;
     private Paint colorFramePaint;
@@ -406,8 +407,13 @@ public class WallpapersListActivity extends BaseFragment implements Notification
     }
 
     public WallpapersListActivity(int type) {
+        this(type, 0);
+    }
+
+    public WallpapersListActivity(int type, long dialogId) {
         super();
         currentType = type;
+        this.dialogId = dialogId;
     }
 
     @Override
@@ -418,21 +424,25 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.wallpapersNeedReload);
             getMessagesStorage().getWallpapers();
         } else {
-            boolean darkTheme = Theme.isCurrentThemeDark();
-            int[][] defaultColors = darkTheme ? defaultColorsDark : defaultColorsLight;
-            for (int a = 0; a < defaultColors.length; a++) {
-                if (defaultColors[a].length == 1) {
-                    wallPapers.add(new ColorWallpaper(Theme.COLOR_BACKGROUND_SLUG, defaultColors[a][0], 0, 45));
-                } else {
-                    wallPapers.add(new ColorWallpaper(Theme.COLOR_BACKGROUND_SLUG, defaultColors[a][0], defaultColors[a][1], defaultColors[a][2], defaultColors[a][3]));
-                }
-            }
+            fillDefaultColors(wallPapers, Theme.isCurrentThemeDark());
             if (currentType == TYPE_COLOR && patterns.isEmpty()) {
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.wallpapersDidLoad);
                 getMessagesStorage().getWallpapers();
             }
         }
         return super.onFragmentCreate();
+    }
+
+    public static void fillDefaultColors(ArrayList<Object> wallPapers, boolean isDark) {
+        boolean darkTheme = isDark;
+        int[][] defaultColors = darkTheme ? defaultColorsDark : defaultColorsLight;
+        for (int a = 0; a < defaultColors.length; a++) {
+            if (defaultColors[a].length == 1) {
+                wallPapers.add(new ColorWallpaper(Theme.COLOR_BACKGROUND_SLUG, defaultColors[a][0], 0, 45));
+            } else {
+                wallPapers.add(new ColorWallpaper(Theme.COLOR_BACKGROUND_SLUG, defaultColors[a][0], defaultColors[a][1], defaultColors[a][2], defaultColors[a][3]));
+            }
+        }
     }
 
     @Override
@@ -460,7 +470,12 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         updater = new WallpaperUpdater(getParentActivity(), this, new WallpaperUpdater.WallpaperUpdaterDelegate() {
             @Override
             public void didSelectWallpaper(File file, Bitmap bitmap, boolean gallery) {
-                presentFragment(new ThemePreviewActivity(new FileWallpaper("", file, file), bitmap), gallery);
+                ThemePreviewActivity themePreviewActivity = new ThemePreviewActivity(new FileWallpaper("", file, file), bitmap);
+                themePreviewActivity.setDialogId(dialogId);
+                if (dialogId != 0) {
+                    themePreviewActivity.setDelegate(WallpapersListActivity.this::removeSelfFromStack);
+                }
+                presentFragment(themePreviewActivity, gallery);
             }
 
             @Override
@@ -537,7 +552,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             if (wallPaper.slug != null && wallPaper.slug.equals(selectedBackgroundSlug)) {
                                 selectedBackgroundSlug = Theme.hasWallpaperFromTheme() ? Theme.THEME_BACKGROUND_SLUG : Theme.DEFAULT_BACKGROUND_SLUG;
                                 Theme.getActiveTheme().setOverrideWallpaper(null);
-                                Theme.reloadWallpaper();
+                                Theme.reloadWallpaper(true);
                             }
 
                             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -559,7 +574,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     showDialog(alertDialog);
                     TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                 } else if (id == forward) {
                     Bundle args = new Bundle();
@@ -765,7 +780,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 showDialog(dialog);
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                    button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
             }
         });
@@ -812,27 +827,50 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         super.onResume();
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
-        Theme.OverrideWallpaperInfo overrideWallpaper = themeInfo.overrideWallpaper;
-        if (overrideWallpaper != null) {
-            selectedBackgroundSlug = overrideWallpaper.slug;
-            selectedColor = overrideWallpaper.color;
-            selectedGradientColor1 = overrideWallpaper.gradientColor1;
-            selectedGradientColor2 = overrideWallpaper.gradientColor2;
-            selectedGradientColor3 = overrideWallpaper.gradientColor3;
-            selectedGradientRotation = overrideWallpaper.rotation;
-            selectedIntensity = overrideWallpaper.intensity;
-            selectedBackgroundMotion = overrideWallpaper.isMotion;
-            selectedBackgroundBlurred = overrideWallpaper.isBlurred;
+        if (dialogId != 0) {
+            TLRPC.UserFull userFull = getMessagesController().getUserFull(dialogId);
+            if (userFull != null && userFull.wallpaper != null) {
+                selectedBackgroundSlug = userFull.wallpaper.slug;
+                if (selectedBackgroundSlug == null) {
+                    selectedBackgroundSlug = "";
+                }
+                if (userFull.wallpaper.settings != null) {
+                    selectedColor = userFull.wallpaper.settings.background_color;
+                    selectedGradientColor1 = userFull.wallpaper.settings.second_background_color;
+                    selectedGradientColor2 = userFull.wallpaper.settings.third_background_color;
+                    selectedGradientColor3 = userFull.wallpaper.settings.fourth_background_color;
+                    selectedGradientRotation = userFull.wallpaper.settings.rotation;
+                    selectedIntensity = userFull.wallpaper.settings.intensity;
+                    selectedBackgroundMotion = userFull.wallpaper.settings.motion;
+                    selectedBackgroundBlurred = userFull.wallpaper.settings.blur;
+                }
+            }
         } else {
-            selectedBackgroundSlug = Theme.hasWallpaperFromTheme() ? Theme.THEME_BACKGROUND_SLUG :  Theme.DEFAULT_BACKGROUND_SLUG;
-            selectedColor = 0;
-            selectedGradientColor1 = 0;
-            selectedGradientColor2 = 0;
-            selectedGradientColor3 = 0;
-            selectedGradientRotation = 45;
-            selectedIntensity = 1.0f;
-            selectedBackgroundMotion = false;
-            selectedBackgroundBlurred = false;
+            Theme.OverrideWallpaperInfo overrideWallpaper = themeInfo.overrideWallpaper;
+            if (overrideWallpaper != null) {
+                selectedBackgroundSlug = overrideWallpaper.slug;
+                if (selectedBackgroundSlug == null) {
+                    selectedBackgroundSlug = "";
+                }
+                selectedColor = overrideWallpaper.color;
+                selectedGradientColor1 = overrideWallpaper.gradientColor1;
+                selectedGradientColor2 = overrideWallpaper.gradientColor2;
+                selectedGradientColor3 = overrideWallpaper.gradientColor3;
+                selectedGradientRotation = overrideWallpaper.rotation;
+                selectedIntensity = overrideWallpaper.intensity;
+                selectedBackgroundMotion = overrideWallpaper.isMotion;
+                selectedBackgroundBlurred = overrideWallpaper.isBlurred;
+            } else {
+                selectedBackgroundSlug = Theme.hasWallpaperFromTheme() ? Theme.THEME_BACKGROUND_SLUG : Theme.DEFAULT_BACKGROUND_SLUG;
+                selectedColor = 0;
+                selectedGradientColor1 = 0;
+                selectedGradientColor2 = 0;
+                selectedGradientColor3 = 0;
+                selectedGradientRotation = 45;
+                selectedIntensity = 1.0f;
+                selectedBackgroundMotion = false;
+                selectedBackgroundBlurred = false;
+            }
         }
         fillWallpapersWithCustom();
         fixLayout();
@@ -926,13 +964,14 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 }
             }
             ThemePreviewActivity wallpaperActivity = new ThemePreviewActivity(object, null, true, false);
-            if (currentType == TYPE_COLOR) {
+            if (currentType == TYPE_COLOR || dialogId != 0) {
                 wallpaperActivity.setDelegate(WallpapersListActivity.this::removeSelfFromStack);
             }
             if (selectedBackgroundSlug.equals(slug)) {
-                wallpaperActivity.setInitialModes(selectedBackgroundBlurred, selectedBackgroundMotion);
+                wallpaperActivity.setInitialModes(selectedBackgroundBlurred, selectedBackgroundMotion, selectedIntensity);
             }
             wallpaperActivity.setPatterns(patterns);
+            wallpaperActivity.setDialogId(dialogId);
             presentFragment(wallpaperActivity);
         }
     }
@@ -1029,7 +1068,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     getMessagesStorage().deleteWallpaper(wallPapersToDelete.get(a).id);
                 }
             }
-            selectedBackgroundSlug = Theme.getSelectedBackgroundSlug();
+            if (dialogId == 0) {
+                selectedBackgroundSlug = Theme.getSelectedBackgroundSlug();
+            }
             fillWallpapersWithCustom();
             loadWallpapers(false);
         } else if (id == NotificationCenter.didSetNewWallpapper) {
@@ -1855,7 +1896,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         } else {
                             if (object instanceof ColorWallpaper) {
                                 ColorWallpaper colorWallpaper = (ColorWallpaper) object;
-                                if (Theme.DEFAULT_BACKGROUND_SLUG.equals(colorWallpaper.slug) && selectedBackgroundSlug.equals(colorWallpaper.slug)) {
+                                if (Theme.DEFAULT_BACKGROUND_SLUG.equals(colorWallpaper.slug) && selectedBackgroundSlug != null && selectedBackgroundSlug.equals(colorWallpaper.slug)) {
                                     selectedWallpaper = object;
                                 } else if (colorWallpaper.color != selectedColor || colorWallpaper.gradientColor1 != selectedGradientColor1 || colorWallpaper.gradientColor2 != selectedGradientColor2 || colorWallpaper.gradientColor3 != selectedGradientColor3 || selectedGradientColor1 != 0 && colorWallpaper.gradientRotation != selectedGradientRotation) {
                                     selectedWallpaper = null;

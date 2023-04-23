@@ -367,6 +367,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             private static final int VIEW_TYPE_REACTION = 0;
             private static final int VIEW_TYPE_PREMIUM_BUTTON = 1;
             private static final int VIEW_TYPE_CUSTOM_EMOJI_BUTTON = 2;
+
             @Override
             public void notifyDataSetChanged() {
                 oldItems.clear();
@@ -1171,7 +1172,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         }
     }
 

@@ -52,6 +52,8 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     private static BillingController instance;
 
+    public static boolean billingClientEmpty;
+
     private Map<String, Consumer<BillingResult>> resultListeners = new HashMap<>();
     private List<String> requestingTokens = new ArrayList<>();
     private String lastPremiumTransaction;
@@ -126,6 +128,14 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         if (!BuildVars.useInvoiceBilling()) {
             billingClient.startConnection(this);
         }
+    }
+
+    private void switchToInvoice() {
+        if (billingClientEmpty) {
+            return;
+        }
+        billingClientEmpty = true;
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
     }
 
     private void parseCurrencies(JSONObject obj) {
@@ -318,18 +328,25 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         FileLog.d("Billing setup finished with result " + setupBillingResult);
         if (setupBillingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
             queryProductDetails(Collections.singletonList(PREMIUM_PRODUCT), (billingResult, list) -> {
+                FileLog.d("Query product details finished " + billingResult + ", " + list);
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     for (ProductDetails details : list) {
                         if (details.getProductId().equals(PREMIUM_PRODUCT_ID)) {
                             PREMIUM_PRODUCT_DETAILS = details;
                         }
                     }
-
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated));
+                    if (PREMIUM_PRODUCT_DETAILS == null) {
+                        switchToInvoice();
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated));
+                    }
+                } else {
+                    switchToInvoice();
                 }
             });
-
             queryPurchases(BillingClient.ProductType.SUBS, this::onPurchasesUpdated);
+        } else {
+            switchToInvoice();
         }
     }
 }

@@ -1456,7 +1456,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         }
                                     }
                                 } else {
-//                                    phoneField.setTextColor(builder.length() > 0 ? getThemedColor(Theme.key_windowBackgroundWhiteRedText4) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+//                                    phoneField.setTextColor(builder.length() > 0 ? getThemedColor(Theme.key_text_RedRegular) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                                 }
                                 if (!builder.toString().equals(editable.toString())) {
                                     editable.replace(0, editable.length(), builder);
@@ -1541,13 +1541,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         int currentYear = bypass ? 2022 : rightNow.get(Calendar.YEAR);
                                         int currentMonth = bypass ? 1 : rightNow.get(Calendar.MONTH) + 1;
                                         if (year < currentYear || year == currentYear && month < currentMonth) {
-                                            inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText4));
+                                            inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_text_RedRegular));
                                             isError = true;
                                         }
                                     } else {
                                         int value = Utilities.parseInt(args[0]);
                                         if (value > 12 || value == 0) {
-                                            inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText4));
+                                            inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_text_RedRegular));
                                             isError = true;
                                         }
                                     }
@@ -1561,7 +1561,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                     } else if (builder.length() == 2) {
                                         int value = Utilities.parseInt(builder.toString());
                                         if (value > 12 || value == 0) {
-                                            inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText4));
+                                            inputFields[FIELD_EXPIRE_DATE].setTextColor(getThemedColor(Theme.key_text_RedRegular));
                                             isError = true;
                                         }
                                         start++;
@@ -2499,8 +2499,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
             settingsCell[0] = new TextSettingsCell(context, resourcesProvider);
             settingsCell[0].setBackgroundDrawable(Theme.getSelectorDrawable(true));
-            settingsCell[0].setTag(Theme.key_windowBackgroundWhiteRedText3);
-            settingsCell[0].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
+            settingsCell[0].setTag(Theme.key_text_RedRegular);
+            settingsCell[0].setTextColor(getThemedColor(Theme.key_text_RedRegular));
             settingsCell[0].setText(LocaleController.getString("AbortPassword", R.string.AbortPassword), false);
             linearLayout2.addView(settingsCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             settingsCell[0].setOnClickListener(v -> {
@@ -2517,7 +2517,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+                    button.setTextColor(getThemedColor(Theme.key_text_RedBold));
                 }
             });
 

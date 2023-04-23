@@ -8,7 +8,10 @@ import android.graphics.drawable.Drawable;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.FrameLayout;
+
+import androidx.core.util.Supplier;
 
 import org.telegram.ui.Components.BackButtonMenu;
 
@@ -77,6 +80,15 @@ public interface INavigationLayout {
 
     static INavigationLayout newLayout(Context context) {
         return new ActionBarLayout(context);
+    }
+
+    static INavigationLayout newLayout(Context context, Supplier<BottomSheet> supplier) {
+        return new ActionBarLayout(context) {
+            @Override
+            public BottomSheet getBottomSheet() {
+                return supplier.get();
+            }
+        };
     }
 
     default void removeFragmentFromStack(BaseFragment fragment) {
@@ -252,6 +264,17 @@ public interface INavigationLayout {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.dismissCurrentDialog();
         }
+    }
+
+    default Window getWindow() {
+        if (getParentActivity() != null) {
+            return getParentActivity().getWindow();
+        }
+        return null;
+    }
+
+    default BottomSheet getBottomSheet() {
+        return null;
     }
 
     interface INavigationLayoutDelegate {

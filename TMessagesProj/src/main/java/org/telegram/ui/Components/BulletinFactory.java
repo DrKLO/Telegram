@@ -33,6 +33,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -325,6 +326,65 @@ public final class BulletinFactory {
                     ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).leftMargin = margin;
                 }
             }
+        }
+
+        return create(layout, Bulletin.DURATION_PROLONG);
+    }
+
+    public Bulletin createChatsBulletin(List<TLObject> objects, CharSequence text, CharSequence subtitle) {
+        final Bulletin.UsersLayout layout = new Bulletin.UsersLayout(getContext(), subtitle != null, resourcesProvider);
+        int count = 0;
+        if (objects != null) {
+            for (int i = 0; i < objects.size(); ++i) {
+                if (count >= 3)
+                    break;
+                TLObject object = objects.get(i);
+                if (object != null) {
+                    layout.avatarsImageView.setCount(++count);
+                    layout.avatarsImageView.setObject(count - 1, UserConfig.selectedAccount, object);
+                }
+            }
+            if (objects.size() == 1) {
+                layout.avatarsImageView.setTranslationX(AndroidUtilities.dp(4));
+                layout.avatarsImageView.setScaleX(1.2f);
+                layout.avatarsImageView.setScaleY(1.2f);
+            } else {
+                layout.avatarsImageView.setScaleX(1f);
+                layout.avatarsImageView.setScaleY(1f);
+            }
+        }
+        layout.avatarsImageView.commitTransition(false);
+
+        if (subtitle != null) {
+            layout.textView.setSingleLine(true);
+            layout.textView.setMaxLines(1);
+            layout.textView.setText(text);
+            layout.subtitleView.setText(subtitle);
+            layout.subtitleView.setSingleLine(true);
+            layout.subtitleView.setMaxLines(1);
+            if (layout.linearLayout.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                int margin = AndroidUtilities.dp(12 + 56 + 6 - (3 - count) * 12);
+                if (LocaleController.isRTL) {
+                    ((ViewGroup.MarginLayoutParams) layout.linearLayout.getLayoutParams()).rightMargin = margin;
+                } else {
+                    ((ViewGroup.MarginLayoutParams) layout.linearLayout.getLayoutParams()).leftMargin = margin;
+                }
+            }
+        } else {
+            layout.textView.setSingleLine(false);
+            layout.textView.setMaxLines(2);
+            layout.textView.setText(text);
+            if (layout.textView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                int margin = AndroidUtilities.dp(12 + 56 + 6 - (3 - count) * 12);
+                if (LocaleController.isRTL) {
+                    ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = margin;
+                } else {
+                    ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).leftMargin = margin;
+                }
+            }
+        }
+        if (LocaleController.isRTL) {
+            layout.avatarsImageView.setTranslationX(AndroidUtilities.dp(32 - (count - 1) * 12));
         }
 
         return create(layout, Bulletin.DURATION_PROLONG);
@@ -724,6 +784,22 @@ public final class BulletinFactory {
         }
 
         layout.textView.setText(text);
+        return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
+    }
+
+    @CheckResult
+    public static Bulletin createMuteBulletin(BaseFragment fragment, boolean mute, int chatsCount, Theme.ResourcesProvider resourcesProvider) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity(), resourcesProvider);
+        layout.textView.setText(
+            mute ?
+                LocaleController.formatPluralString("NotificationsMutedHintChats", chatsCount) :
+                LocaleController.formatPluralString("NotificationsUnmutedHintChats", chatsCount)
+        );
+        if (mute) {
+            layout.setAnimation(R.raw.ic_mute, "Body Main", "Body Top", "Line", "Curve Big", "Curve Small");
+        } else {
+            layout.setAnimation(R.raw.ic_unmute, "BODY", "Wibe Big", "Wibe Big 3", "Wibe Small");
+        }
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
     }
 

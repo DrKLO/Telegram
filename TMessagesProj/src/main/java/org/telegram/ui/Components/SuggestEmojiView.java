@@ -350,7 +350,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
         }
         CharSequence text = enterView.getFieldText();
         Emoji.EmojiSpan[] emojiSpans = (text instanceof Spanned) ? ((Spanned) text).getSpans(Math.max(0, selectionEnd - 24), selectionEnd, Emoji.EmojiSpan.class) : null;
-        if (emojiSpans != null && emojiSpans.length > 0 && SharedConfig.suggestAnimatedEmoji) {
+        if (emojiSpans != null && emojiSpans.length > 0 && SharedConfig.suggestAnimatedEmoji && UserConfig.getInstance(currentAccount).isPremium()) {
             Emoji.EmojiSpan lastEmoji = emojiSpans[emojiSpans.length - 1];
             if (lastEmoji != null) {
                 int emojiStart = ((Spanned) text).getSpanStart(lastEmoji);

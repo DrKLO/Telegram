@@ -943,7 +943,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 }
             };
             imageView.setImageDrawable(drawable);
-            if (drawable instanceof AnimatedEmojiDrawable) {
+            if (drawable instanceof AnimatedEmojiDrawable || drawable instanceof DelayedAnimatedEmojiDrawable) {
                 isAnimatedEmoji = true;
                 imageView.setColorFilter(getEmojiColorFilter());
             }

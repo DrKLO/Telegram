@@ -279,7 +279,7 @@ public class CustomEmojiReactionsWindow {
         }
         selectAnimatedEmojiDialog.setEnterAnimationInProgress(true);
         account = UserConfig.selectedAccount;
-        animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
+        animationIndex = NotificationCenter.getGlobalInstance().setAnimationInProgress(animationIndex, null);
         valueAnimator = ValueAnimator.ofFloat(enterTransitionProgress, enter ? 1f : 0);
         valueAnimator.addUpdateListener(animation -> {
             valueAnimator = null;
@@ -410,7 +410,7 @@ public class CustomEmojiReactionsWindow {
 
     private void checkAnimationEnd() {
         if (animators.isEmpty()) {
-            NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
+            NotificationCenter.getGlobalInstance().onAnimationFinish(animationIndex);
             selectAnimatedEmojiDialog.setEnterAnimationInProgress(false);
         }
     }

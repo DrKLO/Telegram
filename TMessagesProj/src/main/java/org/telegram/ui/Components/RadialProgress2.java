@@ -540,4 +540,8 @@ public class RadialProgress2 {
     public void setOverlayImageAlpha(float overlayImageAlpha) {
         this.overlayImageAlpha = overlayImageAlpha;
     }
+
+    public float getTransitionProgress() {
+        return drawMiniIcon ? miniMediaActionDrawable.getTransitionProgress() : mediaActionDrawable.getTransitionProgress();
+    }
 }

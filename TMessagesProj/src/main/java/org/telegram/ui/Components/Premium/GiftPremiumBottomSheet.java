@@ -276,6 +276,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
                     }
                 }
                 Browser.openUrl(getBaseFragment().getParentActivity(), tier.giftOption.bot_url);
+                dismiss();
             }
         } else {
             if (BillingController.getInstance().isReady() && tier.googlePlayProductDetails != null) {

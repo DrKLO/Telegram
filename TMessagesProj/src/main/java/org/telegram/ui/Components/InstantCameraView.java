@@ -69,6 +69,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -1914,6 +1915,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             handler.sendMessage(handler.obtainMessage(MSG_STOP_RECORDING, send, 0));
         }
 
+        long prevTimestamp;
         public void frameAvailable(SurfaceTexture st, Integer cameraId, long timestampInternal) {
             synchronized (sync) {
                 if (!ready) {
@@ -1935,7 +1937,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             } else {
                 zeroTimeStamps = 0;
             }
-
+            prevTimestamp = timestamp;
             handler.sendMessage(handler.obtainMessage(MSG_VIDEOFRAME_AVAILABLE, (int) (timestamp >> 32), (int) timestamp, cameraId));
         }
 
@@ -2082,7 +2084,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
             long dt, alphaDt;
             if (!lastCameraId.equals(cameraId)) {
-                lastTimestamp = -1;
+              //  lastTimestamp = -1;
                 lastCameraId = cameraId;
             }
             if (lastTimestamp == -1) {

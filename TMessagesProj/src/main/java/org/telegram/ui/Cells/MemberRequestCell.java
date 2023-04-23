@@ -100,7 +100,9 @@ public class MemberRequestCell extends FrameLayout {
         avatarImageView.setForUserOrChat(user, avatarDrawable);
         nameTextView.setText(UserObject.getUserName(user));
         String dateText = LocaleController.formatDateAudio(importer.date, false);
-        if (importer.approved_by == 0) {
+        if (importer.via_chatlist) {
+            statusTextView.setText(LocaleController.getString("JoinedViaFolder", R.string.JoinedViaFolder));
+        } else if (importer.approved_by == 0) {
             statusTextView.setText(LocaleController.formatString("RequestedToJoinAt", R.string.RequestedToJoinAt, dateText));
         } else {
             TLRPC.User approvedByUser = users.get(importer.approved_by);

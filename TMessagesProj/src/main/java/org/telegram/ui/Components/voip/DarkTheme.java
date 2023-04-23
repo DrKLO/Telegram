@@ -368,7 +368,7 @@ public class DarkTheme{
 				return 0xFFFFFFFF;
 			case "chat_outAudioSeekbar":
 				return 0x9672A5D0;
-			case "windowBackgroundWhiteRedText5":
+			case "text_RedRegular":
 				return 0xFFFF4C56;
 			case "avatar_actionBarSelectorViolet":
 				return 0xFF495154;
@@ -426,8 +426,6 @@ public class DarkTheme{
 				return 0x0CFAFEFF;
 			case "chats_menuPhoneCats":
 				return 0xFF8E8E8E;
-			case "chat_reportSpam":
-				return 0xFFE96461;
 			case "avatar_subtitleInProfileGreen":
 				return 0xFF8A8A8A;
 			case "inappPlayerTitle":

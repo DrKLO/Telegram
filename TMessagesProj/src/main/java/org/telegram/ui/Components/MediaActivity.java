@@ -183,7 +183,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             }
 
             @Override
-            public boolean onMemberClick(TLRPC.ChatParticipant participant, boolean b, boolean resultOnly) {
+            public boolean onMemberClick(TLRPC.ChatParticipant participant, boolean b, boolean resultOnly, View vi) {
                 return false;
             }
 

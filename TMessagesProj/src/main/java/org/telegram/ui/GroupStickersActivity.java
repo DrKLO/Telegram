@@ -236,7 +236,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         stickersAlert.setCustomButtonDelegate(new StickersAlert.StickersAlertCustomButtonDelegate() {
             @Override
             public String getCustomButtonTextColorKey() {
-                return isSelected ? Theme.key_dialogTextRed : Theme.key_featuredStickers_buttonText;
+                return isSelected ? Theme.key_text_RedBold : Theme.key_featuredStickers_buttonText;
             }
 
             @Override

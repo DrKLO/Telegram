@@ -4988,7 +4988,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             scheduleButtonTextView.setSingleLine(true);
             scheduleButtonTextView.setEllipsize(TextUtils.TruncateAt.END);
             scheduleButtonTextView.setGravity(Gravity.CENTER);
-            scheduleButtonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0, 0x3f000000));
+            scheduleButtonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), 0, 0x3f000000));
             scheduleButtonTextView.setTextColor(0xffffffff);
             scheduleButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             scheduleButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -5119,7 +5119,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     calendar.setTimeInMillis(date);
                     int year = calendar.get(Calendar.YEAR);
                     if (year == currentYear) {
-                        return LocaleController.getInstance().formatterScheduleDay.format(date);
+                        return (
+                            LocaleController.getInstance().formatterWeek.format(date) +
+                            " " +
+                            LocaleController.getInstance().formatterScheduleDay.format(date)
+                        );
                     } else {
                         return LocaleController.getInstance().formatterScheduleYear.format(date);
                     }

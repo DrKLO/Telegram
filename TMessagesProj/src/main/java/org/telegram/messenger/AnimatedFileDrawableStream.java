@@ -46,7 +46,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
         synchronized (sync) {
             if (canceled) {
                 debugCanceledCount++;
-                if (!debugReportSend && debugCanceledCount > 100) {
+                if (!debugReportSend && debugCanceledCount > 200) {
                     debugReportSend = true;
                     if (BuildVars.DEBUG_PRIVATE_VERSION) {
                         throw new RuntimeException("infinity stream reading!!!");
@@ -166,5 +166,9 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
         if (countDownLatch != null) {
             countDownLatch.countDown();
         }
+    }
+
+    public boolean isCanceled() {
+        return canceled;
     }
 }

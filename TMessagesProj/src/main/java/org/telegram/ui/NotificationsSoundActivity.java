@@ -202,7 +202,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                     AlertDialog dialog = builder.show();
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed, resourcesProvider));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
                     }
                 } else if (id == shareId) {
                     if (selectedTones.size() == 1) {
@@ -341,7 +341,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setOnItemClickListener((view, position) -> {
             if (position == uploadRow) {
-                chatAttachAlert = new ChatAttachAlert(context, NotificationsSoundActivity.this, false, false, resourcesProvider);
+                chatAttachAlert = new ChatAttachAlert(context, NotificationsSoundActivity.this, false, false, true, resourcesProvider);
                 chatAttachAlert.setSoundPicker();
                 chatAttachAlert.init();
                 chatAttachAlert.show();

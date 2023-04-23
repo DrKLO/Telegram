@@ -1010,7 +1010,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                     .create();
             dialog.show();
             TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            textView.setTextColor(getColor(Theme.key_dialogTextRed));
+            textView.setTextColor(getColor(Theme.key_text_RedBold));
             return false;
         } else {
             dismiss();

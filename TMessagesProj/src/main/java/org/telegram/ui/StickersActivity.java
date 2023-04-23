@@ -72,6 +72,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.EmojiView;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -1002,7 +1003,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         if (which == MENU_DELETE) {
                             TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                             if (button != null) {
-                                button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                                button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                             }
                         }
                         break;
@@ -1350,43 +1351,18 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     stickerSetCell.setOnOptionsClick(v -> {
                         StickerSetCell cell = (StickerSetCell) v.getParent();
                         TLRPC.TL_messages_stickerSet stickerSet = cell.getStickersSet();
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(stickerSet.set.title);
-                        int[] options;
-                        CharSequence[] items;
-                        int[] icons;
+                        ItemOptions options = ItemOptions.makeOptions(StickersActivity.this, cell);
+                        options.add(R.drawable.msg_archive, LocaleController.getString("StickersHide", R.string.StickersHide), () -> processSelectionOption(MENU_ARCHIVE, stickerSet));
                         if (stickerSet.set.official) {
-                            options = new int[]{MENU_ARCHIVE, 4};
-                            items = new CharSequence[]{
-                                    LocaleController.getString("StickersHide", R.string.StickersHide),
-                                    LocaleController.getString("StickersReorder", R.string.StickersReorder)
-                            };
-                            icons = new int[]{R.drawable.msg_archive, R.drawable.msg_reorder};
+                            options.add(R.drawable.msg_reorder, LocaleController.getString("StickersReorder", R.string.StickersReorder), () -> processSelectionOption(4, stickerSet));
                         } else {
-                            options = new int[]{MENU_ARCHIVE, 3, 4, 2, MENU_DELETE};
-                            items = new CharSequence[]{
-                                    LocaleController.getString("StickersHide", R.string.StickersHide),
-                                    LocaleController.getString("StickersCopy", R.string.StickersCopy),
-                                    LocaleController.getString("StickersReorder", R.string.StickersReorder),
-                                    LocaleController.getString("StickersShare", R.string.StickersShare),
-                                    LocaleController.getString("StickersRemove", R.string.StickersRemove),
-                            };
-                            icons = new int[]{
-                                    R.drawable.msg_archive,
-                                    R.drawable.msg_link,
-                                    R.drawable.msg_reorder,
-                                    R.drawable.msg_share,
-                                    R.drawable.msg_delete
-                            };
+                            options.add(R.drawable.msg_link, LocaleController.getString("StickersCopy", R.string.StickersCopy), () -> processSelectionOption(3, stickerSet));
+                            options.add(R.drawable.msg_reorder, LocaleController.getString("StickersReorder", R.string.StickersReorder), () -> processSelectionOption(4, stickerSet));
+                            options.add(R.drawable.msg_share, LocaleController.getString("StickersShare", R.string.StickersShare), () -> processSelectionOption(2, stickerSet));
+                            options.add(R.drawable.msg_delete, LocaleController.getString("StickersRemove", R.string.StickersRemove), true, () -> processSelectionOption(MENU_DELETE, stickerSet));
                         }
-                        builder.setItems(items, icons, (dialog, which) -> processSelectionOption(options[which], stickerSet));
-
-                        AlertDialog dialog = builder.create();
-                        showDialog(dialog);
-
-                        if (options[options.length - 1] == MENU_DELETE) {
-                            dialog.setItemColor(items.length - 1, Theme.getColor(Theme.key_dialogTextRed), Theme.getColor(Theme.key_dialogRedIcon));
-                        }
+                        options.setMinWidth(190);
+                        options.show();
                     });
                     break;
                 case TYPE_INFO:

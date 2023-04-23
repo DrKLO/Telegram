@@ -53,6 +53,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -73,6 +74,7 @@ public class RecyclerListView extends RecyclerView {
             SECTIONS_TYPE_STICKY_HEADERS = 1,
             SECTIONS_TYPE_DATE = 2,
             SECTIONS_TYPE_FAST_SCROLL_ONLY = 3;
+    private boolean drawSelection = true;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
@@ -481,6 +483,7 @@ public class RecyclerListView extends RecyclerView {
 
         public static final int LETTER_TYPE = 0;
         public static final int DATE_TYPE = 1;
+        public boolean usePadding = true;
 
         private RectF rect = new RectF();
         private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -576,7 +579,7 @@ public class RecyclerListView extends RecyclerView {
         boolean isMoving;
         long startTime;
         float visibilityAlpha;
-        float viewAlpha;
+        float viewAlpha = 1f;
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
@@ -745,7 +748,8 @@ public class RecyclerListView extends RecyclerView {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            int y = getPaddingTop() + (int) Math.ceil((getMeasuredHeight() - getPaddingTop() - AndroidUtilities.dp(24 + 30)) * progress);
+            int topPadding = usePadding ? getPaddingTop() : 0;
+            int y = topPadding + (int) Math.ceil((getMeasuredHeight() - topPadding - AndroidUtilities.dp(24 + 30)) * progress);
             rect.set(scrollX, AndroidUtilities.dp(12) + y, scrollX + AndroidUtilities.dp(5), AndroidUtilities.dp(12 + 30) + y);
             if (type == LETTER_TYPE) {
                 paint.setColor(ColorUtils.blendARGB(inactiveColor, activeColor, bubbleProgress));
@@ -1564,7 +1568,8 @@ public class RecyclerListView extends RecyclerView {
     protected void onMeasure(int widthSpec, int heightSpec) {
         super.onMeasure(widthSpec, heightSpec);
         if (fastScroll != null && fastScroll.getLayoutParams() != null) {
-            int height = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
+            int topPadding = fastScroll.usePadding ? getPaddingTop() : 0;
+            int height = getMeasuredHeight() - topPadding - getPaddingBottom();
             fastScroll.getLayoutParams().height = height;
             fastScroll.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(132), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         }
@@ -1576,7 +1581,8 @@ public class RecyclerListView extends RecyclerView {
         super.onLayout(changed, l, t, r, b);
         if (fastScroll != null) {
             selfOnLayout = true;
-            t += getPaddingTop();
+            int topPadding = fastScroll.usePadding ? getPaddingTop() : 0;
+            t += topPadding;
             if (fastScroll.isRtl) {
                 fastScroll.layout(0, t, fastScroll.getMeasuredWidth(), t + fastScroll.getMeasuredHeight());
             } else {
@@ -1843,12 +1849,20 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
-    public void setListSelectorColor(int color) {
-        Theme.setSelectorDrawableColor(selectorDrawable, color, true);
+    public void setListSelectorColor(Integer color) {
+        Theme.setSelectorDrawableColor(selectorDrawable, color == null ? getThemedColor(Theme.key_listSelector) : color, true);
     }
 
+    private GenericProvider<Integer, Integer> getSelectorColor;
     public Integer getSelectorColor(int position) {
+        if (getSelectorColor != null) {
+            return getSelectorColor.provide(position);
+        }
         return null;
+    }
+
+    public void setItemSelectorColorProvider(GenericProvider<Integer, Integer> getSelectorColor) {
+        this.getSelectorColor = getSelectorColor;
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
@@ -2269,10 +2283,7 @@ public class RecyclerListView extends RecyclerView {
             selectorDrawable.setVisible(false, false);
             selectorDrawable.setState(StateSet.NOTHING);
         }
-        Integer color = getSelectorColor(position);
-        if (color != null) {
-            setListSelectorColor(color);
-        }
+        setListSelectorColor(getSelectorColor(position));
         selectorDrawable.setBounds(selectorRect);
         if (positionChanged) {
             if (getVisibility() == VISIBLE) {
@@ -2492,7 +2503,7 @@ public class RecyclerListView extends RecyclerView {
             itemsEnterAnimator.dispatchDraw();
         }
 
-        if (drawSelectorBehind && !selectorRect.isEmpty()) {
+        if (drawSelection && drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
             canvas.save();
             if (selectorTransformer != null) {
@@ -2502,7 +2513,7 @@ public class RecyclerListView extends RecyclerView {
             canvas.restore();
         }
         super.dispatchDraw(canvas);
-        if (!drawSelectorBehind && !selectorRect.isEmpty()) {
+        if (drawSelection && !drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
             canvas.save();
             if (selectorTransformer != null) {
@@ -2876,5 +2887,9 @@ public class RecyclerListView extends RecyclerView {
 
     public void setAllowStopHeaveOperations(boolean allowStopHeaveOperations) {
         this.allowStopHeaveOperations = allowStopHeaveOperations;
+    }
+
+    public void setDrawSelection(boolean drawSelection) {
+        this.drawSelection = drawSelection;
     }
 }

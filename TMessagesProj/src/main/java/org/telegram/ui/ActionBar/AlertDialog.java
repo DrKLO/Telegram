@@ -199,7 +199,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     public void redPositive() {
         TextView button = (TextView) getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+            button.setTextColor(getThemedColor(Theme.key_text_RedBold));
         }
     }
 

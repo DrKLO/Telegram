@@ -53,6 +53,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     private static final int MIN_DRAWER_MARGIN = 64;
 
     private FrameLayout drawerLayout;
+    private View drawerListView;
     private INavigationLayout parentActionBarLayout;
 
     private boolean maybeStartTracking;
@@ -176,13 +177,18 @@ public class DrawerLayoutContainer extends FrameLayout {
         return 0;
     }
 
-    public void setDrawerLayout(FrameLayout layout) {
+    public void setDrawerLayout(FrameLayout layout, View drawerListView) {
         drawerLayout = layout;
+        this.drawerListView = drawerListView;
         addView(drawerLayout);
         drawerLayout.setVisibility(INVISIBLE);
+        drawerListView.setVisibility(GONE);
         if (Build.VERSION.SDK_INT >= 21) {
             drawerLayout.setFitsSystemWindows(true);
         }
+        AndroidUtilities.runOnUIThread(() -> {
+            drawerListView.setVisibility(View.VISIBLE);
+        }, 2500);
     }
 
     public void moveDrawerByX(float dx) {
@@ -201,6 +207,9 @@ public class DrawerLayoutContainer extends FrameLayout {
             drawerPosition = 0;
         }
         drawerLayout.setTranslationX(drawerPosition);
+        if (drawerPosition > 0 && drawerListView != null && drawerListView.getVisibility() != View.VISIBLE) {
+            drawerListView.setVisibility(View.VISIBLE);
+        }
 
         final int newVisibility = drawerPosition > 0 ? VISIBLE : INVISIBLE;
         if (drawerLayout.getVisibility() != newVisibility) {

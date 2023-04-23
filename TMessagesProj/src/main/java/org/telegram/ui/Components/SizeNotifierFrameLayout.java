@@ -39,6 +39,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BlurSettingsBottomSheet;
+import org.telegram.ui.ChatBackgroundDrawable;
 
 import java.util.ArrayList;
 
@@ -46,6 +47,10 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     private Rect rect = new Rect();
     private Drawable backgroundDrawable;
+    private boolean backgroundMotion;
+    private Drawable oldBackgroundDrawable;
+    private boolean oldBackgroundMotion;
+
     protected int keyboardHeight;
     private int bottomClip;
     private SizeNotifierFrameLayoutDelegate delegate;
@@ -57,7 +62,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private float parallaxScale = 1.0f;
     private int backgroundTranslationY;
     private boolean paused = true;
-    private Drawable oldBackgroundDrawable;
     private INavigationLayout parentLayout;
     public AdjustPanLayoutHelper adjustPanLayoutHelper;
     private int emojiHeight;
@@ -66,6 +70,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private boolean skipBackgroundDrawing;
     SnowflakesEffect snowflakesEffect;
     protected View backgroundView;
+    boolean attached;
 
 
     //blur variables
@@ -98,11 +103,16 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     int times;
     int count2;
     int times2;
+    private float themeAnimationValue = 1f;
     //
 
     public void invalidateBlur() {
         invalidateBlur = true;
         invalidate();
+    }
+
+    public void invalidateBackground() {
+        backgroundView.invalidate();
     }
 
 
@@ -134,17 +144,25 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 return;
             }
             Drawable newDrawable = getNewDrawable();
+            boolean newMotion = getNewDrawableMotion();
             if (newDrawable != backgroundDrawable && newDrawable != null) {
                 if (Theme.isAnimatingColor()) {
                     oldBackgroundDrawable = backgroundDrawable;
+                    oldBackgroundMotion = backgroundMotion;
                 }
                 if (newDrawable instanceof MotionBackgroundDrawable) {
                     MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) newDrawable;
                     motionBackgroundDrawable.setParentView(backgroundView);
                 }
                 backgroundDrawable = newDrawable;
+                if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
+                    ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+                }
+                backgroundMotion = newMotion;
+                themeAnimationValue = 0f;
+                checkMotion();
             }
-            float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1.0f;
+            themeAnimationValue = Utilities.clamp(themeAnimationValue + AndroidUtilities.screenRefreshTime / 200, 1f, 0);
             for (int a = 0; a < 2; a++) {
                 Drawable drawable = a == 0 ? oldBackgroundDrawable : backgroundDrawable;
                 if (drawable == null) {
@@ -154,6 +172,20 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     drawable.setAlpha((int) (255 * themeAnimationValue));
                 } else {
                     drawable.setAlpha(255);
+                }
+                float parallaxScale;
+                float translationX;
+                float translationY;
+                boolean drawMotion = a == 0 ? oldBackgroundMotion : backgroundMotion;
+                if (drawMotion) {
+                    parallaxScale = SizeNotifierFrameLayout.this.parallaxScale;
+                    translationX = SizeNotifierFrameLayout.this.translationX;
+                    translationY = SizeNotifierFrameLayout.this.translationY;
+                } else {
+                    parallaxScale = 1.0f;
+                    translationX = 0;
+                    translationY = 0;
+
                 }
                 if (drawable instanceof MotionBackgroundDrawable) {
                     MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) drawable;
@@ -240,11 +272,40 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                         checkSnowflake(canvas);
                         canvas.restore();
                     }
+                } else {
+                    if (bottomClip != 0) {
+                        canvas.save();
+                        canvas.clipRect(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight() - bottomClip);
+                    }
+                    if (drawable instanceof ChatBackgroundDrawable) {
+                        ((ChatBackgroundDrawable) drawable).setParent(this);
+                    }
+                    float x = -getMeasuredWidth() * (parallaxScale - 1f) / 2f + translationX;
+                    float y = -getRootView().getMeasuredHeight() * (parallaxScale - 1f) / 2f + translationY;
+                    drawable.setBounds(
+                            (int) x,
+                            (int) (backgroundTranslationY + y),
+                            (int) (getMeasuredWidth() * parallaxScale + x),
+                            (int) (backgroundTranslationY + getRootView().getMeasuredHeight() * parallaxScale + y)
+                    );
+                    drawable.draw(canvas);
+                    checkSnowflake(canvas);
+                    if (bottomClip != 0) {
+                        canvas.restore();
+                    }
                 }
                 if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
+                    if (attached && oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
+                        ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow();
+                    }
                     oldBackgroundDrawable = null;
+                    oldBackgroundMotion = false;
+                    checkMotion();
                     backgroundView.invalidate();
                 }
+            }
+            if (themeAnimationValue != 1f) {
+                backgroundView.invalidate();
             }
         }
     }
@@ -257,7 +318,20 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) bitmap;
             motionBackgroundDrawable.setParentView(backgroundView);
         }
+        if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow();
+        }
         backgroundDrawable = bitmap;
+        if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+        }
+        checkMotion();
+        backgroundView.invalidate();
+        checkLayerType();
+    }
+
+    private void checkMotion() {
+        boolean motion = oldBackgroundMotion || backgroundMotion;
         if (motion) {
             if (parallaxEffect == null) {
                 parallaxEffect = new WallpaperParallaxEffect(getContext());
@@ -281,8 +355,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             translationX = 0;
             translationY = 0;
         }
-        backgroundView.invalidate();
-        checkLayerType();
     }
 
     private void checkLayerType() {
@@ -444,6 +516,10 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     protected Drawable getNewDrawable() {
         return Theme.getCachedWallpaperNonBlocking();
+    }
+
+    protected boolean getNewDrawableMotion() {
+        return Theme.isWallpaperMotion();
     }
 
     @Override
@@ -671,15 +747,23 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        attached = true;
         if (needBlur && !blurIsRunning) {
             blurIsRunning = true;
             invalidateBlur = true;
+        }
+        if (backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow();
+        }
+        if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) oldBackgroundDrawable).onAttachedToWindow();
         }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        attached = false;
         blurPaintTop.setShader(null);
         blurPaintTop2.setShader(null);
         blurPaintBottom.setShader(null);
@@ -698,6 +782,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
         unusedBitmaps.clear();
         blurIsRunning = false;
+
+        if (backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow();
+        }
+        if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow();
+        }
     }
 
     public boolean blurWasDrawn() {
