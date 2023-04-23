@@ -5,3 +5,6 @@
 	path = TMessagesProj/jni/boringssl
 	url = https://github.com/google/boringssl
 	ignore = all
+[submodule "TMessagesProj/jni/libvpx"]
+	path = TMessagesProj/jni/libvpx
+	url = https://github.com/webmproject/libvpx

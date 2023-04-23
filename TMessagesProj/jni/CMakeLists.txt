@@ -12,7 +12,7 @@ ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavresample.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavutil.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswresample.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a,
+${CMAKE_HOME_DIRECTORY}/libvpx/build/${ANDROID_ABI}/lib/libvpx.a,
 ${CMAKE_HOME_DIRECTORY}/boringssl/build/${ANDROID_ABI}/ssl/libssl.a,
 ${CMAKE_HOME_DIRECTORY}/boringssl/build/${ANDROID_ABI}/crypto/libcrypto.a")
 
@@ -47,7 +47,7 @@ add_library(ssl STATIC IMPORTED)
 set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/boringssl/build/${ANDROID_ABI}/ssl/libssl.a)
 
 add_library(libvpx STATIC IMPORTED)
-set_target_properties(libvpx PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a)
+set_target_properties(libvpx PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/libvpx/build/${ANDROID_ABI}/lib/libvpx.a)
 
 
 #tgnet
@@ -739,6 +739,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         third_party/libyuv/include
         boringssl/include
         ffmpeg/include
+        libvpx/build/${ANDROID_ABI}/include
         emoji
         exoplayer/include
         exoplayer/libFLAC/include
