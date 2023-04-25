@@ -21,7 +21,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
 
 public class StickerEmptyView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -142,9 +141,9 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         lastH = getMeasuredHeight();
     }
 
-    String colorKey1 = Theme.key_emptyListPlaceholder;
+    int colorKey1 = Theme.key_emptyListPlaceholder;
 
-    public void setColors(String titleKey, String subtitleKey, String key1, String key2) {
+    public void setColors(int titleKey, int subtitleKey, int key1, int key2) {
         title.setTag(titleKey);
         title.setTextColor(getThemedColor(titleKey));
 
@@ -369,9 +368,8 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         }
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public void setStickerType(int stickerType) {

@@ -1111,7 +1111,7 @@ public class FilterCreateActivity extends BaseFragment {
             if (left <= MAX_NAME_LENGTH - MAX_NAME_LENGTH * 0.7f) {
                 textCell.setText2(String.format("%d", left));
                 SimpleTextView textView = textCell.getTextView2();
-                String key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
+                int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
                 textView.setTextColor(Theme.getColor(key));
                 textView.setTag(key);
                 textView.setAlpha(((PollEditTextCell) cell).getTextView().isFocused() || left < 0 ? 1.0f : 0.0f);
@@ -2139,7 +2139,7 @@ public class FilterCreateActivity extends BaseFragment {
             button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             button.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
             button.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-            button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+            button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
             button.setText(LocaleController.getString("FolderLinkShareButton", R.string.FolderLinkShareButton));
             button.setGravity(Gravity.CENTER);
             button.setOnClickListener(e -> createLink());

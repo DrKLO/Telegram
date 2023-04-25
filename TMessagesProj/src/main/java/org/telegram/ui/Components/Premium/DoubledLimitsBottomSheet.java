@@ -223,8 +223,8 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
         public void setData(Limit limit) {
             title.setText(limit.title);
             subtitle.setText(limit.subtitle);
-            previewView.premiumCount.setText(Integer.toString(limit.premiumLimit));
-            previewView.defaultCount.setText(Integer.toString(limit.defaultLimit));
+            previewView.premiumCount.setText(String.format("%d", limit.premiumLimit));
+            previewView.defaultCount.setText(String.format("%d", limit.defaultLimit));
         }
     }
 

@@ -3726,8 +3726,10 @@ public class LoginActivity extends BaseFragment {
                 codeFieldContainer.invalidate();
             }
 
-            String timeTextColorTag = (String) timeText.getTag();
-            if (timeTextColorTag == null) timeTextColorTag = Theme.key_windowBackgroundWhiteGrayText6;
+            Integer timeTextColorTag = (Integer) timeText.getTag();
+            if (timeTextColorTag == null) {
+                timeTextColorTag = Theme.key_windowBackgroundWhiteGrayText6;
+            }
             timeText.setTextColor(Theme.getColor(timeTextColorTag));
 
             if (currentType != AUTH_TYPE_FRAGMENT_SMS) {

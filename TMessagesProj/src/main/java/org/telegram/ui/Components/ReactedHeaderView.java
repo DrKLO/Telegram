@@ -58,7 +58,7 @@ public class ReactedHeaderView extends FrameLayout {
         this.dialogId = dialogId;
 
         flickerLoadingView = new FlickerLoadingView(context);
-        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, null);
+        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, -1);
         flickerLoadingView.setViewType(FlickerLoadingView.MESSAGE_SEEN_TYPE);
         flickerLoadingView.setIsSingleCell(false);
         addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));

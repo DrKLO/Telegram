@@ -245,7 +245,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
             //  ((ViewGroup.MarginLayoutParams)recyclerListView.getLayoutParams()).bottomMargin = AndroidUtilities.dp()
 
             FrameLayout button = new FrameLayout(getContext());
-            button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+            button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
 
             TextView textView = new TextView(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -373,7 +373,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
                 case VIEW_TYPE_DELETE_ALL:
                     textCell = new TextCell(parent.getContext());
                     textCell.setText(LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException), false);
-                    textCell.setColors(null, Theme.key_text_RedRegular);
+                    textCell.setColors(-1, Theme.key_text_RedRegular);
                     view = textCell;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;

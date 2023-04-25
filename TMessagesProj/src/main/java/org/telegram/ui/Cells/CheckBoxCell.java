@@ -356,7 +356,7 @@ public class CheckBoxCell extends FrameLayout {
         return checkBox;
     }
 
-    public void setCheckBoxColor(String background, String background1, String check) {
+    public void setCheckBoxColor(int background, int background1, int check) {
         if (checkBoxRound != null) {
             checkBoxRound.setColor(background,background,check);
         }
@@ -366,7 +366,7 @@ public class CheckBoxCell extends FrameLayout {
         return checkBoxRound;
     }
 
-    public void setSquareCheckBoxColor(String uncheckedColor, String checkedColor, String checkColor) {
+    public void setSquareCheckBoxColor(int uncheckedColor, int checkedColor, int checkColor) {
         if (checkBoxSquare != null) {
             checkBoxSquare.setColors(uncheckedColor, checkedColor, checkColor);
         }
@@ -388,9 +388,8 @@ public class CheckBoxCell extends FrameLayout {
         info.setChecked(isChecked());
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public void setIcon(int icon) {

@@ -316,7 +316,6 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
             if (fileIsMedia(fileInfo.file)) {
                 ArrayList<Object> photoEntries = new ArrayList<>();
                 photoEntries.add(new MediaController.PhotoEntry(0, 0, 0, fileInfo.file.getPath(), 0, fileInfo.type == TYPE_VIDEOS, 0, 0, 0));
-                ;
                 PhotoViewer.getInstance().openPhotoForSelect(photoEntries, 0, PhotoViewer.SELECT_TYPE_NO_SELECT, false, placeProvider, null);
             } else {
                 AndroidUtilities.openForView(fileInfo.file, fileInfo.file.getName(), null, parentFragment.getParentActivity(), null);
@@ -997,29 +996,39 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
             checkBox = new CheckBox2(context, 21);
             checkBox.setDrawBackgroundAsArc(14);
             checkBox.setColor(Theme.key_checkbox, Theme.key_radioBackground, Theme.key_checkboxCheck);
-            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, 0, 0, 0));
             View checkBoxClickableView = new View(getContext());
             checkBoxClickableView.setOnClickListener(v -> {
                 onCheckBoxPressed();
             });
-            addView(checkBoxClickableView, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
             container = new FrameLayout(context);
 
-            addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 48, 0, 90, 0));
             sizeTextView = new TextView(context);
             sizeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             sizeTextView.setGravity(Gravity.RIGHT);
             sizeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
 
-            addView(sizeTextView, LayoutHelper.createFrame(69, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 21, 0));
-
+            if (LocaleController.isRTL) {
+                addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 18, 0));
+                addView(checkBoxClickableView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+                addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 90, 0, 40, 0));
+                addView(sizeTextView, LayoutHelper.createFrame(69, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+            } else {
+                addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, 0, 0, 0));
+                addView(checkBoxClickableView, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+                addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 48, 0, 90, 0));
+                addView(sizeTextView, LayoutHelper.createFrame(69, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 21, 0));
+            }
         }
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
             super.dispatchDraw(canvas);
             if (drawDivider) {
-                canvas.drawLine(getMeasuredWidth() - AndroidUtilities.dp(90), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+                if (LocaleController.isRTL) {
+                    canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - AndroidUtilities.dp(48), getMeasuredHeight() - 1, Theme.dividerPaint);
+                } else {
+                    canvas.drawLine(getMeasuredWidth() - AndroidUtilities.dp(90), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+                }
             }
         }
 

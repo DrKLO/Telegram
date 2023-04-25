@@ -324,7 +324,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
 
 			checkBox = new CheckBox2(context, 21);
-			checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+			checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
 			checkBox.setDrawUnchecked(false);
 			checkBox.setDrawBackgroundAsArc(3);
 			addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 42, 32, 42, 0));

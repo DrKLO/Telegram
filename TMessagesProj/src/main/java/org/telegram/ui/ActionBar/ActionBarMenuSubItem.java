@@ -85,7 +85,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         if (needCheck > 0) {
             checkView = new CheckBox2(context, 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
-            checkView.setColor(null, null, Theme.key_radioBackgroundChecked);
+            checkView.setColor(-1, -1, Theme.key_radioBackgroundChecked);
             checkView.setDrawBackgroundAsArc(-1);
             if (needCheck == 1) {
                 addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
@@ -123,8 +123,8 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
     }
 
-    public void setCheckColor(String colorKey) {
-        checkView.setColor(null, null, colorKey);
+    public void setCheckColor(int colorKey) {
+        checkView.setColor(-1, -1, colorKey);
     }
 
     public void setRightIcon(int icon) {
@@ -260,9 +260,8 @@ public class ActionBarMenuSubItem extends FrameLayout {
         setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? 6 : 0, bottom ? 6 : 0));
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public CheckBox2 getCheckView() {

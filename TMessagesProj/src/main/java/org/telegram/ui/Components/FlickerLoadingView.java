@@ -65,9 +65,9 @@ public class FlickerLoadingView extends View {
     private int paddingTop;
     private int paddingLeft;
 
-    private String colorKey1 = Theme.key_actionBarDefaultSubmenuBackground;
-    private String colorKey2 = Theme.key_listSelector;
-    private String colorKey3;
+    private int colorKey1 = Theme.key_actionBarDefaultSubmenuBackground;
+    private int colorKey2 = Theme.key_listSelector;
+    private int colorKey3;
     private int itemsCount = 1;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -104,7 +104,7 @@ public class FlickerLoadingView extends View {
         return 2;
     }
 
-    public void setColors(String key1, String key2, String key3) {
+    public void setColors(int key1, int key2, int key3) {
         colorKey1 = key1;
         colorKey2 = key2;
         colorKey3 = key3;
@@ -157,10 +157,10 @@ public class FlickerLoadingView extends View {
         int h = paddingTop;
         if (useHeaderOffset) {
             h += AndroidUtilities.dp(32);
-            if (colorKey3 != null) {
+            if (colorKey3 >= 0) {
                 headerPaint.setColor(getThemedColor(colorKey3));
             }
-            canvas.drawRect(0,0, getMeasuredWidth(), AndroidUtilities.dp(32), colorKey3 != null ? headerPaint : paint);
+            canvas.drawRect(0,0, getMeasuredWidth(), AndroidUtilities.dp(32), colorKey3 >= 0 ? headerPaint : paint);
         }
         if (getViewType() == DIALOG_CELL_TYPE) {
             int k = 0;
@@ -860,9 +860,8 @@ public class FlickerLoadingView extends View {
         this.itemsCount = i;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public void setGlobalGradientView(FlickerLoadingView globalGradientView) {

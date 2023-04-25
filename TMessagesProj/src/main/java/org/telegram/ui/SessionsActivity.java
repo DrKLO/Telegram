@@ -518,16 +518,17 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         SessionBottomSheet bottomSheet = new SessionBottomSheet(this, authorization, isCurrentSession, new SessionBottomSheet.Callback() {
             @Override
             public void onSessionTerminated(TLRPC.TL_authorization authorization) {
-                sessions.remove(authorization);
-                passwordSessions.remove(authorization);
-                updateRows();
-                if (listAdapter != null) {
-                    listAdapter.notifyDataSetChanged();
-                }
                 TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
                 req.hash = authorization.hash;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-
+                    if (error == null) {
+                        sessions.remove(authorization);
+                        passwordSessions.remove(authorization);
+                        updateRows();
+                        if (listAdapter != null) {
+                            listAdapter.notifyDataSetChanged();
+                        }
+                    }
                 }));
             }
         });

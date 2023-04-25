@@ -236,7 +236,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             }
 
             @Override
-            public void onWebAppSetActionBarColor(String colorKey) {
+            public void onWebAppSetActionBarColor(int colorKey) {
                 int from = actionBarColor;
                 int to = getColor(colorKey);
 
@@ -944,14 +944,12 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
     }
 
-    private int getColor(String key) {
-        Integer color;
-        if (resourcesProvider != null) {
-            color = resourcesProvider.getColor(key);
+    private int getColor(int key) {
+        if (resourcesProvider != null && resourcesProvider.contains(key)) {
+            return resourcesProvider.getColor(key);
         } else {
-            color = Theme.getColor(key);
+            return Theme.getColor(key);
         }
-        return color != null ? color : Theme.getColor(key);
     }
 
     @Override

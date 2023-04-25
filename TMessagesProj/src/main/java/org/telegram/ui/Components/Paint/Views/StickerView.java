@@ -39,7 +39,7 @@ public class StickerView extends EntityView {
     private Size baseSize;
 
     private FrameLayoutDrawer containerView;
-    private ImageReceiver centerImage = new ImageReceiver();
+    public final ImageReceiver centerImage = new ImageReceiver();
 
     public StickerView(Context context, Point position, Size baseSize, TLRPC.Document sticker, Object parentObject) {
         this(context, position, 0.0f, 1.0f, baseSize, sticker, parentObject);

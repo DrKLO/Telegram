@@ -27,7 +27,7 @@ public class ManageChatTextCell extends FrameLayout {
     private SimpleTextView valueTextView;
     private ImageView imageView;
     private boolean divider;
-    private String dividerColor;
+    private int dividerColor = 0;
 
     public ManageChatTextCell(Context context) {
         super(context);
@@ -58,7 +58,7 @@ public class ManageChatTextCell extends FrameLayout {
         return valueTextView;
     }
 
-    public void setDividerColor(String key) {
+    public void setDividerColor(int key) {
         dividerColor = key;
     }
 
@@ -96,11 +96,11 @@ public class ManageChatTextCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setColors(String icon, String text) {
+    public void setColors(int iconColorKey, int text) {
         textView.setTextColor(Theme.getColor(text));
         textView.setTag(text);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon), PorterDuff.Mode.MULTIPLY));
-        imageView.setTag(icon);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(iconColorKey), PorterDuff.Mode.MULTIPLY));
+        imageView.setTag(iconColorKey);
     }
 
     public void setText(String text, String value, int resId, boolean needDivider) {
@@ -124,10 +124,10 @@ public class ManageChatTextCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (divider) {
-            if (dividerColor != null) {
+            if (dividerColor != 0) {
                 Theme.dividerExtraPaint.setColor(Theme.getColor(dividerColor));
             }
-            canvas.drawLine(AndroidUtilities.dp(71), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerColor != null ? Theme.dividerExtraPaint : Theme.dividerPaint);
+            canvas.drawLine(AndroidUtilities.dp(71), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerColor != 0 ? Theme.dividerExtraPaint : Theme.dividerPaint);
         }
     }
 }

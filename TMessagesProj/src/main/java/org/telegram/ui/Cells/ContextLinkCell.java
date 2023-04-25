@@ -36,7 +36,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -144,6 +143,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         this.resourcesProvider = resourcesProvider;
 
         linkImageView = new ImageReceiver(this);
+        linkImageView.setAllowLoadingOnAttachedOnly(true);
         linkImageView.setLayerNum(1);
         linkImageView.setUseSharedAnimationQueue(true);
         letterDrawable = new LetterDrawable(resourcesProvider, LetterDrawable.STYLE_DEFAULT);
@@ -157,7 +157,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
             checkBox = new CheckBox2(context, 21, resourcesProvider);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
+            checkBox.setColor(-1, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(1);
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 1, 1, 0));
@@ -856,7 +856,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
     private int getIconForCurrentState() {
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
-            radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
+            radialProgress.setColorKeys(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
             if (buttonState == 1) {
                 return MediaActionDrawable.ICON_PAUSE;
             } else if (buttonState == 2) {
@@ -866,7 +866,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             }
             return MediaActionDrawable.ICON_PLAY;
         }
-        radialProgress.setColors(Theme.key_chat_mediaLoaderPhoto, Theme.key_chat_mediaLoaderPhotoSelected, Theme.key_chat_mediaLoaderPhotoIcon, Theme.key_chat_mediaLoaderPhotoIconSelected);
+        radialProgress.setColorKeys(Theme.key_chat_mediaLoaderPhoto, Theme.key_chat_mediaLoaderPhotoSelected, Theme.key_chat_mediaLoaderPhotoIcon, Theme.key_chat_mediaLoaderPhotoIconSelected);
         return buttonState == 1 ? MediaActionDrawable.ICON_EMPTY : MediaActionDrawable.ICON_NONE;
     }
 

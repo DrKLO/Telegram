@@ -31,6 +31,7 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Pair;
 import android.util.SparseArray;
 
 import androidx.annotation.RequiresApi;
@@ -1091,6 +1092,7 @@ public class ImageLoader {
                 boolean mediaIsVideo = false;
                 Bitmap image = null;
                 boolean needInvert = false;
+                int invert = 0;
                 int orientation = 0;
                 File cacheFileFinal = cacheImage.finalFilePath;
                 boolean inEncryptedFile = cacheImage.secureDocument != null || cacheImage.encryptionKeyPath != null && cacheFileFinal != null && cacheFileFinal.getAbsolutePath().endsWith(".enc");
@@ -1452,23 +1454,9 @@ public class ImageLoader {
                                         is = new FileInputStream(cacheFileFinal);
                                     }
                                     if (cacheImage.imageLocation.document instanceof TLRPC.TL_document) {
-                                        try {
-                                            ExifInterface exif = new ExifInterface(is);
-                                            int attribute = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                                            switch (attribute) {
-                                                case ExifInterface.ORIENTATION_ROTATE_90:
-                                                    orientation = 90;
-                                                    break;
-                                                case ExifInterface.ORIENTATION_ROTATE_180:
-                                                    orientation = 180;
-                                                    break;
-                                                case ExifInterface.ORIENTATION_ROTATE_270:
-                                                    orientation = 270;
-                                                    break;
-                                            }
-                                        } catch (Throwable ignore) {
-
-                                        }
+                                        Pair<Integer, Integer> orientationValues = AndroidUtilities.getImageOrientation(is);
+                                        orientation = orientationValues.first;
+                                        invert = orientationValues.second;
                                         if (secureDocumentKey != null || cacheImage.encryptionKeyPath != null) {
                                             is.close();
                                             if (secureDocumentKey != null) {
@@ -1590,8 +1578,8 @@ public class ImageLoader {
                 if (image != null && !TextUtils.isEmpty(cacheImage.filter) && cacheImage.filter.contains("wallpaper") && cacheImage.parentObject instanceof TLRPC.WallPaper) {
                     image = applyWallpaperSetting(image, (TLRPC.WallPaper) cacheImage.parentObject);
                 }
-                if (needInvert || orientation != 0) {
-                    onPostExecute(image != null ? new ExtendedBitmapDrawable(image, needInvert, orientation) : null);
+                if (needInvert || orientation != 0 || invert != 0) {
+                    onPostExecute(image != null ? new ExtendedBitmapDrawable(image, orientation, invert) : null);
                 } else {
                     onPostExecute(image != null ? new BitmapDrawable(image) : null);
                 }
@@ -3754,35 +3742,28 @@ public class ImageLoader {
 
         Matrix matrix = null;
         try {
-            int orientation = 0;
-            if (path != null) {
-                ExifInterface exif = new ExifInterface(path);
-                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            } else if (uri != null) {
-                try (InputStream stream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri)) {
-                    ExifInterface exif = new ExifInterface(stream);
-                    orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            Pair<Integer, Integer> orientation = AndroidUtilities.getImageOrientation(path);
+            if (orientation.first == 0 && orientation.second == 0) {
+                InputStream stream = null;
+                try {
+                    stream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
+                    orientation = AndroidUtilities.getImageOrientation(stream);
                 } catch (Throwable ignore) {
 
+                } finally {
+                    if (stream != null) {
+                        stream.close();
+                    }
                 }
             }
-            switch (orientation) {
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    matrix = new Matrix();
-                    matrix.postRotate(90);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    matrix = new Matrix();
-                    matrix.postRotate(180);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    matrix = new Matrix();
-                    matrix.postRotate(270);
-                    break;
+            if (orientation.first != 0 || orientation.second != 0) {
+                matrix = new Matrix();
+                if (orientation.second != 0)
+                    matrix.postScale(orientation.second == 1 ? -1 : 1, orientation.second == 2 ? -1 : 1);
+                if (orientation.first != 0)
+                    matrix.postRotate(orientation.first);
             }
-        } catch (Throwable ignore) {
-
-        }
+        } catch (Throwable ignore) {}
 
         scaleFactor /= bmOptions.inSampleSize;
         if (scaleFactor > 1) {

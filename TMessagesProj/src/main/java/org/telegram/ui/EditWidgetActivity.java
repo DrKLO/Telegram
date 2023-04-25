@@ -986,7 +986,7 @@ public class EditWidgetActivity extends BaseFragment {
                 }
                 case 1: {
                     TextCell cell = (TextCell) holder.itemView;
-                    cell.setColors(null, Theme.key_windowBackgroundWhiteBlueText4);
+                    cell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
                     Drawable drawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
                     Drawable drawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
                     drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));

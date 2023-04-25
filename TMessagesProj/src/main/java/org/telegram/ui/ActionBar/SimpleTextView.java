@@ -235,7 +235,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (forceEllipsizeByGradientLeft != null) {
             ellipsizeLeft = forceEllipsizeByGradientLeft;
         } else {
-            ellipsizeLeft = getAlignment() == Layout.Alignment.ALIGN_NORMAL && LocaleController.isRTL || getAlignment() == Layout.Alignment.ALIGN_OPPOSITE && !LocaleController.isRTL;
+            ellipsizeLeft = false;
+//            ellipsizeLeft = getAlignment() == Layout.Alignment.ALIGN_NORMAL && LocaleController.isRTL || getAlignment() == Layout.Alignment.ALIGN_OPPOSITE && !LocaleController.isRTL;
         }
         if ((fadeEllpsizePaint == null || fadeEllpsizePaintWidth != AndroidUtilities.dp(ellipsizeByGradientWidthDp) || ellipsizeByGradientLeft != ellipsizeLeft) && ellipsizeByGradient) {
             if (fadeEllpsizePaint == null) {
@@ -412,7 +413,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 spoilersPool.addAll(spoilers);
                 spoilers.clear();
                 if (layout != null && layout.getText() instanceof Spannable) {
-                    SpoilerEffect.addSpoilers(this, layout, spoilersPool, spoilers);
+                    SpoilerEffect.addSpoilers(this, layout, -2, -2, spoilersPool, spoilers);
                 }
                 calcOffset(width);
             } catch (Exception ignore) {

@@ -156,7 +156,7 @@ public class DataUsage2Activity extends BaseFragment {
         }
     }
 
-    private static String[] colors = {
+    private static int[] colors = {
         Theme.key_statisticChartLine_blue,
         Theme.key_statisticChartLine_green,
         Theme.key_statisticChartLine_lightblue,

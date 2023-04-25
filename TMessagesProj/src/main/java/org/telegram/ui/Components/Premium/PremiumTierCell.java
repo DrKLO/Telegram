@@ -43,8 +43,8 @@ public class PremiumTierCell extends ViewGroup {
     protected PremiumPreviewFragment.SubscriptionTier tier;
     protected TextView discountView;
 
-    private String colorKey1 = Theme.key_windowBackgroundWhite;
-    private String colorKey2 = Theme.key_windowBackgroundGray;
+    private int colorKey1 = Theme.key_windowBackgroundWhite;
+    private int colorKey2 = Theme.key_windowBackgroundGray;
     private int gradientWidth;
     private LinearGradient gradient;
     private Paint paint = new Paint();

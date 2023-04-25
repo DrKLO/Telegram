@@ -3953,11 +3953,16 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private void updateBottomTabContainerPosition() {
         View parent = (View) getParent();
         if (parent != null) {
-            float y = getY() - parent.getHeight();
+            float y = getY() ;
             if (getLayoutParams().height > 0) {
                 y += getLayoutParams().height;
             } else {
                 y += getMeasuredHeight();
+            }
+            if (!AndroidUtilities.isInMultiwindow && (fragment == null || !fragment.isInBubbleMode())) {
+                y -= parent.getHeight();
+            } else {
+                y -= AndroidUtilities.dp(1);
             }
             if (bottomTabContainer.getTop() - y < 0) {
                 y = 0;
@@ -5833,10 +5838,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+    if (resourcesProvider != null) {
+        return resourcesProvider.getColor(key);
     }
+    return Theme.getColor(key);
+}
 
     private class TrendingAdapter extends RecyclerListView.SelectionAdapter {
 

@@ -35,6 +35,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
@@ -673,12 +674,12 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         });
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
 
-            int animationIndex = -1;
+            AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();;
 
             @Override
             protected void onAllAnimationsDone() {
                 super.onAllAnimationsDone();
-                getNotificationCenter().onAnimationFinish(animationIndex);
+                notificationsLocker.unlock();
             }
 
             @Override
@@ -688,7 +689,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 boolean changesPending = !mPendingChanges.isEmpty();
                 boolean additionsPending = !mPendingAdditions.isEmpty();
                 if (removalsPending || movesPending || additionsPending || changesPending) {
-                    animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, null);
+                    notificationsLocker.lock();
                 }
                 super.runPendingAnimations();
             }

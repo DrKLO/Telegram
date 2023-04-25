@@ -1377,7 +1377,7 @@ public class ChatRightsEditActivity extends BaseFragment {
             if (left <= MAX_RANK_LENGTH - MAX_RANK_LENGTH * 0.7f) {
                 headerCell.setText2(String.format("%d", left));
                 SimpleTextView textView = headerCell.getTextView2();
-                String key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
+                int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
                 textView.setTextColor(Theme.getColor(key));
                 textView.setTag(key);
             } else {
@@ -1553,7 +1553,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     addBotButtonText.setGravity(Gravity.CENTER);
                     addBotButtonText.setText(LocaleController.getString("AddBotButton", R.string.AddBotButton) + " " + (asAdmin ? LocaleController.getString("AddBotButtonAsAdmin", R.string.AddBotButtonAsAdmin) : LocaleController.getString("AddBotButtonAsMember", R.string.AddBotButtonAsMember)));
                     addBotButton.addView(addBotButtonText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-                    addBotButton.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
+                    addBotButton.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
                     addBotButton.setOnClickListener(e -> onDonePressed());
                     addBotButtonContainer.addView(addBotButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 14, 28, 14, 14));
                     addBotButtonContainer.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

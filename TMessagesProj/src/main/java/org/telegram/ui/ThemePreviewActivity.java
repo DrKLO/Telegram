@@ -3301,7 +3301,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         }
     }
 
-    private int getButtonsColor(String key) {
+    private int getButtonsColor(int key) {
         return useDefaultThemeForButtons ? Theme.getDefaultColor(key) : getThemedColor(key);
     }
 
@@ -4862,8 +4862,13 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             if (viewType == 0) {
                 view = new ChatMessageCell(mContext, false, new Theme.ResourcesProvider() {
                     @Override
-                    public Integer getColor(String key) {
+                    public int getColor(int key) {
                         return getThemedColor(key);
+                    }
+
+                    @Override
+                    public boolean contains(int key) {
+                        return true;
                     }
 
                     @Override

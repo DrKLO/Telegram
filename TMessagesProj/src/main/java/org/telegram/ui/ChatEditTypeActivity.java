@@ -468,7 +468,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 inviteLinkBottomSheet.show();
             }
         });
-        permanentLinkView.setUsers(0, null);
+        permanentLinkView.setUsers(0, null, false);
         privateContainer.addView(permanentLinkView);
 
         checkTextView = new TextInfoPrivacyCell(context) {
@@ -1405,7 +1405,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         if (name != null) {
             if (name.startsWith("_") || name.endsWith("_")) {
                 checkTextView.setText(LocaleController.getString("LinkInvalid", R.string.LinkInvalid));
-                checkTextView.setTextColor(Theme.key_text_RedRegular);
+                checkTextView.setTextColorByKey(Theme.key_text_RedRegular);
                 return false;
             }
             for (int a = 0; a < name.length(); a++) {
@@ -1416,12 +1416,12 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                     } else {
                         checkTextView.setText(LocaleController.getString("LinkInvalidStartNumberMega", R.string.LinkInvalidStartNumberMega));
                     }
-                    checkTextView.setTextColor(Theme.key_text_RedRegular);
+                    checkTextView.setTextColorByKey(Theme.key_text_RedRegular);
                     return false;
                 }
                 if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
                     checkTextView.setText(LocaleController.getString("LinkInvalid", R.string.LinkInvalid));
-                    checkTextView.setTextColor(Theme.key_text_RedRegular);
+                    checkTextView.setTextColorByKey(Theme.key_text_RedRegular);
                     return false;
                 }
             }
@@ -1432,17 +1432,17 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             } else {
                 checkTextView.setText(LocaleController.getString("LinkInvalidShortMega", R.string.LinkInvalidShortMega));
             }
-            checkTextView.setTextColor(Theme.key_text_RedRegular);
+            checkTextView.setTextColorByKey(Theme.key_text_RedRegular);
             return false;
         }
         if (name.length() > 32) {
             checkTextView.setText(LocaleController.getString("LinkInvalidLong", R.string.LinkInvalidLong));
-            checkTextView.setTextColor(Theme.key_text_RedRegular);
+            checkTextView.setTextColorByKey(Theme.key_text_RedRegular);
             return false;
         }
 
         checkTextView.setText(LocaleController.getString("LinkChecking", R.string.LinkChecking));
-        checkTextView.setTextColor(Theme.key_windowBackgroundWhiteGrayText8);
+        checkTextView.setTextColorByKey(Theme.key_windowBackgroundWhiteGrayText8);
         lastCheckName = name;
         checkRunnable = () -> {
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
@@ -1453,7 +1453,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 if (lastCheckName != null && lastCheckName.equals(name)) {
                     if (error == null && response instanceof TLRPC.TL_boolTrue) {
                         checkTextView.setText(LocaleController.formatString("LinkAvailable", R.string.LinkAvailable, name));
-                        checkTextView.setTextColor(Theme.key_windowBackgroundWhiteGreenText);
+                        checkTextView.setTextColorByKey(Theme.key_windowBackgroundWhiteGreenText);
                         lastNameAvailable = true;
                     } else {
                         if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() == 4) {
@@ -1471,7 +1471,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                             showPremiumIncreaseLimitDialog();
                         } else {
                             checkTextView.setText(LocaleController.getString("LinkInUse", R.string.LinkInUse));
-                            checkTextView.setTextColor(Theme.key_text_RedRegular);
+                            checkTextView.setTextColorByKey(Theme.key_text_RedRegular);
                         }
                         lastNameAvailable = false;
                     }

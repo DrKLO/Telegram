@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.net.Uri;
+
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
@@ -98,7 +99,11 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                 while (availableLength == 0 && opened) {
                     availableLength = (int) loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
                     if (availableLength == 0) {
-                        FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, FileLoader.PRIORITY_HIGH);
+                        FileLoadOperation loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, null, parentObject, currentOffset, false, FileLoader.PRIORITY_HIGH);
+                        if (this.loadOperation != loadOperation) {
+                            this.loadOperation.removeStreamListener(this);
+                            this.loadOperation = loadOperation;
+                        }
                         countDownLatch = new CountDownLatch(1);
                         countDownLatch.await();
                     }

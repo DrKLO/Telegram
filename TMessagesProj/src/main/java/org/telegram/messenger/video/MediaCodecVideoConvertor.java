@@ -426,6 +426,22 @@ public class MediaCodecVideoConvertor {
                             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
 
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                // support HDR
+                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_TRANSFER)) {
+                                    outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER, videoFormat.getInteger(MediaFormat.KEY_COLOR_TRANSFER));
+                                }
+                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_STANDARD)) {
+                                    outputFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD, videoFormat.getInteger(MediaFormat.KEY_COLOR_STANDARD));
+                                }
+                                if (videoFormat.containsKey(MediaFormat.KEY_COLOR_RANGE)) {
+                                    outputFormat.setInteger(MediaFormat.KEY_COLOR_RANGE, videoFormat.getInteger(MediaFormat.KEY_COLOR_RANGE));
+                                }
+                                if (videoFormat.containsKey(MediaFormat.KEY_HDR_STATIC_INFO)) {
+                                    outputFormat.setByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO, videoFormat.getByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO));
+                                }
+                            }
+
                             if (Build.VERSION.SDK_INT < 23 && Math.min(h, w) <= 480 && !isAvatar) {
                                 if (bitrate > 921600) {
                                     bitrate = 921600;

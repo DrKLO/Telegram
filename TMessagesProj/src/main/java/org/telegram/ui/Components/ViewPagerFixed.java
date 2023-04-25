@@ -875,12 +875,12 @@ public class ViewPagerFixed extends FrameLayout {
                     canvas.translate(AndroidUtilities.dp(0.66f) * p, 0);
                     canvas.rotate(p, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
                 }
-                String key;
-                String animateToKey;
-                String otherKey;
-                String animateToOtherKey;
-                String unreadKey;
-                String unreadOtherKey;
+                int key;
+                int animateToKey;
+                int otherKey;
+                int animateToOtherKey;
+                int unreadKey;
+                int unreadOtherKey;
                 int id1;
                 int id2;
                 if (manualScrollingToId != -1) {
@@ -1037,11 +1037,11 @@ public class ViewPagerFixed extends FrameLayout {
         private int scrollingToChild = -1;
         private GradientDrawable selectorDrawable;
 
-        private String tabLineColorKey = Theme.key_profile_tabSelectedLine;
-        private String activeTextColorKey = Theme.key_profile_tabSelectedText;
-        private String unactiveTextColorKey = Theme.key_profile_tabText;
-        private String selectorColorKey = Theme.key_profile_tabSelector;
-        private String backgroundColorKey = Theme.key_actionBarDefault;
+        private int tabLineColorKey = Theme.key_profile_tabSelectedLine;
+        private int activeTextColorKey = Theme.key_profile_tabSelectedText;
+        private int unactiveTextColorKey = Theme.key_profile_tabText;
+        private int selectorColorKey = Theme.key_profile_tabSelector;
+        private int backgroundColorKey = Theme.key_actionBarDefault;
 
         private int prevLayoutWidth;
 

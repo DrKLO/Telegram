@@ -166,7 +166,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             if (isShowLastItemDivider) {
                 loadingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, fragment.getResourceProvider()));
             }
-            loadingView.setColors(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundGray, null);
+            loadingView.setColors(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundGray, -1);
             loadingView.setViewType(FlickerLoadingView.MEMBER_REQUESTS_TYPE);
         }
         return loadingView;

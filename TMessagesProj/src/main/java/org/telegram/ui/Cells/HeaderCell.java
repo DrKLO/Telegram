@@ -53,15 +53,15 @@ public class HeaderCell extends FrameLayout {
         this(context, Theme.key_windowBackgroundWhiteBlueHeader, padding, 15, false, resourcesProvider);
     }
 
-    public HeaderCell(Context context, String textColorKey, int padding, int topMargin, boolean text2) {
+    public HeaderCell(Context context, int textColorKey, int padding, int topMargin, boolean text2) {
         this(context, textColorKey, padding, topMargin, text2, null);
     }
 
-    public HeaderCell(Context context, String textColorKey, int padding, int topMargin, boolean text2, Theme.ResourcesProvider resourcesProvider) {
+    public HeaderCell(Context context, int textColorKey, int padding, int topMargin, boolean text2, Theme.ResourcesProvider resourcesProvider) {
         this(context, textColorKey, padding, topMargin, 0, text2, resourcesProvider);
     }
 
-    public HeaderCell(Context context, String textColorKey, int padding, int topMargin, int bottomMargin, boolean text2, Theme.ResourcesProvider resourcesProvider) {
+    public HeaderCell(Context context, int textColorKey, int padding, int topMargin, int bottomMargin, boolean text2, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
@@ -156,8 +156,7 @@ public class HeaderCell extends FrameLayout {
         info.setEnabled(true);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

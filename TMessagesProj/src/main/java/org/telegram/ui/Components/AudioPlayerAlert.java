@@ -2303,7 +2303,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             EditTextBoldCursor editText = searchItem.getSearchField();
             editText.setCursorColor(getThemedColor(Theme.key_player_actionBarTitle));
 
-            repeatButton.setIconColor(getThemedColor((String) repeatButton.getTag()));
+            repeatButton.setIconColor(getThemedColor((Integer) repeatButton.getTag()));
             Theme.setSelectorDrawableColor(repeatButton.getBackground(), getThemedColor(Theme.key_listSelector), true);
 
             optionsButton.setIconColor(getThemedColor(Theme.key_player_button));

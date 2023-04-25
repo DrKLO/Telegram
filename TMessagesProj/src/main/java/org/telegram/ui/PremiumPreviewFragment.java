@@ -250,7 +250,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     }
 
     {
-        tiersGradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, null, null);
+        tiersGradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1);
         tiersGradientTools.exactly = true;
         tiersGradientTools.x1 = 0;
         tiersGradientTools.y1 = 0f;

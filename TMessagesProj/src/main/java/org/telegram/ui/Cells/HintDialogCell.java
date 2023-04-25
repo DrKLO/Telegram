@@ -139,7 +139,7 @@ public class HintDialogCell extends FrameLayout {
         }
     }
 
-    public void setColors(String textColorKey, String backgroundColorKey) {
+    public void setColors(int textColorKey, int backgroundColorKey) {
         nameTextView.setTextColor(Theme.getColor(textColorKey));
         this.backgroundColorKey = backgroundColorKey;
         checkBox.setColor(Theme.key_dialogRoundCheckBox, backgroundColorKey, Theme.key_dialogRoundCheckBoxCheck);
@@ -180,7 +180,7 @@ public class HintDialogCell extends FrameLayout {
         }
     }
 
-    private String backgroundColorKey = Theme.key_windowBackgroundWhite;
+    private int backgroundColorKey = Theme.key_windowBackgroundWhite;
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {

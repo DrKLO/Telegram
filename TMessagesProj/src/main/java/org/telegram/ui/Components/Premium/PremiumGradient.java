@@ -153,21 +153,21 @@ public class PremiumGradient {
         Matrix matrix = new Matrix();
         public final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        final String colorKey1, colorKey2, colorKey3, colorKey4, colorKey5;
+        final int colorKey1, colorKey2, colorKey3, colorKey4, colorKey5;
         final int colors[] = new int[5];
         public boolean exactly;
 
         public float x1 = 0f, y1 = 1f, x2 = 1.5f, y2 = 0f;
 
-        public PremiumGradientTools(String colorKey1, String colorKey2, String colorKey3) {
-            this(colorKey1, colorKey2, colorKey3, null, null);
+        public PremiumGradientTools(int colorKey1, int colorKey2, int colorKey3) {
+            this(colorKey1, colorKey2, colorKey3, -1, -1);
         }
 
-        public PremiumGradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4) {
-            this(colorKey1, colorKey2, colorKey3, colorKey4, null);
+        public PremiumGradientTools(int colorKey1, int colorKey2, int colorKey3, int colorKey4) {
+            this(colorKey1, colorKey2, colorKey3, colorKey4, -1);
         }
 
-        public PremiumGradientTools(String colorKey1, String colorKey2, String colorKey3, String colorKey4, String colorKey5) {
+        public PremiumGradientTools(int colorKey1, int colorKey2, int colorKey3, int colorKey4, int colorKey5) {
             this.colorKey1 = colorKey1;
             this.colorKey2 = colorKey2;
             this.colorKey3 = colorKey3;
@@ -203,9 +203,9 @@ public class PremiumGradient {
         private void chekColors() {
             int c1 = Theme.getColor(colorKey1);
             int c2 = Theme.getColor(colorKey2);
-            int c3 = colorKey3 == null ? 0 : Theme.getColor(colorKey3);
-            int c4 = colorKey4 == null ? 0 : Theme.getColor(colorKey4);
-            int c5 = colorKey5 == null ? 0 : Theme.getColor(colorKey5);
+            int c3 = colorKey3 < 0 ? 0 : Theme.getColor(colorKey3);
+            int c4 = colorKey4 < 0 ? 0 : Theme.getColor(colorKey4);
+            int c5 = colorKey5 < 0 ? 0 : Theme.getColor(colorKey5);
             if (colors[0] != c1 || colors[1] != c2 || colors[2] != c3 || colors[3] != c4 || colors[4] != c5) {
                 colors[0] = c1;
                 colors[1] = c2;

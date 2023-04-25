@@ -1728,9 +1728,8 @@ public class PhotoPaintView extends FrameLayout implements IPhotoPaintView, Enti
         return false;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     private static class StickerPosition {

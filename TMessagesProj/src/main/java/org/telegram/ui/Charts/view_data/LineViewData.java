@@ -60,7 +60,7 @@ public class LineViewData {
     }
 
     public void updateColors() {
-        if (line.colorKey != null && Theme.hasThemeKey(line.colorKey)) {
+        if (line.colorKey >= 0 && Theme.hasThemeKey(line.colorKey)) {
             lineColor = Theme.getColor(line.colorKey);
         } else {
             int color = Theme.getColor(Theme.key_windowBackgroundWhite);

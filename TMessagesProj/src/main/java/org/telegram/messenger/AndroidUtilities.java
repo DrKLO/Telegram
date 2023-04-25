@@ -72,6 +72,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
+import android.util.Pair;
 import android.util.StateSet;
 import android.util.TypedValue;
 import android.view.Display;
@@ -111,11 +112,13 @@ import androidx.core.math.MathUtils;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
+import com.google.android.exoplayer2.util.Consumer;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
@@ -445,10 +448,10 @@ public class AndroidUtilities {
     }
 
     public static CharSequence replaceSingleTag(String str, Runnable runnable) {
-        return replaceSingleTag(str, null, 0, runnable);
+        return replaceSingleTag(str, -1, 0, runnable);
     }
 
-    public static CharSequence replaceSingleTag(String str, String colorKey, int type, Runnable runnable) {
+    public static CharSequence replaceSingleTag(String str, int colorKey, int type, Runnable runnable) {
         int startIndex = str.indexOf("**");
         int endIndex = str.indexOf("**", startIndex + 1);
         str = str.replace("**", "");
@@ -467,7 +470,7 @@ public class AndroidUtilities {
                     public void updateDrawState(@NonNull TextPaint ds) {
                         super.updateDrawState(ds);
                         ds.setUnderlineText(false);
-                        if (colorKey != null) {
+                        if (colorKey >= 0) {
                             ds.setColor(Theme.getColor(colorKey));
                         }
                     }
@@ -611,6 +614,59 @@ public class AndroidUtilities {
         }
         ApplicationLoader.appCenterLog(new RuntimeException("can't create logs directory"));
         return null;
+    }
+
+    public static String formatVideoDurationFast(int minutes, int seconds) {
+        StringBuilder stringBuilder = new StringBuilder();
+        if (minutes >= 60) {
+            normalizeTimePart(stringBuilder, minutes / 60);
+            stringBuilder.append(":");
+            normalizeTimePart(stringBuilder, minutes % 60);
+            stringBuilder.append(":");
+            normalizeTimePart(stringBuilder,seconds);
+        } else {
+            normalizeTimePart(stringBuilder, minutes);
+            stringBuilder.append(":");
+            normalizeTimePart(stringBuilder, seconds);
+        }
+        return stringBuilder.toString();
+    }
+
+    public static String formatTimerDurationFast(long seconds, int ms) {
+        StringBuilder stringBuilder = new StringBuilder();
+        long minutes = seconds / 60;
+        if (minutes >= 60) {
+            stringBuilder.append(minutes / 60).append(":");
+            normalizeTimePart(stringBuilder, minutes % 60);
+            stringBuilder.append(":");
+            normalizeTimePart(stringBuilder, seconds % 60);
+            stringBuilder.append("," ).append(ms / 10);
+        } else {
+            stringBuilder.append(minutes).append(":");
+            normalizeTimePart(stringBuilder, seconds % 60);
+            stringBuilder.append(",").append(ms / 10);
+        }
+        return stringBuilder.toString();
+    }
+
+    public static void normalizeTimePart(StringBuilder stringBuilder, int time) {
+        if (time < 10) {
+            stringBuilder
+                    .append("0")
+                    .append(time);
+        } else {
+            stringBuilder.append(time);
+        }
+    }
+
+    public static void normalizeTimePart(StringBuilder stringBuilder, long time) {
+        if (time < 10) {
+            stringBuilder
+                    .append("0")
+                    .append(time);
+        } else {
+            stringBuilder.append(time);
+        }
     }
 
     private static class LinkSpec {
@@ -3585,7 +3641,7 @@ public class AndroidUtilities {
         return rights == null || Math.abs(rights.until_date - System.currentTimeMillis() / 1000) > 5 * 365 * 24 * 60 * 60;
     }
 
-    public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, boolean translate) {
+    public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, int invert, boolean translate) {
         float tx, sx;
         float ty, sy;
         boolean xLarger = false;
@@ -3607,12 +3663,27 @@ public class AndroidUtilities {
         }
         if (rotation == 90) {
             matrix.preRotate(90);
+            if (invert == 1) {
+                matrix.preScale(-1, 1);
+            } else if (invert == 2) {
+                matrix.preScale(1, -1);
+            }
             matrix.preTranslate(0, -dst.width());
         } else if (rotation == 180) {
             matrix.preRotate(180);
+            if (invert == 1) {
+                matrix.preScale(-1, 1);
+            } else if (invert == 2) {
+                matrix.preScale(1, -1);
+            }
             matrix.preTranslate(-dst.width(), -dst.height());
         } else if (rotation == 270) {
             matrix.preRotate(270);
+            if (invert == 1) {
+                matrix.preScale(-1, 1);
+            } else if (invert == 2) {
+                matrix.preScale(1, -1);
+            }
             matrix.preTranslate(-dst.height(), 0);
         }
 
@@ -4757,7 +4828,7 @@ public class AndroidUtilities {
         }
         File file = new File(cachePath, fileName);
         try (FileOutputStream out = new FileOutputStream(file)) {
-            bitmap.compress(format, 100, out);
+            bitmap.compress(format, 87, out);
             out.close();
             return FileProvider.getUriForFile(ApplicationLoader.applicationContext, ApplicationLoader.getApplicationId() + ".provider", file);
         } catch (Exception e) {
@@ -5085,6 +5156,82 @@ public class AndroidUtilities {
             return !activity.isDestroyed() && !activity.isFinishing();
         } else {
             return !activity.isFinishing();
+        }
+    }
+
+    public static Pair<Integer, Integer> getImageOrientation(InputStream is) {
+        try {
+            return getImageOrientation(new ExifInterface(is));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new Pair<>(0, 0);
+    }
+    public static Pair<Integer, Integer> getImageOrientation(File file) {
+        try {
+            return getImageOrientation(new ExifInterface(file));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new Pair<>(0, 0);
+    }
+    public static Pair<Integer, Integer> getImageOrientation(String path) {
+        try {
+            return getImageOrientation(new ExifInterface(path));
+        } catch (Exception ignore) {}
+        return new Pair<>(0, 0);
+    }
+
+    public static Pair<Integer, Integer> getImageOrientation(ExifInterface exif) {
+        try {
+            int orientation = 0, invert = 0;
+            final int exifvalue = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            switch (exifvalue) {
+                case ExifInterface.ORIENTATION_NORMAL:
+                    break;
+                case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                    invert = 1;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    orientation = 180;
+                    break;
+                case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                    invert = 2;
+                    break;
+                case ExifInterface.ORIENTATION_TRANSPOSE:
+                    invert = 2;
+                    orientation = 270;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    orientation = 90;
+                    break;
+                case ExifInterface.ORIENTATION_TRANSVERSE:
+                    invert = 1;
+                    orientation = 270;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    orientation = 270;
+                    break;
+            }
+            return new Pair<>(orientation, invert);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new Pair<>(0, 0);
+    }
+
+    public static void forEachViews(RecyclerView recyclerView, Consumer<View> consumer) {
+        for (int i = 0; i < recyclerView.getChildCount(); i++) {
+            consumer.accept(recyclerView.getChildAt(i));
+        }
+        for (int i = 0; i < recyclerView.getCachedChildCount(); i++) {
+            consumer.accept(recyclerView.getCachedChildAt(i));
+        }
+        for (int i = 0; i < recyclerView.getHiddenChildCount(); i++) {
+            consumer.accept(recyclerView.getHiddenChildAt(i));
+        }
+        for (int i = 0; i < recyclerView.getAttachedScrapChildCount(); i++) {
+            consumer.accept(recyclerView.getAttachedScrapChildAt(i));
         }
     }
 }

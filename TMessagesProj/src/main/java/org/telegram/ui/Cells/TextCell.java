@@ -255,10 +255,10 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setColors(String icon, String text) {
+    public void setColors(int icon, int text) {
         textView.setTextColor(Theme.getColor(text, resourcesProvider));
         textView.setTag(text);
-        if (icon != null) {
+        if (icon >= 0) {
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             imageView.setTag(icon);
         }

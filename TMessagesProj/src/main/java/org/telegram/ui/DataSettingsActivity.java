@@ -92,7 +92,7 @@ public class DataSettingsActivity extends BaseFragment {
     private int autoplaySectionRow = -1;
     private int callsSectionRow;
     private int useLessDataForCallsRow;
-    private int quickRepliesRow;
+    private int quickRepliesRow = -1;
     private int callsSection2Row;
     private int proxySectionRow;
     private int proxyRow;
@@ -186,7 +186,7 @@ public class DataSettingsActivity extends BaseFragment {
         enableCacheStreamRow = -1;//rowCount++;
         callsSectionRow = rowCount++;
         useLessDataForCallsRow = rowCount++;
-        quickRepliesRow = rowCount++;
+//        quickRepliesRow = rowCount++;
         callsSection2Row = rowCount++;
         proxySectionRow = rowCount++;
         proxyRow = rowCount++;

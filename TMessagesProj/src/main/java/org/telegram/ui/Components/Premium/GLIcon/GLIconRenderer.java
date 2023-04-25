@@ -41,8 +41,8 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     int color1;
     int color2;
 
-    public String colorKey1 = Theme.key_premiumStartGradient1;
-    public String colorKey2 = Theme.key_premiumStartGradient2;
+    public int colorKey1 = Theme.key_premiumStartGradient1;
+    public int colorKey2 = Theme.key_premiumStartGradient2;
 
     private final int style;
     public final static int FRAGMENT_STYLE = 0;

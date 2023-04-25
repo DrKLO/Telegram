@@ -384,7 +384,7 @@ public class PhotoViewerWebView extends FrameLayout {
         errorButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         errorButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
         errorButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
-        errorButton.setBackground(Theme.AdaptiveRipple.rect(Theme.key_windowBackgroundWhiteBlueText, 12));
+        errorButton.setBackground(Theme.AdaptiveRipple.rectByKey(Theme.key_windowBackgroundWhiteBlueText, 12));
         errorButton.setVisibility(GONE);
         errorLayout.addView(errorButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
 

@@ -338,7 +338,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             if (photoEntry.isVideo) {
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
             } else {
-                imageView.setOrientation(photoEntry.orientation, true);
+                imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
                 imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
             }
         } else {
@@ -568,8 +568,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return super.performAccessibilityAction(action, arguments);
     }
 
-    protected int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    protected int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

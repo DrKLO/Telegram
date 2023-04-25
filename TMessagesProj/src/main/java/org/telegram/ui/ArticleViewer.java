@@ -104,6 +104,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DownloadController;
@@ -299,7 +300,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     PinchToZoomHelper pinchToZoomHelper;
 
-    private int allowAnimationIndex = -1;
+    private final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker(new int[]{
+            NotificationCenter.dialogsNeedReload,
+            NotificationCenter.closeChats
+    });
 
     private final String BOTTOM_SHEET_VIEW_TAG = "bottomSheet";
 
@@ -385,8 +389,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     }
 
     public class DrawingText implements TextSelectionHelper.TextLayoutBlock {
-        public View latestParentView;
+        private View latestParentView;
 
+        private boolean isDrawing;
         public StaticLayout textLayout;
         public LinkPath textPath;
         public LinkPath markPath;
@@ -400,6 +405,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public CharSequence prefix;
 
         public void draw(Canvas canvas, View view) {
+            isDrawing = true;
             latestParentView = view;
 
             if (!searchResults.isEmpty()) {
@@ -446,6 +452,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 canvas.drawRect(-AndroidUtilities.dp(2) + x, 0, x + width + AndroidUtilities.dp(2), getHeight(), urlPaint);
             }
             textLayout.draw(canvas);
+            isDrawing = false;
+        }
+
+        public void invalidateParent() {
+            if (!isDrawing && latestParentView != null) {
+                latestParentView.invalidate();
+            }
         }
 
         public CharSequence getText() {
@@ -4279,7 +4292,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             @Override
             public void onAnimationEnd(Animator animation) {
                 AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(allowAnimationIndex);
+                    notificationsLocker.unlock();
                     if (animationEndRunnable != null) {
                         animationEndRunnable.run();
                         animationEndRunnable = null;
@@ -4289,7 +4302,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         });
         transitionAnimationStartTime = System.currentTimeMillis();
         AndroidUtilities.runOnUIThread(() -> {
-            allowAnimationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(allowAnimationIndex, new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
+            notificationsLocker.lock();
             animatorSet.start();
         });
         if (Build.VERSION.SDK_INT >= 18) {
@@ -6560,7 +6573,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (currentBlock == null) {
                 return;
             }
-            radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
+            radialProgress.setColorKeys(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
             radialProgress.setProgressColor(Theme.getColor(Theme.key_chat_inFileProgress));
             radialProgress.draw(canvas);
             canvas.save();
@@ -10685,7 +10698,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (textLayout != null) {
                     height += AndroidUtilities.dp(8 + 8) + textLayout.getHeight();
                     if (parentAdapter.isRtl) {
-                        textX = (int) Math.floor(width - textLayout.getLineWidth(0) - AndroidUtilities.dp(16));
+                        textX = (int) Math.floor(width - textLayout.getLineLeft(0) - textLayout.getLineWidth(0) - AndroidUtilities.dp(16));
                     } else {
                         textX = AndroidUtilities.dp(18);
                     }

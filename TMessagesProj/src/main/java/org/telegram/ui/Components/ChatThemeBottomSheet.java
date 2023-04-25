@@ -4,6 +4,8 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
@@ -58,6 +60,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
@@ -127,7 +130,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         setCanDismissWithSwipe(false);
         setApplyBottomPadding(false);
         if (Build.VERSION.SDK_INT >= 30) {
-            navBarColorKey = null;
+            navBarColorKey = -1;
             navBarColor = getThemedColor(Theme.key_dialogBackgroundGray);
             AndroidUtilities.setNavigationBarColor(getWindow(), getThemedColor(Theme.key_dialogBackgroundGray), false);
             AndroidUtilities.setLightNavigationBar(getWindow(), AndroidUtilities.computePerceivedBrightness(navBarColor) > 0.721);
@@ -304,7 +307,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 if (currentWallpaper != null) {
                     currentWallpaper = null;
                     dismiss();
-                    ChatThemeController.getInstance(currentAccount).clearWallpaper(chatActivity.getDialogId());
+                    ChatThemeController.getInstance(currentAccount).clearWallpaper(chatActivity.getDialogId(), true);
                 } else {
                     dismiss();
                 }
@@ -351,10 +354,11 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         }
         isLightDarkChangeAnimation = false;
         chatActivity.forceDisallowApplyWallpeper = false;
+        TLRPC.WallPaper wallpaper = hasChanges() ? null : currentWallpaper;
         if (selectedItem.chatTheme.showAsDefaultStub) {
-            themeDelegate.setCurrentTheme(null, themeDelegate.getCurrentWallpaper(), true, forceDark);
+            themeDelegate.setCurrentTheme(null, wallpaper, true, forceDark);
         } else {
-            themeDelegate.setCurrentTheme(selectedItem.chatTheme, themeDelegate.getCurrentWallpaper(), true, forceDark);
+            themeDelegate.setCurrentTheme(selectedItem.chatTheme, wallpaper, true, forceDark);
         }
     }
 
@@ -465,7 +469,30 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         super.dismiss();
         chatActivity.forceDisallowApplyWallpeper = false;
         if (!isApplyClicked) {
-            themeDelegate.setCurrentTheme(originalTheme, themeDelegate.getCurrentWallpaper(), true, originalIsDark);
+            TLRPC.WallPaper wallpaper = themeDelegate.getCurrentWallpaper();
+            if (wallpaper == null) {
+                wallpaper = currentWallpaper;
+            }
+            themeDelegate.setCurrentTheme(originalTheme, wallpaper, true, originalIsDark);
+        }
+        if (forceDark != originalIsDark) {
+            Theme.ThemeInfo activeTheme;
+            if (Theme.getActiveTheme().isDark() == originalIsDark) {
+                activeTheme = Theme.getActiveTheme();
+            } else {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+                String dayThemeName = preferences.getString("lastDayTheme", "Blue");
+                if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
+                    dayThemeName = "Blue";
+                }
+                String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
+                if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
+                    nightThemeName = "Dark Blue";
+                }
+                activeTheme = originalIsDark ? Theme.getTheme(nightThemeName) : Theme.getTheme(dayThemeName);
+            }
+
+            Theme.applyTheme(activeTheme, false, originalIsDark);
         }
     }
 
@@ -642,10 +669,11 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             setForceDark(isDark, true);
             if (selectedItem != null) {
                 isLightDarkChangeAnimation = true;
+                TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
                 if (selectedItem.chatTheme.showAsDefaultStub) {
-                    themeDelegate.setCurrentTheme(null, themeDelegate.getCurrentWallpaper(), false, isDark);
+                    themeDelegate.setCurrentTheme(null, wallpaper, false, isDark);
                 } else {
-                    themeDelegate.setCurrentTheme(selectedItem.chatTheme, themeDelegate.getCurrentWallpaper(), false, isDark);
+                    themeDelegate.setCurrentTheme(selectedItem.chatTheme, wallpaper, false, isDark);
                 }
             }
             if (adapter != null && adapter.items != null) {
@@ -757,6 +785,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 layoutManager.scrollToPositionWithOffset(0, 0);
             }
         }
+        previewSelectedTheme();
     }
 
     private void onAnimationStart() {
@@ -813,11 +842,13 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         if (selectedItem != null && newTheme != currentTheme) {
             EmojiThemes chatTheme = selectedItem.chatTheme;
             String emoticon = !chatTheme.showAsDefaultStub ? chatTheme.getEmoticon() : null;
+            ChatThemeController.getInstance(currentAccount).clearWallpaper(chatActivity.getDialogId(), false);
             ChatThemeController.getInstance(currentAccount).setDialogTheme(chatActivity.getDialogId(), emoticon, true);
+            TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
             if (!chatTheme.showAsDefaultStub) {
-                themeDelegate.setCurrentTheme(chatTheme, themeDelegate.getCurrentWallpaper(), true, originalIsDark);
+                themeDelegate.setCurrentTheme(chatTheme, wallpaper, true, originalIsDark);
             } else {
-                themeDelegate.setCurrentTheme(null, themeDelegate.getCurrentWallpaper(), true, originalIsDark);
+                themeDelegate.setCurrentTheme(null, wallpaper, true, originalIsDark);
             }
             isApplyClicked = true;
 
@@ -995,8 +1026,8 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                                 break;
                             } else {
                                 if ((idx = line.indexOf('=')) != -1) {
-                                    String key = line.substring(0, idx);
-                                    if (key.equals(Theme.key_chat_inBubble) || key.equals(Theme.key_chat_outBubble) || key.equals(Theme.key_chat_wallpaper) || key.equals(Theme.key_chat_wallpaper_gradient_to1) || key.equals(Theme.key_chat_wallpaper_gradient_to2) || key.equals(Theme.key_chat_wallpaper_gradient_to3)) {
+                                    int key = ThemeColors.stringKeyToInt(line.substring(0, idx));
+                                    if (key == Theme.key_chat_inBubble || key == Theme.key_chat_outBubble || key == Theme.key_chat_wallpaper || key == Theme.key_chat_wallpaper_gradient_to1 || key == Theme.key_chat_wallpaper_gradient_to2 || key == Theme.key_chat_wallpaper_gradient_to3) {
                                         String param = line.substring(idx + 1);
                                         int value;
                                         if (param.length() > 0 && param.charAt(0) == '#') {
@@ -1008,25 +1039,18 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                                         } else {
                                             value = Utilities.parseInt(param);
                                         }
-                                        switch (key) {
-                                            case Theme.key_chat_inBubble:
-                                                themeInfo.setPreviewInColor(value);
-                                                break;
-                                            case Theme.key_chat_outBubble:
-                                                themeInfo.setPreviewOutColor(value);
-                                                break;
-                                            case Theme.key_chat_wallpaper:
-                                                themeInfo.setPreviewBackgroundColor(value);
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to1:
-                                                themeInfo.previewBackgroundGradientColor1 = value;
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to2:
-                                                themeInfo.previewBackgroundGradientColor2 = value;
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to3:
-                                                themeInfo.previewBackgroundGradientColor3 = value;
-                                                break;
+                                        if (key == Theme.key_chat_inBubble) {
+                                            themeInfo.setPreviewInColor(value);
+                                        } else if (key == Theme.key_chat_outBubble) {
+                                            themeInfo.setPreviewOutColor(value);
+                                        } else if (key == Theme.key_chat_wallpaper) {
+                                            themeInfo.setPreviewBackgroundColor(value);
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to1) {
+                                            themeInfo.previewBackgroundGradientColor1 = value;
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to2) {
+                                            themeInfo.previewBackgroundGradientColor2 = value;
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to3) {
+                                            themeInfo.previewBackgroundGradientColor3 = value;
                                         }
                                     }
                                 }
@@ -1203,10 +1227,11 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             return;
         }
         Theme.disallowChangeServiceMessageColor = false;
+        TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
         if (selectedItem.chatTheme.showAsDefaultStub) {
-            themeDelegate.setCurrentTheme(null, themeDelegate.getCurrentWallpaper(), false, forceDark, true);
+            themeDelegate.setCurrentTheme(null, wallpaper, false, forceDark, true);
         } else {
-            themeDelegate.setCurrentTheme(selectedItem.chatTheme, themeDelegate.getCurrentWallpaper(), false, forceDark, true);
+            themeDelegate.setCurrentTheme(selectedItem.chatTheme, wallpaper, false, forceDark, true);
         }
         if (chatAttachAlert != null) {
             if (chatAttachAlert.colorsLayout != null) {
@@ -1241,10 +1266,11 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 if (selectedItem != null) {
                     isLightDarkChangeAnimation = true;
                     chatActivity.forceDisallowRedrawThemeDescriptions = true;
+                    TLRPC.WallPaper wallpaper = hasChanges() ? null : themeDelegate.getCurrentWallpaper();
                     if (selectedItem.chatTheme.showAsDefaultStub) {
-                        themeDelegate.setCurrentTheme(null, themeDelegate.getCurrentWallpaper(), true, forceDark);
+                        themeDelegate.setCurrentTheme(null, wallpaper, true, forceDark);
                     } else {
-                        themeDelegate.setCurrentTheme(selectedItem.chatTheme, themeDelegate.getCurrentWallpaper(), true, forceDark);
+                        themeDelegate.setCurrentTheme(selectedItem.chatTheme, wallpaper, true, forceDark);
                     }
                     chatActivity.forceDisallowRedrawThemeDescriptions = false;
                 }

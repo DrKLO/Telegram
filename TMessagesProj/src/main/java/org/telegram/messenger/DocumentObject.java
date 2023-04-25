@@ -45,7 +45,7 @@ public class DocumentObject {
         }
     }
 
-    public static SvgHelper.SvgDrawable getSvgThumb(ArrayList<TLRPC.PhotoSize> sizes, String colorKey, float alpha) {
+    public static SvgHelper.SvgDrawable getSvgThumb(ArrayList<TLRPC.PhotoSize> sizes, int colorKey, float alpha) {
         int w = 0;
         int h = 0;
         TLRPC.TL_photoPathSize photoPathSize = null;
@@ -68,11 +68,11 @@ public class DocumentObject {
         return null;
     }
 
-    public static SvgHelper.SvgDrawable getCircleThumb(float radius, String colorKey, float alpha) {
+    public static SvgHelper.SvgDrawable getCircleThumb(float radius, int colorKey, float alpha) {
         return getCircleThumb(radius, colorKey, null, alpha);
     }
 
-    public static SvgHelper.SvgDrawable getCircleThumb(float radius, String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha) {
+    public static SvgHelper.SvgDrawable getCircleThumb(float radius, int colorKey, Theme.ResourcesProvider resourcesProvider, float alpha) {
         try {
             SvgHelper.SvgDrawable drawable = new SvgHelper.SvgDrawable();
             SvgHelper.Circle circle = new SvgHelper.Circle(256, 256, radius * 512);
@@ -88,11 +88,11 @@ public class DocumentObject {
         }
     }
 
-    public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, String colorKey, float alpha) {
+    public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, int colorKey, float alpha) {
         return getSvgThumb(document, colorKey, alpha, 1.0f);
     }
 
-    public static SvgHelper.SvgDrawable getSvgRectThumb(String colorKey, float alpha) {
+    public static SvgHelper.SvgDrawable getSvgRectThumb(int colorKey, float alpha) {
         Path path = new Path();
         path.addRect(0, 0, 512, 512, Path.Direction.CW);
         path.close();
@@ -105,7 +105,7 @@ public class DocumentObject {
         return drawable;
     }
 
-    public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, String colorKey, float alpha, float zoom) {
+    public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, int colorKey, float alpha, float zoom) {
         if (document == null) {
             return null;
         }
@@ -137,7 +137,7 @@ public class DocumentObject {
         return pathThumb;
     }
 
-    public static SvgHelper.SvgDrawable getSvgThumb(int resourceId, String colorKey, float alpha) {
+    public static SvgHelper.SvgDrawable getSvgThumb(int resourceId, int colorKey, float alpha) {
         SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawable(resourceId, 0xffff0000);
         if (pathThumb != null) {
             pathThumb.setupGradient(colorKey, alpha, false);

@@ -235,18 +235,18 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         boolean isSelected = ((StickerSetCell) view).isChecked();
         stickersAlert.setCustomButtonDelegate(new StickersAlert.StickersAlertCustomButtonDelegate() {
             @Override
-            public String getCustomButtonTextColorKey() {
+            public int getCustomButtonTextColorKey() {
                 return isSelected ? Theme.key_text_RedBold : Theme.key_featuredStickers_buttonText;
             }
 
             @Override
-            public String getCustomButtonRippleColorKey() {
-                return !isSelected ? Theme.key_featuredStickers_addButtonPressed : null;
+            public int getCustomButtonRippleColorKey() {
+                return !isSelected ? Theme.key_featuredStickers_addButtonPressed : -1;
             }
 
             @Override
-            public String getCustomButtonColorKey() {
-                return !isSelected ? Theme.key_featuredStickers_addButton : null;
+            public int getCustomButtonColorKey() {
+                return !isSelected ? Theme.key_featuredStickers_addButton : -1;
             }
 
             @Override

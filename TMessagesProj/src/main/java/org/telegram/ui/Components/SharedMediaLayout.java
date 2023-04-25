@@ -58,6 +58,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -2649,7 +2650,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
-    int animationIndex;
+    AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     private void animateToMediaColumnsCount(int newColumnsCount) {
         MediaPage mediaPage = getMediaPage(0);
@@ -2669,7 +2670,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             saveScrollPosition();
             ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
             MediaPage finalMediaPage = mediaPage;
-            animationIndex = NotificationCenter.getInstance(profileActivity.getCurrentAccount()).setAnimationInProgress(animationIndex, null);
+            notificationsLocker.lock();
             animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -2680,7 +2681,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    NotificationCenter.getInstance(profileActivity.getCurrentAccount()).onAnimationFinish(animationIndex);
+                    notificationsLocker.unlock();
                     int oldItemCount = photoVideoAdapter.getItemCount();
                     photoVideoChangeColumnsAnimation = false;
                     sharedMediaData[0].setListFrozen(false);
@@ -6741,10 +6742,12 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+    if (resourcesProvider != null) {
+        return resourcesProvider.getColor(key);
     }
+    return Theme.getColor(key);
+}
 
     public interface Delegate {
         void scrollToSharedMedia();

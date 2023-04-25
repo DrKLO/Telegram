@@ -47,7 +47,6 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 	private int explanationRow;
 
 	private int rowCount;
-
 	private EditTextSettingsCell[] textCells = new EditTextSettingsCell[4];
 
 	@Override

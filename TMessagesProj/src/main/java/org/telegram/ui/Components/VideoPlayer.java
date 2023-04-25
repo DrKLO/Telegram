@@ -26,6 +26,7 @@ import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
@@ -759,5 +760,22 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 audioUpdateHandler.postDelayed(() -> audioVisualizerDelegate.onVisualizerUpdate(true, true, partsAmplitude), 130);
             }
         }
+    }
+
+    public boolean isHDR() {
+        if (player == null) {
+            return false;
+        }
+        try {
+            Format format = player.getVideoFormat();
+            if (format == null || format.colorInfo == null) {
+                return false;
+            }
+            return (
+                format.colorInfo.colorTransfer == C.COLOR_TRANSFER_ST2084 ||
+                format.colorInfo.colorTransfer == C.COLOR_TRANSFER_HLG
+            );
+        } catch (Exception ignore) {}
+        return false;
     }
 }

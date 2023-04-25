@@ -76,6 +76,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
 
         imageView = new ImageReceiver();
         imageView.setAspectFit(true);
+        imageView.setAllowLoadingOnAttachedOnly(true);
         imageView.setLayerNum(1);
 
         emojiTextView = new TextView(context);

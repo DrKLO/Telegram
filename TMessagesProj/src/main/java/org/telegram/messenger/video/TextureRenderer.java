@@ -29,6 +29,7 @@ import android.text.Layout;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.util.Log;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -617,26 +618,12 @@ public class TextureRenderer {
             try {
                 for (int a = 0; a < paintTexture.length; a++) {
                     String path;
-                    int angle = 0;
+                    int angle = 0, invert = 0;
                     if (a == 0 && imagePath != null) {
                         path = imagePath;
-                        try {
-                            ExifInterface exif = new ExifInterface(path);
-                            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                            switch (orientation) {
-                                case ExifInterface.ORIENTATION_ROTATE_90:
-                                    angle = 90;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_180:
-                                    angle = 180;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_270:
-                                    angle = 270;
-                                    break;
-                            }
-                        } catch (Throwable ignore) {
-
-                        }
+                        Pair<Integer, Integer> orientation = AndroidUtilities.getImageOrientation(path);
+                        angle = orientation.first;
+                        invert = orientation.second;
                     } else {
                         path = paintPath;
                     }
@@ -655,7 +642,7 @@ public class TextureRenderer {
 
                             android.graphics.Matrix matrix = new android.graphics.Matrix();
                             matrix.postTranslate(-bitmap.getWidth() / 2, -bitmap.getHeight() / 2);
-                            matrix.postScale(1.0f / scale, 1.0f / scale);
+                            matrix.postScale((invert == 1 ? -1.0f : 1.0f) / scale, (invert == 2 ? -1.0f : 1.0f) / scale);
                             matrix.postRotate(angle);
                             matrix.postTranslate(newBitmap.getWidth() / 2, newBitmap.getHeight() / 2);
                             canvas.drawBitmap(bitmap, matrix, new Paint(Paint.FILTER_BITMAP_FLAG));

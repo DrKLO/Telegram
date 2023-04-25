@@ -196,9 +196,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     private PhotoPickerActivityDelegate delegate;
     private PhotoPickerActivitySearchDelegate searchDelegate;
 
-    private final String dialogBackgroundKey;
-    private final String textKey;
-    private final String selectorKey;
+    private final int dialogBackgroundKey;
+    private final int textKey;
+    private final int selectorKey;
 
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
         @Override
@@ -237,7 +237,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (photoEntry.thumbPath != null) {
                         imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
                     } else if (photoEntry.path != null) {
-                        imageView.setOrientation(photoEntry.orientation, true);
+                        imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
                         if (photoEntry.isVideo) {
                             imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
                         } else {

@@ -1230,7 +1230,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         actionModeClearButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         actionModeClearButton.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
         actionModeClearButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        actionModeClearButton.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 6));
+        actionModeClearButton.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 6));
         actionModeClearButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         actionModeClearButton.setGravity(Gravity.CENTER);
         actionModeClearButton.setText(LocaleController.getString("CacheClear", R.string.CacheClear));
@@ -2047,7 +2047,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     info.setClassName("android.widget.Button");
                 }
             };
-            button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 8));
+            button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
             button.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
 
             if (LocaleController.isRTL) {
@@ -2627,7 +2627,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
 
             if (actionTextView != null) {
-                actionTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
+                actionTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
             }
         };
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
@@ -2867,7 +2867,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
             if (checkBox == null) {
                 checkBox = new CheckBox2(getContext(), 21, resourcesProvider);
-                checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+                checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
                 checkBox.setDrawUnchecked(false);
                 checkBox.setDrawBackgroundAsArc(3);
                 addView(checkBox, LayoutHelper.createFrame(24, 24, 0, 38, 25, 0, 0));
@@ -2992,7 +2992,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         public int index;
         public long size;
-        String colorKey;
+        int colorKey;
         public boolean pad;
         boolean last;
 
@@ -3019,11 +3019,11 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             super(viewType, true);
         }
 
-        public static ItemInner asCheckBox(CharSequence text, int index, long size, String colorKey) {
+        public static ItemInner asCheckBox(CharSequence text, int index, long size, int colorKey) {
             return asCheckBox(text, index, size, colorKey, false);
         }
 
-        public static ItemInner asCheckBox(CharSequence text, int index, long size, String colorKey, boolean last) {
+        public static ItemInner asCheckBox(CharSequence text, int index, long size, int colorKey, boolean last) {
             ItemInner item = new ItemInner(VIEW_TYPE_SECTION);
             item.index = index;
             item.headerName = text;

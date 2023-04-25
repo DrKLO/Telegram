@@ -1136,21 +1136,21 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                     currentDialog = builder.show();
                     if (buttonsList.size() >= 1) {
                         PopupButton btn = buttonsList.get(0);
-                        if (btn.textColorKey != null) {
+                        if (btn.textColorKey >= 0) {
                             TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_POSITIVE);
                             textView.setTextColor(getColor(btn.textColorKey));
                         }
                     }
                     if (buttonsList.size() >= 2) {
                         PopupButton btn = buttonsList.get(1);
-                        if (btn.textColorKey != null) {
+                        if (btn.textColorKey >= 0) {
                             TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
                             textView.setTextColor(getColor(btn.textColorKey));
                         }
                     }
                     if (buttonsList.size() == 3) {
                         PopupButton btn = buttonsList.get(2);
-                        if (btn.textColorKey != null) {
+                        if (btn.textColorKey >= 0) {
                             TextView textView = (TextView) currentDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
                             textView.setTextColor(getColor(btn.textColorKey));
                         }
@@ -1182,7 +1182,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                 try {
                     JSONObject jsonObject = new JSONObject(eventData);
                     String key = jsonObject.getString("color_key");
-                    String themeKey = null;
+                    int themeKey = -1;
                     switch (key) {
                         case "bg_color": {
                             themeKey = Theme.key_windowBackgroundWhite;
@@ -1193,7 +1193,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
                             break;
                         }
                     }
-                    if (themeKey != null) {
+                    if (themeKey >= 0) {
                         delegate.onWebAppSetActionBarColor(themeKey);
                     }
                 } catch (JSONException e) {
@@ -1426,15 +1426,14 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         }
     }
 
-    private int getColor(String colorKey) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(colorKey) : Theme.getColor(colorKey);
-        if (color == null) {
-            color = Theme.getColor(colorKey);
+    private int getColor(int colorKey) {
+        if (resourcesProvider != null && resourcesProvider.contains(colorKey)) {
+            return resourcesProvider.getColor(colorKey);
         }
-        return color;
+        return Theme.getColor(colorKey);
     }
 
-    private String formatColor(String colorKey) {
+    private String formatColor(int colorKey) {
         int color = getColor(colorKey);
         return "#" + hexFixed(Color.red(color)) + hexFixed(Color.green(color)) + hexFixed(Color.blue(color));
     }
@@ -1490,7 +1489,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
          *
          * @param colorKey  Color theme key
          */
-        void onWebAppSetActionBarColor(String colorKey);
+        void onWebAppSetActionBarColor(int colorKey);
 
         /**
          * Called when WebView requests to set background color
@@ -1547,8 +1546,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     public final static class PopupButton {
         public String id;
         public String text;
-        @Nullable
-        public String textColorKey;
+        public int textColorKey = -1;
 
         public PopupButton(JSONObject obj) throws JSONException {
             id = obj.getString("id");

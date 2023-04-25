@@ -530,7 +530,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         return true;
     }
 
-    private void setCheckText(String text, String colorKey) {
+    private void setCheckText(String text, int colorKey) {
         if (TextUtils.isEmpty(text)) {
             checkInfoCell.setVisibility(View.GONE);
             if (creatingNewTheme) {
@@ -542,7 +542,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
             checkInfoCell.setVisibility(View.VISIBLE);
             checkInfoCell.setText(text);
             checkInfoCell.setTag(colorKey);
-            checkInfoCell.setTextColor(colorKey);
+            checkInfoCell.setTextColorByKey(colorKey);
             if (creatingNewTheme) {
                 helpInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(getParentActivity(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
             } else {

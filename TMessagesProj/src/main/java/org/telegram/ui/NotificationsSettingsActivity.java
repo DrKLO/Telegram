@@ -748,7 +748,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     position == eventsSectionRow || position == otherSectionRow || position == resetSectionRow ||
                     position == badgeNumberSection || position == otherSection2Row || position == resetSection2Row ||
                     position == callsSection2Row || position == callsSectionRow || position == badgeNumberSection2Row ||
-                    position == accountsSectionRow || position == accountsInfoRow || position == resetNotificationsSectionRow);
+                    position == accountsSectionRow || position == accountsInfoRow || position == resetNotificationsSectionRow ||
+                    position == eventsSection2Row);
         }
 
         @Override

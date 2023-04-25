@@ -2853,9 +2853,8 @@ public class RecyclerListView extends RecyclerView {
         return multiSelectionGesture;
     }
 
-    protected int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    protected int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     protected Drawable getThemedDrawable(String key) {

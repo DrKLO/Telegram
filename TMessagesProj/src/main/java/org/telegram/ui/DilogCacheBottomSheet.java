@@ -134,7 +134,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
         for (int a = 0; a < 7; a++) {
             long size = 0;
             String name;
-            String color;
+            int color;
 
             if (a == CacheControlActivity.TYPE_PHOTOS) {
                 name = LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache);
@@ -169,7 +169,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
             if (size > 0) {
                 clearViewData[a] = new StorageDiagramView.ClearViewData(circleDiagramView);
                 clearViewData[a].size = size;
-                clearViewData[a].color = color;
+                clearViewData[a].colorKey = color;
                 CheckBoxCell checkBoxCell = new CheckBoxCell(context, 4, 21, null);
                 lastCreatedCheckbox = checkBoxCell;
                 checkBoxCell.setTag(a);

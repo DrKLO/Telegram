@@ -42,7 +42,7 @@ public class BackupImageView extends View {
     public BackupImageView(Context context) {
         super(context);
         imageReceiver = new ImageReceiver(this);
-
+        imageReceiver.setAllowLoadingOnAttachedOnly(true);
         imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
             if (set && !thumb) {
                 checkCreateBlurredImage();
@@ -96,6 +96,10 @@ public class BackupImageView extends View {
 
     public void setOrientation(int angle, boolean center) {
         imageReceiver.setOrientation(angle, center);
+    }
+
+    public void setOrientation(int angle, int invert, boolean center) {
+        imageReceiver.setOrientation(angle, invert, center);
     }
 
     public void setImage(SecureDocument secureDocument, String filter) {

@@ -45,7 +45,7 @@ public class CounterView extends View {
     }
 
 
-    public void setColors(String textKey, String circleKey) {
+    public void setColors(int textKey, int circleKey) {
         counterDrawable.textColorKey = textKey;
         counterDrawable.circleColorKey = circleKey;
     }
@@ -62,9 +62,8 @@ public class CounterView extends View {
         counterDrawable.setCount(count, animated);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public static class CounterDrawable {
@@ -96,8 +95,8 @@ public class CounterView extends View {
 
         private int circleColor;
         private int textColor;
-        private String textColorKey = Theme.key_chat_goDownButtonCounter;
-        private String circleColorKey = Theme.key_chat_goDownButtonCounterBackground;
+        private int textColorKey = Theme.key_chat_goDownButtonCounter;
+        private int circleColorKey = Theme.key_chat_goDownButtonCounterBackground;
 
         int lastH;
         int width;
@@ -453,9 +452,8 @@ public class CounterView extends View {
             this.parent = parent;
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
 
         public int getWidth() {

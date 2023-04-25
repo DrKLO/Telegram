@@ -32,7 +32,7 @@ public class ClippingImageView extends View {
     private int clipLeft;
     private int clipRight;
     private int clipTop;
-    private int orientation;
+    private int orientation, invert;
     private int imageY;
     private int imageX;
     private RectF drawRect;
@@ -166,7 +166,7 @@ public class ClippingImageView extends View {
                 shaderMatrix.reset();
                 roundRect.set(imageX / scaleY, imageY / scaleY, getWidth() - imageX / scaleY, getHeight() - imageY / scaleY);
                 bitmapRect.set(0, 0, bmp.getWidth(), bmp.getHeight());
-                AndroidUtilities.setRectToRect(shaderMatrix, bitmapRect, roundRect, orientation, false);
+                AndroidUtilities.setRectToRect(shaderMatrix, bitmapRect, roundRect, orientation, invert, false);
                 bitmapShader.setLocalMatrix(shaderMatrix);
                 canvas.clipRect(clipLeft / scaleY, clipTop / scaleY, getWidth() - clipRight / scaleY, getHeight() - clipBottom / scaleY);
 
@@ -182,15 +182,30 @@ public class ClippingImageView extends View {
                 if (orientation == 90 || orientation == 270) {
                     drawRect.set(-getHeight() / 2, -getWidth() / 2, getHeight() / 2, getWidth() / 2);
                     matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
+                    if (invert == 1) {
+                        matrix.postScale(-1, 1);
+                    } else if (invert == 2) {
+                        matrix.postScale(1, -1);
+                    }
                     matrix.postRotate(orientation, 0, 0);
                     matrix.postTranslate(getWidth() / 2, getHeight() / 2);
                 } else if (orientation == 180) {
                     drawRect.set(-getWidth() / 2, -getHeight() / 2, getWidth() / 2, getHeight() / 2);
                     matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
+                    if (invert == 1) {
+                        matrix.postScale(-1, 1);
+                    } else if (invert == 2) {
+                        matrix.postScale(1, -1);
+                    }
                     matrix.postRotate(orientation, 0, 0);
                     matrix.postTranslate(getWidth() / 2, getHeight() / 2);
                 } else {
                     drawRect.set(0, 0, getWidth(), getHeight());
+                    if (invert == 1) {
+                        matrix.postScale(-1, 1, getWidth() / 2, getHeight() / 2);
+                    } else if (invert == 2) {
+                        matrix.postScale(1, -1, getWidth() / 2, getHeight() / 2);
+                    }
                     matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
                 }
 
@@ -247,6 +262,12 @@ public class ClippingImageView extends View {
 
     public void setOrientation(int angle) {
         orientation = angle;
+        invert = 0;
+    }
+
+    public void setOrientation(int angle, int invert) {
+        orientation = angle;
+        this.invert = invert;
     }
 
     public float getCenterX() {

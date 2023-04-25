@@ -139,7 +139,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         setApplyTopPadding(false);
         setApplyBottomPadding(false);
         useBackgroundTopPadding = false;
-        PremiumGradient.PremiumGradientTools gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradientBottomSheet1, Theme.key_premiumGradientBottomSheet2, Theme.key_premiumGradientBottomSheet3, null);
+        PremiumGradient.PremiumGradientTools gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradientBottomSheet1, Theme.key_premiumGradientBottomSheet2, Theme.key_premiumGradientBottomSheet3, -1);
         gradientTools.x1 = 0;
         gradientTools.y1 = 1.1f;
         gradientTools.x2 = 1.5f;

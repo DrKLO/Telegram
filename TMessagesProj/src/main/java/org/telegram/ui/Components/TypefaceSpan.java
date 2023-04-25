@@ -21,7 +21,7 @@ public class TypefaceSpan extends MetricAffectingSpan {
     private Typeface typeface;
     private int textSize;
     private int color;
-    private String colorKey;
+    private int colorKey = -1;
     Theme.ResourcesProvider resourcesProvider;
 
     public TypefaceSpan(Typeface tf) {
@@ -41,7 +41,7 @@ public class TypefaceSpan extends MetricAffectingSpan {
         color = textColor;
     }
 
-    public TypefaceSpan(Typeface tf, int size, String colorKey, Theme.ResourcesProvider resourcesProvider) {
+    public TypefaceSpan(Typeface tf, int size, int colorKey, Theme.ResourcesProvider resourcesProvider) {
         typeface = tf;
         if (size > 0) {
             textSize = size;
@@ -84,7 +84,7 @@ public class TypefaceSpan extends MetricAffectingSpan {
 
     @Override
     public void updateDrawState(TextPaint tp) {
-        if (colorKey != null) {
+        if (colorKey >= 0) {
             color = Theme.getColor(colorKey, resourcesProvider);
         }
         if (typeface != null) {

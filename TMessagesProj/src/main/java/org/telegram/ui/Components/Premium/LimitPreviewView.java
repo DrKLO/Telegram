@@ -135,13 +135,18 @@ public class LimitPreviewView extends LinearLayout {
 
         defaultCount = new TextView(context);
         defaultCount.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        defaultCount.setText(Integer.toString(premiumLimit));
+        defaultCount.setText(String.format("%d", premiumLimit));
         defaultCount.setGravity(Gravity.CENTER_VERTICAL);
         defaultCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
 
         if (percent > .3f) {
-            limitLayout.addView(freeTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
-            limitLayout.addView(defaultCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+            if (LocaleController.isRTL) {
+                limitLayout.addView(freeTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.RIGHT, 36, 0, 12, 0));
+                limitLayout.addView(defaultCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT, 12, 0, 0, 0));
+            } else {
+                limitLayout.addView(freeTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
+                limitLayout.addView(defaultCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+            }
         }
 
         limitsContainer.addView(limitLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 2f * (1f - percent)));
@@ -157,13 +162,18 @@ public class LimitPreviewView extends LinearLayout {
 
         premiumCount = new TextView(context);
         premiumCount.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        premiumCount.setText(Integer.toString(premiumLimit));
+        premiumCount.setText(String.format("%d", premiumLimit));
         premiumCount.setGravity(Gravity.CENTER_VERTICAL);
         premiumCount.setTextColor(Color.WHITE);
 
         if (percent < .7f) {
-            limitLayout2.addView(limitTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
-            limitLayout2.addView(premiumCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+            if (LocaleController.isRTL) {
+                limitLayout2.addView(limitTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.RIGHT, 36, 0, 12, 0));
+                limitLayout2.addView(premiumCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT, 12, 0, 0, 0));
+            } else {
+                limitLayout2.addView(limitTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.LEFT, 0, 0, 36, 0));
+                limitLayout2.addView(premiumCount, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.RIGHT, 0, 0, 12, 0));
+            }
         }
 
         limitsContainer.addView(limitLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 2f * percent));

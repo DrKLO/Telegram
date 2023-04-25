@@ -309,6 +309,13 @@ public class Bulletin {
         }
     }
 
+    private Runnable onHideListener;
+
+    public Bulletin setOnHideListener(Runnable listener) {
+        this.onHideListener = listener;
+        return this;
+    }
+
     private void ensureLayoutTransitionCreated() {
         if (layout != null && layoutTransition == null) {
             layoutTransition = layout.createTransition();
@@ -361,6 +368,10 @@ public class Bulletin {
                         containerLayout.removeView(parentLayout);
                         containerLayout.removeOnLayoutChangeListener(containerLayoutListener);
                         layout.onDetach();
+
+                        if (onHideListener != null) {
+                            onHideListener.run();
+                        }
                     }, offset -> {
                         if (currentDelegate != null && !layout.top) {
                             currentDelegate.onBottomOffsetChange(layout.getHeight() - offset);
@@ -384,6 +395,10 @@ public class Bulletin {
                 });
             }
             layout.onDetach();
+
+            if (onHideListener != null) {
+                onHideListener.run();
+            }
         }
     }
 
@@ -991,9 +1006,8 @@ public class Bulletin {
             }
         }
 
-        protected int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
         //endregion
     }
@@ -1557,10 +1571,12 @@ public class Bulletin {
             return this;
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+        if (resourcesProvider != null) {
+            return resourcesProvider.getColor(key);
         }
+        return Theme.getColor(key);
+    }
     }
 
     // TODO: possibility of loading icon as well

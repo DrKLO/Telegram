@@ -445,7 +445,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
             Theme.setSelectorDrawableColor(dayNightCell.getBackground(), Theme.getColor(Theme.key_listSelector), true);
             browseThemesCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
-            dayNightCell.setColors(null, Theme.key_windowBackgroundWhiteBlueText4);
+            dayNightCell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
             browseThemesCell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
         }
     }

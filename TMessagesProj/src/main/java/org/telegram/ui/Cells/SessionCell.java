@@ -293,7 +293,7 @@ public class SessionCell extends FrameLayout {
         }
         String deviceModel = session.device_model.toLowerCase();
         int iconId;
-        String colorKey, colorKey2;
+        int colorKey, colorKey2;
         if (deviceModel.contains("safari")) {
             iconId = R.drawable.device_web_safari;
             colorKey = Theme.key_avatar_backgroundPink;

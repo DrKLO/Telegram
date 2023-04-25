@@ -23,8 +23,6 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
-import java.util.Arrays;
-
 public class LoadingDrawable extends Drawable {
 
     private static final float APPEAR_DURATION = 550;
@@ -36,7 +34,7 @@ public class LoadingDrawable extends Drawable {
         this.resourcesProvider = resourcesProvider;
     }
 
-    public LoadingDrawable(String colorKey1, String colorKey2, Theme.ResourcesProvider resourcesProvider) {
+    public LoadingDrawable(int colorKey1, int colorKey2, Theme.ResourcesProvider resourcesProvider) {
         this();
         this.colorKey1 = colorKey1;
         this.colorKey2 = colorKey2;
@@ -95,8 +93,8 @@ public class LoadingDrawable extends Drawable {
     private Matrix matrix = new Matrix(), strokeMatrix = new Matrix();
     private int gradientColor1, gradientColor2;
     private int gradientStrokeColor1, gradientStrokeColor2;
-    public String colorKey1 = Theme.key_dialogBackground;
-    public String colorKey2 = Theme.key_dialogBackgroundGray;
+    public int colorKey1 = Theme.key_dialogBackground;
+    public int colorKey2 = Theme.key_dialogBackgroundGray;
     public boolean stroke;
     public Integer backgroundColor, color1, color2, strokeColor1, strokeColor2;
     private int gradientWidth;

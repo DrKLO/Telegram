@@ -1155,7 +1155,7 @@ public class LocaleController {
             }
             String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
             param = key + "_" + param;
-            StringBuilder stringBuilder = new StringBuilder(String.format(Locale.US, "%d", plural));
+            StringBuilder stringBuilder = new StringBuilder(String.format("%d", plural));
             for (int a = stringBuilder.length() - 3; a > 0; a -= 3) {
                 stringBuilder.insert(a, symbol);
             }
