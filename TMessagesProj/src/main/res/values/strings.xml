@@ -1907,6 +1907,7 @@
     <string name="ArchivedMasksEmpty">No archived masks</string>
     <string name="ArchivedEmojiPacksEmpty">No archived emoji packs</string>
     <string name="ArchivedStickersInfo">You can add up to 200 sticker sets.\nUnused sets are archived when you add more.</string>
+    <string name="ArchivedEmojiInfo">You can add up to 200 emoji packs.\nUnused packs are archived when you add more.</string>
     <string name="ArchivedMasksInfo">You can have up to 200 sets of masks.\nUnused sets are archived when you add more.</string>
     <string name="SendSticker">SEND STICKER</string>
     <string name="ArchivedStickersAlertTitle">Archived stickers</string>
@@ -6598,4 +6599,6 @@
     <string name="ChatThemeDaySwitchTooltip">Tap to view this theme in the day mode.</string>
     <string name="ChatThemeNightSwitchTooltip">Tap to view this theme in the night mode.</string>
     <string name="BotWebAppInstantViewOpen">Open App</string>
+    <string name="RestorePremiumHintTitle">Get Premium back with up to **%1$d%%** off</string>
+    <string name="RestorePremiumHintMessage">Your Telegram Premium has recently expired. Tap here to extend it.</string>
 </resources>

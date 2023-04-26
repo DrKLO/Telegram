@@ -27,6 +27,7 @@ import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -133,6 +134,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private LongSparseIntArray pendingUnreadCounter = new LongSparseIntArray();
     private int lastPrintingStringCount;
     private SparseArray<ChatlistUpdatesStat> chatlistFoldersUpdates = new SparseArray<>();
+    public int largeQueueMaxActiveOperations = 2;
+    public int smallQueueMaxActiveOperations = 5;
 
     class ChatlistUpdatesStat {
         public ChatlistUpdatesStat() {
@@ -1321,6 +1324,8 @@ public class MessagesController extends BaseController implements NotificationCe
         giftAttachMenuIcon = mainPreferences.getBoolean("giftAttachMenuIcon", false);
         giftTextFieldIcon = mainPreferences.getBoolean("giftTextFieldIcon", false);
         checkResetLangpack = mainPreferences.getInt("checkResetLangpack", 0);
+        smallQueueMaxActiveOperations = mainPreferences.getInt("smallQueueMaxActiveOperations", 5);
+        largeQueueMaxActiveOperations = mainPreferences.getInt("largeQueueMaxActiveOperations", 2);
         boolean isTest = ConnectionsManager.native_isTestBackend(currentAccount) != 0;
         chatlistInvitesLimitDefault = mainPreferences.getInt("chatlistInvitesLimitDefault", 3);
         chatlistInvitesLimitPremium = mainPreferences.getInt("chatlistInvitesLimitPremium",  isTest ? 5 : 20);
@@ -2096,6 +2101,20 @@ public class MessagesController extends BaseController implements NotificationCe
         for (int a = 0, N = object.value.size(); a < N; a++) {
             TLRPC.TL_jsonObjectValue value = object.value.get(a);
             switch (value.key) {
+                case "large_queue_max_active_operations_count": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        largeQueueMaxActiveOperations = (int) ((TLRPC.TL_jsonNumber) value.value).value;
+                        editor.putInt("largeQueueMaxActiveOperations", largeQueueMaxActiveOperations);
+                    }
+                    break;
+                }
+                case "small_queue_max_active_operations_count": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        smallQueueMaxActiveOperations = (int) ((TLRPC.TL_jsonNumber) value.value).value;
+                        editor.putInt("smallQueueMaxActiveOperations", smallQueueMaxActiveOperations);
+                    }
+                    break;
+                }
                 case "premium_gift_text_field_icon": {
                     if (value.value instanceof TLRPC.TL_jsonBool) {
                         if (giftTextFieldIcon != ((TLRPC.TL_jsonBool) value.value).value) {
@@ -2353,17 +2372,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         autologinDomains = newDomains;
                         editor.putStringSet("autologinDomains", autologinDomains);
                         changed = true;
-                    }
-                    break;
-                }
-                case "autologin_token": {
-                    if (value.value instanceof TLRPC.TL_jsonString) {
-                        TLRPC.TL_jsonString string = (TLRPC.TL_jsonString) value.value;
-                        if (!string.value.equals(autologinToken)) {
-                            autologinToken = string.value;
-                            editor.putString("autologinToken", autologinToken);
-                            changed = true;
-                        }
                     }
                     break;
                 }
@@ -3364,6 +3372,7 @@ public class MessagesController extends BaseController implements NotificationCe
             editor.putInt("webFileDatacenterId", webFileDatacenterId);
             editor.putString("suggestedLangCode", suggestedLangCode);
             editor.putBoolean("forceTryIpV6", forceTryIpV6);
+            editor.putString("autologinToken", autologinToken = config.autologin_token);
             editor.commit();
 
             getConnectionsManager().setForceTryIpV6(forceTryIpV6);
@@ -11199,9 +11208,9 @@ public class MessagesController extends BaseController implements NotificationCe
         final ArrayList<TLRPC.User> userRestrictedPrivacy = new ArrayList<>();
         processed[0] = 0;
         final Runnable showUserRestrictedPrivacyAlert = () -> {
-            AndroidUtilities.runOnUIThread(() ->{
+            AndroidUtilities.runOnUIThread(() -> {
                 BaseFragment lastFragment = LaunchActivity.getLastFragment();
-                if (lastFragment != null && lastFragment.getParentActivity() != null) {
+                if (lastFragment != null && lastFragment.getParentActivity() != null && !lastFragment.getParentActivity().isFinishing()) {
 //                    if (ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_INVITE)) {
                         LimitReachedBottomSheet restricterdUsersBottomSheet = new LimitReachedBottomSheet(lastFragment, lastFragment.getParentActivity(), LimitReachedBottomSheet.TYPE_ADD_MEMBERS_RESTRICTED, currentAccount);
                         restricterdUsersBottomSheet.setRestrictedUsers(currentChat, userRestrictedPrivacy);

@@ -619,6 +619,14 @@ public class FileLoadOperation {
         return result[0];
     }
 
+    protected File getCurrentFileFast() {
+        if (state == stateFinished) {
+            return cacheFileFinal;
+        } else {
+            return cacheFileTemp;
+        }
+    }
+
     private long getDownloadedLengthFromOffsetInternal(ArrayList<Range> ranges, final long offset, final long length) {
         if (ranges == null || state == stateFinished || ranges.isEmpty()) {
             if (state == stateFinished) {

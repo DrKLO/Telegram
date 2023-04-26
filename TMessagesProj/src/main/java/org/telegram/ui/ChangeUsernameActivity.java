@@ -517,7 +517,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                     break;
                 case VIEW_TYPE_HELP2:
                     ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString(botId != 0 ? R.string.BotUsernamesHelp : R.string.UsernamesProfileHelp));
-                    ((TextInfoPrivacyCell) holder.itemView).setBackgroundDrawable(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    ((TextInfoPrivacyCell) holder.itemView).setBackgroundDrawable(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
             }
         }
@@ -650,7 +650,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             helpCell = this;
 
             setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(17));
-            setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             setClipChildren(false);
 
             text1View = new LinkSpanDrawable.LinksTextView(context);

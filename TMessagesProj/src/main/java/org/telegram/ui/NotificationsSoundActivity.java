@@ -521,17 +521,23 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             return null;
         }
 
-        RingtoneManager manager = new RingtoneManager(ApplicationLoader.applicationContext);
-        manager.setType(RingtoneManager.TYPE_NOTIFICATION);
-        Cursor cursor = manager.getCursor();
+        try {
+            RingtoneManager manager = new RingtoneManager(ApplicationLoader.applicationContext);
+            manager.setType(RingtoneManager.TYPE_NOTIFICATION);
+            Cursor cursor = manager.getCursor();
 
-        while (cursor.moveToNext()) {
-            String notificationTitle = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX);
-            String notificationUri = cursor.getString(RingtoneManager.URI_COLUMN_INDEX) + "/" + cursor.getString(RingtoneManager.ID_COLUMN_INDEX);
+            while (cursor.moveToNext()) {
+                String notificationTitle = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX);
+                String notificationUri = cursor.getString(RingtoneManager.URI_COLUMN_INDEX) + "/" + cursor.getString(RingtoneManager.ID_COLUMN_INDEX);
 
-            if (title.equalsIgnoreCase(notificationTitle)) {
-                return notificationUri;
+                if (title.equalsIgnoreCase(notificationTitle)) {
+                    return notificationUri;
+                }
             }
+        } catch (Throwable e) {
+            // Exception java.lang.NullPointerException: Attempt to invoke interface method 'void android.database.Cursor.registerDataSetObserver(android.database.DataSetObserver)' on a null object reference
+            // ignore
+            FileLog.e(e);
         }
         return null;
     }

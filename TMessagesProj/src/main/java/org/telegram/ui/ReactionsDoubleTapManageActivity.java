@@ -107,7 +107,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
                     case 2:
                         TextInfoPrivacyCell cell = new TextInfoPrivacyCell(context);
                         cell.setText(LocaleController.getString("DoubleTapPreviewRational", R.string.DoubleTapPreviewRational));
-                        cell.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        cell.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                         view = cell;
                         break;
                     case 3:
@@ -125,7 +125,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
                                 );
                             }
                         };
-                        view.setBackground(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        view.setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                         break;
                     default:
                     case 1: {

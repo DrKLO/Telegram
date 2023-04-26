@@ -464,7 +464,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                     break;
                 case 2:
                     view = new ShadowSectionCell(parent.getContext());
-                    Drawable drawable = Theme.getThemedDrawable(parent.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                    Drawable drawable = Theme.getThemedDrawableByKey(parent.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
                     view.setBackground(combinedDrawable);

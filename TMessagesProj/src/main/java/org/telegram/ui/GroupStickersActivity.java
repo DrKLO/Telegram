@@ -549,7 +549,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 default:
                 case TYPE_MY_STICKERS_HEADER:
                     view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteGrayText4, 21, 0, 0, false, getResourceProvider());
-                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     ((HeaderCell) view).setText(LocaleController.getString(R.string.ChooseStickerMyStickerSets));
                     break;
             }
@@ -685,7 +685,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     break;
                 case TYPE_INFO:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case TYPE_CHOOSE_HEADER:
                 default:

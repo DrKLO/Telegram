@@ -42,6 +42,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.ViewHelper;
 
+import java.util.ArrayList;
+
 @SuppressLint("ViewConstructor")
 public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
 
@@ -154,15 +156,33 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
         setWillNotDraw(!needDivider);
 
         textView.setText(stickersSet.set.title);
-        valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
+        if (set.set.emojis) {
+            valueTextView.setText(LocaleController.formatPluralString("EmojiCount", set.set.count));
+        } else {
+            valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
+        }
 
-        TLRPC.Document sticker;
-        if (set.cover != null) {
+        TLRPC.Document sticker = null;
+        if (set instanceof TLRPC.TL_stickerSetFullCovered) {
+            ArrayList<TLRPC.Document> documents = ((TLRPC.TL_stickerSetFullCovered) set).documents;
+            if (documents == null) {
+                return;
+            }
+            long thumb_document_id = set.set.thumb_document_id;
+            for (int i = 0; i < documents.size(); ++i) {
+                TLRPC.Document d = documents.get(i);
+                if (d != null && d.id == thumb_document_id) {
+                    sticker = d;
+                    break;
+                }
+            }
+            if (sticker == null && !documents.isEmpty()) {
+                sticker = documents.get(0);
+            }
+        } else if (set.cover != null) {
             sticker = set.cover;
         } else if (!set.covers.isEmpty()) {
             sticker = set.covers.get(0);
-        } else {
-            sticker = null;
         }
         if (sticker != null) {
             TLObject object = FileLoader.getClosestPhotoSizeWithSize(set.set.thumbs, 90);

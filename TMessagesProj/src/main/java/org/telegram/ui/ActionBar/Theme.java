@@ -141,7 +141,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class Theme {
@@ -3526,6 +3525,8 @@ public class Theme {
     public static final int key_chat_outBubbleSelected = colorsCount++;
     public static final int key_chat_outBubbleShadow = colorsCount++;
     public static final int key_chat_outBubbleGradient1 = colorsCount++;
+    public static final int key_chat_outBubbleGradient2 = colorsCount++;
+    public static final int key_chat_outBubbleGradient3 = colorsCount++;
     public static final int myMessagesBubblesEndIndex = colorsCount;
 
     //my messages
@@ -3598,8 +3599,6 @@ public class Theme {
     public static final int key_chat_outBubbleLocationPlaceholder = colorsCount++;
     public static final int key_chat_outBubbleSelectedOverlay = colorsCount++;
     public static final int key_chat_outPsaNameText = colorsCount++;
-    public static final int key_chat_outBubbleGradient2 = colorsCount++;
-    public static final int key_chat_outBubbleGradient3 = colorsCount++;
     public static final int key_chat_outBubbleGradientAnimated = colorsCount++;
     public static final int key_chat_outBubbleGradientSelectedOverlay = colorsCount++;
     public static final int key_chat_inBubbleSelected = colorsCount++;
@@ -9077,7 +9076,7 @@ public class Theme {
         setDrawableColorByKey(profile_verifiedCheckDrawable, key_profile_verifiedCheck);
     }
 
-    public static Drawable getThemedDrawable(Context context, int resId, int key, Theme.ResourcesProvider resourcesProvider) {
+    public static Drawable getThemedDrawableByKey(Context context, int resId, int key, Theme.ResourcesProvider resourcesProvider) {
         return getThemedDrawable(context, resId, getColor(key, resourcesProvider));
     }
 

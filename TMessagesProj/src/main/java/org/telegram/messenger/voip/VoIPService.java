@@ -4097,8 +4097,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		Notification incomingNotification;
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 			Bitmap avatar = getRoundAvatarBitmap(userOrChat);
+			String presonName = ContactsController.formatName(userOrChat);
+			if (TextUtils.isEmpty(presonName)) {
+				//java.lang.IllegalArgumentException: person must have a non-empty a name
+				presonName = "___";
+			}
 			Person person = new Person.Builder()
-					.setName(ContactsController.formatName(userOrChat))
+					.setName(presonName)
 					.setIcon(Icon.createWithAdaptiveBitmap(avatar)).build();
 			Notification.CallStyle notificationStyle = Notification.CallStyle.forIncomingCall(person, endPendingIntent, answerPendingIntent);
 

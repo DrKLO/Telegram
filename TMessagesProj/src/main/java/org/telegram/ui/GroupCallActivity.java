@@ -7145,7 +7145,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     }
 
     private boolean showMenuForCell(View rendererCell) {
-        if (itemAnimator.isRunning()) {
+        if (itemAnimator.isRunning() || getContext() == null) {
             return false;
         }
         if (avatarPriviewTransitionInProgress || avatarsPreviewShowed) {
@@ -7211,6 +7211,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
         boolean showWithAvatarPreview = !isLandscapeMode && !isTabletMode && !AndroidUtilities.isInMultiwindow;
         TLRPC.TL_groupCallParticipant participant = view.getParticipant();
+        if (participant == null) {
+            return false;
+        }
 
         Rect rect = new Rect();
 

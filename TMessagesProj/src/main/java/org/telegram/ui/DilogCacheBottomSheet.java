@@ -72,7 +72,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
                     textInfoPrivacyCell.setFixedSize(12);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(
                             new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)),
-                            Theme.getThemedDrawable(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)
+                            Theme.getThemedDrawableByKey(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)
                     );
                     combinedDrawable.setFullsize(true);
                     textInfoPrivacyCell.setBackgroundDrawable(combinedDrawable);

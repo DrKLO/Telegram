@@ -15931,7 +15931,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (!postponedScroll) {
                             chatAdapter.notifyDataSetChanged(true);
                         }
-                        if (isTopic && startLoadFromMessageId == getTopicId() && messArr.size() > 0 && messages.size() > 0) {
+                        if (isTopic && startLoadFromMessageId == getTopicId() && messArr.size() > 0 && messages.size() > 0 && messArr.size() - 1 < messages.size()) {
                             scrollToMessage = messages.get(messArr.size() - 1);
                         }
                         if (scrollToMessage != null) {
@@ -17252,18 +17252,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         isVotedChanged = true;
                     }
                 }
+                createUndoView();
                 if (isVotedChanged && isQuiz && undoView != null && pollView instanceof ChatMessageCell) {
                     ChatMessageCell cell = (ChatMessageCell) pollView;
                     if (cell.isAnimatingPollAnswer()) {
                         for (int a = 0, N = results.results.size(); a < N; a++) {
                             TLRPC.TL_pollAnswerVoters voters = results.results.get(a);
                             if (voters.chosen) {
+                                pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                 if (voters.correct) {
                                     fireworksOverlay.start();
-                                    pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                 } else {
                                     ((ChatMessageCell) pollView).shakeView();
-                                    pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     showPollSolution(cell.getMessageObject(), results);
                                     cell.showHintButton(false, true, 0);
                                 }
@@ -31084,24 +31084,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return animatingColors.valueAt(index);
                 }
             }
-            if (chatTheme == null && backgroundDrawable == null) {
+            if (chatTheme == null) {
                 return Theme.getColor(key);
             }
             int index = currentColors.indexOfKey(key);
             if (index >= 0) {
                 return currentColors.valueAt(index);
-            }
-
-            if (Theme.key_chat_outBubbleGradient1 == key || Theme.key_chat_outBubbleGradient2 == key || Theme.key_chat_outBubbleGradient3 == key) {
-                index = currentColors.indexOfKey(Theme.key_chat_outBubble);
-                if (index < 0) {
-                    int color = Theme.getColor(key);
-                    if (color != 0) {
-                        return color;
-                    }
-                } else {
-                    return currentColors.valueAt(index);
-                }
             }
 
             int fallbackKey = Theme.getFallbackKey(key);

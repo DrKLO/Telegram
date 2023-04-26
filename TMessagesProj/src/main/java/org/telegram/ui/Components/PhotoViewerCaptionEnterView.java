@@ -620,6 +620,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 return -16777216;
             } else if (key == Theme.key_dialogFloatingButton) {
                 return -10177041;
+            } else if (key == Theme.key_dialogFloatingIcon) {
+                return 0xffffffff;
             }
             return 0;
         }

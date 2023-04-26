@@ -1733,7 +1733,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     currentCanvas.scale(v.getScaleX(), v.getScaleY());
                     currentCanvas.rotate(v.getRotation());
                     currentCanvas.translate(-entity.getWidth() / 2f, -entity.getHeight() / 2f);
-                    if (v instanceof TextPaintView) {
+                    if (v instanceof TextPaintView && v.getHeight() > 0 && v.getWidth() > 0) {
                         Bitmap b = Bitmaps.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
                         Canvas c = new Canvas(b);
                         v.draw(c);
