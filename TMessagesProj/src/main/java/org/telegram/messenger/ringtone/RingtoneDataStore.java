@@ -50,12 +50,12 @@ public class RingtoneDataStore {
             FileLog.e(e);
         }
         AndroidUtilities.runOnUIThread(() -> {
-            loadUserRingtones();
+            loadUserRingtones(false);
         });
     }
 
-    public void loadUserRingtones() {
-        boolean needReload = System.currentTimeMillis() - lastReloadTimeMs > reloadTimeoutMs;
+    public void loadUserRingtones(boolean force) {
+        boolean needReload = force || System.currentTimeMillis() - lastReloadTimeMs > reloadTimeoutMs;
         TLRPC.TL_account_getSavedRingtones req = new TLRPC.TL_account_getSavedRingtones();
         req.hash = queryHash;
         if (needReload) {

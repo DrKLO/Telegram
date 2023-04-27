@@ -801,11 +801,8 @@ public class FileLoader extends BaseController {
             public void didPreFinishLoading(FileLoadOperation operation, File finalFile) {
                 FileLoaderPriorityQueue queue = operation.getQueue();
                 fileLoaderQueue.postRunnable(() -> {
-                    FileLoadOperation currentOperation = loadOperationPaths.get(fileName);
-                    if (currentOperation != null) {
-                        currentOperation.preFinished = true;
-                        queue.checkLoadingOperations();
-                    }
+                    operation.preFinished = true;
+                    queue.checkLoadingOperations();
                 });
             }
 
@@ -832,13 +829,13 @@ public class FileLoader extends BaseController {
                     }
                 }
 
-                checkDownloadQueue(operation.getQueue(), fileName, 100);
+                checkDownloadQueue(operation, operation.getQueue(), 100);
             }
 
             @Override
             public void didFailedLoadingFile(FileLoadOperation operation, int reason) {
                 loadOperationPathsUI.remove(fileName);
-                checkDownloadQueue(operation.getQueue(), fileName);
+                checkDownloadQueue(operation, operation.getQueue());
                 if (delegate != null) {
                     delegate.fileDidFailedLoad(fileName, reason);
                 }
@@ -986,15 +983,16 @@ public class FileLoader extends BaseController {
         return result[0];
     }
 
-    private void checkDownloadQueue(FileLoaderPriorityQueue queue, String fileName) {
-        checkDownloadQueue(queue, fileName, 0);
+    private void checkDownloadQueue(FileLoadOperation operation, FileLoaderPriorityQueue queue) {
+        checkDownloadQueue(operation, queue, 0);
     }
 
-    private void checkDownloadQueue(FileLoaderPriorityQueue queue, String fileName, long delay) {
+    private void checkDownloadQueue(FileLoadOperation operation, FileLoaderPriorityQueue queue, long delay) {
         fileLoaderQueue.postRunnable(() -> {
-            FileLoadOperation operation = loadOperationPaths.remove(fileName);
-            queue.remove(operation);
-            queue.checkLoadingOperations();
+            if (queue.remove(operation)) {
+                loadOperationPaths.remove(operation.getFileName());
+                queue.checkLoadingOperations();
+            }
         }, delay);
     }
 

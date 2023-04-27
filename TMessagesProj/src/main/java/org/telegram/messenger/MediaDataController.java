@@ -6954,8 +6954,8 @@ public class MediaDataController extends BaseController {
         ringtoneDataStore.onRingtoneUploaded(filePath, document, error);
     }
 
-    public void checkRingtones() {
-        ringtoneDataStore.loadUserRingtones();
+    public void checkRingtones(boolean force) {
+        ringtoneDataStore.loadUserRingtones(force);
     }
 
     public boolean saveToRingtones(TLRPC.Document document) {

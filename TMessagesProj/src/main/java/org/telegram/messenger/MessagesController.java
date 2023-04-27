@@ -15871,7 +15871,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_updatePendingJoinRequests update = (TLRPC.TL_updatePendingJoinRequests) baseUpdate;
                         getMemberRequestsController().onPendingRequestsUpdated(update);
                     } else if (baseUpdate instanceof TLRPC.TL_updateSavedRingtones) {
-                        getMediaDataController().ringtoneDataStore.loadUserRingtones();
+                        getMediaDataController().ringtoneDataStore.loadUserRingtones(true);
                     } else if (baseUpdate instanceof TLRPC.TL_updateTranscribeAudio) {
                         FileLog.e("Received legacy TL_updateTranscribeAudio update");
                     } else if (baseUpdate instanceof TLRPC.TL_updateTranscribedAudio) {

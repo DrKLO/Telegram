@@ -836,6 +836,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
             message.media.flags |= 3;
             message.media.document = new TLRPC.TL_document();
             message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+            message.dialog_id = fileInfo.dialogId;
 
             String ext = FileLoader.getFileExtension(fileInfo.file);
 
