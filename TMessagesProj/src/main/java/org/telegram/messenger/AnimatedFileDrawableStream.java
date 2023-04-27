@@ -6,7 +6,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class AnimatedFileDrawableStream implements FileLoadOperationStream {
 
-    private final FileLoadOperation loadOperation;
+    private FileLoadOperation loadOperation;
     private CountDownLatch countDownLatch;
     private TLRPC.Document document;
     private ImageLocation location;
@@ -76,22 +76,30 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                                 return 0;
                             }
                         }
+                        countDownLatch = new CountDownLatch(1);
                         if (loadOperation.isPaused() || lastOffset != offset || preview) {
-                            FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, offset, preview, loadingPriority);
+                            FileLoadOperation loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, offset, preview, loadingPriority);
+                            if (this.loadOperation != loadOperation) {
+                                this.loadOperation.removeStreamListener(this);
+                                this.loadOperation = loadOperation;
+                            }
+                            lastOffset = offset + availableLength;
                         }
                         synchronized (sync) {
                             if (canceled) {
+                                countDownLatch = null;
                                 cancelLoadingInternal();
                                 return 0;
                             }
-                            countDownLatch = new CountDownLatch(1);
                         }
                         if (!preview) {
                             FileLoader.getInstance(currentAccount).setLoadingVideo(document, false, true);
                         }
-                        waitingForLoad = true;
-                        countDownLatch.await();
-                        waitingForLoad = false;
+                        if (countDownLatch != null) {
+                            waitingForLoad = true;
+                            countDownLatch.await();
+                            waitingForLoad = false;
+                        }
                     }
                 }
                 lastOffset = offset + availableLength;
@@ -113,8 +121,15 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
         synchronized (sync) {
             if (countDownLatch != null) {
                 countDownLatch.countDown();
+                countDownLatch = null;
                 if (removeLoading && !canceled && !preview) {
                     FileLoader.getInstance(currentAccount).removeLoadingVideo(document, false, true);
+                }
+            }
+            if (parentObject instanceof MessageObject) {
+                MessageObject messageObject = (MessageObject) parentObject;
+                if (DownloadController.getInstance(messageObject.currentAccount).isDownloading(messageObject.getId()))  {
+                    removeLoading = false;
                 }
             }
             if (removeLoading) {
@@ -165,6 +180,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     public void newDataAvailable() {
         if (countDownLatch != null) {
             countDownLatch.countDown();
+            countDownLatch = null;
         }
     }
 

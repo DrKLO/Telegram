@@ -609,11 +609,8 @@ public class ColorPicker extends FrameLayout {
         updateColorsPosition(null, 0, false, getMeasuredWidth());
     }
 
-    private int getThemedColor(String key) {
-        if (resourcesProvider != null) {
-            return resourcesProvider.getColor(key);
-        }
-        return Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     @Override

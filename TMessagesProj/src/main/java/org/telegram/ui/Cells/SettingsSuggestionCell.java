@@ -64,7 +64,7 @@ public class SettingsSuggestionCell extends LinearLayout {
 
         for (int a = 0; a < 2; a++) {
             TextView textView = new TextView(context);
-            textView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.key_featuredStickers_addButton, 4));
+            textView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
             textView.setLines(1);
             textView.setSingleLine(true);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);

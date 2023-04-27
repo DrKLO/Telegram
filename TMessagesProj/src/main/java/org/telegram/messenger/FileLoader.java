@@ -203,8 +203,8 @@ public class FileLoader extends BaseController {
         super(instance);
         filePathDatabase = new FilePathDatabase(instance);
         for (int i = 0; i < smallFilesQueue.length; i++)  {
-            smallFilesQueue[i] = new FileLoaderPriorityQueue("smallFilesQueue dc" + (i + 1), 5);
-            largeFilesQueue[i] = new FileLoaderPriorityQueue("largeFilesQueue dc" + (i + 1), 1);
+            smallFilesQueue[i] = new FileLoaderPriorityQueue(instance, "smallFilesQueue dc" + (i + 1), FileLoaderPriorityQueue.TYPE_SMALL);
+            largeFilesQueue[i] = new FileLoaderPriorityQueue(instance, "largeFilesQueue dc" + (i + 1), FileLoaderPriorityQueue.TYPE_LARGE);
         }
         dumpFilesQueue();
     }
@@ -871,7 +871,9 @@ public class FileLoader extends BaseController {
 
         loadOperationPaths.put(finalFileName, operation);
         operation.setPriority(priority);
-        operation.setStream(stream, streamPriority, streamOffset);
+        if (stream != null) {
+            operation.setStream(stream, streamPriority, streamOffset);
+        }
 
         loaderQueue.add(operation);
         loaderQueue.checkLoadingOperations();

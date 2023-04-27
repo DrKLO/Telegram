@@ -156,7 +156,7 @@ public class DataUsage2Activity extends BaseFragment {
         }
     }
 
-    private static String[] colors = {
+    private static int[] colors = {
         Theme.key_statisticChartLine_blue,
         Theme.key_statisticChartLine_green,
         Theme.key_statisticChartLine_lightblue,
@@ -624,7 +624,7 @@ public class DataUsage2Activity extends BaseFragment {
                     int bottomViewType;
                     boolean bottom = position + 1 < itemInners.size() && (bottomViewType = itemInners.get(position + 1).viewType) != item.viewType && bottomViewType != VIEW_TYPE_SEPARATOR && bottomViewType != VIEW_TYPE_ROUNDING;
                     if (bottom) {
-                        subtitleCell.setBackground(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+                        subtitleCell.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
                     } else {
                         subtitleCell.setBackground(null);
                     }
@@ -637,11 +637,11 @@ public class DataUsage2Activity extends BaseFragment {
                     boolean top = position > 0 && item.viewType != itemInners.get(position - 1).viewType;
                     boolean bottom = position + 1 < itemInners.size() && itemInners.get(position + 1).viewType != item.viewType;
                     if (top && bottom) {
-                        view.setBackground(Theme.getThemedDrawable(getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        view.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (top) {
-                        view.setBackground(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        view.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else if (bottom) {
-                        view.setBackground(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+                        view.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
                     } else {
                         view.setBackground(null);
                     }

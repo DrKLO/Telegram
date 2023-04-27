@@ -19,7 +19,6 @@ import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
-import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.TextPaint;
 import android.view.View;
@@ -28,6 +27,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -57,13 +58,10 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Components.VideoTimelineView;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import androidx.viewpager.widget.ViewPager;
 
 public class ThemeDescription {
 
@@ -105,7 +103,7 @@ public class ThemeDescription {
     private Paint[] paintToUpdate;
     private Drawable[] drawablesToUpdate;
     private Class[] listClasses;
-    private String currentKey;
+    private int currentKey;
     private String lottieLayerName;
     private ThemeDescriptionDelegate delegate;
     private int previousColor;
@@ -124,7 +122,7 @@ public class ThemeDescription {
         default void onAnimationProgress(float progress) {}
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key, Object unused) {
+    public ThemeDescription(View view, int flags, Class[] classes, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, int key, Object unused) {
         currentKey = key;
         paintToUpdate = paint;
         drawablesToUpdate = drawables;
@@ -137,7 +135,7 @@ public class ThemeDescription {
         }
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, Paint paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
+    public ThemeDescription(View view, int flags, Class[] classes, Paint paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, int key) {
         currentKey = key;
         if (paint != null) {
             paintToUpdate = new Paint[]{paint};
@@ -152,7 +150,7 @@ public class ThemeDescription {
         }
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, RLottieDrawable[] drawables, String layerName, String key) {
+    public ThemeDescription(View view, int flags, Class[] classes, RLottieDrawable[] drawables, String layerName, int key) {
         currentKey = key;
         lottieLayerName = layerName;
         drawablesToUpdate = drawables;
@@ -164,11 +162,11 @@ public class ThemeDescription {
         }
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
+    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, int key) {
         this(view, flags, classes, classesFields, paint, drawables, -1, themeDescriptionDelegate, key);
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, int alpha, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
+    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, int alpha, ThemeDescriptionDelegate themeDescriptionDelegate, int key) {
         currentKey = key;
         paintToUpdate = paint;
         drawablesToUpdate = drawables;
@@ -185,7 +183,7 @@ public class ThemeDescription {
         }
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, String layerName, String key) {
+    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, String layerName, int key) {
         currentKey = key;
         lottieLayerName = layerName;
         viewToInvalidate = view;
@@ -209,13 +207,13 @@ public class ThemeDescription {
         setColor(color, useDefault, true);
     }
 
-    private boolean checkTag(String key, View view) {
-        if (key == null || view == null) {
+    private boolean checkTag(int key, View view) {
+        if (key < 0 || view == null) {
             return false;
         }
         Object viewTag = view.getTag();
-        if (viewTag instanceof String) {
-            return ((String) viewTag).contains(key);
+        if (viewTag instanceof Integer) {
+            return ((Integer) viewTag) == key;
         }
         return false;
     }
@@ -766,7 +764,7 @@ public class ThemeDescription {
         }
     }
 
-    public String getCurrentKey() {
+    public int getCurrentKey() {
         return currentKey;
     }
 
@@ -800,6 +798,6 @@ public class ThemeDescription {
     }
 
     public String getTitle() {
-        return currentKey;
+        return ThemeColors.getStringName(currentKey);
     }
 }

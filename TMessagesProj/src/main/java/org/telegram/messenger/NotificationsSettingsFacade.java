@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.NotificationsSoundActivity;
 
 public class NotificationsSettingsFacade {
 
@@ -200,6 +201,22 @@ public class NotificationsSettingsFacade {
                 soundPref = "ChannelSound";
                 soundDocPref = "ChannelSoundDocId";
                 soundPathPref = "ChannelSoundPath";
+            }
+        }
+
+        if (settings instanceof TLRPC.TL_notificationSoundLocal) {
+            TLRPC.TL_notificationSoundLocal localSound = (TLRPC.TL_notificationSoundLocal) settings;
+            if ("Default".equalsIgnoreCase(localSound.data)) {
+                settings = new TLRPC.TL_notificationSoundDefault();
+            } else if ("NoSound".equalsIgnoreCase(localSound.data)) {
+                settings = new TLRPC.TL_notificationSoundNone();
+            } else {
+                String path = NotificationsSoundActivity.findRingtonePathByName(localSound.title);
+                if (path == null) {
+                    settings = new TLRPC.TL_notificationSoundDefault();
+                } else {
+                    localSound.data = path;
+                }
             }
         }
 

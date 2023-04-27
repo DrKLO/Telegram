@@ -168,7 +168,7 @@ public class LegendSignatureView extends FrameLayout {
                 h.root.setVisibility(View.VISIBLE);
                 h.value.setText(formatWholeNumber(l.y[index]));
                 h.signature.setText(l.name);
-                if (l.colorKey != null && Theme.hasThemeKey(l.colorKey)) {
+                if (l.colorKey >= 0 && Theme.hasThemeKey(l.colorKey)) {
                     h.value.setTextColor(Theme.getColor(l.colorKey));
                 } else {
                     h.value.setTextColor(Theme.getCurrentTheme().isDark() ? l.colorDark : l.color);

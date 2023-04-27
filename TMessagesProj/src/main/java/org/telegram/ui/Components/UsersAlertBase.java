@@ -65,19 +65,19 @@ public class UsersAlertBase extends BottomSheet {
     protected boolean needSnapToTop = true;
     protected boolean isEmptyViewVisible = true;
 
-    protected String keyScrollUp = Theme.key_sheet_scrollUp;
-    protected String keyListSelector = Theme.key_listSelector;
-    protected String keySearchBackground = Theme.key_dialogSearchBackground;
-    protected String keyInviteMembersBackground = Theme.key_windowBackgroundWhite;
-    protected String keyListViewBackground = Theme.key_windowBackgroundWhite;
-    protected String keyActionBarUnscrolled = Theme.key_windowBackgroundWhite;
-    protected String keyNameText = Theme.key_windowBackgroundWhiteBlackText;
-    protected String keyLastSeenText = Theme.key_windowBackgroundWhiteGrayText;
-    protected String keyLastSeenTextUnscrolled = Theme.key_windowBackgroundWhiteGrayText;
-    protected String keySearchPlaceholder = Theme.key_dialogSearchHint;
-    protected String keySearchText = Theme.key_dialogSearchText;
-    protected String keySearchIcon = Theme.key_dialogSearchIcon;
-    protected String keySearchIconUnscrolled = Theme.key_dialogSearchIcon;
+    protected int keyScrollUp = Theme.key_sheet_scrollUp;
+    protected int keyListSelector = Theme.key_listSelector;
+    protected int keySearchBackground = Theme.key_dialogSearchBackground;
+    protected int keyInviteMembersBackground = Theme.key_windowBackgroundWhite;
+    protected int keyListViewBackground = Theme.key_windowBackgroundWhite;
+    protected int keyActionBarUnscrolled = Theme.key_windowBackgroundWhite;
+    protected int keyNameText = Theme.key_windowBackgroundWhiteBlackText;
+    protected int keyLastSeenText = Theme.key_windowBackgroundWhiteGrayText;
+    protected int keyLastSeenTextUnscrolled = Theme.key_windowBackgroundWhiteGrayText;
+    protected int keySearchPlaceholder = Theme.key_dialogSearchHint;
+    protected int keySearchText = Theme.key_dialogSearchText;
+    protected int keySearchIcon = Theme.key_dialogSearchIcon;
+    protected int keySearchIconUnscrolled = Theme.key_dialogSearchIcon;
     protected final FillLastLinearLayoutManager layoutManager;
 
 

@@ -122,7 +122,7 @@ public class SvgHelper {
         private static WeakReference<Drawable> shiftDrawable;
         private ImageReceiver parentImageReceiver;
         private int[] currentColor = new int[2];
-        private String currentColorKey;
+        private int currentColorKey;
         private Integer overrideColor;
         private Theme.ResourcesProvider currentResourcesProvider;
         private float colorAlpha;
@@ -166,7 +166,7 @@ public class SvgHelper {
         }
 
         public void drawInternal(Canvas canvas, boolean drawInBackground, int threadIndex, long time, float x, float y, float w, float h) {
-            if (currentColorKey != null) {
+            if (currentColorKey >= 0) {
                 setupGradient(currentColorKey, currentResourcesProvider, colorAlpha, drawInBackground);
             }
 
@@ -318,11 +318,11 @@ public class SvgHelper {
             parentImageReceiver = imageReceiver;
         }
 
-        public void setupGradient(String colorKey, float alpha, boolean drawInBackground) {
+        public void setupGradient(int colorKey, float alpha, boolean drawInBackground) {
             setupGradient(colorKey, null, alpha, drawInBackground);
         }
 
-        public void setupGradient(String colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
+        public void setupGradient(int colorKey, Theme.ResourcesProvider resourcesProvider, float alpha, boolean drawInBackground) {
             int color = overrideColor == null ? Theme.getColor(colorKey, resourcesProvider) : overrideColor;
             int index = drawInBackground ? 1 : 0;
             currentResourcesProvider = resourcesProvider;
@@ -385,11 +385,11 @@ public class SvgHelper {
             }
         }
 
-        public void setColorKey(String colorKey) {
+        public void setColorKey(int colorKey) {
             currentColorKey = colorKey;
         }
 
-        public void setColorKey(String colorKey, Theme.ResourcesProvider resourcesProvider) {
+        public void setColorKey(int colorKey, Theme.ResourcesProvider resourcesProvider) {
             currentColorKey = colorKey;
             currentResourcesProvider = resourcesProvider;
         }

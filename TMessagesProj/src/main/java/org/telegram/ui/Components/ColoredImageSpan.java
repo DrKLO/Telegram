@@ -21,7 +21,7 @@ public class ColoredImageSpan extends ReplacementSpan {
     Drawable drawable;
 
     boolean usePaintColor = true;
-    String colorKey;
+    int colorKey;
     private int topOffset = 0;
 
     private int size;
@@ -93,9 +93,9 @@ public class ColoredImageSpan extends ReplacementSpan {
         canvas.restore();
     }
 
-    public void setColorKey(String colorKey) {
+    public void setColorKey(int colorKey) {
         this.colorKey = colorKey;
-        usePaintColor = colorKey == null;
+        usePaintColor = colorKey < 0;
     }
 
     public void setTopOffset(int topOffset) {

@@ -170,7 +170,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         super(parentContainer.getContext());
         this.call = call;
         this.currentAccount = activity.getCurrentAccount();
-        pausedVideoDrawable = new CrossOutDrawable(parentContainer.getContext(), R.drawable.calls_video, null);
+        pausedVideoDrawable = new CrossOutDrawable(parentContainer.getContext(), R.drawable.calls_video, -1);
         pausedVideoDrawable.setCrossOut(true, false);
         pausedVideoDrawable.setOffsets(-AndroidUtilities.dp(4), AndroidUtilities.dp(6), AndroidUtilities.dp(6));
         pausedVideoDrawable.setStrokeWidth(AndroidUtilities.dpf2(3.4f));

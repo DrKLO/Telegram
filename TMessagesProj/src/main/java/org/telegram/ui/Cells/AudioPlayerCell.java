@@ -80,7 +80,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         this.viewType = viewType;
 
         radialProgress = new RadialProgress2(this, resourcesProvider);
-        radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
+        radialProgress.setColorKeys(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setFocusable(true);
 
@@ -450,8 +450,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         }
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

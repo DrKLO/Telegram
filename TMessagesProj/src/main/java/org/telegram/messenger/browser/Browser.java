@@ -522,4 +522,32 @@ public class Browser {
         }
         return false;
     }
+
+    // © ChatGPT. All puns reserved. 🤖📜
+    public static String replaceHostname(Uri originalUri, String newHostname) {
+        String scheme = originalUri.getScheme();
+        String userInfo = originalUri.getUserInfo();
+        int port = originalUri.getPort();
+        String path = originalUri.getPath();
+        String query = originalUri.getQuery();
+        String fragment = originalUri.getFragment();
+
+        StringBuilder modifiedUriBuilder = new StringBuilder();
+        modifiedUriBuilder.append(scheme).append("://");
+        if (userInfo != null) {
+            modifiedUriBuilder.append(userInfo).append("@");
+        }
+        modifiedUriBuilder.append(newHostname);
+        if (port != -1) {
+            modifiedUriBuilder.append(":").append(port);
+        }
+        modifiedUriBuilder.append(path);
+        if (query != null) {
+            modifiedUriBuilder.append("?").append(query);
+        }
+        if (fragment != null) {
+            modifiedUriBuilder.append("#").append(fragment);
+        }
+        return modifiedUriBuilder.toString();
+    }
 }

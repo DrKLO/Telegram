@@ -470,9 +470,6 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
         manager.setType(RingtoneManager.TYPE_NOTIFICATION);
         Cursor cursor = manager.getCursor();
 
-
-
-
         Tone noSoundTone = new Tone();
         noSoundTone.stableId = stableIds++;
         noSoundTone.title = LocaleController.getString("NoSound", R.string.NoSound);
@@ -517,6 +514,32 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             selectedToneChanged = true;
         }
         updateRows();
+    }
+
+    public static String findRingtonePathByName(String title) {
+        if (title == null) {
+            return null;
+        }
+
+        try {
+            RingtoneManager manager = new RingtoneManager(ApplicationLoader.applicationContext);
+            manager.setType(RingtoneManager.TYPE_NOTIFICATION);
+            Cursor cursor = manager.getCursor();
+
+            while (cursor.moveToNext()) {
+                String notificationTitle = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX);
+                String notificationUri = cursor.getString(RingtoneManager.URI_COLUMN_INDEX) + "/" + cursor.getString(RingtoneManager.ID_COLUMN_INDEX);
+
+                if (title.equalsIgnoreCase(notificationTitle)) {
+                    return notificationUri;
+                }
+            }
+        } catch (Throwable e) {
+            // Exception java.lang.NullPointerException: Attempt to invoke interface method 'void android.database.Cursor.registerDataSetObserver(android.database.DataSetObserver)' on a null object reference
+            // ignore
+            FileLog.e(e);
+        }
+        return null;
     }
 
     private void updateRows() {
@@ -708,7 +731,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
 
 
             checkBox = new CheckBox2(context, 24, resourcesProvider);
-            checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+            checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(3);
             addView(checkBox, LayoutHelper.createFrame(26, 26, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, (LocaleController.isRTL ? 0 : 18), 0, (LocaleController.isRTL ? 18 : 0), 0));

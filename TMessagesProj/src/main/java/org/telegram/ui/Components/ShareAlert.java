@@ -1201,7 +1201,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context, resourcesProvider);
         flickerLoadingView.setViewType(FlickerLoadingView.SHARE_ALERT_TYPE);
         if (darkTheme) {
-            flickerLoadingView.setColors(Theme.key_voipgroup_inviteMembersBackground, Theme.key_voipgroup_searchBackground, null);
+            flickerLoadingView.setColors(Theme.key_voipgroup_inviteMembersBackground, Theme.key_voipgroup_searchBackground, -1);
         }
         searchEmptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_SEARCH, resourcesProvider);
         searchEmptyView.addView(flickerLoadingView, 0);
@@ -1396,7 +1396,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             protected void showPopup(int show) {
                 super.showPopup(show);
                 if (darkTheme) {
-                    navBarColorKey = null;
+                    navBarColorKey = -1;
                     AndroidUtilities.setNavigationBarColor(ShareAlert.this.getWindow(), ShareAlert.this.getThemedColor(Theme.key_windowBackgroundGray), true, color -> {
                         ShareAlert.this.setOverlayNavBarColor(navBarColor = color);
                     });
@@ -1407,7 +1407,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             public void hidePopup(boolean byBackButton) {
                 super.hidePopup(byBackButton);
                 if (darkTheme) {
-                    navBarColorKey = null;
+                    navBarColorKey = -1;
                     AndroidUtilities.setNavigationBarColor(ShareAlert.this.getWindow(), ShareAlert.this.getThemedColor(Theme.key_voipgroup_inviteMembersBackground), true, color -> {
                         ShareAlert.this.setOverlayNavBarColor(navBarColor = color);
                     });

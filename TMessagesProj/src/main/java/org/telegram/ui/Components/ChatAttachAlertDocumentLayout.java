@@ -46,6 +46,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
@@ -1435,7 +1436,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     break;
                 case 2:
                     view = new ShadowSectionCell(mContext);
-                    Drawable drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                    Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
                     view.setBackgroundDrawable(combinedDrawable);
@@ -1519,7 +1520,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         private boolean isLoading;
         private int requestIndex;
         private boolean firstLoading = true;
-        private int animationIndex = -1;
+        private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
         private boolean endReached;
 
         private Runnable clearCurrentResultsRunnable = new Runnable() {
@@ -1972,10 +1973,10 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                                     animatorSet.addListener(new AnimatorListenerAdapter() {
                                         @Override
                                         public void onAnimationEnd(Animator animation) {
-                                            accountInstance.getNotificationCenter().onAnimationFinish(animationIndex);
+                                            notificationsLocker.unlock();
                                         }
                                     });
-                                    animationIndex = accountInstance.getNotificationCenter().setAnimationInProgress(animationIndex, null);
+                                    notificationsLocker.lock();
                                     animatorSet.start();
 
                                     if (finalProgressView != null && finalProgressView.getParent() == null) {

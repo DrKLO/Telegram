@@ -46,7 +46,7 @@ public class UnreadCounterTextView extends View {
     int counterColor;
     CharSequence lastText;
 
-    String textColorKey = Theme.key_chat_fieldOverlayText;
+    int textColorKey = Theme.key_chat_fieldOverlayText;
 
     public UnreadCounterTextView(Context context) {
         super(context);
@@ -301,7 +301,7 @@ public class UnreadCounterTextView extends View {
         }
     }
 
-    public void setTextColorKey(String textColorKey) {
+    public void setTextColorKey(int textColorKey) {
         this.textColorKey = textColorKey;
         invalidate();
     }

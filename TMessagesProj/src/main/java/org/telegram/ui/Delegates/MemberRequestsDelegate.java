@@ -166,7 +166,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             if (isShowLastItemDivider) {
                 loadingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, fragment.getResourceProvider()));
             }
-            loadingView.setColors(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundGray, null);
+            loadingView.setColors(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundGray, -1);
             loadingView.setViewType(FlickerLoadingView.MEMBER_REQUESTS_TYPE);
         }
         return loadingView;
@@ -554,7 +554,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
                     break;
                 case 1:
                     view = new View(parent.getContext());
-                    view.setBackground(Theme.getThemedDrawable(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawableByKey(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 2:
                     view = new View(parent.getContext()) {

@@ -19,6 +19,8 @@ import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -118,12 +120,18 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         avatarDrawable = new AvatarDrawable();
 
         checkBox = new CheckBox2(context, 21, resourcesProvider);
-        checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+        checkBox.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
         checkBox.setDrawUnchecked(false);
         checkBox.setDrawBackgroundAsArc(3);
         addView(checkBox);
 
         statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, AndroidUtilities.dp(20));
+        statusDrawable.setCallback(this);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return statusDrawable == who || super.verifyDrawable(who);
     }
 
     public void setData(Object object, TLRPC.EncryptedChat ec, CharSequence n, CharSequence s, boolean needCount, boolean saved) {
@@ -217,6 +225,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         super.onDetachedFromWindow();
         avatarImage.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        statusDrawable.detach();
     }
 
     @Override
@@ -224,6 +233,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         super.onAttachedToWindow();
         avatarImage.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        statusDrawable.attach();
     }
 
     @Override
@@ -327,6 +337,11 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 });
             }
         }
+        if (!LocaleController.isRTL) {
+            statusLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+        } else {
+            statusLeft = AndroidUtilities.dp(11);
+        }
 
         if (currentName != null) {
             nameString = currentName;
@@ -370,6 +385,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             } else {
                 actionLeft = AndroidUtilities.dp(19) + AndroidUtilities.dp(16);
                 nameLeft += w;
+                statusLeft += w;
             }
             nameWidth -= AndroidUtilities.dp(32) + w;
         }
@@ -393,6 +409,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
                 } else {
                     countLeft = AndroidUtilities.dp(19);
                     nameLeft += w;
+                    statusLeft += w;
                 }
             } else {
                 lastUnreadCount = 0;
@@ -414,12 +431,6 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
 
         CharSequence statusString = null;
         TextPaint currentStatusPaint = Theme.dialogs_offlinePaint;
-        if (!LocaleController.isRTL) {
-            statusLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-        } else {
-            statusLeft = AndroidUtilities.dp(11);
-        }
-
         if (chat == null || subLabel != null) {
             if (subLabel != null) {
                 statusString = subLabel;
@@ -543,6 +554,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     }
 
     public void updateStatus(boolean verified, TLRPC.User user, boolean animated) {
+        statusDrawable.center = LocaleController.isRTL;
         if (verified) {
             statusDrawable.set(new CombinedDrawable(Theme.dialogs_verifiedDrawable, Theme.dialogs_verifiedCheckDrawable, 0, 0), animated);
             statusDrawable.setColor(null);
@@ -691,10 +703,10 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             int x;
             if (LocaleController.isRTL) {
                 if (nameLayout.getLineLeft(0) == 0) {
-                    x = nameLeft - AndroidUtilities.dp(6) - statusDrawable.getIntrinsicWidth();
+                    x = nameLeft - AndroidUtilities.dp(3) - statusDrawable.getIntrinsicWidth();
                 } else {
                     float w = nameLayout.getLineWidth(0);
-                    x = (int) (nameLeft + nameWidth - Math.ceil(w) - AndroidUtilities.dp(6) - statusDrawable.getIntrinsicWidth());
+                    x = (int) (nameLeft + nameWidth - Math.ceil(w) - AndroidUtilities.dp(3) - statusDrawable.getIntrinsicWidth());
                 }
             } else {
                 x = (int) (nameLeft + nameLayout.getLineRight(0) + AndroidUtilities.dp(6));

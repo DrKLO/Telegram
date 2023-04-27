@@ -78,7 +78,7 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView {
         super(fragment, false, true);
         this.user = user;
 
-        gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, null, null);
+        gradientTools = new PremiumGradient.PremiumGradientTools(Theme.key_premiumGradient1, Theme.key_premiumGradient2, -1, -1);
         gradientTools.exactly = true;
         gradientTools.x1 = 0;
         gradientTools.y1 = 0f;

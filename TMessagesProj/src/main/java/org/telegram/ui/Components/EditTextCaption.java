@@ -519,9 +519,8 @@ public class EditTextCaption extends EditTextBoldCursor {
         return performMenuAction(action) || super.performAccessibilityAction(action, arguments);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     @Override

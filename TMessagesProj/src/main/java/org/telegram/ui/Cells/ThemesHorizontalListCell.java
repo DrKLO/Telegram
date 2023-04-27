@@ -50,6 +50,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RadioButton;
@@ -285,8 +286,8 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                 break;
                             } else {
                                 if ((idx = line.indexOf('=')) != -1) {
-                                    String key = line.substring(0, idx);
-                                    if (key.equals(Theme.key_chat_inBubble) || key.equals(Theme.key_chat_outBubble) || key.equals(Theme.key_chat_wallpaper) || key.equals(Theme.key_chat_wallpaper_gradient_to1) || key.equals(Theme.key_chat_wallpaper_gradient_to2) || key.equals(Theme.key_chat_wallpaper_gradient_to3)) {
+                                    int key = ThemeColors.stringKeyToInt(line.substring(0, idx));
+                                    if (key == Theme.key_chat_inBubble || key == Theme.key_chat_outBubble || key == Theme.key_chat_wallpaper || key == Theme.key_chat_wallpaper_gradient_to1 || key == Theme.key_chat_wallpaper_gradient_to2 || key == Theme.key_chat_wallpaper_gradient_to3) {
                                         String param = line.substring(idx + 1);
                                         int value;
                                         if (param.length() > 0 && param.charAt(0) == '#') {
@@ -298,25 +299,18 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                         } else {
                                             value = Utilities.parseInt(param);
                                         }
-                                        switch (key) {
-                                            case Theme.key_chat_inBubble:
-                                                themeInfo.setPreviewInColor(value);
-                                                break;
-                                            case Theme.key_chat_outBubble:
-                                                themeInfo.setPreviewOutColor(value);
-                                                break;
-                                            case Theme.key_chat_wallpaper:
-                                                themeInfo.setPreviewBackgroundColor(value);
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to1:
-                                                themeInfo.previewBackgroundGradientColor1 = value;
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to2:
-                                                themeInfo.previewBackgroundGradientColor2 = value;
-                                                break;
-                                            case Theme.key_chat_wallpaper_gradient_to3:
-                                                themeInfo.previewBackgroundGradientColor3 = value;
-                                                break;
+                                        if (key == Theme.key_chat_inBubble) {
+                                            themeInfo.setPreviewInColor(value);
+                                        } else if (key == Theme.key_chat_outBubble){
+                                            themeInfo.setPreviewOutColor(value);
+                                        } else if (key == Theme.key_chat_wallpaper) {
+                                            themeInfo.setPreviewBackgroundColor(value);
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to1) {
+                                            themeInfo.previewBackgroundGradientColor1 = value;
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to2) {
+                                            themeInfo.previewBackgroundGradientColor2 = value;
+                                        } else if (key == Theme.key_chat_wallpaper_gradient_to3) {
+                                            themeInfo.previewBackgroundGradientColor3 = value;
                                         }
                                     }
                                 }

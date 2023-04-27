@@ -61,8 +61,10 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
@@ -95,7 +97,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private int customViewOffset = 12;
 
-    private String dialogButtonColorKey = Theme.key_dialogButton;
+    private int dialogButtonColorKey = Theme.key_dialogButton;
 
     private OnCancelListener onCancelListener;
 
@@ -256,9 +258,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             }
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
     }
 
@@ -718,13 +719,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             contentScrollView.addView(scrollContainer, new ScrollView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
-        messageTextView = new SpoilersTextView(getContext(), false) {
-            @Override
-            public void setText(CharSequence text, BufferType type) {
-                text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false);
-                super.setText(text, type);
-            }
-        };
+        messageTextView = new EffectsTextView(getContext());
         NotificationCenter.listenEmojiLoading(messageTextView);
         messageTextView.setTextColor(getThemedColor(topAnimationIsNew ? Theme.key_windowBackgroundWhiteGrayText : Theme.key_dialogTextBlack));
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -1422,9 +1417,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         positiveButtonListener = listener;
     }
 
-    protected int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    protected int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 
     public void showDelayed(long delay) {
@@ -1518,7 +1512,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             return this;
         }
 
-        public Builder setDialogButtonColorKey(String key) {
+        public Builder setDialogButtonColorKey(int key) {
             alertDialog.dialogButtonColorKey = key;
             return this;
         }

@@ -24,7 +24,9 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -237,7 +239,7 @@ public class CustomEmojiReactionsWindow {
     }
 
     int[] location = new int[2];
-    int animationIndex;
+    final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     private void createTransition(boolean enter) {
         fromRect.set(reactionsContainerLayout.rect);
@@ -279,7 +281,7 @@ public class CustomEmojiReactionsWindow {
         }
         selectAnimatedEmojiDialog.setEnterAnimationInProgress(true);
         account = UserConfig.selectedAccount;
-        animationIndex = NotificationCenter.getGlobalInstance().setAnimationInProgress(animationIndex, null);
+        notificationsLocker.lock();
         valueAnimator = ValueAnimator.ofFloat(enterTransitionProgress, enter ? 1f : 0);
         valueAnimator.addUpdateListener(animation -> {
             valueAnimator = null;
@@ -410,7 +412,7 @@ public class CustomEmojiReactionsWindow {
 
     private void checkAnimationEnd() {
         if (animators.isEmpty()) {
-            NotificationCenter.getGlobalInstance().onAnimationFinish(animationIndex);
+            notificationsLocker.unlock();
             selectAnimatedEmojiDialog.setEnterAnimationInProgress(false);
         }
     }

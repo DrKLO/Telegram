@@ -72,7 +72,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
                     textInfoPrivacyCell.setFixedSize(12);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(
                             new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)),
-                            Theme.getThemedDrawable(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)
+                            Theme.getThemedDrawableByKey(parent.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)
                     );
                     combinedDrawable.setFullsize(true);
                     textInfoPrivacyCell.setBackgroundDrawable(combinedDrawable);
@@ -134,7 +134,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
         for (int a = 0; a < 7; a++) {
             long size = 0;
             String name;
-            String color;
+            int color;
 
             if (a == CacheControlActivity.TYPE_PHOTOS) {
                 name = LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache);
@@ -169,7 +169,7 @@ public class DilogCacheBottomSheet extends BottomSheetWithRecyclerListView {
             if (size > 0) {
                 clearViewData[a] = new StorageDiagramView.ClearViewData(circleDiagramView);
                 clearViewData[a].size = size;
-                clearViewData[a].color = color;
+                clearViewData[a].colorKey = color;
                 CheckBoxCell checkBoxCell = new CheckBoxCell(context, 4, 21, null);
                 lastCreatedCheckbox = checkBoxCell;
                 checkBoxCell.setTag(a);

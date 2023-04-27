@@ -209,7 +209,7 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
                 if (a > 0) {
                     a = 0;
                 }
-                data[i].paint.setColor(Theme.getColor(data[i].color));
+                data[i].paint.setColor(Theme.getColor(data[i].colorKey));
                 data[i].paint.setAlpha(255);
                 float r = (rectF.width() / 2);
                 float len = (float) ((Math.PI * r / 180) * a);
@@ -241,7 +241,7 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
                 if (a > 0) {
                     a = 0;
                 }
-                data[i].paint.setColor(Theme.getColor(data[i].color));
+                data[i].paint.setColor(Theme.getColor(data[i].colorKey));
                 data[i].paint.setAlpha(255);
                 float r = (rectF.width() / 2);
                 float len = (float) ((Math.PI * r / 180) * a);
@@ -291,7 +291,7 @@ public class StorageDiagramView extends View implements NotificationCenter.Notif
 
     public static class ClearViewData {
 
-        public String color;
+        public int colorKey;
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         public boolean clear = true;

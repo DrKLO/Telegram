@@ -77,7 +77,7 @@ public class MessageSeenView extends FrameLayout {
         this.currentAccount = currentAccount;
         isVoice = (messageObject.isRoundVideo() || messageObject.isVoice());
         flickerLoadingView = new FlickerLoadingView(context);
-        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, null);
+        flickerLoadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, -1);
         flickerLoadingView.setViewType(FlickerLoadingView.MESSAGE_SEEN_TYPE);
         flickerLoadingView.setIsSingleCell(false);
         addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
@@ -359,18 +359,16 @@ public class MessageSeenView extends FrameLayout {
             super(context);
             avatarImageView = new BackupImageView(context);
             avatarImageView.setRoundRadius(AndroidUtilities.dp(18));
-            addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER_VERTICAL, 10f, 0, 0, 0));
 
             nameView = new SimpleTextView(context);
             nameView.setTextSize(16);
-            nameView.setEllipsizeByGradient(true);
+            nameView.setEllipsizeByGradient(!LocaleController.isRTL);
             nameView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             nameView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-            addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 6.33f, 8, 0));
+            nameView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
             rightDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, AndroidUtilities.dp(18));
             nameView.setDrawablePadding(AndroidUtilities.dp(3));
-            nameView.setRightDrawable(rightDrawable);
 
             readView = new TextView(context);
             readView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -378,7 +376,17 @@ public class MessageSeenView extends FrameLayout {
             readView.setEllipsize(TextUtils.TruncateAt.END);
             readView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             readView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 20, 13, 0));
+            readView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+
+            if (LocaleController.isRTL) {
+                addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 8, 6.33f, 55, 0));
+                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 13, 20, 55, 0));
+            } else {
+                addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.LEFT | Gravity.CENTER_VERTICAL, 10f, 0, 0, 0));
+                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 6.33f, 8, 0));
+                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 20, 13, 0));
+            }
         }
 
         @Override
@@ -431,8 +439,10 @@ public class MessageSeenView extends FrameLayout {
         private void updateStatus(boolean animated) {
             Long documentId = UserObject.getEmojiStatusDocumentId(user);
             if (documentId == null) {
+                nameView.setRightDrawable(null);
                 rightDrawable.set((Drawable) null, animated);
             } else {
+                nameView.setRightDrawable(rightDrawable);
                 rightDrawable.set(documentId, animated);
             }
         }

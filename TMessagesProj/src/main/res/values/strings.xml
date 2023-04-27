@@ -1639,6 +1639,7 @@
     <string name="EmailCopied">Email copied to clipboard</string>
     <string name="InviteToGroupByLink">Invite to Group via Link</string>
     <string name="InviteLink">Invite Link</string>
+    <string name="InviteLinkPrivate">Invite Link only works for group members</string>
     <string name="InviteLinks">Invite Links</string>
     <string name="RevokeAlert">Are you sure you want to revoke this link? Once the link is revoked, no one will be able to join using it.</string>
     <string name="RevokeAlertNewLink">The previous invite link is now inactive. A new link has been generated.</string>
@@ -1906,6 +1907,7 @@
     <string name="ArchivedMasksEmpty">No archived masks</string>
     <string name="ArchivedEmojiPacksEmpty">No archived emoji packs</string>
     <string name="ArchivedStickersInfo">You can add up to 200 sticker sets.\nUnused sets are archived when you add more.</string>
+    <string name="ArchivedEmojiInfo">You can add up to 200 emoji packs.\nUnused packs are archived when you add more.</string>
     <string name="ArchivedMasksInfo">You can have up to 200 sets of masks.\nUnused sets are archived when you add more.</string>
     <string name="SendSticker">SEND STICKER</string>
     <string name="ArchivedStickersAlertTitle">Archived stickers</string>
@@ -3631,6 +3633,7 @@
     <string name="ActionGroupCallYouInvited">You invited un2 to the voice chat</string>
     <string name="ActionGroupCallInvitedYou">un1 invited you to the voice chat</string>
     <string name="ActionBotAllowed">You allowed this bot to message you when you logged in on %1$s.</string>
+    <string name="ActionBotAllowedApp">You allowed this bot to message you when you logged in on "%1$s" app.</string>
     <string name="ActionBotDocuments">%1$s received the following documents: %2$s</string>
     <string name="ActionBotDocumentIdentity">Personal details</string>
     <string name="ActionBotDocumentAddress">Address</string>
@@ -6596,4 +6599,6 @@
     <string name="ChatThemeDaySwitchTooltip">Tap to view this theme in the day mode.</string>
     <string name="ChatThemeNightSwitchTooltip">Tap to view this theme in the night mode.</string>
     <string name="BotWebAppInstantViewOpen">Open App</string>
+    <string name="RestorePremiumHintTitle">Get Premium back with up to **%1$d%%** off</string>
+    <string name="RestorePremiumHintMessage">Your Telegram Premium has recently expired. Tap here to extend it.</string>
 </resources>

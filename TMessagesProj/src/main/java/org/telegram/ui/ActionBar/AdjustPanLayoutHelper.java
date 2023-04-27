@@ -24,8 +24,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.UserConfig;
 
 import java.util.ArrayList;
@@ -71,7 +70,7 @@ public class AdjustPanLayoutHelper {
     View parentForListener;
     ValueAnimator animator;
 
-    int notificationsIndex;
+    AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     ArrayList<View> viewsToHeightSet = new ArrayList<>();
     protected float keyboardSize;
@@ -147,7 +146,7 @@ public class AdjustPanLayoutHelper {
         animator.setDuration(keyboardDuration);
         animator.setInterpolator(keyboardInterpolator);
 
-        notificationsIndex = NotificationCenter.getInstance(selectedAccount).setAnimationInProgress(notificationsIndex, null);
+        notificationsLocker.lock();
         if (needDelay) {
             needDelay = false;
             startAfter = SystemClock.elapsedRealtime() + 100;
@@ -214,7 +213,7 @@ public class AdjustPanLayoutHelper {
         }
         animationInProgress = false;
         usingInsetAnimator = false;
-        NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationsIndex);
+        notificationsLocker.unlock();
         animator = null;
         setViewHeight(ViewGroup.LayoutParams.MATCH_PARENT);
         viewsToHeightSet.clear();
@@ -228,7 +227,7 @@ public class AdjustPanLayoutHelper {
             animator.cancel();
         }
         animationInProgress = false;
-        NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationsIndex);
+        notificationsLocker.unlock();
         animator = null;
         setViewHeight(ViewGroup.LayoutParams.MATCH_PARENT);
         viewsToHeightSet.clear();

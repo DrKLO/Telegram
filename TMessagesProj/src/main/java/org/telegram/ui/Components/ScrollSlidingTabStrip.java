@@ -26,7 +26,6 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.util.SparseArray;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -37,7 +36,6 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
@@ -47,7 +45,6 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -56,6 +53,8 @@ import org.telegram.ui.ActionBar.Theme;
 import java.util.HashMap;
 
 public class ScrollSlidingTabStrip extends HorizontalScrollView {
+
+    private int imageReceiversPlayingNum = 1;
 
     public interface ScrollSlidingTabStripDelegate {
         void onPageSelected(int page);
@@ -345,7 +344,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             avatarDrawable.setInfo(chat);
 
             BackupImageView imageView = stickerTabView.imageView;
-            imageView.setLayerNum(1);
+            imageView.setLayerNum(imageReceiversPlayingNum);
             imageView.setForUserOrChat(chat, avatarDrawable);
             imageView.setAspectFit(true);
 
@@ -403,6 +402,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
             tabsContainer.addView(tab, position);
         }
+        tab.imageView.setLayerNum(imageReceiversPlayingNum);
         tab.isChatSticker = false;
         tab.setTag(thumb);
         tab.setTag(R.id.index_tag, position);
@@ -1060,8 +1060,12 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         dragEnabled = enabled;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
+    }
+
+
+    public void setImageReceiversLayerNum(int playingImages) {
+        imageReceiversPlayingNum = playingImages;
     }
 }

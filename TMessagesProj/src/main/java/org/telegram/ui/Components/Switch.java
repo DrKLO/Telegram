@@ -55,10 +55,10 @@ public class Switch extends View {
 
     private OnCheckedChangeListener onCheckedChangeListener;
 
-    private String trackColorKey = Theme.key_fill_RedNormal;
-    private String trackCheckedColorKey = Theme.key_switch2TrackChecked;
-    private String thumbColorKey = Theme.key_windowBackgroundWhite;
-    private String thumbCheckedColorKey = Theme.key_windowBackgroundWhite;
+    private int trackColorKey = Theme.key_fill_RedNormal;
+    private int trackCheckedColorKey = Theme.key_switch2TrackChecked;
+    private int thumbColorKey = Theme.key_windowBackgroundWhite;
+    private int thumbCheckedColorKey = Theme.key_windowBackgroundWhite;
 
     private Drawable iconDrawable;
     private int lastIconColor;
@@ -222,7 +222,7 @@ public class Switch extends View {
         return super.verifyDrawable(who) || rippleDrawable != null && who == rippleDrawable;
     }
 
-    public void setColors(String track, String trackChecked, String thumb, String thumbChecked) {
+    public void setColors(int track, int trackChecked, int thumb, int thumbChecked) {
         trackColorKey = track;
         trackCheckedColorKey = trackChecked;
         thumbColorKey = thumb;

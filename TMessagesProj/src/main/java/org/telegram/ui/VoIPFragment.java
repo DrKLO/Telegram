@@ -51,6 +51,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
@@ -181,7 +182,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private boolean deviceIsLocked;
 
     long lastContentTapTime;
-    int animationIndex = -1;
+    AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     VoIPNotificationsLayout notificationsLayout;
 
     HintView tapToVideoTooltip;
@@ -1105,13 +1106,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         VoIPPiPView.switchingToPip = true;
         switchingToPip = true;
         Animator animator = createPiPTransition(false);
-        animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+        notificationsLocker.lock();
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 VoIPPiPView.getInstance().windowView.setAlpha(1f);
                 AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                    notificationsLocker.unlock();
                     VoIPPiPView.getInstance().onTransitionEnd();
                     currentUserCameraFloatingLayout.setCornerRadius(-1f);
                     callingUserTextureView.renderer.release();
@@ -1142,7 +1143,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         switchingToPip = true;
         VoIPPiPView.switchingToPip = true;
         VoIPPiPView.prepareForTransition();
-        animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+        notificationsLocker.lock();
         AndroidUtilities.runOnUIThread(() -> {
             windowView.setAlpha(1f);
             Animator animator = createPiPTransition(true);
@@ -1175,7 +1176,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                        notificationsLocker.unlock();
                         currentUserCameraFloatingLayout.setCornerRadius(-1f);
                         switchingToPip = false;
                         currentUserCameraFloatingLayout.switchingToPip = false;

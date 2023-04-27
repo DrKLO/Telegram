@@ -4,8 +4,11 @@ import java.util.ArrayList;
 
 public class FileLoaderPriorityQueue {
 
-    private final int maxActiveOperationsCount;
+    public static final int TYPE_SMALL = 0;
+    public static final int TYPE_LARGE = 1;
     String name;
+    int type;
+    int currentAccount;
 
     private ArrayList<FileLoadOperation> allOperations = new ArrayList<>();
 
@@ -13,9 +16,10 @@ public class FileLoaderPriorityQueue {
     private int PRIORITY_VALUE_NORMAL = (1 << 16);
     private int PRIORITY_VALUE_LOW = 0;
 
-    FileLoaderPriorityQueue(String name, int maxActiveOperationsCount) {
+    FileLoaderPriorityQueue(int currentAccount, String name, int type) {
+        this.currentAccount = currentAccount;
         this.name = name;
-        this.maxActiveOperationsCount = maxActiveOperationsCount;
+        this.type = type;
     }
 
     public void add(FileLoadOperation operation) {
@@ -55,7 +59,7 @@ public class FileLoaderPriorityQueue {
         int activeCount = 0;
         int lastPriority = 0;
         boolean pauseAllNextOperations = false;
-        int max = maxActiveOperationsCount;
+        int max = type == TYPE_LARGE ? MessagesController.getInstance(currentAccount).largeQueueMaxActiveOperations : MessagesController.getInstance(currentAccount).smallQueueMaxActiveOperations;
         for (int i = 0; i < allOperations.size(); i++) {
             FileLoadOperation operation = allOperations.get(i);
             if (i > 0 && !pauseAllNextOperations) {

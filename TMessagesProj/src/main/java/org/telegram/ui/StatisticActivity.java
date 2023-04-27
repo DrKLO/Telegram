@@ -1648,7 +1648,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             if (data != null && data.chartData != null && data.chartData.lines != null && data.chartData.lines.size() > 1) {
                 for (int i = 0; i < data.chartData.lines.size(); i++) {
                     int color;
-                    if (data.chartData.lines.get(i).colorKey != null && Theme.hasThemeKey(data.chartData.lines.get(i).colorKey)) {
+                    if (data.chartData.lines.get(i).colorKey >= 0 && Theme.hasThemeKey(data.chartData.lines.get(i).colorKey)) {
                         color = Theme.getColor(data.chartData.lines.get(i).colorKey);
                     } else {
                         boolean darkBackground = ColorUtils.calculateLuminance(Theme.getColor(Theme.key_windowBackgroundWhite)) < 0.5f;
@@ -1916,7 +1916,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         if (child instanceof ChartCell) {
             ((ChartCell) child).recolor();
         } else if (child instanceof ShadowSectionCell) {
-            Drawable shadowDrawable = Theme.getThemedDrawable(ApplicationLoader.applicationContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+            Drawable shadowDrawable = Theme.getThemedDrawableByKey(ApplicationLoader.applicationContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
             Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
             CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
             combinedDrawable.setFullsize(true);
@@ -2197,7 +2197,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     public static void putColorFromData(ChartViewData chartViewData, ArrayList<ThemeDescription> arrayList, ThemeDescription.ThemeDescriptionDelegate themeDelegate) {
         if (chartViewData != null && chartViewData.chartData != null) {
             for (ChartData.Line l : chartViewData.chartData.lines) {
-                if (l.colorKey != null) {
+                if (l.colorKey >= 0) {
                     if (!Theme.hasThemeKey(l.colorKey)) {
                         Theme.setColor(l.colorKey, Theme.isCurrentThemeNight() ? l.colorDark : l.color, false);
                         Theme.setDefaultColor(l.colorKey, l.color);
@@ -2449,7 +2449,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 primary[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 title[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
 
-                String colorKey = (String) secondary[i].getTag();
+                Integer colorKey = (Integer) secondary[i].getTag();
                 if (colorKey != null) {
                     secondary[i].setTextColor(Theme.getColor(colorKey));
                 }

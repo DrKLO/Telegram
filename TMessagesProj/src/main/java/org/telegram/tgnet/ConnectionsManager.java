@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 

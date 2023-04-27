@@ -31,12 +31,12 @@ public class LoadingSpan extends ReplacementSpan {
         this.drawable.setRadiiDp(4);
     }
 
-    public void setColorKeys(String colorKey1, String colorKey2) {
+    public void setColorKeys(int colorKey1, int colorKey2) {
         this.drawable.colorKey1 = colorKey1;
         this.drawable.colorKey2 = colorKey2;
     }
 
-    public void setColorKeys(String colorKey1, String colorKey2, Theme.ResourcesProvider resourcesProvider) {
+    public void setColorKeys(int colorKey1, int colorKey2, Theme.ResourcesProvider resourcesProvider) {
         this.drawable.resourcesProvider = resourcesProvider;
         this.drawable.colorKey1 = colorKey1;
         this.drawable.colorKey2 = colorKey2;

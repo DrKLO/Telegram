@@ -167,6 +167,7 @@ public class PaintingOverlay extends FrameLayout {
                 View child = null;
                 if (entity.type == 0) {
                     BackupImageView imageView = new BackupImageView(getContext());
+                    imageView.setLayerNum(8);
                     imageView.setAspectFit(true);
                     ImageReceiver imageReceiver = imageView.getImageReceiver();
                     if (isVideo) {

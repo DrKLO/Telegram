@@ -168,6 +168,16 @@ public final class BulletinFactory {
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, int maxLines) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(iconRawId, 36, 36);
+        if (text != null) {
+            String string = text.toString();
+            SpannableStringBuilder ssb = text instanceof SpannableStringBuilder ? (SpannableStringBuilder) text : new SpannableStringBuilder(text);
+            for (int index = string.indexOf('\n'), l = 0; index >= 0 && index < text.length(); l++, index = string.indexOf('\n', index + 1)) {
+                if (l >= maxLines) {
+                    ssb.replace(index, index + 1, " ");
+                }
+            }
+            text = ssb;
+        }
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(maxLines);

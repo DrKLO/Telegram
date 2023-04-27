@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -259,7 +260,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     public final LinearLayoutManager layoutManager;
     private final FlickerLoadingView loadingView;
     private boolean firstLoading = true;
-    private int animationIndex = -1;
+    private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     public int keyboardHeight;
     private final ChatActionCell floatingDateView;
 
@@ -796,10 +797,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                                 animatorSet.addListener(new AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(Animator animation) {
-                                        NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                                        notificationsLocker.unlock();
                                     }
                                 });
-                                animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+                                notificationsLocker.lock();
                                 animatorSet.start();
 
                                 if (finalProgressView != null && finalProgressView.getParent() == null) {

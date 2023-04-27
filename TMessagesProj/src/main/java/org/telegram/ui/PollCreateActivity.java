@@ -533,7 +533,7 @@ public class PollCreateActivity extends BaseFragment {
         if (left <= max - max * 0.7f) {
             textCell.setText2(String.format("%d", left));
             SimpleTextView textView = textCell.getTextView2();
-            String key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
+            int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
             textView.setTextColor(Theme.getColor(key));
             textView.setTag(key);
         } else {
@@ -587,7 +587,7 @@ public class PollCreateActivity extends BaseFragment {
                 case 2: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     cell.setFixedSize(0);
-                    cell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    cell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     if (position == solutionInfoRow) {
                         cell.setText(LocaleController.getString("AddAnExplanationInfo", R.string.AddAnExplanationInfo));
                     } else if (position == settingsSectionRow) {
@@ -606,7 +606,7 @@ public class PollCreateActivity extends BaseFragment {
                 }
                 case 3: {
                     TextCell textCell = (TextCell) holder.itemView;
-                    textCell.setColors(null, Theme.key_windowBackgroundWhiteBlueText4);
+                    textCell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
                     Drawable drawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
                     Drawable drawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
                     drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));

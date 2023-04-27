@@ -72,7 +72,7 @@ public class GraySectionCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
     }
 
-    public void setTextColor(String key) {
+    public void setTextColor(int key) {
         int color = getThemedColor(key);
         textView.setTextColor(color);
         rightTextView.setTextColor(color);
@@ -114,8 +114,7 @@ public class GraySectionCell extends FrameLayout {
         return textView;
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
     }
 }

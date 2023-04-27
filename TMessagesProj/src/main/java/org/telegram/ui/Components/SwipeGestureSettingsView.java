@@ -42,7 +42,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
     private NumberPicker picker;
 
     String[] strings = new String[6];
-    String[] backgroundKeys = new String[6];
+    int[] backgroundKeys = new int[6];
     RLottieDrawable[] icons = new RLottieDrawable[6];
 
     int currentIconIndex;
@@ -52,7 +52,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
     float progressToSwipeFolders;
     float colorProgress = 1f;
     int fromColor;
-    String currentColorKey;
+    int currentColorKey;
 
 
     public SwipeGestureSettingsView(Context context, int currentAccount) {
@@ -209,12 +209,12 @@ public class SwipeGestureSettingsView extends FrameLayout {
 
 
         int color;
-        if (currentColorKey == null) {
+        if (currentColorKey < 0) {
             currentColorKey = backgroundKeys[picker.getValue()];
             colorProgress = 1f;
             color = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(currentColorKey), 0.9f);
             fromColor = color;
-        } else if (!backgroundKeys[picker.getValue()].equals(currentColorKey)) {
+        } else if (backgroundKeys[picker.getValue()] != currentColorKey) {
             fromColor = ColorUtils.blendARGB(fromColor, ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(currentColorKey), 0.9f), colorProgress);
             colorProgress = 0;
             currentColorKey = backgroundKeys[picker.getValue()];

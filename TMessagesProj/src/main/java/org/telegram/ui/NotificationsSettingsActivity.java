@@ -748,7 +748,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     position == eventsSectionRow || position == otherSectionRow || position == resetSectionRow ||
                     position == badgeNumberSection || position == otherSection2Row || position == resetSection2Row ||
                     position == callsSection2Row || position == callsSectionRow || position == badgeNumberSection2Row ||
-                    position == accountsSectionRow || position == accountsInfoRow || position == resetNotificationsSectionRow);
+                    position == accountsSectionRow || position == accountsInfoRow || position == resetNotificationsSectionRow ||
+                    position == eventsSection2Row);
         }
 
         @Override
@@ -786,7 +787,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 case 6:
                 default:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -911,9 +912,9 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 }
                 case 4: {
                     if (position == resetNotificationsSectionRow) {
-                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else {
-                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        holder.itemView.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
                 }

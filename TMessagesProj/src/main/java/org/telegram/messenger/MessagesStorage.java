@@ -13871,7 +13871,7 @@ public class MessagesStorage extends BaseController {
             }
             if (message.media instanceof TLRPC.TL_messageMediaPoll) {
                 TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) message.media;
-                if (!messageMediaPoll.results.recent_voters.isEmpty()) {
+                if (messageMediaPoll.results != null && messageMediaPoll.results.recent_voters != null && !messageMediaPoll.results.recent_voters.isEmpty()) {
                     usersToLoad.addAll(messageMediaPoll.results.recent_voters);
                 }
             }

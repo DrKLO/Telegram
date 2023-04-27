@@ -37,19 +37,17 @@ import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.Views.LPhotoPaintView;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 
 public class ActionBarPopupWindow extends PopupWindow {
 
@@ -83,7 +81,7 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     private ViewTreeObserver.OnScrollChangedListener mSuperScrollListener;
     private ViewTreeObserver mViewTreeObserver;
-    private int popupAnimationIndex = -1;
+    private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     public void setScaleOut(boolean b) {
         scaleOut = b;
@@ -588,9 +586,8 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
 
         public void setOnSizeChangedListener(ActionBarPopupWindow.onSizeChangedListener onSizeChangedListener) {
@@ -1015,12 +1012,12 @@ public class ActionBarPopupWindow extends PopupWindow {
                     }
                     unregisterListener();
                     if (pauseNotifications) {
-                        NotificationCenter.getInstance(currentAccount).onAnimationFinish(popupAnimationIndex);
+                        notificationsLocker.unlock();
                     }
                 }
             });
             if (pauseNotifications) {
-                popupAnimationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(popupAnimationIndex, null);
+                notificationsLocker.lock();
             }
             windowAnimatorSet.start();
         } else {
@@ -1055,7 +1052,7 @@ public class ActionBarPopupWindow extends PopupWindow {
             setBackgroundColor(color);
         }
 
-        public GapView(Context context, Theme.ResourcesProvider resourcesProvider, String colorKey) {
+        public GapView(Context context, Theme.ResourcesProvider resourcesProvider, int colorKey) {
             this(context, Theme.getColor(colorKey, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
         }
 

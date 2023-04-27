@@ -8,10 +8,8 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
-import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
 
@@ -23,23 +21,23 @@ public class MessageSeenCheckDrawable {
     private float lastDensity;
 
     private int resId;
-    private String colorKey;
+    private int colorKey;
 
     private int w = -1, h = -1;
     private float oy = 4.66f;
 
-    public MessageSeenCheckDrawable(int resId, String colorKey) {
+    public MessageSeenCheckDrawable(int resId, int colorKey) {
         this.resId = resId;
         this.colorKey = colorKey;
     }
 
-    public MessageSeenCheckDrawable(int resId, String colorKey, int w, int h) {
+    public MessageSeenCheckDrawable(int resId, int colorKey, int w, int h) {
         this(resId, colorKey);
         this.w = w;
         this.h = h;
     }
 
-    public MessageSeenCheckDrawable(int resId, String colorKey, int w, int h, float oy) {
+    public MessageSeenCheckDrawable(int resId, int colorKey, int w, int h, float oy) {
         this(resId, colorKey);
         this.w = w;
         this.h = h;

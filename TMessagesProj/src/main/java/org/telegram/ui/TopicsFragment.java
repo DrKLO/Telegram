@@ -56,6 +56,7 @@ import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -251,8 +252,9 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
     private boolean updateAnimated;
 
-    private int transitionAnimationIndex;
-    private int transitionAnimationGlobalIndex;
+    private final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker(new int[]{
+            NotificationCenter.topicsDidLoaded
+    });
     private View blurredView;
     private int selectedTopicForTablet;
 
@@ -724,8 +726,8 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         generalIconDrawable.setBounds(0, AndroidUtilities.dp(2), AndroidUtilities.dp(16), AndroidUtilities.dp(18));
         generalIcon.setSpan(new ImageSpan(generalIconDrawable, DynamicDrawableSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         pullForegroundDrawable = new PullForegroundDrawable(
-                AndroidUtilities.replaceCharSequence("#", LocaleController.getString("AccSwipeForGeneral", R.string.AccSwipeForGeneral), generalIcon),
-                AndroidUtilities.replaceCharSequence("#", LocaleController.getString("AccReleaseForGeneral", R.string.AccReleaseForGeneral), generalIcon)
+            AndroidUtilities.replaceCharSequence("#", LocaleController.getString("AccSwipeForGeneral", R.string.AccSwipeForGeneral), generalIcon),
+            AndroidUtilities.replaceCharSequence("#", LocaleController.getString("AccReleaseForGeneral", R.string.AccReleaseForGeneral), generalIcon)
         ) {
             @Override
             protected float getViewOffset() {
@@ -2512,8 +2514,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
     @Override
     public void onFragmentDestroy() {
-        getNotificationCenter().onAnimationFinish(transitionAnimationIndex);
-        NotificationCenter.getGlobalInstance().onAnimationFinish(transitionAnimationGlobalIndex);
+        notificationsLocker.unlock();
 
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.topicsDidLoaded);
@@ -3314,7 +3315,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                 } else if (items.get(position).type == DOWNLOADS_TYPE) {
                     return LocaleController.getString("DownloadsTabs", R.string.DownloadsTabs);
                 } else {
-                    return FiltersView.filters[items.get(position).filterIndex].title;
+                    return FiltersView.filters[items.get(position).filterIndex].getTitle();
                 }
             }
 
@@ -3761,8 +3762,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
 
-        transitionAnimationIndex = getNotificationCenter().setAnimationInProgress(transitionAnimationIndex, new int[]{NotificationCenter.topicsDidLoaded});
-        transitionAnimationGlobalIndex = NotificationCenter.getGlobalInstance().setAnimationInProgress(transitionAnimationGlobalIndex, new int[0]);
+        notificationsLocker.lock();
     }
 
     @Override
@@ -3775,8 +3775,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             blurredView.setBackground(null);
         }
 
-        getNotificationCenter().onAnimationFinish(transitionAnimationIndex);
-        NotificationCenter.getGlobalInstance().onAnimationFinish(transitionAnimationGlobalIndex);
+        notificationsLocker.unlock();
 
         if (!isOpen && (opnendForSelect && removeFragmentOnTransitionEnd)) {
             removeSelfFromStack();

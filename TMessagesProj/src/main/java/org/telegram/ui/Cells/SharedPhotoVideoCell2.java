@@ -43,7 +43,6 @@ import org.telegram.ui.PhotoViewer;
 
 public class SharedPhotoVideoCell2 extends View {
 
-
     public ImageReceiver imageReceiver = new ImageReceiver();
     public ImageReceiver blurImageReceiver = new ImageReceiver();
     int currentAccount;
@@ -106,7 +105,7 @@ public class SharedPhotoVideoCell2 extends View {
         this.style = style;
         if (style == STYLE_CACHE) {
             checkBoxBase = new CheckBoxBase(this, 21, null);
-            checkBoxBase.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
+            checkBoxBase.setColor(-1, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
             checkBoxBase.setDrawUnchecked(true);
             checkBoxBase.setBackgroundType(0);
             checkBoxBase.setBounds(0, 0, AndroidUtilities.dp(24), AndroidUtilities.dp(24));
@@ -284,7 +283,7 @@ public class SharedPhotoVideoCell2 extends View {
             imageHeight -= 2;
         }
 
-        if (currentMessageObject == null || !imageReceiver.hasBitmapImage() || imageReceiver.getCurrentAlpha() != 1.0f || imageAlpha != 1f) {
+        if ((currentMessageObject == null && style != STYLE_CACHE) || !imageReceiver.hasBitmapImage() || imageReceiver.getCurrentAlpha() != 1.0f || imageAlpha != 1f) {
             if (SharedPhotoVideoCell2.this.getParent() != null && globalGradientView != null) {
                 globalGradientView.setParentSize(((View) SharedPhotoVideoCell2.this.getParent()).getMeasuredWidth(), SharedPhotoVideoCell2.this.getMeasuredHeight(), -getX());
                 globalGradientView.updateColors();
@@ -521,7 +520,7 @@ public class SharedPhotoVideoCell2 extends View {
         }
         if (checkBoxBase == null) {
             checkBoxBase = new CheckBoxBase(this, 21, null);
-            checkBoxBase.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
+            checkBoxBase.setColor(-1, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
             checkBoxBase.setDrawUnchecked(false);
             checkBoxBase.setBackgroundType(1);
             checkBoxBase.setBounds(0, 0, AndroidUtilities.dp(24), AndroidUtilities.dp(24));

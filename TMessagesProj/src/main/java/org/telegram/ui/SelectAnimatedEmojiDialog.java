@@ -61,6 +61,7 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
@@ -3911,7 +3912,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     final long showDuration = (long) (800 * durationScale);
     private ValueAnimator showAnimator;
     private ValueAnimator hideAnimator;
-    private int animationIndex = -1;
+    private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     public void onShow(Runnable dismiss) {
         if (listStateId != null) {
@@ -3951,7 +3952,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
-                    NotificationCenter.getGlobalInstance().onAnimationFinish(animationIndex);
+                    notificationsLocker.unlock();
                     AndroidUtilities.runOnUIThread(NotificationCenter.getGlobalInstance()::runDelayedNotifications);
                     checkScroll();
                     updateShow(1);
@@ -3971,7 +3972,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             updateShow(0);
             showAnimator.setDuration(showDuration);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
-            animationIndex = NotificationCenter.getGlobalInstance().setAnimationInProgress(animationIndex, null);
+            notificationsLocker.lock();
             showAnimator.start();
         } else {
             checkScroll();
@@ -5044,6 +5045,20 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     }
 
     public void setEnterAnimationInProgress(boolean enterAnimationInProgress) {
-        this.enterAnimationInProgress = enterAnimationInProgress;
+        if (this.enterAnimationInProgress != enterAnimationInProgress) {
+            this.enterAnimationInProgress = enterAnimationInProgress;
+            if (!enterAnimationInProgress) {
+                AndroidUtilities.forEachViews(emojiGridView, (child) -> {
+                    child.setScaleX(1);
+                    child.setScaleY(1);
+                });
+                for (int i = 0; i < emojiTabs.contentView.getChildCount(); ++i) {
+                    View child = emojiTabs.contentView.getChildAt(i);
+                    child.setScaleX(1);
+                    child.setScaleY(1);
+                }
+                emojiTabs.contentView.invalidate();
+            }
+        }
     }
 }

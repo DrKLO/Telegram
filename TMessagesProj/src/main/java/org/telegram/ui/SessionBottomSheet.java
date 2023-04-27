@@ -310,7 +310,7 @@ public class SessionBottomSheet extends BottomSheet {
         }
         String deviceModel = session.device_model.toLowerCase();
         int iconId;
-        String colorKey, colorKey2;
+        int colorKey, colorKey2;
         boolean animation = true;
 
 

@@ -32,6 +32,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -780,15 +781,20 @@ public class QrActivity extends BaseFragment {
 
     private class ThemeResourcesProvider implements Theme.ResourcesProvider {
 
-        private HashMap<String, Integer> colors;
+        @Override
+        public boolean contains(int key) {
+            return false;
+        }
+
+        private SparseIntArray colors;
 
         void initColors(EmojiThemes theme, boolean isDark) {
             colors = theme.createColors(currentAccount, isDark ? 1 : 0);
         }
 
         @Override
-        public Integer getColor(String key) {
-            return colors != null ? colors.get(key) : null;
+        public int getColor(int key) {
+            return colors != null ? colors.get(key) : Theme.getColor(key);
         }
     }
 
