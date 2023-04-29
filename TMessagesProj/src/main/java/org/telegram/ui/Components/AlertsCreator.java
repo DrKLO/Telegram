@@ -1728,7 +1728,6 @@ public class AlertsCreator {
             frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
             cell[0].setOnClickListener(v -> {
                 CheckBoxCell cell1 = (CheckBoxCell) v;
-                deleteForAll[0] = !deleteForAll[0];
                 cell1.setChecked(deleteForAll[0], true);
             });
         }
@@ -1977,7 +1976,6 @@ public class AlertsCreator {
             cell[0].setChecked(false, false);
             cell[0].setOnClickListener(v -> {
                 CheckBoxCell cell1 = (CheckBoxCell) v;
-                deleteForAll[0] = !deleteForAll[0];
                 cell1.setChecked(deleteForAll[0], true);
             });
         }
@@ -5584,7 +5582,6 @@ public class AlertsCreator {
                 frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
                 cell.setOnClickListener(v -> {
                     CheckBoxCell cell1 = (CheckBoxCell) v;
-                    deleteForAll[0] = !deleteForAll[0];
                     cell1.setChecked(deleteForAll[0], true);
                 });
                 builder.setView(frameLayout);
