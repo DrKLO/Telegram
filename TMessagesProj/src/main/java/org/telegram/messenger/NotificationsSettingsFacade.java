@@ -236,7 +236,7 @@ public class NotificationsSettingsFacade {
         } else if (settings instanceof TLRPC.TL_notificationSoundRingtone) {
             TLRPC.TL_notificationSoundRingtone soundRingtone = (TLRPC.TL_notificationSoundRingtone) settings;
             editor.putLong(soundDocPref, soundRingtone.id);
-            MediaDataController.getInstance(currentAccount).checkRingtones();
+            MediaDataController.getInstance(currentAccount).checkRingtones(true);
             if (serverUpdate && dialogId != 0) {
                 editor.putBoolean("custom_" + dialogId, true);
             }

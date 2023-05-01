@@ -83,11 +83,11 @@ public class FileLoaderPriorityQueue {
         }
     }
 
-    public void remove(FileLoadOperation operation) {
+    public boolean remove(FileLoadOperation operation) {
         if (operation == null) {
-            return;
+            return false;
         }
-        allOperations.remove(operation);
+        return allOperations.remove(operation);
     }
 
     public int getCount() {

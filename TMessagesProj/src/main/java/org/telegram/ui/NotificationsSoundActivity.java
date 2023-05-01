@@ -442,7 +442,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
     }
 
     private void loadTones() {
-        getMediaDataController().ringtoneDataStore.loadUserRingtones();
+        getMediaDataController().ringtoneDataStore.loadUserRingtones(false);
         serverTones.clear();
         systemTones.clear();
         
