@@ -72,6 +72,7 @@ import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.AutoDeleteMediaTask;
 import org.telegram.messenger.BuildVars;
@@ -597,7 +598,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         if (!initCamera()) {
             return;
         }
-        MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
+        if (MediaController.getInstance().getPlayingMessageObject() != null) {
+            if (MediaController.getInstance().getPlayingMessageObject().isVideo() || MediaController.getInstance().getPlayingMessageObject().isRoundVideo()) {
+                MediaController.getInstance().cleanupPlayer(true, true);
+            } else {
+                MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
+            }
+        }
 
         cameraFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_DOCUMENT), System.currentTimeMillis() + "_" + SharedConfig.getLastLocalId() + ".mp4") {
             @Override
@@ -1571,8 +1578,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
                     GLES20.glGenTextures(1, cameraTexture, 0);
                     GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTexture[0]);
-                    GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-                    GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+                    GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+                    GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
                     GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
                     GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
 
@@ -2089,20 +2096,31 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 FileLog.e(e);
             }
             long dt, alphaDt;
+            boolean cameraChanged = false;
             if (!lastCameraId.equals(cameraId)) {
-                if (timestampNanos - lastTimestamp > 10_000) {
-                    lastTimestamp = -1;
-                }
+                cameraChanged = true;
                 lastCameraId = cameraId;
             }
-            if (lastTimestamp == -1) {
-                lastTimestamp = timestampNanos;
+            if (cameraChanged || lastTimestamp == -1) {
                 if (currentTimestamp != 0) {
-                    dt = (System.currentTimeMillis() - lastCommitedFrameTime) * 1000000;
+                    //real dt lead to asynchron aduio and video
+                    //surface may return wrong measured timestamp so big or negative
+                    // `\_(._.)_/`
+                    long dtTimestamps = (timestampNanos - lastTimestamp);
+                    long dtReal = (System.currentTimeMillis() - lastCommitedFrameTime) * 1000000;
+                    if (dtTimestamps < 0 || Math.abs(dtReal - dtTimestamps) > 100_000_000) {
+                        dt = dtReal;
+                    } else {
+                        dt = dtTimestamps;
+                    }
+                    if (dt < 0) {
+                        dt = 0;
+                    }
                     alphaDt = 0;
                 } else {
                     alphaDt = dt = 0;
                 }
+                lastTimestamp = timestampNanos;
             } else {
                 alphaDt = dt = (timestampNanos - lastTimestamp);
                 lastTimestamp = timestampNanos;
@@ -2749,7 +2767,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     }
 
     private String createFragmentShader(Size previewSize) {
-        if (!SharedConfig.deviceIsHigh() || !allowBigSizeCamera() || Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
+        if (SharedConfig.deviceIsLow() || !allowBigSizeCamera() || Math.max(previewSize.getHeight(), previewSize.getWidth()) * 0.7f < MessagesController.getInstance(currentAccount).roundVideoSize) {
             return "#extension GL_OES_EGL_image_external : require\n" +
                     "precision highp float;\n" +
                     "varying vec2 vTextureCoord;\n" +
@@ -2767,12 +2785,12 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     "   gl_FragColor = vec4(color * alpha, alpha);\n" +
                     "}\n";
         }
-        //apply box blur
+        //apply bilinear filtering
         return "#extension GL_OES_EGL_image_external : require\n" +
                 "precision highp float;\n" +
                 "varying vec2 vTextureCoord;\n" +
                 "uniform vec2 resolution;\n" +
-                "uniform vec2 preview;\n" +
+                "uniform vec2 preview;\n" +// original texture size
                 "uniform float alpha;\n" +
 
                 "uniform samplerExternalOES sTexture;\n" +
@@ -2782,16 +2800,22 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 "   float d = length(coord - gl_FragCoord.xy) - radius;\n" +
                 "   float t = clamp(d, 0.0, 1.0);\n" +
                 "   if (t == 0.0) {\n" +
-                "       float pixelSizeX = 1.0 / preview.x;\n" +
-                "       float pixelSizeY = 1.0 / preview.y;\n" +
-                "       vec3 accumulation = vec3(0);\n" +
-                "       for (float x = 0.0; x < 2.0; x++){\n" +
-                "           for (float y = 0.0; y < 2.0; y++){\n" +
-                "               accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
-                "           }\n" +
-                "       }\n" +
-                "       vec4 textColor = vec4(accumulation / vec3(4, 4, 4), 1);\n" +
-                "       gl_FragColor = textColor * alpha;\n" +
+                "       vec2 c_textureSize = preview;\n" +
+                "       vec2 c_onePixel = (1.0 / c_textureSize);\n" +
+                "       vec2 uv = vTextureCoord;\n" +
+                "       vec2 pixel = uv * c_textureSize + 0.5;\n" +
+
+                "       vec2 frac = fract(pixel);\n" +
+                "       pixel = (floor(pixel) / c_textureSize) - vec2(c_onePixel);\n" +
+
+                "       vec4 tl = texture2D(sTexture, pixel + vec2(0.0         , 0.0));\n" +
+                "       vec4 tr = texture2D(sTexture, pixel + vec2(c_onePixel.x, 0.0));\n" +
+                "       vec4 bl = texture2D(sTexture, pixel + vec2(0.0         , c_onePixel.y));\n" +
+                "       vec4 br = texture2D(sTexture, pixel + vec2(c_onePixel.x, c_onePixel.y));\n" +
+
+                "       vec4 x1 = mix(tl, tr, frac.x);\n" +
+                "       vec4 x2 = mix(bl, br, frac.x);\n" +
+                "       gl_FragColor = mix(x1, x2, frac.y) * alpha;" +
                 "   } else {\n" +
                 "       gl_FragColor = vec4(1, 1, 1, alpha);\n" +
                 "   }\n" +

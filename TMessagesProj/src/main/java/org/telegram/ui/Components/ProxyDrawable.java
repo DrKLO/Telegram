@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -29,13 +30,15 @@ public class ProxyDrawable extends Drawable {
     private boolean connected;
     private boolean isEnabled;
 
+    private int colorKey = -1;
+
     public ProxyDrawable(Context context) {
         super();
-        emptyDrawable = context.getResources().getDrawable(R.drawable.proxy_off);
-        fullDrawable = context.getResources().getDrawable(R.drawable.proxy_on);
+        emptyDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_off);
+        fullDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_on);
 
         outerPaint.setStyle(Paint.Style.STROKE);
-        outerPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        outerPaint.setStrokeWidth(AndroidUtilities.dp(1.66f));
         outerPaint.setStrokeCap(Paint.Cap.ROUND);
         lastUpdateTime = SystemClock.elapsedRealtime();
     }
@@ -57,13 +60,13 @@ public class ProxyDrawable extends Drawable {
         lastUpdateTime = newTime;
 
         if (!isEnabled) {
-            emptyDrawable.setBounds(getBounds());
+            setBounds(emptyDrawable);
             emptyDrawable.draw(canvas);
         } else if (!connected || connectedAnimationProgress != 1.0f) {
-            emptyDrawable.setBounds(getBounds());
+            setBounds(emptyDrawable);
             emptyDrawable.draw(canvas);
 
-            outerPaint.setColor(Theme.getColor(Theme.key_contextProgressOuter2));
+            outerPaint.setColor(Theme.getColor(colorKey < 0 ? Theme.key_contextProgressOuter2 : colorKey));
             outerPaint.setAlpha((int) (255 * (1.0f - connectedAnimationProgress)));
 
             radOffset += 360 * dt / 1000.0f;
@@ -71,16 +74,17 @@ public class ProxyDrawable extends Drawable {
             int width = getBounds().width();
             int height = getBounds().height();
 
-            int x = width / 2 - AndroidUtilities.dp(3);
-            int y = height / 2 - AndroidUtilities.dp(3);
-            cicleRect.set(x, y, x + AndroidUtilities.dp(6), y + AndroidUtilities.dp(6));
+            int r = AndroidUtilities.dp(4);
+            int x = width / 2 - r;
+            int y = height / 2 - r;
+            cicleRect.set(x, y, x + r + r, y + r + r);
             canvas.drawArc(cicleRect, -90 + radOffset, 90, false, outerPaint);
             invalidateSelf();
         }
 
         if (isEnabled && (connected || connectedAnimationProgress != 0.0f)) {
             fullDrawable.setAlpha((int) (255 * connectedAnimationProgress));
-            fullDrawable.setBounds(getBounds());
+            setBounds(fullDrawable);
             fullDrawable.draw(canvas);
         }
 
@@ -99,6 +103,16 @@ public class ProxyDrawable extends Drawable {
         }
     }
 
+    private void setBounds(Drawable drawable) {
+        Rect bounds = getBounds();
+        drawable.setBounds(
+            bounds.centerX() - drawable.getIntrinsicWidth() / 2,
+            bounds.centerY() - drawable.getIntrinsicHeight() / 2,
+            bounds.centerX() + drawable.getIntrinsicWidth() / 2,
+            bounds.centerY() + drawable.getIntrinsicHeight() / 2
+        );
+    }
+
     @Override
     public void setAlpha(int alpha) {
 
@@ -108,6 +122,10 @@ public class ProxyDrawable extends Drawable {
     public void setColorFilter(ColorFilter cf) {
         emptyDrawable.setColorFilter(cf);
         fullDrawable.setColorFilter(cf);
+    }
+
+    public void setColorKey(int colorKey) {
+        this.colorKey = colorKey;
     }
 
     @Override

@@ -211,7 +211,7 @@ void resumeNetwork(JNIEnv *env, jclass c, jint instanceNum, jboolean partial) {
 }
 
 void updateDcSettings(JNIEnv *env, jclass c, jint instanceNum) {
-    ConnectionsManager::getInstance(instanceNum).updateDcSettings(0, false);
+    ConnectionsManager::getInstance(instanceNum).updateDcSettings(0, false, false);
 }
 
 void setIpStrategy(JNIEnv *env, jclass c, jint instanceNum, jbyte value) {

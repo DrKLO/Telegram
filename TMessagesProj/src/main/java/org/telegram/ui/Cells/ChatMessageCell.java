@@ -12073,7 +12073,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             loadingProgressLayout = null;
             return;
         }
-        long hash = loadedSize << 16 + totalSize;
+        long hash = (loadedSize << 16) + totalSize;
         if (loadingProgressLayout != null && loadingProgressLayoutHash == hash) {
             return;
         }
