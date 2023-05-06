@@ -1284,10 +1284,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             globalCount = 4;
         }
         int contactsCount = searchContacts.size();
-        if (i >= 0 && i < contactsCount) {
-            return false;
+        if (contactsCount > 0) {
+            if (i >= 0 && i < contactsCount) {
+                return false;
+            }
+            i -= contactsCount + 1;
         }
-        i -= contactsCount + 1;
         if (i >= 0 && i < localCount) {
             return false;
         }
