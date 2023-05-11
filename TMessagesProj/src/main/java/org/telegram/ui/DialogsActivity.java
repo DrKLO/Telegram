@@ -10463,7 +10463,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (dialogsHintCell != null) {
-            SimpleThemeDescription.add(arrayList, dialogsHintCell::updateColors, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhiteBlackText, Theme.key_windowBackgroundWhiteGrayText);
+            arrayList.addAll(SimpleThemeDescription.createThemeDescriptions(() -> {
+                dialogsHintCell.setBackground(Theme.AdaptiveRipple.filledRect());
+            }, Theme.key_windowBackgroundWhite));
+            SimpleThemeDescription.add(arrayList, dialogsHintCell::updateColors, Theme.key_windowBackgroundWhiteBlackText, Theme.key_windowBackgroundWhiteGrayText);
         }
 
         return arrayList;
