@@ -744,9 +744,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 filterTabsView.setTranslationY(actionBar.getTranslationY() + tabsYOffset);
                 filterTabsView.setAlpha(filterTabsProgress);
                 viewPages[0].setTranslationY(-(1f - filterTabsProgress) * filterTabsMoveFrom);
+                if (dialogsHintCell != null) {
+                    dialogsHintCell.setTranslationY(actionBar.getTranslationY() + tabsYOffset);
+                }
             } else if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
                 filterTabsView.setTranslationY(actionBar.getTranslationY());
                 filterTabsView.setAlpha(1f);
+                if (dialogsHintCell != null) {
+                    dialogsHintCell.setTranslationY(actionBar.getTranslationY());
+                }
             }
             updateContextViewPosition();
             super.dispatchDraw(canvas);
