@@ -6255,8 +6255,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         if (captionLayout != null && currentPosition != null && currentMessagesGroup != null && currentMessagesGroup.isDocuments) {
                             reactionsLayoutInBubble.positionOffsetY += AndroidUtilities.dp(10);
-                        } else if (!drawPhotoImage && !TextUtils.isEmpty(messageObject.caption) && ((docTitleLayout != null && docTitleLayout.getLineCount() > 1) || currentMessageObject.hasValidReplyMessageObject())) {
+                        } else if (currentMessageObject.hasValidReplyMessageObject()) {
                             reactionsLayoutInBubble.positionOffsetY += AndroidUtilities.dp(10);
+                        } else if (!drawPhotoImage && !TextUtils.isEmpty(messageObject.caption) && ((docTitleLayout != null && docTitleLayout.getLineCount() > 1))) {
+                            if (currentMessageObject.isOut()) {
+                                if (currentMessageObject.isForwarded()) {
+                                    reactionsLayoutInBubble.positionOffsetY -= AndroidUtilities.dp(4);
+                                }
+                            } else {
+                                reactionsLayoutInBubble.positionOffsetY += AndroidUtilities.dp(10);
+                            }
                         } else if (!drawPhotoImage && !TextUtils.isEmpty(messageObject.caption) && !currentMessageObject.isOutOwner()) {
                             reactionsLayoutInBubble.positionOffsetY += AndroidUtilities.dp(10);
                         }
