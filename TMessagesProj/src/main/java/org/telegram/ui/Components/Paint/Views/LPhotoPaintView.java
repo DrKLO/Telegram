@@ -272,6 +272,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         queue = new DispatchQueue("Paint");
 
+        // preload built in fonts
+        Utilities.themeQueue.postRunnable(PaintTypeface::getBuiltInFonts);
+
         bitmapToEdit = bitmap;
         facesBitmap = originalBitmap;
         originalBitmapRotation = originalRotation;
@@ -717,7 +720,6 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         textOptionsView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         textOptionsView.setVisibility(GONE);
         textOptionsView.setDelegate(this);
-        textOptionsView.setTypeface(PersistColorPalette.getInstance(currentAccount).getCurrentTypeface());
         textOptionsView.setAlignment(PersistColorPalette.getInstance(currentAccount).getCurrentAlignment());
         bottomLayout.addView(textOptionsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
 
@@ -1486,6 +1488,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         entitiesView.setVisibility(VISIBLE);
         renderView.setVisibility(View.VISIBLE);
         renderInputView.setVisibility(View.VISIBLE);
+
+        if (textOptionsView != null) {
+            textOptionsView.setTypeface(PersistColorPalette.getInstance(currentAccount).getCurrentTypeface());
+        }
     }
 
     private int getFrameRotation() {

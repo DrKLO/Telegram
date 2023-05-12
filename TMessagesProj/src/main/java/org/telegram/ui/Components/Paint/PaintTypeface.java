@@ -6,7 +6,6 @@ import android.graphics.fonts.Font;
 import android.graphics.fonts.SystemFonts;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
@@ -37,7 +36,7 @@ public class PaintTypeface {
     public static final PaintTypeface MW_BOLD = new PaintTypeface("mw_bold", "PhotoEditorTypefaceMerriweather", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_MERRIWEATHER_BOLD));
     public static final PaintTypeface COURIER_NEW_BOLD = new PaintTypeface("courier_new_bold", "PhotoEditorTypefaceCourierNew", AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_COURIER_NEW_BOLD));
 
-    public final static List<PaintTypeface> BUILT_IN_FONTS = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
+    public static List<PaintTypeface> builtInFonts;
 
     private static final List<String> preferable = Arrays.asList(
         "Google Sans",
@@ -106,7 +105,7 @@ public class PaintTypeface {
     private static List<PaintTypeface> typefaces;
     public static List<PaintTypeface> get() {
         if (typefaces == null) {
-            typefaces = new ArrayList<>(BUILT_IN_FONTS);
+            typefaces = new ArrayList<>(getBuiltInFonts());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && SYSTEM_FONTS_ENABLED) {
                 Set<Font> fonts = SystemFonts.getAvailableFonts();
                 Iterator<Font> i = fonts.iterator();
@@ -166,6 +165,13 @@ public class PaintTypeface {
             AndroidUtilities.runOnUIThread(runnable);
         });
         return false;
+    }
+
+    public static List<PaintTypeface> getBuiltInFonts() {
+        if (builtInFonts == null) {
+            builtInFonts = Arrays.asList(ROBOTO_MEDIUM, ROBOTO_ITALIC, ROBOTO_SERIF, ROBOTO_MONO, MW_BOLD, COURIER_NEW_BOLD);
+        }
+        return builtInFonts;
     }
 
     static class Family {

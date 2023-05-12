@@ -162,7 +162,7 @@ public class PaintTextOptionsView extends LinearLayout {
         if (typefaceCell == null) {
             return;
         }
-        for (PaintTypeface typeface : PaintTypeface.BUILT_IN_FONTS) {
+        for (PaintTypeface typeface : PaintTypeface.getBuiltInFonts()) {
             if (typeface.getKey().equals(key)) {
                 typefaceCell.bind(typeface);
                 return;
