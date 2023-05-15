@@ -670,7 +670,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         };
         frameLayout.setClipToPadding(false);
         frameLayout.setClipChildren(false);
-        frameLayout.setBackgroundColor(0xff000000);
+        frameLayout.setBackgroundColor(Color.BLACK);
         updateSystemBarColors();
         fragmentView = frameLayout;
         frameLayout.setFitsSystemWindows(true);
@@ -1093,6 +1093,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             return;
         }
 
+        fragmentView.setBackgroundColor(Color.TRANSPARENT);
         speakerPhoneIcon.animate().alpha(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
         backIcon.animate().alpha(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
         emojiLayout.animate().alpha(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
@@ -1119,6 +1120,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     currentUserTextureView.renderer.release();
                     callingUserMiniTextureRenderer.release();
                     destroy();
+                    fragmentView.setBackgroundColor(Color.BLACK);
                     windowView.finishImmediate();
                     VoIPPiPView.switchingToPip = false;
                     switchingToPip = false;
@@ -1139,6 +1141,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             currentUserTextureView.setStub(VoIPPiPView.getInstance().currentUserTextureView);
         }
         windowView.setAlpha(0f);
+        fragmentView.setBackgroundColor(Color.TRANSPARENT);
         updateViewState();
         switchingToPip = true;
         VoIPPiPView.switchingToPip = true;
@@ -1177,6 +1180,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         notificationsLocker.unlock();
+                        fragmentView.setBackgroundColor(Color.BLACK);
                         currentUserCameraFloatingLayout.setCornerRadius(-1f);
                         switchingToPip = false;
                         currentUserCameraFloatingLayout.switchingToPip = false;
