@@ -23,16 +23,19 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
@@ -45,6 +48,8 @@ import java.io.File;
 public class ApplicationLoader extends Application {
 
     private static ApplicationLoader applicationLoaderInstance;
+
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     @SuppressLint("StaticFieldLeak")
     public static volatile Context applicationContext;
@@ -239,6 +244,7 @@ public class ApplicationLoader extends Application {
     @Override
     public void onCreate() {
         applicationLoaderInstance = this;
+
         try {
             applicationContext = getApplicationContext();
         } catch (Throwable ignore) {

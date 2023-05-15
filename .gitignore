@@ -6,4 +6,5 @@ obj/
 local.properties
 *.env
 gradle.properties
-TMessagesProj/.cxx/Debug/*
+TMessagesProj/.cxx/Debug/
+localenv.properties
