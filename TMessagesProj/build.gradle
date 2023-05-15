@@ -96,8 +96,8 @@ android {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
-        buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
-        buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+        buildConfigField("String", "APP_ID", getLocalProps("APP_ID"))
+        buildConfigField("String", "APP_HASH", getLocalProps("APP_HASH"))
     }
 
     buildTypes {
@@ -113,8 +113,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
-            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+            buildConfigField("String", "APP_ID", getLocalProps("APP_ID"))
+            buildConfigField("String", "APP_HASH", getLocalProps("APP_HASH"))
 
         }
 
@@ -129,8 +129,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
-            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+            buildConfigField("String", "APP_ID", getLocalProps("APP_ID"))
+            buildConfigField("String", "APP_HASH", getLocalProps("APP_HASH"))
 
         }
 
@@ -145,8 +145,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
-            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+            buildConfigField("String", "APP_ID", getLocalProps("APP_ID"))
+            buildConfigField("String", "APP_HASH", getLocalProps("APP_HASH"))
         }
 
         standalone {
@@ -160,8 +160,8 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
-            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+            buildConfigField("String", "APP_ID", getLocalProps("APP_ID"))
+            buildConfigField("String", "APP_HASH", getLocalProps("APP_HASH"))
         }
 
         release {
@@ -176,12 +176,22 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-            buildConfigField("String", "APP_ID", "\"${APP_ID}\"")
-            buildConfigField("String", "APP_HASH", "\"${APP_HASH}\"")
+            buildConfigField("String", "APP_ID", getLocalProps("APP_ID"))
+            buildConfigField("String", "APP_HASH", getLocalProps("APP_HASH"))
         }
     }
 }
 
+def getLocalProps(String propName) {
+    def propsFile = rootProject.file('localenv.properties')
+    if (propsFile.exists()) {
+        def props = new Properties()
+        props.load(new FileInputStream(propsFile))
+        return props[propName]
+    } else {
+        return "";
+    }
+}
 
 def getProps(String propName) {
     def propsFile = rootProject.file('local.properties')

@@ -1494,6 +1494,7 @@
     <string name="NotificationHiddenChatUserName">User</string>
     <string name="NotificationHiddenMessage">New message</string>
     <string name="Reply">Reply</string>
+    <string name="Mock">Mock</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
     <string name="ReplyToUser">Reply to %1$s</string>
     <string name="BackgroundRestricted">Background data restricted.</string>

@@ -133,6 +133,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlagSecureReason;
 import org.telegram.messenger.ForwardingMessagesParams;
+import org.telegram.messenger.GexCustomFunction;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LanguageDetector;
@@ -937,6 +938,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int OPTION_SHARE = 6;
     private final static int OPTION_SAVE_TO_GALLERY2 = 7;
     private final static int OPTION_REPLY = 8;
+
+    private final static int OPTION_MOCK = 108;
     private final static int OPTION_ADD_TO_STICKERS_OR_MASKS = 9;
     private final static int OPTION_SAVE_TO_DOWNLOADS_OR_MUSIC = 10;
     private final static int OPTION_ADD_TO_GIFS = 11;
@@ -23287,6 +23290,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             items.add(LocaleController.getString("Reply", R.string.Reply));
                             options.add(OPTION_REPLY);
                             icons.add(R.drawable.msg_reply);
+
+                            // Mock Text
+                            items.add(LocaleController.getString("Mock", R.string.Mock));
+                            options.add(OPTION_MOCK);
+                            icons.add(R.mipmap.spongbob_mock_foreground);
                         }
                         if (!isThreadChat() && chatMode != MODE_SCHEDULED && message.hasReplies() && currentChat.megagroup && message.canViewThread()) {
                             items.add(LocaleController.formatPluralString("ViewReplies", message.getRepliesCount()));
@@ -23327,6 +23335,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             items.add(LocaleController.getString("Reply", R.string.Reply));
                             options.add(OPTION_REPLY);
                             icons.add(R.drawable.msg_reply);
+
+                            // Mock Text
+                            items.add(LocaleController.getString("Mock", R.string.Mock));
+                            options.add(OPTION_MOCK);
+                            icons.add(R.mipmap.spongbob_mock_foreground);
                         }
                     }
                     if (message.canDeleteMessage(chatMode == MODE_SCHEDULED, currentChat) && (threadMessageObjects == null || !threadMessageObjects.contains(message)) && !(message != null && message.messageOwner != null && message.messageOwner.action instanceof TLRPC.TL_messageActionTopicCreate)) {
@@ -23368,6 +23381,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             items.add(LocaleController.getString("Reply", R.string.Reply));
                             options.add(OPTION_REPLY);
                             icons.add(R.drawable.msg_reply);
+
+                            // Mock Text
+                            items.add(LocaleController.getString("Mock", R.string.Mock));
+                            options.add(OPTION_MOCK);
+                            icons.add(R.mipmap.spongbob_mock_foreground);
                         }
                         if ((selectedObject.type == MessageObject.TYPE_TEXT || selectedObject.isDice() || selectedObject.isAnimatedEmoji() || selectedObject.isAnimatedEmojiStickers() || getMessageCaption(selectedObject, selectedObjectGroup) != null) && !noforwards) {
                             items.add(LocaleController.getString("Copy", R.string.Copy));
@@ -23609,6 +23627,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             items.add(LocaleController.getString("Reply", R.string.Reply));
                             options.add(OPTION_REPLY);
                             icons.add(R.drawable.msg_reply);
+
+                            // Mock Text
+                            items.add(LocaleController.getString("Mock", R.string.Mock));
+                            options.add(OPTION_MOCK);
+                            icons.add(R.mipmap.spongbob_mock_foreground);
                         }
                         if ((selectedObject.type == MessageObject.TYPE_TEXT || selectedObject.isAnimatedEmoji() || selectedObject.isAnimatedEmojiStickers() || getMessageCaption(selectedObject, selectedObjectGroup) != null) && !noforwards) {
                             items.add(LocaleController.getString("Copy", R.string.Copy));
@@ -25420,6 +25443,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             case OPTION_REPLY: {
                 showFieldPanelForReply(selectedObject);
+                break;
+            }
+            case OPTION_MOCK:{
+                getSendMessagesHelper().sendMessage(GexCustomFunction.mockifyText(selectedObject.messageText.toString()),dialog_id,selectedObject,selectedObject,null,false,null,null,null,true,0,null,false);
                 break;
             }
             case OPTION_ADD_TO_STICKERS_OR_MASKS: {
