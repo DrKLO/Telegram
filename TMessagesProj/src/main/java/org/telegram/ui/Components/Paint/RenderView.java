@@ -123,7 +123,6 @@ public class RenderView extends TextureView {
             }
         });
 
-        input = new Input(this);
         shapeInput = new ShapeInput(this, () -> {
             if (delegate != null) {
                 delegate.invalidateInputView();
@@ -171,7 +170,7 @@ public class RenderView extends TextureView {
         if (brush instanceof Brush.Shape) {
             shapeInput.process(event, getScaleX());
         } else {
-            input.process(event, getScaleX());
+            getInput().process(event, getScaleX());
         }
         return true;
     }
@@ -253,7 +252,7 @@ public class RenderView extends TextureView {
         if (delegate != null) {
             delegate.resetBrush();
         }
-        input.ignoreOnce();
+        getInput().ignoreOnce();
     }
 
     public void clearShape() {
@@ -282,7 +281,7 @@ public class RenderView extends TextureView {
         if (brush instanceof Brush.Shape) {
             shapeInput.setMatrix(matrix);
         } else {
-            input.setMatrix(matrix);
+            getInput().setMatrix(matrix);
         }
 
         float[] proj = GLMatrix.LoadOrtho(0.0f, internal.bufferWidth, 0.0f, internal.bufferHeight, -1.0f, 1.0f);
@@ -322,7 +321,7 @@ public class RenderView extends TextureView {
     }
 
     public void clearAll() {
-        input.clear(() -> painting.setBrush(brush));
+        getInput().clear(() -> painting.setBrush(brush));
     }
 
     private class CanvasInternal extends DispatchQueue {
@@ -605,6 +604,13 @@ public class RenderView extends TextureView {
             internal.setCurrentContext();
             action.run();
         });
+    }
+
+    private Input getInput() {
+        if (input == null) {
+            input = new Input(this);
+        }
+        return input;
     }
 
     protected void selectBrush(Brush brush) {}
