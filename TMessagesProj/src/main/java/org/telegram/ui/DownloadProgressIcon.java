@@ -10,8 +10,9 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -126,6 +127,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         updateDownloadingListeners();
+        updateProgress();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.onDownloadingFilesChanged);
         downloadImageReceiver.onAttachedToWindow();
         downloadCompleteImageReceiver.onAttachedToWindow();
@@ -150,11 +152,13 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
         }
         currentListeners.clear();
         for (int i = 0; i < downloadController.downloadingFiles.size(); i++) {
-            String filename = downloadController.downloadingFiles.get(i).getFileName();
+            MessageObject messageObject = downloadController.downloadingFiles.get(i);
+            String filename = messageObject.getFileName();
             if (FileLoader.getInstance(currentAccount).isLoadingFile(filename)) {
                 ProgressObserver progressObserver = observerHashMap.get(filename);
                 if (progressObserver == null) {
-                    progressObserver = new ProgressObserver(filename);
+                    long[] progresses = ImageLoader.getInstance().getFileProgressSizes(filename);
+                    progressObserver = new ProgressObserver(filename, progresses[0], progresses[1]);
                 }
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(filename, progressObserver);
                 currentListeners.add(progressObserver);
@@ -172,7 +176,6 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
     }
 
     public void updateProgress() {
-        MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
         long total = 0;
         long downloaded = 0;
         for (int i = 0; i < currentListeners.size(); i++) {
@@ -215,8 +218,10 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
         long downloaded;
         private final String fileName;
 
-        private ProgressObserver(String fileName) {
+        private ProgressObserver(String fileName, long loadedFileSize, long totalFileSize) {
             this.fileName = fileName;
+            this.total = totalFileSize;
+            this.downloaded = loadedFileSize;
         }
 
         @Override
