@@ -5743,7 +5743,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                         }
                                         messageReplies.replies++;
                                     }
-
+                                    if (newMessage.message.pinned && channelId != 0) {
+                                        ArrayList<Integer> pinnedIds = new ArrayList<>(1);
+                                        pinnedIds.add(newMessage.message.id);
+                                        getMessagesStorage().updatePinnedMessages(-channelId, pinnedIds, true, -1, 0, false, null);
+                                    }
                                     sentMessages.add(message = newMessage.message);
                                     Utilities.stageQueue.postRunnable(() -> getMessagesController().processNewChannelDifferenceParams(newMessage.pts, newMessage.pts_count, newMessage.message.peer_id.channel_id));
                                     updatesArr.remove(a);

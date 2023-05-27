@@ -12280,6 +12280,12 @@ public class MessagesController extends BaseController implements NotificationCe
                                         pushMessages.add(obj);
                                     }
 
+                                    if (message.pinned && message.peer_id.channel_id != 0) {
+                                        ArrayList<Integer> pinnedIds = new ArrayList<>(1);
+                                        pinnedIds.add(message.id);
+                                        getMessagesStorage().updatePinnedMessages(-message.peer_id.channel_id, pinnedIds, true, -1, 0, false, null);
+                                    }
+
                                     long uid = -channelId;
                                     ArrayList<MessageObject> arr = messages.get(uid);
                                     if (arr == null) {
@@ -13961,6 +13967,11 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     if (!message.out && message.from_id instanceof TLRPC.TL_peerUser && message.from_id.user_id == getUserConfig().getClientUserId()) {
                         message.out = true;
+                    }
+                    if (message.pinned && message.peer_id.channel_id != 0) {
+                        ArrayList<Integer> pinnedIds = new ArrayList<>(1);
+                        pinnedIds.add(message.id);
+                        getMessagesStorage().updatePinnedMessages(-message.peer_id.channel_id, pinnedIds, true, -1, 0, false, null);
                     }
                 }
                 if (message instanceof TLRPC.TL_messageEmpty) {
