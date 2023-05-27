@@ -471,10 +471,13 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                     actionBarPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
                     actionBarPaint.setAlpha((int) (255 * searchAnimationProgress));
                     canvas.drawRect(0, 0, getWidth(), AndroidUtilities.statusBarHeight, actionBarPaint);
+                    canvas.drawLine(0, 0, 0, getHeight(), Theme.dividerPaint);
                 }
             }
 
         };
+
+        contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         contentView.needBlur = !inPreviewMode;
 
         actionBar.setAddToContainer(false);
@@ -3941,6 +3944,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
+        arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));

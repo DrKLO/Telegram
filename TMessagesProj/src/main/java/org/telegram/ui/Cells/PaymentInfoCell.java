@@ -33,7 +33,7 @@ public class PaymentInfoCell extends FrameLayout {
     private TextView detailExTextView;
     private BackupImageView imageView;
 
-    public PaymentInfoCell(Context context) {
+    public PaymentInfoCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         imageView = new BackupImageView(context);
@@ -41,7 +41,7 @@ public class PaymentInfoCell extends FrameLayout {
         addView(imageView, LayoutHelper.createFrame(100, 100, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 10, 10, 10, 0));
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setLines(1);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -52,7 +52,7 @@ public class PaymentInfoCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 9, LocaleController.isRTL ? 123 : 10, 0));
 
         detailTextView = new TextView(context);
-        detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         detailTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         detailTextView.setMaxLines(3);
         detailTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -60,7 +60,7 @@ public class PaymentInfoCell extends FrameLayout {
         addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 33, LocaleController.isRTL ? 123 : 10, 0));
 
         detailExTextView = new TextView(context);
-        detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         detailExTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         detailExTextView.setLines(1);
         detailExTextView.setMaxLines(1);
