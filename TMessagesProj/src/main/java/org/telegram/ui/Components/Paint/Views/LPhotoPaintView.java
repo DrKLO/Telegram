@@ -717,7 +717,6 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         textOptionsView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         textOptionsView.setVisibility(GONE);
         textOptionsView.setDelegate(this);
-        textOptionsView.setTypeface(PersistColorPalette.getInstance(currentAccount).getCurrentTypeface());
         textOptionsView.setAlignment(PersistColorPalette.getInstance(currentAccount).getCurrentAlignment());
         bottomLayout.addView(textOptionsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
 
@@ -1483,6 +1482,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
     @Override
     public void init() {
+        textOptionsView.setTypeface(PersistColorPalette.getInstance(currentAccount).getCurrentTypeface());
         entitiesView.setVisibility(VISIBLE);
         renderView.setVisibility(View.VISIBLE);
         renderInputView.setVisibility(View.VISIBLE);
@@ -1565,15 +1565,24 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     }
 
     @Override
+    public void onAnimationStateChanged(boolean isStart) {
+        if (tabsSelectedIndex == 0) {
+            weightChooserView.setLayerType(isStart ? LAYER_TYPE_HARDWARE : LAYER_TYPE_NONE, null);
+        }
+    }
+
+    @Override
+    public void setOffsetTranslationX(float x) {
+        if (tabsSelectedIndex == 0) {
+            weightChooserView.setTranslationX(x);
+        }
+    }
+
+    @Override
     public void setOffsetTranslationY(float y, float progress, int keyboardHeight, boolean isPan) {
         offsetTranslationY = y;
         if (!isPan) {
             topLayout.setTranslationY(-y);
-
-            if (tabsSelectedIndex == 0) {
-                weightChooserView.setTranslationX(-y);
-            }
-
             bottomLayout.setTranslationY(y);
         } else {
             setTranslationY(0);

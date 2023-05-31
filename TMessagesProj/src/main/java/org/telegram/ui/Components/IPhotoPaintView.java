@@ -26,6 +26,8 @@ public interface IPhotoPaintView {
     void shutdown();
     void onResume();
 
+    default void onAnimationStateChanged(boolean isStart) {}
+    default void setOffsetTranslationX(float x) {}
     void setOffsetTranslationY(float y, float panProgress, int keyboardHeight, boolean isPan);
     float getOffsetTranslationY();
     void updateColors();

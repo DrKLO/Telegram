@@ -673,6 +673,9 @@ void ConnectionsManager::cleanUp(bool resetKeys, int32_t datacenterId) {
 }
 
 void ConnectionsManager::onConnectionClosed(Connection *connection, int reason) {
+    if (reason == 1) {
+        lastProtocolUsefullData = false;
+    }
     Datacenter *datacenter = connection->getDatacenter();
     if ((connection->getConnectionType() == ConnectionTypeGeneric || connection->getConnectionType() == ConnectionTypeGenericMedia) && datacenter->isHandshakingAny()) {
         datacenter->onHandshakeConnectionClosed(connection);
@@ -3543,6 +3546,7 @@ void ConnectionsManager::setNetworkAvailable(bool value, int32_t type, bool slow
 
 void ConnectionsManager::setIpStrategy(uint8_t value) {
     scheduleTask([&, value] {
+        lastProtocolUsefullData = false;
         ipStrategy = value;
     });
 }
