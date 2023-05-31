@@ -5282,6 +5282,23 @@ public class Theme {
         }
     }
 
+    public static Drawable getSelectorDrawableByColor(int colorValue, int backgroundColorValue) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            Drawable maskDrawable = new ColorDrawable(0xffffffff);
+            ColorStateList colorStateList = new ColorStateList(
+                    new int[][]{StateSet.WILD_CARD},
+                    new int[]{colorValue}
+            );
+            return new RippleDrawable(colorStateList, new ColorDrawable(backgroundColorValue), maskDrawable);
+        } else {
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(colorValue));
+            stateListDrawable.addState(new int[]{android.R.attr.state_selected}, new ColorDrawable(colorValue));
+            stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(backgroundColorValue));
+            return stateListDrawable;
+        }
+    }
+
     public static Drawable createSelectorDrawable(int color) {
         return createSelectorDrawable(color, RIPPLE_MASK_CIRCLE_20DP, -1);
     }

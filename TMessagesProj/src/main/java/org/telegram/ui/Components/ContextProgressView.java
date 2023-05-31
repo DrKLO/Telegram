@@ -19,6 +19,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class ContextProgressView extends View {
 
+    private Theme.ResourcesProvider resourcesProvider;
     private Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RectF cicleRect = new RectF();
@@ -31,7 +32,12 @@ public class ContextProgressView extends View {
     private int outerColor;
 
     public ContextProgressView(Context context, int colorType) {
+        this(context, colorType, null);
+    }
+
+    public ContextProgressView(Context context, int colorType, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         innerPaint.setStyle(Paint.Style.STROKE);
         innerPaint.setStrokeWidth(AndroidUtilities.dp(2));
         outerPaint.setStyle(Paint.Style.STROKE);
@@ -63,12 +69,12 @@ public class ContextProgressView extends View {
 
     public void updateColors() {
         if (innerKey >= 0) {
-            innerPaint.setColor(Theme.getColor(innerKey));
+            innerPaint.setColor(Theme.getColor(innerKey, resourcesProvider));
         } else {
             innerPaint.setColor(innerColor);
         }
         if (outerKey >= 0) {
-            outerPaint.setColor(Theme.getColor(outerKey));
+            outerPaint.setColor(Theme.getColor(outerKey, resourcesProvider));
         } else {
             outerPaint.setColor(outerColor);
         }
