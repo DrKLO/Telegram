@@ -1049,6 +1049,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int commentUnreadX;
     private boolean commentDrawUnread;
     private int commentWidth;
+    private CharSequence currentComment;
     private int commentX;
     private int totalCommentWidth;
     private int commentNumberWidth;
@@ -4143,7 +4144,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 messageObject.translated != lastTranslated;
         boolean groupChanged = groupedMessages != currentMessagesGroup;
         boolean pollChanged = false;
-
+        boolean captionChanged = currentCaption != messageObject.caption;
         if (!messageIdChanged && currentMessageObject != null) {
             messageObject.copyStableParams(currentMessageObject);
         }
@@ -4512,7 +4513,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
                     commentWidth = totalCommentWidth = (int) Math.ceil(Theme.chat_commentTextPaint.measureText(comment));
-                    commentLayout = new StaticLayout(comment, Theme.chat_commentTextPaint, commentWidth + AndroidUtilities.dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    boolean commentChanged = currentComment == null || !currentComment.equals(comment);
+                    if (commentLayout == null || commentChanged) {
+                        commentLayout = new StaticLayout(comment, Theme.chat_commentTextPaint, commentWidth + AndroidUtilities.dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        currentComment = comment;
+                    }
+
                     if (commentCount != 0 && !LocaleController.isRTL) {
                         drawCommentNumber = true;
                         if (commentNumberLayout == null) {
@@ -6180,7 +6186,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     int width = backgroundWidth - AndroidUtilities.dp(31);
                     widthForCaption = width - AndroidUtilities.dp(10) - getExtraTextX() * 2;
 
-                    if (!messageObject.isRestrictedMessage && !TextUtils.isEmpty(messageObject.caption)) {
+                    if (captionChanged && !messageObject.isRestrictedMessage && !TextUtils.isEmpty(messageObject.caption)) {
                         try {
                             currentCaption = messageObject.caption;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -6984,14 +6990,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (currentCaption != null) {
                         try {
                             widthForCaption -= getExtraTextX() * 2;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                captionLayout = StaticLayout.Builder.obtain(currentCaption, 0, currentCaption.length(), Theme.chat_msgTextPaint, widthForCaption)
-                                        .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
-                                        .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
-                                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                                        .build();
-                            } else {
-                                captionLayout = new StaticLayout(currentCaption, Theme.chat_msgTextPaint, widthForCaption, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                            if (captionLayout == null || captionChanged) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    captionLayout = StaticLayout.Builder.obtain(currentCaption, 0, currentCaption.length(), Theme.chat_msgTextPaint, widthForCaption)
+                                            .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
+                                            .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
+                                            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                                            .build();
+                                } else {
+                                    captionLayout = new StaticLayout(currentCaption, Theme.chat_msgTextPaint, widthForCaption, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                                }
                             }
                             updateCaptionSpoilers();
                             int lineCount = captionLayout.getLineCount();
@@ -7362,14 +7370,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             width -= AndroidUtilities.dp(24);
                         }
                         int widthForCaption = width - AndroidUtilities.dp(31 + (currentMessageObject.type != MessageObject.TYPE_ROUND_VIDEO ? 10 : 0)) - getExtraTextX() * 2;
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            captionLayout = StaticLayout.Builder.obtain(currentCaption, 0, currentCaption.length(), Theme.chat_msgTextPaint, widthForCaption)
-                                    .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
-                                    .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
-                                    .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                                    .build();
-                        } else {
-                            captionLayout = new StaticLayout(currentCaption, Theme.chat_msgTextPaint, widthForCaption, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        if (captionLayout == null || captionChanged) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                captionLayout = StaticLayout.Builder.obtain(currentCaption, 0, currentCaption.length(), Theme.chat_msgTextPaint, widthForCaption)
+                                        .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
+                                        .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
+                                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                                        .build();
+                            } else {
+                                captionLayout = new StaticLayout(currentCaption, Theme.chat_msgTextPaint, widthForCaption, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                            }
                         }
                         updateSeekBarWaveformWidth(null);
                         updateCaptionSpoilers();
