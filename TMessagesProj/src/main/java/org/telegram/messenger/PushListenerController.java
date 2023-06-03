@@ -151,6 +151,9 @@ public class PushListenerController {
                     buffer.readBytes(strBytes, true);
                     jsonString = new String(strBytes);
                     JSONObject json = new JSONObject(jsonString);
+                    if (BuildVars.LOGS_ENABLED) {
+                         FileLog.d("GCM received decrypt json: " + json + " from: " + from);
+                     }
 
                     if (json.has("loc_key")) {
                         loc_key = json.getString("loc_key");
