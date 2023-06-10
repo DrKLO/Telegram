@@ -217,6 +217,7 @@ public class MediaDataController extends BaseController {
     private LongSparseArray<TLRPC.Document>[] stickersByIds = new LongSparseArray[]{new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>()};
     private LongSparseArray<TLRPC.TL_messages_stickerSet> stickerSetsById = new LongSparseArray<>();
     private LongSparseArray<TLRPC.TL_messages_stickerSet> installedStickerSetsById = new LongSparseArray<>();
+    private HashSet<Integer> loadingStickerSetIDHashes = new HashSet<>();
     private ArrayList<Long> installedForceStickerSetsById = new ArrayList<>();
     private ArrayList<Long> uninstalledForceStickerSetsById = new ArrayList<>();
     private LongSparseArray<TLRPC.TL_messages_stickerSet> groupStickerSets = new LongSparseArray<>();
@@ -1158,10 +1159,15 @@ public class MediaDataController extends BaseController {
             return cacheSet;
         }
         if (inputStickerSet instanceof TLRPC.TL_inputStickerSetID) {
+            if (loadingStickerSetIDHashes.contains(hash)) {
+                return null;
+            }
+            loadingStickerSetIDHashes.add(hash);
             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                 TLRPC.TL_messages_stickerSet cachedSet = getCachedStickerSetInternal(inputStickerSet.id, hash);
                 AndroidUtilities.runOnUIThread(() -> {
                     if (cachedSet != null) {
+                        loadingStickerSetIDHashes.remove(hash);
                         if (onResponse != null) {
                             onResponse.run(cachedSet);
                         }
@@ -1172,6 +1178,7 @@ public class MediaDataController extends BaseController {
                         getNotificationCenter().postNotificationName(NotificationCenter.groupStickersDidLoad, cachedSet.set.id, cachedSet);
                     } else {
                         fetchStickerSetInternal(inputStickerSet, (ok, set) -> {
+                            loadingStickerSetIDHashes.remove(hash);
                             if (onResponse != null) {
                                 onResponse.run(set);
                             }
