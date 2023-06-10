@@ -628,7 +628,13 @@ public class ReactionsEffectOverlay {
     }
 
     public static String getFilterForAroundAnimation() {
-        return sizeForAroundReaction() + "_" + sizeForAroundReaction() + "_nolimit_pcache";
+        StringBuilder sb = new StringBuilder(20);
+        int size = sizeForAroundReaction();
+        sb.append(size);
+        sb.append("_");
+        sb.append(size);
+        sb.append("_nolimit_pcache");
+        return sb.toString();
     }
 
     private void removeCurrentView() {
