@@ -3165,27 +3165,45 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             emojiGridView.setItemAnimator(null);
         }
         if (diff) {
-            DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                @Override
-                public int getOldListSize() {
-                    return prevRowHashCodes.size();
+            // DiffUtil works slow when there are many modifications
+            boolean needCalculateDiff = true;
+            if (prevRowHashCodes.size() == 0 && rowHashCodes.size() > 0) {
+                needCalculateDiff = false;
+                adapter.notifyItemRangeInserted(0, rowHashCodes.size());
+            } else if (prevRowHashCodes.size() == rowHashCodes.size()) {
+                needCalculateDiff = !prevRowHashCodes.equals(rowHashCodes);
+            } else if (rowHashCodes.size() >= prevRowHashCodes.size()) {
+                List<Long> subList = rowHashCodes.subList(0, prevRowHashCodes.size());
+                needCalculateDiff = !prevRowHashCodes.equals(subList);
+                if (!needCalculateDiff) {
+                    // No need to search for modifications if only new items were inserted
+                    adapter.notifyItemRangeInserted(prevRowHashCodes.size(), rowHashCodes.size() - prevRowHashCodes.size());
                 }
+            }
 
-                @Override
-                public int getNewListSize() {
-                    return rowHashCodes.size();
-                }
+            if (needCalculateDiff) {
+                DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                    @Override
+                    public int getOldListSize() {
+                        return prevRowHashCodes.size();
+                    }
 
-                @Override
-                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                    return prevRowHashCodes.get(oldItemPosition).equals(rowHashCodes.get(newItemPosition));
-                }
+                    @Override
+                    public int getNewListSize() {
+                        return rowHashCodes.size();
+                    }
 
-                @Override
-                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                    return true;
-                }
-            }, false).dispatchUpdatesTo(adapter);
+                    @Override
+                    public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                        return prevRowHashCodes.get(oldItemPosition).equals(rowHashCodes.get(newItemPosition));
+                    }
+
+                    @Override
+                    public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                        return true;
+                    }
+                }, false).dispatchUpdatesTo(adapter);
+            }
         } else {
             adapter.notifyDataSetChanged();
         }
