@@ -24,7 +24,6 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ImageReceiver;
@@ -240,6 +239,8 @@ public class CustomEmojiReactionsWindow {
 
     int[] location = new int[2];
     final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
+    ArrayList<ValueAnimator> animators = new ArrayList<>();
+    private long lastAnimatorsInvokeTime = 0;
 
     private void createTransition(boolean enter) {
         fromRect.set(reactionsContainerLayout.rect);
@@ -283,8 +284,9 @@ public class CustomEmojiReactionsWindow {
         account = UserConfig.selectedAccount;
         notificationsLocker.lock();
         valueAnimator = ValueAnimator.ofFloat(enterTransitionProgress, enter ? 1f : 0);
+        containerView.selfInvalidate = true;
         valueAnimator.addUpdateListener(animation -> {
-            valueAnimator = null;
+            containerView.selfInvalidate = false;
             enterTransitionProgress = (float) animation.getAnimatedValue();
             reactionsContainerLayout.setCustomEmojiEnterProgress(Utilities.clamp(enterTransitionProgress,1f, 0));
             invalidatePath = true;
@@ -294,12 +296,14 @@ public class CustomEmojiReactionsWindow {
                 updateCascadeEnter(enterTransitionProgress);
             }
         });
+        animators.add(valueAnimator);
         if (!enter) {
             syncReactionFrames(enter);
         }
         valueAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
+                animators.remove(valueAnimator);
                 checkAnimationEnd();
                 enterTransitionProgress = enter ? 1f : 0f;
                 if (enter) {
@@ -333,7 +337,6 @@ public class CustomEmojiReactionsWindow {
     }
 
     HashSet<View> animatingEnterChild = new HashSet<>();
-    ArrayList<ValueAnimator> animators = new ArrayList<>();
 
     private void updateCascadeEnter(float progress) {
         int fullHeight = selectAnimatedEmojiDialog.contentView.getHeight();
@@ -378,9 +381,7 @@ public class CustomEmojiReactionsWindow {
             }
         }
         if (updated) {
-            selectAnimatedEmojiDialog.emojiGridView.invalidate();
-            selectAnimatedEmojiDialog.contentView.invalidate();
-            selectAnimatedEmojiDialog.emojiTabs.contentView.invalidate();
+           invalidateSelectAnimatedEmojiDialogViews();
         }
         if (animatedViews != null) {
             ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
@@ -391,9 +392,7 @@ public class CustomEmojiReactionsWindow {
                     finalAnimatedViews.get(i).setScaleX(s);
                     finalAnimatedViews.get(i).setScaleY(s);
                 }
-                selectAnimatedEmojiDialog.emojiGridView.invalidate();
-                selectAnimatedEmojiDialog.contentView.invalidate();
-                selectAnimatedEmojiDialog.emojiTabs.contentView.invalidate();
+                invalidateSelectAnimatedEmojiDialogViews();
             });
             animators.add(valueAnimator);
             valueAnimator.addListener(new AnimatorListenerAdapter() {
@@ -407,6 +406,15 @@ public class CustomEmojiReactionsWindow {
             valueAnimator.setDuration(350);
             valueAnimator.setInterpolator(new OvershootInterpolator(1f));
             valueAnimator.start();
+        }
+    }
+
+    private void invalidateSelectAnimatedEmojiDialogViews() {
+        if (System.currentTimeMillis() - lastAnimatorsInvokeTime != 0) {
+            selectAnimatedEmojiDialog.emojiGridView.invalidate();
+            selectAnimatedEmojiDialog.contentView.invalidate();
+            selectAnimatedEmojiDialog.emojiTabs.contentView.invalidate();
+            lastAnimatorsInvokeTime = System.currentTimeMillis();
         }
     }
 
@@ -498,6 +506,7 @@ public class CustomEmojiReactionsWindow {
         Rect shadowPad = new Rect();
         Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         int[] radiusTmp = new int[4];
+        boolean selfInvalidate = false;
 
 
         public ContainerView(@NonNull Context context) {
@@ -737,7 +746,7 @@ public class CustomEmojiReactionsWindow {
             }
 
             selectAnimatedEmojiDialog.drawBigReaction(canvas, this);
-            if (valueAnimator != null) {
+            if (selfInvalidate) {
                 invalidate();
             }
         }
