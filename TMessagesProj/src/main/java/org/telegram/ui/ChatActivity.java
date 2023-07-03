@@ -4184,7 +4184,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         int wasOutlineAlpha = skeletonOutlinePaint.getAlpha();
                         skeletonServicePaint.setAlpha((int) (0xFF * topSkeletonAlpha));
                         skeletonPaint.setAlpha((int) (topSkeletonAlpha * alpha));
-                        skeletonOutlinePaint.setAlpha((int) (wasOutlineAlpha * alpha));
+                        skeletonOutlinePaint.setAlpha((int) (topSkeletonAlpha * alpha));
                         while (lastTop > blurredViewTopOffset) {
                             lastTop -= AndroidUtilities.dp(3f);
 
@@ -6721,7 +6721,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         bottomOverlayStartButton.setOnClickListener(v -> bottomOverlayChatText.callOnClick());
         bottomOverlayChat.addView(bottomOverlayStartButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER, 8, 8, 8, 8));
 
-        if (currentUser != null && currentUser.bot && !UserObject.isReplyUser(currentUser) && !isInScheduleMode()) {
+        if (currentUser != null && currentUser.bot && !UserObject.isReplyUser(currentUser) && !isInScheduleMode() && chatMode != MODE_PINNED) {
             bottomOverlayStartButton.setVisibility(View.VISIBLE);
             bottomOverlayChat.setVisibility(View.VISIBLE);
         }
@@ -20039,7 +20039,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void showInfoHint(MessageObject messageObject, CharSequence text, int type) {
         int duration = Math.max(4000, Math.min((text == null ? 0 : text.length()) / 50 * 1600, 10000));
-        BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, text, 3).setDuration(duration).setOnHideListener(() -> {
+        BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, text, 9999).setDuration(duration).setOnHideListener(() -> {
             if (chatListView != null) {
                 int count = chatListView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -22424,7 +22424,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public int getTopOffset(int tag) {
-                return (actionBar != null ? actionBar.getMeasuredHeight() + (int) actionBar.getTranslationY() : 0) + Math.max(0, (int) chatListViewPaddingTop - AndroidUtilities.dp(4));
+                return (actionBar != null ? actionBar.getMeasuredHeight() + (int) actionBar.getTranslationY() : 0) + Math.max(0, contentPaddingTop);
             }
 
             @Override

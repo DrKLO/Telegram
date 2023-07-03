@@ -34,8 +34,8 @@ public class ProxyDrawable extends Drawable {
 
     public ProxyDrawable(Context context) {
         super();
-        emptyDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_off);
-        fullDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_on);
+        emptyDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_off).mutate();
+        fullDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_on).mutate();
 
         outerPaint.setStyle(Paint.Style.STROKE);
         outerPaint.setStrokeWidth(AndroidUtilities.dp(1.66f));
