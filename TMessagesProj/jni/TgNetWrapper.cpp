@@ -146,6 +146,10 @@ void cancelRequest(JNIEnv *env, jclass c, jint instanceNum, jint token, jboolean
     return ConnectionsManager::getInstance(instanceNum).cancelRequest(token, notifyServer);
 }
 
+void failNotRunningRequest(JNIEnv *env, jclass c, jint instanceNum, jint token) {
+    return ConnectionsManager::getInstance(instanceNum).failNotRunningRequest(token);
+}
+
 void cleanUp(JNIEnv *env, jclass c, jint instanceNum, jboolean resetKeys) {
     return ConnectionsManager::getInstance(instanceNum).cleanUp(resetKeys, -1);
 }
@@ -346,6 +350,10 @@ void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstr
     socket->onHostNameResolved(h, i, false);
 }
 
+void discardConnection(JNIEnv *env, jclass c,  jint instanceNum, jint datacenerId, jint connectionType) {
+    ConnectionsManager::getInstance(instanceNum).reconnect(datacenerId, connectionType);
+}
+
 void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
 
@@ -463,7 +471,9 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setJava", "(Z)V", (void *) setJava},
         {"native_applyDnsConfig", "(IJLjava/lang/String;I)V", (void *) applyDnsConfig},
         {"native_checkProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/telegram/tgnet/RequestTimeDelegate;)J", (void *) checkProxy},
-        {"native_onHostNameResolved", "(Ljava/lang/String;JLjava/lang/String;)V", (void *) onHostNameResolved}
+        {"native_onHostNameResolved", "(Ljava/lang/String;JLjava/lang/String;)V", (void *) onHostNameResolved},
+        {"native_discardConnection", "(III)V", (void *) discardConnection},
+        {"native_failNotRunningRequest", "(II)V", (void *) failNotRunningRequest},
 };
 
 inline int registerNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *methods, int methodsCount) {

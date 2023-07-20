@@ -182,6 +182,12 @@ public final class MediaCodecUtil {
       }
     }
     applyWorkarounds(mimeType, decoderInfos);
+    for (int i = 0; i < decoderInfos.size(); i++) {
+      if (decoderInfos.get(i).name.equals("c2.exynos.hevc.decoder")) {
+        decoderInfos.remove(i);
+        i--;
+      }
+    }
     ImmutableList<MediaCodecInfo> immutableDecoderInfos = ImmutableList.copyOf(decoderInfos);
     decoderInfosCache.put(key, immutableDecoderInfos);
     return immutableDecoderInfos;

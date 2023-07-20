@@ -18,11 +18,11 @@ import java.util.ArrayList;
 
 public class CameraInfo {
 
-    protected int cameraId;
+    public int cameraId;
     protected Camera camera;
     protected ArrayList<Size> pictureSizes = new ArrayList<>();
     protected ArrayList<Size> previewSizes = new ArrayList<>();
-    protected final int frontCamera;
+    public final int frontCamera;
 
     protected CameraDevice cameraDevice;
     CameraCharacteristics cameraCharacteristics;

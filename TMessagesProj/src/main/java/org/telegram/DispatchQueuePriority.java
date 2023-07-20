@@ -46,6 +46,7 @@ public class DispatchQueuePriority {
             return runnable;
         } else {
             PriorityRunnable priorityRunnable = new PriorityRunnable(priority, runnable);
+
             threadPoolExecutor.execute(priorityRunnable);
             return priorityRunnable;
         }

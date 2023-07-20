@@ -57,7 +57,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
                 return;
             }
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
+                FileLog.d("apply channel{channel} " + channelId + " state");
             }
             preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_CHANNEL), state ? Integer.MAX_VALUE : 0).commit();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_CHANNEL);
@@ -67,7 +67,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
                 return;
             }
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
+                FileLog.d("apply channel{groups} " + channelId + " state");
             }
             preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_GROUP), state ? Integer.MAX_VALUE : 0).commit();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_GROUP);
@@ -77,9 +77,19 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
                 return;
             }
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
+                FileLog.d("apply channel{private} " + channelId + " state");
             }
             preferences.edit().putInt(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_PRIVATE), state ? Integer.MAX_VALUE : 0).commit();
+            AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_PRIVATE);
+        } else if (args[1].startsWith("stories")) {
+            String currentChannel = preferences.getString("stories", null);
+            if (!channelId.equals(currentChannel)) {
+                return;
+            }
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("apply channel{stories} " + channelId + " state");
+            }
+            preferences.edit().putBoolean(NotificationsController.getGlobalNotificationsKey(NotificationsController.TYPE_STORIES), !state).commit();
             AccountInstance.getInstance(account).getNotificationsController().updateServerNotificationsSettings(NotificationsController.TYPE_PRIVATE);
         } else {
             long dialogId = Utilities.parseLong(args[1]);
@@ -93,7 +103,7 @@ public class NotificationsDisabledReceiver extends BroadcastReceiver {
                 return;
             }
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("apply channel " + channelId + " state");
+                FileLog.d("apply channel{else} " + channelId + " state");
             }
             SharedPreferences.Editor editor = preferences.edit();
             editor.putInt("notify2_" + key, state ? 2 : 0);

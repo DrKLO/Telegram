@@ -136,6 +136,10 @@ public class BackupImageView extends View {
         onNewImageSet();
     }
 
+    public void clearImage() {
+        imageReceiver.clearImage();
+    }
+
     public void setForUserOrChat(TLObject object, AvatarDrawable avatarDrawable) {
         imageReceiver.setForUserOrChat(object, avatarDrawable);
         onNewImageSet();

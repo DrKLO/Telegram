@@ -1036,6 +1036,26 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
             dataArr[2] = 0;
         }
         dataArr[4] = (int32_t) (info->fmt_ctx->duration * 1000 / AV_TIME_BASE);
+        int video_stream_index = -1;
+        double fps = 30.0;
+        for (int i = 0; i < info->fmt_ctx->nb_streams; i++) {
+            if (info->fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                video_stream_index = i;
+                break;
+            }
+        }
+        if (video_stream_index != -1) {
+            AVStream* video_stream = info->fmt_ctx->streams[video_stream_index];
+            if (video_stream->avg_frame_rate.den && video_stream->avg_frame_rate.num) {
+                fps = av_q2d(video_stream->avg_frame_rate);
+            } else if(video_stream->r_frame_rate.den && video_stream->r_frame_rate.num) {
+                fps = av_q2d(video_stream->r_frame_rate);
+            } else {
+                int ticks = video_stream->codec->ticks_per_frame;
+                fps = 1.0 / (ticks * av_q2d(video_stream->time_base));
+            }
+        }
+        dataArr[5] = (int32_t) fps;
         //(int32_t) (1000 * info->video_stream->duration * av_q2d(info->video_stream->time_base));
         env->ReleaseIntArrayElements(data, dataArr, 0);
     }

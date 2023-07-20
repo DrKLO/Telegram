@@ -176,6 +176,11 @@ public class CellFlickerDrawable {
         onRestartCallback = runnable;
     }
 
+    public void setAlpha(int alpha) {
+        paint.setAlpha(alpha);
+        paintOutline.setAlpha(alpha);
+    }
+
     public class DrawableInterface extends Drawable {
 
         public float radius;

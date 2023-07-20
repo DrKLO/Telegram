@@ -342,7 +342,7 @@ public class StickerSetCell extends FrameLayout {
                     imageView.setImage(ImageLocation.getForDocument(sticker), filter, imageLocation, null, 0, set);
                 }
                 if (MessageObject.isTextColorEmoji(sticker)) {
-                    imageView.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                    imageView.setColorFilter(Theme.getAnimatedEmojiColorFilter(null));
                 }
             } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, filter, "tgs", svgThumb, set);

@@ -215,7 +215,7 @@ public class PullForegroundDrawable {
         canvas.save();
 
         if (header) {
-            canvas.clipRect(0, 0, listView.getMeasuredWidth(), overscroll + 1);
+            canvas.clipRect(0, -AndroidUtilities.dp(4) /*fix overscroll*/, listView.getMeasuredWidth(), overscroll + 1);
         }
         if (outProgress == 0f) {
             if (!(accentRevalProgress == 1f || accentRevalProgressOut == 1)) {

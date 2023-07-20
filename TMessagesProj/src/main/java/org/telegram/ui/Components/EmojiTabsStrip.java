@@ -98,7 +98,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
     private int currentType;
     public boolean updateButtonDrawables = true;
 
-    public EmojiTabsStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean includeStandard, boolean includeAnimated, int type, Runnable onSettingsOpen) {
+    public EmojiTabsStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean includeRecent, boolean includeStandard, boolean includeAnimated, int type, Runnable onSettingsOpen) {
         super(context);
         this.includeAnimated = includeAnimated;
         this.resourcesProvider = resourcesProvider;
@@ -225,6 +225,8 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 paint.setColor(selectorColor());
                 if (forceTabsShow) {
                     paint.setAlpha((int) (paint.getAlpha() * alpha * (1f - isEmojiTabs * .5f)));
+                } else {
+                    paint.setAlpha((int) (paint.getAlpha() * alpha));
                 }
 
                 path.rewind();
@@ -262,6 +264,9 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
             private void getChildBounds(int i, RectF out) {
                 View child = getChildAt(MathUtils.clamp(i, 0, getChildCount() - 1));
+                if (child == null) {
+                    return;
+                }
                 out.set(child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
                 out.set(
                         out.centerX() - out.width() / 2f * child.getScaleX(),
@@ -284,8 +289,10 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         if (type == SelectAnimatedEmojiDialog.TYPE_TOPIC_ICON) {
             recentDrawableId = R.drawable.msg_emoji_smiles;
         }
-        contentView.addView(recentTab = new EmojiTabButton(context, recentDrawableId, false, false));
-        recentTab.id = "recent".hashCode();
+        if (includeRecent) {
+            contentView.addView(recentTab = new EmojiTabButton(context, recentDrawableId, false, false));
+            recentTab.id = "recent".hashCode();
+        }
         if (!includeAnimated) {
             for (int i = 0; i < emojiTabsDrawableIds.length; ++i) {
                 contentView.addView(new EmojiTabButton(context, emojiTabsDrawableIds[i], false, i == 0));
@@ -535,8 +542,18 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 if (currentPackButton != null) {
                     contentView.removeView(currentPackButton);
                 }
+            } else if (newPack.resId != 0) {
+                if (currentPackButton == null) {
+                    currentPackButton = new EmojiTabButton(getContext(), newPack.resId, false, false);
+                    onTabCreate(currentPackButton);
+                    contentView.addView(currentPackButton, packsIndexStart + i);
+                } else {
+                    currentPackButton.setDrawable(getResources().getDrawable(newPack.resId).mutate());
+                    currentPackButton.updateColor();
+                    currentPackButton.setLock(null);
+                }
             } else {
-                final boolean free = isFreeEmojiPack(newPack.set, newPack.documents);
+                final boolean free = newPack.free; // isFreeEmojiPack(newPack.set, newPack.documents);
                 DelayedAnimatedEmojiDrawable drawable = currentPackButton == null ? null : (DelayedAnimatedEmojiDrawable) currentPackButton.getDrawable();
                 TLRPC.Document thumbDocument = getThumbDocument(newPack.set, newPack.documents);
                 if (thumbDocument != null && (drawable == null || !drawable.equals(thumbDocument.id))) {
@@ -837,11 +854,11 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
     }
 
     protected ColorFilter getEmojiColorFilter() {
-        return Theme.chat_animatedEmojiTextColorFilter;
+        return Theme.getAnimatedEmojiColorFilter(resourcesProvider);
     }
 
     private int selectorColor() {
-        return 0x2effffff & Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider);
+        return Theme.multAlpha(Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider), .18f);
     }
 
     public void setAnimatedEmojiCacheType(int cacheType) {
@@ -1488,5 +1505,21 @@ class ScrollableHorizontalScrollView extends HorizontalScrollView {
                 ((EmojiTabsStrip.EmojiTabButton) child).updateVisibilityInbounds(child.getRight() - getScrollX() > 0 && child.getLeft() - getScrollX() < getMeasuredWidth(), scrollingAnimation && !(showAnimator != null && showAnimator.isRunning()));
             }
         }
+    }
+
+    private boolean touch;
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            touch = true;
+        } else if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+            touch = false;
+        }
+        return super.onTouchEvent(ev);
+    }
+
+    public boolean isTouch() {
+        return touch;
     }
 }

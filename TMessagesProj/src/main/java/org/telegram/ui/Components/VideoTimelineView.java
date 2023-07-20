@@ -13,6 +13,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -66,8 +67,10 @@ public class VideoTimelineView extends View {
     private ArrayList<Bitmap> keyframes = new ArrayList<>();
     private boolean framesLoaded;
     private TimeHintView timeHintView;
+    Path path;
 
     Paint thumbPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    boolean useClip;
 
     public void setKeyframes(ArrayList<Bitmap> keyframes) {
         this.keyframes.clear();
@@ -396,7 +399,27 @@ public class VideoTimelineView extends View {
     }
 
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (useClip) {
+            if (path == null) {
+                path = new Path();
+            }
+            path.rewind();
+            int topOffset = (getMeasuredHeight() - AndroidUtilities.dp(32)) >> 1;
+            AndroidUtilities.rectTmp.set(0, topOffset, getMeasuredWidth(), getMeasuredHeight() - topOffset);
+            path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(7), AndroidUtilities.dp(7), Path.Direction.CCW);
+        }
+    }
+
+    @Override
     protected void onDraw(Canvas canvas) {
+        if (useClip) {
+            canvas.save();
+            if (path != null) {
+                canvas.clipPath(path);
+            }
+        }
         int width = getMeasuredWidth() - AndroidUtilities.dp(24);
         int startX = (int) (width * progressLeft) + AndroidUtilities.dp(12);
         int endX = (int) (width * progressRight) + AndroidUtilities.dp(12);
@@ -425,6 +448,9 @@ public class VideoTimelineView extends View {
                 offset++;
             }
         } else {
+            if (useClip) {
+                canvas.restore();
+            }
             return;
         }
 
@@ -434,7 +460,11 @@ public class VideoTimelineView extends View {
         canvas.drawLine(startX - AndroidUtilities.dp(4), topOffset + AndroidUtilities.dp(10), startX - AndroidUtilities.dp(4), getMeasuredHeight() - AndroidUtilities.dp(10) - topOffset, thumbPaint);
         canvas.drawLine(endX + AndroidUtilities.dp(4), topOffset + AndroidUtilities.dp(10), endX + AndroidUtilities.dp(4), getMeasuredHeight() - AndroidUtilities.dp(10) - topOffset, thumbPaint);
 
-        drawCorners(canvas, getMeasuredHeight() - topOffset * 2, getMeasuredWidth(), 0, topOffset);
+        if (useClip) {
+            canvas.restore();
+        } else {
+            drawCorners(canvas, getMeasuredHeight() - topOffset * 2, getMeasuredWidth(), 0, topOffset);
+        }
     }
 
     private void drawCorners(Canvas canvas, int height, int width, int left, int top) {

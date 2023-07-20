@@ -79,7 +79,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
             replyToMsgId = new MessageObject(accountInstance.getCurrentAccount(), topicStartMessage, false, false);
         }
 
-        accountInstance.getSendMessagesHelper().sendMessage(text.toString(), dialog_id, replyToMsgId, null, null, true, null, null, null, true, 0, null, false);
+        accountInstance.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialog_id, replyToMsgId, null, null, true, null, null, null, true, 0, null, false));
         //TODO handle topics
         if (topicId == 0) {
             accountInstance.getMessagesController().markDialogAsRead(dialog_id, max_id, max_id, 0, false, topicId, 0, true, 0);

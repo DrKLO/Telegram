@@ -26,11 +26,15 @@ public abstract class AbstractSerializedData {
 
     public abstract void writeByteBuffer(NativeByteBuffer buffer);
 
+    public abstract void writeFloat(float f);
+
     public abstract int readInt32(boolean exception);
 
     public abstract boolean readBool(boolean exception);
 
     public abstract long readInt64(boolean exception);
+
+    public abstract byte readByte(boolean exception);
 
     public abstract void readBytes(byte[] b, boolean exception);
 
@@ -39,6 +43,8 @@ public abstract class AbstractSerializedData {
     public abstract String readString(boolean exception);
 
     public abstract byte[] readByteArray(boolean exception);
+
+    public abstract float readFloat(boolean exception);
 
     public abstract NativeByteBuffer readByteBuffer(boolean exception);
 

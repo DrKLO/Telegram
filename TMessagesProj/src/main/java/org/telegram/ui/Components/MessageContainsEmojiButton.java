@@ -25,6 +25,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -53,6 +54,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
 
     public final static int EMOJI_TYPE = 0;
     public final static int REACTIONS_TYPE = 1;
+    public final static int EMOJI_STICKER_TYPE = 2;
     int type;
 
     private class BoldAndAccent extends CharacterStyle {
@@ -65,7 +67,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         }
     }
 
-    public MessageContainsEmojiButton(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, @NonNull ArrayList<TLRPC.InputStickerSet> inputStickerSets, int type) {
+    private MessageContainsEmojiButton(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, int type) {
         super(context);
         this.currentAccount = currentAccount;
         this.type = type;
@@ -75,6 +77,28 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(13));
         textPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+    }
+
+    public MessageContainsEmojiButton(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, TLObject object) {
+        this(currentAccount, context, resourcesProvider, EMOJI_STICKER_TYPE);
+
+        String string;
+        if (type == EMOJI_TYPE) {
+            string = LocaleController.getString("MessageContainsEmojiPack", R.string.MessageContainsEmojiPack);
+        } else {
+            string = LocaleController.getString("MessageContainsReactionsPack", R.string.MessageContainsReactionsPack);
+        }
+        String[] parts = string.split("%s");
+        mainText = parts[0];
+        endText = parts[1];
+        loadingDrawable = new LoadingDrawable(resourcesProvider);
+        loadingDrawable.colorKey1 = Theme.key_actionBarDefaultSubmenuBackground;
+        loadingDrawable.colorKey2 = Theme.key_listSelector;
+        loadingDrawable.setRadiiDp(4);
+    }
+
+    public MessageContainsEmojiButton(int currentAccount, Context context, Theme.ResourcesProvider resourcesProvider, @NonNull ArrayList<TLRPC.InputStickerSet> inputStickerSets, int type) {
+        this(currentAccount, context, resourcesProvider, type);
 
         if (inputStickerSets.size() > 1) {
             String string;
@@ -130,7 +154,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                         }
                     }, 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     emojiDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, document);
-                    emojiDrawable.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                    emojiDrawable.setColorFilter(Theme.getAnimatedEmojiColorFilter(resourcesProvider));
                     emojiDrawable.addView(this);
 
                     SpannableString stickerPack = new SpannableString(stickerPackName);

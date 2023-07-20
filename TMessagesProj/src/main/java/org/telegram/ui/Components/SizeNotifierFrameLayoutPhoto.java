@@ -19,6 +19,7 @@ import org.telegram.messenger.AndroidUtilities;
 
 public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
 
+    private Activity activity;
     private Rect rect = new Rect();
     private int keyboardHeight;
     private SizeNotifierFrameLayoutPhotoDelegate delegate;
@@ -30,9 +31,14 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
     }
 
-    public SizeNotifierFrameLayoutPhoto(Context context, boolean smoothKeyboard) {
+    public SizeNotifierFrameLayoutPhoto(Context context, Activity activity, boolean smoothKeyboard) {
         super(context);
+        setActivity(activity);
         useSmoothKeyboard = smoothKeyboard;
+    }
+
+    public void setActivity(Activity activity) {
+        this.activity = activity;
     }
 
     public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate sizeNotifierFrameLayoutPhotoDelegate) {
@@ -60,7 +66,7 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
             int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
             return usableViewHeight - (rect.bottom - rect.top);
         } else {
-            int size = ((Activity) rootView.getContext()).getWindow().getDecorView().getHeight() - AndroidUtilities.getViewInset(rootView) - rootView.getBottom();
+            int size = activity.getWindow().getDecorView().getHeight() - AndroidUtilities.getViewInset(rootView) - rootView.getBottom();
             if (size <= Math.max(AndroidUtilities.dp(10), AndroidUtilities.statusBarHeight)) {
                 size = 0;
             }

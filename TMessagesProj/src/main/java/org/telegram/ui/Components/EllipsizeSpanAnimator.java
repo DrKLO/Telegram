@@ -119,7 +119,7 @@ public class EllipsizeSpanAnimator {
 
         @Override
         public void updateDrawState(TextPaint tp) {
-            tp.setAlpha(alpha);
+            tp.setAlpha((int) (tp.getAlpha() * (alpha / 255f)));
         }
     }
 }

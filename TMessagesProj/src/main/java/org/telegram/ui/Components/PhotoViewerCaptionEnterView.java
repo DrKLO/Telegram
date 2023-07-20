@@ -61,6 +61,7 @@ import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
 public class PhotoViewerCaptionEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
 
@@ -625,11 +626,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             }
             return 0;
         }
-
-        @Override
-        public boolean contains(int key) {
-            return getColor(key) != 0;
-        }
     }
 
     private void createEmojiView() {
@@ -640,7 +636,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, resourcesProvider);
+        emojiView = new EmojiView(null, true, false, false, getContext(), false, null, null, true, resourcesProvider);
         emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
             @Override
             public boolean onBackspace() {

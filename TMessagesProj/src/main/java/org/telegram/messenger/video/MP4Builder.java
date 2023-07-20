@@ -63,13 +63,13 @@ public class MP4Builder {
     private boolean splitMdat;
     private boolean wasFirstVideoFrame;
 
-    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split) throws Exception {
+    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split, boolean hevc) throws Exception {
         currentMp4Movie = mp4Movie;
 
         fos = new FileOutputStream(mp4Movie.getCacheFile());
         fc = fos.getChannel();
 
-        FileTypeBox fileTypeBox = createFileTypeBox();
+        FileTypeBox fileTypeBox = createFileTypeBox(hevc);
         fileTypeBox.getBox(fc);
         dataOffset += fileTypeBox.getSize();
         wroteSinceLastMdat += dataOffset;
@@ -200,11 +200,11 @@ public class MP4Builder {
         fos.close();
     }
 
-    protected FileTypeBox createFileTypeBox() {
+    protected FileTypeBox createFileTypeBox(boolean hevc) {
         LinkedList<String> minorBrands = new LinkedList<>();
         minorBrands.add("isom");
         minorBrands.add("iso2");
-        minorBrands.add("avc1");
+        minorBrands.add(hevc ? "hvc1" : "avc1");
         minorBrands.add("mp41");
         return new FileTypeBox("isom", 512, minorBrands);
     }

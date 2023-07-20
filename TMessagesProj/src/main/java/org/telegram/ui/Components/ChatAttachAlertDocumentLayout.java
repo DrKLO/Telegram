@@ -454,7 +454,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                             }
                         });
                         fragment.setMaxSelectedPhotos(maxSelectedFiles, false);
-                        parentAlert.baseFragment.presentFragment(fragment);
+                        parentAlert.presentFragment(fragment);
                         parentAlert.dismiss(true);
                     } else if (item.icon == R.drawable.files_music) {
                         if (delegate != null) {

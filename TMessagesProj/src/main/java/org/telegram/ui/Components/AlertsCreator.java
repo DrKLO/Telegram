@@ -540,6 +540,8 @@ public class AlertsCreator {
                     showSimpleToast(fragment, error.text);
                     break;
             }
+        } else if (request instanceof TLRPC.TL_payments_assignPlayMarketTransaction) {
+            showSimpleAlert(fragment, LocaleController.getString("PaymentConfirmationError", R.string.PaymentConfirmationError) + "\n" + error.text);
         }
 
         return null;
@@ -931,11 +933,11 @@ public class AlertsCreator {
         }
     }
 
-    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int topicId, int globalType, ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, int currentAccount, MessagesStorage.IntCallback callback) {
-        showCustomNotificationsDialog(parentFragment, did, topicId, globalType, exceptions, currentAccount, callback, null);
+    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int topicId, int globalType, ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, ArrayList<NotificationsSettingsActivity.NotificationException> autoExceptions, int currentAccount, MessagesStorage.IntCallback callback) {
+        showCustomNotificationsDialog(parentFragment, did, topicId, globalType, exceptions, autoExceptions, currentAccount, callback, null);
     }
 
-    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int topicId, int globalType, ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, int currentAccount, MessagesStorage.IntCallback callback, MessagesStorage.IntCallback resultCallback) {
+    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int topicId, int globalType, ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, ArrayList<NotificationsSettingsActivity.NotificationException> autoExceptions, int currentAccount, MessagesStorage.IntCallback callback, MessagesStorage.IntCallback resultCallback) {
         if (parentFragment == null || parentFragment.getParentActivity() == null) {
             return;
         }
@@ -1021,7 +1023,7 @@ public class AlertsCreator {
                         args.putLong("dialog_id", did);
                         parentFragment.presentFragment(new ProfileNotificationsActivity(args));
                     } else {
-                        parentFragment.presentFragment(new NotificationsCustomSettingsActivity(globalType, exceptions));
+                        parentFragment.presentFragment(new NotificationsCustomSettingsActivity(globalType, exceptions, autoExceptions));
                     }
                 } else {
                     int untilTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
@@ -1185,11 +1187,15 @@ public class AlertsCreator {
             Runnable open = () -> Browser.openUrl(fragment.getParentActivity(), Uri.parse(url), inlineReturn == 0, tryTelegraph, progress);
             AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity(), resourcesProvider);
             builder.setTitle(LocaleController.getString("OpenUrlTitle", R.string.OpenUrlTitle));
+            AlertDialog[] dialog = new AlertDialog[1];
             SpannableString link = new SpannableString(urlFinal);
             link.setSpan(new URLSpan(urlFinal) {
                 @Override
                 public void onClick(View widget) {
                     open.run();
+                    if (dialog[0] != null) {
+                        dialog[0].dismiss();
+                    }
                 }
             }, 0, link.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             SpannableStringBuilder stringBuilder = new SpannableStringBuilder(LocaleController.getString("OpenUrlAlert2", R.string.OpenUrlAlert2));
@@ -1201,7 +1207,7 @@ public class AlertsCreator {
             builder.setMessageTextViewClickable(false);
             builder.setPositiveButton(LocaleController.getString("Open", R.string.Open), (dialogInterface, i) -> open.run());
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            fragment.showDialog(builder.create());
+            fragment.showDialog(dialog[0] = builder.create());
         }
     }
 
@@ -4152,35 +4158,51 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static void sendReport(TLRPC.InputPeer peer, int type, String message, ArrayList<Integer> messages) {
-        TLRPC.TL_messages_report request = new TLRPC.TL_messages_report();
-        request.peer = peer;
-        request.id.addAll(messages);
-        request.message = message;
+    public static void sendReport(TLRPC.InputPeer peer, int type, String message, ArrayList<Integer> messages, int storyId) {
+        TLRPC.ReportReason reason = null;
         if (type == AlertsCreator.REPORT_TYPE_SPAM) {
-            request.reason = new TLRPC.TL_inputReportReasonSpam();
+            reason = new TLRPC.TL_inputReportReasonSpam();
         } else if (type == AlertsCreator.REPORT_TYPE_FAKE_ACCOUNT) {
-            request.reason = new TLRPC.TL_inputReportReasonFake();
+            reason = new TLRPC.TL_inputReportReasonFake();
         } else if (type == AlertsCreator.REPORT_TYPE_VIOLENCE) {
-            request.reason = new TLRPC.TL_inputReportReasonViolence();
+            reason = new TLRPC.TL_inputReportReasonViolence();
         } else if (type == AlertsCreator.REPORT_TYPE_CHILD_ABUSE) {
-            request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
+            reason = new TLRPC.TL_inputReportReasonChildAbuse();
         } else if (type == AlertsCreator.REPORT_TYPE_PORNOGRAPHY) {
-            request.reason = new TLRPC.TL_inputReportReasonPornography();
+            reason = new TLRPC.TL_inputReportReasonPornography();
         } else if (type == AlertsCreator.REPORT_TYPE_ILLEGAL_DRUGS) {
-            request.reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
+            reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
         } else if (type == AlertsCreator.REPORT_TYPE_PERSONAL_DETAILS) {
-            request.reason = new TLRPC.TL_inputReportReasonPersonalDetails();
+            reason = new TLRPC.TL_inputReportReasonPersonalDetails();
         } else if (type == AlertsCreator.REPORT_TYPE_OTHER) {
-            request.reason = new TLRPC.TL_inputReportReasonOther();
+            reason = new TLRPC.TL_inputReportReasonOther();
         }
-        ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
+        if (reason == null) {
+            return;
+        }
+        if (storyId != 0) {
+            TLRPC.TL_stories_report request = new TLRPC.TL_stories_report();
+            request.user_id = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(peer.user_id);
+            request.id.add(storyId);
+            request.message = message;
+            request.reason = reason;
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
 
-        });
+            });
+        } else {
+            TLRPC.TL_messages_report request = new TLRPC.TL_messages_report();
+            request.peer = peer;
+            request.id.addAll(messages);
+            request.message = message;
+            request.reason = reason;
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
+
+            });
+        }
     }
 
     public static void createReportAlert(final Context context, final long dialog_id, final int messageId, final BaseFragment parentFragment, Runnable hideDim) {
-        createReportAlert(context, dialog_id, messageId, parentFragment, null, hideDim);
+        createReportAlert(context, dialog_id, messageId, 0, parentFragment, null, hideDim);
     }
 
     public final static int REPORT_TYPE_SPAM = 0;
@@ -4192,7 +4214,7 @@ public class AlertsCreator {
     public final static int REPORT_TYPE_FAKE_ACCOUNT = 6;
     public final static int REPORT_TYPE_OTHER = 100;
 
-    public static void createReportAlert(final Context context, final long dialog_id, final int messageId, final BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider, Runnable hideDim) {
+    public static void createReportAlert(final Context context, final long dialog_id, final int messageId, final int storyId, final BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider, Runnable hideDim) {
         if (context == null || parentFragment == null) {
             return;
         }
@@ -4278,7 +4300,7 @@ public class AlertsCreator {
                 if (parentFragment instanceof ChatActivity) {
                     AndroidUtilities.requestAdjustNothing(parentFragment.getParentActivity(), parentFragment.getClassGuid());
                 }
-                parentFragment.showDialog(new ReportAlert(context, type) {
+                parentFragment.showDialog(new ReportAlert(context, type, resourcesProvider) {
 
                     @Override
                     public void dismissInternal() {
@@ -4295,12 +4317,19 @@ public class AlertsCreator {
                             ids.add(messageId);
                         }
                         TLRPC.InputPeer peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(dialog_id);
-                        sendReport(peer, type, message, ids);
+                        sendReport(peer, type, message, ids, storyId);
                         if (parentFragment instanceof ChatActivity) {
                             UndoView undoView = ((ChatActivity) parentFragment).getUndoView();
                             if (undoView != null) {
                                 undoView.showWithAction(0, UndoView.ACTION_REPORT_SENT, null);
                             }
+                        } else {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                BulletinFactory bulletinFactory = BulletinFactory.global();
+                                if (bulletinFactory != null) {
+                                    bulletinFactory.createReportSent(resourcesProvider).show();
+                                }
+                            });
                         }
                     }
                 });
@@ -4308,7 +4337,28 @@ public class AlertsCreator {
             }
             TLObject req;
             TLRPC.InputPeer peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(dialog_id);
-            if (messageId != 0) {
+            if (storyId != 0) {
+                TLRPC.TL_stories_report request = new TLRPC.TL_stories_report();
+                request.id.add(storyId);
+                request.user_id = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(dialog_id);
+                request.message = "";
+                if (type == REPORT_TYPE_SPAM) {
+                    request.reason = new TLRPC.TL_inputReportReasonSpam();
+                } else if (type == REPORT_TYPE_FAKE_ACCOUNT) {
+                    request.reason = new TLRPC.TL_inputReportReasonFake();
+                } else if (type == REPORT_TYPE_VIOLENCE) {
+                    request.reason = new TLRPC.TL_inputReportReasonViolence();
+                } else if (type == REPORT_TYPE_CHILD_ABUSE) {
+                    request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
+                } else if (type == REPORT_TYPE_PORNOGRAPHY) {
+                    request.reason = new TLRPC.TL_inputReportReasonPornography();
+                } else if (type == REPORT_TYPE_ILLEGAL_DRUGS) {
+                    request.reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
+                } else if (type == REPORT_TYPE_PERSONAL_DETAILS) {
+                    request.reason = new TLRPC.TL_inputReportReasonPersonalDetails();
+                }
+                req = request;
+            } else if (messageId != 0) {
                 TLRPC.TL_messages_report request = new TLRPC.TL_messages_report();
                 request.peer = peer;
                 request.id.add(messageId);
@@ -4576,6 +4626,8 @@ public class AlertsCreator {
             currentColor = preferences.getInt("MessagesLed", 0xff0000ff);
         } else if (globalType == NotificationsController.TYPE_GROUP) {
             currentColor = preferences.getInt("GroupLed", 0xff0000ff);
+        } else if (globalType == NotificationsController.TYPE_STORIES) {
+            currentColor = preferences.getInt("StoriesLed", 0xff0000ff);
         } else {
             currentColor = preferences.getInt("ChannelLed", 0xff0000ff);
         }
@@ -4621,6 +4673,8 @@ public class AlertsCreator {
                     editor.putInt("MessagesLed", selectedColor[0]);
                 } else if (globalType == NotificationsController.TYPE_GROUP) {
                     editor.putInt("GroupLed", selectedColor[0]);
+                } else if (globalType == NotificationsController.TYPE_STORIES) {
+                    editor.putInt("StoriesLed", selectedColor[0]);
                 } else {
                     editor.putInt("ChannelLed", selectedColor[0]);
                 }
@@ -4640,6 +4694,8 @@ public class AlertsCreator {
                 editor.putInt("MessagesLed", 0);
             } else if (globalType == NotificationsController.TYPE_GROUP) {
                 editor.putInt("GroupLed", 0);
+            } else if (globalType == NotificationsController.TYPE_STORIES) {
+                editor.putInt("StoriesLed", 0);
             } else {
                 editor.putInt("ChannelLed", 0);
             }
@@ -5060,6 +5116,8 @@ public class AlertsCreator {
                 selected[0] = preferences.getInt("priority_group", 1);
             } else if (globalType == NotificationsController.TYPE_CHANNEL) {
                 selected[0] = preferences.getInt("priority_channel", 1);
+            } else if (globalType == NotificationsController.TYPE_STORIES) {
+                selected[0] = preferences.getInt("priority_stories", 1);
             }
             if (selected[0] == 4) {
                 selected[0] = 0;
@@ -5129,6 +5187,9 @@ public class AlertsCreator {
                     } else if (globalType == NotificationsController.TYPE_CHANNEL) {
                         editor.putInt("priority_channel", option);
                         selected[0] = preferences.getInt("priority_channel", 1);
+                    } else if (globalType == NotificationsController.TYPE_STORIES) {
+                        editor.putInt("priority_stories", option);
+                        selected[0] = preferences.getInt("priority_stories", 1);
                     }
                     NotificationsController.getInstance(UserConfig.selectedAccount).deleteNotificationChannelGlobal(globalType);
                 }
@@ -5624,13 +5685,6 @@ public class AlertsCreator {
                         ids.add(selectedMessages[a].keyAt(b));
                     }
                     ArrayList<Long> random_ids = null;
-                    long channelId = 0;
-                    if (!ids.isEmpty()) {
-                        MessageObject msg = selectedMessages[a].get(ids.get(0));
-                        if (msg.messageOwner.peer_id.channel_id != 0) {
-                            channelId = msg.messageOwner.peer_id.channel_id;
-                        }
-                    }
                     if (encryptedChat != null) {
                         random_ids = new ArrayList<>();
                         for (int b = 0; b < selectedMessages[a].size(); b++) {

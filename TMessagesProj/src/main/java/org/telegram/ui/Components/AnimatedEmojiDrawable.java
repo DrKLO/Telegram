@@ -826,7 +826,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         Integer color = dominantColors.get(documentId);
         if (color == null) {
             if (yourDrawable.getImageReceiver() != null && yourDrawable.getImageReceiver().getBitmap() != null) {
-                dominantColors.put(documentId, color = PremiumLockIconView.getDominantColor(yourDrawable.getImageReceiver().getBitmap()));
+                dominantColors.put(documentId, color = AndroidUtilities.getDominantColor(yourDrawable.getImageReceiver().getBitmap()));
             }
         }
         return color == null ? 0 : color;
@@ -906,6 +906,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         private int size;
         private int alpha = 255;
         boolean attached;
+        private Theme.ResourcesProvider resourcesProvider;
 
         public SwapAnimatedEmojiDrawable(View parentView, int size) {
             this(parentView, false, size, CACHE_TYPE_EMOJI_STATUS);
@@ -1061,7 +1062,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attach();
                 }
             }
-            lastColor = 0xffffffff;
+            lastColor = null;
             colorFilter = null;
             play();
             invalidate();
@@ -1107,7 +1108,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attach();
                 }
             }
-            lastColor = 0xffffffff;
+            lastColor = null;
             colorFilter = null;
             play();
             invalidate();
@@ -1138,7 +1139,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attach();
                 }
             }
-            lastColor = 0xffffffff;
+            lastColor = null;
             colorFilter = null;
             play();
             invalidate();
@@ -1208,6 +1209,10 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         public void setSecondParent(View secondParent) {
             this.secondParent = secondParent;
+        }
+
+        public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+            this.resourcesProvider = resourcesProvider;
         }
     }
 

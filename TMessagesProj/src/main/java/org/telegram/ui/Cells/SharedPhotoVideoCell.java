@@ -189,7 +189,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 imageView.setImageResource(R.drawable.photo_placeholder_in);
             } else if (messageObject.isVideo()) {
                 videoInfoContainer.setVisibility(VISIBLE);
-                videoTextView.setText(AndroidUtilities.formatShortDuration(messageObject.getDuration()));
+                videoTextView.setText(AndroidUtilities.formatShortDuration((int) messageObject.getDuration()));
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
                 TLRPC.PhotoSize qualityThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);
@@ -251,7 +251,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
             if (currentMessageObject.isVideo()) {
-                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(currentMessageObject.getDuration()));
+                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration((int) currentMessageObject.getDuration()));
             } else {
                 info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
             }

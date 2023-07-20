@@ -692,7 +692,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             View view = null;
             switch (viewType) {
                 case 0:
-                    StickerEmojiCell stickerCell = new StickerEmojiCell(context, false) {
+                    StickerEmojiCell stickerCell = new StickerEmojiCell(context, false, resourcesProvider) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }

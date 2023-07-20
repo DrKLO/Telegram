@@ -2,7 +2,10 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.os.Looper;
@@ -29,23 +32,16 @@ public class EditTextEffects extends EditText {
     private boolean isSpoilersRevealed;
     private boolean shouldRevealSpoilersByTouch = true;
     private SpoilersClickDetector clickDetector;
-    private boolean suppressOnTextChanged;
+    public boolean suppressOnTextChanged;
     private Path path = new Path();
     private int selStart, selEnd;
     private float lastRippleX, lastRippleY;
     private boolean postedSpoilerTimeout;
     private AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiDrawables;
-    protected boolean animatedEmojiRawDraw;
-    protected int animatedEmojiRawDrawFps;
-    protected int animatedEmojiOffsetX;
+    private ColorFilter animatedEmojiColorFilter;
+    public boolean drawAnimatedEmojiDrawables = true;
     private Layout lastLayout = null;
     private int lastTextLength;
-
-    public void incrementFrames(int frames) {
-        if (animatedEmojiDrawables != null) {
-            animatedEmojiDrawables.incrementFrames(frames);
-        }
-    }
 
     private Runnable spoilerTimeout = () -> {
         postedSpoilerTimeout = false;
@@ -198,6 +194,12 @@ public class EditTextEffects extends EditText {
     }
 
     @Override
+    public void setTextColor(int color) {
+        super.setTextColor(color);
+        animatedEmojiColorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+
+    @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         updateAnimatedEmoji(false);
@@ -263,14 +265,10 @@ public class EditTextEffects extends EditText {
         canvas.clipPath(path, Region.Op.DIFFERENCE);
         updateAnimatedEmoji(false);
         super.onDraw(canvas);
-        if (animatedEmojiDrawables != null) {
+        if (drawAnimatedEmojiDrawables && animatedEmojiDrawables != null) {
             canvas.save();
-            canvas.translate(animatedEmojiOffsetX, 0);
-            if (animatedEmojiRawDraw) {
-                AnimatedEmojiSpan.drawRawAnimatedEmojis(canvas, getLayout(), animatedEmojiDrawables, 0, spoilers, computeVerticalScrollOffset() - AndroidUtilities.dp(6), computeVerticalScrollOffset() + computeVerticalScrollExtent(), 0, 1f, animatedEmojiRawDrawFps);
-            } else {
-                AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmojiDrawables, 0, spoilers, computeVerticalScrollOffset() - AndroidUtilities.dp(6), computeVerticalScrollOffset() + computeVerticalScrollExtent(), 0, 1f);
-            }
+            canvas.translate(getPaddingLeft(), 0);
+            AnimatedEmojiSpan.drawAnimatedEmojis(canvas, getLayout(), animatedEmojiDrawables, 0, spoilers, computeVerticalScrollOffset() - AndroidUtilities.dp(6), computeVerticalScrollOffset() + computeVerticalScrollExtent(), 0, 1f, animatedEmojiColorFilter);
             canvas.restore();
         }
         canvas.restore();
@@ -299,6 +297,9 @@ public class EditTextEffects extends EditText {
     }
 
     public void updateAnimatedEmoji(boolean force) {
+        if (!drawAnimatedEmojiDrawables) {
+            return;
+        }
         int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
         if (force || lastLayout != getLayout() || lastTextLength != newTextLength) {
             animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.getCacheTypeForEnterView(), this, animatedEmojiDrawables, getLayout());
@@ -319,7 +320,7 @@ public class EditTextEffects extends EditText {
         invalidateSpoilers();
     }
 
-    private void invalidateSpoilers() {
+    protected void invalidateSpoilers() {
         if (spoilers == null) return; // A null-check for super constructor, because it calls onTextChanged
         spoilersPool.addAll(spoilers);
         spoilers.clear();
@@ -331,11 +332,11 @@ public class EditTextEffects extends EditText {
 
         Layout layout = getLayout();
         if (layout != null && layout.getText() instanceof Spannable) {
-            if (animatedEmojiDrawables != null) {
+            if (drawAnimatedEmojiDrawables && animatedEmojiDrawables != null) {
                 animatedEmojiDrawables.recordPositions(false);
             }
             SpoilerEffect.addSpoilers(this, spoilersPool, spoilers);
-            if (animatedEmojiDrawables != null) {
+            if (drawAnimatedEmojiDrawables && animatedEmojiDrawables != null) {
                 animatedEmojiDrawables.recordPositions(true);
             }
         }

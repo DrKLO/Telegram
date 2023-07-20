@@ -67,6 +67,9 @@ import com.google.android.exoplayer2.video.spherical.CameraMotionListener;
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
+import org.telegram.messenger.DispatchQueue;
+
 import java.util.List;
 
 /**
@@ -153,7 +156,9 @@ import java.util.List;
  */
 public interface ExoPlayer extends Player {
 
-  /**
+    void setWorkerQueue(DispatchQueue dispatchQueue);
+
+    /**
    * @deprecated Use {@link ExoPlayer}, as the {@link AudioComponent} methods are defined by that
    *     interface.
    */

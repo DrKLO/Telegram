@@ -1,10 +1,17 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.CornerPathEffect;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -14,6 +21,10 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.core.graphics.ColorUtils;
+
+import com.google.android.exoplayer2.DefaultLivePlaybackSpeedControl;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
@@ -32,6 +43,7 @@ public class HintView extends FrameLayout {
     public static final int TYPE_SEARCH_AS_LIST = 3;
     public static final int TYPE_COMMON = 4;
     public static final int TYPE_POLL_VOTE = 5;
+    public static final int TYPE_DEFAULT = 6;
 
     public TextView textView;
     private ImageView imageView;
@@ -50,6 +62,12 @@ public class HintView extends FrameLayout {
     private int bottomOffset;
     private long showingDuration = 2000;
     private final Theme.ResourcesProvider resourcesProvider;
+    private boolean useScale;
+
+    VisibilityListener visibleListener;
+    private boolean hasCloseButton;
+    private boolean drawPath;
+    private int backgroundColor;
 
     public HintView(Context context, int type) {
         this(context, type, false, null);
@@ -107,6 +125,18 @@ public class HintView extends FrameLayout {
         arrowImageView.setImageResource(topArrow ? R.drawable.tooltip_arrow_up : R.drawable.tooltip_arrow);
         arrowImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
         addView(arrowImageView, LayoutHelper.createFrame(14, 6, Gravity.LEFT | (topArrow ? Gravity.TOP : Gravity.BOTTOM), 0, 0, 0, 0));
+    }
+
+    public void createCloseButton() {
+        textView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(7), AndroidUtilities.dp(36), AndroidUtilities.dp(8));
+
+        hasCloseButton = true;
+        imageView = new ImageView(getContext());
+        imageView.setImageResource(R.drawable.msg_mini_close_tooltip);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_gifSaveHintText), 125), PorterDuff.Mode.MULTIPLY));
+        imageView.setOnClickListener(v -> hide(true));
+        addView(imageView, LayoutHelper.createFrame(34, 34, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, isTopArrow ? 3 : 0, 0, isTopArrow ? 0 : 3));
     }
 
     public void setBackgroundColor(int background, int text) {
@@ -262,6 +292,9 @@ public class HintView extends FrameLayout {
 
         setTag(1);
         setVisibility(VISIBLE);
+        if (visibleListener != null) {
+            visibleListener.onVisible(true);
+        }
         if (animated) {
             animatorSet = new AnimatorSet();
             animatorSet.playTogether(
@@ -271,7 +304,9 @@ public class HintView extends FrameLayout {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     animatorSet = null;
-                    AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), currentType == 0 ? 10000 : 2000);
+                    if (!hasCloseButton) {
+                        AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), currentType == 0 ? 10000 : 2000);
+                    }
                 }
             });
             animatorSet.setDuration(300);
@@ -304,19 +339,37 @@ public class HintView extends FrameLayout {
 
         setTag(1);
         setVisibility(VISIBLE);
+        if (visibleListener != null) {
+            visibleListener.onVisible(true);
+        }
         if (animated) {
             animatorSet = new AnimatorSet();
-            animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f, 1.0f)
-            );
+            if (useScale) {
+                setPivotX(arrowImageView.getX() + arrowImageView.getMeasuredWidth() / 2f);
+                setPivotY(arrowImageView.getY() + arrowImageView.getMeasuredHeight() / 2f);
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f, 1.0f),
+                        ObjectAnimator.ofFloat(this, View.SCALE_Y, 0.5f, 1.0f),
+                        ObjectAnimator.ofFloat(this, View.SCALE_X, 0.5f, 1.0f)
+                );
+                animatorSet.setDuration(350);
+                animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            } else {
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f, 1.0f)
+                );
+                animatorSet.setDuration(300);
+            }
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     animatorSet = null;
-                    AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), showingDuration);
+                    if (!hasCloseButton) {
+                        AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), showingDuration);
+                    }
                 }
             });
-            animatorSet.setDuration(300);
+
             animatorSet.start();
         } else {
             setAlpha(1.0f);
@@ -325,6 +378,12 @@ public class HintView extends FrameLayout {
         return true;
     }
 
+    public void updatePosition() {
+        if (currentView == null) {
+            return;
+        }
+        updatePosition(currentView);
+    }
     private void updatePosition(View view) {
         measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.AT_MOST));
 
@@ -335,7 +394,7 @@ public class HintView extends FrameLayout {
 
         if (currentType == 4) {
             top += AndroidUtilities.dp(4);
-        } else if (currentType == 6) {
+        } else if (currentType == 6 && isTopArrow) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(10);
         } else if (currentType == 7 || currentType == 8 && isTopArrow) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(8);
@@ -447,26 +506,47 @@ public class HintView extends FrameLayout {
         }
         if (animate) {
             animatorSet = new AnimatorSet();
-            animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f)
-            );
+            if (useScale) {
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(this, View.ALPHA, 1.0f, 0.0f),
+                        ObjectAnimator.ofFloat(this, View.SCALE_Y, 1.0f, 0.5f),
+                        ObjectAnimator.ofFloat(this, View.SCALE_X, 1.0f, 0.5f)
+                );
+                animatorSet.setDuration(150);
+                animatorSet.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            } else {
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f)
+                );
+                animatorSet.setDuration(300);
+            }
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     setVisibility(View.INVISIBLE);
+                    if (visibleListener != null) {
+                        visibleListener.onVisible(false);
+                    }
                     currentView = null;
                     messageCell = null;
                     animatorSet = null;
                 }
             });
-            animatorSet.setDuration(300);
+
             animatorSet.start();
         } else {
             setVisibility(View.INVISIBLE);
+            if (visibleListener != null) {
+                visibleListener.onVisible(false);
+            }
             currentView = null;
             messageCell = null;
             animatorSet = null;
         }
+    }
+
+    public boolean isShowing() {
+        return getTag() != null;
     }
 
     public void setText(CharSequence text) {
@@ -487,5 +567,123 @@ public class HintView extends FrameLayout {
 
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    public void setUseScale(boolean useScale) {
+        this.useScale = useScale;
+    }
+
+    public void setVisibleListener(VisibilityListener visibleListener) {
+        this.visibleListener = visibleListener;
+    }
+
+    public interface VisibilityListener {
+        void onVisible(boolean visible);
+    }
+
+    android.graphics.Path path;
+    Paint backgroundPaint;
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (drawPath && path != null) {
+            if (backgroundPaint == null) {
+                backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                backgroundPaint.setPathEffect(new CornerPathEffect(AndroidUtilities.dpf2(6)));
+                backgroundPaint.setColor(backgroundColor);
+            }
+            canvas.drawPath(path, backgroundPaint);
+        }
+
+        super.dispatchDraw(canvas);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (drawPath) {
+            int height = getMeasuredHeight();
+            int width = getMeasuredWidth();
+            float cx = arrowImageView.getX() + arrowImageView.getMeasuredWidth() / 2f;
+            if (path == null) {
+                path = new Path();
+            } else {
+                path.rewind();
+            }
+            if (isTopArrow) {
+                path.moveTo(0, dp(6));
+                path.lineTo(0, height);
+                path.lineTo(width, height);
+                path.lineTo(width, dp(6));
+
+                path.lineTo(cx + dp(7), dp(6));
+                path.lineTo(cx, -dp(2));
+                path.lineTo(cx - dp(7), dp(6));
+                path.close();
+            } else {
+                path.moveTo(0, height - dp(6));
+                path.lineTo(0, 0);
+                path.lineTo(width, 0);
+                path.lineTo(width, height - dp(6));
+
+                path.lineTo(cx + dp(7), height - dp(6));
+                path.lineTo(cx, height + dp(2));
+                path.lineTo(cx - dp(7), height - dp(6));
+                path.close();
+            }
+        }
+
+    }
+
+    public static class Builder {
+
+        HintView hintView;
+        boolean closeButton;
+        Context context;
+        Theme.ResourcesProvider resourcesProvider;
+        private boolean isTopArrow;
+        private boolean drawPath = true;
+        private int backgroundColor;
+
+        public Builder(Context context, Theme.ResourcesProvider resourcesProvider) {
+            this.context = context;
+            this.resourcesProvider = resourcesProvider;
+            backgroundColor = Theme.getColor(Theme.key_chat_gifSaveHintBackground, resourcesProvider);
+        }
+
+        public Builder setTopArrow(boolean topArrow) {
+            isTopArrow = topArrow;
+            return this;
+        }
+
+        public Builder setDrawPath(boolean drawPath) {
+            this.drawPath = drawPath;
+            return this;
+        }
+
+        public Builder withCloseButton() {
+            this.closeButton = true;
+            return this;
+        }
+
+        public Builder setBackgroundColor(int color) {
+            this.backgroundColor = color;
+            return this;
+        }
+
+        public HintView build() {
+            hintView = new HintView(context, 6, isTopArrow, resourcesProvider);
+            hintView.setUseScale(true);
+            if (drawPath) {
+                hintView.textView.setBackground(null);
+                hintView.arrowImageView.setImageDrawable(null);
+                hintView.drawPath = true;
+                hintView.backgroundColor = backgroundColor;
+            }
+            if (closeButton) {
+                hintView.createCloseButton();
+            }
+
+            return this.hintView;
+        }
     }
 }

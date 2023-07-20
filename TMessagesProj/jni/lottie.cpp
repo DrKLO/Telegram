@@ -163,6 +163,31 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
     return (jlong) (intptr_t) info;
 }
 
+JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_getFramesCount(JNIEnv *env, jclass clazz, jstring src, jstring json) {
+    auto info = new LottieInfo();
+    char const *srcString = env->GetStringUTFChars(src, nullptr);
+    info->path = srcString;
+    if (json != nullptr) {
+        char const *jsonString = env->GetStringUTFChars(json, nullptr);
+        if (jsonString) {
+            info->animation = rlottie::Animation::loadFromData(jsonString, info->path, nullptr, FitzModifier::None);
+            env->ReleaseStringUTFChars(json, jsonString);
+        }
+    } else {
+        info->animation = rlottie::Animation::loadFromFile(info->path, nullptr, FitzModifier::None);
+    }
+    if (srcString) {
+        env->ReleaseStringUTFChars(src, srcString);
+    }
+    if (info->animation == nullptr) {
+        delete info;
+        return 0;
+    }
+    long frameCount = info->animation->totalFrame();
+    delete info;
+    return (jlong) frameCount;
+}
+
 JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(JNIEnv *env, jclass clazz, jstring json, jstring name, jintArray data, jintArray colorReplacement) {
     std::map<int32_t, int32_t> *colors = nullptr;
     if (colorReplacement != nullptr) {

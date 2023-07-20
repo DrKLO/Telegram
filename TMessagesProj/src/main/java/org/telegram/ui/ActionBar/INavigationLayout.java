@@ -392,12 +392,11 @@ public interface INavigationLayout {
 
         @Override
         public int getColor(int key) {
-            return colors.get(key);
-        }
-
-        @Override
-        public boolean contains(int key) {
-            return colors.indexOfKey(key) >= 0;
+            int index = colors.indexOfKey(key);
+            if (index >= 0) {
+                return colors.valueAt(index);
+            }
+            return Theme.getColor(key);
         }
 
         @Override

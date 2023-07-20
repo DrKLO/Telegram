@@ -231,7 +231,7 @@ public class Switch extends View {
 
     private void animateToCheckedState(boolean newCheckedState) {
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(semHaptics ? 150 : 250);
+        checkAnimator.setDuration(200);
         checkAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -243,7 +243,7 @@ public class Switch extends View {
 
     private void animateIcon(boolean newCheckedState) {
         iconAnimator = ObjectAnimator.ofFloat(this, "iconProgress", newCheckedState ? 1 : 0);
-        iconAnimator.setDuration(semHaptics ? 150 : 250);
+        iconAnimator.setDuration(200);
         iconAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -277,7 +277,6 @@ public class Switch extends View {
         if (checked != isChecked) {
             isChecked = checked;
             if (attachedToWindow && animated) {
-                vibrateChecked(checked);
                 animateToCheckedState(checked);
             } else {
                 cancelCheckAnimator();
@@ -542,19 +541,5 @@ public class Switch extends View {
         info.setCheckable(true);
         info.setChecked(isChecked);
         //info.setContentDescription(isChecked ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
-    }
-
-    private boolean semHaptics = false;
-
-    private void vibrateChecked(boolean toCheck) {
-        try {
-            if (isHapticFeedbackEnabled() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                Vibrator vibrator = AndroidUtilities.getVibrator();
-                VibrationEffect vibrationEffect = VibrationEffect.createWaveform(new long[]{75,10,5,10}, new int[] {5,20,110,20}, -1);
-                vibrator.cancel();
-                vibrator.vibrate(vibrationEffect);
-                semHaptics = true;
-            }
-        } catch (Exception ignore) {}
     }
 }

@@ -287,6 +287,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         progressViewStyle = progressStyle;
     }
 
+    private long shownAt;
+
     @Override
     public void show() {
         super.show();
@@ -299,6 +301,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 .setDuration(190)
                 .start();
         }
+        shownAt = System.currentTimeMillis();
     }
 
     @Override
@@ -1253,6 +1256,15 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             if (messageTextView != null) {
                 messageTextView.invalidate();
             }
+        }
+    }
+
+    public void dismissUnless(long minDuration) {
+        long currentShowDuration = System.currentTimeMillis() - shownAt;
+        if (currentShowDuration < minDuration) {
+            AndroidUtilities.runOnUIThread(this::dismiss, currentShowDuration - minDuration);
+        } else {
+            dismiss();
         }
     }
 

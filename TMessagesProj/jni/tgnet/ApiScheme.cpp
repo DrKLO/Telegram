@@ -515,11 +515,15 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
             usernames.push_back(std::unique_ptr<TL_username>(object));
         }
     }
+    if ((flags2 & 32) != 0) {
+        stories_max_id = stream->readInt32(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
+    stream->writeInt32(flags2);
     stream->writeInt64(id);
     if ((flags & 1) != 0) {
         stream->writeInt64(access_hash);

@@ -442,6 +442,7 @@ public class FilePathDatabase {
                             list = new ArrayList<>();
                             filesByDialogId.put(fileMeta.dialogId, list);
                         }
+                        keepMediaFiles.get(i).isStory = fileMeta.messageType == MessageObject.TYPE_STORY;
                         list.add(keepMediaFiles.get(i));
                     }
                 }

@@ -87,7 +87,7 @@ public class ActionBar extends FrameLayout {
     private ActionBarMenu actionMode;
     private String actionModeTag;
     private boolean ignoreLayoutRequest;
-    private boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
+    protected boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
     private boolean actionModeVisible;
     private boolean addToContainer = true;
     private boolean clipContent;
@@ -139,6 +139,8 @@ public class ActionBar extends FrameLayout {
     private boolean attached;
     private boolean resumed;
     private boolean attachState;
+    private FrameLayout titlesContainer;
+    private boolean useContainerForTitles;
 
     private View.OnTouchListener interceptTouchEventListener;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -282,7 +284,7 @@ public class ActionBar extends FrameLayout {
     }
 
     protected boolean shouldClipChild(View child) {
-        return clipContent && (child == titleTextView[0] || child == titleTextView[1] || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView);
+        return clipContent && (child == titleTextView[0] || child == titleTextView[1] || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView || child == titlesContainer);
     }
 
     @Override
@@ -431,7 +433,11 @@ public class ActionBar extends FrameLayout {
         titleTextView[i].setDrawablePadding(AndroidUtilities.dp(4));
         titleTextView[i].setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
         titleTextView[i].setRightDrawableTopPadding(-AndroidUtilities.dp(1));
-        addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        if (useContainerForTitles) {
+            titlesContainer.addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        } else {
+            addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        }
     }
 
     public void setTitleRightMargin(int value) {
@@ -1861,4 +1867,25 @@ public class ActionBar extends FrameLayout {
         }
     }
 
+    public void setUseContainerForTitles() {
+        this.useContainerForTitles = true;
+        if (titlesContainer == null) {
+            titlesContainer = new FrameLayout(getContext()) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+                }
+
+                @Override
+                protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+
+                }
+            };
+            addView(titlesContainer);
+        }
+    }
+
+    public FrameLayout getTitlesContainer() {
+        return titlesContainer;
+    }
 }

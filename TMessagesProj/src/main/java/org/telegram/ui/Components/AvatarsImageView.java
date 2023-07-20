@@ -59,6 +59,14 @@ public class AvatarsImageView extends View {
         avatarsDrawable.setAvatarsTextSize(size);
     }
 
+    public void setSize(int size) {
+        avatarsDrawable.setSize(size);
+    }
+
+    public void setStepFactor(float factor) {
+        avatarsDrawable.setStepFactor(factor);
+    }
+
     public void reset() {
         avatarsDrawable.reset();
     }

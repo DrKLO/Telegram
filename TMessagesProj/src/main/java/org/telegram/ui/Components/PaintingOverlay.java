@@ -192,8 +192,6 @@ public class PaintingOverlay extends FrameLayout {
                     entity.view = child = imageView;
                 } else if (entity.type == 1) {
                     EditTextOutline editText = new EditTextOutline(getContext()) {
-                        { animatedEmojiOffsetX = AndroidUtilities.dp(8); }
-
                         @Override
                         public boolean dispatchTouchEvent(MotionEvent event) {
                             return false;

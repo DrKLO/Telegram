@@ -19,6 +19,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
 
 public class SponsoredMessageInfoView extends FrameLayout {
 
@@ -36,8 +37,11 @@ public class SponsoredMessageInfoView extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
 
-        TextView description1 = new TextView(context);
-        description1.setText(LocaleController.getString("SponsoredMessageInfoDescription1", R.string.SponsoredMessageInfoDescription1));
+        LinkSpanDrawable.LinksTextView description1 = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
+        description1.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString("SponsoredMessageInfoDescriptionLink", R.string.SponsoredMessageInfoDescriptionLink), () -> {
+            Browser.openUrl(getContext(), "https://telegram.org/privacy#5-6-no-ads-based-on-user-data");
+        }));
+        description1.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
         description1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         description1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         description1.setLineSpacing(AndroidUtilities.dp(2), 1f);

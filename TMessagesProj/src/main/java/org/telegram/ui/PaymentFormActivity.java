@@ -25,7 +25,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -612,7 +611,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             case STEP_CHECKOUT:
             case STEP_SET_PASSWORD_EMAIL:
                 doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
-                progressView = new ContextProgressView(context, 1, resourcesProvider);
+                progressView = new ContextProgressView(context, 1);
                 progressView.setAlpha(0.0f);
                 progressView.setScaleX(0.1f);
                 progressView.setScaleY(0.1f);
@@ -630,17 +629,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, getThemedColor(Theme.key_actionBarDefault));
         frameLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, currentStep == STEP_CHECKOUT ? 48 : 0));
 
-        linearLayout2 = new LinearLayout(context) {
-            @Override
-            public void setBackgroundColor(int color) {
-                super.setBackgroundColor(color);
-            }
-
-            @Override
-            public void setBackground(Drawable background) {
-                super.setBackground(background);
-            }
-        };
+        linearLayout2 = new LinearLayout(context);
         linearLayout2.setOrientation(LinearLayout.VERTICAL);
         linearLayout2.setClipChildren(false);
         scrollView.addView(linearLayout2, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -1033,7 +1022,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
 
                     checkCell1 = new TextCheckCell(context, resourcesProvider);
-                    checkCell1.setBackgroundDrawable(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                    checkCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
                     checkCell1.setTextAndCheck(LocaleController.getString("PaymentShippingSave", R.string.PaymentShippingSave), saveShippingInfo, false);
                     linearLayout2.addView(checkCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                     checkCell1.setOnClickListener(v -> {
@@ -1189,7 +1178,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 linearLayout2.addView(sectionCell[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 checkCell1 = new TextCheckCell(context, resourcesProvider);
-                checkCell1.setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                checkCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
                 checkCell1.setTextAndCheck(LocaleController.getString("PaymentCardSavePaymentInformation", R.string.PaymentCardSavePaymentInformation), saveCardInfo, false);
                 linearLayout2.addView(checkCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 checkCell1.setOnClickListener(v -> {
@@ -1198,7 +1187,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 });
 
                 bottomCell[0] = new TextInfoPrivacyCell(context, resourcesProvider);
-                bottomCell[0].setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                bottomCell[0].setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                 updateSavePaymentField();
                 linearLayout2.addView(bottomCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             } else {
@@ -1629,7 +1618,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         linearLayout2.addView(sectionCell[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                         checkCell1 = new TextCheckCell(context, resourcesProvider);
-                        checkCell1.setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                        checkCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         checkCell1.setTextAndCheck(LocaleController.getString("PaymentCardSavePaymentInformation", R.string.PaymentCardSavePaymentInformation), saveCardInfo, false);
                         linearLayout2.addView(checkCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                         checkCell1.setOnClickListener(v -> {
@@ -1638,7 +1627,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         });
 
                         bottomCell[0] = new TextInfoPrivacyCell(context, resourcesProvider);
-                        bottomCell[0].setBackground(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        bottomCell[0].setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                         updateSavePaymentField();
                         linearLayout2.addView(bottomCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                     } else if (a == FIELD_CARD) {
@@ -1677,9 +1666,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             radioCells = new RadioCell[count];
             for (int a = 0; a < count; a++) {
                 TLRPC.TL_shippingOption shippingOption = requestedInfo.shipping_options.get(a);
-                radioCells[a] = new RadioCell(context, resourcesProvider);
+                radioCells[a] = new RadioCell(context);
                 radioCells[a].setTag(a);
-                radioCells[a].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                radioCells[a].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                 radioCells[a].setText(String.format("%s - %s", getTotalPriceString(shippingOption.prices), shippingOption.title), a == 0, a != count - 1);
                 radioCells[a].setOnClickListener(v -> {
                     int num = (Integer) v.getTag();
@@ -1772,7 +1761,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     linearLayout2.addView(bottomCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                     settingsCell[0] = new TextSettingsCell(context, resourcesProvider);
-                    settingsCell[0].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                    settingsCell[0].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                     settingsCell[0].setText(LocaleController.getString("PaymentConfirmationNewCard", R.string.PaymentConfirmationNewCard), false);
                     linearLayout2.addView(settingsCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                     settingsCell[0].setOnClickListener(v -> {
@@ -1786,7 +1775,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
             }
         } else if (currentStep == STEP_CHECKOUT || currentStep == STEP_RECEIPT) {
-            paymentInfoCell = new PaymentInfoCell(context, resourcesProvider);
+            paymentInfoCell = new PaymentInfoCell(context);
             paymentInfoCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
             if (messageObject != null) {
                 paymentInfoCell.setInvoice((TLRPC.TL_messageMediaInvoice) messageObject.messageOwner.media, currentBotName);
@@ -1809,20 +1798,20 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             for (int a = 0; a < prices.size(); a++) {
                 TLRPC.TL_labeledPrice price = prices.get(a);
 
-                TextPriceCell priceCell = new TextPriceCell(context, resourcesProvider);
+                TextPriceCell priceCell = new TextPriceCell(context);
                 priceCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 priceCell.setTextAndValue(price.label, LocaleController.getInstance().formatCurrencyString(price.amount, paymentForm.invoice.currency), false);
                 linearLayout2.addView(priceCell);
             }
 
             if (currentStep == STEP_RECEIPT && tipAmount != null) {
-                TextPriceCell priceCell = new TextPriceCell(context, resourcesProvider);
+                TextPriceCell priceCell = new TextPriceCell(context);
                 priceCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 priceCell.setTextAndValue(LocaleController.getString("PaymentTip", R.string.PaymentTip), LocaleController.getInstance().formatCurrencyString(tipAmount, paymentForm.invoice.currency), false);
                 linearLayout2.addView(priceCell);
             }
 
-            totalCell = new TextPriceCell(context, resourcesProvider);
+            totalCell = new TextPriceCell(context);
             totalCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
             totalPrice[0] = getTotalPriceString(prices);
             totalCell.setTextAndValue(LocaleController.getString("PaymentTransactionTotal", R.string.PaymentTransactionTotal), totalPrice[0], true);
@@ -1837,7 +1826,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     AndroidUtilities.showKeyboard(inputFields[0]);
                 });
 
-                TextPriceCell cell = new TextPriceCell(context, resourcesProvider);
+                TextPriceCell cell = new TextPriceCell(context);
                 cell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 cell.setTextAndValue(LocaleController.getString("PaymentTipOptional", R.string.PaymentTipOptional), "", false);
                 container.addView(cell);
@@ -2106,8 +2095,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             sectionCell[2].setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             linearLayout2.addView(sectionCell[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            detailSettingsCell[0] = new TextDetailSettingsCell(context, resourcesProvider);
-            detailSettingsCell[0].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+            detailSettingsCell[0] = new TextDetailSettingsCell(context);
+            detailSettingsCell[0].setBackgroundDrawable(Theme.getSelectorDrawable(true));
             detailSettingsCell[0].setTextAndValueAndIcon(cardName != null && cardName.length() > 1 ? cardName.substring(0, 1).toUpperCase() + cardName.substring(1) : cardName, LocaleController.getString("PaymentCheckoutMethod", R.string.PaymentCheckoutMethod), R.drawable.msg_payment_card,  true);
             int cardInfoVisibility = View.VISIBLE;
             if (isCheckoutPreview) {
@@ -2131,8 +2120,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     providerUser = user;
                 }
             }
-            detailSettingsCell[1] = new TextDetailSettingsCell(context, resourcesProvider);
-            detailSettingsCell[1].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+            detailSettingsCell[1] = new TextDetailSettingsCell(context);
+            detailSettingsCell[1].setBackground(Theme.getSelectorDrawable(true));
             String providerName;
             if (providerUser != null) {
                 detailSettingsCell[1].setTextAndValueAndIcon(providerName = ContactsController.formatName(providerUser.first_name, providerUser.last_name), LocaleController.getString("PaymentCheckoutProvider", R.string.PaymentCheckoutProvider), R.drawable.msg_payment_provider, validateRequest != null && (validateRequest.info.shipping_address != null || shippingOption != null) || paymentForm.saved_info != null && (paymentForm.saved_info.shipping_address != null));
@@ -2145,13 +2134,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             if (validateRequest != null || isCheckoutPreview && paymentForm != null && paymentForm.saved_info != null) {
                 TLRPC.TL_paymentRequestedInfo info = validateRequest != null ? validateRequest.info : paymentForm.saved_info;
 
-                detailSettingsCell[2] = new TextDetailSettingsCell(context, resourcesProvider);
+                detailSettingsCell[2] = new TextDetailSettingsCell(context);
                 detailSettingsCell[2].setVisibility(View.GONE);
                 linearLayout2.addView(detailSettingsCell[2]);
                 if (info.shipping_address != null) {
                     detailSettingsCell[2].setVisibility(View.VISIBLE);
                     if (currentStep == STEP_CHECKOUT) {
-                        detailSettingsCell[2].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                        detailSettingsCell[2].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[2].setOnClickListener(v -> {
                             PaymentFormActivity activity = new PaymentFormActivity(paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
@@ -2168,13 +2157,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
                 }
 
-                detailSettingsCell[3] = new TextDetailSettingsCell(context, resourcesProvider);
+                detailSettingsCell[3] = new TextDetailSettingsCell(context);
                 detailSettingsCell[3].setVisibility(View.GONE);
                 linearLayout2.addView(detailSettingsCell[3]);
                 if (info.name != null) {
                     detailSettingsCell[3].setVisibility(View.VISIBLE);
                     if (currentStep == STEP_CHECKOUT) {
-                        detailSettingsCell[3].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                        detailSettingsCell[3].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[3].setOnClickListener(v -> {
                             PaymentFormActivity activity = new PaymentFormActivity(paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
@@ -2191,13 +2180,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
                 }
 
-                detailSettingsCell[4] = new TextDetailSettingsCell(context, resourcesProvider);
+                detailSettingsCell[4] = new TextDetailSettingsCell(context);
                 detailSettingsCell[4].setVisibility(View.GONE);
                 linearLayout2.addView(detailSettingsCell[4]);
                 if (info.phone != null) {
                     detailSettingsCell[4].setVisibility(View.VISIBLE);
                     if (currentStep == STEP_CHECKOUT) {
-                        detailSettingsCell[4].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                        detailSettingsCell[4].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[4].setOnClickListener(v -> {
                             PaymentFormActivity activity = new PaymentFormActivity(paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
@@ -2214,13 +2203,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
                 }
 
-                detailSettingsCell[5] = new TextDetailSettingsCell(context, resourcesProvider);
+                detailSettingsCell[5] = new TextDetailSettingsCell(context);
                 detailSettingsCell[5].setVisibility(View.GONE);
                 linearLayout2.addView(detailSettingsCell[5]);
                 if (info.email != null) {
                     detailSettingsCell[5].setVisibility(View.VISIBLE);
                     if (currentStep == STEP_CHECKOUT) {
-                        detailSettingsCell[5].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+                        detailSettingsCell[5].setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         detailSettingsCell[5].setOnClickListener(v -> {
                             PaymentFormActivity activity = new PaymentFormActivity(paymentForm, messageObject, invoiceSlug, STEP_SHIPPING_INFORMATION, requestedInfo, shippingOption, tipAmount, null, cardName, validateRequest, saveCardInfo, null, parentFragment);
                             activity.setDelegate(new PaymentFormActivityDelegate() {
@@ -2238,7 +2227,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
 
                 if (shippingOption != null) {
-                    detailSettingsCell[6] = new TextDetailSettingsCell(context, resourcesProvider);
+                    detailSettingsCell[6] = new TextDetailSettingsCell(context);
                     detailSettingsCell[6].setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                     detailSettingsCell[6].setTextAndValueAndIcon(shippingOption.title, LocaleController.getString("PaymentCheckoutShippingMethod", R.string.PaymentCheckoutShippingMethod), R.drawable.msg_payment_delivery, false);
                     linearLayout2.addView(detailSettingsCell[6]);
@@ -2263,14 +2252,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         } catch (Exception ignored) {}
                         return;
                     }
-                    final boolean savedInfoMissing = (
-                        paymentForm.invoice.shipping_address_requested && (paymentForm.saved_info == null || paymentForm.saved_info.shipping_address == null) ||
-                        paymentForm.invoice.email_requested && (paymentForm.saved_info == null || paymentForm.saved_info.email == null) ||
-                        paymentForm.invoice.name_requested && (paymentForm.saved_info == null || paymentForm.saved_info.name == null) ||
-                        paymentForm.invoice.phone_requested && (paymentForm.saved_info == null || paymentForm.saved_info.phone == null)
-                    );
 
-                    if (isCheckoutPreview && !savedInfoMissing && validateRequest == null) {
+                    if (isCheckoutPreview && paymentForm.saved_info != null && validateRequest == null) {
                         setDonePressed(true);
 
                         sendSavedForm(()->{
@@ -2280,9 +2263,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         return;
                     }
 
-                    if (isCheckoutPreview && (savedInfoMissing || savedCredentialsCard == null && paymentJson == null && googlePayCredentials == null || shippingOption == null && paymentForm.invoice.flexible)) {
+                    if (isCheckoutPreview && (paymentForm.saved_info == null && (paymentForm.invoice.shipping_address_requested || paymentForm.invoice.email_requested || paymentForm.invoice.name_requested || paymentForm.invoice.phone_requested) || savedCredentialsCard == null && paymentJson == null && googlePayCredentials == null || shippingOption == null && paymentForm.invoice.flexible)) {
                         int step;
-                        if (savedInfoMissing) {
+                        if (paymentForm.saved_info == null && (paymentForm.invoice.shipping_address_requested || paymentForm.invoice.email_requested || paymentForm.invoice.name_requested || paymentForm.invoice.phone_requested)) {
                             step = STEP_SHIPPING_INFORMATION;
                         } else if (savedCredentialsCard == null && paymentJson == null && googlePayCredentials == null) {
                             step = STEP_PAYMENT_INFO;
@@ -2341,7 +2324,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 payTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 bottomLayout.addView(payTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-                progressViewButton = new ContextProgressView(context, 0, resourcesProvider);
+                progressViewButton = new ContextProgressView(context, 0);
                 progressViewButton.setVisibility(View.INVISIBLE);
                 int color = getThemedColor(Theme.key_contacts_inviteText);
                 progressViewButton.setColors(color & 0x2fffffff, color);
@@ -2497,7 +2480,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             linearLayout2.addView(bottomCell[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             settingsCell[1] = new TextSettingsCell(context, resourcesProvider);
-            settingsCell[1].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+            settingsCell[1].setBackgroundDrawable(Theme.getSelectorDrawable(true));
             settingsCell[1].setTag(Theme.key_windowBackgroundWhiteBlackText);
             settingsCell[1].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             settingsCell[1].setText(LocaleController.getString("ResendCode", R.string.ResendCode), true);
@@ -2515,7 +2498,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             });
 
             settingsCell[0] = new TextSettingsCell(context, resourcesProvider);
-            settingsCell[0].setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundWhite)));
+            settingsCell[0].setBackgroundDrawable(Theme.getSelectorDrawable(true));
             settingsCell[0].setTag(Theme.key_text_RedRegular);
             settingsCell[0].setTextColor(getThemedColor(Theme.key_text_RedRegular));
             settingsCell[0].setText(LocaleController.getString("AbortPassword", R.string.AbortPassword), false);
@@ -2771,7 +2754,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
     private void createGooglePayButton(Context context) {
         googlePayContainer = new FrameLayout(context);
-        googlePayContainer.setBackground(Theme.getSelectorDrawableByColor(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundGray)));
+        googlePayContainer.setBackgroundDrawable(Theme.getSelectorDrawable(true));
         googlePayContainer.setVisibility(View.GONE);
 
         googlePayButton = new FrameLayout(context);
@@ -4471,10 +4454,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
         arrayList.add(new ThemeDescription(bottomLayout, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_windowBackgroundWhite));
         arrayList.add(new ThemeDescription(bottomLayout, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_listSelector));
-
-        for (ThemeDescription description : arrayList) {
-            description.resourcesProvider = resourcesProvider;
-        }
 
         return arrayList;
     }

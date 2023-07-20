@@ -2,8 +2,13 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
+
+import androidx.annotation.Nullable;
+
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 public class VideoEditTextureView extends TextureView implements TextureView.SurfaceTextureListener {
 
@@ -13,6 +18,14 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
     private Rect viewRect = new Rect();
     private int videoWidth;
     private int videoHeight;
+
+    public StoryEntry.HDRInfo hdrInfo;
+    public void setHDRInfo(StoryEntry.HDRInfo hdrInfo) {
+        this.hdrInfo = hdrInfo;
+        if (eglThread != null) {
+            eglThread.updateHDRInfo(this.hdrInfo);
+        }
+    }
 
     private VideoEditTextureViewDelegate delegate;
 
@@ -64,7 +77,7 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
                 }
                 Surface s = new Surface(surfaceTexture);
                 currentVideoPlayer.setSurface(s);
-            });
+            }, hdrInfo);
             if (videoWidth != 0 && videoHeight != 0) {
                 eglThread.setVideoSize(videoWidth, videoHeight);
             }

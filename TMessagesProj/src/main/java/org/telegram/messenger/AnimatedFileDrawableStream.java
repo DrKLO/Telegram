@@ -1,5 +1,8 @@
 package org.telegram.messenger;
 
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.tgnet.TLRPC;
 
 import java.util.concurrent.CountDownLatch;

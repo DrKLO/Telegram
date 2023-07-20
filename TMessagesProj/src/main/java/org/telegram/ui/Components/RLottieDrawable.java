@@ -24,6 +24,7 @@ import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
+import com.google.android.exoplayer2.util.Log;
 import com.google.gson.Gson;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -51,6 +52,8 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     public boolean skipFrameUpdate;
 
     public static native long create(String src, String json, int w, int h, int[] params, boolean precache, int[] colorReplacement, boolean limitFps, int fitzModifier);
+
+    public static native long getFramesCount(String src, String json);
 
     protected static native long createWithJson(String json, String name, int[] params, int[] colorReplacement);
 
@@ -501,6 +504,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         } else {
             nativePtr = create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
             if (nativePtr == 0) {
+                FileLog.d("RLottieDrawable nativePtr == 0 " + file.getAbsolutePath() + " remove file");
                 file.delete();
             }
             if (shouldLimitFps && metaData[1] < 60) {
@@ -538,6 +542,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         } else {
             nativePtr = create(file.getAbsolutePath(), json, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
             if (nativePtr == 0) {
+                FileLog.d("RLottieDrawable nativePtr == 0 " + file.getAbsolutePath() + " remove file");
                 file.delete();
             }
             if (shouldLimitFps && metaData[1] < 60) {
@@ -703,6 +708,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         if (startDecode) {
             setAllowDecodeSingleFrame(true);
         }
+    }
+
+    public void multiplySpeed(float multiplier) {
+        timeBetweenFrames *= (1f / multiplier);
     }
 
     public static String readRes(File path, int rawRes) {
