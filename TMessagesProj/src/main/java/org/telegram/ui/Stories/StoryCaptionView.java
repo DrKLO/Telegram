@@ -21,6 +21,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.view.MotionEvent;
@@ -55,6 +56,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
+import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
@@ -151,7 +153,7 @@ public class StoryCaptionView extends NestedScrollView {
 
     }
 
-    public void onLinkClick(ClickableSpan span, View spoilersTextView) {
+    public void onLinkClick(CharacterStyle span, View spoilersTextView) {
 
     }
 
@@ -540,7 +542,7 @@ public class StoryCaptionView extends NestedScrollView {
     public class StoryCaptionTextView extends View {
 
         private final PorterDuffColorFilter emojiColorFilter;
-        private LinkSpanDrawable<ClickableSpan> pressedLink;
+        private LinkSpanDrawable<CharacterStyle> pressedLink;
         private AnimatedEmojiSpan pressedEmoji;
         private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
 
@@ -783,7 +785,7 @@ public class StoryCaptionView extends NestedScrollView {
             if (Build.VERSION.SDK_INT >= 24) {
                 return StaticLayout.Builder.obtain(string, 0, string.length(), textPaint, width).setBreakStrategy(StaticLayout.BREAK_STRATEGY_SIMPLE).setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE).setAlignment(LocaleController.isRTL ? StaticLayoutEx.ALIGN_RIGHT() : StaticLayoutEx.ALIGN_LEFT()).build();
             } else {
-                return new StaticLayout(string, Theme.profile_aboutTextPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                return new StaticLayout(string, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
         }
 
@@ -818,11 +820,14 @@ public class StoryCaptionView extends NestedScrollView {
                 final int off = fullLayout.getOffsetForHorizontal(line, x);
                 final float left = fullLayout.getLineLeft(line);
 
-                ClickableSpan touchLink = null;
+                CharacterStyle touchLink = null;
                 AnimatedEmojiSpan touchEmoji = null;
                 if (left <= x && left + fullLayout.getLineWidth(line) >= x && y >= 0 && y <= fullLayout.getHeight()) {
                     Spannable buffer = new SpannableString(text);
-                    ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                    CharacterStyle[] link = buffer.getSpans(off, off, ClickableSpan.class);
+                    if (link == null || link.length == 0) {
+                        link = buffer.getSpans(off, off, URLSpanMono.class);
+                    }
                     if (link != null && link.length != 0) {
                         touchLink = link[0];
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -838,7 +843,7 @@ public class StoryCaptionView extends NestedScrollView {
                             path.setCurrentLayout(fullLayout, start, getPaddingTop());
                             fullLayout.getSelectionPath(start, end, path);
 
-                            final LinkSpanDrawable<ClickableSpan> savedPressedLink = pressedLink;
+                            final LinkSpanDrawable<CharacterStyle> savedPressedLink = pressedLink;
                             postDelayed(() -> {
                                 if (savedPressedLink == pressedLink && pressedLink != null && pressedLink.getSpan() instanceof URLSpan) {
                                     onLinkLongPress((URLSpan) pressedLink.getSpan(), this, () -> links.clear());

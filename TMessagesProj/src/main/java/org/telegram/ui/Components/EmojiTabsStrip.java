@@ -37,6 +37,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
+import org.telegram.ui.Components.Reactions.HwEmojis;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.util.ArrayList;
@@ -127,7 +128,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                                 child.setScaleX(0);
                                 child.setScaleY(0);
                                 child.setAlpha(0);
-                                child.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(200).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+                                child.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(HwEmojis.isHwEnabledOrPreparing() ? 0 : 200).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
                             }
                             if (id != null) {
                                 if (lastX.get(id) != null && lastX.get(id) != x) {
@@ -313,6 +314,17 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         }
     }
 
+    public void showRecentTabStub(boolean show) {
+        if (recentTab == null) {
+            return;
+        }
+        if (show) {
+            recentTab.setBackground(new StabDrawable(selectorColor()));
+        } else {
+            recentTab.setBackground(null);
+        }
+    }
+
     public void showSelected(boolean show) {
         this.showSelected = show;
         this.contentView.invalidate();
@@ -370,6 +382,37 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             return documents.get(0);
         }
         return null;
+    }
+
+    private static class StabDrawable extends Drawable {
+        private final Paint paint = new Paint();
+        private final RectF rectF = new RectF();
+
+        public StabDrawable(int color){
+            paint.setAlpha(45);
+            paint.setColor(color);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            rectF.set(0, 0, AndroidUtilities.dp(30), AndroidUtilities.dp(30));
+            canvas.drawRoundRect(rectF, AndroidUtilities.dpf2(8), AndroidUtilities.dpf2(8), paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
     }
 
     private static class DelayedAnimatedEmojiDrawable extends Drawable {
@@ -678,7 +721,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         if (settingsTab != null) {
             settingsTab.bringToFront();
             if (settingsTab.getAlpha() < 1) {
-                settingsTab.animate().alpha(1f).setDuration(200).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+                settingsTab.animate().alpha(1f).setDuration(HwEmojis.isHwEnabledOrPreparing() ? 0 : 200).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
             }
         }
 //        if (doAppearAnimation) {
@@ -935,8 +978,19 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             imageView = new ImageView(context) {
                 @Override
                 public void invalidate() {
+                    if (HwEmojis.grab(this)) {
+                        return;
+                    }
                     super.invalidate();
                     updateLockImageReceiver();
+                }
+
+                @Override
+                public void invalidate(int l, int t, int r, int b) {
+                    if (HwEmojis.grab(this)) {
+                        return;
+                    }
+                    super.invalidate(l, t, r, b);
                 }
 
                 @Override
@@ -966,7 +1020,23 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             }
             addView(imageView);
 
-            lockView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED, resourcesProvider);
+            lockView = new PremiumLockIconView(context, PremiumLockIconView.TYPE_STICKERS_PREMIUM_LOCKED, resourcesProvider) {
+                @Override
+                public void invalidate() {
+                    if (HwEmojis.grab(this)) {
+                        return;
+                    }
+                    super.invalidate();
+                }
+
+                @Override
+                public void invalidate(int l, int t, int r, int b) {
+                    if (HwEmojis.grab(this)) {
+                        return;
+                    }
+                    super.invalidate(l, t, r, b);
+                }
+            };
             lockView.setAlpha(0f);
             lockView.setScaleX(0);
             lockView.setScaleY(0);
@@ -974,6 +1044,22 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             addView(lockView);
 
             setColor(Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider));
+        }
+
+        @Override
+        public void invalidate() {
+            if (HwEmojis.grab(this)) {
+                return;
+            }
+            super.invalidate();
+        }
+
+        @Override
+        public void invalidate(int l, int t, int r, int b) {
+            if (HwEmojis.grab(this)) {
+                return;
+            }
+            super.invalidate(l, t, r, b);
         }
 
         @Override
@@ -1116,7 +1202,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 }
             });
             lockAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            lockAnimator.setDuration(200);
+            lockAnimator.setDuration(HwEmojis.isHwEnabledOrPreparing() ? 0 : 200);
             lockAnimator.start();
         }
 
@@ -1175,7 +1261,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 if (animatedEmoji != null && attached && wasVisible) {
                     animatedEmoji.updateView(imageView);
                 }
-                if (wasVisible) {
+                if (wasVisible && animatedEmoji != null) {
                     animatedEmoji.load();
                 }
                 initLock();
@@ -1250,7 +1336,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                         }
                     }
                 });
-                selectAnimator.setDuration(350);
+                selectAnimator.setDuration(HwEmojis.isHwEnabledOrPreparing() ? 0 : 350);
                 selectAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
                 selectAnimator.start();
             } else {

@@ -23,6 +23,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -35,6 +36,8 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.IntStream;
 
 public class AnimatedTextView extends View {
@@ -352,6 +355,7 @@ public class AnimatedTextView extends View {
                 CharSequence to = splitByWords ? new WordSequence(currentText) : currentText;
 
                 diff(from, to, onEqualRegion, onNewPart, onOldPart);
+//                betterDiff(from, to, onEqualRegion, onNewPart, onOldPart);
 
                 if (this.currentParts == null || this.currentParts.length != currentParts.size()) {
                     this.currentParts = new Part[currentParts.size()];
@@ -596,6 +600,81 @@ public class AnimatedTextView extends View {
             }
             return (a == null && b == null || a != null && b != null && a.charAt(aIndex) == b.charAt(bIndex));
         }
+
+        private void betterDiff(final CharSequence oldText, final CharSequence newText,
+                                RegionCallback onEqualPart, RegionCallback onNewPart, RegionCallback onOldPart) {
+            int m = oldText.length();
+            int n = newText.length();
+
+            int[][] dp = new int[m+1][n+1];
+            for (int i = 0; i <= m; i++) {
+                for (int j = 0; j <= n; j++) {
+                    if (i == 0 || j == 0)
+                        dp[i][j] = 0;
+                    else if (partEquals(oldText, newText, i - 1, j - 1))
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    else
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+
+            List<Runnable> parts = new ArrayList<>();
+            int i = m, j = n;
+            while (i > 0 && j > 0) {
+                if (partEquals(oldText, newText, i - 1, j - 1)) {
+                    int start = i-1;
+                    while (i > 1 && j > 1 && partEquals(oldText, newText, i - 2, j - 2)) {
+                        i--;
+                        j--;
+                    }
+                    final int end = i - 1;
+                    parts.add(() -> onEqualPart.run(oldText.subSequence(end, start + 1), end, start + 1));
+                    i--;
+                    j--;
+                } else if (dp[i - 1][j] > dp[i][j - 1]) {
+                    int start = i-1;
+                    while (i > 1 && dp[i - 2][j] > dp[i - 1][j - 1]) {
+                        i--;
+                    }
+                    final int end = i - 1;
+                    parts.add(() -> onOldPart.run(oldText.subSequence(end, start + 1), end, start + 1));
+                    i--;
+                } else {
+                    int start = j - 1;
+                    while (j > 1 && dp[i][j - 2] > dp[i - 1][j - 1]) {
+                        j--;
+                    }
+                    final int end = j - 1;
+                    parts.add(() -> onNewPart.run(newText.subSequence(end, start + 1), end, start + 1));
+                    j--;
+                }
+            }
+
+            while (i > 0) {
+                final int start = i - 1;
+                while (i > 1 && dp[i - 2][j] >= dp[i - 1][j]) {
+                    i--;
+                }
+                final int end = i - 1;
+                parts.add(() -> onOldPart.run(oldText.subSequence(end, start + 1), end, start + 1));
+                i--;
+            }
+            while (j > 0) {
+                final int start = j - 1;
+                while (j > 1 && dp[i][j - 2] >= dp[i][j - 1]) {
+                    j--;
+                }
+                final int end = j - 1;
+                parts.add(() -> onNewPart.run(newText.subSequence(end, start + 1), end, start + 1));
+                j--;
+            }
+
+            Collections.reverse(parts);
+            for (Runnable part : parts) {
+                part.run();
+            }
+        }
+
 
         private void diff(final CharSequence oldText, final CharSequence newText, RegionCallback onEqualPart, RegionCallback onNewPart, RegionCallback onOldPart) {
             if (updateAll) {

@@ -278,6 +278,10 @@ public class PreviewView extends FrameLayout {
                     }
                 }
             }
+            if (imageId < 0 && entry.isVideo && entry.thumbPath == null) {
+                invalidate();
+                return;
+            }
             if (bitmap == null) {
                 String path = entry.getOriginalFile().getPath();
                 BitmapFactory.Options options = new BitmapFactory.Options();
@@ -286,7 +290,13 @@ public class PreviewView extends FrameLayout {
                     if (entry.thumbPath != null) {
                         BitmapFactory.decodeFile(entry.thumbPath, options);
                     } else {
-                        MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
+                        try {
+                            MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
+                        } catch (Throwable e) {
+                            bitmap = null;
+                            invalidate();
+                            return;
+                        }
                     }
                 } else {
                     BitmapFactory.decodeFile(path, options);
@@ -298,7 +308,13 @@ public class PreviewView extends FrameLayout {
                     if (entry.thumbPath != null) {
                         BitmapFactory.decodeFile(entry.thumbPath, options);
                     } else {
-                        bitmap = MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
+                        try {
+                            bitmap = MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
+                        } catch (Throwable e) {
+                            bitmap = null;
+                            invalidate();
+                            return;
+                        }
                     }
                 } else {
                     bitmap = BitmapFactory.decodeFile(path, options);
@@ -459,7 +475,9 @@ public class PreviewView extends FrameLayout {
             addView(textureView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
 
             entry.detectHDR((hdrInfo) -> {
-                textureView.setHDRInfo(hdrInfo);
+                if (textureView != null) {
+                    textureView.setHDRInfo(hdrInfo);
+                }
             });
 
             Uri uri = Uri.fromFile(entry.getOriginalFile());

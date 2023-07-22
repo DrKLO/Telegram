@@ -228,8 +228,11 @@ public class EditTextOutline extends EditTextBoldCursor {
                 }
                 if (traceback) {
                     for (int j = i; j >= 1; --j) {
-                        above = lines[i - 1];
+                        above = lines[j - 1];
                         line = lines[j];
+                        if (above.width() < dp(1) || line.width() < dp(1)) {
+                            continue;
+                        }
                         if (Math.abs(above.left - line.left) < mr) {
                             line.left = above.left = Math.min(line.left, above.left);
                         }

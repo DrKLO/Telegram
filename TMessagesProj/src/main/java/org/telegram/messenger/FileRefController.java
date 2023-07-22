@@ -1059,19 +1059,21 @@ public class FileRefController extends BaseController {
                 Object arg = requester.args[1];
                 if (arg instanceof FileLoadOperation) {
                     FileLoadOperation operation = (FileLoadOperation) requester.args[1];
-                    TLRPC.StoryItem storyItem = (TLRPC.StoryItem) operation.parentObject;
-                    if (newStoryItem == null) {
-                        TLRPC.TL_updateStory story = new TLRPC.TL_updateStory();
-                        story.user_id = storyItem.dialogId;
-                        story.story = new TLRPC.TL_storyItemDeleted();
-                        story.story.id = storyItem.id;
-                        ArrayList<TLRPC.Update> updates = new ArrayList<>();
-                        updates.add(story);
-                        getMessagesController().processUpdateArray(updates, null, null, false, 0);
-                    } else {
-                        TLRPC.User user = getMessagesController().getUser(storyItem.dialogId);
-                        if (user != null && user.contact) {
-                            MessagesController.getInstance(currentAccount).getStoriesController().getStoriesStorage().updateStoryItem(storyItem.dialogId, newStoryItem);
+                    if (operation.parentObject instanceof TLRPC.StoryItem) {
+                        TLRPC.StoryItem storyItem = (TLRPC.StoryItem) operation.parentObject;
+                        if (newStoryItem == null) {
+                            TLRPC.TL_updateStory story = new TLRPC.TL_updateStory();
+                            story.user_id = storyItem.dialogId;
+                            story.story = new TLRPC.TL_storyItemDeleted();
+                            story.story.id = storyItem.id;
+                            ArrayList<TLRPC.Update> updates = new ArrayList<>();
+                            updates.add(story);
+                            getMessagesController().processUpdateArray(updates, null, null, false, 0);
+                        } else {
+                            TLRPC.User user = getMessagesController().getUser(storyItem.dialogId);
+                            if (user != null && user.contact) {
+                                MessagesController.getInstance(currentAccount).getStoriesController().getStoriesStorage().updateStoryItem(storyItem.dialogId, newStoryItem);
+                            }
                         }
                     }
                 }

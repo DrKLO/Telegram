@@ -571,8 +571,8 @@ public class StoryEntry extends IStoryPart {
         long usedMemory = runtime.totalMemory() - runtime.freeMemory();
         long availableMemory = maxMemory - usedMemory;
         final boolean enoughMemory = options.outWidth * options.outHeight * 4L * 2L <= availableMemory;
-        if (!enoughMemory) {
-            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+        if (!enoughMemory || Math.max(options.outWidth, options.outHeight) > 4200 || SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_LOW) {
+//            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
             options.inScaled = true;
             options.inDensity = options.outWidth;
             options.inTargetDensity = reqWidth;

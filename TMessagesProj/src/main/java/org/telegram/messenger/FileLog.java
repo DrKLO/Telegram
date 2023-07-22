@@ -21,6 +21,7 @@ import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
@@ -170,7 +171,7 @@ public class FileLog {
             excludeRequests.add("TL_upload_getFile");
             excludeRequests.add("TL_upload_a");
 
-            gson = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
+            ExclusionStrategy strategy = new ExclusionStrategy() {
 
                 @Override
                 public boolean shouldSkipField(FieldAttributes f) {
@@ -182,12 +183,10 @@ public class FileLog {
 
                 @Override
                 public boolean shouldSkipClass(Class<?> clazz) {
-                    if (clazz.isInstance(ColorStateList.class) || clazz.isInstance(Context.class)) {
-                        return true;
-                    }
-                    return false;
+                    return clazz.isInstance(AnimatedFileDrawable.class) || clazz.isInstance(ColorStateList.class) || clazz.isInstance(Context.class);
                 }
-            }).registerTypeAdapterFactory(RuntimeClassNameTypeAdapterFactory.of(TLObject.class, "type_")).create();
+            };
+            gson = new GsonBuilder().addSerializationExclusionStrategy(strategy).registerTypeAdapterFactory(RuntimeClassNameTypeAdapterFactory.of(TLObject.class, "type_", strategy)).create();
         }
     }
 

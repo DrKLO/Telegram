@@ -37,6 +37,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -220,6 +221,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         dateTextView.setSingleLine(true);
         dateTextView.setEllipsize(TextUtils.TruncateAt.END);
         dateTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        NotificationCenter.listenEmojiLoading(dateTextView);
         if (viewType == VIEW_TYPE_PICKER) {
             dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 34, LocaleController.isRTL ? 72 : 8, 0));
@@ -509,7 +511,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             fileSize = String.format(Locale.ENGLISH, "%s / %s", AndroidUtilities.formatFileSize(downloadedSize), AndroidUtilities.formatFileSize(message.getDocument().size));
         }
         if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
-            CharSequence fromName = FilteredSearchView.createFromInfoString(message);
+            CharSequence fromName = FilteredSearchView.createFromInfoString(message, true, 2, dateTextView.getPaint());
 
             dateTextView.setText(new SpannableStringBuilder().append(fileSize)
                     .append(' ').append(dotSpan).append(' ')

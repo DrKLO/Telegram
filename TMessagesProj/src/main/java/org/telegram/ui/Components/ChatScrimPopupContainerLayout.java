@@ -164,10 +164,10 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
         updateBottomViewPosition();
     }
 
-    public void setPopupAlpha(float aplha) {
-        popupWindowLayout.setAlpha(aplha);
+    public void setPopupAlpha(float alpha) {
+        popupWindowLayout.setAlpha(alpha);
         if (bottomView != null) {
-            bottomView.setAlpha(aplha);
+            bottomView.setAlpha(alpha);
         }
     }
 

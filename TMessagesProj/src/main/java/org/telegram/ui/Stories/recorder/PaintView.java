@@ -2739,8 +2739,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
             deleteView.setBackground(Theme.getSelectorDrawable(false));
             deleteView.setGravity(Gravity.CENTER_VERTICAL);
+            deleteView.setEllipsize(TextUtils.TruncateAt.END);
             deleteView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(14), 0);
-            deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             deleteView.setTag(0);
             deleteView.setText(LocaleController.getString("PaintDelete", R.string.PaintDelete));
             deleteView.setOnClickListener(v -> {
@@ -2757,8 +2758,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 editView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                 editView.setBackground(Theme.getSelectorDrawable(false));
                 editView.setGravity(Gravity.CENTER_VERTICAL);
+                editView.setEllipsize(TextUtils.TruncateAt.END);
                 editView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
-                editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 if ((keyboardNotifier.keyboardVisible() && !keyboardNotifier.ignoring) || emojiPadding > 0) {
                     editView.setTag(3);
                     editView.setText(LocaleController.getString("Paste", R.string.Paste));
@@ -2791,9 +2793,10 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 TextView flipView = new TextView(getContext());
                 flipView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                 flipView.setBackground(Theme.getSelectorDrawable(false));
+                flipView.setEllipsize(TextUtils.TruncateAt.END);
                 flipView.setGravity(Gravity.CENTER_VERTICAL);
                 flipView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
-                flipView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                flipView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 flipView.setTag(4);
                 flipView.setText(LocaleController.getString(R.string.Flip));
                 flipView.setOnClickListener(v -> {
@@ -2809,22 +2812,25 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 parent.addView(flipView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
             }
 
-            TextView duplicateView = new TextView(getContext());
-            duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
-            duplicateView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-            duplicateView.setGravity(Gravity.CENTER_VERTICAL);
-            duplicateView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
-            duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            duplicateView.setTag(2);
-            duplicateView.setText(LocaleController.getString("PaintDuplicate", R.string.PaintDuplicate));
-            duplicateView.setOnClickListener(v -> {
-                duplicateEntity(entityView);
+            if (!(entityView instanceof PhotoView)) {
+                TextView duplicateView = new TextView(getContext());
+                duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                duplicateView.setBackground(Theme.getSelectorDrawable(false));
+                duplicateView.setEllipsize(TextUtils.TruncateAt.END);
+                duplicateView.setGravity(Gravity.CENTER_VERTICAL);
+                duplicateView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
+                duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                duplicateView.setTag(2);
+                duplicateView.setText(LocaleController.getString("PaintDuplicate", R.string.PaintDuplicate));
+                duplicateView.setOnClickListener(v -> {
+                    duplicateEntity(entityView);
 
-                if (popupWindow != null && popupWindow.isShowing()) {
-                    popupWindow.dismiss(true);
-                }
-            });
-            parent.addView(duplicateView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
+                    if (popupWindow != null && popupWindow.isShowing()) {
+                        popupWindow.dismiss(true);
+                    }
+                });
+                parent.addView(duplicateView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48));
+            }
 
             popupLayout.addView(parent);
 
@@ -2855,6 +2861,8 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             newTextPaintView.setMaxWidth(w - AndroidUtilities.dp(7 + 7 + 18));
             entitiesView.addView(newTextPaintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
             entityView = newTextPaintView;
+        } else {
+            return;
         }
 
         registerRemovalUndo(entityView);
@@ -3192,6 +3200,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     }
 
     private void registerRemovalUndo(final EntityView entityView) {
+        if (entityView == null) {
+            return;
+        }
         undoStore.registerUndo(entityView.getUUID(), () -> removeEntity(entityView));
     }
 

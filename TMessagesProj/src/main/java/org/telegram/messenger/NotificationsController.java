@@ -3708,7 +3708,11 @@ public class NotificationsController extends BaseController {
                 } else if (names.isEmpty()) {
                     msg.message = "";
                 } else if (names.size() == 1) {
-                    msg.message = LocaleController.formatPluralString("StoryNotification1", storiesCount, names.get(0));
+                    if (storiesCount == 1) {
+                        msg.message = LocaleController.getString("StoryNotificationSingle");
+                    } else {
+                        msg.message = LocaleController.formatPluralString("StoryNotification1", storiesCount, names.get(0));
+                    }
                 } else if (names.size() == 2) {
                     msg.message = LocaleController.formatString(R.string.StoryNotification2, names.get(0), names.get(1));
                 } else if (names.size() == 3 && storyPushMessages.size() == 3) {
@@ -4682,7 +4686,11 @@ public class NotificationsController extends BaseController {
                 } else if (names.isEmpty()) {
                     continue;
                 } else if (names.size() == 1) {
-                    text.append(LocaleController.formatPluralString("StoryNotification1", storiesCount, names.get(0)));
+                    if (storiesCount == 1) {
+                        text.append(LocaleController.getString("StoryNotificationSingle"));
+                    } else {
+                        text.append(LocaleController.formatPluralString("StoryNotification1", storiesCount, names.get(0)));
+                    }
                 } else if (names.size() == 2) {
                     text.append(LocaleController.formatString(R.string.StoryNotification2, names.get(0), names.get(1)));
                 } else if (names.size() == 3 && storyPushMessages.size() == 3) {

@@ -74,6 +74,7 @@ import org.telegram.ui.Components.PullForegroundDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Stories.DialogStoriesCell;
+import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoriesUtilities;
 
@@ -92,8 +93,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             VIEW_TYPE_USER = 6,
             VIEW_TYPE_HEADER = 7,
             VIEW_TYPE_SHADOW = 8,
-//            VIEW_TYPE_ARCHIVE = 9,
-            VIEW_TYPE_LAST_EMPTY = 10,
+    //            VIEW_TYPE_ARCHIVE = 9,
+    VIEW_TYPE_LAST_EMPTY = 10,
             VIEW_TYPE_NEW_CHAT_HINT = 11,
             VIEW_TYPE_TEXT = 12,
             VIEW_TYPE_CONTACTS_FLICKER = 13,
@@ -487,7 +488,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             if (view != null) {
                 float offset = view.getTop() - recyclerListView.getPaddingTop();
                 if (!hasStories) {
-                  //  offset += tabsTranslation;
+                    //  offset += tabsTranslation;
                 } else {
                     tabsTranslation = 0;
                 }
@@ -660,8 +661,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             case VIEW_TYPE_ARCHIVE_FULLSCREEN:
                 LastEmptyView lastEmptyView = new LastEmptyView(mContext);
                 lastEmptyView.addView(
-                    new ArchiveHelp(mContext, currentAccount, null, DialogsAdapter.this::onArchiveSettingsClick,null),
-                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER, 0, -(int) (DialogStoriesCell.HEIGHT_IN_DP * .5f), 0, 0)
+                        new ArchiveHelp(mContext, currentAccount, null, DialogsAdapter.this::onArchiveSettingsClick, null),
+                        LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER, 0, -(int) (DialogStoriesCell.HEIGHT_IN_DP * .5f), 0, 0)
                 );
                 view = lastEmptyView;
                 break;
@@ -733,6 +734,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 if (dialogsType == DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER) {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                 }
+                break;
             }
             case VIEW_TYPE_STORIES: {
                 view = new View(mContext) {
@@ -1089,6 +1091,23 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     @Override
     public void showChatPreview(DialogCell cell) {
         parentFragment.showChatPreview(cell);
+    }
+
+    @Override
+    public void openHiddenStories() {
+        StoriesController storiesController = MessagesController.getInstance(currentAccount).getStoriesController();
+        if (storiesController.getHiddenList().isEmpty()) {
+            return;
+        }
+        boolean unreadOnly = storiesController.getUnreadState(storiesController.getHiddenList().get(0).user_id) != StoriesController.STATE_READ;
+        ArrayList<Long> peerIds = new ArrayList<>();
+        for (int i = 0; i < storiesController.getHiddenList().size(); i++) {
+            if (!unreadOnly || storiesController.getUnreadState(storiesController.getHiddenList().get(i).user_id) != StoriesController.STATE_READ) {
+                peerIds.add(storiesController.getHiddenList().get(i).user_id);
+            }
+        }
+
+        parentFragment.getOrCreateStoryViewer().open(mContext, null, peerIds, 0, null, null, StoriesListPlaceProvider.of(recyclerListView, true), false);
     }
 
     public void setIsTransitionSupport() {

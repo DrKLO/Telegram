@@ -12067,7 +12067,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             newMessageObject.updateTranslation();
             isVideo = newMessageObject.isVideo();
 
-            title = FilteredSearchView.createFromInfoString(newMessageObject, opennedFromMedia && !openedFromProfile);
+            title = FilteredSearchView.createFromInfoString(newMessageObject, opennedFromMedia && !openedFromProfile, 0);
             CharSequence subtitle = null;
             if (newMessageObject.messageOwner != null) {
                 subtitle = LocaleController.formatDateAudio(newMessageObject.messageOwner.date, false);

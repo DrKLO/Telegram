@@ -2086,10 +2086,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 int currentPosition = layoutManager.findFirstVisibleItemPosition();
                 if (currentPosition == 0) {
                     int pTop = getPaddingTop();
-                    View view = findArchiveDialogCell(parentPage);
-                    int height = (int) (AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) * PullForegroundDrawable.SNAP_HEIGHT);
-                    int diff = (view.getTop() - pTop) + view.getMeasuredHeight();
-                    if (view instanceof DialogCell) {
+                    DialogCell view = findArchiveDialogCell(parentPage);
+                    if (view != null) {
+                        int height = (int) (AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) * PullForegroundDrawable.SNAP_HEIGHT);
+                        int diff = (view.getTop() - pTop) + view.getMeasuredHeight();
+
                         long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
                         if (diff < height || pullingTime < PullForegroundDrawable.minPullingTime) {
                             disableActionBarScrolling = true;
@@ -2941,6 +2942,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setBackButtonContentDescription(LocaleController.getString("AccDescrGoBack", R.string.AccDescrGoBack));
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors);
                 ((SizeNotifierFrameLayout) fragmentView).invalidateBlur();
+                if (optionsItem != null) {
+                    optionsItem.setVisibility(View.GONE);
+                }
             }
 
             @Override
@@ -2990,12 +2994,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors, true);
                 ((SizeNotifierFrameLayout) fragmentView).invalidateBlur();
+                if (optionsItem != null) {
+                    optionsItem.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override
             public void onTextChanged(EditText editText) {
                 String text = editText.getText().toString();
-                if (text.length() != 0 || (searchViewPager.dialogsSearchAdapter != null && searchViewPager.dialogsSearchAdapter.hasRecentSearch()) || searchFiltersWasShowed) {
+                if (text.length() != 0 || (searchViewPager.dialogsSearchAdapter != null && searchViewPager.dialogsSearchAdapter.hasRecentSearch()) || searchFiltersWasShowed || hasStories) {
                     searchWas = true;
                     if (!searchIsShowed) {
                         showSearch(true, false, true);
@@ -3024,7 +3031,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             searchItem.setVisibility(View.GONE);
         }
         if (isArchive()) {
-            searchItem.searchRightMargin = -44;
             optionsItem = menu.addItem(4, R.drawable.ic_ab_other);
             optionsItem.addSubItem(5, R.drawable.msg_customize, LocaleController.getString("ArchiveSettings")).setColors(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
             optionsItem.addSubItem(6, R.drawable.msg_help, LocaleController.getString("HowDoesItWork")).setColors(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
@@ -3271,7 +3277,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (initialDialogsType != DIALOGS_TYPE_DEFAULT) {
                         return false;
                     }
-                    if (actionBar.isActionModeShowed()) {
+                    if (actionBar.isActionModeShowed() || storiesOverscroll != 0) {
                         return false;
                     }
                     if (filterOptions != null && filterOptions.isShown()) {
@@ -4844,7 +4850,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }, subItem -> {
                                 subItem.setMultiline(false);
                             })
-                            .addIf(!isArchive(), R.drawable.msg_archive, LocaleController.getString("ArchiveStories", R.string.ArchiveStories), () -> {
+                            .addIf(!isArchive(), R.drawable.msg_archive, LocaleController.getString("ArchivePeerStories", R.string.ArchivePeerStories), () -> {
                                 toggleArciveForStory(dialogId);
                             }, subItem -> {
                                 subItem.setMultiline(false);
@@ -6750,10 +6756,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (searchFiltersWasShowed) {
                 onlyDialogsAdapter = false;
             } else {
-                onlyDialogsAdapter = onlyDialogsAdapter() && !hasStories;
+                onlyDialogsAdapter = onlyDialogsAdapter();
             }
             searchViewPager.showOnlyDialogsAdapter(onlyDialogsAdapter);
-            whiteActionBar = !onlyDialogsAdapter;
+            whiteActionBar = !onlyDialogsAdapter || hasStories;
             if (whiteActionBar) {
                 searchFiltersWasShowed = true;
             }
@@ -7048,7 +7054,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     public boolean onlyDialogsAdapter() {
         int dialogsCount = getMessagesController().getTotalDialogsCount();
-        return onlySelect || !searchViewPager.dialogsSearchAdapter.hasRecentSearch() || dialogsCount <= 10;
+        return onlySelect || !searchViewPager.dialogsSearchAdapter.hasRecentSearch() || dialogsCount <= 10 && !hasStories;
     }
 
     private void updateFilterTabsVisibility(boolean animated) {
@@ -8051,6 +8057,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 storyHint.show();
             }
             this.storiesEnabled = storiesEnabled;
+        }
+
+        if (floatingButton == null || floatingButtonContainer == null) {
+            return;
         }
 
         if (initialDialogsType == DIALOGS_TYPE_WIDGET) {
@@ -11802,7 +11812,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (StoryRecorder.isVisible() || (storyViewer != null && storyViewer.isFullyVisible())) {
             animated = false;
         }
-        boolean onlySelfStories = getStoriesController().hasOnlySelfStories();
+        boolean onlySelfStories = !isArchive() && getStoriesController().hasOnlySelfStories();
         boolean newVisibility;
         if (isArchive()) {
             newVisibility = !getStoriesController().getHiddenList().isEmpty();

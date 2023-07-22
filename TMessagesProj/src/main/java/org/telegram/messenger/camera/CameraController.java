@@ -436,6 +436,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             if (!ignoreOrientation && orientation != -1) {
                                 matrix.setRotate(orientation);
                             }
+                            orientation = 0;
                             matrix.postScale(-1, 1);
                             Bitmap scaled = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
                             if (scaled != bitmap) {

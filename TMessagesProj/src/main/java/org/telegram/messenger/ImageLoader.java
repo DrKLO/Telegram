@@ -52,6 +52,7 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.Reactions.HwEmojis;
 import org.telegram.ui.Components.SlotsDrawable;
 import org.telegram.ui.Components.ThemePreviewDrawable;
 
@@ -169,6 +170,10 @@ public class ImageLoader {
             }
         }
         return null;
+    }
+
+    public static boolean isSdCardPath(File videoFile) {
+        return !TextUtils.isEmpty(SharedConfig.storageCacheDir) && videoFile.getAbsolutePath().startsWith(SharedConfig.storageCacheDir);
     }
 
     public void moveToFront(String key) {
@@ -3291,6 +3296,9 @@ public class ImageLoader {
     }
 
     public void loadImageForImageReceiver(ImageReceiver imageReceiver) {
+        loadImageForImageReceiver(imageReceiver, null);
+    }
+    public void loadImageForImageReceiver(ImageReceiver imageReceiver, List<ImageReceiver> preloadReceiver) {
         if (imageReceiver == null) {
             return;
         }
@@ -3300,24 +3308,26 @@ public class ImageLoader {
         int guid = imageReceiver.getNewGuid();
         if (mediaKey != null) {
             ImageLocation mediaLocation = imageReceiver.getMediaLocation();
-            Drawable drawable;
-            if (useLottieMemCache(mediaLocation, mediaKey)) {
-                drawable = getFromLottieCache(mediaKey);
-            } else {
-                drawable = memCache.get(mediaKey);
-                if (drawable != null) {
-                    memCache.moveToFront(mediaKey);
-                }
-                if (drawable == null) {
-                    drawable = smallImagesMemCache.get(mediaKey);
+            Drawable drawable = findInPreloadImageReceivers(mediaKey, preloadReceiver);
+            if (drawable == null) {
+                if (useLottieMemCache(mediaLocation, mediaKey)) {
+                    drawable = getFromLottieCache(mediaKey);
+                } else {
+                    drawable = memCache.get(mediaKey);
                     if (drawable != null) {
-                        smallImagesMemCache.moveToFront(mediaKey);
+                        memCache.moveToFront(mediaKey);
                     }
-                }
-                if (drawable == null) {
-                    drawable = wallpaperMemCache.get(mediaKey);
-                    if (drawable != null) {
-                        wallpaperMemCache.moveToFront(mediaKey);
+                    if (drawable == null) {
+                        drawable = smallImagesMemCache.get(mediaKey);
+                        if (drawable != null) {
+                            smallImagesMemCache.moveToFront(mediaKey);
+                        }
+                    }
+                    if (drawable == null) {
+                        drawable = wallpaperMemCache.get(mediaKey);
+                        if (drawable != null) {
+                            wallpaperMemCache.moveToFront(mediaKey);
+                        }
                     }
                 }
             }
@@ -3342,8 +3352,8 @@ public class ImageLoader {
         String imageKey = imageReceiver.getImageKey();
         if (!imageSet && imageKey != null) {
             ImageLocation imageLocation = imageReceiver.getImageLocation();
-            Drawable drawable = null;
-            if (useLottieMemCache(imageLocation, imageKey)) {
+            Drawable drawable = findInPreloadImageReceivers(imageKey, preloadReceiver);
+            if (drawable == null && useLottieMemCache(imageLocation, imageKey)) {
                 drawable = getFromLottieCache(imageKey);
             }
             if (drawable == null) {
@@ -3597,6 +3607,22 @@ public class ImageLoader {
             createLoadOperationForImageReceiver(imageReceiver, thumbKey, thumbUrl, thumbExt, thumbLocation, thumbFilter, 0, thumbCacheType, ImageReceiver.TYPE_THUMB, thumbSet ? 2 : 1, guid);
             createLoadOperationForImageReceiver(imageReceiver, imageKey, imageUrl, imageExt, imageLocation, imageFilter, imageReceiver.getSize(), imageCacheType, ImageReceiver.TYPE_IMAGE, 0, guid);
         }
+    }
+
+    private Drawable findInPreloadImageReceivers(String imageKey, List<ImageReceiver> receivers) {
+        if (receivers == null) {
+            return null;
+        }
+        for (int i = 0; i < receivers.size(); i++) {
+            ImageReceiver receiver = receivers.get(i);
+            if (imageKey.equals(receiver.getImageKey())) {
+                return receiver.getImageDrawable();
+            }
+            if (imageKey.equals(receiver.getMediaKey())) {
+                return receiver.getMediaDrawable();
+            }
+        }
+        return null;
     }
 
     private BitmapDrawable getFromLottieCache(String imageKey) {

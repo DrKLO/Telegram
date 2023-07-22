@@ -923,7 +923,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
             setPadding(dp(16), dp(16), dp(21), dp(10));
 
-            setText(LocaleController.getString(onlyPhotos ? R.string.ChoosePhoto : R.string.ChoosePhotoOrVideo));
+            setText(LocaleController.getString(onlyPhotos ? R.string.AddImage : R.string.ChoosePhotoOrVideo));
         }
     }
 

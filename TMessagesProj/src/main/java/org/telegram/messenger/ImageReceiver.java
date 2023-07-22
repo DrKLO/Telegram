@@ -43,9 +43,12 @@ import org.telegram.ui.Components.RecyclableDrawable;
 import org.telegram.ui.Components.VectorAvatarThumbDrawable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
+    List<ImageReceiver> preloadReceivers;
     public boolean updateThumbShaderMatrix() {
         if (currentThumbDrawable != null && thumbShader != null) {
             drawDrawable(null, currentThumbDrawable, 255, thumbShader, 0, 0, 0, null);
@@ -56,6 +59,18 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             return true;
         }
         return false;
+    }
+
+    public void setPreloadingReceivers(List<ImageReceiver> preloadReceivers) {
+        this.preloadReceivers = preloadReceivers;
+    }
+
+    public Drawable getImageDrawable() {
+        return currentImageDrawable;
+    }
+
+    public Drawable getMediaDrawable() {
+        return currentMediaDrawable;
     }
 
     public interface ImageReceiverDelegate {
@@ -706,7 +721,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     private void loadImage() {
-        ImageLoader.getInstance().loadImageForImageReceiver(this);
+        ImageLoader.getInstance().loadImageForImageReceiver(this, preloadReceivers);
         invalidate();
     }
 
@@ -1047,6 +1062,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (setImageBackup != null && setImageBackup.isSet()) {
             SetImageBackup temp = setImageBackup;
             setImageBackup = null;
+            if (temp.thumb instanceof BitmapDrawable) {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) temp.thumb;
+                if (!(bitmapDrawable instanceof RLottieDrawable) && !(bitmapDrawable instanceof AnimatedFileDrawable) && bitmapDrawable.getBitmap() != null && bitmapDrawable.getBitmap().isRecycled()) {
+                    temp.thumb = null;
+                }
+            }
             setImage(temp.mediaLocation, temp.mediaFilter, temp.imageLocation, temp.imageFilter, temp.thumbLocation, temp.thumbFilter, temp.thumb, temp.size, temp.ext, temp.parentObject, temp.cacheType);
             temp.clear();
             setImageBackup = temp;

@@ -86,6 +86,7 @@ public class HintView2 extends View {
     private float textX, textY;
 
     private boolean hideByTouch = true;
+    private boolean repeatedBounce = true;
 
     private boolean shown;
     private AnimatedFloat show = new AnimatedFloat(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -185,6 +186,18 @@ public class HintView2 extends View {
         return this;
     }
 
+    private static boolean contains(CharSequence text, char c) {
+        if (text == null) {
+            return false;
+        }
+        for (int i = 0; i < text.length(); ++i) {
+            if (text.charAt(i) == c) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // returns max width
     public static int cutInFancyHalf(CharSequence text, TextPaint paint) {
         if (text == null) {
@@ -257,6 +270,11 @@ public class HintView2 extends View {
         return this;
     }
 
+    public HintView2 setBounce(boolean enable) {
+        repeatedBounce = enable;
+        return this;
+    }
+
     // works only for multiline=true
     public HintView2 setTextAlign(Layout.Alignment alignment) {
         textLayoutAlignment = alignment;
@@ -318,6 +336,9 @@ public class HintView2 extends View {
     private ValueAnimator bounceAnimator;
     private float bounceT = 1;
     private void bounceShow() {
+        if (!repeatedBounce) {
+            return;
+        }
         if (bounceAnimator != null) {
             bounceAnimator.cancel();
             bounceAnimator = null;
@@ -487,7 +508,7 @@ public class HintView2 extends View {
         backgroundPaint.setAlpha(wasAlpha);
 
         if (multiline) {
-            canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+            canvas.saveLayerAlpha(0, 0, getWidth(), Math.max(getHeight(), height), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
             canvas.translate(textX = bounds.left + innerPadding.left - textLayoutLeft, textY = bounds.top + innerPadding.top);
             if (links.draw(canvas)) {
                 invalidate();

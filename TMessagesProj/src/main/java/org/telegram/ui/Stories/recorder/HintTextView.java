@@ -26,6 +26,7 @@ public class HintTextView extends View {
         textDrawable.getPaint().setShadowLayer(AndroidUtilities.dp(1.4f), 0, AndroidUtilities.dp(.4f), 0x4C000000);
         textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
         textDrawable.setCallback(this);
+        textDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
     }
 
     public void setText(CharSequence text, boolean animated) {
@@ -44,5 +45,11 @@ public class HintTextView extends View {
     @Override
     protected boolean verifyDrawable(@NonNull Drawable who) {
         return who == textDrawable || super.verifyDrawable(who);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        textDrawable.setOverrideFullWidth(getMeasuredWidth());
     }
 }

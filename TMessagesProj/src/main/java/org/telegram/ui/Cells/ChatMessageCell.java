@@ -4894,6 +4894,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         type = webpage == null ? null : webpage.type;
                         duration = storyItem != null && storyItem.media != null && storyItem.media.document != null ? (int) MessageObject.getDocumentDuration(storyItem.media.document) : 0;
                         smallImage = false;
+                        isSmallImage = false;
                     } else if (hasLinkPreview) {
                         TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) webpage;
                         site_name = webPage.site_name;

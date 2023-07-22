@@ -3,9 +3,10 @@ package org.telegram.ui.Stories;
 import android.graphics.Canvas;
 import android.view.View;
 
-import androidx.recyclerview.widget.RecyclerView;
-
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -20,12 +21,18 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 
     private final RecyclerListView recyclerListView;
     int[] clipPoint = new int[2];
+    private boolean isHiddenArchive;
 
     public static StoriesListPlaceProvider of(RecyclerListView recyclerListView) {
-        return new StoriesListPlaceProvider(recyclerListView);
+        return of(recyclerListView, false);
     }
-    public StoriesListPlaceProvider(RecyclerListView recyclerListView) {
+
+    public static StoriesListPlaceProvider of(RecyclerListView recyclerListView, boolean hiddenArchive) {
+        return new StoriesListPlaceProvider(recyclerListView, hiddenArchive);
+    }
+    public StoriesListPlaceProvider(RecyclerListView recyclerListView, boolean hiddenArchive) {
         this.recyclerListView = recyclerListView;
+        this.isHiddenArchive = hiddenArchive;
     }
 
     @Override
@@ -38,6 +45,9 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                 r.run();
             }
         } else {
+            if (isHiddenArchive) {
+                MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().sortHiddenStories();
+            }
             r.run();
         }
     }
@@ -47,6 +57,10 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         holder.avatarImage = null;
         holder.storyImage = null;
         holder.drawAbove = null;
+
+        if (recyclerListView == null) {
+            return false;
+        }
 
         DialogStoriesCell dialogStoriesCell = null;
         if (recyclerListView.getParent() instanceof DialogStoriesCell) {
@@ -75,11 +89,14 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                 }
             } else if (child instanceof DialogCell) {
                 DialogCell cell = (DialogCell) child;
-                if (cell.getDialogId() == dialogId) {
+                if (cell.getDialogId() == dialogId || (isHiddenArchive && cell.isDialogFolder())) {
                     holder.view = child;
-                    holder.params = cell.params;
+                    holder.params = cell.storyParams;
                     holder.avatarImage = cell.avatarImage;
                     holder.clipParent = (View) cell.getParent();
+                    if (isHiddenArchive) {
+                        holder.crossfadeToAvatarImage = cell.avatarImage;
+                    }
                     updateClip(holder);
                     return true;
                 }

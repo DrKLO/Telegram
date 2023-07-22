@@ -28,6 +28,7 @@ import androidx.core.graphics.ColorUtils;
 import com.google.android.exoplayer2.util.Consumer;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -153,7 +154,7 @@ public class ItemOptions {
         }
 
         ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
-        subItem.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18 + 8), 0);
+        subItem.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18 + (LocaleController.isRTL ? 0 : 8)), 0);
         subItem.setTextAndIcon(text, iconResId);
 
         subItem.setColors(Theme.getColor(textColorKey, resourcesProvider), Theme.getColor(iconColorKey, resourcesProvider));

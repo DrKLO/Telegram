@@ -879,7 +879,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 selectedUsers.addAll(selectedContacts);
                 selectedUsersByGroup.putAll(selectedContactsByGroup);
             }
-            layoutManager.setReverseLayout(pageType == PAGE_TYPE_SHARE);
+            layoutManager.setReverseLayout(adapter.reversedLayout = pageType == PAGE_TYPE_SHARE);
             updateSpans(false);
             searchField.setText("");
             searchField.setVisibility(pageType == PAGE_TYPE_SHARE ? View.GONE : View.VISIBLE);
@@ -912,7 +912,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 sectionCell.setVisibility(View.GONE);
 //                items.add(ItemInner.asPad(dp(84) + 4 * dp(56) + (sendAsMessageEnabled ? dp(120) : dp(64))));
                 items.add(ItemInner.asHeader2(
-                    LocaleController.getString("StoryPrivacyAlertTitle", R.string.StoryPrivacyAlertTitle),
+                    isEdit ?
+                        LocaleController.getString("StoryPrivacyAlertEditTitle", R.string.StoryPrivacyAlertEditTitle) :
+                        LocaleController.getString("StoryPrivacyAlertTitle", R.string.StoryPrivacyAlertTitle),
                     storyPeriod != Integer.MAX_VALUE ?
                         LocaleController.formatPluralString("StoryPrivacyAlertSubtitle", storyPeriod / 3600) :
                         LocaleController.getString("StoryPrivacyAlertSubtitleProfile", R.string.StoryPrivacyAlertSubtitleProfile)
@@ -1300,7 +1302,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             } else if (pageType == PAGE_TYPE_SEND_AS_MESSAGE) {
                 button.setShowZero(true);
                 button.setEnabled(!selectedUsers.isEmpty());
-                button.setText(LocaleController.formatPluralString("StoryPrivacyButtonMessageChats", selectedUsers.size()), animated);
+//                button.setText(LocaleController.formatPluralString("StoryPrivacyButtonMessageChats", selectedUsers.size()), animated);
                 button.setCount(selectedUsers.size(), animated);
                 button2.setVisibility(View.GONE);
             }
@@ -1536,6 +1538,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
 
             private RecyclerListView listView;
+            public boolean reversedLayout;
 
             @Override
             public boolean isEnabled(RecyclerView.ViewHolder holder) {
@@ -1587,8 +1590,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
                 final ItemInner item = items.get(position);
                 final int viewType = holder.getItemViewType();
-                final ItemInner nextItem = position + 1 < items.size() ? items.get(position + 1) : null;
-                final boolean divider = nextItem != null && nextItem.viewType == viewType;
+                final ItemInner neighbour = reversedLayout ? (position > 0 ? items.get(position - 1) : null) : (position + 1 < items.size() ? items.get(position + 1) : null);
+                final boolean divider = neighbour != null && neighbour.viewType == viewType;
                 if (viewType == VIEW_TYPE_USER) {
                     UserCell userCell = (UserCell) holder.itemView;
                     if (item.type > 0) {
@@ -2539,7 +2542,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         }
     }
 
-    private static class HeaderCell2 extends FrameLayout {
+    private static class HeaderCell2 extends LinearLayout {
 
         private final Theme.ResourcesProvider resourcesProvider;
         private final TextView titleTextView;
@@ -2547,27 +2550,19 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         public HeaderCell2(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            setOrientation(VERTICAL);
             this.resourcesProvider = resourcesProvider;
 
             titleTextView = new TextView(context);
             titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 27, 16, 27, 0));
+            addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 27, 16, 27, 0));
 
             subtitleTextView = new TextView(context);
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            NotificationCenter.listenEmojiLoading(subtitleTextView);
-            addView(subtitleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 27, 44, 27, 0));
-        }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(
-                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(72), MeasureSpec.EXACTLY)
-            );
+            addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 27, 5, 27, 13));
         }
 
         public void setText(CharSequence title, CharSequence subtitle) {

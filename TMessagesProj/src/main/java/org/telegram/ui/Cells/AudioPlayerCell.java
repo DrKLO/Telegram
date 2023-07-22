@@ -112,7 +112,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         try {
             CharSequence author = currentMessageObject.getMusicAuthor().replace('\n', ' ');
             if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
-                author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject));
+                author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject, 2));
             }
             CharSequence authorFinal = TextUtils.ellipsize(author, Theme.chat_contextResult_descriptionTextPaint, maxWidth, TextUtils.TruncateAt.END);
             descriptionLayout = new StaticLayout(authorFinal, Theme.chat_contextResult_descriptionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

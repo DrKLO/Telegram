@@ -79,6 +79,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -103,6 +104,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -122,6 +124,8 @@ import javax.microedition.khronos.egl.EGLSurface;
 
 @TargetApi(18)
 public class InstantCameraView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+
+    public boolean WRITE_TO_FILE_IN_BACKGROUND = true;
 
     private int currentAccount = UserConfig.selectedAccount;
     private InstantViewCameraContainer cameraContainer;
@@ -1730,6 +1734,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private static final int IFRAME_INTERVAL = 1;
 
         private File videoFile;
+        private File fileToWrite;
+        private boolean writingToDifferentFile;
         private int videoWidth;
         private int videoHeight;
         private int videoBitrate;
@@ -2302,6 +2308,18 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                if (writingToDifferentFile) {
+                    if (!fileToWrite.renameTo(videoFile)) {
+                        FileLog.e("unable to rename file, try move file");
+                        try {
+                            AndroidUtilities.copyFile(fileToWrite, videoFile);
+                            fileToWrite.delete();
+                        } catch (IOException e) {
+                            FileLog.e(e);
+                            FileLog.e("unable to move file");
+                        }
+                    }
+                }
             }
             if (generateKeyframeThumbsQueue != null) {
                 generateKeyframeThumbsQueue.cleanupQueue();
@@ -2394,7 +2412,16 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 });
             } else {
                 FileLoader.getInstance(currentAccount).cancelFileUpload(videoFile.getAbsolutePath(), false);
-                videoFile.delete();
+                try {
+                    fileToWrite.delete();
+                } catch (Throwable ignore) {
+
+                }
+                try {
+                    videoFile.delete();
+                } catch (Throwable ignore) {
+
+                }
             }
             EGL14.eglDestroySurface(eglDisplay, eglSurface);
             eglSurface = EGL14.EGL_NO_SURFACE;
@@ -2491,8 +2518,23 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 surface = videoEncoder.createInputSurface();
                 videoEncoder.start();
 
+                boolean isSdCard = ImageLoader.isSdCardPath(videoFile);
+                fileToWrite = videoFile;
+                if (isSdCard) {
+                    try {
+                        fileToWrite = new File(ApplicationLoader.getFilesDirFixed(), "camera_tmp.mp4");
+                        if (fileToWrite.exists()) {
+                            fileToWrite.delete();
+                        }
+                        writingToDifferentFile = true;
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                        fileToWrite = videoFile;
+                        writingToDifferentFile = false;
+                    }
+                }
                 Mp4Movie movie = new Mp4Movie();
-                movie.setCacheFile(videoFile);
+                movie.setCacheFile(fileToWrite);
                 movie.setRotation(0);
                 movie.setSize(videoWidth, videoHeight);
                 mediaMuxer = new MP4Builder().createMovie(movie, isSecretChat, false);
@@ -2684,31 +2726,30 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                                 }
                                 firstEncode = false;
                             }
-                            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                            bufferInfo.size = videoBufferInfo.size;
-                            bufferInfo.offset = videoBufferInfo.offset;
-                            bufferInfo.flags = videoBufferInfo.flags;
-                            bufferInfo.presentationTimeUs = videoBufferInfo.presentationTimeUs;
-                            needReleaseBuffers = false;
-                            fileWriteQueue.postRunnable(() -> {
-                                long availableSize = 0;
-                                try {
-                                    availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, bufferInfo, true);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                MediaCodec videoEncoder = VideoRecorder.this.videoEncoder;
-                                if (videoEncoder != null) {
+                            if (WRITE_TO_FILE_IN_BACKGROUND) {
+                                MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+                                bufferInfo.size = videoBufferInfo.size;
+                                bufferInfo.offset = videoBufferInfo.offset;
+                                bufferInfo.flags = videoBufferInfo.flags;
+                                bufferInfo.presentationTimeUs = videoBufferInfo.presentationTimeUs;
+                                ByteBuffer byteBuffer = encodedData.duplicate();
+                                fileWriteQueue.postRunnable(() -> {
+                                    long availableSize = 0;
                                     try {
-                                        videoEncoder.releaseOutputBuffer(encoderStatus, false);
-                                    } catch (Throwable e) {
-                                        //ignore IllegalStateException if codec released
+                                        availableSize = mediaMuxer.writeSampleData(videoTrackIndex, byteBuffer, bufferInfo, true);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
                                     }
-                                }
-                                if (availableSize != 0) {
+                                    if (availableSize != 0 && !writingToDifferentFile) {
+                                        didWriteData(videoFile, availableSize, false);
+                                    }
+                                });
+                            } else {
+                                long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, videoBufferInfo, true);
+                                if (availableSize != 0 && !writingToDifferentFile) {
                                     didWriteData(videoFile, availableSize, false);
                                 }
-                            });
+                            }
                         } else if (videoTrackIndex == -5) {
                             byte[] csd = new byte[videoBufferInfo.size];
                             encodedData.limit(videoBufferInfo.offset + videoBufferInfo.size);
@@ -2780,31 +2821,33 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         audioBufferInfo.size = 0;
                     }
                     if (audioBufferInfo.size != 0) {
-                        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                        bufferInfo.size = audioBufferInfo.size;
-                        bufferInfo.offset = audioBufferInfo.offset;
-                        bufferInfo.flags = audioBufferInfo.flags;
-                        bufferInfo.presentationTimeUs = audioBufferInfo.presentationTimeUs;
-                        fileWriteQueue.postRunnable(() -> {
-                            long availableSize = 0;
-                            try {
-                                availableSize = mediaMuxer.writeSampleData(audioTrackIndex, encodedData, bufferInfo, false);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            if (availableSize != 0) {
+                        if (WRITE_TO_FILE_IN_BACKGROUND) {
+                            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+                            bufferInfo.size = audioBufferInfo.size;
+                            bufferInfo.offset = audioBufferInfo.offset;
+                            bufferInfo.flags = audioBufferInfo.flags;
+                            bufferInfo.presentationTimeUs = audioBufferInfo.presentationTimeUs;
+                            ByteBuffer byteBuffer = encodedData.duplicate();
+                            fileWriteQueue.postRunnable(() -> {
+                                long availableSize = 0;
+                                try {
+                                    availableSize = mediaMuxer.writeSampleData(audioTrackIndex, byteBuffer, bufferInfo, false);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                if (availableSize != 0 && !writingToDifferentFile) {
+                                    didWriteData(videoFile, availableSize, false);
+                                }
+                            });
+                            audioEncoder.releaseOutputBuffer(encoderStatus, false);
+                        } else {
+                            long availableSize = mediaMuxer.writeSampleData(audioTrackIndex, encodedData, audioBufferInfo, false);
+                            if (availableSize != 0 && !writingToDifferentFile) {
                                 didWriteData(videoFile, availableSize, false);
                             }
-                            MediaCodec audioEncoder = VideoRecorder.this.audioEncoder;
-                            if (audioEncoder != null) {
-                                try {
-                                    audioEncoder.releaseOutputBuffer(encoderStatus, false);
-                                } catch (Throwable e) {
-                                    //ignore IllegalStateException if codec released
-                                }
-                            }
-                        });
-                    } else {
+                            audioEncoder.releaseOutputBuffer(encoderStatus, false);
+                        }
+                    } else if (audioEncoder != null) {
                         audioEncoder.releaseOutputBuffer(encoderStatus, false);
                     }
                     if ((audioBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {

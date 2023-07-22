@@ -165,8 +165,8 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         final TLRPC.TL_userStories userStories;
         if (userId == 0) {
             userStories = null;
-        } else if (stateStories != null) {
-            userStories = stateStories;
+//        } else if (stateStories != null) {
+//            userStories = stateStories;
         } else {
             userStories = userFullStories;
         }

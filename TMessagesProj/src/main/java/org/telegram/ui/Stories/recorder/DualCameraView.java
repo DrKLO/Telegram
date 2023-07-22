@@ -482,13 +482,29 @@ public class DualCameraView extends CameraView implements CameraController.Error
         -862041025,  // XIAOMI WILLOW
         -1258375037, // XIAOMI INGRES
         -1320049076, // XIAOMI GINKGO
+        -215749424,  // XIAOMI LISA
+        1901578030,  // XIAOMI LEMON
+        -215451421,  // XIAOMI VIVA
+        1908491424,  // XIAOMI STONE
+        -1321491332, // XIAOMI RAPHAEL
+        -1155551678, // XIAOMI MARBLE
+        1908524435,  // XIAOMI SURYA
         976847578,   // XIAOMI LAUREL_SPROUT
         -713271737,  // OPPO OP4F2F
         -2010722764, // SAMSUNG A52SXQ (A52s 5G)
         1407170066,  // SAMSUNG D2Q (Note10+)
         -1394190055, // SAMSUNG B4Q
         1407170066,  // HUAWEI HWNAM
+        1407159934,  // HUAWEI HWCOR
+        1407172057,  // HUAWEI HWPCT
         1231389747,  // FAIRPHONE FP3
+        -2076538925, // MOTOROLA RSTAR
+        41497626,    // MOTOROLA RHODEC
+        846150482,   // MOTOROLA CHANNEL
+        -1198092731, // MOTOROLA CYPRUS64
+        -251277614,  // MOTOROLA HANOIP
+        -2078385967, // MOTOROLA PSTAR
+//        -1426053134  // REALME REE2ADL1
     };
 
     private static final int[] dualWhitelistByModel = new int[] {

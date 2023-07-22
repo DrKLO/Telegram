@@ -94,7 +94,7 @@ public class ColoredImageSpan extends ReplacementSpan {
         canvas.save();
         int transY = bottom - (drawable != null ? drawable.getBounds().bottom : bottom);
         if (verticalAlignment == ALIGN_BASELINE) {
-            transY -= paint.getFontMetricsInt().descent;
+//            transY -= paint.getFontMetricsInt().descent;
         } else if (verticalAlignment == ALIGN_CENTER) {
             transY = top + (bottom - top) / 2 - (drawable != null ? drawable.getBounds().height() / 2 : 0);
         } else if (verticalAlignment == ALIGN_DEFAULT) {

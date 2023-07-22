@@ -125,15 +125,16 @@ public class StoryContainsEmojiButton extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final boolean exactly = MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY;
+
+        final int height = getPaddingTop() + AndroidUtilities.lerp(dp(29), layout == null ? dp(29) : layout.getHeight(), loadT) + getPaddingBottom();
+        setMeasuredDimension(exactly ? MeasureSpec.getSize(widthMeasureSpec) : getMinimumWidth(), height);
+
         final int contentWidth = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();
         if (exactly && (toSetText != null || layout != null && lastContentWidth != contentWidth)) {
             setText(toSetText != null ? toSetText : layout.getText());
             toSetText = null;
             lastContentWidth = contentWidth;
         }
-
-        final int height = getPaddingTop() + AndroidUtilities.lerp(dp(29), layout == null ? dp(29) : layout.getHeight(), loadT) + getPaddingBottom();
-        setMeasuredDimension(exactly ? MeasureSpec.getSize(widthMeasureSpec) : getMinimumWidth(), height);
     }
 
     @Override
@@ -207,6 +208,9 @@ public class StoryContainsEmojiButton extends View {
                 req.media = inputStickeredMediaDocument;
             }
             final RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response == null) {
+                    return;
+                }
                 TLRPC.Vector vector = this.vector = (TLRPC.Vector) response;
                 lastRequestParentObject = parentObject;
                 lastResponse = vector;

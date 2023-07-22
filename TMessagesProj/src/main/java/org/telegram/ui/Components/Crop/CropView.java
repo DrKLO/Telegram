@@ -451,6 +451,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void updateMatrix(boolean force) {
+        if (state == null) {
+            return;
+        }
         overlayMatrix.reset();
         if (state.getBaseRotation() == 90 || state.getBaseRotation() == 270) {
             overlayMatrix.postTranslate(-state.getHeight() / 2, -state.getWidth() / 2);

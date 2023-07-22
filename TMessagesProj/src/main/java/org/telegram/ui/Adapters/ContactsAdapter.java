@@ -84,26 +84,13 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     }
 
     public void setStories(ArrayList<TLRPC.TL_userStories> stories, boolean animated) {
-        boolean hasStories = !stories.isEmpty();
-        userStories.clear();
-        userStories.addAll(stories);
-        if (this.hasStories != hasStories) {
-            this.hasStories = hasStories;
-//            if (!animated) {
-//                notifyDataSetChanged();
-//            } else {
-//                cleanupCache();
-//                notifyDataSetChanged();
-//                if (hasStories) {
-//                    notifyItemInserted(0);
-//                } else {
-//                    notifyItemRemoved(0);
-//                    notifyItemRangeChanged(1, getItemCount());
-//                }
-//            }
-        }
-        update(true);
-       // notifyDataSetChanged();
+//        boolean hasStories = !stories.isEmpty();
+//        userStories.clear();
+//        userStories.addAll(stories);
+//        if (this.hasStories != hasStories) {
+//            this.hasStories = hasStories;
+//        }
+//        update(true);
     }
 
     public void setDisableSections(boolean value) {

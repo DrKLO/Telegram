@@ -1917,7 +1917,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
             if (emojiLayout != null) {
                 canvas.save();
-                canvas.translate(emojiRect.left + dp(12) + emojiLayoutLeft, emojiRect.top + (emojiRect.height() - emojiLayout.getHeight()) / 2f);
+                canvas.translate(emojiRect.left + dp(12) - emojiLayoutLeft, emojiRect.top + (emojiRect.height() - emojiLayout.getHeight()) / 2f);
                 textPaint.setColor(ColorUtils.blendARGB(0xFF838383, 0xFFFFFFFF, Utilities.clamp(1f - Math.abs(type - 0), 1, 0)));
                 emojiLayout.draw(canvas);
                 canvas.restore();
@@ -1925,7 +1925,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
             if (stickersLayout != null) {
                 canvas.save();
-                canvas.translate(stickersRect.left + dp(12) + stickersLayoutLeft, stickersRect.top + (stickersRect.height() - stickersLayout.getHeight()) / 2f);
+                canvas.translate(stickersRect.left + dp(12) - stickersLayoutLeft, stickersRect.top + (stickersRect.height() - stickersLayout.getHeight()) / 2f);
                 textPaint.setColor(ColorUtils.blendARGB(0xFF838383, 0xFFFFFFFF, Utilities.clamp(1f - Math.abs(type - 1), 1, 0)));
                 stickersLayout.draw(canvas);
                 canvas.restore();
@@ -1933,7 +1933,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
             if (masksLayout != null) {
                 canvas.save();
-                canvas.translate(masksRect.left + dp(12) + masksLayoutLeft, masksRect.top + (masksRect.height() - masksLayout.getHeight()) / 2f);
+                canvas.translate(masksRect.left + dp(12) - masksLayoutLeft, masksRect.top + (masksRect.height() - masksLayout.getHeight()) / 2f);
                 textPaint.setColor(ColorUtils.blendARGB(0xFF838383, 0xFFFFFFFF, Utilities.clamp(1f - Math.abs(type - 2), 1, 0)));
                 masksLayout.draw(canvas);
                 canvas.restore();

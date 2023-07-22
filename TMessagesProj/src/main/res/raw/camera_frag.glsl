@@ -8,9 +8,6 @@ uniform vec2 pixelWH;
 uniform float roundRadius;
 uniform float scale;
 uniform float alpha;
-uniform float crossfade;
-uniform mat4 cameraMatrix;
-uniform mat4 oppositeCameraMatrix;
 uniform float shapeFrom, shapeTo, shapeT;
 uniform float dual;
 uniform float blur;
@@ -33,17 +30,6 @@ float scene() {
     mix(abs(a)<.1 ? R : rr, abs(b)<.1 ? R : rr, shapeT)
   ) * pixelWH.x;
 }
-vec4 BilinearTextureSample(vec2 P) {
-  vec2 onePixel = 1.0 / pixelWH, twoPixels = 2. * onePixel;
-  vec2 pixel = P * pixelWH + .5;
-  vec2 frac = fract(pixel);
-  pixel = (floor(pixel) / pixelWH) - onePixel / 2.;
-  return mix(
-    mix(texture2D(sTexture, pixel + vec2(0., 0.) * onePixel), texture2D(sTexture, pixel + vec2(1., 0.) * onePixel), frac.x),
-    mix(texture2D(sTexture, pixel + vec2(0., 1.) * onePixel), texture2D(sTexture, pixel + vec2(1., 1.) * onePixel), frac.x),
-    frac.y
-  );
-}
 vec4 makeblur() {
   vec2 S = 4. * vec2(1., pixelWH.x / pixelWH.y);
   vec2 st = fract(uv * S);
@@ -61,14 +47,14 @@ vec4 program() {
   float dalpha = clamp(1. - scene(), 0., 2.) / 2. * alpha;
   if (dalpha <= 0.)
     return vec4(0.);
-  
+
   if (blur >= 1.)
     return makeblur();
   else if (blur <= 0.)
-    return (dual > .5 ? BilinearTextureSample(uv) : texture2D(sTexture, uv)) * vec4(1., 1., 1., dalpha);
+    return texture2D(sTexture, uv) * vec4(1., 1., 1., dalpha);
   else
-    return mix((dual > .5 ? BilinearTextureSample(uv) : texture2D(sTexture, uv)), makeblur(), blur) * vec4(1., 1., 1., dalpha);
+    return mix(texture2D(sTexture, uv), makeblur(), blur) * vec4(1., 1., 1., dalpha);
 }
 void main() {
-  gl_FragColor = program();
+  gl_FragColor = dual < .5 ? texture2D(sTexture, uv) : program();
 }

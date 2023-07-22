@@ -10,7 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
 import com.google.android.exoplayer2.util.Consumer;
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
@@ -157,13 +156,18 @@ public class StoriesController {
     }
 
     private void sortDialogStories(ArrayList<TLRPC.TL_userStories> list) {
-        fixDeletedStories(list);
+        fixDeletedAndNonContactsStories(list);
         Collections.sort(list, userStoriesComparator);
     }
 
-    private void fixDeletedStories(ArrayList<TLRPC.TL_userStories> list) {
+    private void fixDeletedAndNonContactsStories(ArrayList<TLRPC.TL_userStories> list) {
         for (int k = 0; k < list.size(); k++) {
             TLRPC.TL_userStories userStories = list.get(k);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(userStories.user_id);
+            if (user != null && !user.contact) {
+                list.remove(k);
+                k--;
+            }
             for (int i = 0; i < userStories.stories.size(); i++) {
                 if (userStories.stories.get(i) instanceof TLRPC.TL_storyItemDeleted) {
                     userStories.stories.remove(i);
@@ -578,6 +582,7 @@ public class StoriesController {
         AndroidUtilities.runOnUIThread(() -> {
             TLRPC.TL_userStories currentUserStory = allStoriesMap.get(updateStory.user_id);
             FileLog.d("StoriesController update stories for user " + updateStory.user_id);
+            updateStoriesInLists(updateStory.user_id, Collections.singletonList(updateStory.story));
 
             ArrayList<TLRPC.StoryItem> newStoryItems = new ArrayList<>();
             int oldStoriesCount = totalStoriesCount;
@@ -645,7 +650,6 @@ public class StoriesController {
                     }
                     notify = true;
                 }
-                updateStoriesInLists(updateStory.user_id, newStoryItems);
             } else {
                 if (updateStory.story instanceof TLRPC.TL_storyItemDeleted) {
                     FileLog.d("StoriesController can't add user " + updateStory.user_id + " with new story DELETED");
@@ -671,8 +675,8 @@ public class StoriesController {
             if (oldStoriesCount != totalStoriesCount) {
                 mainSettings.edit().putInt("total_stores", totalStoriesCount).apply();
             }
-            fixDeletedStories(dialogListStories);
-            fixDeletedStories(hiddenListStories);
+            fixDeletedAndNonContactsStories(dialogListStories);
+            fixDeletedAndNonContactsStories(hiddenListStories);
             if (notify) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesUpdated);
             }
@@ -789,14 +793,13 @@ public class StoriesController {
         req.id.add(storyItem.id);
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (error == null) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    updateDeletedStoriesInLists(getSelfUserId(), Arrays.asList(storyItem));
-                });
+
             }
         });
         storiesStorage.deleteStory(getSelfUserId(), storyItem.id);
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesUpdated);
         MessagesController.getInstance(currentAccount).checkArchiveFolder();
+        updateDeletedStoriesInLists(getSelfUserId(), Arrays.asList(storyItem));
     }
 
     public void deleteStories(ArrayList<TLRPC.StoryItem> storyItems) {
@@ -2126,6 +2129,9 @@ public class StoriesController {
                 }
                 boolean contains = loadedObjects.contains(storyItem.id) || cachedObjects.contains(storyItem.id);
                 boolean shouldContain = type == TYPE_ARCHIVE ? true : storyItem.pinned;
+                if (storyItem instanceof TLRPC.TL_storyItemDeleted) {
+                    shouldContain = false;
+                }
                 if (contains != shouldContain) {
                     changed = true;
                     if (!shouldContain) {
@@ -2248,5 +2254,10 @@ public class StoriesController {
 
     public boolean hasOnlySelfStories() {
         return hasSelfStories() && (getDialogListStories().isEmpty() || (getDialogListStories().size() == 1 && getDialogListStories().get(0).user_id == UserConfig.getInstance(currentAccount).clientUserId));
+    }
+
+    public void sortHiddenStories() {
+        sortDialogStories(hiddenListStories);
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesUpdated);
     }
 }

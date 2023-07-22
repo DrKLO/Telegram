@@ -168,7 +168,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         try {
             CharSequence title;
             if (viewType == VIEW_TYPE_GLOBAL_SEARCH && (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo())) {
-                title = FilteredSearchView.createFromInfoString(currentMessageObject);
+                title = FilteredSearchView.createFromInfoString(currentMessageObject, 1);
             } else {
                 title = currentMessageObject.getMusicTitle().replace('\n', ' ');
             }
@@ -210,7 +210,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                     author = authorH;
                 }
                 if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
-                    author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject));
+                    author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject, 1));
                 }
                 TextPaint paint = viewType == VIEW_TYPE_GLOBAL_SEARCH ? description2TextPaint : Theme.chat_contextResult_descriptionTextPaint;
                 author = TextUtils.ellipsize(author, paint, maxWidth, TextUtils.TruncateAt.END);

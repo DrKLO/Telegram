@@ -1594,13 +1594,15 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             .setBgColor(Theme.getColor(Theme.key_undo_background))
             .setMultilineText(true)
             .setTextAlign(Layout.Alignment.ALIGN_CENTER)
-            .setText(AndroidUtilities.replaceSingleTag(LocaleController.getString("StoriesPremiumHint"), Theme.key_undo_cancelColor, 0, () -> {
-                if (premiumHint != null) {
-                    premiumHint.hide();
-                }
-                fragment.presentFragment(new PremiumPreviewFragment("stories"));
-            }))
             .setJoint(0, 37 - 8);
+        CharSequence text = AndroidUtilities.replaceSingleTag(LocaleController.getString("StoriesPremiumHint").replace('\n', ' '), Theme.key_undo_cancelColor, 0, () -> {
+            if (premiumHint != null) {
+                premiumHint.hide();
+            }
+            fragment.presentFragment(new PremiumPreviewFragment("stories"));
+        });
+        premiumHint.setMaxWidthPx(HintView2.cutInFancyHalf(text, premiumHint.getTextPaint()));
+        premiumHint.setText(text);
         premiumHint.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(24), AndroidUtilities.dp(8), 0);
         if (getParent() instanceof FrameLayout) {
             ((FrameLayout) getParent()).addView(premiumHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.LEFT | Gravity.TOP));
@@ -1614,7 +1616,6 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             if (premiumHint.shown()) {
                 BotWebViewVibrationEffect.APP_ERROR.vibrate();
             }
-            premiumHint.setMaxWidthPx(Math.min(AndroidUtilities.dp(450), (int) (AndroidUtilities.displaySize.x * .7f)));
             premiumHint.show();
         }
     }

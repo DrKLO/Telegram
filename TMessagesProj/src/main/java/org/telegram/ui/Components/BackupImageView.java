@@ -41,13 +41,17 @@ public class BackupImageView extends View {
 
     public BackupImageView(Context context) {
         super(context);
-        imageReceiver = new ImageReceiver(this);
+        imageReceiver = createImageReciever();
         imageReceiver.setAllowLoadingOnAttachedOnly(true);
         imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
             if (set && !thumb) {
                 checkCreateBlurredImage();
             }
         });
+    }
+
+    protected ImageReceiver createImageReciever() {
+        return new ImageReceiver(this);
     }
 
     public void setBlurAllowed(boolean blurAllowed) {

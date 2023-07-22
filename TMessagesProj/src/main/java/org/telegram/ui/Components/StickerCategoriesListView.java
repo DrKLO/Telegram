@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -32,6 +33,7 @@ import org.telegram.messenger.CacheFetcher;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -114,6 +116,7 @@ public class StickerCategoriesListView extends RecyclerListView {
         this(context, additionalCategories, categoriesType, null);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public StickerCategoriesListView(Context context, EmojiCategory[] additionalCategories, @CategoriesType int categoriesType, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
 
@@ -136,19 +139,22 @@ public class StickerCategoriesListView extends RecyclerListView {
         long start = System.currentTimeMillis();
         fetcher.fetch(UserConfig.selectedAccount, categoriesType, (emojiGroups) -> {
             if (emojiGroups != null) {
-                categories = new EmojiCategory[(additionalCategories == null ? 0 : additionalCategories.length) + emojiGroups.groups.size()];
-                int i = 0;
-                if (additionalCategories != null) {
-                    for (; i < additionalCategories.length; ++i) {
-                        categories[i] = additionalCategories[i];
+                Runnable action = () -> {
+                    categories = new EmojiCategory[(additionalCategories == null ? 0 : additionalCategories.length) + emojiGroups.groups.size()];
+                    int i = 0;
+                    if (additionalCategories != null) {
+                        for (; i < additionalCategories.length; ++i) {
+                            categories[i] = additionalCategories[i];
+                        }
                     }
-                }
-                for (int j = 0; j < emojiGroups.groups.size(); ++j) {
-                    categories[i + j] = EmojiCategory.remote(emojiGroups.groups.get(j));
-                }
-                adapter.notifyDataSetChanged();
-                setCategoriesShownT(0);
-                updateCategoriesShown(categoriesShouldShow, System.currentTimeMillis() - start > 16);
+                    for (int j = 0; j < emojiGroups.groups.size(); ++j) {
+                        categories[i + j] = EmojiCategory.remote(emojiGroups.groups.get(j));
+                    }
+                    adapter.notifyDataSetChanged();
+                    setCategoriesShownT(0);
+                    updateCategoriesShown(categoriesShouldShow, System.currentTimeMillis() - start > 16);
+                };
+                NotificationCenter.getInstance(UserConfig.selectedAccount).doOnIdle(action);
             }
         });
     }

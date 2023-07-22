@@ -1053,7 +1053,9 @@ public class RecyclerListView extends RecyclerView {
                         final View view = cv;
                         final int position = currentChildPosition;
                         if (instantClick && position != -1) {
-                            view.playSoundEffect(SoundEffectConstants.CLICK);
+                            try {
+                                view.playSoundEffect(SoundEffectConstants.CLICK);
+                            } catch (Exception ignore) {}
                             view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
                             if (onItemClickListener != null) {
                                 onItemClickListener.onItemClick(view, position);
@@ -1070,7 +1072,9 @@ public class RecyclerListView extends RecyclerView {
                                 if (view != null) {
                                     onChildPressed(view, 0, 0, false);
                                     if (!instantClick) {
-                                        view.playSoundEffect(SoundEffectConstants.CLICK);
+                                        try {
+                                            view.playSoundEffect(SoundEffectConstants.CLICK);
+                                        } catch (Exception ignore) {}
                                         view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
                                         if (position != -1) {
                                             if (onItemClickListener != null) {

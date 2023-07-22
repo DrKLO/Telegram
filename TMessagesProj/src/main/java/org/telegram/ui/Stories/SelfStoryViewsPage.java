@@ -210,13 +210,15 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         if (id == NotificationCenter.storiesUpdated) {
             if (storyItem.uploadingStory != null) {
                 TLRPC.TL_userStories stories = MessagesController.getInstance(currentAccount).storiesController.getStories(UserConfig.getInstance(currentAccount).clientUserId);
-                for (int i = 0; i < stories.stories.size(); i++) {
-                    TLRPC.StoryItem storyItem = stories.stories.get(i);
-                    if (storyItem.attachPath != null && storyItem.attachPath.equals(this.storyItem.uploadingStory.path)) {
-                        this.storyItem.uploadingStory = null;
-                        this.storyItem.storyItem = storyItem;
-                        setStoryItem(this.storyItem);
-                        break;
+                if (stories != null) {
+                    for (int i = 0; i < stories.stories.size(); i++) {
+                        TLRPC.StoryItem storyItem = stories.stories.get(i);
+                        if (storyItem.attachPath != null && storyItem.attachPath.equals(this.storyItem.uploadingStory.path)) {
+                            this.storyItem.uploadingStory = null;
+                            this.storyItem.storyItem = storyItem;
+                            setStoryItem(this.storyItem);
+                            break;
+                        }
                     }
                 }
             }

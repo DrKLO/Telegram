@@ -160,7 +160,6 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.playerDidStartPlaying);
         }
         playerCounter++;
-        //Log.d("kek", "playerCounter " + playerCounter);
     }
 
     @Override
@@ -343,7 +342,6 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
         }
         playerCounter--;
-        //Log.d("kek", "playerCounter " + playerCounter);
     }
 
     @Override

@@ -1063,7 +1063,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private int getImageSize(MessageObject messageObject) {
         int imageSize = stickerSize;
         if (messageObject.type == MessageObject.TYPE_SUGGEST_PHOTO || isNewStyleButtonLayout()) {
-            imageSize = (int) (stickerSize * 0.7f);
+            imageSize = AndroidUtilities.dp(78);//Math.max(, (int) (stickerSize * 0.7f));
         }
         return imageSize;
     }
@@ -1178,7 +1178,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else {
             giftPremiumTitleLayout = null;
         }
-        if (currentMessageObject != null && (currentMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO || currentMessageObject.isStoryMention())) {
+        if (currentMessageObject != null && isNewStyleButtonLayout()) {
             giftSubtitlePaint.setTextSize(AndroidUtilities.dp(13));
         } else {
             giftSubtitlePaint.setTextSize(AndroidUtilities.dp(15));

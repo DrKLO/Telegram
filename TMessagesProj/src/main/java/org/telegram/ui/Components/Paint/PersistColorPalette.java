@@ -141,7 +141,12 @@ public class PersistColorPalette {
 
     public int getColor(int index) {
         checkIndex(index);
-
+        if (index < 0 || index >= colors.size()) {
+            if (index >= 0 && index < DEFAULT_COLORS.size()) {
+                return DEFAULT_COLORS.get(index);
+            }
+            return DEFAULT_COLORS.get(0);
+        }
         return colors.get(index);
     }
 
@@ -155,12 +160,18 @@ public class PersistColorPalette {
             pendingChange.clear();
             pendingChange.add(color);
             pendingChange.addAll(from);
-            pendingChange.remove(pendingChange.size() - 1);
+            if (pendingChange.size() < DEFAULT_COLORS.size()) {
+                for (int j = pendingChange.size(); j < DEFAULT_COLORS.size(); ++j) {
+                    pendingChange.add(DEFAULT_COLORS.get(j));
+                }
+            } else if (pendingChange.size() > DEFAULT_COLORS.size()) {
+                pendingChange = pendingChange.subList(0, DEFAULT_COLORS.size());
+            }
         }
     }
 
     public void selectColorIndex(int index) {
-        int color = colors.get(index);
+        int color = index < 0 || index >= colors.size() ? DEFAULT_COLORS.get(index) : colors.get(index);
         List<Integer> from = new ArrayList<>(pendingChange.isEmpty() ? colors : pendingChange);
         pendingChange.clear();
         pendingChange.add(color);
@@ -170,6 +181,13 @@ public class PersistColorPalette {
             } else if (from.get(i) != color) {
                 pendingChange.add(from.get(i));
             }
+        }
+        if (pendingChange.size() < DEFAULT_COLORS.size()) {
+            for (int j = pendingChange.size(); j < DEFAULT_COLORS.size(); ++j) {
+                pendingChange.add(DEFAULT_COLORS.get(j));
+            }
+        } else if (pendingChange.size() > DEFAULT_COLORS.size()) {
+            pendingChange = pendingChange.subList(0, DEFAULT_COLORS.size());
         }
     }
 

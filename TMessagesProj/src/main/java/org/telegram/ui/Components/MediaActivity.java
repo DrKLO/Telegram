@@ -129,7 +129,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     public boolean onFragmentCreate() {
         type = getArguments().getInt("type", TYPE_MEDIA);
         dialogId = getArguments().getLong("dialog_id");
-        initialTab = getArguments().getInt("start_from", SharedMediaLayout.TAB_STORIES);
+        initialTab = getArguments().getInt("start_from", type == TYPE_MEDIA ? SharedMediaLayout.TAB_PHOTOVIDEO : SharedMediaLayout.TAB_STORIES);
         getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesEnabledUpdate);
@@ -609,6 +609,11 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             @Override
             protected boolean isStoriesView() {
+                return type == TYPE_STORIES;
+            }
+
+            @Override
+            protected boolean includeStories() {
                 return type == TYPE_STORIES;
             }
 

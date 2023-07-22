@@ -459,7 +459,7 @@ public class PushListenerController {
                                 } else {
                                     switch (loc_key) {
                                         case "STORY_NOTEXT": {
-                                            messageText = LocaleController.formatPluralString("StoryNotification1", 1, args[0]);
+                                            messageText = LocaleController.getString("StoryNotificationSingle");
                                             message1 = null;
                                             msg_id = story_id;
                                             break;

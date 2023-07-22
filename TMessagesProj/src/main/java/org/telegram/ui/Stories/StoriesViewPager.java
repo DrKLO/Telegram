@@ -82,6 +82,7 @@ public class StoriesViewPager extends ViewPager {
                 pageLayout.peerStoryView = view;
                 view.setAccount(currentAccount);
                 view.setDelegate(delegate);
+                view.setLongpressed(storyViewer.isLongpressed);
                 pageLayout.setTag(position);
                 pageLayout.dialogId = dialogs.get(position);
                 pageLayout.addView(view);

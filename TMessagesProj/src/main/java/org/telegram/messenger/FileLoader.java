@@ -938,7 +938,7 @@ public class FileLoader extends BaseController {
         }
 
         loaderQueue.add(operation);
-        loaderQueue.checkLoadingOperations();
+        loaderQueue.checkLoadingOperations(operation.isStory && priority >= PRIORITY_HIGH);
 
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("create load operation fileName=" + finalFileName + " documentName=" + getDocumentFileName(document) + "size=" + AndroidUtilities.formatFileSize(operation.totalBytesCount) + " position in queue " + operation.getPositionInQueue() + " account=" + currentAccount);

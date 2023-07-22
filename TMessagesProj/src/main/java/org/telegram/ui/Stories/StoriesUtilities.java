@@ -13,6 +13,8 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
@@ -101,6 +103,10 @@ public class StoriesUtilities {
         int state;
         int unreadState = 0;
         boolean showProgress = storiesController.isLoading(dialogId);
+
+        if (params.drawHiddenStoriesAsSegments) {
+            hasStories = storiesController.hasHiddenStories();
+        }
 
         if (params.storyItem != null) {
             unreadState = storiesController.getUnreadState(dialogId, params.storyId);
@@ -247,7 +253,13 @@ public class StoriesUtilities {
                 int globalState = storiesController.getUnreadState(dialogId);
                 params.globalState = globalState == StoriesController.STATE_READ ? STATE_READ : STATE_HAS_UNREAD;
                 TLRPC.TL_userStories userStories = storiesController.getStories(params.dialogId);
-                if (userStories == null || userStories.stories.size() == 1) {
+                int storiesCount;
+                if (params.drawHiddenStoriesAsSegments) {
+                    storiesCount = storiesController.getHiddenList().size();
+                } else {
+                    storiesCount = userStories == null || userStories.stories.size() == 1 ? 1 : userStories.stories.size();
+                }
+                if (storiesCount == 1) {
                     Paint localPaint = paint;
                     if (storiesController.hasUnreadStories(dialogId)) {
                         localPaint = unreadPaint;
@@ -259,9 +271,9 @@ public class StoriesUtilities {
                     endAngle = 270;
                     drawSegment(canvas, rectTmp, localPaint, startAngle, endAngle, params);
                     // canvas.drawCircle(rectTmp.centerX(), rectTmp.centerY(), rectTmp.width() / 2f, localPaint);
-                } else if (userStories != null) {
-                    float step = 360 / (float) userStories.stories.size();
-                    int gap = userStories.stories.size() > 20 ? 3 : 5;
+                } else {
+                    float step = 360 / (float) storiesCount;
+                    int gap = storiesCount > 20 ? 3 : 5;
                     float gapLen = gap * params.progressToSegments;
                     if (gapLen > step) {
                         gapLen = 0;//step * 0.4f;
@@ -277,14 +289,23 @@ public class StoriesUtilities {
                         globalPaint = params.isStoryCell ? storyCellGreyPaint[params.isArchive ? 1 : 0] : grayPaint;
                     }
 
-                    int maxUnread = Math.max(userStories.max_read_id, storiesController.dialogIdToMaxReadId.get(dialogId, 0));
-                    for (int i = 0; i < userStories.stories.size(); i++) {
+                    int maxUnread = params.drawHiddenStoriesAsSegments ? 0 : Math.max(userStories.max_read_id, storiesController.dialogIdToMaxReadId.get(dialogId, 0));
+                    for (int i = 0; i < storiesCount; i++) {
                         Paint segmentPaint = params.isStoryCell ? storyCellGreyPaint[params.isArchive ? 1 : 0] : grayPaint;
-                        if (userStories.stories.get(i).justUploaded || userStories.stories.get(i).id > maxUnread) {
-                            if (userStories.stories.get(i).close_friends) {
+                        if (params.drawHiddenStoriesAsSegments) {
+                            int userUnreadState = storiesController.getUnreadState(storiesController.getHiddenList().get(storiesCount - 1 - i).user_id);
+                            if (userUnreadState == StoriesController.STATE_UNREAD_CLOSE_FRIEND) {
                                 segmentPaint = closeFriendsPaint;
-                            } else {
+                            } else if (userUnreadState == StoriesController.STATE_UNREAD) {
                                 segmentPaint = unreadPaint;
+                            }
+                        } else {
+                            if (userStories.stories.get(i).justUploaded || userStories.stories.get(i).id > maxUnread) {
+                                if (userStories.stories.get(i).close_friends) {
+                                    segmentPaint = closeFriendsPaint;
+                                } else {
+                                    segmentPaint = unreadPaint;
+                                }
                             }
                         }
                         float startAngle = step * i - 90;
@@ -541,6 +562,9 @@ public class StoriesUtilities {
     }
 
     public static void setImage(ImageReceiver imageReceiver, TLRPC.StoryItem storyItem, String filter) {
+        if (storyItem == null) {
+            return;
+        }
         if (storyItem.media != null && storyItem.media.document != null) {
             TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.document.thumbs, Integer.MAX_VALUE);
             imageReceiver.setImage(ImageLocation.getForDocument(size, storyItem.media.document), filter, null, null, ImageLoader.createStripedBitmap(storyItem.media.document.thumbs), 0, null, storyItem, 0);
@@ -683,6 +707,9 @@ public class StoriesUtilities {
     }
 
     public static void applyViewedUser(TLRPC.StoryItem storyItem, TLRPC.User currentUser) {
+        if (currentUser == null) {
+            return;
+        }
         if (storyItem.dialogId == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && !hasExpiredViews(storyItem)) {
             if (storyItem.views == null) {
                 storyItem.views = new TLRPC.TL_storyViews();
@@ -743,6 +770,7 @@ public class StoriesUtilities {
         public int prevUnreadState;
         public int unreadState;
         public int animateFromUnreadState;
+        public boolean drawHiddenStoriesAsSegments;
 
         private long dialogId;
         public int currentState;
@@ -795,9 +823,16 @@ public class StoriesUtilities {
         Runnable longPressRunnable;
 
         public boolean checkOnTouchEvent(MotionEvent event, View view) {
+            StoriesController storiesController = MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController();
             if (event.getAction() == MotionEvent.ACTION_DOWN && originalAvatarRect.contains(event.getX(), event.getY())) {
                 TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialogId);
-                if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && (MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(dialogId) || user != null && !user.stories_unavailable && user.stories_max_id > 0)) {
+                boolean hasStories;
+                if (drawHiddenStoriesAsSegments) {
+                    hasStories = storiesController.hasHiddenStories();
+                } else {
+                    hasStories = (MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(dialogId) || user != null && !user.stories_unavailable && user.stories_max_id > 0);
+                }
+                if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && hasStories) {
                     if (buttonBounce == null) {
                         buttonBounce = new ButtonBounce(view, 1.5f);
                     } else {
@@ -817,7 +852,10 @@ public class StoriesUtilities {
                             if (buttonBounce != null) {
                                 buttonBounce.setPressed(false);
                             }
-                            view.getParent().requestDisallowInterceptTouchEvent(false);
+                            ViewParent parent = view.getParent();
+                            if (parent instanceof ViewGroup) {
+                                ((ViewGroup) parent).requestDisallowInterceptTouchEvent(false);
+                            }
                             pressed = false;
                             onLongPress();
                         }, ViewConfiguration.getLongPressTimeout());
@@ -843,7 +881,10 @@ public class StoriesUtilities {
                 if (pressed && event.getAction() == MotionEvent.ACTION_UP) {
                     processOpenStory(view);
                 }
-                view.getParent().requestDisallowInterceptTouchEvent(false);
+                ViewParent parent = view.getParent();
+                if (parent instanceof ViewGroup) {
+                    ((ViewGroup) parent).requestDisallowInterceptTouchEvent(false);
+                }
                 pressed = false;
                 if (longPressRunnable != null) {
                     AndroidUtilities.cancelRunOnUIThread(longPressRunnable);
@@ -860,6 +901,10 @@ public class StoriesUtilities {
             int currentAccount = UserConfig.selectedAccount;
             MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
             StoriesController storiesController = messagesController.getStoriesController();
+            if (drawHiddenStoriesAsSegments) {
+                openStory(0, null);
+                return;
+            }
             if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()) {
                 if (storiesController.hasStories(dialogId)) {
                     openStory(dialogId, null);

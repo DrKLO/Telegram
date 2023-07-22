@@ -69,6 +69,15 @@ public class FileLoaderPriorityQueue {
     }
 
     public void checkLoadingOperations() {
+        checkLoadingOperations(false);
+    }
+
+    public void checkLoadingOperations(boolean immediate) {
+        if (immediate) {
+            workerQueue.cancelRunnable(checkOperationsRunnable);
+            checkOperationsRunnable.run();
+            return;
+        }
         if (checkOperationsScheduled) {
             return;
         }

@@ -60,7 +60,7 @@ public class TrashView extends View {
 
         textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
         textDrawable.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
-        textDrawable.setOverrideFullWidth(dp(120));
+        textDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
         textDrawable.setTextSize(dp(14));
         textDrawable.setTextColor(0xffffffff);
         textDrawable.setShadowLayer(dpf2(1.33f), 0, dp(1), 0x40000000);
@@ -95,7 +95,7 @@ public class TrashView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(dp(120), dp(120));
+        setMeasuredDimension(widthMeasureSpec, dp(120));
     }
 
     public void onDragInfo(boolean dragged, boolean deleted) {
