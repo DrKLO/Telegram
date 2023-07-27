@@ -19870,6 +19870,32 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         messageObject.generatePaymentSentMessageText(null);
                     }
                 }
+                if (old.isWebpage() && messageObject.isWebpage()) {
+                    TLRPC.TL_messageMediaWebPage media = (TLRPC.TL_messageMediaWebPage) MessageObject.getMedia(old.messageOwner);
+                    if (media.webpage != null && "telegram_story".equals(media.webpage.type)) {
+                        TLRPC.StoryItem storyItem = null;
+                        for (int i = 0; i < media.webpage.attributes.size(); ++i) {
+                            TLRPC.WebPageAttribute attr = media.webpage.attributes.get(i);
+                            if (attr instanceof TLRPC.TL_webPageAttributeStory) {
+                                storyItem = ((TLRPC.TL_webPageAttributeStory) attr).storyItem;
+                                break;
+                            }
+                        }
+                        if (storyItem != null) {
+                            TLRPC.TL_messageMediaWebPage newMedia = (TLRPC.TL_messageMediaWebPage) MessageObject.getMedia(messageObject.messageOwner);
+                            for (int i = 0; i < newMedia.webpage.attributes.size(); ++i) {
+                                TLRPC.WebPageAttribute attr = newMedia.webpage.attributes.get(i);
+                                if (attr instanceof TLRPC.TL_webPageAttributeStory) {
+                                    TLRPC.TL_webPageAttributeStory storyAttr = (TLRPC.TL_webPageAttributeStory) attr;
+                                    if (!(storyAttr.storyItem instanceof TLRPC.TL_storyItem)) {
+                                        storyAttr.storyItem = storyItem;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 if (!old.isEditing()) {
                     if (old.getFileName().equals(messageObject.getFileName())) {
                         messageObject.messageOwner.attachPath = old.messageOwner.attachPath;

@@ -2,6 +2,8 @@ package org.telegram.ui.Stories.recorder;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
@@ -197,12 +199,7 @@ public class StoryEntry extends IStoryPart {
         File file = filterFile != null ? filterFile : this.file;
         if (file != null) {
             try {
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                opts.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(file.getPath(), opts);
-                opts.inJustDecodeBounds = false;
-                setupScale(opts, resultWidth, resultHeight);
-                Bitmap fileBitmap = BitmapFactory.decodeFile(file.getPath(), opts);
+                Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(file.getPath(), opts), resultWidth, resultHeight, true);
                 final float scale = (float) width / fileBitmap.getWidth();
                 tempMatrix.preScale(scale, scale);
                 canvas.drawBitmap(fileBitmap, tempMatrix, bitmapPaint);
@@ -214,13 +211,8 @@ public class StoryEntry extends IStoryPart {
 
         for (int i = 0; i < parts.size(); ++i) {
             try {
-                Part part = parts.get(i);
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                opts.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(part.file.getPath(), opts);
-                opts.inJustDecodeBounds = false;
-                setupScale(opts, resultWidth, resultHeight);
-                Bitmap fileBitmap = BitmapFactory.decodeFile(part.file.getPath(), opts);
+                final Part part = parts.get(i);
+                Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(part.file.getPath(), opts), resultWidth, resultHeight, false);
                 final float scale = (float) part.width / fileBitmap.getWidth();
                 tempMatrix.set(part.matrix);
                 tempMatrix.preScale(scale, scale);
@@ -233,12 +225,7 @@ public class StoryEntry extends IStoryPart {
 
         if (paintFile != null) {
             try {
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                opts.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(paintFile.getPath(), opts);
-                opts.inJustDecodeBounds = false;
-                setupScale(opts, resultWidth, resultHeight);
-                Bitmap paintBitmap = BitmapFactory.decodeFile(paintFile.getPath(), opts);
+                Bitmap paintBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(paintFile.getPath(), opts), resultWidth, resultHeight, false);
                 canvas.save();
                 float scale = resultWidth / (float) paintBitmap.getWidth();
                 canvas.scale(scale, scale);
@@ -254,13 +241,71 @@ public class StoryEntry extends IStoryPart {
 
         try {
             FileOutputStream stream = new FileOutputStream(dest);
-            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 75, stream);
+            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream);
             stream.close();
         } catch (Exception e) {
             FileLog.e(e);
         }
 
         finalBitmap.recycle();
+    }
+
+    public static interface DecodeBitmap {
+        public Bitmap decode(BitmapFactory.Options options);
+    }
+
+    public static Bitmap getScaledBitmap(DecodeBitmap decode, int maxWidth, int maxHeight, boolean allowBlur) {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        decode.decode(opts);
+
+        opts.inJustDecodeBounds = false;
+        opts.inScaled = false;
+
+        final Runtime runtime = Runtime.getRuntime();
+        final long availableMemory = runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory());
+        final boolean enoughMemory = (opts.outWidth * opts.outHeight * 4L + maxWidth * maxHeight * 4L) * 1.1 <= availableMemory;
+
+        if (opts.outWidth <= maxWidth && opts.outHeight <= maxHeight) {
+            return decode.decode(opts);
+        }
+
+        if (enoughMemory && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
+            Bitmap bitmap = decode.decode(opts);
+
+            final float scaleX = maxWidth / (float) bitmap.getWidth(), scaleY = maxHeight / (float) bitmap.getHeight();
+            float scale = Math.max(scaleX, scaleY);
+//            if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
+//                scale = Math.min(scale * 2, 1);
+//            }
+            final int w = (int) (bitmap.getWidth() * scale), h = (int) (bitmap.getHeight() * scale);
+
+            Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(scaledBitmap);
+
+            final Matrix matrix = new Matrix();
+            final BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            paint.setShader(shader);
+
+            int blurRadius = Utilities.clamp(Math.round(1f / scale), 8, 0);
+
+            matrix.reset();
+            matrix.postScale(scale, scale);
+            shader.setLocalMatrix(matrix);
+            canvas.drawRect(0, 0, w, h, paint);
+
+            if (allowBlur && blurRadius > 0) {
+                Utilities.stackBlurBitmap(scaledBitmap, blurRadius);
+            }
+
+            return scaledBitmap;
+        } else {
+            opts.inScaled = true;
+            opts.inDensity = opts.outWidth;
+            opts.inTargetDensity = maxWidth;
+            return decode.decode(opts);
+        }
     }
 
     public File getOriginalFile() {
@@ -270,11 +315,18 @@ public class StoryEntry extends IStoryPart {
         return file;
     }
 
-    public void updateFilter(PhotoFilterView filterView) {
+    public void updateFilter(PhotoFilterView filterView, Runnable whenDone) {
         clearFilter();
 
         filterState = filterView.getSavedFilterState();
         if (!isVideo) {
+            if (filterState.isEmpty()) {
+                if (whenDone != null) {
+                    whenDone.run();
+                }
+                return;
+            }
+
             Bitmap bitmap = filterView.getBitmap();
             if (bitmap == null) {
                 return;
@@ -290,14 +342,40 @@ public class StoryEntry extends IStoryPart {
 
             bitmap.recycle();
 
-            filterFile = makeCacheFile(currentAccount, false);
-            try {
-                FileOutputStream stream = new FileOutputStream(filterFile);
-                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (filterFile != null && filterFile.exists()) {
+                filterFile.delete();
             }
-            rotatedBitmap.recycle();
+            filterFile = makeCacheFile(currentAccount, "webp");
+            if (whenDone == null) {
+                try {
+                    FileOutputStream stream = new FileOutputStream(filterFile);
+                    rotatedBitmap.compress(Bitmap.CompressFormat.WEBP, 90, stream);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                rotatedBitmap.recycle();
+            } else {
+                Utilities.themeQueue.postRunnable(() -> {
+                    try {
+                        FileOutputStream stream = new FileOutputStream(filterFile);
+                        rotatedBitmap.compress(Bitmap.CompressFormat.WEBP, 90, stream);
+                    } catch (Exception e) {
+                        FileLog.e(e, false);
+                        try {
+                            FileOutputStream stream = new FileOutputStream(filterFile);
+                            rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
+                        } catch (Exception e2) {
+                            FileLog.e(e2, false);
+                        }
+                    }
+                    rotatedBitmap.recycle();
+                    AndroidUtilities.runOnUIThread(whenDone);
+                });
+            }
+        } else {
+            if (whenDone != null) {
+                whenDone.run();
+            }
         }
     }
 
@@ -669,6 +747,10 @@ public class StoryEntry extends IStoryPart {
     }
 
     public static File makeCacheFile(final int account, boolean video) {
+        return makeCacheFile(account, video ? "mp4" : "jpg");
+    }
+
+    public static File makeCacheFile(final int account, String ext) {
         TLRPC.TL_fileLocationToBeDeprecated location = new TLRPC.TL_fileLocationToBeDeprecated();
         location.volume_id = Integer.MIN_VALUE;
         location.dc_id = Integer.MIN_VALUE;
@@ -676,7 +758,7 @@ public class StoryEntry extends IStoryPart {
         location.file_reference = new byte[0];
 
         TLObject object;
-        if (video) {
+        if ("mp4".equals(ext)) {
             TLRPC.VideoSize videoSize = new TLRPC.TL_videoSize_layer127();
             videoSize.location = location;
             object = videoSize;
@@ -686,7 +768,7 @@ public class StoryEntry extends IStoryPart {
             object = photoSize;
         }
 
-        return FileLoader.getInstance(account).getPathToAttach(object, video ? "mp4" : "jpg", true);
+        return FileLoader.getInstance(account).getPathToAttach(object, ext, true);
     }
 
     public static class HDRInfo {

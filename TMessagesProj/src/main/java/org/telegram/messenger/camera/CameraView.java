@@ -556,25 +556,40 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         return false;
     }
 
+    private Integer shape;
     public void dualToggleShape() {
         if (flipping || !dual) {
             return;
         }
         Handler handler = cameraThread.getHandler();
-        MessagesController.getGlobalMainSettings().edit().putInt("dualshape", (int) (cameraThread.shapeTo + 1)).apply();
+        if (shape == null) {
+            shape = MessagesController.getGlobalMainSettings().getInt("dualshape", 0);
+        }
+        shape++;
+        MessagesController.getGlobalMainSettings().edit().putInt("dualshape", shape).apply();
         if (handler != null) {
             handler.sendMessage(handler.obtainMessage(cameraThread.DO_DUAL_TOGGLE_SHAPE));
         }
     }
+
+    public int getDualShape() {
+        if (shape == null) {
+            shape = MessagesController.getGlobalMainSettings().getInt("dualshape", 0);
+        }
+        return shape;
+    }
+
+    private long lastDualSwitchTime;
 
     public void switchCamera() {
         if (flipping || System.currentTimeMillis() < toggleDualUntil && !dualCameraAppeared) {
             return;
         }
         if (dual) {
-            if (!dualCameraAppeared) {
+            if (!dualCameraAppeared || System.currentTimeMillis() - lastDualSwitchTime < 420) {
                 return;
             }
+            lastDualSwitchTime = System.currentTimeMillis();
             CameraInfo info0 = info[0];
             info[0] = info[1];
             info[1] = info0;
@@ -2147,6 +2162,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 }
             }
             fileWriteQueue = new DispatchQueue("VR_FileWriteQueue");
+            fileWriteQueue.setPriority(Thread.MAX_PRIORITY);
 
             keyframeThumbs.clear();
             handler.sendMessage(handler.obtainMessage(MSG_START_RECORDING));
@@ -2806,7 +2822,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                             bufferInfo.offset = videoBufferInfo.offset;
                             bufferInfo.flags = videoBufferInfo.flags;
                             bufferInfo.presentationTimeUs = videoBufferInfo.presentationTimeUs;
-                            ByteBuffer byteBuffer = encodedData.duplicate();
+                            ByteBuffer byteBuffer = AndroidUtilities.cloneByteBuffer(encodedData);
                             fileWriteQueue.postRunnable(() -> {
                                 try {
                                     mediaMuxer.writeSampleData(videoTrackIndex, byteBuffer, bufferInfo, true);
@@ -2891,7 +2907,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         bufferInfo.offset = audioBufferInfo.offset;
                         bufferInfo.flags = audioBufferInfo.flags;
                         bufferInfo.presentationTimeUs = audioBufferInfo.presentationTimeUs;
-                        ByteBuffer byteBuffer = encodedData.duplicate();
+                        ByteBuffer byteBuffer = AndroidUtilities.cloneByteBuffer(encodedData);
                         fileWriteQueue.postRunnable(() -> {
                             try {
                                 mediaMuxer.writeSampleData(audioTrackIndex, byteBuffer, bufferInfo, false);

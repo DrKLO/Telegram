@@ -7003,4 +7003,6 @@
     <string name="StoriesPremiumHint">Posting stories is currently available only to subscribers of **Telegram Premium**.</string>
     <string name="ArchivePeerStories">Hide Stories</string>
     <string name="UnarchiveStories">Unhide Stories</string>
+    <string name="GroupTooLarge">Group Too Large</string>
+    <string name="GroupTooLargeMessage">You can select groups that are up to 200 members.</string>
 </resources>

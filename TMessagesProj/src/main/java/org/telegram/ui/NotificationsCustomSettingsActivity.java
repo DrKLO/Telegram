@@ -41,8 +41,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.common.primitives.Chars;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -55,7 +53,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
@@ -86,7 +83,6 @@ import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
-import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -95,7 +91,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -189,7 +184,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
         return index >= 0 && index >= topPeers.size() - 5;
     }
 
-    public static boolean isStoriesNotMuted(int currentAccount, long did) {
+    public static boolean areStoriesNotMuted(int currentAccount, long did) {
         SharedPreferences prefs = MessagesController.getNotificationsSettings(currentAccount);
         if (prefs.contains("stories_" + did)) {
             return prefs.getBoolean("stories_" + did, true);

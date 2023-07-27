@@ -171,8 +171,8 @@ public class DualCameraView extends CameraView implements CameraController.Error
         if (setDefault) {
             matrix.postConcat(toScreen);
 
-            float w = getMeasuredWidth() * .4f;
-            float h = getMeasuredHeight() * .4f;
+            float w = getMeasuredWidth() * .43f;
+            float h = getMeasuredHeight() * .43f;
             float px = Math.min(getMeasuredWidth(), getMeasuredWidth()) * .025f;
             float py = px * 2;
 
@@ -192,30 +192,56 @@ public class DualCameraView extends CameraView implements CameraController.Error
         toGL.mapPoints(vertex);
         getDualPosition().invert(invMatrix);
         invMatrix.mapPoints(vertex);
-        return vertex[0] >= -1 && vertex[0] <= 1 && vertex[1] >= -1 && vertex[1] <= 1;
+        int shape = getDualShape() % 3;
+        boolean square = shape == 0 || shape == 1 || shape == 3;
+        float H = square ? 9 / 16f : 1f;
+        return vertex[0] >= -1 && vertex[0] <= 1 && vertex[1] >= -H && vertex[1] <= H;
     }
 
     private float tapX, tapY;
     private long tapTime;
     private Matrix invMatrix = new Matrix();
+    private Runnable longpressRunnable;
     private boolean checkTap(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             tapTime = System.currentTimeMillis();
             tapX = ev.getX();
             tapY = ev.getY();
             lastFocusToPoint = null;
+            if (longpressRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(longpressRunnable);
+                longpressRunnable = null;
+            }
+            if (isAtDual(tapX, tapY)) {
+                AndroidUtilities.runOnUIThread(longpressRunnable = () -> {
+                    if (tapTime > 0) {
+                        this.dualToggleShape();
+                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                    }
+                }, ViewConfiguration.getLongPressTimeout());
+            }
             return true;
         } else if (ev.getAction() == MotionEvent.ACTION_UP) {
             if (System.currentTimeMillis() - tapTime <= ViewConfiguration.getTapTimeout() && MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) < AndroidUtilities.dp(10)) {
                 if (isAtDual(tapX, tapY)) {
-                    lastFocusToPoint = this::dualToggleShape;
+                    switchCamera();
+                    lastFocusToPoint = null;
                 } else {
                     lastFocusToPoint = () -> focusToPoint((int) tapX, (int) tapY);
                 }
             }
+            tapTime = -1;
+            if (longpressRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(longpressRunnable);
+                longpressRunnable = null;
+            }
         } else if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
             tapTime = -1;
             lastFocusToPoint = null;
+            if (longpressRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(longpressRunnable);
+                longpressRunnable = null;
+            }
         }
         return false;
     }
@@ -270,6 +296,12 @@ public class DualCameraView extends CameraView implements CameraController.Error
                 down = isPointInsideDual(touchMatrix, touch.x, touch.y);
             }
             if (ev.getAction() == MotionEvent.ACTION_MOVE && down) {
+                if (MathUtils.distance(tx, ty, ltx, lty) > AndroidUtilities.dp(2)) {
+                    if (longpressRunnable != null) {
+                        AndroidUtilities.cancelRunOnUIThread(longpressRunnable);
+                        longpressRunnable = null;
+                    }
+                }
                 if (ev.getPointerCount() > 1) {
                     if (lastTouchDistance != 0) {
                         extractPointsData(touchMatrix);
@@ -326,8 +358,8 @@ public class DualCameraView extends CameraView implements CameraController.Error
                 }
                 if (cy < 0) {
                     finalMatrix.postTranslate(0, -cy);
-                } else if (cy > getHeight()) {
-                    finalMatrix.postTranslate(0, getHeight() - cy);
+                } else if (cy > getHeight() - AndroidUtilities.dp(150)) {
+                    finalMatrix.postTranslate(0, getHeight() - AndroidUtilities.dp(150) - cy);
                 }
                 finalMatrix.postConcat(toGL);
                 matrix.set(finalMatrix);
@@ -420,14 +452,17 @@ public class DualCameraView extends CameraView implements CameraController.Error
         if (verticesDst == null) {
             verticesDst = new float[8];
         }
+        int shape = getDualShape() % 3;
+        boolean square = shape == 0 || shape == 1 || shape == 3;
+        float H = square ? 9 / 16f : 1f;
         verticesSrc[0] = -1;
-        verticesSrc[1] = -1;
+        verticesSrc[1] = -H;
         verticesSrc[2] = 1;
-        verticesSrc[3] = -1;
+        verticesSrc[3] = -H;
         verticesSrc[4] = 1;
-        verticesSrc[5] = 1;
+        verticesSrc[5] = H;
         verticesSrc[6] = -1;
-        verticesSrc[7] = 1;
+        verticesSrc[7] = H;
         matrix.mapPoints(verticesDst, verticesSrc);
 
         double a1 = Math.sqrt((verticesDst[0] - verticesDst[2]) * (verticesDst[0] - verticesDst[2]) + (verticesDst[1] - verticesDst[3]) * (verticesDst[1] - verticesDst[3]));

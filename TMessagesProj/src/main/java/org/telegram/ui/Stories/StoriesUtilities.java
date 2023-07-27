@@ -46,7 +46,7 @@ import java.util.Collections;
 
 public class StoriesUtilities {
 
-    private final static int ANIMATION_SEGMENT_COUNT = 20;
+    private final static int ANIMATION_SEGMENT_COUNT = 16;
     public static final int STATE_EMPTY = 0;
     public static final int STATE_HAS_UNREAD = 1;
     public static final int STATE_READ = 2;
@@ -155,11 +155,8 @@ public class StoriesUtilities {
 
         float scale = params.buttonBounce != null ? params.buttonBounce.getScale(0.08f) : 1f;
         if (params.showProgress != showProgress && showProgress) {
-            params.alphas = new float[ANIMATION_SEGMENT_COUNT];
-            for (int i = 0; i < ANIMATION_SEGMENT_COUNT; i++) {
-                params.alphas[i] = 1f;
-            }
-            params.sweepAngle = 180;
+            params.sweepAngle = 1f;
+            params.inc = false;
         }
         params.showProgress = showProgress;
         if (params.currentState == STATE_EMPTY && params.progressToSate == 1f) {
@@ -387,36 +384,19 @@ public class StoriesUtilities {
         float len = 360 / (float) ANIMATION_SEGMENT_COUNT;
         params.updateProgressParams();
         view.invalidate();
-        float originalStrokeWidth = paint.getStrokeWidth();
-        for (int i = 0; i < ANIMATION_SEGMENT_COUNT; i++) {
-            float startAngle = i * len;
-            float endAngle = startAngle + len;
-            float segmentLen = endAngle - startAngle;
-            float centerA = (startAngle + segmentLen / 2f);
-            if (params.alphas == null) {
-                params.alphas = new float[ANIMATION_SEGMENT_COUNT];
-            }
-            if ((centerA > params.globalAngle && centerA < params.globalAngle + params.sweepAngle) || (centerA + 360 > params.globalAngle) && (centerA + 360 < params.globalAngle + params.sweepAngle)) {
-                params.alphas[i] += AndroidUtilities.screenRefreshTime / 150f;
-                if (params.alphas[i] > 1) {
-                    params.alphas[i] = 1f;
-                }
-            } else {
-                params.alphas[i] -= AndroidUtilities.screenRefreshTime / 500f;
-                if (params.alphas[i] < 0) {
-                    params.alphas[i] = 0;
-                }
-            }
-            if (params.alphas[i] == 0) {
-                continue;
-            }
-            startAngle += segmentLen / 2f * (1f - params.alphas[i]);
-            endAngle -= segmentLen / 2f * (1f - params.alphas[i]);
-            paint.setStrokeWidth(originalStrokeWidth * params.alphas[i]);
 
-            canvas.drawArc(rectTmp, startAngle, endAngle - startAngle, false, paint);
+        if (params.inc) {
+            canvas.drawArc(rectTmp, params.globalAngle, 360 * params.sweepAngle, false, paint);
+        } else {
+            canvas.drawArc(rectTmp, params.globalAngle + 360, -360 * (params.sweepAngle), false, paint);
         }
-        paint.setStrokeWidth(originalStrokeWidth);
+
+        for (int i = 0; i < ANIMATION_SEGMENT_COUNT; i++) {
+            float startAngle = i * len + 10;
+            float endAngle = startAngle + len - 10;
+            float segmentLen = endAngle - startAngle;
+            canvas.drawArc(rectTmp, params.globalAngle + startAngle, segmentLen, false, paint);
+        }
     }
 
     private static void checkStoryCellGrayPaint(boolean isArchive) {
@@ -787,8 +767,6 @@ public class StoriesUtilities {
         public AvatarStoryParams(boolean isStoryCell) {
             this.isStoryCell = isStoryCell;
         }
-
-        public float[] alphas;
         float sweepAngle;
         boolean inc;
         float globalAngle;
@@ -796,27 +774,20 @@ public class StoriesUtilities {
         UserStoriesLoadOperation operation;
 
         private void updateProgressParams() {
-            float sweepStep = 360 * AndroidUtilities.screenRefreshTime / 1500f;
-            int len = 360 / ANIMATION_SEGMENT_COUNT;
             if (inc) {
-                sweepAngle += sweepStep;
-                if (sweepAngle >= 300) {
+                sweepAngle += 16 / 1000f;
+                if (sweepAngle >= 1f) {
+                    sweepAngle = 1f;
                     inc = false;
                 }
             } else {
-                sweepAngle -= sweepStep;
-                if (sweepAngle < 10) {
+                sweepAngle -= 16 / 1000f;
+                if (sweepAngle < 0) {
+                    sweepAngle = 0;
                     inc = true;
                 }
             }
-            float angleStep = 360 * AndroidUtilities.screenRefreshTime / 900.0f;
-            globalAngle += angleStep;
-            if (!inc) {
-                globalAngle += sweepStep;
-            }
-            if (globalAngle > 360) {
-                globalAngle %= 360;
-            }
+            globalAngle += 16 / 5000f * 360;
         }
 
         float startX, startY;

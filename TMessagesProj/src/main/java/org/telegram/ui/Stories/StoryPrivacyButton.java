@@ -32,7 +32,7 @@ public class StoryPrivacyButton extends View {
     private final Paint[] backgroundPaint = new Paint[2];
     private final AnimatedFloat crossfadeT = new AnimatedFloat(this, 0, 260, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    private boolean draw;
+    public boolean draw;
     private int iconResId;
     private final Drawable[] icon = new Drawable[2];
     private final float[] iconSize = new float[2];
@@ -77,6 +77,7 @@ public class StoryPrivacyButton extends View {
         } else {
             draw = false;
         }
+        setVisibility(draw ? View.VISIBLE : View.GONE);
         invalidate();
         return draw;
     }
@@ -105,6 +106,7 @@ public class StoryPrivacyButton extends View {
         } else {
             draw = false;
         }
+        setVisibility(draw ? View.VISIBLE : View.GONE);
         invalidate();
         return draw;
     }

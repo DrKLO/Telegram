@@ -470,6 +470,7 @@ public class FilePathDatabase {
             synchronized (this) {
                 if (dispatchQueue == null) {
                     dispatchQueue = new DispatchQueue("files_database_queue_" + currentAccount);
+                    dispatchQueue.setPriority(Thread.MAX_PRIORITY);
                 }
             }
         }

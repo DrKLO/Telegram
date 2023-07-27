@@ -198,17 +198,27 @@ public class HintView2 extends View {
         return false;
     }
 
+    private static int getTextWidth(CharSequence text, TextPaint paint) {
+        if (text instanceof Spannable) {
+            StaticLayout layout = new StaticLayout(text, paint, 99999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+            if (layout.getLineCount() > 0)
+                return (int) Math.ceil(layout.getLineWidth(0));
+            return 0;
+        }
+        return (int) paint.measureText(text.toString());
+    }
+
     // returns max width
     public static int cutInFancyHalf(CharSequence text, TextPaint paint) {
         if (text == null) {
             return 0;
         }
-        float fullLineWidth = paint.measureText(text.toString());
+        float fullLineWidth = getTextWidth(text, paint);
         final int L = text.toString().length(), m = L / 2;
-        if (L <= 0) {
+        if (L <= 0 || contains(text, '\n')) {
             return (int) Math.ceil(fullLineWidth);
         }
-        int l = m - 2, r = m + 2;
+        int l = m - 1, r = m + 1;
         int c = m;
         while (l >= 0 && r < L) {
             if (text.charAt(l) == ' ') {
@@ -222,7 +232,7 @@ public class HintView2 extends View {
             l--;
             r++;
         }
-        return (int) Math.ceil(Math.max(fullLineWidth * .3f, Math.max(c, L - c) / (float) L * fullLineWidth));
+        return (int) Math.ceil(Math.max(fullLineWidth * .3f, Math.max(c + .5f, L - c + .5f) / (float) L * fullLineWidth));
     }
 
     public HintView2 useScale(boolean enable) {

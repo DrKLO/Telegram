@@ -177,6 +177,7 @@ import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.IDN;
+import java.nio.ByteBuffer;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
@@ -5359,5 +5360,20 @@ public class AndroidUtilities {
         } catch (InterruptedException ignored) {
 
         }
+    }
+
+    public static ByteBuffer cloneByteBuffer(ByteBuffer original) {
+        ByteBuffer clone;
+        try {
+            clone = ByteBuffer.allocate(original.capacity());
+        } catch (OutOfMemoryError error) {
+            System.gc();
+            clone = ByteBuffer.allocate(original.capacity());
+        }
+        original.rewind();
+        clone.put(original);
+        original.rewind();
+        clone.flip();
+        return clone;
     }
 }

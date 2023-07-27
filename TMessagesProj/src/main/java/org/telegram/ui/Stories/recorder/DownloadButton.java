@@ -58,12 +58,13 @@ public class DownloadButton extends ImageView {
 
     private boolean downloading;
     private boolean downloadingVideo;
+    private boolean preparing;
     private CircularProgressDrawable progressDrawable;
-    private Runnable prepare;
+    private Utilities.Callback<Runnable> prepare;
 
     private PreparingVideoToast toast;
 
-    public DownloadButton(Context context, Runnable prepare, int currentAccount, FrameLayout container, Theme.ResourcesProvider resourcesProvider) {
+    public DownloadButton(Context context, Utilities.Callback<Runnable> prepare, int currentAccount, FrameLayout container, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         this.prepare = prepare;
@@ -117,15 +118,6 @@ public class DownloadButton extends ImageView {
         if (downloading || currentEntry == null) {
             return;
         }
-
-        downloading = true;
-        if (toast != null) {
-            toast.hide();
-            toast = null;
-        }
-        if (prepare != null) {
-            prepare.run();
-        }
         if (savedToGalleryUri != null) {
             if (Build.VERSION.SDK_INT >= 30) {
                 getContext().getContentResolver().delete(savedToGalleryUri, null);
@@ -139,16 +131,28 @@ public class DownloadButton extends ImageView {
                 savedToGalleryUri = null;
             }
         }
+
+        downloading = true;
+        if (toast != null) {
+            toast.hide();
+            toast = null;
+        }
+        if (prepare != null) {
+            preparing = true;
+            prepare.run(this::onClickInternal);
+        }
         if (currentEntry.wouldBeVideo()) {
             downloadingVideo = true;
-            final File file = AndroidUtilities.generateVideoPath();
             if (buildingVideo != null) {
                 buildingVideo.stop(true);
+                buildingVideo = null;
             }
             toast = new PreparingVideoToast(getContext());
             toast.setOnCancelListener(() -> {
+                preparing = false;
                 if (buildingVideo != null) {
                     buildingVideo.stop(true);
+                    buildingVideo = null;
                 }
                 if (toast != null) {
                     toast.hide();
@@ -157,6 +161,22 @@ public class DownloadButton extends ImageView {
                 updateImage();
             });
             container.addView(toast);
+        } else {
+            downloadingVideo = false;
+        }
+        updateImage();
+        if (prepare == null) {
+            onClickInternal();
+        }
+    }
+
+    private void onClickInternal() {
+        if (!preparing) {
+            return;
+        }
+        preparing = false;
+        if (currentEntry.wouldBeVideo()) {
+            final File file = AndroidUtilities.generateVideoPath();
             buildingVideo = new BuildingVideo(currentAccount, currentEntry, file, () -> {
                 if (!downloading || currentEntry == null) {
                     return;
@@ -172,7 +192,9 @@ public class DownloadButton extends ImageView {
                     savedToGalleryUri = uri;
                 }, false);
             }, progress -> {
-                toast.setProgress(progress);
+                if (toast != null) {
+                    toast.setProgress(progress);
+                }
             }, () -> {
                 if (!downloading || currentEntry == null) {
                     return;
@@ -182,7 +204,6 @@ public class DownloadButton extends ImageView {
                 updateImage();
             });
         } else {
-            downloadingVideo = false;
             final File file = AndroidUtilities.generatePicturePath(false, "png");
             if (file == null) {
                 toast.setDone(R.raw.error, LocaleController.getString("UnknownError"), 3500);
@@ -282,6 +303,9 @@ public class DownloadButton extends ImageView {
             message.attachPath = file.getAbsolutePath();
             messageObject = new MessageObject(currentAccount, message, (MessageObject) null, false, false);
             entry.getVideoEditedInfo(info -> {
+                if (messageObject == null) {
+                    return;
+                }
                 messageObject.videoEditedInfo = info;
                 MediaController.getInstance().scheduleVideoConvert(messageObject);
             });

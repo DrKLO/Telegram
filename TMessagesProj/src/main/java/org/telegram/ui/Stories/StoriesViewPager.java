@@ -18,8 +18,12 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 public class StoriesViewPager extends ViewPager {
+
+    long daysDialogId;
+    ArrayList<ArrayList<Integer>> days;
 
     int currentAccount = UserConfig.selectedAccount;
     PagerAdapter pagerAdapter;
@@ -55,10 +59,13 @@ public class StoriesViewPager extends ViewPager {
         setAdapter(pagerAdapter = new PagerAdapter() {
             @Override
             public int getCount() {
+                if (days != null) {
+                    return days.size();
+                }
                 return dialogs.size();
             }
 
-            ArrayList<PeerStoriesView> cachedViews = new ArrayList<>();
+            private final ArrayList<PeerStoriesView> cachedViews = new ArrayList<>();
 
             @NonNull
             @Override
@@ -84,7 +91,13 @@ public class StoriesViewPager extends ViewPager {
                 view.setDelegate(delegate);
                 view.setLongpressed(storyViewer.isLongpressed);
                 pageLayout.setTag(position);
-                pageLayout.dialogId = dialogs.get(position);
+                if (days != null) {
+                    pageLayout.day = days.get(storyViewer.reversed ? days.size() - 1 - position : position);
+                    pageLayout.dialogId = daysDialogId;
+                } else {
+                    pageLayout.day = null;
+                    pageLayout.dialogId = dialogs.get(position);
+                }
                 pageLayout.addView(view);
                 view.requestLayout();
                 container.addView(pageLayout);
@@ -110,13 +123,20 @@ public class StoriesViewPager extends ViewPager {
             if (Math.abs(position) >= 1f) {
                 pageLayout.setVisible(false);
                 AndroidUtilities.runOnUIThread(() -> {
+                    if (pageLayout.day != null) {
+                        pageLayout.peerStoryView.day = pageLayout.day;
+                    }
                     pageLayout.peerStoryView.preloadMainImage(pageLayout.dialogId);
                 }, 16);
                 return;
             }
             if (!pageLayout.isVisible) {
                 pageLayout.setVisible(true);
-                pageLayout.peerStoryView.setDialogId(pageLayout.dialogId);
+                if (days != null) {
+                    pageLayout.peerStoryView.setDay(pageLayout.dialogId, pageLayout.day);
+                } else {
+                    pageLayout.peerStoryView.setDialogId(pageLayout.dialogId);
+                }
             }
             pageLayout.peerStoryView.setOffset(position);
             page.setCameraDistance(page.getWidth() * 15);
@@ -135,9 +155,11 @@ public class StoriesViewPager extends ViewPager {
                 toPosition = positionOffsetPixels > 0 ? selectedPosition + 1 : selectedPosition - 1;
                 progress = positionOffset;
 
-                if (selectedPosition >= 0 && selectedPosition < dialogs.size() && dialogs.get(selectedPosition) == UserConfig.getInstance(currentAccount).clientUserId) {
+                final long me = UserConfig.getInstance(currentAccount).clientUserId;
+
+                if (selectedPosition >= 0 && (days == null ? selectedPosition < dialogs.size() && dialogs.get(selectedPosition) == me : daysDialogId == me)) {
                     delegate.setHideEnterViewProgress(1f - progress);
-                } else if (toPosition >= 0 && toPosition < dialogs.size() && dialogs.get(toPosition) == UserConfig.getInstance(currentAccount).clientUserId) {
+                } else if (toPosition >= 0 && (days == null ? toPosition < dialogs.size() && dialogs.get(toPosition) == me : daysDialogId == me)) {
                     delegate.setHideEnterViewProgress(progress);
                 } else {
                     delegate.setHideEnterViewProgress(0);
@@ -178,7 +200,7 @@ public class StoriesViewPager extends ViewPager {
         boolean allowScreenshots = true;
         for (int i = 0; i < getChildCount(); i++) {
             PageLayout layout = (PageLayout) getChildAt(i);
-            if (layout.isVisible && !layout.peerStoryView.allowScreenshots) {
+            if (layout.isVisible && !layout.peerStoryView.currentStory.allowScreenshots()) {
                 allowScreenshots = false;
                 break;
             }
@@ -218,6 +240,25 @@ public class StoriesViewPager extends ViewPager {
         updateDelegate = true;
     }
 
+    public void setDays(long dialogId, ArrayList<ArrayList<Integer>> days, int currentAccount) {
+        this.daysDialogId = dialogId;
+        this.days = days;
+        this.currentAccount = currentAccount;
+        setAdapter(null);
+        setAdapter(pagerAdapter);
+        int position;
+        for (position = 0; position < days.size(); ++position) {
+            if (days.get(position).contains(storyViewer.dayStoryId)) {
+                break;
+            }
+        }
+        if (storyViewer.reversed) {
+            position = days.size() - 1 - position;
+        }
+        setCurrentItem(position);
+        updateDelegate = true;
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
@@ -240,7 +281,7 @@ public class StoriesViewPager extends ViewPager {
     }
 
     public boolean switchToNext(boolean forward) {
-        if (forward && getCurrentItem() < dialogs.size() - 1) {
+        if (forward && getCurrentItem() < (days != null ? days : dialogs).size() - 1) {
             setCurrentItem(getCurrentItem() + 1, !useSurfaceInViewPagerWorkAround());
             return true;
         }
@@ -286,6 +327,9 @@ public class StoriesViewPager extends ViewPager {
     }
 
     public long getCurrentDialogId() {
+        if (days != null) {
+            return daysDialogId;
+        }
         if (getCurrentItem() < dialogs.size()) {
             return dialogs.get(getCurrentItem());
         }
@@ -337,8 +381,12 @@ public class StoriesViewPager extends ViewPager {
     private class PageLayout extends FrameLayout {
 
         public PeerStoriesView peerStoryView;
+
         long dialogId;
+        ArrayList<Integer> day;
+
         boolean isVisible;
+
         public PageLayout(@NonNull Context context) {
             super(context);
         }

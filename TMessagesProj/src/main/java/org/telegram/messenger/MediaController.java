@@ -276,6 +276,27 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             blurExcludeBlurSize = stream.readFloat(exception);
             blurAngle = stream.readFloat(exception);
         }
+
+        public boolean isEmpty() {
+            return (
+                Math.abs(enhanceValue) < 0.1f &&
+                Math.abs(softenSkinValue) < 0.1f &&
+                Math.abs(exposureValue) < 0.1f &&
+                Math.abs(contrastValue) < 0.1f &&
+                Math.abs(warmthValue) < 0.1f &&
+                Math.abs(saturationValue) < 0.1f &&
+                Math.abs(fadeValue) < 0.1f &&
+                tintShadowsColor == 0 &&
+                tintHighlightsColor == 0 &&
+                Math.abs(highlightsValue) < 0.1f &&
+                Math.abs(shadowsValue) < 0.1f &&
+                Math.abs(vignetteValue) < 0.1f &&
+                Math.abs(grainValue) < 0.1f &&
+                blurType == 0 &&
+                Math.abs(sharpenValue) < 0.1f &&
+                Math.abs(blurExcludeSize) < 0.1f
+            );
+        }
     }
 
     public static class CropState {

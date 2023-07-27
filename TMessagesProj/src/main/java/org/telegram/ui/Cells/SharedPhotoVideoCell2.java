@@ -74,6 +74,7 @@ public class SharedPhotoVideoCell2 extends View {
     float crossfadeProgress;
     float crossfadeToColumnsCount;
     float highlightProgress;
+    public boolean isFirst, isLast;
 
     private Drawable gradientDrawable;
     private boolean gradientDrawableLoading;
@@ -303,8 +304,10 @@ public class SharedPhotoVideoCell2 extends View {
         super.onDraw(canvas);
 
         final float padding = getPadding();
+        final float leftpadding = isStory && isFirst ? 0 : padding;
+        final float rightpadding = isStory && isLast ? 0 : padding;
 
-        float imageWidth = (getMeasuredWidth() - padding * 2) * imageScale;
+        float imageWidth = (getMeasuredWidth() - leftpadding - rightpadding) * imageScale;
         float imageHeight = (getMeasuredHeight() - padding * 2) * imageScale;
 
         if (crossfadeProgress > 0.5f && crossfadeToColumnsCount != 9 && currentParentColumnsCount != 9) {
@@ -317,23 +320,23 @@ public class SharedPhotoVideoCell2 extends View {
                 globalGradientView.setParentSize(((View) SharedPhotoVideoCell2.this.getParent()).getMeasuredWidth(), SharedPhotoVideoCell2.this.getMeasuredHeight(), -getX());
                 globalGradientView.updateColors();
                 globalGradientView.updateGradient();
-                float localPadding = padding;
+                float padPlus = 0;
                 if (crossfadeProgress > 0.5f && crossfadeToColumnsCount != 9 && currentParentColumnsCount != 9) {
-                    localPadding += 1;
+                    padPlus += 1;
                 }
-                canvas.drawRect(localPadding, localPadding, localPadding + imageWidth, localPadding + imageHeight, globalGradientView.getPaint());
+                canvas.drawRect(leftpadding + padPlus, padding + padPlus, leftpadding + padPlus + imageWidth, padding + padPlus + imageHeight, globalGradientView.getPaint());
             }
             invalidate();
         }
 
         if (imageAlpha != 1f) {
-            canvas.saveLayerAlpha(0, 0, padding * 2 + imageWidth, padding * 2 + imageHeight, (int) (255 * imageAlpha), Canvas.ALL_SAVE_FLAG);
+            canvas.saveLayerAlpha(0, 0, leftpadding + rightpadding + imageWidth, padding * 2 + imageHeight, (int) (255 * imageAlpha), Canvas.ALL_SAVE_FLAG);
         } else {
             canvas.save();
         }
 
         if ((checkBoxBase != null && checkBoxBase.isChecked()) || PhotoViewer.isShowingImage(currentMessageObject)) {
-            canvas.drawRect(padding, padding, imageWidth, imageHeight, sharedResources.backgroundPaint);
+            canvas.drawRect(leftpadding, padding, leftpadding + imageWidth - rightpadding, imageHeight, sharedResources.backgroundPaint);
         }
 
         if (isStory && currentParentColumnsCount == 1) {
@@ -357,21 +360,21 @@ public class SharedPhotoVideoCell2 extends View {
             imageReceiver.setImageCoords((imageWidth - w) / 2, 0, w, getHeight());
         } else if (checkBoxProgress > 0) {
             float offset = dp(10) * checkBoxProgress;
-            imageReceiver.setImageCoords(padding + offset, padding + offset, imageWidth - offset * 2, imageHeight - offset * 2);
-            blurImageReceiver.setImageCoords(padding + offset, padding + offset, imageWidth - offset * 2, imageHeight - offset * 2);
+            imageReceiver.setImageCoords(leftpadding + offset, padding + offset, imageWidth - offset * 2, imageHeight - offset * 2);
+            blurImageReceiver.setImageCoords(leftpadding + offset, padding + offset, imageWidth - offset * 2, imageHeight - offset * 2);
         } else {
-            float localPadding = padding;
+            float padPlus = 0;
             if (crossfadeProgress > 0.5f && crossfadeToColumnsCount != 9 && currentParentColumnsCount != 9) {
-                localPadding += 1;
+                padPlus = 1;
             }
-            imageReceiver.setImageCoords(localPadding, localPadding, imageWidth, imageHeight);
-            blurImageReceiver.setImageCoords(localPadding, localPadding, imageWidth, imageHeight);
+            imageReceiver.setImageCoords(leftpadding + padPlus, padding + padPlus, imageWidth, imageHeight);
+            blurImageReceiver.setImageCoords(leftpadding + padPlus, padding + padPlus, imageWidth, imageHeight);
         }
         if (!PhotoViewer.isShowingImage(currentMessageObject)) {
             imageReceiver.draw(canvas);
             if (currentMessageObject != null && currentMessageObject.hasMediaSpoilers() && !currentMessageObject.isMediaSpoilersRevealedInSharedMedia) {
                 canvas.save();
-                canvas.clipRect(padding, padding, padding + imageWidth, padding + imageHeight);
+                canvas.clipRect(leftpadding, padding, leftpadding + imageWidth - rightpadding, padding + imageHeight);
 
                 if (spoilerRevealProgress != 0f) {
                     path.rewind();
@@ -397,7 +400,7 @@ public class SharedPhotoVideoCell2 extends View {
         }
 
         bounds.set(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX2(), imageReceiver.getImageY2());
-        bounds.set(padding, padding, padding + imageWidth, padding + imageHeight);
+        bounds.set(leftpadding, padding, leftpadding + imageWidth - rightpadding, padding + imageHeight);
         drawDuration(canvas, bounds, 1f);
 
         if (checkBoxBase != null && (style == STYLE_CACHE || checkBoxBase.getProgress() != 0)) {

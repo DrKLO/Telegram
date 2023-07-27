@@ -6866,7 +6866,7 @@ public class MessagesStorage extends BaseController {
 
         SQLiteCursor cursor = null;
         try {
-            cursor = database.queryFinalized("SELECT uid, info, participants_count FROM chat_settings_v2 WHERE participants_count > 1 AND participants_count <= 20");
+            cursor = database.queryFinalized("SELECT uid, info, participants_count FROM chat_settings_v2 WHERE participants_count > 1");
             while (cursor.next()) {
                 TLRPC.ChatFull info = null;
                 long id = cursor.longValue(0);

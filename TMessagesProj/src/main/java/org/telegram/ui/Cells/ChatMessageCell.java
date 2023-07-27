@@ -11419,6 +11419,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (currentMessageObject == null) {
             return;
         }
+        if (currentMessageObject.type == MessageObject.TYPE_STORY && currentMessageObject.isVideoStory()) {
+            buttonState = 2;
+            getIconForCurrentState();
+            return;
+        }
         if (animated && (PhotoViewer.isShowingImage(currentMessageObject) || !attachedToWindow)) {
             animated = false;
         }
@@ -12015,7 +12020,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         } else if (buttonState == 2) {
-            if (documentAttachType == DOCUMENT_ATTACH_TYPE_ROUND && currentMessageObject != null && currentMessageObject.isVoiceTranscriptionOpen()) {
+            if (currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_STORY) {
+                delegate.didPressImage(this, 0, 0);
+            } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_ROUND && currentMessageObject != null && currentMessageObject.isVoiceTranscriptionOpen()) {
                 if (miniButtonState == 0) {
                     FileLoader.getInstance(currentAccount).loadFile(documentAttach, currentMessageObject, FileLoader.PRIORITY_NORMAL_UP, 0);
                     currentMessageObject.loadingCancelled = false;

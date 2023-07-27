@@ -7264,7 +7264,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
 
                 boolean divider = false;
-                if (showAddToContacts && user != null && !user.contact) {
+                if (showAddToContacts && user != null && !user.contact && !user.bot && !UserObject.isService(user.id)) {
                     addToContactsRow = rowCount++;
                     divider = true;
                 }
@@ -8990,7 +8990,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                         totalHeight += listView.getChildAt(i).getMeasuredHeight();
                                     }
                                 }
-                                int paddingHeight = fragmentView.getMeasuredHeight() - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.statusBarHeight - totalHeight;
+                                int paddingHeight = (fragmentView == null ? 0 : fragmentView.getMeasuredHeight()) - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.statusBarHeight - totalHeight;
                                 if (paddingHeight > AndroidUtilities.dp(88)) {
                                     paddingHeight = 0;
                                 }

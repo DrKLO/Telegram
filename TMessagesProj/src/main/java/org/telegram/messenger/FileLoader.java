@@ -754,7 +754,7 @@ public class FileLoader extends BaseController {
             type = MEDIA_DIR_DOCUMENT;
         } else if (location != null) {
             documentId = location.volume_id;
-            dcId = location.dc_id;
+            dcId = location.dc_id + (location.local_id << 16);
             operation = new FileLoadOperation(imageLocation, parentObject, locationExt, locationSize);
             type = MEDIA_DIR_IMAGE;
         } else if (document != null) {
@@ -1230,8 +1230,7 @@ public class FileLoader extends BaseController {
                     dir = getDirectory(type = MEDIA_DIR_IMAGE);
                 }
                 documentId = photoSize.location.volume_id;
-                dcId = photoSize.location.dc_id;
-
+                dcId = photoSize.location.dc_id + (photoSize.location.local_id << 16);
             } else if (attach instanceof TLRPC.TL_videoSize) {
                 TLRPC.TL_videoSize videoSize = (TLRPC.TL_videoSize) attach;
                 if (videoSize.location == null || videoSize.location.key != null || videoSize.location.volume_id == Integer.MIN_VALUE && videoSize.location.local_id < 0 || videoSize.size < 0) {
@@ -1240,14 +1239,14 @@ public class FileLoader extends BaseController {
                     dir = getDirectory(type = MEDIA_DIR_IMAGE);
                 }
                 documentId = videoSize.location.volume_id;
-                dcId = videoSize.location.dc_id;
+                dcId = videoSize.location.dc_id + (videoSize.location.local_id << 16);
             } else if (attach instanceof TLRPC.FileLocation) {
                 TLRPC.FileLocation fileLocation = (TLRPC.FileLocation) attach;
                 if (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
                     dir = getDirectory(MEDIA_DIR_CACHE);
                 } else {
                     documentId = fileLocation.volume_id;
-                    dcId = fileLocation.dc_id;
+                    dcId = fileLocation.dc_id + (fileLocation.local_id << 16);
                     dir = getDirectory(type = MEDIA_DIR_IMAGE);
                 }
             } else if (attach instanceof TLRPC.UserProfilePhoto || attach instanceof TLRPC.ChatPhoto) {

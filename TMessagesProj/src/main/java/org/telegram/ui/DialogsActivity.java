@@ -83,8 +83,6 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -4816,7 +4814,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }, null);
                 } else {
                     final String key = NotificationsController.getSharedPrefKey(dialogId, 0);
-                    boolean muted = !NotificationsCustomSettingsActivity.isStoriesNotMuted(currentAccount, dialogId);
+                    boolean muted = !NotificationsCustomSettingsActivity.areStoriesNotMuted(currentAccount, dialogId);
                     filterOptions
                             .add(R.drawable.msg_discussion, LocaleController.getString("SendMessage", R.string.SendMessage), () -> {
                                 presentFragment(ChatActivity.of(dialogId));
@@ -11806,7 +11804,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     public void updateStoriesVisibility(boolean animated) {
-        if (storiesVisibilityAnimator != null || rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment() || searchIsShowed || actionBar.isActionModeShowed() || onlySelect) {
+        if (dialogStoriesCell == null || storiesVisibilityAnimator != null || rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment() || searchIsShowed || actionBar.isActionModeShowed() || onlySelect) {
             return;
         }
         if (StoryRecorder.isVisible() || (storyViewer != null && storyViewer.isFullyVisible())) {

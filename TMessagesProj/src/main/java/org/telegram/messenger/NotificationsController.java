@@ -4658,7 +4658,7 @@ public class NotificationsController extends BaseController {
                 }
             }
 
-            boolean needAddPerson = lastMessageObject != null && !(lastMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByRequest);
+            boolean needAddPerson = lastMessageObject == null || !(lastMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByRequest);
             NotificationCompat.MessagingStyle messagingStyle;
             if (selfPerson != null && needAddPerson) {
                 messagingStyle = new NotificationCompat.MessagingStyle(selfPerson);

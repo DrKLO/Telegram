@@ -52,6 +52,8 @@ import java.util.Map;
 public class PreviewView extends FrameLayout {
 
     private Bitmap bitmap;
+    private Bitmap thumbBitmap;
+
     private StoryEntry entry;
     private VideoPlayer videoPlayer;
     private int videoWidth, videoHeight;
@@ -254,6 +256,10 @@ public class PreviewView extends FrameLayout {
             bitmap.recycle();
             bitmap = null;
         }
+        if (thumbBitmap != null) {
+            thumbBitmap.recycle();
+            thumbBitmap = null;
+        }
         if (entry != null) {
             final int rw = getMeasuredWidth() <= 0 ? AndroidUtilities.displaySize.x : getMeasuredWidth();
             final int rh = (int) (rw * 16 / 9f);
@@ -284,41 +290,77 @@ public class PreviewView extends FrameLayout {
             }
             if (bitmap == null) {
                 String path = entry.getOriginalFile().getPath();
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
-                if (entry.isVideo) {
-                    if (entry.thumbPath != null) {
-                        BitmapFactory.decodeFile(entry.thumbPath, options);
-                    } else {
-                        try {
-                            MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
-                        } catch (Throwable e) {
-                            bitmap = null;
-                            invalidate();
-                            return;
-                        }
-                    }
-                } else {
-                    BitmapFactory.decodeFile(path, options);
-                }
 
-                options.inJustDecodeBounds = false;
-                StoryEntry.setupScale(options, rw, rh);
-                if (entry.isVideo) {
-                    if (entry.thumbPath != null) {
-                        BitmapFactory.decodeFile(entry.thumbPath, options);
-                    } else {
-                        try {
-                            bitmap = MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
-                        } catch (Throwable e) {
-                            bitmap = null;
-                            invalidate();
-                            return;
+                final long imageIdFinal = imageId;
+                bitmap = StoryEntry.getScaledBitmap(opts -> {
+                    if (entry.isVideo) {
+                        if (entry.thumbPath != null) {
+                            return BitmapFactory.decodeFile(entry.thumbPath, opts);
+                        } else {
+                            try {
+                                return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
+                            } catch (Throwable e) {
+                                invalidate();
+                                return null;
+                            }
                         }
+                    } else {
+                        return BitmapFactory.decodeFile(path, opts);
                     }
-                } else {
-                    bitmap = BitmapFactory.decodeFile(path, options);
-                }
+                }, rw, rh, false);
+
+//                this.thumbAlpha.set(0, true);
+//                thumbBitmap = StoryEntry.getScaledBitmap(opts -> {
+//                    if (entry.isVideo) {
+//                        if (entry.thumbPath != null) {
+//                            return BitmapFactory.decodeFile(entry.thumbPath, opts);
+//                        } else {
+//                            try {
+//                                return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
+//                            } catch (Throwable e) {
+//                                invalidate();
+//                                return null;
+//                            }
+//                        }
+//                    } else {
+//                        return BitmapFactory.decodeFile(path, opts);
+//                    }
+//                }, rw / 4, rh / 4, false);
+//
+//                Utilities.themeQueue.postRunnable(() -> {
+//                    final Bitmap bitmapFinal = StoryEntry.getScaledBitmap(opts -> {
+//                        if (entry.isVideo) {
+//                            if (entry.thumbPath != null) {
+//                                return BitmapFactory.decodeFile(entry.thumbPath, opts);
+//                            } else {
+//                                try {
+//                                    return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), imageIdFinal, MediaStore.Video.Thumbnails.MINI_KIND, opts);
+//                                } catch (Throwable e) {
+//                                    invalidate();
+//                                    return null;
+//                                }
+//                            }
+//                        } else {
+//                            return BitmapFactory.decodeFile(path, opts);
+//                        }
+//                    }, rw, rh, true);
+//                    AndroidUtilities.runOnUIThread(() -> {
+//                        if (PreviewView.this.entry != entry) {
+//                            if (bitmapFinal != null) {
+//                                bitmapFinal.recycle();
+//                            }
+//                            return;
+//                        }
+//                        bitmap = bitmapFinal;
+//                        if (!entry.isDraft && entry.isVideo && bitmap != null && entry.width <= 0) {
+//                            entry.width = bitmap.getWidth();
+//                            entry.height = bitmap.getHeight();
+//                            entry.setupMatrix();
+//                        }
+//                        invalidate();
+//                    });
+//                });
+                return;
             }
             if (!entry.isDraft && entry.isVideo && bitmap != null) {
                 entry.width = bitmap.getWidth();
@@ -334,6 +376,13 @@ public class PreviewView extends FrameLayout {
         if (entry.gradientTopColor == 0 || entry.gradientBottomColor == 0) {
             if (bitmap != null) {
                 DominantColors.getColors(true, bitmap, true, colors -> {
+                    entry.gradientTopColor = colors[0];
+                    entry.gradientBottomColor = colors[1];
+                    gradientPaint.setShader(new LinearGradient(0, 0, 0, height, colors, new float[]{0, 1}, Shader.TileMode.CLAMP));
+                    invalidate();
+                });
+            } else if (thumbBitmap != null) {
+                DominantColors.getColors(true, thumbBitmap, true, colors -> {
                     entry.gradientTopColor = colors[0];
                     entry.gradientBottomColor = colors[1];
                     gradientPaint.setShader(new LinearGradient(0, 0, 0, height, colors, new float[]{0, 1}, Shader.TileMode.CLAMP));
@@ -628,14 +677,27 @@ public class PreviewView extends FrameLayout {
         invalidate();
     }
 
+    private final AnimatedFloat thumbAlpha = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT);
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         canvas.drawRect(0, 0, getWidth(), getHeight(), gradientPaint);
-        if (draw && entry != null && bitmap != null) {
-            matrix.set(entry.matrix);
-            matrix.preScale((float) entry.width / bitmap.getWidth(), (float) entry.height / bitmap.getHeight());
-            matrix.postScale((float) getWidth() / entry.resultWidth, (float) getHeight() / entry.resultHeight);
-            canvas.drawBitmap(bitmap, matrix, bitmapPaint);
+        if (draw && entry != null) {
+            float alpha = this.thumbAlpha.set(bitmap != null);
+            if (thumbBitmap != null && (1f - alpha) > 0) {
+                matrix.set(entry.matrix);
+                matrix.preScale((float) entry.width / thumbBitmap.getWidth(), (float) entry.height / thumbBitmap.getHeight());
+                matrix.postScale((float) getWidth() / entry.resultWidth, (float) getHeight() / entry.resultHeight);
+                bitmapPaint.setAlpha(0xFF);
+                canvas.drawBitmap(thumbBitmap, matrix, bitmapPaint);
+            }
+            if (bitmap != null) {
+                matrix.set(entry.matrix);
+                matrix.preScale((float) entry.width / bitmap.getWidth(), (float) entry.height / bitmap.getHeight());
+                matrix.postScale((float) getWidth() / entry.resultWidth, (float) getHeight() / entry.resultHeight);
+                bitmapPaint.setAlpha((int) (0xFF * alpha));
+                canvas.drawBitmap(bitmap, matrix, bitmapPaint);
+            }
         }
         super.dispatchDraw(canvas);
         if (draw && entry != null) {

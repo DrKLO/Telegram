@@ -55,6 +55,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.DispatchQueuePool;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -77,6 +78,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -607,28 +609,16 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             Bitmap bitmap = null;
             if (entry instanceof MediaController.PhotoEntry) {
                 MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entry;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    Uri uri;
-                    if (photoEntry.isVideo) {
-                        uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, photoEntry.imageId);
-                    } else {
-                        uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, photoEntry.imageId);
-                    }
 
-                    try {
-                        bitmap = getContext().getContentResolver().loadThumbnail(uri, new Size(rw, rh), null);
-                    } catch (Exception ignore) {}
-                } else {
-                    BitmapFactory.Options opts = new BitmapFactory.Options();
-                    opts.inJustDecodeBounds = true;
-                    readBitmap(photoEntry, opts);
+                BitmapFactory.Options opts = new BitmapFactory.Options();
+                opts.inJustDecodeBounds = true;
+                readBitmap(photoEntry, opts);
 
-                    opts.inSampleSize = StoryEntry.calculateInSampleSize(opts, rw, rh);
-                    opts.inPreferredConfig = Bitmap.Config.RGB_565;
-                    opts.inDither = true;
-                    opts.inJustDecodeBounds = false;
-                    bitmap = readBitmap(photoEntry, opts);
-                }
+                StoryEntry.setupScale(opts, rw, rh);
+                opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                opts.inDither = true;
+                opts.inJustDecodeBounds = false;
+                bitmap = readBitmap(photoEntry, opts);
 
                 final boolean needGradient = bitmap != null && ((float) bitmap.getHeight() / bitmap.getWidth()) < ASPECT_RATIO;
                 if (needGradient) {
@@ -648,8 +638,8 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
                     opts.inJustDecodeBounds = true;
                     BitmapFactory.decodeFile(file.getPath(), opts);
 
-                    opts.inSampleSize = StoryEntry.calculateInSampleSize(opts, rw, rh);
-                    opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                    StoryEntry.setupScale(opts, rw, rh);
+                    opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                     opts.inDither = true;
                     opts.inJustDecodeBounds = false;
                     bitmap = BitmapFactory.decodeFile(file.getPath(), opts);
@@ -761,8 +751,28 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             } else if (photoEntry.isVideo) {
                 return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), photoEntry.imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
             } else {
-                return BitmapFactory.decodeFile(photoEntry.path, options);
-//                return MediaStore.Images.Thumbnails.getThumbnail(getContext().getContentResolver(), photoEntry.imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
+//                Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, photoEntry.imageId);
+//
+//                Bitmap bitmap = null;
+//                InputStream is = null;
+//                try {
+//                    is = getContext().getContentResolver().openInputStream(uri);
+//                    bitmap = BitmapFactory.decodeStream(is, null, options);
+//                } catch (Exception e) {
+//                    FileLog.e(e, false);
+//                } finally {
+//                    if (is != null) {
+//                        try {
+//                            is.close();
+//                        } catch (Exception e2) {}
+//                    }
+//                }
+//                if (bitmap == null && options != null && !options.inJustDecodeBounds) {
+//                    return BitmapFactory.decodeFile(photoEntry.path, options);
+//                } else {
+//                    return bitmap;
+//                }
+                return MediaStore.Images.Thumbnails.getThumbnail(getContext().getContentResolver(), photoEntry.imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
             }
         }
 

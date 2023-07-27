@@ -338,6 +338,9 @@ public class JoinGroupAlert extends BottomSheet {
 
     private CharSequence ellipsize(TextView textView, TLRPC.ChatInvite chatInvite, int pos) {
         String firstName = chatInvite.participants.get(pos).first_name;
+        if (firstName == null) {
+            firstName = "";
+        }
         return TextUtils.ellipsize(firstName.trim(), textView.getPaint(), AndroidUtilities.dp(120), TextUtils.TruncateAt.END);
     }
 }

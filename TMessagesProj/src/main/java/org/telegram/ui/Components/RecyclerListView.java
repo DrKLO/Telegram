@@ -526,7 +526,7 @@ public class RecyclerListView extends RecyclerView {
         private boolean floatingDateVisible;
         private float floatingDateProgress;
         private int[] positionWithOffset = new int[2];
-        boolean isVisible;
+        public boolean isVisible;
         float touchSlop;
         Drawable fastScrollShadowDrawable;
         Drawable fastScrollBackgroundDrawable;

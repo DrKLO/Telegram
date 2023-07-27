@@ -22,6 +22,7 @@ import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -73,6 +74,7 @@ import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.TreeSet;
 
 public class StoryViewer {
 
@@ -83,7 +85,7 @@ public class StoryViewer {
     public boolean foundViewToClose = false;
 
     public int allowScreenshotsCounter;
-    public boolean allowScreenshots;
+    public boolean allowScreenshots = true;
     public static ArrayList<StoryViewer> globalInstances = new ArrayList<>();
 
     BaseFragment fragment;
@@ -175,8 +177,8 @@ public class StoryViewer {
 
     boolean isSingleStory;
     StoriesController.StoriesList storiesList;
+    public int dayStoryId;
     TLRPC.TL_userStories overrideUserStories;
-    int storiesListStartPosition;
     boolean reversed;
 
     TLRPC.StoryItem singleStory;
@@ -185,6 +187,7 @@ public class StoryViewer {
     private int fromRadius;
     private static boolean runOpenAnimationAfterLayout;
     private boolean isPopupVisible;
+    private boolean isBulletinVisible;
 
     public boolean isLongpressed;
 
@@ -261,12 +264,12 @@ public class StoryViewer {
         open(context, null, peerIds, position, null, null, placeProvider, false);
     }
 
-    public void open(Context context, TLRPC.StoryItem storyItem, int startPosition, StoriesController.StoriesList storiesList, PlaceProvider placeProvider) {
+    public void open(Context context, int startStoryId, StoriesController.StoriesList storiesList, PlaceProvider placeProvider) {
         currentAccount = UserConfig.selectedAccount;
         ArrayList<Long> peerIds = new ArrayList<>();
         peerIds.add(storiesList.userId);
-        storiesListStartPosition = startPosition;
-        open(context, storyItem, peerIds, 0, storiesList, null, placeProvider, false);
+        dayStoryId = startStoryId;
+        open(context, null, peerIds, 0, storiesList, null, placeProvider, false);
     }
 
     public void open(Context context, TLRPC.TL_userStories userStories, PlaceProvider placeProvider) {
@@ -276,14 +279,14 @@ public class StoryViewer {
         currentAccount = UserConfig.selectedAccount;
         ArrayList<Long> peerIds = new ArrayList<>();
         peerIds.add(userStories.user_id);
-        open(context, userStories.stories.get(0), peerIds, 0, null, userStories, placeProvider, reversed);
+        open(context, userStories.stories.get(0), peerIds, 0, null, userStories, placeProvider, false);
     }
 
-    public void open(Context context, TLRPC.StoryItem storyItem, int startPosition, StoriesController.StoriesList storiesList, boolean reversed, PlaceProvider placeProvider) {
+    public void open(Context context, TLRPC.StoryItem storyItem, int startStoryId, StoriesController.StoriesList storiesList, boolean reversed, PlaceProvider placeProvider) {
         currentAccount = UserConfig.selectedAccount;
         ArrayList<Long> peerIds = new ArrayList<>();
         peerIds.add(storiesList.userId);
-        storiesListStartPosition = startPosition;
+        dayStoryId = startStoryId;
         open(context, storyItem, peerIds, 0, storiesList, null, placeProvider, reversed);
     }
 
@@ -314,6 +317,9 @@ public class StoryViewer {
         currentAccount = UserConfig.selectedAccount;
         swipeToDismissOffset = 0;
         swipeToDismissHorizontalOffset = 0;
+        if (storiesViewPager != null) {
+            storiesViewPager.setHorizontalProgressToDismiss(0);
+        }
         swipeToReplyProgress = 0;
         swipeToReplyOffset = 0;
         allowSwipeToReply = false;
@@ -393,7 +399,7 @@ public class StoryViewer {
                             int maxOffset = AndroidUtilities.dp(200);
                             if (swipeToReplyOffset > maxOffset && !swipeToReplyWaitingKeyboard) {
                                 swipeToReplyWaitingKeyboard = true;
-                                storiesViewPager.getCurrentPeerView().showKeyboard();
+                                showKeyboard();
                                 windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                             }
                             swipeToReplyProgress = Utilities.clamp(swipeToReplyOffset / maxOffset, 1f, 0);
@@ -411,11 +417,6 @@ public class StoryViewer {
                             } else {
                                 selfStoriesViewsOffset += distanceY;
                             }
-//                            int maxOffset = AndroidUtilities.dp(200);
-//                            if (selfStoriesViewsOffset > maxOffset) {
-//                                storiesViewPager.getCurrentPeerView().showKeyboard();
-//                            }
-                           // swipeToReplyProgress = Utilities.clamp(swipeToReplyOffset / maxOffset, 1f, 0);
                             storiesViewPager.getCurrentPeerView().invalidate();
                             containerView.invalidate();
                             if (selfStoriesViewsOffset < 0) {
@@ -447,10 +448,7 @@ public class StoryViewer {
                         if (velocityY < -1000 && !swipeToReplyWaitingKeyboard) {
                             swipeToReplyWaitingKeyboard = true;
                             windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-                            storiesViewPager.getCurrentPeerView().showKeyboard();
-                            AndroidUtilities.runOnUIThread(() -> {
-                                cancelSwipeToReply();
-                            }, 200);
+                            showKeyboard();
                         }
                     }
                     if (selfStoriesViewsOffset != 0) {
@@ -1097,20 +1095,41 @@ public class StoryViewer {
 
                 @Override
                 public void switchToNextAndRemoveCurrentPeer() {
-                    ArrayList<Long> newPeers = new ArrayList<>(peerIds);
-                    int index = newPeers.indexOf(storiesViewPager.getCurrentPeerView().getCurrentPeer());
-                    if (index >= 0) {
-                        newPeers.remove(index);
+                    if (storiesList != null) {
+                        if (storiesViewPager.days == null) {
+                            return;
+                        }
+                        ArrayList<ArrayList<Integer>> newDays = new ArrayList<>(storiesViewPager.days);
+                        int index = newDays.indexOf(storiesViewPager.getCurrentPeerView().getCurrentDay());
+                        if (index >= 0) {
+                            newDays.remove(index);
+                        } else {
+                            close(false);
+                            return;
+                        }
+                        if (!storiesViewPager.switchToNext(true)) {
+                            close(false);
+                        } else {
+                            storiesViewPager.onNextIdle(() -> {
+                                storiesViewPager.setDays(storiesList.userId, newDays, currentAccount);
+                            });
+                        }
                     } else {
-                        close(false);
-                        return;
-                    }
-                    if (!storiesViewPager.switchToNext(true)) {
-                        close(false);
-                    } else {
-                        storiesViewPager.onNextIdle(() -> {
-                            storiesViewPager.setPeerIds(newPeers, currentAccount, index);
-                        });
+                        ArrayList<Long> newPeers = new ArrayList<>(peerIds);
+                        int index = newPeers.indexOf(storiesViewPager.getCurrentPeerView().getCurrentPeer());
+                        if (index >= 0) {
+                            newPeers.remove(index);
+                        } else {
+                            close(false);
+                            return;
+                        }
+                        if (!storiesViewPager.switchToNext(true)) {
+                            close(false);
+                        } else {
+                            storiesViewPager.onNextIdle(() -> {
+                                storiesViewPager.setPeerIds(newPeers, currentAccount, index);
+                            });
+                        }
                     }
                 }
 
@@ -1164,10 +1183,14 @@ public class StoryViewer {
 
                 @Override
                 public void requestPlayer(TLRPC.Document document, Uri uri, long t, PeerStoriesView.VideoPlayerSharedScope scope) {
-                    if (isClosed) {
+                    if (isClosed || progressToOpen != 1f) {
+                        scope.firstFrameRendered = false;
+                        scope.player = null;
                         return;
                     }
-                    boolean sameUri = Objects.equals(lastUri, uri);
+                    String lastAutority = lastUri == null ? null : lastUri.getAuthority();
+                    String autority = uri == null ? null : uri.getAuthority();
+                    boolean sameUri = Objects.equals(lastAutority, autority);
                     if (!sameUri || playerHolder == null) {
                         lastUri = uri;
                         if (playerHolder != null) {
@@ -1218,6 +1241,13 @@ public class StoryViewer {
                         currentPlayerScope.textureView = textureView;
                         currentPlayerScope.surfaceView = surfaceView;
                     }
+                    if (USE_SURFACE_VIEW) {
+                        if (uri == null) {
+                            surfaceView.setVisibility(View.INVISIBLE);
+                        } else {
+                            surfaceView.setVisibility(View.VISIBLE);
+                        }
+                    }
                 }
 
                 @Override
@@ -1256,6 +1286,12 @@ public class StoryViewer {
                 @Override
                 public void setPopupIsVisible(boolean b) {
                     StoryViewer.this.isPopupVisible = b;
+                    updatePlayingMode();
+                }
+
+                @Override
+                public void setBulletinIsVisible(boolean b) {
+                    StoryViewer.this.isBulletinVisible = b;
                     updatePlayingMode();
                 }
 
@@ -1335,15 +1371,14 @@ public class StoryViewer {
                 aspectRatioFrameLayout.addView(textureView);
             }
 
-
-
             volumeControl = new StoriesVolumeContorl(context);
             containerView.addView(volumeControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 4, 0, 4, 0));
         }
-        AndroidUtilities.removeFromParent(containerView);
-        windowView.addView(containerView);
         AndroidUtilities.removeFromParent(aspectRatioFrameLayout);
         windowView.addView(aspectRatioFrameLayout);
+
+        AndroidUtilities.removeFromParent(containerView);
+        windowView.addView(containerView);
         windowView.setClipChildren(false);
 
         if (ATTACH_TO_FRAGMENT) {
@@ -1355,7 +1390,11 @@ public class StoryViewer {
         if (isSingleStory) {
             updateTransitionParams();
         }
-        storiesViewPager.setPeerIds(peerIds, currentAccount, position);
+        if (storiesList != null) {
+            storiesViewPager.setDays(storiesList.userId, storiesList.getDays(), currentAccount);
+        } else {
+            storiesViewPager.setPeerIds(peerIds, currentAccount, position);
+        }
 
         windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         if (ATTACH_TO_FRAGMENT) {
@@ -1410,6 +1449,13 @@ public class StoryViewer {
             globalInstances.add(this);
         }
         AndroidUtilities.hideKeyboard(fragment.getFragmentView());
+    }
+
+    private void showKeyboard() {
+        storiesViewPager.getCurrentPeerView().showKeyboard();
+        AndroidUtilities.runOnUIThread(() -> {
+            cancelSwipeToReply();
+        }, 200);
     }
 
     ValueAnimator swipeToViewsAnimator;
@@ -1474,17 +1520,21 @@ public class StoryViewer {
     }
 
     public void cancelSwipeToReply() {
-        if (swipeToReplyOffset != 0 && allowSwipeToReply) {
+        if (swipeToReplyBackAnimator == null) {
             inSwipeToDissmissMode = false;
             allowSwipeToReply = false;
-            swipeToReplyBackAnimator = ValueAnimator.ofFloat(swipeToReplyProgress, 0);
+            swipeToReplyBackAnimator = ValueAnimator.ofFloat(swipeToReplyOffset, 0);
             swipeToReplyBackAnimator.addUpdateListener(animation -> {
-                swipeToReplyProgress = (float) animation.getAnimatedValue();
+                swipeToReplyOffset = (float) animation.getAnimatedValue();
+                int maxOffset = AndroidUtilities.dp(200);
+                swipeToReplyProgress = Utilities.clamp(swipeToReplyOffset / maxOffset, 1f, 0);
                 storiesViewPager.getCurrentPeerView().invalidate();
             });
             swipeToReplyBackAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
+                    swipeToReplyBackAnimator = null;
+                    swipeToReplyOffset = 0;
                     swipeToReplyProgress = 0;
                     storiesViewPager.getCurrentPeerView().invalidate();
                 }
@@ -1610,9 +1660,11 @@ public class StoryViewer {
             int position = peerView == null ? 0 : peerView.getSelectedPosition();
             int storyId = peerView == null || position < 0 || position >= peerView.storyItems.size() ? 0 : peerView.storyItems.get(position).id;
             TLRPC.StoryItem storyItem = peerView == null || position < 0 || position >= peerView.storyItems.size() ? null : peerView.storyItems.get(position);
-
+            if (storyItem == null && isSingleStory) {
+                storyItem = singleStory;
+            }
             transitionViewHolder.clear();
-            if (placeProvider.findView(storiesViewPager.getCurrentDialogId(), messageId, storyId, storyItem == null ? -1 : storyItem.messageType, transitionViewHolder)) {
+            if (placeProvider.findView(storiesViewPager.getCurrentDialogId(), messageId, storiesList != null ? dayStoryId : storyId, storyItem == null ? -1 : storyItem.messageType, transitionViewHolder)) {
                 if (transitionViewHolder.view != null) {
                     int[] loc = new int[2];
                     transitionViewHolder.view.getLocationOnScreen(loc);
@@ -1707,7 +1759,7 @@ public class StoryViewer {
     }
 
     public boolean isPaused() {
-        return isPopupVisible || isCaption || isWaiting || isInTouchMode || keyboardVisible || currentDialog != null || allowTouchesByViewpager || isClosed || isRecording || progressToOpen != 1f || selfStoriesViewsOffset != 0 || isHintVisible || (isSwiping && USE_SURFACE_VIEW) || isOverlayVisible;
+        return isPopupVisible || isBulletinVisible || isCaption || isWaiting || isInTouchMode || keyboardVisible || currentDialog != null || allowTouchesByViewpager || isClosed || isRecording || progressToOpen != 1f || selfStoriesViewsOffset != 0 || isHintVisible || (isSwiping && USE_SURFACE_VIEW) || isOverlayVisible;
     }
 
     public void updatePlayingMode() {
@@ -1835,6 +1887,10 @@ public class StoryViewer {
                 if (transitionViewHolder.storyImage != null && !foundViewToClose) {
                     transitionViewHolder.storyImage.setAlpha(1f);
                     transitionViewHolder.storyImage.setVisible(true, true);
+                }
+                PeerStoriesView peerStoriesView = getCurrentPeerView();
+                if (peerStoriesView != null) {
+                    peerStoriesView.updatePosition();
                 }
                 updatePlayingMode();
                 locker.unlock();
@@ -2183,7 +2239,6 @@ public class StoryViewer {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-
             }
         }
     }
@@ -2411,7 +2466,7 @@ public class StoryViewer {
                             onReadyListener.run();
                             onReadyListener = null;
                         }
-                    });
+                    }, 16);
                 }
 
                 @Override

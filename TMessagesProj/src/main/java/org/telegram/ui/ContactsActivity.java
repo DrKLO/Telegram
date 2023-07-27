@@ -636,7 +636,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     long dialogId = userCell.getDialogId();
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                     final String key = NotificationsController.getSharedPrefKey(dialogId, 0);
-                    boolean muted = !NotificationsCustomSettingsActivity.isStoriesNotMuted(currentAccount, dialogId);
+                    boolean muted = !NotificationsCustomSettingsActivity.areStoriesNotMuted(currentAccount, dialogId);
                     ItemOptions filterOptions = ItemOptions.makeOptions(ContactsActivity.this, view)
                             //.setViewAdditionalOffsets(0, AndroidUtilities.dp(8), 0, 0)
                             .setScrimViewBackground(Theme.createRoundRectDrawable(0, 0, Theme.getColor(Theme.key_windowBackgroundWhite)))

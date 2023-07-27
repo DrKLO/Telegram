@@ -611,6 +611,10 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     }
 
     public void recordVideo(final CameraSession session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, ICameraView cameraView) {
+        recordVideo(session, path, mirror, callback, onVideoStartRecord, cameraView, true);
+    }
+
+    public void recordVideo(final CameraSession session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, ICameraView cameraView, boolean createThumbnail) {
         if (session == null) {
             return;
         }
@@ -632,7 +636,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             FileLog.e(e);
                         }
                         AndroidUtilities.runOnUIThread(() -> {
-                            cameraView.startRecording(path, this::finishRecordingVideo);
+                            cameraView.startRecording(path, () -> finishRecordingVideo(createThumbnail));
 
                             if (onVideoStartRecord != null) {
                                 onVideoStartRecord.run();
@@ -703,7 +707,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         });
     }
 
-    private void finishRecordingVideo() {
+    private void finishRecordingVideo(boolean createThumbnail) {
         MediaMetadataRetriever mediaMetadataRetriever = null;
         long duration = 0;
         try {
@@ -724,38 +728,47 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 FileLog.e(e);
             }
         }
-        Bitmap bitmap = SendMessagesHelper.createVideoThumbnail(recordedFile, MediaStore.Video.Thumbnails.MINI_KIND);
-        if (mirrorRecorderVideo) {
-            Bitmap b = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(b);
-            canvas.scale(-1, 1, b.getWidth() / 2, b.getHeight() / 2);
-            canvas.drawBitmap(bitmap, 0, 0, null);
-            bitmap.recycle();
-            bitmap = b;
-        }
-        String fileName = Integer.MIN_VALUE + "_" + SharedConfig.getLastLocalId() + ".jpg";
-        final File cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-        FileOutputStream stream = null;
-        try {
-            stream = new FileOutputStream(cacheFile);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
-        } catch (Throwable e) {
-            FileLog.e(e);
-        } finally {
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (Throwable ignore) {}
+        final File cacheFile;
+        Bitmap bitmap = null;
+        if (createThumbnail) {
+            bitmap = SendMessagesHelper.createVideoThumbnail(recordedFile, MediaStore.Video.Thumbnails.MINI_KIND);
+            if (mirrorRecorderVideo) {
+                Bitmap b = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(b);
+                canvas.scale(-1, 1, b.getWidth() / 2, b.getHeight() / 2);
+                canvas.drawBitmap(bitmap, 0, 0, null);
+                bitmap.recycle();
+                bitmap = b;
             }
+            String fileName = Integer.MIN_VALUE + "_" + SharedConfig.getLastLocalId() + ".jpg";
+            cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+            FileOutputStream stream = null;
+            try {
+                stream = new FileOutputStream(cacheFile);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+            } catch (Throwable e) {
+                FileLog.e(e);
+            } finally {
+                if (stream != null) {
+                    try {
+                        stream.close();
+                    } catch (Throwable ignore) {}
+                }
+            }
+        } else {
+            cacheFile = null;
         }
         SharedConfig.saveConfig();
         final long durationFinal = duration;
         final Bitmap bitmapFinal = bitmap;
         AndroidUtilities.runOnUIThread(() -> {
             if (onVideoTakeCallback != null) {
-                String path = cacheFile.getAbsolutePath();
-                if (bitmapFinal != null) {
-                    ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmapFinal), Utilities.MD5(path), false);
+                String path = null;
+                if (cacheFile != null) {
+                    path = cacheFile.getAbsolutePath();
+                    if (bitmapFinal != null) {
+                        ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmapFinal), Utilities.MD5(path), false);
+                    }
                 }
                 onVideoTakeCallback.onFinishVideoRecording(path, durationFinal);
                 onVideoTakeCallback = null;
@@ -773,12 +786,16 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 tempRecorder.release();
             }
             if (onVideoTakeCallback != null) {
-                finishRecordingVideo();
+                finishRecordingVideo(true);
             }
         }
     }
 
     public void stopVideoRecording(final CameraSession session, final boolean abandon) {
+        stopVideoRecording(session, abandon, true);
+    }
+
+    public void stopVideoRecording(final CameraSession session, final boolean abandon, final boolean createThumbnail) {
         if (recordingCurrentCameraView != null) {
             recordingCurrentCameraView.stopRecording();
             recordingCurrentCameraView = null;
@@ -830,7 +847,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     }
                 });
                 if (!abandon && onVideoTakeCallback != null) {
-                    finishRecordingVideo();
+                    finishRecordingVideo(createThumbnail);
                 } else {
                     onVideoTakeCallback = null;
                 }

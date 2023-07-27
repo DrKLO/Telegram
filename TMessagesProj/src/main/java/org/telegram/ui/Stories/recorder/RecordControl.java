@@ -16,6 +16,7 @@ import android.graphics.RadialGradient;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.TextureView;
@@ -38,6 +39,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ButtonBounce;
+import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Point;
@@ -101,7 +103,6 @@ public class RecordControl extends View {
 
     private final ButtonBounce recordButton =  new ButtonBounce(this);
     private final ButtonBounce flipButton =    new ButtonBounce(this);
-    private final ButtonBounce galleryButton = new ButtonBounce(this);
     private final ButtonBounce lockButton =   new ButtonBounce(this);
 
     private float flipDrawableRotate;
@@ -245,6 +246,11 @@ public class RecordControl extends View {
     private final AnimatedFloat recordingLongT = new AnimatedFloat(this, 0, 850, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean recording;
 
+    private float loadingSegments[] = new float[2];
+    private final AnimatedFloat recordingLoadingT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private boolean recordingLoading;
+    private long recordingLoadingStart;
+
     private boolean touch;
     private boolean discardParentTouch;
     private long touchStart;
@@ -266,7 +272,6 @@ public class RecordControl extends View {
             touch = false;
             recordButton.setPressed(false);
             flipButton.setPressed(false);
-            galleryButton.setPressed(false);
             lockButton.setPressed(false);
             return;
         }
@@ -287,7 +292,6 @@ public class RecordControl extends View {
             touch = false;
             recordButton.setPressed(false);
             flipButton.setPressed(false);
-            galleryButton.setPressed(false);
             lockButton.setPressed(false);
         }
     };
@@ -326,11 +330,11 @@ public class RecordControl extends View {
         }
 
         canvas.save();
-        scale = lerp(recordButton.getScale(.2f), 1, recordingT);
+        scale = lerp(recordButton.getScale(startModeIsVideo ? 0 : .2f), 1, recordingT);
         canvas.scale(scale, scale, cx, cy);
         mainPaint.setColor(ColorUtils.blendARGB(WHITE, RED, isVideo));
         float acx = lerp(cx, recordCx.set(cx + dp(4) * touchCenterT16), touchIsCenterT);
-        float r =   lerp(lerp(dp(29), dp(12), recordingT), dp(32), touchIsCenterT);
+        float r =   lerp(lerp(dp(29), dp(12), recordingT), dp(32) - dp(4) * Math.abs(touchCenterT96), touchIsCenterT);
         float rad = lerp(lerp(dp(32), dp(7), recordingT), dp(32), touchIsCenterT);
         AndroidUtilities.rectTmp.set(acx - r, cy - r, acx + r, cy + r);
         canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, mainPaint);
@@ -346,10 +350,32 @@ public class RecordControl extends View {
         long duration = System.currentTimeMillis() - recordingStart;
         AndroidUtilities.rectTmp.set(cx - or, cy - or, cx + or, cy + or);
         float recordEndT = recording ? 0 : 1f - recordingLongT;
-        float sweepAngle = /*lerp(*/duration / (float) MAX_DURATION * 360/*, 0, recordEndT)*/;
+        float sweepAngle = duration / (float) MAX_DURATION * 360;
+
+        float recordingLoading = this.recordingLoadingT.set(this.recordingLoading);
+
         outlineFilledPaint.setStrokeWidth(dp(3));
-        outlineFilledPaint.setAlpha((int) (0xFF * (1f - recordEndT)));
-        canvas.drawArc(AndroidUtilities.rectTmp, -90/* + 360 * recordEndT*/, sweepAngle, false, outlineFilledPaint);
+        outlineFilledPaint.setAlpha((int) (0xFF * Math.max(.7f * recordingLoading, 1f - recordEndT)));
+
+        if (recordingLoading <= 0) {
+            canvas.drawArc(AndroidUtilities.rectTmp, -90, sweepAngle, false, outlineFilledPaint);
+        } else {
+            final long now = SystemClock.elapsedRealtime();
+            CircularProgressDrawable.getSegments((now - recordingLoadingStart) % 5400, loadingSegments);
+            invalidate();
+            float fromAngle = loadingSegments[0], toAngle = loadingSegments[1];
+
+            float center = (fromAngle + toAngle) / 2f;
+            float amplitude = Math.abs(toAngle - fromAngle) / 2f;
+
+            if (this.recordingLoading) {
+                center = lerp(-90 + sweepAngle / 2f, center, recordingLoading);
+                amplitude = lerp(sweepAngle / 2f, amplitude, recordingLoading);
+            }
+
+            canvas.drawArc(AndroidUtilities.rectTmp, center - amplitude, amplitude * 2, false, outlineFilledPaint);
+        }
+
         if (recording) {
             invalidate();
 
@@ -360,10 +386,11 @@ public class RecordControl extends View {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;
+                    this.recordingLoadingStart = SystemClock.elapsedRealtime();
+                    this.recordingLoading = true;
                     touch = false;
                     recordButton.setPressed(false);
                     flipButton.setPressed(false);
-                    galleryButton.setPressed(false);
                     lockButton.setPressed(false);
                     delegate.onVideoRecordEnd(true);
                 });
@@ -412,7 +439,25 @@ public class RecordControl extends View {
             canvas.restore();
         }
 
-        final float tr = longpressRecording ? touchT * isVideo * recordingT * lerp(dp(16), lerp(dp(8) + dp(8) * Math.abs(touchCenterT96), dp(22), touchIsButtonT), Math.max(touchIsButtonT, touchIsCenterT)) : 0;
+        final float tr;
+        if (longpressRecording) {
+            tr = (
+                touchT *
+                isVideo *
+                recordingT *
+                lerp(
+                    dp(16),
+                    lerp(
+                        dp(8) + dp(8) * Math.abs(touchCenterT96),
+                        dp(22),
+                        touchIsButtonT
+                    ),
+                    Math.max(touchIsButtonT, touchIsCenterT)
+                )
+            );
+        } else {
+            tr = 0;
+        }
         float locked = lockedT.set(!longpressRecording && recording ? 1 : 0);
         if (tr > 0) {
             redPaint.setAlpha(0xFF);
@@ -556,7 +601,11 @@ public class RecordControl extends View {
         final float x = Utilities.clamp(event.getX() + ox, rightCx, leftCx), y = event.getY() + oy;
 
         final boolean innerFlipButton = isPressed(x, y, rightCx, cy, dp(7), true);
-        if (action == MotionEvent.ACTION_DOWN || touch) {
+        if (recordingLoading) {
+            recordButton.setPressed(false);
+            flipButton.setPressed(false);
+            lockButton.setPressed(false);
+        } else if (action == MotionEvent.ACTION_DOWN || touch) {
             recordButton.setPressed(isPressed(x, y, cx, cy, dp(60), false));
             flipButton.setPressed(isPressed(x, y, rightCx, cy, dp(30), true));
             lockButton.setPressed(isPressed(x, y, leftCx, cy, dp(30), false));
@@ -619,6 +668,8 @@ public class RecordControl extends View {
                     delegate.onVideoRecordLocked();
                 } else {
                     recording = false;
+                    this.recordingLoadingStart = SystemClock.elapsedRealtime();
+                    this.recordingLoading = true;
                     delegate.onVideoRecordEnd(false);
                 }
             } else if (recordButton.isPressed()) {
@@ -638,6 +689,8 @@ public class RecordControl extends View {
                     }
                 } else {
                     recording = false;
+                    this.recordingLoadingStart = SystemClock.elapsedRealtime();
+                    this.recordingLoading = true;
                     delegate.onVideoRecordEnd(false);
                 }
             }
@@ -651,7 +704,6 @@ public class RecordControl extends View {
 
             recordButton.setPressed(false);
             flipButton.setPressed(false);
-            galleryButton.setPressed(false);
             lockButton.setPressed(false);
 
             invalidate();
@@ -667,11 +719,20 @@ public class RecordControl extends View {
             return;
         }
         recording = false;
+        this.recordingLoadingStart = SystemClock.elapsedRealtime();
+        this.recordingLoading = true;
         delegate.onVideoRecordEnd(false);
         recordButton.setPressed(false);
         flipButton.setPressed(false);
-        galleryButton.setPressed(false);
         lockButton.setPressed(false);
+        invalidate();
+    }
+
+    public void stopRecordingLoading(boolean animated) {
+        this.recordingLoading = false;
+        if (!animated) {
+            this.recordingLoadingT.set(false, true);
+        }
         invalidate();
     }
 }

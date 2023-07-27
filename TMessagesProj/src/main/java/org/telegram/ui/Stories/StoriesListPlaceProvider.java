@@ -3,11 +3,13 @@ package org.telegram.ui.Stories;
 import android.graphics.Canvas;
 import android.view.View;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
@@ -16,6 +18,7 @@ import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SharedMediaLayout;
 
 public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 
@@ -30,6 +33,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
     public static StoriesListPlaceProvider of(RecyclerListView recyclerListView, boolean hiddenArchive) {
         return new StoriesListPlaceProvider(recyclerListView, hiddenArchive);
     }
+
     public StoriesListPlaceProvider(RecyclerListView recyclerListView, boolean hiddenArchive) {
         this.recyclerListView = recyclerListView;
         this.isHiddenArchive = hiddenArchive;
@@ -127,27 +131,32 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     updateClip(holder);
                     return true;
                 }
-            }else if (child instanceof SharedPhotoVideoCell2) {
+            } else if (child instanceof SharedPhotoVideoCell2) {
                 SharedPhotoVideoCell2 cell = (SharedPhotoVideoCell2) child;
-                if (cell.getStyle() == SharedPhotoVideoCell2.STYLE_CACHE) {
-                    if (cell.storyId == storyId) {
-                        holder.view = child;
-                        holder.storyImage = cell.imageReceiver;
-                        holder.clipParent = (View) cell.getParent();
-                        holder.drawAbove = cell::drawDuration;
-                        updateClip(holder);
-                        return true;
+                MessageObject msg = cell.getMessageObject();
+                if (
+                    cell.getStyle() == SharedPhotoVideoCell2.STYLE_CACHE && cell.storyId == storyId ||
+                    msg != null && msg.isStory() && msg.getId() == storyId && msg.storyItem.dialogId == dialogId
+                ) {
+                    final RecyclerListView.FastScroll fastScroll = listView.getFastScroll();
+                    final int[] loc = new int[2];
+                    if (fastScroll != null) {
+                        fastScroll.getLocationInWindow(loc);
                     }
-                } else {
-                    MessageObject msg = cell.getMessageObject();
-                    if (msg != null && msg.isStory() && msg.getId() == messageId && msg.storyItem.dialogId == dialogId) {
-                        holder.view = child;
-                        holder.storyImage = cell.imageReceiver;
-                        holder.clipParent = (View) cell.getParent();
-                        holder.drawAbove = cell::drawDuration;
-                        updateClip(holder);
-                        return true;
-                    }
+                    holder.view = child;
+                    holder.storyImage = cell.imageReceiver;
+                    holder.drawAbove = (canvas, bounds, alpha) -> {
+                        cell.drawDuration(canvas, bounds, alpha);
+                        if (fastScroll != null && fastScroll.isVisible && fastScroll.getVisibility() == View.VISIBLE) {
+                            canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+                            canvas.translate(loc[0], loc[1]);
+                            fastScroll.draw(canvas);
+                            canvas.restore();
+                        }
+                    };
+                    holder.clipParent = (View) cell.getParent();
+                    updateClip(holder);
+                    return true;
                 }
             } else if (child instanceof UserCell) {
                 UserCell cell = (UserCell) child;

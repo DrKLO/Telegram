@@ -66,7 +66,8 @@ public class PhotoView extends EntityView {
         centerImage.setParentView(containerView);
         centerImage.setRoundRadius(AndroidUtilities.dp(12));
         centerImage.setOrientation(orientation, invert, true);
-        centerImage.setImage(ImageLocation.getForPath(path), null, null, null, null, 1);
+        final int side = Math.round(Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .8f / AndroidUtilities.density);
+        centerImage.setImage(ImageLocation.getForPath(path), side + "_" + side, null, null, null, 1);
         updatePosition();
     }
 

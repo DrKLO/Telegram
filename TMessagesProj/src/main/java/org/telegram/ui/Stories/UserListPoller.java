@@ -58,6 +58,9 @@ public class UserListPoller {
                         ArrayList<TLRPC.User> usersToUpdate = new ArrayList<>();
                         for (int i = 0; i < vector.objects.size(); i++) {
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogsFinal.get(i));
+                            if (user == null) {
+                                continue;
+                            }
                             user.stories_max_id = (int) vector.objects.get(i);
                             if (user.stories_max_id != 0) {
                                 user.flags2 |= 32;

@@ -18,6 +18,7 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
@@ -277,7 +278,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     }
 
     private void openStoryForCell(StoryCell cell) {
-        if (cell != null && cell.isSelf && !storiesController.hasSelfStories()) {
+        if (cell == null) {
+            return;
+        }
+        if (cell.isSelf && !storiesController.hasSelfStories()) {
             if (!MessagesController.getInstance(currentAccount).storiesEnabled()) {
                 showPremiumHint();
             } else {
@@ -286,8 +290,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             return;
         }
         int position = cell.position;
+        long startFromDialogId = cell.dialogId;
         ArrayList<Long> peerIds = new ArrayList<>();
         boolean allStoriesIsRead = true;
+        if (!storiesController.hasStories(cell.dialogId)) {
+            return;
+        }
         for (int i = 0; i < items.size(); i++) {
             long dialogId = items.get(i).dialogId;
             if (dialogId != UserConfig.getInstance(currentAccount).clientUserId && storiesController.hasUnreadStories(dialogId)) {
@@ -874,6 +882,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     public void openOverscrollSelectedStory() {
         openStoryForCell(overscrollSelectedView);
+        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
     }
 
     public void setActionBar(ActionBar actionBar) {

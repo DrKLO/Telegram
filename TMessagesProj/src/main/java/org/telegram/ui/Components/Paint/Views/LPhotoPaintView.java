@@ -2408,9 +2408,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             deleteView.setBackground(Theme.getSelectorDrawable(false));
             deleteView.setGravity(Gravity.CENTER_VERTICAL);
             deleteView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(14), 0);
-            deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             deleteView.setTag(0);
             deleteView.setText(LocaleController.getString("PaintDelete", R.string.PaintDelete));
+            deleteView.setEllipsize(TextUtils.TruncateAt.END);
             deleteView.setOnClickListener(v -> {
                 removeEntity(entityView);
 
@@ -2426,7 +2427,8 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 editView.setBackground(Theme.getSelectorDrawable(false));
                 editView.setGravity(Gravity.CENTER_VERTICAL);
                 editView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
-                editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                editView.setEllipsize(TextUtils.TruncateAt.END);
                 editView.setTag(1);
                 editView.setText(LocaleController.getString("PaintEdit", R.string.PaintEdit));
                 editView.setOnClickListener(v -> {
@@ -2443,8 +2445,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
             duplicateView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             duplicateView.setGravity(Gravity.CENTER_VERTICAL);
+            duplicateView.setEllipsize(TextUtils.TruncateAt.END);
             duplicateView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
-            duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            duplicateView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             duplicateView.setTag(2);
             duplicateView.setText(LocaleController.getString("PaintDuplicate", R.string.PaintDuplicate));
             duplicateView.setOnClickListener(v -> {

@@ -13,9 +13,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
@@ -35,6 +37,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -64,6 +67,7 @@ import com.google.zxing.common.detector.MathUtils;
 
 import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -212,7 +216,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 @Override
                 public void setContainerHeight(float value) {
                     super.setContainerHeight(value);
-                    sectionCell.setTranslationY(getY() - (contentView == null ? 0 : contentView.getPaddingTop()) + containerHeight - 1);
+                    sectionCell.setTranslationY(getY() - (contentView == null ? 0 : contentView.getPaddingTop()) + Math.min(dp(150), containerHeight) - 1);
                     if (contentView != null) {
                         contentView.invalidate();
                     }
@@ -221,7 +225,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 @Override
                 public void setTranslationY(float translationY) {
                     super.setTranslationY(translationY);
-                    sectionCell.setTranslationY(getY() - (contentView == null ? 0 : contentView.getPaddingTop()) + containerHeight - 1);
+                    sectionCell.setTranslationY(getY() - (contentView == null ? 0 : contentView.getPaddingTop()) + Math.min(dp(150), containerHeight) - 1);
                     if (contentView != null) {
                         contentView.invalidate();
                     }
@@ -239,87 +243,63 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
             });
 
-            contentView = new FrameLayout(context) {
-                private final AnimatedFloat topGradientAlpha = new AnimatedFloat(this, 0, 200, CubicBezierInterpolator.DEFAULT);
-                private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                {
-                    paint.setShader(new LinearGradient(0, 0, 0, dp(12), new int[] { getThemedColor(Theme.key_dialogBackground), ColorUtils.setAlphaComponent(getThemedColor(Theme.key_dialogBackground), 0)}, new float[] { 0, 1 }, Shader.TileMode.CLAMP));
-                    backgroundPaint.setColor(getThemedColor(Theme.key_dialogBackground));
-                }
-
-                @Override
-                protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                    if (child == searchField && listView != null && searchPosition >= 0) {
-                        float gradientAlpha = topGradientAlpha.set(searchField.getTranslationY() < 0);
-                        if (gradientAlpha > 0) {
-                            boolean r = super.drawChild(canvas, child, drawingTime);
-                            canvas.save();
-                            canvas.translate(0, getPaddingTop());
-                            paint.setAlpha((int) (0xFF * gradientAlpha));
-                            canvas.drawRect(0, 0, getWidth(), dp(12), paint);
-                            canvas.restore();
-                            float t = child.getY() + child.getHeight() - 3, b = sectionCell.getY();
-                            if (t < b) {
-                                canvas.drawRect(0, t, getWidth(), b, backgroundPaint);
-                            }
-                            return r;
-                        }
-                    }
-                    return super.drawChild(canvas, child, drawingTime);
-                }
-            };
+            contentView = new FrameLayout(context);
             contentView.setPadding(0, AndroidUtilities.statusBarHeight + AndroidUtilities.dp(56), 0, 0);
             contentView.setClipToPadding(true);
             addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
             listView = new RecyclerListView(context, resourcesProvider) {
-                private long tapTime;
-                private float tapX, tapY;
-                @Override
-                public boolean dispatchTouchEvent(MotionEvent ev) {
-                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-                        tapTime = System.currentTimeMillis();
-                        tapX = ev.getX();
-                        tapY = ev.getY();
-                    } else if (ev.getAction() == MotionEvent.ACTION_MOVE) {
-                        if (MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) >= AndroidUtilities.touchSlop) {
-                            tapTime = -1;
-                            if (searchField.currentDeletingSpan != null) {
-                                searchField.currentDeletingSpan.cancelDeleteAnimation();
-                                searchField.currentDeletingSpan = null;
-                            }
-                        }
-                    } else if (ev.getAction() == MotionEvent.ACTION_UP) {
-                        if (MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) <= AndroidUtilities.touchSlop && System.currentTimeMillis() - tapTime <= ViewConfiguration.getTapTimeout() && searchField != null && searchField.spansContainer != null) {
-                            float x = ev.getX(), y = contentView.getPaddingTop() + ev.getY();
-                            x -= searchField.getX();
-                            y -= searchField.getY();
-                            if (x < 0 || y < 0 || x > searchField.getWidth() || y > searchField.getHeight()) {
-                                return super.dispatchTouchEvent(ev);
-                            }
-                            for (int i = 0; i < searchField.spansContainer.getChildCount(); ++i) {
-                                View child = searchField.spansContainer.getChildAt(i);
-                                if (x < child.getX() || y < child.getY() || x >= child.getX() + child.getWidth() || y >= child.getY() + child.getHeight() || !(child instanceof GroupCreateSpan)) {
-                                    continue;
-                                }
-                                GroupCreateSpan span = (GroupCreateSpan) child;
-                                onClick(span);
-                                break;
-                            }
-                            tapTime = -1;
-                            return true;
-                        }
-                        tapTime = -1;
-                    } else if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
-                        tapTime = -1;
-                        if (searchField.currentDeletingSpan != null) {
-                            searchField.currentDeletingSpan.cancelDeleteAnimation();
-                            searchField.currentDeletingSpan = null;
-                        }
-                    }
-                    return super.dispatchTouchEvent(ev);
-                }
+//                private long tapTime;
+//                private float tapX, tapY;
+//                @Override
+//                public boolean dispatchTouchEvent(MotionEvent ev) {
+//                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+//                        tapTime = System.currentTimeMillis();
+//                        tapX = ev.getX();
+//                        tapY = ev.getY();
+//                    } else if (ev.getAction() == MotionEvent.ACTION_MOVE) {
+//                        if (MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) >= AndroidUtilities.touchSlop) {
+//                            tapTime = -1;
+//                            if (searchField.currentDeletingSpan != null) {
+//                                searchField.currentDeletingSpan.cancelDeleteAnimation();
+//                                searchField.currentDeletingSpan = null;
+//                            }
+//                        }
+//                    } else if (ev.getAction() == MotionEvent.ACTION_UP) {
+//                        if (MathUtils.distance(tapX, tapY, ev.getX(), ev.getY()) <= AndroidUtilities.touchSlop && System.currentTimeMillis() - tapTime <= ViewConfiguration.getTapTimeout() && searchField != null && searchField.spansContainer != null) {
+//                            float x = ev.getX(), y = contentView.getPaddingTop() + ev.getY();
+//                            x -= searchField.getX();
+//                            y -= searchField.getY();
+//                            if (x < 0 || y < 0 || x > searchField.getWidth() || y > searchField.getHeight()) {
+//                                return super.dispatchTouchEvent(ev);
+//                            }
+//                            for (int i = 0; i < searchField.spansContainer.getChildCount(); ++i) {
+//                                View child = searchField.spansContainer.getChildAt(i);
+//                                if (x < child.getX() || y < child.getY() || x >= child.getX() + child.getWidth() || y >= child.getY() + child.getHeight() || !(child instanceof GroupCreateSpan)) {
+//                                    continue;
+//                                }
+//                                GroupCreateSpan span = (GroupCreateSpan) child;
+//                                onClick(span);
+//                                break;
+//                            }
+//                            tapTime = -1;
+//                            return true;
+//                        }
+//                        tapTime = -1;
+//                    } else if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
+//                        tapTime = -1;
+//                        if (searchField.currentDeletingSpan != null) {
+//                            searchField.currentDeletingSpan.cancelDeleteAnimation();
+//                            searchField.currentDeletingSpan = null;
+//                        }
+//                    }
+//                    return super.dispatchTouchEvent(ev);
+//                }
+//
+//                @Override
+//                public boolean onTouchEvent(MotionEvent e) {
+//                    return super.onTouchEvent(e);
+//                }
             };
             listView.setClipToPadding(false);
             listView.setTranslateSelector(true);
@@ -386,7 +366,18 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         searchField.spansContainer.removeAllSpans(true);
                     } else if (item.chat != null) {
                         final long id = item.chat.id;
-                        if (selectedUsersByGroup.containsKey(id)) {
+                        if (getParticipantsCount(item.chat) > 200) {
+//                            AndroidUtilities.shakeViewSpring(view, shiftDp = -shiftDp);
+//                            BotWebViewVibrationEffect.APP_ERROR.vibrate();
+                            try {
+                                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                            } catch (Throwable ignore) {}
+                            new AlertDialog.Builder(getContext(), resourcesProvider)
+                                .setTitle(LocaleController.getString("GroupTooLarge", R.string.GroupTooLarge))
+                                .setMessage(LocaleController.getString("GroupTooLargeMessage", R.string.GroupTooLargeMessage))
+                                .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
+                                .show();
+                        } else if (selectedUsersByGroup.containsKey(id)) {
                             selectedUsersByGroup.remove(id);
                             updateSpans(true);
                         } else {
@@ -394,7 +385,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(id);
                             if (chatFull != null && chatFull.participants != null && !chatFull.participants.participants.isEmpty()) {
                                 selectChat(id, chatFull.participants);
-                            } else if (chatFull == null) {
+                            } else {
                                 if (progressDialog != null) {
                                     progressDialog.dismiss();
                                     progressDialog = null;
@@ -489,6 +480,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                     updateButton(true);
                     updateCheckboxes(true);
+                    searchField.scrollToBottom();
                 } else if (item.viewType == VIEW_TYPE_CHECK) {
                     if (!(view instanceof TextCell)) {
                         return;
@@ -501,12 +493,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         boolean allowShare = selectedType == TYPE_EVERYONE;
                         if (allowScreenshots) {
                             BulletinFactory.of(container, resourcesProvider)
-                                .createSimpleBulletin(R.raw.ic_save_to_gallery, LocaleController.getString(allowShare ? R.string.StoryEnabledScreenshotsShare : R.string.StoryEnabledScreenshots))
+                                .createSimpleBulletin(R.raw.ic_save_to_gallery, LocaleController.getString(allowShare ? R.string.StoryEnabledScreenshotsShare : R.string.StoryEnabledScreenshots), 4)
                                     .setDuration(5000)
                                 .show(true);
                         } else {
                             BulletinFactory.of(container, resourcesProvider)
-                                .createSimpleBulletin(R.raw.passcode_lock_close, LocaleController.getString(allowShare ? R.string.StoryDisabledScreenshotsShare : R.string.StoryDisabledScreenshots))
+                                .createSimpleBulletin(R.raw.passcode_lock_close, LocaleController.getString(allowShare ? R.string.StoryDisabledScreenshotsShare : R.string.StoryDisabledScreenshots), 4)
                                     .setDuration(5000)
                                 .show(true);
                         }
@@ -514,12 +506,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         keepOnMyPage = cell.isChecked();
                         if (keepOnMyPage) {
                             BulletinFactory.of(container, resourcesProvider)
-                                    .createSimpleBulletin(R.raw.msg_story_keep, LocaleController.getString(R.string.StoryEnableKeep))
+                                    .createSimpleBulletin(R.raw.msg_story_keep, LocaleController.getString(R.string.StoryEnableKeep), 4)
                                     .setDuration(5000)
                                     .show(true);
                         } else {
                             BulletinFactory.of(container, resourcesProvider)
-                                    .createSimpleBulletin(R.raw.fire_on, LocaleController.getString(R.string.StoryDisableKeep))
+                                    .createSimpleBulletin(R.raw.fire_on, LocaleController.getString(R.string.StoryDisableKeep), 4)
                                     .setDuration(5000)
                                     .show(true);
                         }
@@ -671,20 +663,49 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
         private void selectChat(long id, TLRPC.ChatParticipants participants) {
             ArrayList<Long> groupUsers = new ArrayList<>();
+            ArrayList<Long> nonContactsUsers = new ArrayList<>();
+            final boolean mustBeContacts = pageType == PAGE_TYPE_CLOSE_FRIENDS || pageType == PAGE_TYPE_EXCLUDE_CONTACTS;
             if (participants != null && participants.participants != null) {
                 for (int i = 0; i < participants.participants.size(); ++i) {
                     long userId = participants.participants.get(i).user_id;
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(userId);
                     if (user != null && !UserObject.isUserSelf(user) && !user.bot && user.id != 777000 && userId != 0) {
-                        groupUsers.add(userId);
+                        if (mustBeContacts && !user.contact) {
+                            nonContactsUsers.add(userId);
+                        } else {
+                            groupUsers.add(userId);
+                        }
                         selectedUsers.remove(userId);
                     }
                 }
             }
-            selectedUsersByGroup.put(id, groupUsers);
-            updateSpans(true);
-            updateButton(true);
-            updateCheckboxes(true);
+            if (!nonContactsUsers.isEmpty()) {
+                if (groupUsers.isEmpty()) {
+                    new AlertDialog.Builder(getContext(), resourcesProvider)
+                        .setMessage("All group members are not in your contact list.")
+                        .setNegativeButton("Cancel", null)
+                        .show();
+                } else {
+                    new AlertDialog.Builder(getContext(), resourcesProvider)
+                        .setMessage(nonContactsUsers.size() + " members are not in your contact list")
+                        .setPositiveButton("Add " + groupUsers.size() + " contacts", (di, a) -> {
+                            selectedUsersByGroup.put(id, groupUsers);
+                            updateSpans(true);
+                            updateButton(true);
+                            updateCheckboxes(true);
+                            di.dismiss();
+                            searchField.scrollToBottom();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+                }
+            } else {
+                selectedUsersByGroup.put(id, groupUsers);
+                updateSpans(true);
+                updateButton(true);
+                updateCheckboxes(true);
+                searchField.scrollToBottom();
+            }
         }
 
         private void updateSpans(boolean animated) {
@@ -726,7 +747,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         continue;
                     }
                     GroupCreateSpan span = new GroupCreateSpan(getContext(), obj, null, true, resourcesProvider);
-//                    span.setOnClickListener(this);
+                    span.setOnClickListener(this);
                     toAdd.add(span);
                 }
             }
@@ -883,6 +904,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             updateSpans(false);
             searchField.setText("");
             searchField.setVisibility(pageType == PAGE_TYPE_SHARE ? View.GONE : View.VISIBLE);
+            searchField.scrollToBottom();
             query = null;
             updateItems(false);
             updateButton(false);
@@ -1169,7 +1191,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         }
 
         private float getSearchFieldTop() {
-            float top = -Math.max(0, searchField.resultContainerHeight - dp(150));
+            float top = -Math.max(0, Math.min(dp(150), searchField.resultContainerHeight) - dp(150));
             for (int i = 0; i < listView.getChildCount(); ++i) {
                 View child = listView.getChildAt(i);
                 if (child.getTag() instanceof Integer && (int) child.getTag() == 34) {
@@ -1453,7 +1475,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             contentView.setPadding(0, AndroidUtilities.statusBarHeight + AndroidUtilities.dp(56), 0, 0);
             if (wasKeyboardVisible != keyboardVisible) {
                 float searchFieldTop = getSearchFieldTop();
-                if (keyboardVisible && searchFieldTop + searchField.resultContainerHeight > listView.getPaddingTop()) {
+                if (keyboardVisible && searchFieldTop + Math.min(dp(150), searchField.resultContainerHeight) > listView.getPaddingTop()) {
                     scrollToTopSmoothly();
                 }
                 if (pageType == PAGE_TYPE_SHARE) {
@@ -1623,7 +1645,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                     holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
                 } else if (viewType == VIEW_TYPE_SEARCH) {
-                    holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, searchField.resultContainerHeight));
+                    holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.min(dp(150), searchField.resultContainerHeight)));
                 } else if (viewType == VIEW_TYPE_HEADER2) {
                     ((HeaderCell2) holder.itemView).setText(item.text, item.text2);
                 } else if (viewType == VIEW_TYPE_NO_USERS) {
@@ -1640,7 +1662,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         cell.setText(item.text);
                     }
                 } else if (viewType == VIEW_TYPE_CHECK) {
-                    ((TextCell) holder.itemView).setTextAndCheck(item.text, item.resId == 0 ? allowScreenshots : keepOnMyPage, !divider);
+                    ((TextCell) holder.itemView).setTextAndCheck(item.text, item.resId == 0 ? allowScreenshots : keepOnMyPage, divider);
                 }
             }
 
@@ -2258,7 +2280,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     continue;
                 }
                 int participants_count = getParticipantsCount(chat);
-                if (participants_count > 1 && participants_count <= 20) {
+                if (participants_count > 1) {
                     contains.put(-chat.id, true);
                     users.add(chat);
                 }
@@ -2398,6 +2420,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
 
             checkBox.setVisibility(View.VISIBLE);
+            checkBox.setAlpha(1f);
             radioButton.setVisibility(View.GONE);
         }
 
@@ -2405,7 +2428,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             avatarDrawable.setInfo(chat);
             imageView.setForUserOrChat(chat, avatarDrawable);
 
-            titleTextView.setText(chat.title);
+            CharSequence text = chat.title;
+            text = Emoji.replaceEmoji(text, titleTextView.getPaint().getFontMetricsInt(), false);
+            titleTextView.setText(text);
+
             isOnline[0] = false;
             String subtitle;
             if (ChatObject.isChannel(chat) && !chat.megagroup) {
@@ -2435,6 +2461,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
 
             checkBox.setVisibility(View.VISIBLE);
+            checkBox.setAlpha(participants_count > 200 ? .3f : 1f);
             radioButton.setVisibility(View.GONE);
         }
 
@@ -2655,7 +2682,6 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         private Runnable updateHeight;
 
         private boolean ignoreTextChange;
-
         private Utilities.Callback<String> onSearchTextChange;
 
         public SearchUsersCell(Context context, Theme.ResourcesProvider resourcesProvider, Runnable updateHeight) {
@@ -2683,6 +2709,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
                         if (!AndroidUtilities.showKeyboard(this)) {
+                            fullScroll(View.FOCUS_DOWN);
                             clearFocus();
                             requestFocus();
                         }
@@ -2758,11 +2785,60 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             });
         }
 
+        private final AnimatedFloat topGradientAlpha = new AnimatedFloat(this, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private final LinearGradient topGradient = new LinearGradient(0, 0, 0, dp(8), new int[] { 0xff000000, 0x00000000 }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+        private final Paint topGradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Matrix topGradientMatrix = new Matrix();
+
+        private final AnimatedFloat bottomGradientAlpha = new AnimatedFloat(this, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private final LinearGradient bottomGradient = new LinearGradient(0, 0, 0, dp(8), new int[] { 0x00000000, 0xff000000 }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+        private final Paint bottomGradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Matrix bottomGradientMatrix = new Matrix();
+        {
+            topGradientPaint.setShader(topGradient);
+            topGradientPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+            bottomGradientPaint.setShader(bottomGradient);
+            bottomGradientPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            final int y = getScrollY();
+
+            canvas.saveLayerAlpha(0, y, getWidth(), y + getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+            super.dispatchDraw(canvas);
+
+            canvas.save();
+
+            float alpha = topGradientAlpha.set(canScrollVertically(-1));
+            topGradientMatrix.reset();
+            topGradientMatrix.postTranslate(0, y);
+            topGradient.setLocalMatrix(topGradientMatrix);
+            topGradientPaint.setAlpha((int) (0xFF * alpha));
+            canvas.drawRect(0, y, getWidth(), y + dp(8), topGradientPaint);
+
+            alpha = bottomGradientAlpha.set(canScrollVertically(1));
+            bottomGradientMatrix.reset();
+            bottomGradientMatrix.postTranslate(0, y + getHeight() - dp(8));
+            bottomGradient.setLocalMatrix(bottomGradientMatrix);
+            bottomGradientPaint.setAlpha((int) (0xFF * alpha));
+            canvas.drawRect(0, y + getHeight() - dp(8), getWidth(), y + getHeight(), bottomGradientPaint);
+
+            canvas.restore();
+
+            canvas.restore();
+        }
+
+        @Override
+        public void requestChildFocus(View child, View focused) {
+
+        }
+
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
-            if (!AndroidUtilities.findClickableView(this, ev.getX(), ev.getY())) {
-                return false;
-            }
+//            if (!AndroidUtilities.findClickableView(this, ev.getX(), ev.getY())) {
+//                return false;
+//            }
             return super.dispatchTouchEvent(ev);
         }
 
@@ -2797,8 +2873,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
-                    MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                    heightMeasureSpec
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(dp(150), MeasureSpec.AT_MOST)
             );
         }
 
@@ -2815,10 +2891,17 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             return animator;
         }
 
+        private boolean scroll;
+        public void scrollToBottom() {
+            scroll = true;
+        }
+
         public class SpansContainer extends ViewGroup {
 
             private AnimatorSet currentAnimation;
             private boolean animationStarted;
+            private ArrayList<View> animAddingSpans = new ArrayList<>();
+            private ArrayList<View> animRemovingSpans = new ArrayList<>();
             private ArrayList<Animator> animators = new ArrayList<>();
             private View addingSpan;
             private final ArrayList<View> removingSpans = new ArrayList<>();
@@ -2933,6 +3016,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         editText.bringPointIntoView(editText.getSelectionStart());
                     }
                 }
+                if (scroll) {
+                    fullScroll(View.FOCUS_DOWN);
+                    scroll = false;
+                }
                 setMeasuredDimension(width, (int) containerHeight);
             }
 
@@ -2945,46 +3032,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 }
             }
 
-            public void addSpan(final GroupCreateSpan span, boolean animated) {
-                allSpans.add(span);
-
-                if (currentAnimation != null && currentAnimation.isRunning()) {
-                    currentAnimation.setupEndValues();
-                    currentAnimation.cancel();
-                }
-                animationStarted = false;
-                if (animated) {
-                    currentAnimation = new AnimatorSet();
-                    currentAnimation.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animator) {
-                            addingSpan = null;
-                            currentAnimation = null;
-                            animationStarted = false;
-                            editText.setAllowDrawCursor(true);
-                            if (updateHeight != null) {
-                                updateHeight.run();
-                            }
-                        }
-                    });
-                    addingSpan = span;
-                    animators.clear();
-                    animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_X, 0.01f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_Y, 0.01f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(addingSpan, View.ALPHA, 0.0f, 1.0f));
-                }
-                addView(span);
-            }
-
             public void removeSpan(final GroupCreateSpan span) {
                 ignoreScrollEvent = true;
                 allSpans.remove(span);
                 span.setOnClickListener(null);
 
-                if (currentAnimation != null) {
-                    currentAnimation.setupEndValues();
-                    currentAnimation.cancel();
-                }
+                setupEndValues();
                 animationStarted = false;
                 currentAnimation = new AnimatorSet();
                 currentAnimation.addListener(new AnimatorListenerAdapter() {
@@ -3002,6 +3055,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 });
                 removingSpans.clear();
                 removingSpans.add(span);
+                animAddingSpans.clear();
+                animRemovingSpans.clear();
+                animAddingSpans.add(span);
                 animators.clear();
                 animators.add(ObjectAnimator.ofFloat(span, View.SCALE_X, 1.0f, 0.01f));
                 animators.add(ObjectAnimator.ofFloat(span, View.SCALE_Y, 1.0f, 0.01f));
@@ -3022,10 +3078,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     toDelete.get(i).setOnClickListener(null);
                 }
 
-                if (currentAnimation != null) {
-                    currentAnimation.setupEndValues();
-                    currentAnimation.cancel();
-                }
+                setupEndValues();
                 if (animated) {
                     animationStarted = false;
                     currentAnimation = new AnimatorSet();
@@ -3046,14 +3099,18 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         }
                     });
                     animators.clear();
+                    animAddingSpans.clear();
+                    animRemovingSpans.clear();
                     for (int i = 0; i < toDelete.size(); ++i) {
                         GroupCreateSpan span = toDelete.get(i);
+                        animRemovingSpans.add(span);
                         animators.add(ObjectAnimator.ofFloat(span, View.SCALE_X, 1.0f, 0.01f));
                         animators.add(ObjectAnimator.ofFloat(span, View.SCALE_Y, 1.0f, 0.01f));
                         animators.add(ObjectAnimator.ofFloat(span, View.ALPHA, 1.0f, 0.0f));
                     }
                     for (int i = 0; i < toAdd.size(); ++i) {
                         GroupCreateSpan addingSpan = toAdd.get(i);
+                        animAddingSpans.add(addingSpan);
                         animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_X, 0.01f, 1.0f));
                         animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_Y, 0.01f, 1.0f));
                         animators.add(ObjectAnimator.ofFloat(addingSpan, View.ALPHA, 0.0f, 1.0f));
@@ -3086,10 +3143,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     spans.get(i).setOnClickListener(null);
                 }
 
-                if (currentAnimation != null) {
-                    currentAnimation.setupEndValues();
-                    currentAnimation.cancel();
-                }
+                setupEndValues();
                 if (animated) {
                     animationStarted = false;
                     currentAnimation = new AnimatorSet();
@@ -3109,8 +3163,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                         }
                     });
                     animators.clear();
+                    animAddingSpans.clear();
+                    animRemovingSpans.clear();
                     for (int i = 0; i < spans.size(); ++i) {
                         GroupCreateSpan span = spans.get(i);
+                        animAddingSpans.add(span);
                         animators.add(ObjectAnimator.ofFloat(span, View.SCALE_X, 1.0f, 0.01f));
                         animators.add(ObjectAnimator.ofFloat(span, View.SCALE_Y, 1.0f, 0.01f));
                         animators.add(ObjectAnimator.ofFloat(span, View.ALPHA, 1.0f, 0.0f));
@@ -3125,6 +3182,24 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     editText.setAllowDrawCursor(true);
                 }
                 requestLayout();
+            }
+
+            private void setupEndValues() {
+                if (currentAnimation != null) {
+                    currentAnimation.cancel();
+                }
+                for (int i = 0; i < animAddingSpans.size(); ++i) {
+                    animAddingSpans.get(i).setScaleX(1f);
+                    animAddingSpans.get(i).setScaleY(1f);
+                    animAddingSpans.get(i).setAlpha(1f);
+                }
+                for (int i = 0; i < animRemovingSpans.size(); ++i) {
+                    animRemovingSpans.get(i).setScaleX(0f);
+                    animRemovingSpans.get(i).setScaleY(0f);
+                    animRemovingSpans.get(i).setAlpha(0f);
+                }
+                animAddingSpans.clear();
+                animRemovingSpans.clear();
             }
         }
     }

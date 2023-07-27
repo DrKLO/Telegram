@@ -747,18 +747,18 @@ public class FileLoadOperation {
             return;
         }
         paused = true;
-        if (isStory) {
-            Utilities.stageQueue.postRunnable(() -> {
+        Utilities.stageQueue.postRunnable(() -> {
+            if (isStory) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("debug_loading:" + cacheFileFinal.getName() + " pause operation, clear requests");
                 }
                 clearOperaion(null, false);
-            });
-        } else {
-            for (int i = 0; i < requestInfos.size(); i++) {
-                ConnectionsManager.getInstance(currentAccount).failNotRunningRequest(requestInfos.get(i).requestToken);
+            } else {
+                for (int i = 0; i < requestInfos.size(); i++) {
+                    ConnectionsManager.getInstance(currentAccount).failNotRunningRequest(requestInfos.get(i).requestToken);
+                }
             }
-        }
+        });
     }
 
     public boolean start() {
@@ -936,7 +936,7 @@ public class FileLoadOperation {
         boolean finalFileExist = cacheFileFinal.exists();
         if (finalFileExist && (parentObject instanceof TLRPC.TL_theme || (totalBytesCount != 0 && !ungzip && totalBytesCount != cacheFileFinal.length()))) {
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("debug_loading: delete existing file cause file size mismatch " + cacheFileFinal.getName() + " totalSize= " + totalBytesCount + " existingFileSize=" + cacheFileFinal.length());
+                FileLog.d("debug_loading: delete existing file cause file size mismatch " + cacheFileFinal.getName() + " totalSize=" + totalBytesCount + " existingFileSize=" + cacheFileFinal.length());
             }
             if (!delegate.hasAnotherRefOnFile(cacheFileFinal.toString())) {
                 cacheFileFinal.delete();
