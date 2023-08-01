@@ -19,6 +19,7 @@ public class CacheModel {
     public final ArrayList<FileInfo> documents = new ArrayList<>();
     public final ArrayList<FileInfo> music = new ArrayList<>();
     public final ArrayList<FileInfo> voice = new ArrayList<>();
+    public final ArrayList<FileInfo> stories = new ArrayList<>();
 
     private final HashSet<Long> dialogIdsTmp = new HashSet<>();
 
@@ -32,41 +33,43 @@ public class CacheModel {
     public boolean allDocumentsSelected;
     public boolean allMusicSelected;
     public boolean allVoiceSelected;
+    public boolean allStoriesSelected;
     public long photosSelectedSize;
     public long videosSelectedSize;
     public long documentsSelectedSize;
     public long musicSelectedSize;
     public long voiceSelectedSize;
+    public long storiesSelectedSize;
 
     public CacheModel(boolean isDialog) {
         this.isDialog = isDialog;
     }
 
     public void add(int addToType, FileInfo fileInfo) {
-        if (addToType == CacheControlActivity.TYPE_PHOTOS) {
-            media.add(fileInfo);
-        } else if (addToType == CacheControlActivity.TYPE_VIDEOS) {
-            media.add(fileInfo);
-        } else if (addToType == CacheControlActivity.TYPE_DOCUMENTS) {
-            documents.add(fileInfo);
-        } else if (addToType == CacheControlActivity.TYPE_MUSIC) {
-            music.add(fileInfo);
-        } else if (addToType == CacheControlActivity.TYPE_VOICE) {
-            voice.add(fileInfo);
+        getListByType(addToType).add(fileInfo);
+    }
+
+    private ArrayList<CacheModel.FileInfo> getListByType(int type) {
+        if (type == CacheControlActivity.TYPE_PHOTOS) {
+            return media;
+        } else if (type == CacheControlActivity.TYPE_VIDEOS) {
+            return media;
+        } else if (type == CacheControlActivity.TYPE_DOCUMENTS) {
+            return documents;
+        } else if (type == CacheControlActivity.TYPE_MUSIC) {
+            return music;
+        } else if (type == CacheControlActivity.TYPE_VOICE) {
+            return voice;
+        } else if (type == CacheControlActivity.TYPE_STORIES) {
+            return stories;
         }
+        return null;
     }
 
     private void remove(int type, FileInfo fileInfo) {
-        if (type == CacheControlActivity.TYPE_PHOTOS) {
-            media.remove(fileInfo);
-        } else if (type == CacheControlActivity.TYPE_VIDEOS) {
-            media.remove(fileInfo);
-        } else if (type == CacheControlActivity.TYPE_DOCUMENTS) {
-            documents.remove(fileInfo);
-        } else if (type == CacheControlActivity.TYPE_MUSIC) {
-            music.remove(fileInfo);
-        } else if (type == CacheControlActivity.TYPE_VOICE) {
-            voice.remove(fileInfo);
+        ArrayList<FileInfo> list = getListByType(type);
+        if (list != null) {
+            list.remove(fileInfo);
         }
     }
 
@@ -80,6 +83,7 @@ public class CacheModel {
         sort(documents);
         sort(music);
         sort(voice);
+        sort(stories);
     }
 
     private void sort(ArrayList<FileInfo> entities) {
@@ -123,6 +127,8 @@ public class CacheModel {
                 allMusicSelected = false;
             } else if (type == CacheControlActivity.TYPE_VOICE) {
                 allVoiceSelected = false;
+            } else if (type == CacheControlActivity.TYPE_STORIES) {
+                allStoriesSelected = false;
             }
         } else {
             if (type == CacheControlActivity.TYPE_PHOTOS) {
@@ -135,6 +141,8 @@ public class CacheModel {
                 allMusicSelected = checkAllFilesSelectedInArray(type, music);
             } else if (type == CacheControlActivity.TYPE_VOICE) {
                 allVoiceSelected = checkAllFilesSelectedInArray(type, voice);
+            } else if (type == CacheControlActivity.TYPE_STORIES) {
+                allStoriesSelected = checkAllFilesSelectedInArray(type, stories);
             }
         }
     }
@@ -309,6 +317,9 @@ public class CacheModel {
         } else if (type == CacheControlActivity.TYPE_VOICE) {
             files = voice;
             allVoiceSelected = selected;
+        } else if (type == CacheControlActivity.TYPE_STORIES) {
+            files = stories;
+            allStoriesSelected = selected;
         }
         if (files != null) {
             for (int i = 0; i < files.size(); i++) {
@@ -341,6 +352,8 @@ public class CacheModel {
             musicSelectedSize += size;
         } else if (fileInfo.type == CacheControlActivity.TYPE_VOICE) {
             voiceSelectedSize += size;
+        } else if (fileInfo.type == CacheControlActivity.TYPE_STORIES) {
+            storiesSelectedSize += size;
         }
     }
 

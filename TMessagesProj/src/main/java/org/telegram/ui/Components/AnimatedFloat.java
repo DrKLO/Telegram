@@ -126,6 +126,14 @@ public class AnimatedFloat {
         return this.set(mustBe, false);
     }
 
+    public float set(boolean mustBe) {
+        return this.set(mustBe ? 1 : 0, false);
+    }
+
+    public float set(boolean mustBe, boolean force) {
+        return this.set(mustBe ? 1 : 0, force);
+    }
+
     public float set(float mustBe, boolean force) {
         if (force || transitionDuration <= 0 || firstSet) {
             value = targetValue = mustBe;
@@ -159,6 +167,14 @@ public class AnimatedFloat {
             }
         }
         return value;
+    }
+
+    public void setDuration(long duration) {
+        transitionDuration = duration;
+    }
+
+    public long getDuration() {
+        return transitionDuration;
     }
 
     public boolean isInProgress() {

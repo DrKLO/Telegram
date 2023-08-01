@@ -761,62 +761,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
             } else if (chat != null) {
                 TLRPC.ChatFull info = parentFragment.getCurrentChatInfo();
-                if (ChatObject.isChannel(chat)) {
-                    if (info != null && info.participants_count != 0) {
-                        if (chat.megagroup) {
-                            if (onlineCount > 1) {
-                                newSubtitle = String.format("%s, %s", LocaleController.formatPluralString("Members", info.participants_count), LocaleController.formatPluralString("OnlineCount", Math.min(onlineCount, info.participants_count)));
-                            } else {
-                                newSubtitle = LocaleController.formatPluralString("Members", info.participants_count);
-                            }
-                        } else {
-                            int[] result = new int[1];
-                            boolean ignoreShort = AndroidUtilities.isAccessibilityScreenReaderEnabled();
-                            String shortNumber = ignoreShort ? String.valueOf(result[0] = info.participants_count) : LocaleController.formatShortNumber(info.participants_count, result);
-                            if (chat.megagroup) {
-                                newSubtitle = LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber);
-                            } else {
-                                newSubtitle = LocaleController.formatPluralString("Subscribers", result[0]).replace(String.format("%d", result[0]), shortNumber);
-                            }
-                        }
-                    } else {
-                        if (chat.megagroup) {
-                            if (info == null) {
-                                newSubtitle = LocaleController.getString("Loading", R.string.Loading).toLowerCase();
-                            } else {
-                                if (chat.has_geo) {
-                                    newSubtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation).toLowerCase();
-                                } else if (ChatObject.isPublic(chat)) {
-                                    newSubtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
-                                } else {
-                                    newSubtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
-                                }
-                            }
-                        } else {
-                            if (ChatObject.isPublic(chat)) {
-                                newSubtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
-                            } else {
-                                newSubtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
-                            }
-                        }
-                    }
-                } else {
-                    if (ChatObject.isKickedFromChat(chat)) {
-                        newSubtitle = LocaleController.getString("YouWereKicked", R.string.YouWereKicked);
-                    } else if (ChatObject.isLeftFromChat(chat)) {
-                        newSubtitle = LocaleController.getString("YouLeft", R.string.YouLeft);
-                    } else {
-                        int count = chat.participants_count;
-                        if (info != null && info.participants != null) {
-                            count = info.participants.participants.size();
-                        }
-                        if (onlineCount > 1 && count != 0) {
-                            newSubtitle = String.format("%s, %s", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("OnlineCount", onlineCount));
-                        } else {
-                            newSubtitle = LocaleController.formatPluralString("Members", count);
-                        }
-                    }
-                }
+                newSubtitle = getChatSubtitle(chat, info, onlineCount);
             } else if (user != null) {
                 TLRPC.User newUser = MessagesController.getInstance(currentAccount).getUser(user.id);
                 if (newUser != null) {
@@ -891,6 +836,67 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
     }
 
+    public static CharSequence getChatSubtitle(TLRPC.Chat chat, TLRPC.ChatFull info, int onlineCount) {
+        CharSequence newSubtitle = null;
+        if (ChatObject.isChannel(chat)) {
+            if (info != null && info.participants_count != 0) {
+                if (chat.megagroup) {
+                    if (onlineCount > 1) {
+                        newSubtitle = String.format("%s, %s", LocaleController.formatPluralString("Members", info.participants_count), LocaleController.formatPluralString("OnlineCount", Math.min(onlineCount, info.participants_count)));
+                    } else {
+                        newSubtitle = LocaleController.formatPluralString("Members", info.participants_count);
+                    }
+                } else {
+                    int[] result = new int[1];
+                    boolean ignoreShort = AndroidUtilities.isAccessibilityScreenReaderEnabled();
+                    String shortNumber = ignoreShort ? String.valueOf(result[0] = info.participants_count) : LocaleController.formatShortNumber(info.participants_count, result);
+                    if (chat.megagroup) {
+                        newSubtitle = LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber);
+                    } else {
+                        newSubtitle = LocaleController.formatPluralString("Subscribers", result[0]).replace(String.format("%d", result[0]), shortNumber);
+                    }
+                }
+            } else {
+                if (chat.megagroup) {
+                    if (info == null) {
+                        newSubtitle = LocaleController.getString("Loading", R.string.Loading).toLowerCase();
+                    } else {
+                        if (chat.has_geo) {
+                            newSubtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation).toLowerCase();
+                        } else if (ChatObject.isPublic(chat)) {
+                            newSubtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
+                        } else {
+                            newSubtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
+                        }
+                    }
+                } else {
+                    if (ChatObject.isPublic(chat)) {
+                        newSubtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
+                    } else {
+                        newSubtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
+                    }
+                }
+            }
+        } else {
+            if (ChatObject.isKickedFromChat(chat)) {
+                newSubtitle = LocaleController.getString("YouWereKicked", R.string.YouWereKicked);
+            } else if (ChatObject.isLeftFromChat(chat)) {
+                newSubtitle = LocaleController.getString("YouLeft", R.string.YouLeft);
+            } else {
+                int count = chat.participants_count;
+                if (info != null && info.participants != null) {
+                    count = info.participants.participants.size();
+                }
+                if (onlineCount > 1 && count != 0) {
+                    newSubtitle = String.format("%s, %s", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("OnlineCount", onlineCount));
+                } else {
+                    newSubtitle = LocaleController.formatPluralString("Members", count);
+                }
+            }
+        }
+        return newSubtitle;
+    }
+
     public int getLastSubtitleColorKey() {
         return lastSubtitleColorKey;
     }
@@ -952,7 +958,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             } else {
                 avatarDrawable.setScaleSize(1f);
                 if (avatarImageView != null) {
-                    avatarImageView.imageReceiver.setForUserOrChat(user, avatarDrawable,  null, true, VectorAvatarThumbDrawable.TYPE_STATIC);
+                    avatarImageView.imageReceiver.setForUserOrChat(user, avatarDrawable,  null, true, VectorAvatarThumbDrawable.TYPE_STATIC, false);
                 }
             }
         } else if (chat != null) {

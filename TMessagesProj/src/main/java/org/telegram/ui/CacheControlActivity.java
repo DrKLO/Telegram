@@ -49,8 +49,11 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CacheByChatsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -60,6 +63,7 @@ import org.telegram.messenger.FilesMigrationService;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -134,6 +138,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     public static final int KEEP_MEDIA_TYPE_USER = 0;
     public static final int KEEP_MEDIA_TYPE_GROUP = 1;
     public static final int KEEP_MEDIA_TYPE_CHANNEL = 2;
+    public static final int KEEP_MEDIA_TYPE_STORIES = 3;
 
     public static final long UNKNOWN_CHATS_DIALOG_ID = Long.MAX_VALUE;
 
@@ -149,6 +154,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     private long cacheSize = -1, cacheEmojiSize = -1, cacheTempSize = -1;
     private long documentsSize = -1;
     private long audioSize = -1;
+    private long storiesSize = -1;
     private long musicSize = -1;
     private long photoSize = -1;
     private long videoSize = -1;
@@ -189,14 +195,17 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     public final static int TYPE_VOICE = 4;
     public final static int TYPE_ANIMATED_STICKERS_CACHE = 5;
     public final static int TYPE_OTHER = 6;
+    public final static int TYPE_STORIES = 7;
 
     private static final int delete_id = 1;
     private static final int other_id = 2;
     private static final int clear_database_id = 3;
+    private static final int reset_database_id = 4;
     private boolean loadingDialogs;
     private NestedSizeNotifierLayout nestedSizeNotifierLayout;
 
     private ActionBarMenuSubItem clearDatabaseItem;
+    private ActionBarMenuSubItem resetDatabaseItem;
     private void updateDatabaseItemSize() {
         if (clearDatabaseItem != null) {
             SpannableStringBuilder string = new SpannableStringBuilder();
@@ -238,7 +247,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             long stickersCacheSize = getDirectorySize(new File(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), "acache"), 0);
             stickersCacheSize += getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), 3);
             long audioSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_AUDIO), 0);
-            final long totalSize = lastTotalSizeCalculated = cacheSize + cacheTempSize + videoSize + audioSize + photoSize + documentsSize + musicSize + stickersCacheSize;
+            long storiesSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_STORIES), 0);
+            final long totalSize = lastTotalSizeCalculated = cacheSize + cacheTempSize + videoSize + audioSize + photoSize + documentsSize + musicSize + stickersCacheSize + storiesSize;
             lastTotalSizeCalculatedTime = System.currentTimeMillis();
             if (!canceled) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -360,6 +370,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
             stickersCacheSize += cacheEmojiSize;
             audioSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_AUDIO), 0);
+            storiesSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_STORIES), 0);
             if (canceled) {
                 return;
             }
@@ -464,7 +475,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             CacheModel cacheModel = new CacheModel(false);
             LongSparseArray<DialogFileEntities> dilogsFilesEntities = new LongSparseArray<>();
 
-            fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), TYPE_OTHER, dilogsFilesEntities, null);
+            fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE), TYPE_OTHER, dilogsFilesEntities, cacheModel);
 
             fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_IMAGE), TYPE_PHOTOS, dilogsFilesEntities, cacheModel);
             fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_IMAGE_PUBLIC), TYPE_PHOTOS, dilogsFilesEntities, cacheModel);
@@ -473,6 +484,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_VIDEO_PUBLIC), TYPE_VIDEOS, dilogsFilesEntities, cacheModel);
 
             fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_AUDIO), TYPE_VOICE, dilogsFilesEntities, cacheModel);
+            fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_STORIES), TYPE_OTHER, dilogsFilesEntities, cacheModel);
             fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_DOCUMENT), TYPE_DOCUMENTS, dilogsFilesEntities, cacheModel);
             fillDialogsEntitiesRecursive(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_FILES), TYPE_DOCUMENTS, dilogsFilesEntities, cacheModel);
 
@@ -602,13 +614,17 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     addToType = TYPE_MUSIC;
                 }
                 CacheModel.FileInfo fileInfo = new CacheModel.FileInfo(fileEntry);
-                fileInfo.type = addToType;
+                fileInfo.size = fileEntry.length();
                 if (fileMetadata != null) {
                     fileInfo.dialogId = fileMetadata.dialogId;
                     fileInfo.messageId = fileMetadata.messageId;
                     fileInfo.messageType = fileMetadata.messageType;
+                    if (fileInfo.messageType == MessageObject.TYPE_STORY && fileInfo.size > 0) {
+                        addToType = TYPE_STORIES;
+                    }
                 }
-                fileInfo.size = fileEntry.length();
+                fileInfo.type = addToType;
+
                 if (fileInfo.dialogId != 0) {
                     DialogFileEntities dilogEntites = dilogsFilesEntities.get(fileInfo.dialogId, null);
                     if (dilogEntites == null) {
@@ -617,7 +633,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     }
                     dilogEntites.addFile(fileInfo, addToType);
                 }
-                if (cacheModel != null) {
+                if (cacheModel != null && addToType != TYPE_OTHER) {
                     cacheModel.add(addToType, fileInfo);
                 }
                 //TODO measure for other accounts
@@ -705,14 +721,17 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             if (audioSize > 0) {
                 sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalAudioCache), 4, audioSize, Theme.key_statisticChartLine_lightgreen));
             }
+            if (storiesSize > 0) {
+                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalStoriesCache), 5, storiesSize, Theme.key_statisticChartLine_indigo));
+            }
             if (stickersCacheSize > 0) {
-                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalStickersCache), 5, stickersCacheSize, Theme.key_statisticChartLine_orange));
+                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalStickersCache), 6, stickersCacheSize, Theme.key_statisticChartLine_orange));
             }
             if (cacheSize > 0) {
-                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalProfilePhotosCache), 6, cacheSize, Theme.key_statisticChartLine_cyan));
+                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalProfilePhotosCache), 7, cacheSize, Theme.key_statisticChartLine_cyan));
             }
             if (cacheTempSize > 0) {
-                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalMiscellaneousCache), 7, cacheTempSize, Theme.key_statisticChartLine_purple));
+                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalMiscellaneousCache), 8, cacheTempSize, Theme.key_statisticChartLine_purple));
             }
             if (!sections.isEmpty()) {
                 Collections.sort(sections, (a, b) -> Long.compare(b.size, a.size));
@@ -763,6 +782,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         itemInners.add(new ItemInner(VIEW_TYPE_KEEP_MEDIA_CELL, KEEP_MEDIA_TYPE_USER));
         itemInners.add(new ItemInner(VIEW_TYPE_KEEP_MEDIA_CELL, KEEP_MEDIA_TYPE_GROUP));
         itemInners.add(new ItemInner(VIEW_TYPE_KEEP_MEDIA_CELL, KEEP_MEDIA_TYPE_CHANNEL));
+        itemInners.add(new ItemInner(VIEW_TYPE_KEEP_MEDIA_CELL, KEEP_MEDIA_TYPE_STORIES));
         itemInners.add(ItemInner.asInfo(LocaleController.getString("KeepMediaInfoPart", R.string.KeepMediaInfoPart)));
 
         if (totalDeviceSize > 0) {
@@ -924,6 +944,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 }
 
                 if (entry.isDirectory()) {
+                    if ("drafts".equals(entry.getName())) {
+                        continue;
+                    }
                     cleanDirJava(fileName + "/" + name, docType, p, onProgress);
                 } else {
                     entry.delete();
@@ -949,7 +972,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             final long now = System.currentTimeMillis();
             onProgress.run(clearDirI[0] / (float) clearDirCount, now - time > 250);
         };
-        for (int a = 0; a < 8; a++) {
+        for (int a = 0; a < 9; a++) {
             if (!selected[a]) {
                 allItemsClear = false;
                 continue;
@@ -974,13 +997,16 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 type = FileLoader.MEDIA_DIR_AUDIO;
                 clearedSize += audioSize;
             } else if (a == 5) {
+                type = FileLoader.MEDIA_DIR_STORIES;
+                clearedSize += storiesSize;
+            } else if (a == 6) {
                 type = 100;
                 clearedSize += stickersCacheSize + cacheEmojiSize;
-            } else if (a == 6) {
+            } else if (a == 7) {
                 clearedSize += cacheSize;
                 documentsMusicType = 5;
                 type = FileLoader.MEDIA_DIR_CACHE;
-            } else if (a == 7) {
+            } else if (a == 8) {
                 clearedSize += cacheTempSize;
                 documentsMusicType = 4;
                 type = FileLoader.MEDIA_DIR_CACHE;
@@ -1037,6 +1063,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 imagesCleared = true;
             } else if (type == FileLoader.MEDIA_DIR_AUDIO) {
                 audioSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_AUDIO), documentsMusicType);
+            } else if (type == FileLoader.MEDIA_DIR_STORIES) {
+                storiesSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_STORIES), documentsMusicType);
             } else if (type == FileLoader.MEDIA_DIR_DOCUMENT) {
                 if (documentsMusicType == 1) {
                     documentsSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_DOCUMENT), documentsMusicType);
@@ -1200,7 +1228,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 } else if (id == delete_id) {
                    clearSelectedFiles();
                 } else if (id == clear_database_id) {
-                    clearDatabase();
+                    clearDatabase(false);
+                } else if (id == reset_database_id) {
+                    clearDatabase(true);
                 }
             }
         });
@@ -1238,6 +1268,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         clearDatabaseItem.setIconColor(Theme.getColor(Theme.key_text_RedRegular));
         clearDatabaseItem.setTextColor(Theme.getColor(Theme.key_text_RedBold));
         clearDatabaseItem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
+
+        if (BuildVars.DEBUG_PRIVATE_VERSION) {
+            resetDatabaseItem = otherItem.addSubItem(reset_database_id, R.drawable.msg_delete, "Full Reset Database");
+            resetDatabaseItem.setIconColor(Theme.getColor(Theme.key_text_RedRegular));
+            resetDatabaseItem.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            resetDatabaseItem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
+        }
         updateDatabaseItemSize();
 
         listAdapter = new ListAdapter(context);
@@ -1438,7 +1475,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         HashSet<CacheModel.FileInfo> filesToRemove = new HashSet<>();
         long totalSizeBefore = totalSize;
-        for (int a = 0; a < 7; a++) {
+        for (int a = 0; a < 8; a++) {
             if (clearViewData != null) {
                 if (clearViewData[a] == null || !clearViewData[a].clear) {
                     continue;
@@ -1465,7 +1502,22 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 audioSize -= entitiesToDelete.totalSize;
             } else if (a == TYPE_ANIMATED_STICKERS_CACHE) {
                 stickersCacheSize -= entitiesToDelete.totalSize;
-            } else {
+            } else if (a == TYPE_STORIES) {
+                for (int i = 0; i < entitiesToDelete.files.size(); i++) {
+                    CacheModel.FileInfo fileInfo = entitiesToDelete.files.get(i);
+                    int type = getTypeByPath(entitiesToDelete.files.get(i).file.getAbsolutePath());
+                    if (type == TYPE_STORIES) {
+                        storiesSize -= fileInfo.size;
+                    } else if (type == TYPE_PHOTOS) {
+                        photoSize -= fileInfo.size;
+                    } else if (type == TYPE_VIDEOS) {
+                        videoSize -= fileInfo.size;
+                    } else {
+                        cacheSize -= fileInfo.size;
+                    }
+                }
+              //  cacheSize -= entitiesToDelete.totalSize;
+            }else {
                 cacheSize -= entitiesToDelete.totalSize;
             }
         }
@@ -1484,11 +1536,11 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         photoSize -= fileInfo.size;
                     } else if (fileInfo.type == TYPE_VIDEOS) {
                         videoSize -= fileInfo.size;
-                    } else if (fileInfo.size == TYPE_DOCUMENTS) {
+                    } else if (fileInfo.type == TYPE_DOCUMENTS) {
                         documentsSize -= fileInfo.size;
-                    } else if (fileInfo.size == TYPE_MUSIC) {
+                    } else if (fileInfo.type == TYPE_MUSIC) {
                         musicSize -= fileInfo.size;
-                    } else if (fileInfo.size == TYPE_VOICE) {
+                    } else if (fileInfo.type == TYPE_VOICE) {
                         audioSize -= fileInfo.size;
                     }
                 }
@@ -1520,12 +1572,38 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         });
     }
 
+    private int getTypeByPath(String absolutePath) {
+        if (pathContains(absolutePath, FileLoader.MEDIA_DIR_STORIES)) {
+            return TYPE_STORIES;
+        }
+        if (pathContains(absolutePath, FileLoader.MEDIA_DIR_IMAGE)) {
+            return TYPE_PHOTOS;
+        }
+        if (pathContains(absolutePath, FileLoader.MEDIA_DIR_IMAGE_PUBLIC)) {
+            return TYPE_PHOTOS;
+        }
+        if (pathContains(absolutePath, FileLoader.MEDIA_DIR_VIDEO)) {
+            return TYPE_VIDEOS;
+        }
+        if (pathContains(absolutePath, FileLoader.MEDIA_DIR_VIDEO_PUBLIC)) {
+            return TYPE_VIDEOS;
+        }
+        return TYPE_OTHER;
+    }
+
+    private boolean pathContains(String path, int mediaDirType) {
+        if (path == null || FileLoader.checkDirectory(mediaDirType) == null) {
+            return false;
+        }
+        return path.contains(FileLoader.checkDirectory(mediaDirType).getAbsolutePath());
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.R)
     private void migrateOldFolder() {
         FilesMigrationService.checkBottomSheet(this);
     }
 
-    private void clearDatabase() {
+    private void clearDatabase(boolean fullReset) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("LocalDatabaseClearTextTitle", R.string.LocalDatabaseClearTextTitle));
         SpannableStringBuilder message = new SpannableStringBuilder();
@@ -1542,7 +1620,11 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             progressDialog.setCanCancel(false);
             progressDialog.showDelayed(500);
             MessagesController.getInstance(currentAccount).clearQueryTime();
-            getMessagesStorage().clearLocalDatabase();
+            if (fullReset) {
+                getMessagesStorage().fullReset();
+            } else {
+                getMessagesStorage().clearLocalDatabase();
+            }
         });
         AlertDialog alertDialog = builder.create();
         showDialog(alertDialog);
@@ -1977,9 +2059,10 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 (selected[2] ? documentsSize : 0) +
                 (selected[3] ? musicSize : 0) +
                 (selected[4] ? audioSize : 0) +
-                (selected[5] ? stickersCacheSize : 0) +
-                (selected[6] ? cacheSize : 0) +
-                (selected[7] ? cacheTempSize : 0)
+                (selected[5] ? storiesSize : 0) +
+                (selected[6] ? stickersCacheSize : 0) +
+                (selected[7] ? cacheSize : 0) +
+                (selected[8] ? cacheTempSize : 0)
             );
             setSize(
                 isAllSectionsSelected(),
@@ -2041,6 +2124,12 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                     super.onInitializeAccessibilityNodeInfo(info);
                     info.setClassName("android.widget.Button");
+                }
+
+                @Override
+                public boolean onInterceptTouchEvent(MotionEvent ev) {
+                    super.onInterceptTouchEvent(ev);
+                    return true;
                 }
             };
             button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
@@ -2534,7 +2623,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_GROUP) {
                         textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("GroupChats", R.string.GroupChats), value, true, R.drawable.msg_filled_menu_groups, getThemedColor(Theme.key_statisticChartLine_green), true);
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_CHANNEL) {
-                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("CacheChannels", R.string.CacheChannels), value, true, R.drawable.msg_filled_menu_channels, getThemedColor(Theme.key_statisticChartLine_golden), false);
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("CacheChannels", R.string.CacheChannels), value, true, R.drawable.msg_filled_menu_channels, getThemedColor(Theme.key_statisticChartLine_golden), true);
+                    } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_STORIES) {
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString("CacheStories", R.string.CacheStories), value, false, R.drawable.msg_filled_stories, getThemedColor(Theme.key_statisticChartLine_red), false);
                     }
                     textCell2.setSubtitle(subtitle);
                     break;

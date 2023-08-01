@@ -693,6 +693,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
           try {
             setOutputSurfaceV23(codec, surface);
           } catch (Throwable e) {
+            e.printStackTrace();
             throw new SurfaceNotValidException(e);
           }
         } else {

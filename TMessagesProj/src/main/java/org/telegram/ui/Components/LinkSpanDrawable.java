@@ -552,7 +552,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
             y -= getPaddingTop();
             final int line = textLayout.getLineForVertical(y);
             final int off = textLayout.getOffsetForHorizontal(line, x);
-            final float left = getLayout().getLineLeft(line);
+            final float left = textLayout.getLineLeft(line);
             if (left <= x && left + textLayout.getLineWidth(line) >= x && y >= 0 && y <= textLayout.getHeight()) {
                 Spannable buffer = new SpannableString(textLayout.getText());
                 ClickableSpan[] spans = buffer.getSpans(off, off, ClickableSpan.class);

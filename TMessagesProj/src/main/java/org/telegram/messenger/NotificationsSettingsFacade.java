@@ -15,6 +15,7 @@ public class NotificationsSettingsFacade {
     public final static String PROPERTY_NOTIFY_UNTIL = "notifyuntil_";
     public final static String PROPERTY_CONTENT_PREVIEW = "content_preview_";
     public final static String PROPERTY_SILENT  = "silent_";
+    public final static String PROPERTY_STORIES_NOTIFY = "stories_";
 
     private final int currentAccount;
 
@@ -36,6 +37,7 @@ public class NotificationsSettingsFacade {
                 .remove(PROPERTY_NOTIFY_UNTIL + key)
                 .remove(PROPERTY_CONTENT_PREVIEW + key)
                 .remove(PROPERTY_SILENT + key)
+                .remove(PROPERTY_STORIES_NOTIFY + key)
                 .apply();
 
     }
@@ -106,6 +108,11 @@ public class NotificationsSettingsFacade {
                 editor.putBoolean(PROPERTY_SILENT + key, notify_settings.silent);
             } else {
                 editor.remove(PROPERTY_SILENT + key);
+            }
+            if ((notify_settings.flags & 64) != 0) {
+                editor.putBoolean(PROPERTY_STORIES_NOTIFY + key, !notify_settings.stories_muted);
+            } else {
+                editor.remove(PROPERTY_STORIES_NOTIFY + key);
             }
 
             TLRPC.Dialog dialog = null;
@@ -193,6 +200,10 @@ public class NotificationsSettingsFacade {
                 soundPref = "GroupSound";
                 soundDocPref = "GroupSoundDocId";
                 soundPathPref = "GroupSoundPath";
+            } else if (globalType == NotificationsController.TYPE_STORIES) {
+                soundPref = "StoriesSound";
+                soundDocPref = "StoriesSoundDocId";
+                soundPathPref = "StoriesSoundPath";
             } else if (globalType == TYPE_PRIVATE) {
                 soundPref = "GlobalSound";
                 soundDocPref = "GlobalSoundDocId";

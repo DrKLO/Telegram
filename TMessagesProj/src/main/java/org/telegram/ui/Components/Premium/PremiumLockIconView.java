@@ -104,7 +104,7 @@ public class PremiumLockIconView extends ImageView {
         if (waitingImage) {
             if (imageReceiver != null && imageReceiver.getBitmap() != null) {
                 waitingImage = false;
-                setColor(getDominantColor(imageReceiver.getBitmap()));
+                setColor(AndroidUtilities.getDominantColor(imageReceiver.getBitmap()));
             } else {
                 invalidate();
             }
@@ -162,33 +162,6 @@ public class PremiumLockIconView extends ImageView {
 
     public ImageReceiver getImageReceiver() {
         return imageReceiver;
-    }
-
-    public static int getDominantColor(Bitmap bitmap) {
-        if (bitmap == null) {
-            return Color.WHITE;
-        }
-        float stepH = (bitmap.getHeight() - 1) / 10f;
-        float stepW = (bitmap.getWidth() - 1) / 10f;
-        int r = 0, g = 0, b = 0;
-        int amount = 0;
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                int x = (int) (stepW * i);
-                int y = (int) (stepH * j);
-                int pixel = bitmap.getPixel(x, y);
-                if (Color.alpha(pixel) > 200) {
-                    r += Color.red(pixel);
-                    g += Color.green(pixel);
-                    b += Color.blue(pixel);
-                    amount++;
-                }
-            }
-        }
-        if (amount == 0) {
-            return 0;
-        }
-        return Color.argb(255, r / amount, g / amount, b / amount);
     }
 
     private void updateGradient() {

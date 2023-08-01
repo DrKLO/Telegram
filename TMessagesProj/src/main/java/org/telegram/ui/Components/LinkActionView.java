@@ -70,9 +70,8 @@ public class LinkActionView extends LinearLayout {
     private QRCodeBottomSheet qrCodeBottomSheet;
     private boolean hideRevokeOption;
     private boolean canEdit = true;
-    private boolean isChannel;
-
-    float[] point = new float[2];
+    private final boolean isChannel;
+    private final float[] point = new float[2];
 
     public LinkActionView(Context context, BaseFragment fragment, BottomSheet bottomSheet, long chatId, boolean permanent, boolean isChannel) {
         super(context);
@@ -83,70 +82,68 @@ public class LinkActionView extends LinearLayout {
         setOrientation(VERTICAL);
         frameLayout = new FrameLayout(context);
         linkView = new TextView(context);
-        linkView.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(18), AndroidUtilities.dp(40), AndroidUtilities.dp(18));
+        linkView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(13), AndroidUtilities.dp(40), AndroidUtilities.dp(13));
         linkView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         linkView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
         linkView.setSingleLine(true);
 
+        int containerPadding = 4;
         frameLayout.addView(linkView);
         optionsView = new ImageView(context);
         optionsView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_ab_other));
         optionsView.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
         optionsView.setScaleType(ImageView.ScaleType.CENTER);
         frameLayout.addView(optionsView, LayoutHelper.createFrame(40, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
-        addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 4, 0));
+        addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, containerPadding, 0, containerPadding, 0));
 
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(HORIZONTAL);
 
         copyView = new TextView(context);
-        copyView.setGravity(Gravity.CENTER_HORIZONTAL);
+        copyView.setGravity(Gravity.CENTER);
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_copy_filled)), 0, 1, 0);
-        spannableStringBuilder.setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(8)), 1, 2, 0);
+        spannableStringBuilder.setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(6)), 1, 2, 0);
         spannableStringBuilder.append(LocaleController.getString("LinkActionCopy", R.string.LinkActionCopy));
-        spannableStringBuilder.append(".").setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(5)), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
         copyView.setText(spannableStringBuilder);
         copyView.setContentDescription(LocaleController.getString("LinkActionCopy", R.string.LinkActionCopy));
-        copyView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
+        copyView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         copyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        copyView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        copyView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         copyView.setSingleLine(true);
-        linearLayout.addView(copyView, LayoutHelper.createLinear(0, 40, 1f, 0, 4, 0, 4, 0));
+        linearLayout.addView(copyView, LayoutHelper.createLinear(0, 42, 1f, 0, containerPadding, 0, 4, 0));
 
         shareView = new TextView(context);
-        shareView.setGravity(Gravity.CENTER_HORIZONTAL);
+        shareView.setGravity(Gravity.CENTER);
         spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_share_filled)), 0, 1, 0);
-        spannableStringBuilder.setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(8)), 1, 2, 0);
+        spannableStringBuilder.setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(6)), 1, 2, 0);
         spannableStringBuilder.append(LocaleController.getString("LinkActionShare", R.string.LinkActionShare));
-        spannableStringBuilder.append(".").setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(5)), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
         shareView.setText(spannableStringBuilder);
         shareView.setContentDescription(LocaleController.getString("LinkActionShare", R.string.LinkActionShare));
-        shareView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
-
+        shareView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         shareView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        shareView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        shareView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         shareView.setSingleLine(true);
-        linearLayout.addView(shareView, LayoutHelper.createLinear(0, 40, 1f, 4, 0, 4, 0));
+        linearLayout.addView(shareView, LayoutHelper.createLinear(0, 42, 1f, 4, 0, containerPadding, 0));
 
 
         removeView = new TextView(context);
-        removeView.setGravity(Gravity.CENTER_HORIZONTAL);
+        removeView.setGravity(Gravity.CENTER);
         spannableStringBuilder = new SpannableStringBuilder();
         spannableStringBuilder.append("..").setSpan(new ColoredImageSpan(ContextCompat.getDrawable(context, R.drawable.msg_delete_filled)), 0, 1, 0);
         spannableStringBuilder.setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(8)), 1, 2, 0);
         spannableStringBuilder.append(LocaleController.getString("DeleteLink", R.string.DeleteLink));
         spannableStringBuilder.append(".").setSpan(new DialogCell.FixedWidthSpan(AndroidUtilities.dp(5)), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
         removeView.setText(spannableStringBuilder);
-        removeView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
+        removeView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         removeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        removeView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        removeView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         removeView.setSingleLine(true);
-        linearLayout.addView(removeView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 4, 0, 4, 0));
+        linearLayout.addView(removeView, LayoutHelper.createLinear(0, 42, 1f, containerPadding, 0, containerPadding, 0));
         removeView.setVisibility(View.GONE);
 
-        addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
+        addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
         avatarsContainer = new AvatarsContainer(context);
         avatarsContainer.avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(18));
@@ -384,10 +381,10 @@ public class LinkActionView extends LinearLayout {
         copyView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         shareView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         removeView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        copyView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        shareView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        removeView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_chat_attachAudioBackground), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
-        frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_graySection), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), (int) (255 * 0.3f))));
+        copyView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        shareView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        removeView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_chat_attachAudioBackground), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
+        frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), (int) (255 * 0.3f))));
         linkView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         optionsView.setColorFilter(Theme.getColor(Theme.key_dialogTextGray3));
         //optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));

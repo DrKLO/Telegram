@@ -1427,7 +1427,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     }
 
     private int getColor(int colorKey) {
-        if (resourcesProvider != null && resourcesProvider.contains(colorKey)) {
+        if (resourcesProvider != null) {
             return resourcesProvider.getColor(colorKey);
         }
         return Theme.getColor(colorKey);

@@ -90,7 +90,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                 }
 
                 @Override
-                public boolean needCopy() {
+                public boolean needCopy(TLRPC.Document document) {
                     return UserConfig.getInstance(UserConfig.selectedAccount).isPremium();
                 }
 
@@ -498,7 +498,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
         searchRunnable = () -> {
             ArrayList<MediaDataController.KeywordResult> standard = new ArrayList<>(1);
             standard.add(new MediaDataController.KeywordResult(emoji, null));
-            MediaDataController.getInstance(currentAccount).fillWithAnimatedEmoji(standard, 15, false, () -> {
+            MediaDataController.getInstance(currentAccount).fillWithAnimatedEmoji(standard, 15, false, false, () -> {
                 if (id == lastQueryId) {
                     lastQuery = emoji;
                     lastQueryType = 2;

@@ -137,6 +137,10 @@ public class TextCheckCell extends FrameLayout {
         checkBox.setIcon(icon);
     }
 
+    public Switch getCheckBox() {
+        return checkBox;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (isMultiline) {
@@ -157,7 +161,7 @@ public class TextCheckCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
-    public void setTextAndCheck(String text, boolean checked, boolean divider) {
+    public void setTextAndCheck(CharSequence text, boolean checked, boolean divider) {
         textView.setText(text);
         isMultiline = false;
         checkBox.setVisibility(View.VISIBLE);

@@ -1003,7 +1003,7 @@ public class SecretChatHelper extends BaseController {
                         for (int a = 0, N = newMessage.media.document.attributes.size(); a < N; a++) {
                             TLRPC.DocumentAttribute attribute = newMessage.media.document.attributes.get(a);
                             if (attribute instanceof TLRPC.TL_documentAttributeAudio || attribute instanceof TLRPC.TL_documentAttributeVideo) {
-                                newMessage.ttl = Math.max(attribute.duration + 1, newMessage.ttl);
+                                newMessage.ttl = (int) Math.max(attribute.duration + 1, newMessage.ttl);
                                 break;
                             }
                         }

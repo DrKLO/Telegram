@@ -96,6 +96,8 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     boolean showName = true;
     float showNameProgress = 0;
 
+    TextPaint titlePaint;
+
     public SharedAudioCell(Context context) {
         this(context, VIEW_TYPE_DEFAULT, null);
     }
@@ -134,6 +136,13 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         captionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         captionTextPaint.setTextSize(AndroidUtilities.dp(13));
+
+        if (resourcesProvider != null) {
+            titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            titlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titlePaint.setTextSize(AndroidUtilities.dp(15));
+            titlePaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        }
     }
 
     @SuppressLint("DrawAllocation")
@@ -159,7 +168,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         try {
             CharSequence title;
             if (viewType == VIEW_TYPE_GLOBAL_SEARCH && (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo())) {
-                title = FilteredSearchView.createFromInfoString(currentMessageObject);
+                title = FilteredSearchView.createFromInfoString(currentMessageObject, 1);
             } else {
                 title = currentMessageObject.getMusicTitle().replace('\n', ' ');
             }
@@ -167,8 +176,9 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             if (titleH != null) {
                 title = titleH;
             }
-            CharSequence titleFinal = TextUtils.ellipsize(title, Theme.chat_contextResult_titleTextPaint, maxWidth - dateWidth, TextUtils.TruncateAt.END);
-            titleLayout = new StaticLayout(titleFinal, Theme.chat_contextResult_titleTextPaint, maxWidth + AndroidUtilities.dp(4) - dateWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            TextPaint titlePaintFinal = titlePaint != null ? titlePaint : Theme.chat_contextResult_titleTextPaint;
+            CharSequence titleFinal = TextUtils.ellipsize(title, titlePaintFinal, maxWidth - dateWidth, TextUtils.TruncateAt.END);
+            titleLayout = new StaticLayout(titleFinal, titlePaintFinal, maxWidth + AndroidUtilities.dp(4) - dateWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             titleLayoutLeft = titleLayout.getLineCount() > 0 ? titleLayout.getLineLeft(0) : 0;
             titleLayoutWidth = titleLayout.getLineCount() > 0 ? titleLayout.getLineWidth(0) : 0;
             titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
@@ -189,7 +199,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         }
         try {
             if (viewType == VIEW_TYPE_GLOBAL_SEARCH && (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo())) {
-                CharSequence duration = AndroidUtilities.formatDuration(currentMessageObject.getDuration(), false);
+                CharSequence duration = AndroidUtilities.formatDuration((int) currentMessageObject.getDuration(), false);
                 TextPaint paint = viewType == VIEW_TYPE_GLOBAL_SEARCH ? description2TextPaint : Theme.chat_contextResult_descriptionTextPaint;
                 duration = TextUtils.ellipsize(duration, paint, maxWidth, TextUtils.TruncateAt.END);
                 descriptionLayout = new StaticLayout(duration, paint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -200,7 +210,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                     author = authorH;
                 }
                 if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
-                    author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject));
+                    author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject, 1));
                 }
                 TextPaint paint = viewType == VIEW_TYPE_GLOBAL_SEARCH ? description2TextPaint : Theme.chat_contextResult_descriptionTextPaint;
                 author = TextUtils.ellipsize(author, paint, maxWidth, TextUtils.TruncateAt.END);
@@ -698,9 +708,9 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         if (needDivider) {
             if (LocaleController.isRTL) {
-                canvas.drawLine(0, getHeight() - 1, getWidth() - AndroidUtilities.dp(72) - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+                canvas.drawLine(0, getHeight() - 1, getWidth() - AndroidUtilities.dp(72) - getPaddingRight(), getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
             } else {
-                canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+                canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
             }
         }
     }

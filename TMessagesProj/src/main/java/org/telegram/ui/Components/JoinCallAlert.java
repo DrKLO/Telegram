@@ -277,6 +277,10 @@ public class JoinCallAlert extends BottomSheet {
     }
 
     private static void showAlert(Context context, long dialogId, ArrayList<TLRPC.Peer> peers, BaseFragment fragment, int type, TLRPC.Peer scheduledPeer, JoinCallAlertDelegate delegate) {
+        if (type == TYPE_CREATE) {
+            CreateGroupCallBottomSheet.show(peers, fragment, dialogId, delegate);
+            return;
+        }
         JoinCallAlert alert = new JoinCallAlert(context, dialogId, peers, type, scheduledPeer, delegate);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
@@ -698,7 +702,7 @@ public class JoinCallAlert extends BottomSheet {
                 view = new ShareDialogCell(context, ShareDialogCell.TYPE_CREATE, null);
                 view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(100)));
             } else {
-                view = new GroupCreateUserCell(context, 2, 0, false, currentType == TYPE_DISPLAY);
+                view = new GroupCreateUserCell(context, 2, 0, false, currentType == TYPE_DISPLAY, null);
             }
             return new RecyclerListView.Holder(view);
         }

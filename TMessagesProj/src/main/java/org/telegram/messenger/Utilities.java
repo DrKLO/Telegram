@@ -39,6 +39,7 @@ public class Utilities {
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
     public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
+    public static volatile DispatchQueue videoPlayerQueue;
 
     private final static String RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -472,6 +473,10 @@ public class Utilities {
         return Math.max(Math.min(value, maxValue), minValue);
     }
 
+    public static long clamp(long value, long maxValue, long minValue) {
+        return Math.max(Math.min(value, maxValue), minValue);
+    }
+
     public static float clamp(float value, float maxValue, float minValue) {
         if (Float.isNaN(value)) {
             return minValue;
@@ -523,6 +528,10 @@ public class Utilities {
         public void run(T arg, T2 arg2, T3 arg3);
     }
 
+    public static interface Callback4<T, T2, T3, T4> {
+        public void run(T arg, T2 arg2, T3 arg3, T4 arg4);
+    }
+
     public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
         Value v = map.get(key);
         if (v == null) {
@@ -559,5 +568,12 @@ public class Utilities {
         for (int i = 0; i < actions.length; ++i) {
             actions[i].run(checkFinish);
         }
+    }
+
+    public static DispatchQueue getOrCreatePlayerQueue() {
+        if (videoPlayerQueue == null) {
+            videoPlayerQueue = new DispatchQueue("playerQueue");
+        }
+        return videoPlayerQueue;
     }
 }

@@ -12,6 +12,8 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -36,6 +38,7 @@ public class StickerView extends EntityView {
     private Object parentObject;
     private int anchor = -1;
     private boolean mirrored = false;
+    private final AnimatedFloat mirrorT;
     private Size baseSize;
 
     private FrameLayoutDrawer containerView;
@@ -66,6 +69,8 @@ public class StickerView extends EntityView {
 
         containerView = new FrameLayoutDrawer(context);
         addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        mirrorT = new AnimatedFloat(containerView, 0, 500, CubicBezierInterpolator.EASE_OUT_QUINT);
 
         centerImage.setAspectFit(true);
         centerImage.setInvalidateAll(true);
@@ -108,7 +113,14 @@ public class StickerView extends EntityView {
     }
 
     public void mirror() {
+        mirror(false);
+    }
+
+    public void mirror(boolean animated) {
         mirrored = !mirrored;
+        if (!animated) {
+            mirrorT.set(mirrored, true);
+        }
         containerView.invalidate();
     }
 
@@ -134,10 +146,9 @@ public class StickerView extends EntityView {
         }
 
         canvas.save();
-        if (mirrored) {
-            canvas.scale(-1.0f, 1.0f);
-            canvas.translate(-baseSize.width, 0);
-        }
+        float mirrorT = this.mirrorT.set(mirrored);
+        canvas.scale(1 - mirrorT * 2, 1f, baseSize.width / 2f, 0);
+        canvas.skew(0, 4 * mirrorT * (1f - mirrorT) * .25f);
         centerImage.setImageCoords(0, 0, (int) baseSize.width, (int) baseSize.height);
         centerImage.draw(canvas);
         canvas.restore();
@@ -226,7 +237,7 @@ public class StickerView extends EntityView {
             super.onDraw(canvas);
 
             float thickness = AndroidUtilities.dp(1.0f);
-            float radius = AndroidUtilities.dp(4.5f);
+            float radius = AndroidUtilities.dpf2(5.66f);
 
             float inset = radius + thickness + AndroidUtilities.dp(15);
             float mainRadius = getMeasuredWidth() / 2 - inset;
@@ -235,11 +246,11 @@ public class StickerView extends EntityView {
             canvas.drawArc(arcRect, 0, 180, false, paint);
             canvas.drawArc(arcRect, 180, 180, false, paint);
 
-            canvas.drawCircle(inset, inset + mainRadius, radius, dotPaint);
             canvas.drawCircle(inset, inset + mainRadius, radius, dotStrokePaint);
+            canvas.drawCircle(inset, inset + mainRadius, radius - AndroidUtilities.dp(1), dotPaint);
 
-            canvas.drawCircle(inset + mainRadius * 2, inset + mainRadius, radius, dotPaint);
             canvas.drawCircle(inset + mainRadius * 2, inset + mainRadius, radius, dotStrokePaint);
+            canvas.drawCircle(inset + mainRadius * 2, inset + mainRadius, radius - AndroidUtilities.dp(1), dotPaint);
         }
     }
 }

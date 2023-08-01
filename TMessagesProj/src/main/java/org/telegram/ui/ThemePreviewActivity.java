@@ -4495,7 +4495,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 messageObject.resetLayout();
                 messages.add(messageObject);
 
-                if (dialogId != 0 && serverWallpaper == null) {
+                if (dialogId != 0) {
                     message = new TLRPC.TL_message();
                     message.message = "";
                     messageObject = new MessageObject(currentAccount, message, true, false);
@@ -4864,11 +4864,6 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     @Override
                     public int getColor(int key) {
                         return getThemedColor(key);
-                    }
-
-                    @Override
-                    public boolean contains(int key) {
-                        return true;
                     }
 
                     @Override

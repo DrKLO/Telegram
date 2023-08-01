@@ -1,10 +1,13 @@
 package org.telegram.ui.Components.Paint.Views;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -31,6 +34,8 @@ public class EditTextOutline extends EditTextBoldCursor {
     private int mFrameColor;
     private Path path = new Path();
 
+    public boolean betterFraming;
+
     private RectF[] lines;
     private boolean isFrameDirty;
 
@@ -42,7 +47,15 @@ public class EditTextOutline extends EditTextBoldCursor {
 
         mUpdateCachedBitmap = true;
         isFrameDirty = true;
+        setFrameRoundRadius(dp(16));
         textPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+    }
+
+    private float lastFrameRoundRadius;
+    private void setFrameRoundRadius(float roundRadius) {
+        if (Math.abs(lastFrameRoundRadius - roundRadius) > 0.1f) {
+            paint.setPathEffect(new CornerPathEffect(lastFrameRoundRadius = roundRadius));
+        }
     }
 
     protected void onTextChanged(CharSequence text, int start, int before, int after) {
@@ -81,10 +94,11 @@ public class EditTextOutline extends EditTextBoldCursor {
 
     public void setFrameColor(int frameColor) {
         if (mFrameColor == 0 && frameColor != 0) {
-            setPadding(AndroidUtilities.dp(7 + 12), AndroidUtilities.dp(7), AndroidUtilities.dp(7 + 12), AndroidUtilities.dp(7));
-            setCursorColor(0xff000000);
+            setPadding(dp(7 + 12), dp(7), dp(7 + 12), dp(7));
+            setCursorColor(0xffffffff);
+//            setCursorColor(0xff000000);
         } else if (mFrameColor != 0 && frameColor == 0) {
-            setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+            setPadding(dp(7), dp(7), dp(7), dp(7));
             setCursorColor(0xffffffff);
         }
         mFrameColor = frameColor;
@@ -146,7 +160,10 @@ public class EditTextOutline extends EditTextBoldCursor {
             canvas.drawBitmap(mCache, 0, 0, textPaint);
         }
         if (mFrameColor != 0) {
-            // have you heard about CornerPathEffect?
+            canvas.save();
+            if (betterFraming) {
+                canvas.translate(getPaddingLeft(), getPaddingTop());
+            }
             paint.setColor(mFrameColor);
             Layout layout = getLayout();
             if (layout == null) {
@@ -165,96 +182,75 @@ public class EditTextOutline extends EditTextBoldCursor {
                     }
                     lines[i].set(layout.getLineLeft(i), layout.getLineTop(i), layout.getLineRight(i), layout.getLineBottom(i));
 
-                    if (lines[i].width() > AndroidUtilities.dp(1)) {
-                        int pad = AndroidUtilities.dp(6);
-                        lines[i].right += AndroidUtilities.dp(32);
-                        lines[i].bottom += pad;
+                    if (lines[i].width() > dp(1)) {
+                        if (betterFraming) {
+                            lines[i].inset(-getTextSize() / 3f, 0);
+                            lines[i].top += AndroidUtilities.dpf2(1.2f);
+                            lines[i].bottom += AndroidUtilities.dpf2(1);
+                            lines[i].left = Math.max(-getPaddingLeft(), lines[i].left);
+                            lines[i].right = Math.min(getWidth() - getPaddingLeft(), lines[i].right);
+                        } else {
+                            lines[i].right += dp(32);
+                            lines[i].bottom += dp(6);
+                        }
                     } else {
                         lines[i].left = lines[i].right;
+                    }
+
+                    if (i > 0 && lines[i - 1].width() > 0) {
+                        lines[i - 1].bottom = lines[i].top;
                     }
                 }
             }
             path.rewind();
-
-            float rad = AndroidUtilities.dp(16);
-            float cornersOffset = AndroidUtilities.dp(8);
-
-            for (int i = 0; i < lines.length; i++) {
+            float h = getHeight();
+            for (int i = 0; i < lines.length; ++i) {
                 if (lines[i].width() == 0) {
                     continue;
                 }
-
-                if (i != lines.length - 1 && lines[i].left > lines[i + 1].left) { // Left top arc corner
-                    if (lines[i].left - lines[i + 1].left > rad + cornersOffset) {
-                        float bottom = lines[i + 1].top;
-                        AndroidUtilities.rectTmp.set(lines[i].left - rad * 2, bottom - rad * 2, lines[i].left, bottom);
-                        path.moveTo(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.bottom);
-                        path.arcTo(AndroidUtilities.rectTmp, 90, -90);
-                        path.lineTo(AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.bottom);
-                        path.lineTo(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.bottom);
-                    }
+                h = lines[i].bottom - lines[i].top;
+            }
+            float r = Math.min(h / 3f, dp(16)), mr = r * 1.5f;
+            for (int i = 1; i < lines.length; ++i) {
+                RectF above = lines[i - 1];
+                RectF line = lines[i];
+                if (above.width() < dp(1) || line.width() < dp(1)) {
+                    continue;
                 }
-
-                if (i != lines.length - 1 && lines[i].right < lines[i + 1].right) { // Right top arc corner
-                    if (lines[i + 1].right - lines[i].right > rad + cornersOffset) {
-                        float bottom = lines[i + 1].top;
-                        AndroidUtilities.rectTmp.set(lines[i].right, bottom - rad * 2, lines[i].right + rad * 2, bottom);
-                        path.moveTo(AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.bottom);
-                        path.arcTo(AndroidUtilities.rectTmp, 90, 90);
-                        path.lineTo(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.bottom);
-                        path.lineTo(AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.bottom);
-                    }
+                boolean traceback = false;
+                if (Math.abs(above.left - line.left) < mr) {
+                    line.left = above.left = Math.min(line.left, above.left);
+                    traceback = true;
                 }
-
-                if (i != 0 && lines[i].left > lines[i - 1].left) { // Left bottom arc corner
-                    if (lines[i].left - lines[i - 1].left > rad + cornersOffset) {
-                        float top = lines[i - 1].bottom;
-                        AndroidUtilities.rectTmp.set(lines[i].left - rad * 2, top, lines[i].left, top + rad * 2);
-                        path.moveTo(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
-                        path.arcTo(AndroidUtilities.rectTmp, -90, 90);
-                        path.lineTo(AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.top);
-                        path.lineTo(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
-                    } else {
-                        lines[i].left = lines[i - 1].left;
-                    }
+                if (Math.abs(above.right - line.right) < mr) {
+                    line.right = above.right = Math.max(line.right, above.right);
+                    traceback = true;
                 }
-                if (i != 0 && lines[i].right < lines[i - 1].right) { // Right bottom arc corner
-                    if (lines[i - 1].right - lines[i].right > rad + cornersOffset) {
-                        float top = lines[i - 1].bottom;
-                        AndroidUtilities.rectTmp.set(lines[i].right, top, lines[i].right + rad * 2, top + rad * 2);
-                        path.moveTo(AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.top);
-                        path.arcTo(AndroidUtilities.rectTmp, -90, -90);
-                        path.lineTo(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
-                        path.lineTo(AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.top);
-                    } else {
-                        lines[i].right = lines[i - 1].right;
+                if (traceback) {
+                    for (int j = i; j >= 1; --j) {
+                        above = lines[j - 1];
+                        line = lines[j];
+                        if (above.width() < dp(1) || line.width() < dp(1)) {
+                            continue;
+                        }
+                        if (Math.abs(above.left - line.left) < mr) {
+                            line.left = above.left = Math.min(line.left, above.left);
+                        }
+                        if (Math.abs(above.right - line.right) < mr) {
+                            line.right = above.right = Math.max(line.right, above.right);
+                        }
                     }
                 }
             }
-
-            float[] radii = new float[8];
-            for (int i = 0; i < lines.length; i++) {
-                Arrays.fill(radii, 0);
-
-                if (i == 0 || lines[i].left < lines[i - 1].left || lines[i - 1].width() == 0) {
-                    radii[0] = radii[1] = rad; // Top left corner
+            for (int i = 0; i < lines.length; ++i) {
+                if (lines[i].width() == 0) {
+                    continue;
                 }
-                if (i == 0 || lines[i].right > lines[i - 1].right || lines[i - 1].width() == 0) {
-                    radii[2] = radii[3] = rad; // Top right corner
-                }
-                if (i == lines.length - 1 || lines[i + 1].left > lines[i].left || lines[i + 1].width() == 0) {
-                    radii[6] = radii[7] = rad; // Bottom left corner
-                }
-                if (i == lines.length - 1 || lines[i + 1].right < lines[i].right || lines[i + 1].width() == 0) {
-                    radii[4] = radii[5] = rad; // Bottom right corner
-                }
-
-                AndroidUtilities.rectTmp.set(lines[i]);
-                path.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
+                path.addRect(lines[i], Path.Direction.CW);
             }
-            path.close();
-
+            setFrameRoundRadius(r);
             canvas.drawPath(path, paint);
+            canvas.restore();
         }
         super.onDraw(canvas);
     }

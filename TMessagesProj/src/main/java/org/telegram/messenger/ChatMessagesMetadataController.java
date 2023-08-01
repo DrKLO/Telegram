@@ -1,15 +1,24 @@
 package org.telegram.messenger;
 
+import com.google.android.exoplayer2.util.Log;
+
+import org.checkerframework.checker.units.qual.A;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Stories.StoriesStorage;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class ChatMessagesMetadataController {
 
     final ChatActivity chatActivity;
     private ArrayList<MessageObject> reactionsToCheck = new ArrayList<>(10);
     private ArrayList<MessageObject> extendedMediaToCheck = new ArrayList<>(10);
+    private ArrayList<MessageObject> storiesToCheck = new ArrayList<>(10);
 
     ArrayList<Integer> reactionsRequests = new ArrayList<>();
     ArrayList<Integer> extendedMediaRequests = new ArrayList<>();
@@ -32,6 +41,7 @@ public class ChatMessagesMetadataController {
             }
             reactionsToCheck.clear();
             extendedMediaToCheck.clear();
+            storiesToCheck.clear();
             for (int i = from; i < to; i++) {
                 MessageObject messageObject = messages.get(i);
                 if (chatActivity.getThreadMessage() != messageObject && messageObject.getId() > 0 && messageObject.messageOwner.action == null && (currentTime - messageObject.reactionsLastCheckTime) > 15000L) {
@@ -42,9 +52,78 @@ public class ChatMessagesMetadataController {
                     messageObject.extendedMediaLastCheckTime = currentTime;
                     extendedMediaToCheck.add(messageObject);
                 }
+                if (messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION || messageObject.messageOwner.replyStory != null) {
+                    TLRPC.StoryItem storyItem = messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION ? messageObject.messageOwner.media.storyItem : messageObject.messageOwner.replyStory;
+                    if (storyItem == null || storyItem instanceof TLRPC.TL_storyItemDeleted) {
+                        continue;
+                    }
+                    if (currentTime - storyItem.lastUpdateTime > 1000 * 5 * 60) {
+                        storyItem.lastUpdateTime = currentTime;
+                        storiesToCheck.add(messageObject);
+                    }
+                }
             }
             loadReactionsForMessages(chatActivity.getDialogId(), reactionsToCheck);
             loadExtendedMediaForMessages(chatActivity.getDialogId(), extendedMediaToCheck);
+            loadStoriesForMessages(chatActivity.getDialogId(), storiesToCheck);
+        }
+    }
+
+    private void loadStoriesForMessages(long dialogId, ArrayList<MessageObject> visibleObjects) {
+        if (visibleObjects.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < visibleObjects.size(); i++) {
+            TLRPC.TL_stories_getStoriesByID req = new TLRPC.TL_stories_getStoriesByID();
+            MessageObject messageObject = visibleObjects.get(i);
+            TLRPC.StoryItem storyItem = new TLRPC.TL_storyItem();
+            if (messageObject.type == MessageObject.TYPE_STORY || messageObject.type == MessageObject.TYPE_STORY_MENTION) {
+                storyItem = messageObject.messageOwner.media.storyItem;
+                storyItem.dialogId = messageObject.messageOwner.media.user_id;
+            } else if (messageObject.messageOwner.reply_to != null) {
+                storyItem = messageObject.messageOwner.replyStory;
+                storyItem.dialogId = messageObject.messageOwner.reply_to.user_id;
+            } else {
+                continue;
+            }
+            long storyDialogId = storyItem.dialogId;
+            req.user_id = chatActivity.getMessagesController().getInputUser(storyDialogId);
+            req.id.add(storyItem.id);
+            int storyId = storyItem.id;
+            int reqId = chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> {
+                TLRPC.StoryItem newStoryItem = null;
+                if (response != null) {
+                    TLRPC.TL_stories_stories stories = (TLRPC.TL_stories_stories) response;
+                    if (stories.stories.size() > 0) {
+                        newStoryItem = stories.stories.get(0);
+                    }
+                    if (newStoryItem == null) {
+                        newStoryItem = new TLRPC.TL_storyItemDeleted();
+                    }
+                    newStoryItem.lastUpdateTime = System.currentTimeMillis();
+                    newStoryItem.id = storyId;
+                    TLRPC.StoryItem finalNewStoryItem = newStoryItem;
+                    AndroidUtilities.runOnUIThread(() -> {
+                        boolean wasExpired = messageObject.isExpiredStory();
+                        StoriesStorage.applyStory(chatActivity.getCurrentAccount(), storyDialogId, messageObject, finalNewStoryItem);
+                        ArrayList<MessageObject> messageObjects = new ArrayList<>();
+                        messageObject.forceUpdate = true;
+                        messageObjects.add(messageObject);
+                        chatActivity.getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                            chatActivity.getMessagesController().getStoriesController().getStoriesStorage().updateMessagesWithStories(messageObjects);
+                        });
+                        if (!wasExpired && messageObject.isExpiredStory() && messageObject.type == MessageObject.TYPE_STORY_MENTION) {
+                            chatActivity.updateMessages(messageObjects, true);
+                        } else {
+                            chatActivity.updateMessages(messageObjects, false);
+                        }
+                    });
+                }
+            });
+            extendedMediaRequests.add(reqId);
+        }
+        if (extendedMediaRequests.size() > 10) {
+            chatActivity.getConnectionsManager().cancelRequest(extendedMediaRequests.remove(0), false);
         }
     }
 
@@ -91,7 +170,7 @@ public class ChatMessagesMetadataController {
             }
         });
         extendedMediaRequests.add(reqId);
-        if (extendedMediaRequests.size() > 5) {
+        if (extendedMediaRequests.size() > 10) {
             chatActivity.getConnectionsManager().cancelRequest(extendedMediaRequests.remove(0), false);
         }
     }

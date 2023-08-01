@@ -6,12 +6,15 @@ import android.graphics.PointF;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
+import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,10 +28,10 @@ public class FilterShaders {
 
     private static final String YUCIHighPassSkinSmoothingMaskBoostFilterFragmentShaderCode =
             "precision lowp float;" +
-            "varying highp vec2 texCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "varying highp vec2 vTextureCoord;" +
+            "uniform sampler2D sTexture;" +
             "void main() {" +
-                "vec4 color = texture2D(sourceImage, texCoord);" +
+                "vec4 color = texture2D(sTexture, vTextureCoord);" +
                 "float hardLightColor = color.b;" +
                 "for (int i = 0; i < 3; ++i)" +
                 "{" +
@@ -46,14 +49,14 @@ public class FilterShaders {
     private static final String highpassSkinSmoothingCompositingFilterFragmentShaderString =
             "%1$s\n" +
             "precision lowp float;" +
-            "varying highp vec2 texCoord;" +
+            "varying highp vec2 vTextureCoord;" +
             "varying highp vec2 texCoord2;" +
-            "uniform %2$s sourceImage;" +
+            "uniform %2$s sTexture;" +
             "uniform sampler2D toneCurveTexture;" +
             "uniform sampler2D inputImageTexture3;" +
             "uniform lowp float mixturePercent;" +
             "void main() {" +
-                "vec4 image = texture2D(sourceImage, texCoord);" +
+                "vec4 image = texture2D(sTexture, vTextureCoord);" +
                 "vec4 mask = texture2D(inputImageTexture3, texCoord2);" +
                 "float redCurveValue = texture2D(toneCurveTexture, vec2(image.r, 0.0)).r;" +
                 "float greenCurveValue = texture2D(toneCurveTexture, vec2(image.g, 0.0)).g;" +
@@ -63,13 +66,32 @@ public class FilterShaders {
                 "gl_FragColor = vec4(mix(image.rgb, tone.rgb, 1.0 - mask.b), 1.0);" +
             "}";
 
+    private static final String yuv_highpassSkinSmoothingCompositingFilterFragmentShaderString_300 =
+        "%1$s\n" +
+        "in highp vec2 vTextureCoord;" +
+        "in highp vec2 texCoord2;" +
+        "uniform sampler2D toneCurveTexture;" +
+        "uniform sampler2D inputImageTexture3;" +
+        "uniform lowp float mixturePercent;" +
+        "out vec4 fragColor;" +
+        "void main() {" +
+        "vec4 image = TEX(vTextureCoord);" +
+        "vec4 mask = texture(inputImageTexture3, texCoord2);" +
+        "float redCurveValue = texture(toneCurveTexture, vec2(image.r, 0.0)).r;" +
+        "float greenCurveValue = texture(toneCurveTexture, vec2(image.g, 0.0)).g;" +
+        "float blueCurveValue = texture(toneCurveTexture, vec2(image.b, 0.0)).b;" +
+        "vec4 result = vec4(redCurveValue, greenCurveValue, blueCurveValue, image.a);" +
+        "vec4 tone = mix(image, result, mixturePercent);" +
+        "fragColor = vec4(mix(image.rgb, tone.rgb, 1.0 - mask.b), 1.0);" +
+        "}";
+
     private static final String greenAndBlueChannelOverlayFragmentShaderCode =
             "%1$s\n" +
             "precision lowp float;" +
-            "varying highp vec2 texCoord;" +
-            "uniform %2$s sourceImage;" +
+            "varying highp vec2 vTextureCoord;" +
+            "uniform %2$s sTexture;" +
             "void main() {" +
-                "vec4 inp = texture2D(sourceImage, texCoord);" +
+                "vec4 inp = texture2D(sTexture, vTextureCoord);" +
                 "vec4 image = vec4(inp.rgb * pow(2.0, -1.0), inp.w);" +
                 "vec4 base = vec4(image.g, image.g, image.g, 1.0);" +
                 "vec4 overlay = vec4(image.b, image.b, image.b, 1.0);" +
@@ -77,37 +99,50 @@ public class FilterShaders {
                 "gl_FragColor = vec4(ba,ba,ba,image.a);" +
             "}";
 
+    private static final String greenAndBlueChannelOverlayFragmentShaderCode_300 =
+        "%1$s\n" +
+        "in highp vec2 vTextureCoord;" +
+        "out vec4 fragColor;" +
+        "void main() {" +
+        "vec4 inp = TEX(vTextureCoord);" +
+        "vec4 image = vec4(inp.rgb * pow(2.0, -1.0), inp.w);" +
+        "vec4 base = vec4(image.g, image.g, image.g, 1.0);" +
+        "vec4 overlay = vec4(image.b, image.b, image.b, 1.0);" +
+        "float ba = 2.0 * overlay.b * base.b + overlay.b * (1.0 - base.a) + base.b * (1.0 - overlay.a);" +
+        "fragColor = vec4(ba,ba,ba,image.a);" +
+        "}";
+
     private static final String stillImageHighPassFilterFragmentShaderCode =
             "precision lowp float;" +
-            "varying highp vec2 texCoord;" +
+            "varying highp vec2 vTextureCoord;" +
             "varying highp vec2 texCoord2;" +
-            "uniform sampler2D sourceImage;" +
+            "uniform sampler2D sTexture;" +
             "uniform sampler2D inputImageTexture2;" +
             "void main() {" +
-                "vec4 image = texture2D(sourceImage, texCoord);" +
+                "vec4 image = texture2D(sTexture, vTextureCoord);" +
                 "vec4 blurredImage = texture2D(inputImageTexture2, texCoord2);" +
                 "gl_FragColor = vec4((image.rgb - blurredImage.rgb + vec3(0.5,0.5,0.5)), image.a);" +
             "}";
 
     private static final String radialBlurFragmentShaderCode =
-            "varying highp vec2 texCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "varying highp vec2 vTextureCoord;" +
+            "uniform sampler2D sTexture;" +
             "uniform sampler2D inputImageTexture2;" +
             "uniform lowp float excludeSize;" +
             "uniform lowp vec2 excludePoint;" +
             "uniform lowp float excludeBlurSize;" +
             "uniform highp float aspectRatio;" +
             "void main() {" +
-                "lowp vec4 sharpImageColor = texture2D(sourceImage, texCoord);" +
-                "lowp vec4 blurredImageColor = texture2D(inputImageTexture2, texCoord);" +
-                "highp vec2 texCoordToUse = vec2(texCoord.x, (texCoord.y * aspectRatio + 0.5 - 0.5 * aspectRatio));" +
+                "lowp vec4 sharpImageColor = texture2D(sTexture, vTextureCoord);" +
+                "lowp vec4 blurredImageColor = texture2D(inputImageTexture2, vTextureCoord);" +
+                "highp vec2 texCoordToUse = vec2(vTextureCoord.x, (vTextureCoord.y * aspectRatio + 0.5 - 0.5 * aspectRatio));" +
                 "highp float distanceFromCenter = distance(excludePoint, texCoordToUse);" +
                 "gl_FragColor = mix(sharpImageColor, blurredImageColor, smoothstep(excludeSize - excludeBlurSize, excludeSize, distanceFromCenter));" +
             "}";
 
     private static final String linearBlurFragmentShaderCode =
-            "varying highp vec2 texCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "varying highp vec2 vTextureCoord;" +
+            "uniform sampler2D sTexture;" +
             "uniform sampler2D inputImageTexture2;" +
             "uniform lowp float excludeSize;" +
             "uniform lowp vec2 excludePoint;" +
@@ -115,9 +150,9 @@ public class FilterShaders {
             "uniform highp float angle;" +
             "uniform highp float aspectRatio;" +
             "void main() {" +
-                "lowp vec4 sharpImageColor = texture2D(sourceImage, texCoord);" +
-                "lowp vec4 blurredImageColor = texture2D(inputImageTexture2, texCoord);" +
-                "highp vec2 texCoordToUse = vec2(texCoord.x, (texCoord.y * aspectRatio + 0.5 - 0.5 * aspectRatio));" +
+                "lowp vec4 sharpImageColor = texture2D(sTexture, vTextureCoord);" +
+                "lowp vec4 blurredImageColor = texture2D(inputImageTexture2, vTextureCoord);" +
+                "highp vec2 texCoordToUse = vec2(vTextureCoord.x, (vTextureCoord.y * aspectRatio + 0.5 - 0.5 * aspectRatio));" +
                 "highp float distanceFromCenter = abs((texCoordToUse.x - excludePoint.x) * aspectRatio * cos(angle) + (texCoordToUse.y - excludePoint.y) * sin(angle));" +
                 "gl_FragColor = mix(sharpImageColor, blurredImageColor, smoothstep(excludeSize - excludeBlurSize, excludeSize, distanceFromCenter));" +
             "}";
@@ -183,21 +218,21 @@ public class FilterShaders {
 
         StringBuilder shaderString = new StringBuilder();
 
-        shaderString.append("uniform sampler2D sourceImage;\n");
+        shaderString.append("uniform sampler2D sTexture;\n");
         shaderString.append("uniform highp float texelWidthOffset;\n");
         shaderString.append("uniform highp float texelHeightOffset;\n");
         shaderString.append(String.format(Locale.US, "varying highp vec2 blurCoordinates[%d];\n", 1 + (numberOfOptimizedOffsets * 2)));
         shaderString.append("void main()\n");
         shaderString.append("{\n");
         shaderString.append("lowp vec4 sum = vec4(0.0);\n");
-        shaderString.append(String.format(Locale.US, "sum += texture2D(sourceImage, blurCoordinates[0]) * %f;\n", standardGaussianWeights[0]));
+        shaderString.append(String.format(Locale.US, "sum += texture2D(sTexture, blurCoordinates[0]) * %f;\n", standardGaussianWeights[0]));
 
         for (int currentBlurCoordinateIndex = 0; currentBlurCoordinateIndex < numberOfOptimizedOffsets; currentBlurCoordinateIndex++) {
             float firstWeight = standardGaussianWeights[currentBlurCoordinateIndex * 2 + 1];
             float secondWeight = standardGaussianWeights[currentBlurCoordinateIndex * 2 + 2];
             float optimizedWeight = firstWeight + secondWeight;
-            shaderString.append(String.format(Locale.US, "sum += texture2D(sourceImage, blurCoordinates[%d]) * %f;\n", ((currentBlurCoordinateIndex * 2) + 1), optimizedWeight));
-            shaderString.append(String.format(Locale.US, "sum += texture2D(sourceImage, blurCoordinates[%d]) * %f;\n", ((currentBlurCoordinateIndex * 2) + 2), optimizedWeight));
+            shaderString.append(String.format(Locale.US, "sum += texture2D(sTexture, blurCoordinates[%d]) * %f;\n", ((currentBlurCoordinateIndex * 2) + 1), optimizedWeight));
+            shaderString.append(String.format(Locale.US, "sum += texture2D(sTexture, blurCoordinates[%d]) * %f;\n", ((currentBlurCoordinateIndex * 2) + 2), optimizedWeight));
         }
 
         if (trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets) {
@@ -208,8 +243,8 @@ public class FilterShaders {
                 float secondWeight = standardGaussianWeights[currentOverlowTextureRead * 2 + 2];
                 float optimizedWeight = firstWeight + secondWeight;
                 float optimizedOffset = (firstWeight * (currentOverlowTextureRead * 2 + 1) + secondWeight * (currentOverlowTextureRead * 2 + 2)) / optimizedWeight;
-                shaderString.append(String.format(Locale.US, "sum += texture2D(sourceImage, blurCoordinates[0] + singleStepOffset * %f) * %f;\n", optimizedOffset, optimizedWeight));
-                shaderString.append(String.format(Locale.US, "sum += texture2D(sourceImage, blurCoordinates[0] - singleStepOffset * %f) * %f;\n", optimizedOffset, optimizedWeight));
+                shaderString.append(String.format(Locale.US, "sum += texture2D(sTexture, blurCoordinates[0] + singleStepOffset * %f) * %f;\n", optimizedOffset, optimizedWeight));
+                shaderString.append(String.format(Locale.US, "sum += texture2D(sTexture, blurCoordinates[0] - singleStepOffset * %f) * %f;\n", optimizedOffset, optimizedWeight));
             }
         }
 
@@ -281,7 +316,7 @@ public class FilterShaders {
             } else {
                 blurPositionHandle = GLES20.glGetAttribLocation(blurShaderProgram, "position");
                 blurInputTexCoordHandle = GLES20.glGetAttribLocation(blurShaderProgram, "inputTexCoord");
-                blurSourceImageHandle = GLES20.glGetUniformLocation(blurShaderProgram, "sourceImage");
+                blurSourceImageHandle = GLES20.glGetUniformLocation(blurShaderProgram, "sTexture");
                 blurWidthHandle = GLES20.glGetUniformLocation(blurShaderProgram, "texelWidthOffset");
                 blurHeightHandle = GLES20.glGetUniformLocation(blurShaderProgram, "texelHeightOffset");
             }
@@ -293,29 +328,53 @@ public class FilterShaders {
             "attribute vec4 position;" +
             "uniform mat4 videoMatrix;" +
             "attribute vec4 inputTexCoord;" +
-            "varying vec2 texCoord;" +
+            "varying vec2 vTextureCoord;" +
             "void main() {" +
                 "gl_Position = position;" +
-                "texCoord = vec2(videoMatrix * inputTexCoord).xy;" +
+                "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
+            "}";
+
+    private static final String simpleVertexVideoShaderCode_300 =
+            "#version 320 es\n" +
+            "in vec4 position;" +
+            "uniform mat4 videoMatrix;" +
+            "in vec4 inputTexCoord;" +
+            "out vec2 vTextureCoord;" +
+            "void main() {" +
+            "gl_Position = position;" +
+            "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
             "}";
 
     private static final String simpleTwoTextureVertexVideoShaderCode =
             "attribute vec4 position;" +
             "uniform mat4 videoMatrix;" +
             "attribute vec4 inputTexCoord;" +
-            "varying vec2 texCoord;" +
+            "varying vec2 vTextureCoord;" +
             "varying vec2 texCoord2;" +
             "void main() {" +
                 "gl_Position = position;" +
-                "texCoord = vec2(videoMatrix * inputTexCoord).xy;" +
+                "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
                 "texCoord2 = inputTexCoord.xy;" +
+            "}";
+
+    private static final String simpleTwoTextureVertexVideoShaderCode_300 =
+            "#version 320 es\n" +
+            "in vec4 position;" +
+            "uniform mat4 videoMatrix;" +
+            "in vec4 inputTexCoord;" +
+            "out vec2 vTextureCoord;" +
+            "out vec2 texCoord2;" +
+            "void main() {" +
+            "gl_Position = position;" +
+            "vTextureCoord = vec2(videoMatrix * inputTexCoord).xy;" +
+            "texCoord2 = inputTexCoord.xy;" +
             "}";
 
     private static final String rgbToHsvFragmentShaderCode =
             "%1$s\n" +
             "precision highp float;" +
-            "varying vec2 texCoord;" +
-            "uniform %2$s sourceImage;" +
+            "varying vec2 vTextureCoord;" +
+            "uniform %2$s sTexture;" +
             "vec3 rgb_to_hsv(vec3 c) {" +
                 "vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
                 "vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
@@ -325,20 +384,37 @@ public class FilterShaders {
                 "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
             "}" +
             "void main() {" +
-                "vec4 texel = texture2D(sourceImage, texCoord);" +
+                "vec4 texel = texture2D(sTexture, vTextureCoord);" +
                 "gl_FragColor = vec4(rgb_to_hsv(texel.rgb), texel.a);" +
             "}";
 
+    private static final String yuvToHsvFragmentShaderCode_300 =
+        "%1$s\n" +
+        "in vec2 vTextureCoord;" +
+        "out vec4 fragColor;" +
+        "highp vec3 rgb_to_hsv(vec3 c) {" +
+        "highp vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
+        "highp vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
+        "highp vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);" +
+        "highp float d = q.x - min(q.w, q.y);" +
+        "highp float e = 1.0e-10;" +
+        "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
+        "}" +
+        "void main() {" +
+        "vec4 texel = TEX(vTextureCoord);" +
+        "fragColor = vec4(rgb_to_hsv(texel.rgb), texel.a);" +
+        "}";
+
     private static final String enhanceFragmentShaderCode =
             "precision highp float;" +
-            "varying vec2 texCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "varying vec2 vTextureCoord;" +
+            "uniform sampler2D sTexture;" +
             "uniform sampler2D inputImageTexture2;" +
             "uniform float intensity;" +
             "float enhance(float value) {" +
                 "const vec2 offset = vec2(0.001953125, 0.03125);" +
                 "value = value + offset.x;" +
-                "vec2 coord = (clamp(texCoord, 0.125, 1.0 - 0.125001) - 0.125) * 4.0;" +
+                "vec2 coord = (clamp(vTextureCoord, 0.125, 1.0 - 0.125001) - 0.125) * 4.0;" +
                 "vec2 frac = fract(coord);" +
                 "coord = floor(coord);" +
                 "float p00 = float(coord.y * 4.0 + coord.x) * 0.0625 + offset.y;" +
@@ -363,7 +439,7 @@ public class FilterShaders {
                 "return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);" +
             "}" +
             "void main() {" +
-                "vec4 texel = texture2D(sourceImage, texCoord);" +
+                "vec4 texel = texture2D(sTexture, vTextureCoord);" +
                 "vec4 hsv = texel;" +
                 "hsv.y = min(1.0, hsv.y * 1.2);" +
                 "hsv.z = min(1.0, enhance(hsv.z) * 1.1);" +
@@ -373,34 +449,34 @@ public class FilterShaders {
     public static final String simpleVertexShaderCode =
             "attribute vec4 position;" +
             "attribute vec2 inputTexCoord;" +
-            "varying vec2 texCoord;" +
+            "varying vec2 vTextureCoord;" +
             "void main() {" +
                 "gl_Position = position;" +
-                "texCoord = inputTexCoord;" +
+                "vTextureCoord = inputTexCoord;" +
             "}";
 
     public static final String simpleTwoTextureVertexShaderCode =
             "attribute vec4 position;" +
             "attribute vec2 inputTexCoord;" +
-            "varying vec2 texCoord;" +
+            "varying vec2 vTextureCoord;" +
             "varying vec2 texCoord2;" +
             "void main() {" +
                 "gl_Position = position;" +
-                "texCoord = inputTexCoord;" +
+                "vTextureCoord = inputTexCoord;" +
                 "texCoord2 = inputTexCoord;" +
             "}";
 
     public static final String simpleFragmentShaderCode =
-            "varying highp vec2 texCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "varying highp vec2 vTextureCoord;" +
+            "uniform sampler2D sTexture;" +
             "void main() {" +
-                "gl_FragColor = texture2D(sourceImage, texCoord);" +
+                "gl_FragColor = texture2D(sTexture, vTextureCoord);" +
             "}";
 
     private static final String sharpenVertexShaderCode =
             "attribute vec4 position;" +
             "attribute vec2 inputTexCoord;" +
-            "varying vec2 texCoord;" +
+            "varying vec2 vTextureCoord;" +
 
             "uniform highp float inputWidth;" +
             "uniform highp float inputHeight;" +
@@ -411,7 +487,7 @@ public class FilterShaders {
 
             "void main() {" +
                 "gl_Position = position;" +
-                "texCoord = inputTexCoord;" +
+                "vTextureCoord = inputTexCoord;" +
                 "highp vec2 widthStep = vec2(1.0 / inputWidth, 0.0);" +
                 "highp vec2 heightStep = vec2(0.0, 1.0 / inputHeight);" +
                 "leftTexCoord = inputTexCoord - widthStep;" +
@@ -422,29 +498,29 @@ public class FilterShaders {
 
     private static final String sharpenFragmentShaderCode =
             "precision highp float;" +
-            "varying vec2 texCoord;" +
+            "varying vec2 vTextureCoord;" +
             "varying vec2 leftTexCoord;" +
             "varying vec2 rightTexCoord;" +
             "varying vec2 topTexCoord;" +
             "varying vec2 bottomTexCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "uniform sampler2D sTexture;" +
             "uniform float sharpen;" +
 
             "void main() {" +
-                "vec4 result = texture2D(sourceImage, texCoord);" +
+                "vec4 result = texture2D(sTexture, vTextureCoord);" +
 
-                "vec3 leftTextureColor = texture2D(sourceImage, leftTexCoord).rgb;" +
-                "vec3 rightTextureColor = texture2D(sourceImage, rightTexCoord).rgb;" +
-                "vec3 topTextureColor = texture2D(sourceImage, topTexCoord).rgb;" +
-                "vec3 bottomTextureColor = texture2D(sourceImage, bottomTexCoord).rgb;" +
+                "vec3 leftTextureColor = texture2D(sTexture, leftTexCoord).rgb;" +
+                "vec3 rightTextureColor = texture2D(sTexture, rightTexCoord).rgb;" +
+                "vec3 topTextureColor = texture2D(sTexture, topTexCoord).rgb;" +
+                "vec3 bottomTextureColor = texture2D(sTexture, bottomTexCoord).rgb;" +
                 "result.rgb = result.rgb * (1.0 + 4.0 * sharpen) - (leftTextureColor + rightTextureColor + topTextureColor + bottomTextureColor) * sharpen;" +
 
                 "gl_FragColor = result;" +
             "}";
 
     private static final String toolsFragmentShaderCode =
-            "varying highp vec2 texCoord;" +
-            "uniform sampler2D sourceImage;" +
+            "varying highp vec2 vTextureCoord;" +
+            "uniform sampler2D sTexture;" +
             "uniform highp float width;" +
             "uniform highp float height;" +
             "uniform sampler2D curvesImage;" +
@@ -619,7 +695,7 @@ public class FilterShaders {
             "return vec2(((tc.x * 2.0 - 1.0) * cos(angle) - (tc.y * 2.0 - 1.0) * sin(angle)) * 0.5 + 0.5, ((tc.y * 2.0 - 1.0) * cos(angle) + (tc.x * 2.0 - 1.0) * sin(angle)) * 0.5 + 0.5);" +
             "}" +
             "void main() {" +
-            "lowp vec4 source = texture2D(sourceImage, texCoord);" +
+            "lowp vec4 source = texture2D(sTexture, vTextureCoord);" +
             "lowp vec4 result = source;" +
             "const lowp float toolEpsilon = 0.005;" +
             "if (skipTone < toolEpsilon) {" +
@@ -676,7 +752,7 @@ public class FilterShaders {
             "}" +
             "if (abs(grain) > toolEpsilon) {" +
             "highp vec3 rotOffset = vec3(1.425, 3.892, 5.835);" +
-            "highp vec2 rotCoordsR = coordRot(texCoord, rotOffset.x);" +
+            "highp vec2 rotCoordsR = coordRot(vTextureCoord, rotOffset.x);" +
             "highp vec3 noise = vec3(pnoise3D(vec3(rotCoordsR * vec2(width / grainsize, height / grainsize),0.0)));" +
             "lowp vec3 lumcoeff = vec3(0.299,0.587,0.114);" +
             "lowp float luminance = dot(result.rgb, lumcoeff);" +
@@ -688,7 +764,7 @@ public class FilterShaders {
             "if (abs(vignette) > toolEpsilon) {" +
             "const lowp float midpoint = 0.7;" +
             "const lowp float fuzziness = 0.62;" +
-            "lowp float radDist = length(texCoord - 0.5) / sqrt(0.5);" +
+            "lowp float radDist = length(vTextureCoord - 0.5) / sqrt(0.5);" +
             "lowp float mag = easeInOutSigmoid(radDist * midpoint, fuzziness) * vignette * 0.645;" +
             "result.rgb = mix(pow(result.rgb, vec3(1.0 / (1.0 - mag))), vec3(0.0), mag * mag);" +
             "}" +
@@ -908,6 +984,7 @@ public class FilterShaders {
     private int greenAndBlueChannelOverlayInputTexCoordHandle;
     private int greenAndBlueChannelOverlaySourceImageHandle;
     private int greenAndBlueChannelOverlayMatrixHandle;
+    private int greenAndBlueChannelOverlayTexSizeHandle;
     private ToneCurve toneCurve;
 
     private int highPassProgram;
@@ -924,6 +1001,7 @@ public class FilterShaders {
     private int compositeCurveImageHandle;
     private int compositeMixtureHandle;
     private int compositeMatrixHandle;
+    private int compositeTexSizeHandle;
 
     private int boostProgram;
     private int boostPositionHandle;
@@ -935,6 +1013,7 @@ public class FilterShaders {
     private int[] rgbToHsvInputTexCoordHandle = new int[2];
     private int[] rgbToHsvSourceImageHandle = new int[2];
     private int rgbToHsvMatrixHandle;
+    private int rgbToHsvTexSizeHandle;
 
     private int enhanceShaderProgram;
     private int enhancePositionHandle;
@@ -996,6 +1075,7 @@ public class FilterShaders {
     private int sharpenSourceImageHandle;
 
     private int videoTexture;
+    private int videoWidth, videoHeight;
     private float[] videoMatrix;
     private int videoFramesCount;
 
@@ -1023,9 +1103,11 @@ public class FilterShaders {
     private FilterShadersDelegate delegate;
 
     private boolean isVideo;
+    private StoryEntry.HDRInfo hdrInfo;
 
-    public FilterShaders(boolean video) {
+    public FilterShaders(boolean video, StoryEntry.HDRInfo hdrInfo) {
         isVideo = video;
+        this.hdrInfo = hdrInfo;
 
         float[] squareCoordinates = {
                 -1.0f, 1.0f,
@@ -1106,7 +1188,7 @@ public class FilterShaders {
             } else {
                 positionHandle = GLES20.glGetAttribLocation(toolsShaderProgram, "position");
                 inputTexCoordHandle = GLES20.glGetAttribLocation(toolsShaderProgram, "inputTexCoord");
-                sourceImageHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "sourceImage");
+                sourceImageHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "sTexture");
                 shadowsHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "shadows");
                 highlightsHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "highlights");
                 exposureHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "exposure");
@@ -1147,7 +1229,7 @@ public class FilterShaders {
             } else {
                 sharpenPositionHandle = GLES20.glGetAttribLocation(sharpenShaderProgram, "position");
                 sharpenInputTexCoordHandle = GLES20.glGetAttribLocation(sharpenShaderProgram, "inputTexCoord");
-                sharpenSourceImageHandle = GLES20.glGetUniformLocation(sharpenShaderProgram, "sourceImage");
+                sharpenSourceImageHandle = GLES20.glGetUniformLocation(sharpenShaderProgram, "sTexture");
                 sharpenWidthHandle = GLES20.glGetUniformLocation(sharpenShaderProgram, "inputWidth");
                 sharpenHeightHandle = GLES20.glGetUniformLocation(sharpenShaderProgram, "inputHeight");
                 sharpenHandle = GLES20.glGetUniformLocation(sharpenShaderProgram, "sharpen");
@@ -1161,8 +1243,9 @@ public class FilterShaders {
             return false;
         }
 
-        String extension = isVideo ? "#extension GL_OES_EGL_image_external : require" : "";
-        String sampler2D = isVideo ? "samplerExternalOES" : "sampler2D";
+        if (!setupExternalShaders()) {
+            return false;
+        }
 
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
         fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, linearBlurFragmentShaderCode);
@@ -1182,7 +1265,7 @@ public class FilterShaders {
             } else {
                 linearBlurPositionHandle = GLES20.glGetAttribLocation(linearBlurShaderProgram, "position");
                 linearBlurInputTexCoordHandle = GLES20.glGetAttribLocation(linearBlurShaderProgram, "inputTexCoord");
-                linearBlurSourceImageHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "sourceImage");
+                linearBlurSourceImageHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "sTexture");
                 linearBlurSourceImage2Handle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "inputImageTexture2");
                 linearBlurExcludeSizeHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "excludeSize");
                 linearBlurExcludePointHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "excludePoint");
@@ -1212,7 +1295,7 @@ public class FilterShaders {
             } else {
                 radialBlurPositionHandle = GLES20.glGetAttribLocation(radialBlurShaderProgram, "position");
                 radialBlurInputTexCoordHandle = GLES20.glGetAttribLocation(radialBlurShaderProgram, "inputTexCoord");
-                radialBlurSourceImageHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "sourceImage");
+                radialBlurSourceImageHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "sTexture");
                 radialBlurSourceImage2Handle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "inputImageTexture2");
                 radialBlurExcludeSizeHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "excludeSize");
                 radialBlurExcludePointHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "excludePoint");
@@ -1221,39 +1304,6 @@ public class FilterShaders {
             }
         } else {
             return false;
-        }
-
-        for (int a = 0; a < (isVideo ? 2 : 1); a++) {
-            if (a == 1 && isVideo) {
-                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode);
-                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, rgbToHsvFragmentShaderCode, extension, sampler2D));
-            } else {
-                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
-                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, rgbToHsvFragmentShaderCode, "", "sampler2D"));
-            }
-            if (vertexShader != 0 && fragmentShader != 0) {
-                rgbToHsvShaderProgram[a] = GLES20.glCreateProgram();
-                GLES20.glAttachShader(rgbToHsvShaderProgram[a], vertexShader);
-                GLES20.glAttachShader(rgbToHsvShaderProgram[a], fragmentShader);
-                GLES20.glBindAttribLocation(rgbToHsvShaderProgram[a], 0, "position");
-                GLES20.glBindAttribLocation(rgbToHsvShaderProgram[a], 1, "inputTexCoord");
-
-                GLES20.glLinkProgram(rgbToHsvShaderProgram[a]);
-                GLES20.glGetProgramiv(rgbToHsvShaderProgram[a], GLES20.GL_LINK_STATUS, linkStatus, 0);
-                if (linkStatus[0] == 0) {
-                    GLES20.glDeleteProgram(rgbToHsvShaderProgram[a]);
-                    rgbToHsvShaderProgram[a] = 0;
-                } else {
-                    rgbToHsvPositionHandle[a] = GLES20.glGetAttribLocation(rgbToHsvShaderProgram[a], "position");
-                    rgbToHsvInputTexCoordHandle[a] = GLES20.glGetAttribLocation(rgbToHsvShaderProgram[a], "inputTexCoord");
-                    rgbToHsvSourceImageHandle[a] = GLES20.glGetUniformLocation(rgbToHsvShaderProgram[a], "sourceImage");
-                    if (a == 1) {
-                        rgbToHsvMatrixHandle = GLES20.glGetUniformLocation(rgbToHsvShaderProgram[a], "videoMatrix");
-                    }
-                }
-            } else {
-                return false;
-            }
         }
 
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
@@ -1273,39 +1323,9 @@ public class FilterShaders {
             } else {
                 enhancePositionHandle = GLES20.glGetAttribLocation(enhanceShaderProgram, "position");
                 enhanceInputTexCoordHandle = GLES20.glGetAttribLocation(enhanceShaderProgram, "inputTexCoord");
-                enhanceSourceImageHandle = GLES20.glGetUniformLocation(enhanceShaderProgram, "sourceImage");
+                enhanceSourceImageHandle = GLES20.glGetUniformLocation(enhanceShaderProgram, "sTexture");
                 enhanceIntensityHandle = GLES20.glGetUniformLocation(enhanceShaderProgram, "intensity");
                 enhanceInputImageTexture2Handle = GLES20.glGetUniformLocation(enhanceShaderProgram, "inputImageTexture2");
-            }
-        } else {
-            return false;
-        }
-
-        if (isVideo) {
-            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode);
-        } else {
-            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
-        }
-        fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, greenAndBlueChannelOverlayFragmentShaderCode, extension, sampler2D));
-        if (vertexShader != 0 && fragmentShader != 0) {
-            greenAndBlueChannelOverlayProgram = GLES20.glCreateProgram();
-            GLES20.glAttachShader(greenAndBlueChannelOverlayProgram, vertexShader);
-            GLES20.glAttachShader(greenAndBlueChannelOverlayProgram, fragmentShader);
-            GLES20.glBindAttribLocation(greenAndBlueChannelOverlayProgram, 0, "position");
-            GLES20.glBindAttribLocation(greenAndBlueChannelOverlayProgram, 1, "inputTexCoord");
-
-            GLES20.glLinkProgram(greenAndBlueChannelOverlayProgram);
-            GLES20.glGetProgramiv(greenAndBlueChannelOverlayProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
-            if (linkStatus[0] == 0) {
-                GLES20.glDeleteProgram(greenAndBlueChannelOverlayProgram);
-                greenAndBlueChannelOverlayProgram = 0;
-            } else {
-                greenAndBlueChannelOverlayPositionHandle = GLES20.glGetAttribLocation(greenAndBlueChannelOverlayProgram, "position");
-                greenAndBlueChannelOverlayInputTexCoordHandle = GLES20.glGetAttribLocation(greenAndBlueChannelOverlayProgram, "inputTexCoord");
-                greenAndBlueChannelOverlaySourceImageHandle = GLES20.glGetUniformLocation(greenAndBlueChannelOverlayProgram, "sourceImage");
-                if (isVideo) {
-                    greenAndBlueChannelOverlayMatrixHandle = GLES20.glGetUniformLocation(greenAndBlueChannelOverlayProgram, "videoMatrix");
-                }
             }
         } else {
             return false;
@@ -1328,7 +1348,7 @@ public class FilterShaders {
             } else {
                 highPassPositionHandle = GLES20.glGetAttribLocation(highPassProgram, "position");
                 highPassInputTexCoordHandle = GLES20.glGetAttribLocation(highPassProgram, "inputTexCoord");
-                highPassSourceImageHandle = GLES20.glGetUniformLocation(highPassProgram, "sourceImage");
+                highPassSourceImageHandle = GLES20.glGetUniformLocation(highPassProgram, "sTexture");
                 highPassInputImageHandle = GLES20.glGetUniformLocation(highPassProgram, "inputImageTexture2");
             }
         } else {
@@ -1352,18 +1372,135 @@ public class FilterShaders {
             } else {
                 boostPositionHandle = GLES20.glGetAttribLocation(boostProgram, "position");
                 boostInputTexCoordHandle = GLES20.glGetAttribLocation(boostProgram, "inputTexCoord");
-                boostSourceImageHandle = GLES20.glGetUniformLocation(boostProgram, "sourceImage");
+                boostSourceImageHandle = GLES20.glGetUniformLocation(boostProgram, "sTexture");
+            }
+        } else {
+            return false;
+        }
+
+        toneCurve = new ToneCurve();
+
+        return true;
+    }
+
+    public void updateHDRInfo(StoryEntry.HDRInfo hdrInfo) {
+        this.hdrInfo = hdrInfo;
+        setupExternalShaders();
+    }
+
+    private boolean setupExternalShaders() {
+        String yuvProcessor = "";
+        int hdrType = hdrInfo != null ? hdrInfo.getHDRType() : 0;
+        if (hdrType == 1) {
+            yuvProcessor = RLottieDrawable.readRes(null, R.raw.yuv_hlg2rgb);
+        } else if (hdrType == 2) {
+            yuvProcessor = RLottieDrawable.readRes(null, R.raw.yuv_pq2rgb);
+        }
+        String extension = isVideo ? "#extension GL_OES_EGL_image_external : require" : "";
+        String sampler2D = isVideo ? "samplerExternalOES" : "sampler2D";
+
+        int[] linkStatus = new int[1];
+        int vertexShader, fragmentShader;
+        for (int a = 0; a < (isVideo ? 2 : 1); a++) {
+            if (a == 1 && isVideo) {
+                if (hdrType != 0) {
+                    vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode_300);
+                    fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, yuvToHsvFragmentShaderCode_300, yuvProcessor));
+                } else {
+                    vertexShader = fragmentShader = 0;
+                }
+                if (vertexShader == 0 || fragmentShader == 0) {
+                    vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode);
+                    fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, rgbToHsvFragmentShaderCode, extension, sampler2D));
+                }
+            } else {
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, rgbToHsvFragmentShaderCode, "", "sampler2D"));
+            }
+            GLES20.glDeleteProgram(rgbToHsvShaderProgram[a]);
+            if (vertexShader != 0 && fragmentShader != 0) {
+                rgbToHsvShaderProgram[a] = GLES20.glCreateProgram();
+                GLES20.glAttachShader(rgbToHsvShaderProgram[a], vertexShader);
+                GLES20.glAttachShader(rgbToHsvShaderProgram[a], fragmentShader);
+                GLES20.glBindAttribLocation(rgbToHsvShaderProgram[a], 0, "position");
+                GLES20.glBindAttribLocation(rgbToHsvShaderProgram[a], 1, "inputTexCoord");
+
+                GLES20.glLinkProgram(rgbToHsvShaderProgram[a]);
+                GLES20.glGetProgramiv(rgbToHsvShaderProgram[a], GLES20.GL_LINK_STATUS, linkStatus, 0);
+                if (linkStatus[0] == 0) {
+                    GLES20.glDeleteProgram(rgbToHsvShaderProgram[a]);
+                    rgbToHsvShaderProgram[a] = 0;
+                } else {
+                    rgbToHsvPositionHandle[a] = GLES20.glGetAttribLocation(rgbToHsvShaderProgram[a], "position");
+                    rgbToHsvInputTexCoordHandle[a] = GLES20.glGetAttribLocation(rgbToHsvShaderProgram[a], "inputTexCoord");
+                    rgbToHsvSourceImageHandle[a] = GLES20.glGetUniformLocation(rgbToHsvShaderProgram[a], "sTexture");
+                    if (a == 1) {
+                        rgbToHsvMatrixHandle = GLES20.glGetUniformLocation(rgbToHsvShaderProgram[a], "videoMatrix");
+                        rgbToHsvTexSizeHandle = GLES20.glGetUniformLocation(rgbToHsvShaderProgram[a], "texSize");
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
+
+        if (isVideo) {
+            if (hdrType != 0) {
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode_300);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, greenAndBlueChannelOverlayFragmentShaderCode_300, yuvProcessor));
+            } else {
+                vertexShader = fragmentShader = 0;
+            }
+            if (vertexShader == 0 || fragmentShader == 0) {
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexVideoShaderCode);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, greenAndBlueChannelOverlayFragmentShaderCode, extension, sampler2D));
+            }
+        } else {
+            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
+            fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, greenAndBlueChannelOverlayFragmentShaderCode, extension, sampler2D));
+        }
+        GLES20.glDeleteProgram(greenAndBlueChannelOverlayProgram);
+        if (vertexShader != 0 && fragmentShader != 0) {
+            greenAndBlueChannelOverlayProgram = GLES20.glCreateProgram();
+            GLES20.glAttachShader(greenAndBlueChannelOverlayProgram, vertexShader);
+            GLES20.glAttachShader(greenAndBlueChannelOverlayProgram, fragmentShader);
+            GLES20.glBindAttribLocation(greenAndBlueChannelOverlayProgram, 0, "position");
+            GLES20.glBindAttribLocation(greenAndBlueChannelOverlayProgram, 1, "inputTexCoord");
+
+            GLES20.glLinkProgram(greenAndBlueChannelOverlayProgram);
+            GLES20.glGetProgramiv(greenAndBlueChannelOverlayProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+            if (linkStatus[0] == 0) {
+                GLES20.glDeleteProgram(greenAndBlueChannelOverlayProgram);
+                greenAndBlueChannelOverlayProgram = 0;
+            } else {
+                greenAndBlueChannelOverlayPositionHandle = GLES20.glGetAttribLocation(greenAndBlueChannelOverlayProgram, "position");
+                greenAndBlueChannelOverlayInputTexCoordHandle = GLES20.glGetAttribLocation(greenAndBlueChannelOverlayProgram, "inputTexCoord");
+                greenAndBlueChannelOverlaySourceImageHandle = GLES20.glGetUniformLocation(greenAndBlueChannelOverlayProgram, "sTexture");
+                if (isVideo) {
+                    greenAndBlueChannelOverlayMatrixHandle = GLES20.glGetUniformLocation(greenAndBlueChannelOverlayProgram, "videoMatrix");
+                    greenAndBlueChannelOverlayTexSizeHandle = GLES20.glGetUniformLocation(greenAndBlueChannelOverlayProgram, "texSize");
+                }
             }
         } else {
             return false;
         }
 
         if (isVideo) {
-            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleTwoTextureVertexVideoShaderCode);
+            if (hdrType != 0) {
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleTwoTextureVertexVideoShaderCode_300);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, yuv_highpassSkinSmoothingCompositingFilterFragmentShaderString_300, yuvProcessor));
+            } else {
+                vertexShader = fragmentShader = 0;
+            }
+            if (vertexShader == 0 || fragmentShader == 0) {
+                vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleTwoTextureVertexVideoShaderCode);
+                fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, highpassSkinSmoothingCompositingFilterFragmentShaderString, extension, sampler2D));
+            }
         } else {
             vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleTwoTextureVertexShaderCode);
+            fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, highpassSkinSmoothingCompositingFilterFragmentShaderString, extension, sampler2D));
         }
-        fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, String.format(Locale.US, highpassSkinSmoothingCompositingFilterFragmentShaderString, extension, sampler2D));
+        GLES20.glDeleteProgram(compositeProgram);
         if (vertexShader != 0 && fragmentShader != 0) {
             compositeProgram = GLES20.glCreateProgram();
             GLES20.glAttachShader(compositeProgram, vertexShader);
@@ -1379,19 +1516,18 @@ public class FilterShaders {
             } else {
                 compositePositionHandle = GLES20.glGetAttribLocation(compositeProgram, "position");
                 compositeInputTexCoordHandle = GLES20.glGetAttribLocation(compositeProgram, "inputTexCoord");
-                compositeSourceImageHandle = GLES20.glGetUniformLocation(compositeProgram, "sourceImage");
+                compositeSourceImageHandle = GLES20.glGetUniformLocation(compositeProgram, "sTexture");
                 compositeInputImageHandle = GLES20.glGetUniformLocation(compositeProgram, "inputImageTexture3");
                 compositeCurveImageHandle = GLES20.glGetUniformLocation(compositeProgram, "toneCurveTexture");
                 compositeMixtureHandle = GLES20.glGetUniformLocation(compositeProgram, "mixturePercent");
                 if (isVideo) {
                     compositeMatrixHandle = GLES20.glGetUniformLocation(compositeProgram, "videoMatrix");
+                    compositeTexSizeHandle = GLES20.glGetUniformLocation(compositeProgram, "texSize");
                 }
             }
         } else {
             return false;
         }
-
-        toneCurve = new ToneCurve();
 
         return true;
     }
@@ -1399,6 +1535,8 @@ public class FilterShaders {
     public void setRenderData(Bitmap currentBitmap, int orientation, int videoTex, int w, int h) {
         loadTexture(currentBitmap, orientation, w, h);
         videoTexture = videoTex;
+        videoWidth = w;
+        videoHeight = h;
 
         GLES20.glBindTexture(GL10.GL_TEXTURE_2D, enhanceTextures[0]);
         GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
@@ -1439,6 +1577,9 @@ public class FilterShaders {
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
                 GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, videoTexture);
                 GLES20.glUniformMatrix4fv(rgbToHsvMatrixHandle, 1, false, videoMatrix, 0);
+                if (rgbToHsvTexSizeHandle != -1) {
+                    GLES20.glUniform2f(rgbToHsvTexSizeHandle, renderBufferWidth, renderBufferHeight);
+                }
                 index = 1;
             } else {
                 GLES20.glUseProgram(rgbToHsvShaderProgram[0]);
@@ -1627,6 +1768,9 @@ public class FilterShaders {
             GLES20.glEnableVertexAttribArray(greenAndBlueChannelOverlayPositionHandle);
             if (isVideo) {
                 GLES20.glUniformMatrix4fv(greenAndBlueChannelOverlayMatrixHandle, 1, false, videoMatrix, 0);
+                if (greenAndBlueChannelOverlayTexSizeHandle != -1) {
+                    GLES20.glUniform2f(greenAndBlueChannelOverlayTexSizeHandle, renderBufferWidth, renderBufferHeight);
+                }
             }
             GLES20.glVertexAttribPointer(greenAndBlueChannelOverlayPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
 
@@ -1710,6 +1854,9 @@ public class FilterShaders {
         GLES20.glVertexAttribPointer(compositePositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
         if (isVideo) {
             GLES20.glUniformMatrix4fv(compositeMatrixHandle, 1, false, videoMatrix, 0);
+            if (compositeTexSizeHandle != -1) {
+                GLES20.glUniform2f(compositeTexSizeHandle, renderBufferWidth, renderBufferHeight);
+            }
         }
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
@@ -1827,6 +1974,12 @@ public class FilterShaders {
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
+
+    private boolean scaleBitmap = true;
+    public void setScaleBitmap(boolean scale) {
+        this.scaleBitmap = scale;
+    }
+
     private void loadTexture(Bitmap bitmap, int orientation, int w, int h) {
         renderBufferWidth = w;
         renderBufferHeight = h;
@@ -1841,9 +1994,9 @@ public class FilterShaders {
             GLES20.glGenTextures(1, bitmapTextre, 0);
 
             float maxSize = AndroidUtilities.getPhotoSize();
-            if (renderBufferWidth > maxSize || renderBufferHeight > maxSize || orientation % 360 != 0) {
+            if (scaleBitmap && (renderBufferWidth > maxSize || renderBufferHeight > maxSize) || orientation % 360 != 0) {
                 float scale = 1;
-                if (renderBufferWidth > maxSize || renderBufferHeight > maxSize) {
+                if (scaleBitmap && (renderBufferWidth > maxSize || renderBufferHeight > maxSize)) {
                     float scaleX = maxSize / bitmap.getWidth();
                     float scaleY = maxSize / bitmap.getHeight();
                     if (scaleX < scaleY) {

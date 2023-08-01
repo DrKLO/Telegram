@@ -34,6 +34,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
@@ -41,7 +42,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.Premium.PremiumLockIconView;
+import org.telegram.ui.Components.Reactions.HwEmojis;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.io.File;
@@ -146,6 +147,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private static HashMap<Integer, EmojiDocumentFetcher> fetchers;
+
     public static EmojiDocumentFetcher getDocumentFetcher(int account) {
         if (fetchers == null) {
             fetchers = new HashMap<>();
@@ -156,15 +158,21 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
         return fetcher;
     }
+
     public static class EmojiDocumentFetcher {
         private HashMap<Long, TLRPC.Document> emojiDocumentsCache;
         private HashMap<Long, ArrayList<ReceivedDocument>> loadingDocuments;
         private HashSet<Long> toFetchDocuments;
         private Runnable fetchRunnable;
+        private Runnable uiDbCallback;
         private final int currentAccount;
 
         public EmojiDocumentFetcher(int account) {
             currentAccount = account;
+        }
+
+        public void setUiDbCallback(Runnable uiDbCallback) {
+            this.uiDbCallback = uiDbCallback;
         }
 
         public void fetchDocument(long id, ReceivedDocument onDone) {
@@ -204,7 +212,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             AndroidUtilities.runOnUIThread(fetchRunnable = () -> {
                 ArrayList<Long> emojiToLoad = new ArrayList<>(toFetchDocuments);
                 toFetchDocuments.clear();
-                loadFromDatabase(emojiToLoad);
+                loadFromDatabase(emojiToLoad, uiDbCallback == null);
                 fetchRunnable = null;
             });
         }
@@ -219,51 +227,73 @@ public class AnimatedEmojiDrawable extends Drawable {
             return true;
         }
 
+        private void loadFromDatabase(ArrayList<Long> emojiToLoad, boolean async) {
+            if (async) {
+                MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
+                messagesStorage.getStorageQueue().postRunnable(() -> loadFromDatabase(emojiToLoad));
+            } else {
+                loadFromDatabase(emojiToLoad);
+            }
+        }
+
         private void loadFromDatabase(ArrayList<Long> emojiToLoad) {
             MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
-            messagesStorage.getStorageQueue().postRunnable(() -> {
-                SQLiteDatabase database = messagesStorage.getDatabase();
-                if (database == null) {
-                    return;
-                }
-                try {
-                    String idsStr = TextUtils.join(",", emojiToLoad);
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM animated_emoji WHERE document_id IN (%s)", idsStr));
-                    ArrayList<Object> documents = new ArrayList<>();
-                    HashSet<Long> loadFromServerIds = new HashSet<>(emojiToLoad);
-                    while (cursor.next()) {
-                        NativeByteBuffer byteBuffer = cursor.byteBufferValue(0);
-                        try {
-                            TLRPC.Document document = TLRPC.Document.TLdeserialize(byteBuffer, byteBuffer.readInt32(true), true);
-                            if (document != null && document.id != 0) {
-                                documents.add(document);
-                                loadFromServerIds.remove(document.id);
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
+            SQLiteDatabase database = messagesStorage.getDatabase();
+            if (database == null) {
+                return;
+            }
+            try {
+                String idsStr = TextUtils.join(",", emojiToLoad);
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM animated_emoji WHERE document_id IN (%s)", idsStr));
+                ArrayList<Object> documents = new ArrayList<>();
+                HashSet<Long> loadFromServerIds = new HashSet<>(emojiToLoad);
+                while (cursor.next()) {
+                    NativeByteBuffer byteBuffer = cursor.byteBufferValue(0);
+                    try {
+                        TLRPC.Document document = TLRPC.Document.TLdeserialize(byteBuffer, byteBuffer.readInt32(true), true);
+                        if (document != null && document.id != 0) {
+                            documents.add(document);
+                            loadFromServerIds.remove(document.id);
                         }
-                        if (byteBuffer != null) {
-                            byteBuffer.reuse();
-                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
-
-                    AndroidUtilities.runOnUIThread(() -> {
-                        processDocuments(documents);
-                        if (!loadFromServerIds.isEmpty()) {
-                            loadFromServer(new ArrayList<>(loadFromServerIds));
-                        }
-                    });
-                    cursor.dispose();
-                } catch (SQLiteException e) {
-                    messagesStorage.checkSQLException(e);
+                    if (byteBuffer != null) {
+                        byteBuffer.reuse();
+                    }
                 }
-            });
+
+                processDatabaseResult(documents, loadFromServerIds);
+                cursor.dispose();
+
+                if (uiDbCallback != null) {
+                    uiDbCallback.run();
+                    uiDbCallback = null;
+                }
+            } catch (SQLiteException e) {
+                messagesStorage.checkSQLException(e);
+            }
+        }
+
+        private void processDocumentsAndLoadMore(ArrayList<Object> documents, HashSet<Long> loadFromServerIds) {
+            processDocuments(documents);
+            if (!loadFromServerIds.isEmpty()) {
+                loadFromServer(new ArrayList<>(loadFromServerIds));
+            }
+        }
+
+        private void processDatabaseResult(ArrayList<Object> documents, HashSet<Long> loadFromServerIds) {
+            if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
+                processDocumentsAndLoadMore(documents, loadFromServerIds);
+            } else {
+                NotificationCenter.getInstance(currentAccount).doOnIdle(() -> AndroidUtilities.runOnUIThread(() -> processDocumentsAndLoadMore(documents, loadFromServerIds)));
+            }
         }
 
         private void loadFromServer(ArrayList<Long> loadFromServerIds) {
             final TLRPC.TL_messages_getCustomEmojiDocuments req = new TLRPC.TL_messages_getCustomEmojiDocuments();
             req.document_id = loadFromServerIds;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> NotificationCenter.getInstance(currentAccount).doOnIdle(() -> AndroidUtilities.runOnUIThread(() -> {
                 HashSet<Long> loadedFromServer = new HashSet<>(loadFromServerIds);
                 if (res instanceof TLRPC.Vector) {
                     ArrayList<Object> objects = ((TLRPC.Vector) res).objects;
@@ -280,7 +310,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                         loadFromServer(new ArrayList<>(loadedFromServer));
                     }
                 }
-            }));
+            })));
         }
 
         private void putToStorage(ArrayList<Object> objects) {
@@ -438,11 +468,13 @@ public class AnimatedEmojiDrawable extends Drawable {
             sizedp = 34;
         }
     }
+
     public long getDocumentId() {
         return this.document != null ? this.document.id : this.documentId;
     }
 
     private static boolean liteModeKeyboard, liteModeReactions;
+
     private static void updateLiteModeValues() {
         liteModeKeyboard = LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD);
         liteModeReactions = LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
@@ -472,6 +504,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             };
             imageReceiver.setAllowLoadingOnAttachedOnly(true);
         };
+
         if (cacheType == CACHE_TYPE_RENDERING_VIDEO) {
             imageReceiver.ignoreNotifications = true;
         }
@@ -541,7 +574,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             if (onlyStaticPreview || (!liteModeKeyboard && cacheType != CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW)) {
                 if ("video/webm".equals(document.mime_type)) {
                     imageReceiver.setImage(null, null, ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
-                } else if (MessageObject.isAnimatedStickerDocument(document, true)){
+                } else if (MessageObject.isAnimatedStickerDocument(document, true)) {
                     imageReceiver.setImage(mediaLocation, mediaFilter + "_firstframe", null, null, thumbDrawable, document.size, null, document, 1);
                 } else {
                     imageReceiver.setImage(ImageLocation.getForDocument(thumb, document), sizedp + "_" + sizedp, null, null, thumbDrawable, document.size, null, document, 1);
@@ -612,6 +645,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private static Paint placeholderPaint;
+
     public static void updatePlaceholderPaintColor() {
         if (placeholderPaint != null) {
             placeholderPaint.setColor(Theme.isCurrentThemeDark() ? 0x0fffffff : 0x0f000000);
@@ -706,6 +740,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
     public static int attachedCount = 0;
     public static ArrayList<AnimatedEmojiDrawable> attachedDrawable;
+
     private void updateAttachState() {
         if (imageReceiver == null) {
             return;
@@ -742,6 +777,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private Boolean canOverrideColorCached = null;
+
     public boolean canOverrideColor() {
         if (canOverrideColorCached != null) {
             return canOverrideColorCached;
@@ -753,6 +789,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private Boolean isDefaultStatusEmojiCached = null;
+
     public boolean isDefaultStatusEmoji() {
         if (isDefaultStatusEmojiCached != null) {
             return isDefaultStatusEmojiCached;
@@ -760,8 +797,8 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (document != null) {
             TLRPC.InputStickerSet set = MessageObject.getInputStickerSet(document);
             return isDefaultStatusEmojiCached = (
-                set instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses ||
-                set instanceof TLRPC.TL_inputStickerSetID && (set.id == 773947703670341676L || set.id == 2964141614563343L)
+                    set instanceof TLRPC.TL_inputStickerSetEmojiDefaultStatuses ||
+                    set instanceof TLRPC.TL_inputStickerSetID && (set.id == 773947703670341676L || set.id == 2964141614563343L)
             );
         }
         return false;
@@ -812,6 +849,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private static HashMap<Long, Integer> dominantColors;
+
     public static int getDominantColor(AnimatedEmojiDrawable yourDrawable) {
         if (yourDrawable == null) {
             return 0;
@@ -826,7 +864,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         Integer color = dominantColors.get(documentId);
         if (color == null) {
             if (yourDrawable.getImageReceiver() != null && yourDrawable.getImageReceiver().getBitmap() != null) {
-                dominantColors.put(documentId, color = PremiumLockIconView.getDominantColor(yourDrawable.getImageReceiver().getBitmap()));
+                dominantColors.put(documentId, color = AndroidUtilities.getDominantColor(yourDrawable.getImageReceiver().getBitmap()));
             }
         }
         return color == null ? 0 : color;
@@ -868,6 +906,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         private int alpha = 255;
+
         @Override
         public void setAlpha(int alpha) {
             this.alpha = alpha;
@@ -906,6 +945,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         private int size;
         private int alpha = 255;
         boolean attached;
+        private Theme.ResourcesProvider resourcesProvider;
 
         public SwapAnimatedEmojiDrawable(View parentView, int size) {
             this(parentView, false, size, CACHE_TYPE_EMOJI_STATUS);
@@ -944,6 +984,7 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         private Integer lastColor;
         private ColorFilter colorFilter;
+
         public void setColor(Integer color) {
             if (lastColor == null && color == null || lastColor != null && lastColor.equals(color)) {
                 return;
@@ -966,17 +1007,17 @@ public class AnimatedEmojiDrawable extends Drawable {
                     drawables[1].setBounds(bounds);
                 } else if (center) {
                     drawables[1].setBounds(
-                        bounds.centerX() - drawables[1].getIntrinsicWidth() / 2,
-                        bounds.centerY() - drawables[1].getIntrinsicHeight() / 2,
-                        bounds.centerX() + drawables[1].getIntrinsicWidth() / 2,
-                        bounds.centerY() + drawables[1].getIntrinsicHeight() / 2
+                            bounds.centerX() - drawables[1].getIntrinsicWidth() / 2,
+                            bounds.centerY() - drawables[1].getIntrinsicHeight() / 2,
+                            bounds.centerX() + drawables[1].getIntrinsicWidth() / 2,
+                            bounds.centerY() + drawables[1].getIntrinsicHeight() / 2
                     );
                 } else { // left
                     drawables[1].setBounds(
-                        bounds.left,
-                        bounds.centerY() - drawables[1].getIntrinsicHeight() / 2,
-                        bounds.left + drawables[1].getIntrinsicWidth(),
-                        bounds.centerY() + drawables[1].getIntrinsicHeight() / 2
+                            bounds.left,
+                            bounds.centerY() - drawables[1].getIntrinsicHeight() / 2,
+                            bounds.left + drawables[1].getIntrinsicWidth(),
+                            bounds.centerY() + drawables[1].getIntrinsicHeight() / 2
                     );
                 }
                 drawables[1].setColorFilter(colorFilter);
@@ -1000,10 +1041,10 @@ public class AnimatedEmojiDrawable extends Drawable {
                         canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
                     }
                     drawables[0].setBounds(
-                        bounds.centerX() - drawables[0].getIntrinsicWidth() / 2,
-                        bounds.centerY() - drawables[0].getIntrinsicHeight() / 2,
-                        bounds.centerX() + drawables[0].getIntrinsicWidth() / 2,
-                        bounds.centerY() + drawables[0].getIntrinsicHeight() / 2
+                            bounds.centerX() - drawables[0].getIntrinsicWidth() / 2,
+                            bounds.centerY() - drawables[0].getIntrinsicHeight() / 2,
+                            bounds.centerX() + drawables[0].getIntrinsicWidth() / 2,
+                            bounds.centerY() + drawables[0].getIntrinsicHeight() / 2
                     );
                 } else { // left
                     if (progress < 1) {
@@ -1011,10 +1052,10 @@ public class AnimatedEmojiDrawable extends Drawable {
                         canvas.scale(scale, scale, bounds.left + drawables[0].getIntrinsicWidth() / 2f, bounds.centerY());
                     }
                     drawables[0].setBounds(
-                        bounds.left,
-                        bounds.centerY() - drawables[0].getIntrinsicHeight() / 2,
-                        bounds.left + drawables[0].getIntrinsicWidth(),
-                        bounds.centerY() + drawables[0].getIntrinsicHeight() / 2
+                            bounds.left,
+                            bounds.centerY() - drawables[0].getIntrinsicHeight() / 2,
+                            bounds.left + drawables[0].getIntrinsicWidth(),
+                            bounds.centerY() + drawables[0].getIntrinsicHeight() / 2
                     );
                 }
                 drawables[0].setAlpha(alpha);
@@ -1061,7 +1102,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attach();
                 }
             }
-            lastColor = 0xffffffff;
+            lastColor = null;
             colorFilter = null;
             play();
             invalidate();
@@ -1107,7 +1148,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attach();
                 }
             }
-            lastColor = 0xffffffff;
+            lastColor = null;
             colorFilter = null;
             play();
             invalidate();
@@ -1138,7 +1179,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     attach();
                 }
             }
-            lastColor = 0xffffffff;
+            lastColor = null;
             colorFilter = null;
             play();
             invalidate();
@@ -1184,8 +1225,10 @@ public class AnimatedEmojiDrawable extends Drawable {
         public void setAlpha(int i) {
             alpha = i;
         }
+
         @Override
         public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+
         @Override
         public int getOpacity() {
             return PixelFormat.TRANSPARENT;
@@ -1208,6 +1251,10 @@ public class AnimatedEmojiDrawable extends Drawable {
 
         public void setSecondParent(View secondParent) {
             this.secondParent = secondParent;
+        }
+
+        public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+            this.resourcesProvider = resourcesProvider;
         }
     }
 

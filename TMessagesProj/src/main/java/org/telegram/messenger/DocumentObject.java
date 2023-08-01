@@ -89,7 +89,7 @@ public class DocumentObject {
     }
 
     public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, int colorKey, float alpha) {
-        return getSvgThumb(document, colorKey, alpha, 1.0f);
+        return getSvgThumb(document, colorKey, alpha, 1.0f, null);
     }
 
     public static SvgHelper.SvgDrawable getSvgRectThumb(int colorKey, float alpha) {
@@ -105,7 +105,7 @@ public class DocumentObject {
         return drawable;
     }
 
-    public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, int colorKey, float alpha, float zoom) {
+    public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, int colorKey, float alpha, float zoom, Theme.ResourcesProvider resourcesProvider) {
         if (document == null) {
             return null;
         }
@@ -128,7 +128,7 @@ public class DocumentObject {
                 if (w != 0 && h != 0) {
                     pathThumb = SvgHelper.getDrawableByPath(((TLRPC.TL_photoPathSize) size).svgPath, (int) (w * zoom), (int) (h * zoom));
                     if (pathThumb != null) {
-                        pathThumb.setupGradient(colorKey, alpha, false);
+                        pathThumb.setupGradient(colorKey, resourcesProvider, alpha, false);
                     }
                 }
                 break;

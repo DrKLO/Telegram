@@ -97,19 +97,19 @@ public final class DefaultMediaCodecAdapterFactory implements MediaCodecAdapter.
   @Override
   public MediaCodecAdapter createAdapter(MediaCodecAdapter.Configuration configuration)
       throws IOException {
-    if (Util.SDK_INT >= 23
-        && (asynchronousMode == MODE_ENABLED
-            || (asynchronousMode == MODE_DEFAULT && Util.SDK_INT >= 31))) {
-      int trackType = MimeTypes.getTrackType(configuration.format.sampleMimeType);
-      Log.i(
-          TAG,
-          "Creating an asynchronous MediaCodec adapter for track type "
-              + Util.getTrackTypeString(trackType));
-      AsynchronousMediaCodecAdapter.Factory factory =
-          new AsynchronousMediaCodecAdapter.Factory(
-              trackType, enableSynchronizeCodecInteractionsWithQueueing);
-      return factory.createAdapter(configuration);
-    }
+//    if (Util.SDK_INT >= 23
+//        && (asynchronousMode == MODE_ENABLED
+//            || (asynchronousMode == MODE_DEFAULT && Util.SDK_INT >= 31))) {
+//      int trackType = MimeTypes.getTrackType(configuration.format.sampleMimeType);
+//      Log.i(
+//          TAG,
+//          "Creating an asynchronous MediaCodec adapter for track type "
+//              + Util.getTrackTypeString(trackType));
+//      AsynchronousMediaCodecAdapter.Factory factory =
+//          new AsynchronousMediaCodecAdapter.Factory(
+//              trackType, enableSynchronizeCodecInteractionsWithQueueing);
+//      return factory.createAdapter(configuration);
+//    }
     return new SynchronousMediaCodecAdapter.Factory().createAdapter(configuration);
   }
 }

@@ -44,6 +44,7 @@ import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
@@ -315,11 +316,12 @@ public class PipVideoOverlay {
         controlsAnimator.start();
     }
 
-    public static void dimissAndDestroy() {
+    public static void dismissAndDestroy() {
         if (instance.parentSheet != null) {
             instance.parentSheet.destroy();
         } else if (instance.photoViewer != null) {
             instance.photoViewer.destroyPhotoViewer();
+            MediaController.getInstance().tryResumePausedAudio();
         }
         dismiss();
     }
@@ -753,14 +755,14 @@ public class PipVideoOverlay {
 
             @Override
             public boolean onSingleTapUp(MotionEvent e) {
-                if (!hasDoubleTap()) {
+                if (!hasDoubleTap(e)) {
                     return onSingleTapConfirmed(e);
                 }
                 return super.onSingleTapUp(e);
             }
 
             @Override
-            public boolean hasDoubleTap() {
+            public boolean hasDoubleTap(MotionEvent e) {
                 if (photoViewer == null || photoViewer.getVideoPlayer() == null && photoViewerWebView == null || isDismissing || isVideoCompleted || isScrolling || scaleGestureDetector.isInProgress() || !canLongClick) {
                     return false;
                 }
@@ -894,7 +896,7 @@ public class PipVideoOverlay {
                     if (onSideToDismiss) {
                         onSideToDismiss = false;
 
-                        dimissAndDestroy();
+                        dismissAndDestroy();
                     } else {
                         if (!pipXSpring.isRunning()) {
                             pipXSpring.setStartValue(pipX)
@@ -1028,7 +1030,7 @@ public class PipVideoOverlay {
         closeButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         closeButton.setPadding(padding, padding, padding, padding);
-        closeButton.setOnClickListener(v -> dimissAndDestroy());
+        closeButton.setOnClickListener(v -> dismissAndDestroy());
         controlsView.addView(closeButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, margin, 0));
 
         ImageView expandButton = new ImageView(context);

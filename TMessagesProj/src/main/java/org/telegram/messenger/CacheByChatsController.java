@@ -17,20 +17,22 @@ public class CacheByChatsController {
     public static int KEEP_MEDIA_ONE_DAY = 3;
     public static int KEEP_MEDIA_ONE_WEEK = 0;
     public static int KEEP_MEDIA_ONE_MONTH = 1;
+    public static int KEEP_MEDIA_TWO_DAY = 6;
     //TEST VALUE
     public static int KEEP_MEDIA_ONE_MINUTE = 5;
 
     public static final int KEEP_MEDIA_TYPE_USER = 0;
     public static final int KEEP_MEDIA_TYPE_GROUP = 1;
     public static final int KEEP_MEDIA_TYPE_CHANNEL = 2;
+    public static final int KEEP_MEDIA_TYPE_STORIES = 3;
 
     private final int currentAccount;
 
-    int[] keepMediaByTypes = {-1, -1, -1};
+    int[] keepMediaByTypes = {-1, -1, -1, -1};
 
     public CacheByChatsController(int currentAccount) {
         this.currentAccount = currentAccount;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             keepMediaByTypes[i] = SharedConfig.getPreferences().getInt("keep_media_type_" + i, getDefault(i));
         }
     }
@@ -42,6 +44,8 @@ public class CacheByChatsController {
             return KEEP_MEDIA_ONE_MONTH;
         } else if (type == KEEP_MEDIA_TYPE_CHANNEL) {
             return KEEP_MEDIA_ONE_WEEK;
+        } else if (type == KEEP_MEDIA_TYPE_STORIES) {
+            return KEEP_MEDIA_TWO_DAY;
         }
         return SharedConfig.keepMedia;
     }
@@ -51,6 +55,8 @@ public class CacheByChatsController {
             return LocaleController.formatPluralString("Minutes", 1);
         } else if (keepMedia == KEEP_MEDIA_ONE_DAY) {
             return LocaleController.formatPluralString("Days", 1);
+        } else if (keepMedia == KEEP_MEDIA_TWO_DAY) {
+            return LocaleController.formatPluralString("Days", 2);
         } else if (keepMedia == KEEP_MEDIA_ONE_WEEK) {
             return LocaleController.formatPluralString("Weeks", 1);
         } else if (keepMedia == KEEP_MEDIA_ONE_MONTH) {
@@ -67,7 +73,9 @@ public class CacheByChatsController {
             seconds = 60L * 60L * 24L * 30L;
         } else if (keepMedia == CacheByChatsController.KEEP_MEDIA_ONE_DAY) {
             seconds = 60L * 60L * 24L;
-        } else if (keepMedia == CacheByChatsController.KEEP_MEDIA_ONE_MINUTE && BuildVars.DEBUG_PRIVATE_VERSION) { //one min
+        } else if (keepMedia == CacheByChatsController.KEEP_MEDIA_TWO_DAY) {
+            seconds = 60L * 60L * 24L * 2;
+        }else if (keepMedia == CacheByChatsController.KEEP_MEDIA_ONE_MINUTE && BuildVars.DEBUG_PRIVATE_VERSION) { //one min
             seconds = 60L;
         } else {
             seconds = Long.MAX_VALUE;
@@ -187,6 +195,7 @@ public class CacheByChatsController {
         final File file;
         int keepMedia = -1;
         int dialogType = KEEP_MEDIA_TYPE_CHANNEL;
+        boolean isStory;
 
         public KeepMediaFile(File file) {
             this.file = file;

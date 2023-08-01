@@ -9,7 +9,6 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
@@ -135,6 +134,18 @@ public class ConnectionsManager extends BaseController {
             this.forceTryIpV6 = forceTryIpV6;
             checkConnection();
         }
+    }
+
+    public void discardConnection(int dcId, int connectionType) {
+        Utilities.stageQueue.postRunnable(() -> {
+            native_discardConnection(currentAccount, dcId, connectionType);
+        });
+    }
+
+    public void failNotRunningRequest(int requestToken) {
+        Utilities.stageQueue.postRunnable(() -> {
+            native_failNotRunningRequest(currentAccount, requestToken);
+        });
     }
 
     private static class ResolvedDomain {
@@ -344,7 +355,7 @@ public class ConnectionsManager extends BaseController {
                         error = new TLRPC.TL_error();
                         error.code = errorCode;
                         error.text = errorText;
-                        if (BuildVars.LOGS_ENABLED) {
+                        if (BuildVars.LOGS_ENABLED && error.code != -2000) {
                             FileLog.e(object + " got error " + error.code + " " + error.text);
                         }
                     }
@@ -797,6 +808,8 @@ public class ConnectionsManager extends BaseController {
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
     public static native void native_onHostNameResolved(String host, long address, String ip);
+    public static native void native_discardConnection(int currentAccount, int datacenterId, int connectionType);
+    public static native void native_failNotRunningRequest(int currentAccount, int token);
 
     public static int generateClassGuid() {
         return lastClassGuid++;

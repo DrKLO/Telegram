@@ -252,7 +252,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView {
         }
         for (Object obj : selectedChats) {
             TLRPC.User user = (TLRPC.User) obj;
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(link, user.id, null, null, null, true, null, null, null, false, 0, null, false);
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(link, user.id, null, null, null, true, null, null, null, false, 0, null, false));
         }
         AndroidUtilities.runOnUIThread(() -> {
             BulletinFactory factory = BulletinFactory.global();

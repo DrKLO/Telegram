@@ -6647,7 +6647,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 for (int a = 0; a < currentDocument.attributes.size(); a++) {
                     TLRPC.DocumentAttribute attribute = currentDocument.attributes.get(a);
                     if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
-                        duration = attribute.duration;
+                        duration = (int) attribute.duration;
                         break;
                     }
                 }

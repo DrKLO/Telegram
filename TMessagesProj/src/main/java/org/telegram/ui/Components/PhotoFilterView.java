@@ -12,22 +12,32 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -35,17 +45,22 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.PhotoEditRadioCell;
 import org.telegram.ui.Cells.PhotoEditToolCell;
+import org.telegram.ui.Stories.recorder.PreviewView;
+import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 @SuppressLint("NewApi")
-public class PhotoFilterView extends FrameLayout implements FilterShaders.FilterShadersDelegate {
+public class PhotoFilterView extends FrameLayout implements FilterShaders.FilterShadersDelegate, StoryRecorder.Touchable {
 
     private final static int curveGranularity = 100;
     private final static int curveDataStep = 2;
@@ -96,6 +111,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private TextView cancelTextView;
     private TextureView textureView;
     private boolean ownsTextureView;
+    private boolean ownLayout;
     private FilterGLThread eglThread;
     private RecyclerListView recyclerListView;
     private FrameLayout blurLayout;
@@ -228,6 +244,22 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         public boolean isDefault() {
             return Math.abs(blacksLevel - 0) < 0.00001 && Math.abs(shadowsLevel - 25) < 0.00001 && Math.abs(midtonesLevel - 50) < 0.00001 && Math.abs(highlightsLevel - 75) < 0.00001 && Math.abs(whitesLevel - 100) < 0.00001;
         }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeFloat(blacksLevel);
+            stream.writeFloat(shadowsLevel);
+            stream.writeFloat(midtonesLevel);
+            stream.writeFloat(highlightsLevel);
+            stream.writeFloat(whitesLevel);
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            blacksLevel = previousBlacksLevel = stream.readFloat(exception);
+            shadowsLevel = previousShadowsLevel = stream.readFloat(exception);
+            midtonesLevel = previousMidtonesLevel = stream.readFloat(exception);
+            highlightsLevel = previousHighlightsLevel = stream.readFloat(exception);
+            whitesLevel = previousWhitesLevel = stream.readFloat(exception);
+        }
     }
 
     public static class CurvesToolValue {
@@ -268,10 +300,25 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         public boolean shouldBeSkipped() {
             return luminanceCurve.isDefault() && redCurve.isDefault() && greenCurve.isDefault() && blueCurve.isDefault();
         }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            luminanceCurve.serializeToStream(stream);
+            redCurve.serializeToStream(stream);
+            greenCurve.serializeToStream(stream);
+            blueCurve.serializeToStream(stream);
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            luminanceCurve.readParams(stream, exception);
+            redCurve.readParams(stream, exception);
+            greenCurve.readParams(stream, exception);
+            blueCurve.readParams(stream, exception);
+        }
     }
 
-    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror, Theme.ResourcesProvider resourcesProvider) {
+    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror, boolean ownLayout, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.ownLayout = ownLayout;
         this.resourcesProvider = resourcesProvider;
 
         inBubbleMode = context instanceof BubbleActivity;
@@ -346,13 +393,15 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         } else {
             ownsTextureView = true;
             textureView = new TextureView(context);
-            addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+            if (ownLayout) {
+                addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+            }
             textureView.setVisibility(INVISIBLE);
             textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                     if (eglThread == null && surface != null) {
-                        eglThread = new FilterGLThread(surface, bitmapToEdit, orientation, isMirrored);
+                        eglThread = new FilterGLThread(surface, bitmapToEdit, orientation, isMirrored, null, ownLayout);
                         eglThread.setFilterGLThreadDelegate(PhotoFilterView.this);
                         eglThread.setSurfaceTextureSize(width, height);
                         eglThread.requestRender(true, true, false);
@@ -390,7 +439,9 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         blurControl = new PhotoFilterBlurControl(context);
         blurControl.setVisibility(INVISIBLE);
-        addView(blurControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        if (ownLayout) {
+            addView(blurControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        }
         blurControl.setDelegate((centerPoint, falloff, size, angle) -> {
             blurExcludeSize = size;
             blurExcludePoint = centerPoint;
@@ -408,10 +459,12 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             }
         });
         curvesControl.setVisibility(INVISIBLE);
-        addView(curvesControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        if (ownLayout) {
+            addView(curvesControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        }
 
         toolsView = new FrameLayout(context);
-        addView(toolsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 186, Gravity.LEFT | Gravity.BOTTOM));
+        addView(toolsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 186 + (!ownLayout ? 40 : 0), Gravity.LEFT | Gravity.BOTTOM));
 
         FrameLayout frameLayout = new FrameLayout(context);
         frameLayout.setBackgroundColor(0xff000000);
@@ -483,18 +536,18 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             switchMode();
         });
 
-        recyclerListView = new RecyclerListView(context);
+        recyclerListView = new RecyclerListViewWithShadows(context);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerListView.setLayoutManager(layoutManager);
         recyclerListView.setClipToPadding(false);
         recyclerListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         recyclerListView.setAdapter(new ToolsAdapter(context));
-        toolsView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 120, Gravity.LEFT | Gravity.TOP));
+        toolsView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 120 + (!ownLayout ? 60 : 0), Gravity.LEFT | Gravity.TOP));
 
         curveLayout = new FrameLayout(context);
         curveLayout.setVisibility(INVISIBLE);
-        toolsView.addView(curveLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL, 0, 40, 0, 0));
+        toolsView.addView(curveLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL, 0, 40 + (!ownLayout ? 40 : 0), 0, 0));
 
         LinearLayout curveTextViewContainer = new LinearLayout(context);
         curveTextViewContainer.setOrientation(LinearLayout.HORIZONTAL);
@@ -547,7 +600,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         blurLayout = new FrameLayout(context);
         blurLayout.setVisibility(INVISIBLE);
-        toolsView.addView(blurLayout, LayoutHelper.createFrame(280, 60, Gravity.CENTER_HORIZONTAL, 0, 40, 0, 0));
+        toolsView.addView(blurLayout, LayoutHelper.createFrame(280, 60, Gravity.CENTER_HORIZONTAL, 0, 40 + (!ownLayout ? 40 : 0), 0, 0));
 
         blurOffButton = new TextView(context);
         blurOffButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
@@ -598,7 +651,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         updateSelectedBlurType();
 
-        if (Build.VERSION.SDK_INT >= 21 && !inBubbleMode) {
+        if (Build.VERSION.SDK_INT >= 21 && !inBubbleMode && ownLayout) {
             if (ownsTextureView) {
                 ((LayoutParams) textureView.getLayoutParams()).topMargin = AndroidUtilities.statusBarHeight;
             }
@@ -707,7 +760,54 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         }
     }
 
-    public void onTouch(MotionEvent event) {
+    private static class RecyclerListViewWithShadows extends RecyclerListView  {
+        private final Paint topPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint bottomPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        private boolean top, bottom;
+        private AnimatedFloat topAlpha = new AnimatedFloat(this);
+        private AnimatedFloat bottomAlpha = new AnimatedFloat(this);
+
+        public RecyclerListViewWithShadows(Context context) {
+            super(context);
+            topPaint.setShader(new LinearGradient(0, 0, 0, AndroidUtilities.dp(8), new int[] {0xff000000, 0x00000000}, new float[] {0, 1}, Shader.TileMode.CLAMP));
+            bottomPaint.setShader(new LinearGradient(0, 0, 0, AndroidUtilities.dp(8), new int[] {0x00000000, 0xff000000}, new float[] {0, 1}, Shader.TileMode.CLAMP));
+        }
+
+        @Override
+        public void dispatchDraw(Canvas canvas) {
+            super.dispatchDraw(canvas);
+
+            final float topAlpha = this.topAlpha.set(top ? 1 : 0);
+            topPaint.setAlpha((int) (0xFF * topAlpha));
+            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.dp(8), topPaint);
+
+            final float bottomAlpha = this.bottomAlpha.set(bottom ? 1 : 0);
+            bottomPaint.setAlpha((int) (0xFF * bottomAlpha));
+            canvas.save();
+            canvas.translate(0, getHeight() - AndroidUtilities.dp(8));
+            canvas.drawRect(0, 0, getWidth(), AndroidUtilities.dp(8), bottomPaint);
+            canvas.restore();
+        }
+
+        @Override
+        public void onScrolled(int dx, int dy) {
+            super.onScrolled(dx, dy);
+            updateAlphas();
+        }
+
+        private void updateAlphas() {
+            final boolean top = canScrollVertically(-1);
+            final boolean bottom = canScrollVertically(1);
+            if (top != this.top || bottom != this.bottom) {
+                this.top = top;
+                this.bottom = bottom;
+                invalidate();
+            }
+        }
+    }
+
+    public boolean onTouch(MotionEvent event) {
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN || event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
             if (textureView instanceof VideoEditTextureView) {
                 if (((VideoEditTextureView) textureView).containsPoint(event.getX(), event.getY())) {
@@ -721,6 +821,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         } else if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_POINTER_UP) {
             setShowOriginal(false);
         }
+        return true;
     }
 
     private void setShowOriginal(boolean value) {
@@ -776,16 +877,21 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             VideoEditTextureView videoEditTextureView = (VideoEditTextureView) textureView;
             if (lastState == null) {
                 videoEditTextureView.setDelegate(null);
-            } else {
+            } else if (eglThread != null) {
                 eglThread.setFilterGLThreadDelegate(FilterShaders.getFilterShadersDelegate(lastState));
             }
         }
     }
 
-    public void init() {
-        if (ownsTextureView) {
-            textureView.setVisibility(VISIBLE);
+    public TextureView getMyTextureView() {
+        if (ownsTextureView && !ownLayout) {
+            return textureView;
         }
+        return null;
+    }
+
+    public void init() {
+        textureView.setVisibility(VISIBLE);
     }
 
     public Bitmap getBitmap() {
@@ -793,6 +899,9 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     }
 
     private void fixLayout(int viewWidth, int viewHeight) {
+        if (!ownLayout) {
+            return;
+        }
         viewWidth -= AndroidUtilities.dp(28);
         viewHeight -= AndroidUtilities.dp(14 + 140 + 60) + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
 
@@ -832,10 +941,12 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             layoutParams.width = width;
             layoutParams.height = height;
         }
+
         curvesControl.setActualArea(bitmapX, bitmapY - (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0), width, height);
 
         blurControl.setActualAreaSize(width, height);
-        LayoutParams layoutParams = (LayoutParams) blurControl.getLayoutParams();
+        LayoutParams layoutParams;
+        layoutParams = (LayoutParams) blurControl.getLayoutParams();
         layoutParams.height = viewHeight + AndroidUtilities.dp(38);
 
         layoutParams = (LayoutParams) curvesControl.getLayoutParams();
@@ -1005,11 +1116,11 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         return toolsView;
     }
 
-    public View getCurveControl() {
+    public PhotoFilterCurvesControl getCurveControl() {
         return curvesControl;
     }
 
-    public View getBlurControl() {
+    public PhotoFilterBlurControl getBlurControl() {
         return blurControl;
     }
 
@@ -1023,6 +1134,20 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    public void setEnhanceValue(float value) {
+        enhanceValue = value * 100f;
+        for (int i = 0; i < recyclerListView.getChildCount(); ++i) {
+            View child = recyclerListView.getChildAt(i);
+            if (child instanceof PhotoEditToolCell && recyclerListView.getChildAdapterPosition(child) == enhanceTool) {
+                ((PhotoEditToolCell) child).setIconAndTextAndValue(LocaleController.getString("Enhance", R.string.Enhance), enhanceValue, 0, 100);
+                break;
+            }
+        }
+        if (eglThread != null) {
+            eglThread.requestRender(true);
+        }
     }
 
     public class ToolsAdapter extends RecyclerListView.SelectionAdapter {
@@ -1154,6 +1279,174 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                 return 1;
             }
             return 0;
+        }
+    }
+
+    public static class EnhanceView extends View {
+
+        private TextPaint topTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private TextPaint bottomTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+
+        private StaticLayout topText;
+        private float topTextWidth, topTextLeft;
+
+        private StaticLayout bottomText;
+        private float bottomTextWidth, bottomTextLeft;
+
+        private boolean shown;
+        private AnimatedFloat showT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+        private boolean allowTouch;
+        private PhotoFilterView filterView;
+        private Runnable requestFilterView;
+
+        public EnhanceView(Context context, Runnable requestFilterView) {
+            super(context);
+            this.requestFilterView = requestFilterView;
+        }
+
+        public void setFilterView(PhotoFilterView filterView) {
+            this.filterView = filterView;
+        }
+
+        public void setAllowTouch(boolean allow) {
+            this.allowTouch = allow;
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(
+                MeasureSpec.getSize(widthMeasureSpec),
+                MeasureSpec.getSize(heightMeasureSpec)
+            );
+
+            topTextPaint.setColor(0xffffffff);
+            topTextPaint.setShadowLayer(AndroidUtilities.dp(8), 0, 0, 0x30000000);
+            topTextPaint.setTextSize(AndroidUtilities.dp(34));
+            bottomTextPaint.setColor(0xffffffff);
+            bottomTextPaint.setShadowLayer(AndroidUtilities.dp(12), 0, 0, 0x30000000);
+            bottomTextPaint.setTextSize(AndroidUtilities.dp(58));
+
+            if (topText == null) {
+                topText = new StaticLayout(LocaleController.getString("Enhance", R.string.Enhance), topTextPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+                topTextWidth = topText.getLineCount() > 0 ? topText.getLineWidth(0) : 0;
+                topTextLeft = topText.getLineCount() > 0 ? topText.getLineLeft(0) : 0;
+            }
+        }
+
+        private void updateBottomText() {
+            float value = filterView == null ? 0 : filterView.getEnhanceValue();
+            bottomText = new StaticLayout("" + Math.round(value * 100), bottomTextPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+            bottomTextWidth = bottomText.getLineCount() > 0 ? bottomText.getLineWidth(0) : 0;
+            bottomTextLeft = bottomText.getLineCount() > 0 ? bottomText.getLineLeft(0) : 0;
+            invalidate();
+        }
+
+        private boolean tracking;
+        private long downTime;
+        private float lastTouchX;
+        private float lastTouchY;
+        private float lastVibrateValue;
+
+        private Runnable hide = () -> {
+            shown = false;
+            invalidate();
+        };
+
+        public boolean onTouch(MotionEvent event) {
+            if (allowTouch && event.getPointerCount() == 1) {
+                final int action = event.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    tracking = false;
+                    downTime = System.currentTimeMillis();
+                    lastTouchX = event.getX();
+                    lastTouchY = event.getY();
+                    if (filterView != null) {
+                        lastVibrateValue = filterView.getEnhanceValue();
+                    }
+                    return true;
+                } else if (action == MotionEvent.ACTION_MOVE) {
+                    final float x = event.getX(), y = event.getY();
+                    if (!tracking) {
+                        if (System.currentTimeMillis() - downTime <= ViewConfiguration.getLongPressTimeout() &&
+                            Math.abs(lastTouchY - y) < Math.abs(lastTouchX - x) &&
+                            Math.abs(lastTouchX - x) > AndroidUtilities.touchSlop
+                        ) {
+                            tracking = true;
+
+                            AndroidUtilities.cancelRunOnUIThread(hide);
+                            shown = true;
+                            invalidate();
+                        }
+                    }
+
+                    if (tracking) {
+                        float dx = x - lastTouchX;
+                        if (filterView == null) {
+                            requestFilterView.run();
+                        }
+                        if (filterView == null) {
+                            tracking = false;
+                            return false;
+                        }
+                        final float fullDistance = AndroidUtilities.displaySize.x * .8f;
+                        final float value = filterView.getEnhanceValue();
+                        final float newValue = Utilities.clamp(value + dx / fullDistance, 1, 0);
+                        int newValueInt = Math.round(newValue * 100), lastValueInt = Math.round(value * 100), lastVibrateValueInt = Math.round(lastVibrateValue * 100);
+                        if (newValueInt != lastValueInt && (newValueInt == 100 || newValueInt == 0)) {
+                            try {
+                                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                            } catch (Exception ignore) {}
+                            lastVibrateValue = newValue;
+                        } else if (Math.abs(newValueInt - lastVibrateValueInt) > (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH ? 5 : 10)) {
+                            try {
+                                performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                            } catch (Exception ignore) {}
+                            lastVibrateValue = newValue;
+                        }
+                        filterView.setEnhanceValue(newValue);
+                        updateBottomText();
+                    }
+
+                    lastTouchX = x;
+                    lastTouchY = y;
+                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    tracking = false;
+                    downTime = -1;
+                    if (filterView != null) {
+                        lastVibrateValue = filterView.getEnhanceValue();
+                    }
+                    AndroidUtilities.runOnUIThread(hide, 600);
+                    return false;
+                }
+            } else {
+                if (shown) {
+                    shown = false;
+                    invalidate();
+                }
+            }
+            return false;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            float alpha = showT.set(shown);
+
+            if (alpha > 0 && topText != null && bottomText != null) {
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
+
+                canvas.save();
+                canvas.translate((getWidth() - topTextWidth) / 2f - topTextLeft, getHeight() * .22f);
+                topText.draw(canvas);
+                canvas.restore();
+
+                canvas.save();
+                canvas.translate((getWidth() - bottomTextWidth) / 2f - bottomTextLeft, getHeight() * .22f + AndroidUtilities.dp(60));
+                bottomText.draw(canvas);
+                canvas.restore();
+
+                canvas.restore();
+            }
         }
     }
 }

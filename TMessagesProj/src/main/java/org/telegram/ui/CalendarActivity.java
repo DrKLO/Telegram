@@ -41,6 +41,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -61,15 +62,20 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
+import org.telegram.ui.Stories.StoriesController;
+import org.telegram.ui.Stories.StoryViewer;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.SortedSet;
 
-public class CalendarActivity extends BaseFragment {
+public class CalendarActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public final static int TYPE_CHAT_ACTIVITY = 0;
     public final static int TYPE_MEDIA_CALENDAR = 1;
+    public final static int TYPE_PROFILE_STORIES = 2;
+    public final static int TYPE_ARCHIVED_STORIES = 3;
 
     FrameLayout contentView;
 
@@ -124,6 +130,11 @@ public class CalendarActivity extends BaseFragment {
 
     private int calendarType;
 
+    private StoriesController.StoriesList storiesList;
+    private StoryViewer.PlaceProvider storiesPlaceProvider;
+    private int storiesPlaceDay;
+    private StoryViewer.HolderDrawAbove storiesPlaceDrawAbove;
+
     private Path path = new Path();
     private SpoilerEffect mediaSpoilerEffect = new SpoilerEffect();
 
@@ -149,12 +160,102 @@ public class CalendarActivity extends BaseFragment {
         topicId = getArguments().getInt("topic_id");
         calendarType = getArguments().getInt("type");
 
+        if (calendarType == TYPE_PROFILE_STORIES) {
+            storiesList = MessagesController.getInstance(currentAccount).getStoriesController().getStoriesList(dialogId, StoriesController.StoriesList.TYPE_PINNED);
+        } else if (calendarType == TYPE_ARCHIVED_STORIES) {
+            storiesList = MessagesController.getInstance(currentAccount).getStoriesController().getStoriesList(getUserConfig().clientUserId, StoriesController.StoriesList.TYPE_ARCHIVE);
+        }
+        if (storiesList != null) {
+            storiesPlaceProvider = new StoryViewer.PlaceProvider() {
+                @Override
+                public boolean findView(long dialogId, int messageId, int storyId, int type, StoryViewer.TransitionViewHolder holder) {
+                    if (listView == null) {
+                        return false;
+                    }
+
+                    for (int i = 0; i < listView.getChildCount(); ++i) {
+                        View child = listView.getChildAt(i);
+                        if (!(child instanceof MonthView)) {
+                            continue;
+                        }
+                        MonthView monthView = (MonthView) child;
+                        if (monthView.messagesByDays == null) {
+                            continue;
+                        }
+                        for (int j = 0; j < monthView.messagesByDays.size(); ++j) {
+                            PeriodDay day = monthView.messagesByDays.valueAt(j);
+                            if (day.storyItems != null && day.storyItems.contains(storyId)) {
+                                int key = storiesPlaceDay = monthView.messagesByDays.keyAt(j);
+                                ImageReceiver imageReceiver = monthView.imagesByDays.get(key);
+
+                                if (imageReceiver == null) {
+                                    return false;
+                                }
+
+                                holder.storyImage = imageReceiver;
+                                if (storiesPlaceDrawAbove == null) {
+                                    storiesPlaceDrawAbove = (canvas, bounds, alpha) -> {
+                                        blackoutPaint.setAlpha((int) (80 * alpha));
+                                        float r = AndroidUtilities.lerp(0, Math.min(bounds.width(), bounds.height()) / 2f, alpha);
+                                        canvas.drawRoundRect(bounds, r, r, blackoutPaint);
+
+                                        float textAlpha = Utilities.clamp((alpha - .5f) / .5f, 1, 0);
+                                        if (textAlpha > 0) {
+                                            int oldAlpha = activeTextPaint.getAlpha();
+                                            activeTextPaint.setAlpha((int) (oldAlpha * textAlpha));
+                                            canvas.save();
+                                            float scale = Math.min(2, Math.min(bounds.height(), bounds.width()) / AndroidUtilities.dp(44));
+                                            canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
+                                            canvas.drawText(Integer.toString(1 + storiesPlaceDay), bounds.centerX(), bounds.centerY() + AndroidUtilities.dp(5), activeTextPaint);
+                                            canvas.restore();
+                                            activeTextPaint.setAlpha(oldAlpha);
+                                        }
+                                    };
+                                }
+                                holder.drawAbove = storiesPlaceDrawAbove;
+                                holder.view = monthView;
+                                holder.clipParent = fragmentView;
+                                holder.clipTop = AndroidUtilities.dp(36);
+                                holder.clipBottom = fragmentView.getBottom();
+                                holder.avatarImage = null;
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override
+                public void preLayout(long currentDialogId, int messageId, Runnable o) {
+                    if (listView == null) {
+                        o.run();
+                    }
+                    listView.post(o);
+                }
+            };
+        }
+
         if (dialogId >= 0) {
             canClearHistory = true;
         } else {
             canClearHistory = false;
         }
+
+        if (storiesList != null) {
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
+        }
+
         return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+
+        if (storiesList != null) {
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesListUpdated);
+        }
     }
 
     @Override
@@ -359,6 +460,12 @@ public class CalendarActivity extends BaseFragment {
         if (loading || endReached) {
             return;
         }
+        if (storiesList != null) {
+            updateFromStoriesList();
+            storiesList.load(false, 100);
+            loading = storiesList.isLoading();
+            return;
+        }
         loading = true;
         TLRPC.TL_messages_getSearchResultsCalendar req = new TLRPC.TL_messages_getSearchResultsCalendar();
         if (photosVideosTypeFilter == SharedMediaLayout.FILTER_PHOTOS_ONLY) {
@@ -470,6 +577,88 @@ public class CalendarActivity extends BaseFragment {
         int min2 = (listMinMonth / 100 * 12) + listMinMonth % 100;
         if (min1 + 3 >= min2) {
             loadNext();
+        }
+    }
+
+    private void updateFromStoriesList() {
+        loading = storiesList.isLoading();
+
+        Calendar calendar = Calendar.getInstance();
+        messagesByYearMounth.clear();
+        minDate = Integer.MAX_VALUE;
+        for (int i = 0; i < storiesList.messageObjects.size(); ++i) {
+            MessageObject messageObject = storiesList.messageObjects.get(i);
+            minDate = Math.min(minDate, messageObject.messageOwner.date);
+            calendar.setTimeInMillis(messageObject.messageOwner.date * 1000L);
+            int month = calendar.get(Calendar.YEAR) * 100 + calendar.get(Calendar.MONTH);
+            SparseArray<PeriodDay> messagesByDays = messagesByYearMounth.get(month);
+            if (messagesByDays == null) {
+                messagesByDays = new SparseArray<>();
+                messagesByYearMounth.put(month, messagesByDays);
+            }
+            int index = calendar.get(Calendar.DAY_OF_MONTH) - 1;
+            PeriodDay periodDay = messagesByDays.get(index);
+            if (periodDay == null) {
+                periodDay = new PeriodDay();
+                periodDay.storyItems = new ArrayList<>();
+            }
+            periodDay.storyItems.add(messageObject.getId());
+            periodDay.messageObject = messageObject;
+            periodDay.date = (int) (calendar.getTimeInMillis() / 1000L);
+//                    startOffset += res.periods.get(i).count;
+//                    periodDay.startOffset = startOffset;
+            messagesByDays.put(index, periodDay);
+            if (month < minMontYear || minMontYear == 0) {
+                minMontYear = month;
+            }
+        }
+
+        int maxDate = (int) (System.currentTimeMillis() / 1000L);
+
+        for (int date = minDate; date < maxDate; date += 86400) {
+            calendar.setTimeInMillis(date * 1000L);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+
+            int month = calendar.get(Calendar.YEAR) * 100 + calendar.get(Calendar.MONTH);
+            SparseArray<PeriodDay> messagesByDays = messagesByYearMounth.get(month);
+            if (messagesByDays == null) {
+                messagesByDays = new SparseArray<>();
+                messagesByYearMounth.put(month, messagesByDays);
+            }
+            int index = calendar.get(Calendar.DAY_OF_MONTH) - 1;
+            if (messagesByDays.get(index, null) == null) {
+                PeriodDay periodDay = new PeriodDay();
+                periodDay.hasImage = false;
+                periodDay.date = (int) (calendar.getTimeInMillis() / 1000L);
+                messagesByDays.put(index, periodDay);
+            }
+        }
+
+        endReached = storiesList.isFull();
+        if (isOpened) {
+            checkEnterItems = true;
+        }
+        listView.invalidate();
+        int newMonthCount = (int) (((calendar.getTimeInMillis() / 1000) - minDate) / 2629800) + 1;
+        adapter.notifyItemRangeChanged(0, monthCount);
+        if (newMonthCount > monthCount) {
+            adapter.notifyItemRangeInserted(monthCount + 1, newMonthCount);
+            monthCount = newMonthCount;
+        }
+        if (endReached) {
+            resumeDelayedFragmentAnimation();
+        }
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.storiesListUpdated) {
+            if (storiesList == (StoriesController.StoriesList) args[0]) {
+                updateFromStoriesList();
+            }
         }
     }
 
@@ -609,11 +798,15 @@ public class CalendarActivity extends BaseFragment {
                     if (parentLayout == null) {
                         return false;
                     }
-                    if (calendarType == TYPE_MEDIA_CALENDAR && messagesByDays != null) {
+                    if (calendarType == TYPE_MEDIA_CALENDAR && messagesByDays != null || storiesList != null) {
                         PeriodDay day = getDayAtCoord(e.getX(), e.getY());
                         if (day != null && day.messageObject != null && callback != null) {
-                            callback.onDateSelected(day.messageObject.getId(), day.startOffset);
-                            finishFragment();
+                            if (storiesList != null) {
+                                getOrCreateStoryViewer().open(getContext(), day.messageObject.storyItem, day.messageObject.getId(), storiesList, true, storiesPlaceProvider);
+                            } else {
+                                callback.onDateSelected(day.messageObject.getId(), day.startOffset);
+                                finishFragment();
+                            }
                         }
                     }
                     if (messagesByDays != null) {
@@ -1249,6 +1442,7 @@ public class CalendarActivity extends BaseFragment {
 
     private class PeriodDay {
         MessageObject messageObject;
+        ArrayList<Integer> storyItems;
         int startOffset;
         float enterAlpha = 1f;
         float startEnterDelay = 1f;

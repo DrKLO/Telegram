@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -116,7 +117,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
     private String currentDataQuery;
 
-    private static SpannableStringBuilder arrowSpan;
+    private static SpannableStringBuilder[] arrowSpan = new SpannableStringBuilder[3];
 
     private int photoViewerClassGuid;
 
@@ -246,7 +247,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         @Override
         public CharSequence getTitleFor(int i) {
-            return createFromInfoString(messages.get(i));
+            return createFromInfoString(messages.get(i), 0);
         }
 
         @Override
@@ -422,20 +423,37 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         emptyView.setVisibility(View.GONE);
     }
 
-    public static CharSequence createFromInfoString(MessageObject messageObject) {
-        return createFromInfoString(messageObject, true);
+    public static CharSequence createFromInfoString(MessageObject messageObject, int arrowType) {
+        return createFromInfoString(messageObject, true, arrowType);
     }
 
-    public static CharSequence createFromInfoString(MessageObject messageObject, boolean includeChat) {
+    public static CharSequence createFromInfoString(MessageObject messageObject, boolean includeChat, int arrowType) {
+        return createFromInfoString(messageObject, includeChat, arrowType, null);
+    }
+
+    public static CharSequence createFromInfoString(MessageObject messageObject, boolean includeChat, int arrowType, TextPaint textPaint) {
         if (messageObject == null) {
             return "";
         }
-        if (arrowSpan == null) {
-            arrowSpan = new SpannableStringBuilder(">");
-            Drawable arrowDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.attach_arrow_right).mutate();
-            ColoredImageSpan span = new ColoredImageSpan(arrowDrawable, ColoredImageSpan.ALIGN_CENTER);
-            arrowDrawable.setBounds(0, AndroidUtilities.dp(1), AndroidUtilities.dp(13), AndroidUtilities.dp(1 + 13));
-            arrowSpan.setSpan(span, 0, arrowSpan.length(), 0);
+        if (arrowSpan[arrowType] == null) {
+            arrowSpan[arrowType] = new SpannableStringBuilder(">");
+            int resId;
+            if (arrowType == 0) {
+                resId = R.drawable.attach_arrow_right;
+            } else if (arrowType == 1) {
+                resId = R.drawable.msg_mini_arrow_mediathin;
+            } else if (arrowType == 2) {
+                resId = R.drawable.msg_mini_arrow_mediabold;
+            } else {
+                return "";
+            }
+            Drawable arrowDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, resId).mutate();
+            ColoredImageSpan span = new ColoredImageSpan(arrowDrawable, arrowType == 0 ? ColoredImageSpan.ALIGN_CENTER : ColoredImageSpan.ALIGN_BASELINE);
+//            arrowDrawable.setBounds(0, 0, AndroidUtilities.dp(13), AndroidUtilities.dp(13));
+            if (arrowType == 1 || arrowType == 2) {
+                span.setScale(.85f);
+            }
+            arrowSpan[arrowType].setSpan(span, 0, arrowSpan[arrowType].length(), 0);
         }
         CharSequence fromName = null;
         TLRPC.User user = messageObject.messageOwner.from_id.user_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getUser(messageObject.messageOwner.from_id.user_id) : null;
@@ -459,17 +477,17 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     chatTitle = ForumUtilities.getTopicSpannedName(topic, null);
                 }
             }
-            chatTitle = Emoji.replaceEmoji(chatTitle, null, AndroidUtilities.dp(12), false);
+            chatTitle = Emoji.replaceEmoji(chatTitle, textPaint == null ? null : textPaint.getFontMetricsInt(), false);
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
             spannableStringBuilder
-                    .append(Emoji.replaceEmoji(UserObject.getFirstName(user), null, AndroidUtilities.dp(12), false))
+                    .append(Emoji.replaceEmoji(UserObject.getFirstName(user), textPaint == null ? null : textPaint.getFontMetricsInt(), false))
                     .append(' ')
-                    .append(arrowSpan)
+                    .append(arrowSpan[arrowType])
                     .append(' ')
                     .append(chatTitle);
             fromName = spannableStringBuilder;
         } else if (user != null) {
-            fromName = Emoji.replaceEmoji(UserObject.getUserName(user), null, AndroidUtilities.dp(12), false);
+            fromName = Emoji.replaceEmoji(UserObject.getUserName(user), textPaint == null ? null : textPaint.getFontMetricsInt(), false);
         } else if (chatFrom != null) {
             CharSequence chatTitle = chatFrom.title;
             if (ChatObject.isForum(chatFrom)) {
@@ -478,7 +496,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     chatTitle = ForumUtilities.getTopicSpannedName(topic, null);
                 }
             }
-            chatTitle = Emoji.replaceEmoji(chatTitle, null, AndroidUtilities.dp(12), false);
+            chatTitle = Emoji.replaceEmoji(chatTitle, textPaint == null ? null : textPaint.getFontMetricsInt(),  false);
             fromName = chatTitle;
         }
         return fromName == null ? "" : fromName;

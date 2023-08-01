@@ -1,5 +1,6 @@
 package org.telegram.messenger;
 
+import com.google.gson.ExclusionStrategy;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -114,21 +115,23 @@ public final class RuntimeClassNameTypeAdapterFactory<T> implements TypeAdapterF
     private final String typeFieldName;
     private final Map<String, Class<?>> labelToSubtype = new LinkedHashMap<String, Class<?>>();
     private final Map<Class<?>, String> subtypeToLabel = new LinkedHashMap<Class<?>, String>();
+    private final ExclusionStrategy exclusionStrategy;
 
-    private RuntimeClassNameTypeAdapterFactory(Class<?> baseType, String typeFieldName) {
+    private RuntimeClassNameTypeAdapterFactory(Class<?> baseType, String typeFieldName, ExclusionStrategy exclusionStrategy) {
         if (typeFieldName == null || baseType == null) {
             throw new NullPointerException();
         }
         this.baseType = baseType;
         this.typeFieldName = typeFieldName;
+        this.exclusionStrategy = exclusionStrategy;
     }
 
     /**
      * Creates a new runtime type adapter using for {@code baseType} using {@code
      * typeFieldName} as the type field name. Type field names are case sensitive.
      */
-    public static <T> RuntimeClassNameTypeAdapterFactory<T> of(Class<T> baseType, String typeFieldName) {
-        return new RuntimeClassNameTypeAdapterFactory<T>(baseType, typeFieldName);
+    public static <T> RuntimeClassNameTypeAdapterFactory<T> of(Class<T> baseType, String typeFieldName, ExclusionStrategy exclusionStrategy) {
+        return new RuntimeClassNameTypeAdapterFactory<T>(baseType, typeFieldName, exclusionStrategy);
     }
 
     /**
@@ -136,7 +139,7 @@ public final class RuntimeClassNameTypeAdapterFactory<T> implements TypeAdapterF
      * the type field name.
      */
     public static <T> RuntimeClassNameTypeAdapterFactory<T> of(Class<T> baseType) {
-        return new RuntimeClassNameTypeAdapterFactory<T>(baseType, "class");
+        return new RuntimeClassNameTypeAdapterFactory<T>(baseType, "class", null);
     }
 
     /**
@@ -171,6 +174,9 @@ public final class RuntimeClassNameTypeAdapterFactory<T> implements TypeAdapterF
 
     public <R> TypeAdapter<R> create(Gson gson, TypeToken<R> type) {
 
+        if (exclusionStrategy.shouldSkipClass(type.getRawType().getClass())) {
+            return null;
+        }
         final Map<String, TypeAdapter<?>> labelToDelegate
                 = new LinkedHashMap<String, TypeAdapter<?>>();
         final Map<Class<?>, TypeAdapter<?>> subtypeToDelegate

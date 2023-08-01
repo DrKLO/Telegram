@@ -8,14 +8,18 @@
 
 package org.telegram.ui.Components;
 
+import static com.google.android.exoplayer2.C.TRACK_TYPE_AUDIO;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
+import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Surface;
+import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.ViewGroup;
 
@@ -24,25 +28,20 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.Renderer;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioProcessor;
-import com.google.android.exoplayer2.audio.AudioRendererEventListener;
 import com.google.android.exoplayer2.audio.AudioSink;
 import com.google.android.exoplayer2.audio.DefaultAudioSink;
 import com.google.android.exoplayer2.audio.TeeAudioProcessor;
 import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer;
-import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -53,22 +52,32 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.video.SurfaceNotValidException;
 import com.google.android.exoplayer2.video.VideoListener;
 import com.google.android.exoplayer2.video.VideoSize;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.DispatchQueue;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FourierTransform;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.nio.ByteOrder;
 
 @SuppressLint("NewApi")
 public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsListener, NotificationCenter.NotificationCenterDelegate {
+
+    private DispatchQueue workerQueue;
+    private boolean isStory;
+
+    public boolean createdWithAudioTrack() {
+        return !audioDisabled;
+    }
 
     public interface VideoPlayerDelegate {
         void onStateChanged(boolean playWhenReady, int playbackState);
@@ -93,11 +102,12 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         boolean needUpdate();
     }
 
-    private ExoPlayer player;
+    public ExoPlayer player;
     private ExoPlayer audioPlayer;
     private MappingTrackSelector trackSelector;
     private DataSource.Factory mediaDataSourceFactory;
     private TextureView textureView;
+    private SurfaceView surfaceView;
     private Surface surface;
     private boolean isStreaming;
     private boolean autoplay;
@@ -130,18 +140,26 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
 
     Handler audioUpdateHandler = new Handler(Looper.getMainLooper());
 
+    boolean audioDisabled;
+
     public VideoPlayer() {
-        this(true);
+        this(true, false);
     }
 
-    public VideoPlayer(boolean pauseOther) {
+    static int playerCounter = 0;
+    public VideoPlayer(boolean pauseOther, boolean audioDisabled) {
+        this.audioDisabled = audioDisabled;
         mediaDataSourceFactory = new ExtendedDefaultDataSourceFactory(ApplicationLoader.applicationContext, "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)");
         trackSelector = new DefaultTrackSelector(ApplicationLoader.applicationContext);
+        if (audioDisabled) {
+            trackSelector.setParameters(trackSelector.getParameters().buildUpon().setTrackTypeDisabled(TRACK_TYPE_AUDIO, true).build());
+        }
         lastReportedPlaybackState = ExoPlayer.STATE_IDLE;
         shouldPauseOther = pauseOther;
         if (pauseOther) {
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.playerDidStartPlaying);
         }
+        playerCounter++;
     }
 
     @Override
@@ -155,16 +173,30 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     private void ensurePlayerCreated() {
-        DefaultLoadControl loadControl = new DefaultLoadControl(
-                new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
-                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
-                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
-                100,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
-                DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES,
-                DefaultLoadControl.DEFAULT_PRIORITIZE_TIME_OVER_SIZE_THRESHOLDS,
-                DefaultLoadControl.DEFAULT_BACK_BUFFER_DURATION_MS,
-                DefaultLoadControl.DEFAULT_RETAIN_BACK_BUFFER_FROM_KEYFRAME);
+        DefaultLoadControl loadControl;
+        if (isStory) {
+            loadControl = new DefaultLoadControl(
+                    new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
+                    DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                    DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
+                    1000,
+                    1000,
+                    DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES,
+                    DefaultLoadControl.DEFAULT_PRIORITIZE_TIME_OVER_SIZE_THRESHOLDS,
+                    DefaultLoadControl.DEFAULT_BACK_BUFFER_DURATION_MS,
+                    DefaultLoadControl.DEFAULT_RETAIN_BACK_BUFFER_FROM_KEYFRAME);
+        } else {
+            loadControl = new DefaultLoadControl(
+                    new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
+                    DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                    DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
+                    100,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                    DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES,
+                    DefaultLoadControl.DEFAULT_PRIORITIZE_TIME_OVER_SIZE_THRESHOLDS,
+                    DefaultLoadControl.DEFAULT_BACK_BUFFER_DURATION_MS,
+                    DefaultLoadControl.DEFAULT_RETAIN_BACK_BUFFER_FROM_KEYFRAME);
+        }
         if (player == null) {
             DefaultRenderersFactory factory;
             if (audioVisualizerDelegate != null) {
@@ -272,6 +304,10 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     public void preparePlayer(Uri uri, String type) {
+        preparePlayer(uri, type, FileLoader.PRIORITY_HIGH);
+    }
+
+    public void preparePlayer(Uri uri, String type, int priority) {
         this.videoUri = uri;
         this.videoType = type;
         this.audioUri = null;
@@ -305,6 +341,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         if (shouldPauseOther) {
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
         }
+        playerCounter--;
     }
 
     @Override
@@ -337,6 +374,17 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             return;
         }
         player.setVideoTextureView(textureView);
+    }
+
+    public void setSurfaceView(SurfaceView surfaceView) {
+        if (this.surfaceView == surfaceView) {
+            return;
+        }
+        this.surfaceView = surfaceView;
+        if (player == null) {
+            return;
+        }
+        player.setVideoSurfaceView(surfaceView);
     }
 
     public void setSurface(Surface s) {
@@ -570,19 +618,38 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                         parent.removeView(textureView);
                         parent.addView(textureView, i);
                     }
-                    player.clearVideoTextureView(textureView);
-                    player.setVideoTextureView(textureView);
-                    if (loopingMediaSource) {
-                        preparePlayerLoop(videoUri, videoType, audioUri, audioType);
+                    if (workerQueue != null) {
+                        workerQueue.postRunnable(() -> {
+                            if (player != null) {
+                                player.clearVideoTextureView(textureView);
+                                player.setVideoTextureView(textureView);
+                                if (loopingMediaSource) {
+                                    preparePlayerLoop(videoUri, videoType, audioUri, audioType);
+                                } else {
+                                    preparePlayer(videoUri, videoType);
+                                }
+                                play();
+                            }
+                        });
                     } else {
-                        preparePlayer(videoUri, videoType);
+                        player.clearVideoTextureView(textureView);
+                        player.setVideoTextureView(textureView);
+                        if (loopingMediaSource) {
+                            preparePlayerLoop(videoUri, videoType, audioUri, audioType);
+                        } else {
+                            preparePlayer(videoUri, videoType);
+                        }
+                        play();
                     }
-                    play();
                 }
             } else {
                 delegate.onError(this, error);
             }
         });
+    }
+
+    public VideoSize getVideoSize() {
+        return player != null ? player.getVideoSize() : null;
     }
 
     @Override
@@ -777,5 +844,33 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             );
         } catch (Exception ignore) {}
         return false;
+    }
+
+
+    public StoryEntry.HDRInfo getHDRStaticInfo(StoryEntry.HDRInfo hdrInfo) {
+        if (hdrInfo == null) {
+            hdrInfo = new StoryEntry.HDRInfo();
+        }
+        try {
+            MediaFormat mediaFormat = ((MediaCodecRenderer) player.getRenderer(0)).codecOutputMediaFormat;
+            ByteBuffer byteBuffer = mediaFormat.getByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            if (byteBuffer.get() == 0) {
+                hdrInfo.maxlum = byteBuffer.getShort(17);
+                hdrInfo.minlum = byteBuffer.getShort(19) * 0.0001f;
+            }
+        } catch (Exception ignore) {
+            hdrInfo.maxlum = hdrInfo.minlum = 0;
+        }
+        return hdrInfo;
+    }
+
+    public void setWorkerQueue(DispatchQueue dispatchQueue) {
+        workerQueue = dispatchQueue;
+        player.setWorkerQueue(dispatchQueue);
+    }
+
+    public void setIsStory() {
+        isStory = true;
     }
 }

@@ -1386,7 +1386,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = imageViewEmoji;
                     break;
                 case 0:
-                    StickerEmojiCell stickerEmojiCell = new StickerEmojiCell(context, false) {
+                    StickerEmojiCell stickerEmojiCell = new StickerEmojiCell(context, false, resourcesProvider) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
                                 super.onMeasure(widthMeasureSpec, widthMeasureSpec);
@@ -1916,7 +1916,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = imageViewEmoji;
                     break;
                 case 0:
-                    StickerEmojiCell cell = new StickerEmojiCell(context, false) {
+                    StickerEmojiCell cell = new StickerEmojiCell(context, false, resourcesProvider) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
                                 super.onMeasure(widthMeasureSpec, widthMeasureSpec);

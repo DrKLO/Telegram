@@ -15,7 +15,9 @@ import org.telegram.messenger.Utilities;
 
 public class GradientTools {
 
-    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public boolean isDiagonal;
+    public boolean isRotate;
+    public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     int color1;
     int color2;
     int color3;
@@ -52,7 +54,11 @@ public class GradientTools {
             paint.setShader(shader = null);
             paint.setColor(color1);
         } else if (color3 == 0) {
-            paint.setShader(shader = new LinearGradient(0, 0, 0, INTERNAL_HEIGHT, new int[]{color1, color2}, null, Shader.TileMode.CLAMP));
+            if (isDiagonal && isRotate) {
+                paint.setShader(shader = new LinearGradient(0, 0, INTERNAL_HEIGHT, INTERNAL_HEIGHT, new int[]{color1, color2}, null, Shader.TileMode.CLAMP));
+            } else {
+                paint.setShader(shader = new LinearGradient(isDiagonal ? INTERNAL_HEIGHT : 0, 0, 0, INTERNAL_HEIGHT, new int[]{color1, color2}, null, Shader.TileMode.CLAMP));
+            }
         } else {
             if (gradientBitmap == null) {
                 gradientBitmap = Bitmap.createBitmap(INTERNAL_WIDTH, INTERNAL_HEIGHT, Bitmap.Config.ARGB_8888);
@@ -71,7 +77,7 @@ public class GradientTools {
         updateBounds();
     }
 
-    private void updateBounds() {
+    protected void updateBounds() {
         if (shader == null) {
             return;
         }

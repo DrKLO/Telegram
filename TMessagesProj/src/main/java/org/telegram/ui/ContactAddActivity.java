@@ -180,6 +180,8 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         TLRPC.User user = getMessagesController().getUser(user_id);
                         user.first_name = firstNameField.getText().toString();
                         user.last_name = lastNameField.getText().toString();
+                        user.contact = true;
+                        getMessagesController().putUser(user, false);
                         getContactsController().addContact(user, checkBoxCell != null && checkBoxCell.isChecked());
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                         preferences.edit().putInt("dialog_bar_vis3" + user_id, 3).commit();

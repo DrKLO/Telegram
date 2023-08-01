@@ -20,6 +20,8 @@ import android.os.SystemClock;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -191,6 +193,7 @@ public class LoadingDrawable extends Drawable {
 
     public void setBounds(@NonNull RectF bounds) {
         super.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
+        lastBounds = null;
     }
 
     public void reset() {

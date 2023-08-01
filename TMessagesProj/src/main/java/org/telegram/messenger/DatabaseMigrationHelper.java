@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Locale;
 
 public class DatabaseMigrationHelper {
+
     public static int migrate(MessagesStorage messagesStorage, int version) throws Exception {
         SQLiteDatabase database = messagesStorage.getDatabase();
         if (version < 4) {
@@ -1254,9 +1255,79 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 117").stepThis().dispose();
             version = 117;
         }
+
+        if (version == 116 || version == 117 || version == 118) {
+            database.executeFast("DROP TABLE IF EXISTS stories").stepThis().dispose();
+            database.executeFast("DROP TABLE IF EXISTS stories_counter").stepThis().dispose();
+
+            database.executeFast("CREATE TABLE stories (dialog_id INTEGER, story_id INTEGER, data BLOB, local_path TEXT, local_thumb_path TEXT, PRIMARY KEY (dialog_id, story_id));").stepThis().dispose();
+            database.executeFast("CREATE TABLE stories_counter (dialog_id INTEGER PRIMARY KEY, count INTEGER, max_read INTEGER);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 119").stepThis().dispose();
+            messagesStorage.getMessagesController().getStoriesController().cleanup();
+            version = 119;
+        }
+
+        if (version == 119) {
+            database.executeFast("ALTER TABLE messages_v2 ADD COLUMN reply_to_story_id INTEGER default 0").stepThis().dispose();
+            database.executeFast("ALTER TABLE messages_topics ADD COLUMN reply_to_story_id INTEGER default 0").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 120").stepThis().dispose();
+            version = 120;
+        }
+
+        if (version == 120) {
+            database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, PRIMARY KEY(dialog_id, story_id));").stepThis().dispose();
+            database.executeFast("CREATE TABLE archived_stories (story_id INTEGER PRIMARY KEY, data BLOB);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 121").stepThis().dispose();
+            version = 121;
+        }
+
+        if (version == 121) {
+            database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 122").stepThis().dispose();
+            version = 122;
+        }
+
+        if (version == 122) {
+            database.executeFast("ALTER TABLE chat_settings_v2 ADD COLUMN participants_count INTEGER default 0").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 123").stepThis().dispose();
+            version = 123;
+        }
+
+        if (version == 123) {
+            database.executeFast("CREATE TABLE story_pushes (uid INTEGER PRIMARY KEY, minId INTEGER, maxId INTEGER, date INTEGER, localName TEXT);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 124").stepThis().dispose();
+            version = 124;
+        }
+
+        if (version == 124) {
+            database.executeFast("DROP TABLE IF EXISTS story_pushes;").stepThis().dispose();
+            database.executeFast("CREATE TABLE story_pushes (uid INTEGER, sid INTEGER, date INTEGER, localName TEXT, PRIMARY KEY(uid, sid));").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 125").stepThis().dispose();
+            version = 125;
+        }
+
+        if (version == 125) {
+            database.executeFast("ALTER TABLE story_pushes ADD COLUMN flags INTEGER default 0").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 126").stepThis().dispose();
+            version = 126;
+        }
+
+        if (version == 126) {
+            database.executeFast("ALTER TABLE story_pushes ADD COLUMN expire_date INTEGER default 0").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 127").stepThis().dispose();
+            version = 127;
+        }
+
         return version;
     }
-
 
     public static boolean recoverDatabase(File oldDatabaseFile, File oldDatabaseWall, File oldDatabaseShm, int currentAccount) {
         File filesDir = ApplicationLoader.getFilesDirFixed();

@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
+import android.os.Process;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
@@ -25,7 +26,7 @@ public class SpoilerEffectBitmapFactory {
         return factory;
     }
 
-    final DispatchQueue dispatchQueue = new DispatchQueue("SpoilerEffectBitmapFactory");
+    final DispatchQueue dispatchQueue = new DispatchQueue("SpoilerEffectBitmapFactory", true, 3 * Process.THREAD_PRIORITY_LESS_FAVORABLE);
     private Bitmap shaderBitmap;
     Bitmap bufferBitmap;
     Bitmap backgroundBitmap;

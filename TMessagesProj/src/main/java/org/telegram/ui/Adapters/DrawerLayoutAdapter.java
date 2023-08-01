@@ -315,6 +315,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             } else {
                 items.add(new Item(15, LocaleController.getString("SetEmojiStatus", R.string.SetEmojiStatus), R.drawable.msg_status_set));
             }
+        }
+        if (MessagesController.getInstance(UserConfig.selectedAccount).storiesEnabled()) {
+            items.add(new Item(16, LocaleController.getString("ProfileMyStories", R.string.ProfileMyStories), R.drawable.msg_menu_stories));
+            items.add(null); // divider
+        } else if (me != null && me.isPremium()) {
             items.add(null); // divider
         }
         items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), newGroupIcon));

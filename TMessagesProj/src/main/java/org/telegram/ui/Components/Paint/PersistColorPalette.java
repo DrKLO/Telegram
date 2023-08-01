@@ -15,6 +15,8 @@ public class PersistColorPalette {
     public final static int COLORS_COUNT = 14;
 
     private final static List<Integer> DEFAULT_COLORS = Arrays.asList(
+            0xff000000,
+            0xffFFFFFF,
             0xff1D99FF,
             0xff03BCD4,
             0xff39BA2B,
@@ -26,9 +28,7 @@ public class PersistColorPalette {
             0xffAC734C,
             0xff90512C,
             0xff532E1F,
-            0xff000000,
-            0xff818181,
-            0xffFFFFFF
+            0xff818181
     );
     private final static Integer DEFAULT_MARKER_COLOR = 0xff0a84ff;
 
@@ -141,7 +141,12 @@ public class PersistColorPalette {
 
     public int getColor(int index) {
         checkIndex(index);
-
+        if (index < 0 || index >= colors.size()) {
+            if (index >= 0 && index < DEFAULT_COLORS.size()) {
+                return DEFAULT_COLORS.get(index);
+            }
+            return DEFAULT_COLORS.get(0);
+        }
         return colors.get(index);
     }
 
@@ -155,19 +160,34 @@ public class PersistColorPalette {
             pendingChange.clear();
             pendingChange.add(color);
             pendingChange.addAll(from);
-            pendingChange.remove(pendingChange.size() - 1);
+            if (pendingChange.size() < DEFAULT_COLORS.size()) {
+                for (int j = pendingChange.size(); j < DEFAULT_COLORS.size(); ++j) {
+                    pendingChange.add(DEFAULT_COLORS.get(j));
+                }
+            } else if (pendingChange.size() > DEFAULT_COLORS.size()) {
+                pendingChange = pendingChange.subList(0, DEFAULT_COLORS.size());
+            }
         }
     }
 
     public void selectColorIndex(int index) {
-        int color = colors.get(index);
+        int color = index < 0 || index >= colors.size() ? DEFAULT_COLORS.get(index) : colors.get(index);
         List<Integer> from = new ArrayList<>(pendingChange.isEmpty() ? colors : pendingChange);
         pendingChange.clear();
         pendingChange.add(color);
         for (int i = 0; i < COLORS_COUNT; i++) {
-            if (from.get(i) != color) {
+            if (i >= from.size()) {
+                pendingChange.add(DEFAULT_COLORS.get(i));
+            } else if (from.get(i) != color) {
                 pendingChange.add(from.get(i));
             }
+        }
+        if (pendingChange.size() < DEFAULT_COLORS.size()) {
+            for (int j = pendingChange.size(); j < DEFAULT_COLORS.size(); ++j) {
+                pendingChange.add(DEFAULT_COLORS.get(j));
+            }
+        } else if (pendingChange.size() > DEFAULT_COLORS.size()) {
+            pendingChange = pendingChange.subList(0, DEFAULT_COLORS.size());
         }
     }
 
@@ -185,7 +205,7 @@ public class PersistColorPalette {
 
         SharedPreferences.Editor editor = mConfig.edit();
         for (int i = 0; i < COLORS_COUNT; i++) {
-            editor.putLong("color_" + i, pendingChange.get(i));
+            editor.putLong("color_" + i, i < pendingChange.size() ? pendingChange.get(i) : (long) DEFAULT_COLORS.get(i));
         }
         editor.apply();
 

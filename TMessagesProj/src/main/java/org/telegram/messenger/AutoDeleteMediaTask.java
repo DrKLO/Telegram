@@ -1,6 +1,10 @@
 package org.telegram.messenger;
 
+import static org.telegram.messenger.CacheByChatsController.KEEP_MEDIA_TYPE_STORIES;
+
 import android.util.SparseArray;
+
+import com.google.android.exoplayer2.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,10 +41,10 @@ public class AutoDeleteMediaTask {
                 }
             }
 
-            int[] keepMediaByTypes = new int[3];
+            int[] keepMediaByTypes = new int[4];
             boolean allKeepMediaTypesForever = true;
             long keepMediaMinSeconds = Long.MAX_VALUE;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 4; i++) {
                 keepMediaByTypes[i] = SharedConfig.getPreferences().getInt("keep_media_type_" + i, CacheByChatsController.getDefault(i));
                 if (keepMediaByTypes[i] != CacheByChatsController.KEEP_MEDIA_FOREVER) {
                     allKeepMediaTypesForever = false;
@@ -60,10 +64,13 @@ public class AutoDeleteMediaTask {
             long deletedFilesBySizeSize = 0;
             int skippedFiles = 0;
 
-            if (!allKeepMediaTypesForever) {
+            //if (!allKeepMediaTypesForever) {
                 //long currentTime = time - 60 * 60 * 24 * days;
                 final SparseArray<File> paths = ImageLoader.getInstance().createMediaPaths();
                 for (int a = 0; a < paths.size(); a++) {
+                    if (allKeepMediaTypesForever && (paths.keyAt(a) == FileLoader.MEDIA_DIR_AUDIO || paths.keyAt(a) == FileLoader.MEDIA_DIR_DOCUMENT)) {
+                        continue;
+                    }
                     boolean isCacheDir = false;
                     if (paths.keyAt(a) == FileLoader.MEDIA_DIR_CACHE) {
                         isCacheDir = true;
@@ -85,24 +92,31 @@ public class AutoDeleteMediaTask {
                         }
                         for (int i = 0; i < keepMediaFiles.size(); i++) {
                             CacheByChatsController.KeepMediaFile file = keepMediaFiles.get(i);
-                            if (file.keepMedia == CacheByChatsController.KEEP_MEDIA_FOREVER) {
-                                continue;
-                            }
-                            long seconds;
-                            if (file.keepMedia >= 0) {
-                                seconds = CacheByChatsController.getDaysInSeconds(file.keepMedia);
-                            } else if (file.dialogType >= 0) {
-                                seconds = CacheByChatsController.getDaysInSeconds(keepMediaByTypes[file.dialogType]);
-                            } else if (isCacheDir) {
-                                continue;
+                            long timeLocal;
+                            if (file.isStory) {
+                                long seconds = CacheByChatsController.getDaysInSeconds(keepMediaByTypes[KEEP_MEDIA_TYPE_STORIES]);
+                                timeLocal = time - seconds;
                             } else {
-                                seconds = keepMediaMinSeconds;
-                            }
-                            if (seconds == Long.MAX_VALUE) {
-                                continue;
+                                if (file.keepMedia == CacheByChatsController.KEEP_MEDIA_FOREVER) {
+                                    continue;
+                                }
+                                long seconds;
+                                if (file.keepMedia >= 0) {
+                                    seconds = CacheByChatsController.getDaysInSeconds(file.keepMedia);
+                                } else if (file.dialogType >= 0) {
+                                    seconds = CacheByChatsController.getDaysInSeconds(keepMediaByTypes[file.dialogType]);
+                                } else if (isCacheDir) {
+                                    continue;
+                                } else {
+                                    seconds = keepMediaMinSeconds;
+                                }
+                                if (seconds == Long.MAX_VALUE) {
+                                    continue;
+                                }
+
+                                timeLocal = time - seconds;
                             }
                             long lastUsageTime = Utilities.getLastUsageFileTime(file.file.getAbsolutePath());
-                            long timeLocal = time - seconds;
                             boolean needDelete = lastUsageTime > 316000000 && lastUsageTime < timeLocal && !usingFilePaths.contains(file.file.getPath());
                             if (needDelete) {
                                 try {
@@ -111,7 +125,7 @@ public class AutoDeleteMediaTask {
                                         autoDeletedFilesSize += file.file.length();
                                     }
                                     if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                                        FileLog.d("delete file " + file.file.getPath() + " last_usage_time=" + lastUsageTime + " time_local=" + timeLocal);
+                                        FileLog.d("delete file " + file.file.getPath() + " last_usage_time=" + lastUsageTime + " time_local=" + timeLocal + " story=" + file.isStory);
                                     }
                                     file.file.delete();
                                 } catch (Exception exception) {
@@ -123,7 +137,7 @@ public class AutoDeleteMediaTask {
                         FileLog.e(e);
                     }
                 }
-            }
+            //}
 
             int maxCacheGb = SharedConfig.getPreferences().getInt("cache_limit", Integer.MAX_VALUE);
             if (maxCacheGb != Integer.MAX_VALUE) {
@@ -133,7 +147,6 @@ public class AutoDeleteMediaTask {
                 } else {
                     maxCacheSize = maxCacheGb * 1024L * 1024L * 1000L;
                 }
-                final SparseArray<File> paths = ImageLoader.getInstance().createMediaPaths();
                 long totalSize = 0;
                 for (int a = 0; a < paths.size(); a++) {
                     totalSize += Utilities.getDirSize(paths.valueAt(a).getAbsolutePath(), 0, true);

@@ -42,6 +42,7 @@ import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
@@ -317,8 +318,15 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                     ((ChatActivity) fragment).chatAttachAlert.dismiss(true);
                 }
             }
-            if (fragment != null && fragment.getVisibleDialog() != null) {
-                fragment.getVisibleDialog().dismiss();
+            BaseFragment mainFragment = LaunchActivity.getLastFragment();
+            for (int i = 0; i < 2; i++) {
+                BaseFragment currentFragment = i == 0 ? fragment : mainFragment;
+                if (currentFragment != null && currentFragment.storyViewer != null && currentFragment.storyViewer.isShown()) {
+                    currentFragment.storyViewer.dismissVisibleDialogs();
+                }
+                if (currentFragment != null && currentFragment.getVisibleDialog() != null) {
+                    currentFragment.getVisibleDialog().dismiss();
+                }
             }
             if ((onlySelectedType || forceAbout) && fragment != null) {
                 fragment.presentFragment(new PremiumPreviewFragment(PremiumPreviewFragment.featureTypeToServerString(featureData.type)));
@@ -608,30 +616,30 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             } else if (onlySelectedType) {
                 if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
                     title.setText(LocaleController.getString("AdditionalReactions", R.string.AdditionalReactions));
-                    description.setText(LocaleController.getString("AdditionalReactionsDescription", R.string.AdditionalReactionsDescription));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString("AdditionalReactionsDescription", R.string.AdditionalReactionsDescription)));
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
                     title.setText(LocaleController.getString("PremiumPreviewNoAds", R.string.PremiumPreviewNoAds));
-                    description.setText(LocaleController.getString("PremiumPreviewNoAdsDescription2", R.string.PremiumPreviewNoAdsDescription2));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString("PremiumPreviewNoAdsDescription2", R.string.PremiumPreviewNoAdsDescription2)));
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS) {
                     title.setText(LocaleController.getString("PremiumPreviewAppIcon", R.string.PremiumPreviewAppIcon));
-                    description.setText(LocaleController.getString("PremiumPreviewAppIconDescription2", R.string.PremiumPreviewAppIconDescription2));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString("PremiumPreviewAppIconDescription2", R.string.PremiumPreviewAppIconDescription2)));
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED) {
                     title.setText(LocaleController.getString(R.string.PremiumPreviewDownloadSpeed));
-                    description.setText(LocaleController.getString(R.string.PremiumPreviewDownloadSpeedDescription2));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewDownloadSpeedDescription2)));
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT) {
                     title.setText(LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagement));
-                    description.setText(LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription2));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewAdvancedChatManagementDescription2)));
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_VOICE_TO_TEXT) {
                     title.setText(LocaleController.getString(R.string.PremiumPreviewVoiceToText));
-                    description.setText(LocaleController.getString(R.string.PremiumPreviewVoiceToTextDescription2));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewVoiceToTextDescription2)));
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS) {
                     title.setText(LocaleController.getString(R.string.PremiumPreviewTranslations));
-                    description.setText(LocaleController.getString(R.string.PremiumPreviewTranslationsDescription));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewTranslationsDescription)));
                 }
                 topViewOnFullHeight = false;
             } else {
                 title.setText(featureData.title);
-                description.setText(featureData.description);
+                description.setText(AndroidUtilities.replaceTags(featureData.description));
                 topViewOnFullHeight = false;
             }
             requestLayout();

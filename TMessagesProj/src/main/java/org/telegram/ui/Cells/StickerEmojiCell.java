@@ -68,9 +68,11 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
 
     private final static int STICKER_SIZE = 66;
     private boolean drawInParentView;
+    private Theme.ResourcesProvider resourceProvider;
 
-    public StickerEmojiCell(Context context, boolean isEmojiPanel) {
+    public StickerEmojiCell(Context context, boolean isEmojiPanel, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourceProvider = resourcesProvider;
 
         fromEmojiPanel = isEmojiPanel;
 
@@ -168,10 +170,10 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             parentObject = parent;
             //boolean isVideoSticker = MessageObject.isVideoSticker(document);
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f, 1f, resourceProvider);
             String imageFilter = fromEmojiPanel ? "66_66_pcache_compress" : "66_66";
             if (MessageObject.isTextColorEmoji(document)) {
-                imageView.setColorFilter(Theme.chat_animatedEmojiTextColorFilter);
+                imageView.setColorFilter(Theme.getAnimatedEmojiColorFilter(resourceProvider));
             }
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
                 if (fromEmojiPanel) {

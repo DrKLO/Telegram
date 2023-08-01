@@ -136,6 +136,21 @@ public class NativeByteBuffer extends AbstractSerializedData {
         }
     }
 
+    public void writeFloat(float f) {
+        try {
+            if (!justCalc) {
+                buffer.putInt(Float.floatToIntBits(f));
+            } else {
+                len += 4;
+            }
+        } catch (Exception e) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("write float error");
+                FileLog.e(e);
+            }
+        }
+    }
+
     public void writeBool(boolean value) {
         if (!justCalc) {
             if (value) {
@@ -380,6 +395,22 @@ public class NativeByteBuffer extends AbstractSerializedData {
         return buffer.position();
     }
 
+    public byte readByte(boolean exception) {
+        try {
+            return buffer.get();
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read byte error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read byte error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return 0;
+    }
+
     public int readInt32(boolean exception) {
         try {
             return buffer.getInt();
@@ -389,6 +420,22 @@ public class NativeByteBuffer extends AbstractSerializedData {
             } else {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.e("read int32 error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return 0;
+    }
+
+    public float readFloat(boolean exception) {
+        try {
+            return Float.intBitsToFloat(buffer.getInt());
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read float error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read float error");
                     FileLog.e(e);
                 }
             }

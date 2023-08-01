@@ -823,7 +823,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 long destroyTime = (long) messageObject.messageOwner.destroyTime * 1000;
                 long currentTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000L;
                 long timeToDestroy = destroyTime - currentTime;
-                long duration = messageObject.getDuration() * 1000L;
+                long duration = (long) (messageObject.getDuration() * 1000L);
                 if (duration > timeToDestroy) {
                     secretDeleteTimer.setDestroyTime(-1, -1, true);
                 } else {

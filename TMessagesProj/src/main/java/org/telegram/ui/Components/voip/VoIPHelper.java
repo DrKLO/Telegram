@@ -589,7 +589,7 @@ public class VoIPHelper {
 					}
 					if (includeLogs[0] && log.exists() && req.rating < 4) {
 						AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-						SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, null, true, 0);
+						SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, null, true, 0, null);
 						Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
 					}
 				});

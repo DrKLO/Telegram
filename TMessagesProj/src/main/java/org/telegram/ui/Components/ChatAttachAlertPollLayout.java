@@ -943,7 +943,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                                 if (menu.findItem(android.R.id.copy) == null) {
                                     return;
                                 }
-                                ((ChatActivity) parentAlert.baseFragment).fillActionModeMenu(menu);
+                                ChatActivity.fillActionModeMenu(menu, ((ChatActivity) parentAlert.baseFragment).getCurrentEncryptedChat());
                             }
                         }
                     };

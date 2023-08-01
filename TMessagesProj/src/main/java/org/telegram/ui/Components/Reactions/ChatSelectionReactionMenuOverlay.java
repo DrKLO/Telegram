@@ -66,7 +66,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void checkCreateReactionsLayout() {
         if (reactionsContainerLayout == null) {
-            reactionsContainerLayout = new ReactionsContainerLayout(parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
+            reactionsContainerLayout = new ReactionsContainerLayout(ReactionsContainerLayout.TYPE_DEFAULT, parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
                 float enabledAlpha = 1f;
                 long lastUpdate;
 
