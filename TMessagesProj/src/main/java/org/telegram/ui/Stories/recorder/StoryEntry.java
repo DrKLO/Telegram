@@ -315,6 +315,17 @@ public class StoryEntry extends IStoryPart {
         return file;
     }
 
+    private String ext(File file) {
+        if (file == null) {
+            return null;
+        }
+        String s = file.getPath();
+        int i;
+        if ((i = s.lastIndexOf('.')) > 0)
+            return s.substring(i + 1);
+        return null;
+    }
+
     public void updateFilter(PhotoFilterView filterView, Runnable whenDone) {
         clearFilter();
 
@@ -329,6 +340,9 @@ public class StoryEntry extends IStoryPart {
 
             Bitmap bitmap = filterView.getBitmap();
             if (bitmap == null) {
+                if (whenDone != null) {
+                    whenDone.run();
+                }
                 return;
             }
 
@@ -345,11 +359,13 @@ public class StoryEntry extends IStoryPart {
             if (filterFile != null && filterFile.exists()) {
                 filterFile.delete();
             }
-            filterFile = makeCacheFile(currentAccount, "webp");
+            String ext = ext(file);
+            final boolean supportTransparent = "png".equals(ext) || "webp".equals(ext);
+            filterFile = makeCacheFile(currentAccount, supportTransparent ? "webp" : "jpg");
             if (whenDone == null) {
                 try {
                     FileOutputStream stream = new FileOutputStream(filterFile);
-                    rotatedBitmap.compress(Bitmap.CompressFormat.WEBP, 90, stream);
+                    rotatedBitmap.compress(supportTransparent ? Bitmap.CompressFormat.WEBP : Bitmap.CompressFormat.JPEG, 90, stream);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -358,14 +374,16 @@ public class StoryEntry extends IStoryPart {
                 Utilities.themeQueue.postRunnable(() -> {
                     try {
                         FileOutputStream stream = new FileOutputStream(filterFile);
-                        rotatedBitmap.compress(Bitmap.CompressFormat.WEBP, 90, stream);
+                        rotatedBitmap.compress(supportTransparent ? Bitmap.CompressFormat.WEBP : Bitmap.CompressFormat.JPEG, 90, stream);
                     } catch (Exception e) {
                         FileLog.e(e, false);
-                        try {
-                            FileOutputStream stream = new FileOutputStream(filterFile);
-                            rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
-                        } catch (Exception e2) {
-                            FileLog.e(e2, false);
+                        if (supportTransparent) {
+                            try {
+                                FileOutputStream stream = new FileOutputStream(filterFile);
+                                rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 90, stream);
+                            } catch (Exception e2) {
+                                FileLog.e(e2, false);
+                            }
                         }
                     }
                     rotatedBitmap.recycle();

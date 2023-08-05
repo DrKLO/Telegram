@@ -288,6 +288,8 @@ public class NotificationCenter {
     public static final int uploadStoryProgress = totalEvents++;
     public static final int uploadStoryEnd = totalEvents++;
     public static final int customTypefacesLoaded = totalEvents++;
+    public static final int stealthModeChanged = totalEvents++;
+    public static final int onReceivedChannelDifference = totalEvents++;
 
     public static boolean alreadyLogged;
 

@@ -92,6 +92,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -464,11 +465,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             canvas.drawPaint(sharedResources.gradientBackgroundPaint);
                         }
                         if (progressToFullBlackout < 1f) {
-                            if (progressToDismiss != 0) {
-                                canvas.saveLayerAlpha(0, gradientTop, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
-                            } else {
-                                canvas.save();
-                            }
+                            canvas.save();
                             sharedResources.gradientBackgroundPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.506f * (1f - progressToFullBlackout) * hideCaptionAlpha)));
                             sharedResources.bottomOverlayGradient.setAlpha((int) (255 * (1f - progressToFullBlackout) * hideCaptionAlpha));
                             sharedResources.bottomOverlayGradient.setBounds(0, gradientTop, getMeasuredWidth(), gradientBottom);
@@ -777,15 +774,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 bulletin.show(true);
             }
         };
-        storyCaptionView.captionTextview.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (storyCaptionView.expanded) {
+        storyCaptionView.captionTextview.setOnClickListener(v -> {
+            if (storyCaptionView.expanded) {
+                if (!storyCaptionView.textSelectionHelper.isInSelectionMode()) {
                     storyCaptionView.collapse();
                 } else {
-                    checkBlackoutMode = true;
-                    storyCaptionView.expand();
+                    storyCaptionView.checkCancelTextSelection();
                 }
+            } else {
+                checkBlackoutMode = true;
+                storyCaptionView.expand();
             }
         });
 
@@ -1226,6 +1224,19 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         muteIconContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         optionsIconView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
         shareButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100)));
+
+        View overlay = storyCaptionView.textSelectionHelper.getOverlayView(context);
+        if (overlay != null) {
+            AndroidUtilities.removeFromParent(overlay);
+            addView(overlay);
+        }
+        storyCaptionView.textSelectionHelper.setCallback(new TextSelectionHelper.Callback() {
+            @Override
+            public void onStateChanged(boolean isSelected) {
+                delegate.setIsInSelectionMode(storyCaptionView.textSelectionHelper.isInSelectionMode());
+            }
+        });
+        storyCaptionView.textSelectionHelper.setParentView(this);
     }
 
     private ArrayList<TLRPC.InputStickerSet> getAnimatedEmojiSets(StoryItemHolder storyHolder) {
@@ -3044,6 +3055,10 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     }
 
     public boolean closeKeyboardOrEmoji() {
+        if (storyCaptionView.textSelectionHelper.isInSelectionMode()) {
+            storyCaptionView.textSelectionHelper.clear(false);
+            return true;
+        }
         if (privacyHint != null) {
             privacyHint.hide();
         }
@@ -3149,6 +3164,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
                 //storyViewer.allowScreenshots(allowScreenshots);
             } else {
+                cancelTextSelection();
                 muteIconView.clearAnimationDrawable();
                 viewsThumbImageReceiver = null;
                 isLongPressed = false;
@@ -3196,6 +3212,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         progressToHideInterface.set(0, false);
         viewsThumbImageReceiver = null;
         messageSent = false;
+        cancelTextSelection();
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -3375,6 +3392,26 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
     public void showNoSoundHint() {
         muteIconContainer.callOnClick();
+    }
+
+    public boolean checkTextSelectionEvent(MotionEvent ev) {
+        if (storyCaptionView.textSelectionHelper.isInSelectionMode()) {
+            float xOffset = getX();
+            float yOffset = getY() + ((View) getParent()).getY();
+            ev.offsetLocation(-xOffset, -yOffset);
+            if (storyCaptionView.textSelectionHelper.getOverlayView(getContext()).onTouchEvent(ev)) {
+                return true;
+            } else {
+                ev.offsetLocation(xOffset, yOffset);
+            }
+        }
+        return false;
+    }
+
+    public void cancelTextSelection() {
+        if (storyCaptionView.textSelectionHelper.isInSelectionMode()) {
+            storyCaptionView.textSelectionHelper.clear();
+        }
     }
 
     public static class PeerHeaderView extends FrameLayout {
@@ -3601,6 +3638,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         void setIsHintVisible(boolean visible);
 
         void setIsSwiping(boolean swiping);
+
+        void setIsInSelectionMode(boolean selectionMode);
     }
 
     public class StoryItemHolder {
@@ -4006,6 +4045,12 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             if (progressToHideInterface.get() != prevToHideProgress) {
                 storyContainer.invalidate();
             }
+            if (progressToDismissLocal != 0) {
+                //fix jittering caption shadow
+                storyContainer.setLayerType(LAYER_TYPE_HARDWARE, null);
+            } else {
+                storyContainer.setLayerType(LAYER_TYPE_NONE, null);
+            }
             prevToHideProgress = progressToHideInterface.get();
             progressToDismiss = progressToDismissLocal;
             progressToKeyboard = progressToKeyboardLocal;
@@ -4013,6 +4058,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         } else {
             return;
         }
+
 
         if (reactionsContainerLayout != null) {
             reactionsContainerLayout.setVisibility(progressToKeyboard > 0 ? View.VISIBLE : View.GONE);
@@ -4031,7 +4077,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
 
-            if (child.getVisibility() != View.VISIBLE || child == selfView || child.getTag(R.id.parent_tag) != null) {
+            if (child.getVisibility() != View.VISIBLE || child == selfView || child.getTag(R.id.parent_tag) != null || child == storyCaptionView.textSelectionHelper.getOverlayView(getContext())) {
                 if (child == selfView) {
                     if (BIG_SCREEN) {
                         child.setAlpha((1f - progressToDismiss) * hideInterfaceAlpha * (1f - outT));

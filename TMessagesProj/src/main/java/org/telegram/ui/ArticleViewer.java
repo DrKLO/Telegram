@@ -92,6 +92,7 @@ import android.widget.Toast;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
@@ -309,6 +310,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     @SuppressLint("StaticFieldLeak")
     private static volatile ArticleViewer Instance = null;
+    private Drawable chat_redLocationIcon;
 
     public static ArticleViewer getInstance() {
         ArticleViewer localInstance = Instance;
@@ -757,7 +759,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             MotionEvent textSelectionEv = MotionEvent.obtain(ev);
             textSelectionEv.offsetLocation(-containerView.getX(), -containerView.getY());
 
-            if (textSelectionHelper.isSelectionMode() && textSelectionHelper.getOverlayView(getContext()).onTouchEvent(textSelectionEv)) {
+            if (textSelectionHelper.isInSelectionMode() && textSelectionHelper.getOverlayView(getContext()).onTouchEvent(textSelectionEv)) {
                 return true;
             }
 
@@ -765,7 +767,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 ev.setAction(MotionEvent.ACTION_CANCEL);
             }
 
-            if (ev.getAction() == MotionEvent.ACTION_DOWN && textSelectionHelper.isSelectionMode() && (ev.getY() < containerView.getTop() || ev.getY() > containerView.getBottom())) {
+            if (ev.getAction() == MotionEvent.ACTION_DOWN && textSelectionHelper.isInSelectionMode() && (ev.getY() < containerView.getTop() || ev.getY() > containerView.getBottom())) {
                 if (textSelectionHelper.getOverlayView(getContext()).onTouchEvent(textSelectionEv)) {
                     return super.dispatchTouchEvent(ev);
                 } else {
@@ -906,7 +908,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         public boolean handleTouchEvent(MotionEvent event) {
-            if (pageSwitchAnimation == null && !closeAnimationInProgress && fullscreenVideoContainer.getVisibility() != VISIBLE && !textSelectionHelper.isSelectionMode()) {
+            if (pageSwitchAnimation == null && !closeAnimationInProgress && fullscreenVideoContainer.getVisibility() != VISIBLE && !textSelectionHelper.isInSelectionMode()) {
                 if (event != null && event.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
                     startedTrackingPointerId = event.getPointerId(0);
                     maybeStartTracking = true;
@@ -1035,7 +1037,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         tracker.recycle();
                         tracker = null;
                     }
-                    if (textSelectionHelper != null && !textSelectionHelper.isSelectionMode()) {
+                    if (textSelectionHelper != null && !textSelectionHelper.isInSelectionMode()) {
                         textSelectionHelper.clear();
                     }
                 }
@@ -1134,7 +1136,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     } else {
                         textSelectionHelper.trySelect(pressedLinkOwnerView);
                     }
-                    if (textSelectionHelper.isSelectionMode()) {
+                    if (textSelectionHelper.isInSelectionMode()) {
                         windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     }
                 } else if (pressedLinkOwnerLayout != null && pressedLinkOwnerView != null) {
@@ -1733,7 +1735,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         TextSelectionHelper.TextSelectionOverlay selectionOverlay = textSelectionHelperBottomSheet.getOverlayView(getContext());
                         MotionEvent textSelectionEv = MotionEvent.obtain(ev);
                         textSelectionEv.offsetLocation(-linearLayout.getX(), -linearLayout.getY());
-                        if (textSelectionHelperBottomSheet.isSelectionMode() && textSelectionHelperBottomSheet.getOverlayView(getContext()).onTouchEvent(textSelectionEv)) {
+                        if (textSelectionHelperBottomSheet.isInSelectionMode() && textSelectionHelperBottomSheet.getOverlayView(getContext()).onTouchEvent(textSelectionEv)) {
                             return true;
                         }
 
@@ -1741,7 +1743,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             ev.setAction(MotionEvent.ACTION_CANCEL);
                         }
 
-                        if (ev.getAction() == MotionEvent.ACTION_DOWN && textSelectionHelperBottomSheet.isSelectionMode() && (ev.getY() < linearLayout.getTop() || ev.getY() > linearLayout.getBottom())) {
+                        if (ev.getAction() == MotionEvent.ACTION_DOWN && textSelectionHelperBottomSheet.isInSelectionMode() && (ev.getY() < linearLayout.getTop() || ev.getY() > linearLayout.getBottom())) {
                             if (textSelectionHelperBottomSheet.getOverlayView(getContext()).onTouchEvent(textSelectionEv)) {
                                 return super.dispatchTouchEvent(ev);
                             } else {
@@ -1762,7 +1764,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 builder.setDelegate(new BottomSheet.BottomSheetDelegate() {
                     @Override
                     public boolean canDismiss() {
-                        if (textSelectionHelperBottomSheet != null && textSelectionHelperBottomSheet.isSelectionMode()){
+                        if (textSelectionHelperBottomSheet != null && textSelectionHelperBottomSheet.isInSelectionMode()){
                             textSelectionHelperBottomSheet.clear();
                             return false;
                         }
@@ -1773,7 +1775,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 frameLayout.addView(linearLayout, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
                 frameLayout.addView(overlayView, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
                 builder.setCustomView(frameLayout);
-                if (textSelectionHelper.isSelectionMode()) {
+                if (textSelectionHelper.isInSelectionMode()) {
                     textSelectionHelper.clear();
                 }
                 showDialog(linkSheet = builder.create());
@@ -3186,7 +3188,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             });
             listView[i].setOnItemClickListener((view, position, x, y) -> {
                 if (textSelectionHelper != null) {
-                    if (textSelectionHelper.isSelectionMode()) {
+                    if (textSelectionHelper.isInSelectionMode()) {
                         textSelectionHelper.clear();
                         return;
                     }
@@ -4580,7 +4582,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
         }
-        if (textSelectionHelper.isSelectionMode()) {
+        if (textSelectionHelper.isInSelectionMode()) {
             textSelectionHelper.clear();
             return;
         }
@@ -7541,7 +7543,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         pressedLinkOwnerView = null;
                     }
                     updateChildTextPositions();
-                    if (textSelectionHelper != null && textSelectionHelper.isSelectionMode()) {
+                    if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
                         textSelectionHelper.invalidate();
                     }
                 }
@@ -10394,13 +10396,16 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             imageView.draw(canvas);
             if (currentMapProvider == 2 && imageView.hasNotThumb()) {
-                int w = (int) (Theme.chat_redLocationIcon.getIntrinsicWidth() * 0.8f);
-                int h = (int) (Theme.chat_redLocationIcon.getIntrinsicHeight() * 0.8f);
+                if (chat_redLocationIcon == null) {
+                    chat_redLocationIcon = ContextCompat.getDrawable(getContext(), R.drawable.map_pin).mutate();
+                }
+                int w = (int) (chat_redLocationIcon.getIntrinsicWidth() * 0.8f);
+                int h = (int) (chat_redLocationIcon.getIntrinsicHeight() * 0.8f);
                 int x = (int) (imageView.getImageX() + (imageView.getImageWidth() - w) / 2);
                 int y = (int) (imageView.getImageY() + (imageView.getImageHeight() / 2 - h));
-                Theme.chat_redLocationIcon.setAlpha((int) (255 * imageView.getCurrentAlpha()));
-                Theme.chat_redLocationIcon.setBounds(x, y, x + w, y + h);
-                Theme.chat_redLocationIcon.draw(canvas);
+                chat_redLocationIcon.setAlpha((int) (255 * imageView.getCurrentAlpha()));
+                chat_redLocationIcon.setBounds(x, y, x + w, y + h);
+                chat_redLocationIcon.draw(canvas);
             }
             int count = 0;
             if (captionLayout != null) {
@@ -11059,7 +11064,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             if (Build.VERSION.SDK_INT >= 23) {
                 scrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                    if (textSelectionHelper != null && textSelectionHelper.isSelectionMode()) {
+                    if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
                         textSelectionHelper.invalidate();
                     }
                 });

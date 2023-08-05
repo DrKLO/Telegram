@@ -14,9 +14,12 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -58,6 +61,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
@@ -1273,6 +1277,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         params.progressToArc = getArcProgress(cx, radius);
                         params.isLast = isLast;
                         params.isFirst = isFirst;
+                        params.crossfadeToDialog = 0;
                         StoriesUtilities.drawAvatarWithStory(dialogId, canvas, avatarImage, storiesController.hasSelfStories(), params);
                        // avatarImage.draw(canvas);
                     }
@@ -1292,6 +1297,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     params.progressToArc = getArcProgress(cx, radius);
                     params.isLast = isLast;
                     params.isFirst = isFirst;
+                    if (crossfadeToDialog) {
+                        params.crossfadeToDialog = crossfadeToDialogId;
+                        params.crossfadeToDialogProgress = progressToCollapsed2;
+                    } else {
+                        params.crossfadeToDialog = 0;
+                    }
                     StoriesUtilities.drawAvatarWithStory(dialogId, canvas, avatarImage, storiesController.hasStories(dialogId), params);
 //                    avatarImage.draw(canvas);
                 }
@@ -1475,6 +1486,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         public void setCrossfadeTo(long dialogId) {
             if (crossfadeToDialogId != dialogId) {
+                this.crossfadeToDialogId = dialogId;
                 crossfadeToDialog = dialogId != -1;
                 if (crossfadeToDialog) {
                     TLObject object;
@@ -1604,12 +1616,18 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             .setMultilineText(true)
             .setTextAlign(Layout.Alignment.ALIGN_CENTER)
             .setJoint(0, 37 - 8);
-        CharSequence text = AndroidUtilities.replaceSingleTag(LocaleController.getString("StoriesPremiumHint").replace('\n', ' '), Theme.key_undo_cancelColor, 0, () -> {
+        Spannable text = AndroidUtilities.replaceSingleTag(LocaleController.getString("StoriesPremiumHint").replace('\n', ' '), Theme.key_undo_cancelColor, 0, () -> {
             if (premiumHint != null) {
                 premiumHint.hide();
             }
             fragment.presentFragment(new PremiumPreviewFragment("stories"));
         });
+        ClickableSpan[] spans = text.getSpans(0, text.length(), ClickableSpan.class);
+        if (spans != null && spans.length >= 1) {
+            int start = text.getSpanStart(spans[0]);
+            int end = text.getSpanEnd(spans[0]);
+            text.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM)), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         premiumHint.setMaxWidthPx(HintView2.cutInFancyHalf(text, premiumHint.getTextPaint()));
         premiumHint.setText(text);
         premiumHint.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(24), AndroidUtilities.dp(8), 0);

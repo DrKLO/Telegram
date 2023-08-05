@@ -71,6 +71,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
     @Override
     public long open(DataSpec dataSpec) throws IOException {
         uri = dataSpec.uri;
+        transferInitializing(dataSpec);
         currentAccount = Utilities.parseInt(uri.getQueryParameter("account"));
         parentObject = FileLoader.getInstance(currentAccount).getParentObject(Utilities.parseInt(uri.getQueryParameter("rid")));
         document = new TLRPC.TL_document();
@@ -124,6 +125,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
             return C.RESULT_END_OF_INPUT;
         } else {
             int availableLength = 0;
+            int bytesRead;
             try {
                 if (bytesRemaining < readLength) {
                     readLength = (int) bytesRemaining;
@@ -165,14 +167,16 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                 if (!opened) {
                     return 0;
                 }
-                file.readFully(buffer, offset, availableLength);
-                currentOffset += availableLength;
-                bytesRemaining -= availableLength;
-                bytesTransferred(availableLength);
+                bytesRead = file.read(buffer, offset, availableLength);
+                if (bytesRead > 0) {
+                    currentOffset += bytesRead;
+                    bytesRemaining -= bytesRead;
+                    bytesTransferred(bytesRead);
+                }
             } catch (Exception e) {
                 throw new IOException(e);
             }
-            return availableLength;
+            return bytesRead;
         }
     }
 

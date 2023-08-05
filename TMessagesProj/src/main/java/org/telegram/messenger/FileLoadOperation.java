@@ -708,7 +708,12 @@ public class FileLoadOperation {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final long[] result = new long[2];
         Utilities.stageQueue.postRunnable(() -> {
-            result[0] = getDownloadedLengthFromOffsetInternal(notLoadedBytesRanges, offset, length);
+            try {
+                result[0] = getDownloadedLengthFromOffsetInternal(notLoadedBytesRanges, offset, length);
+            } catch (Throwable e) {
+                FileLog.e(e);
+                result[0] = 0;
+            }
             if (state == stateFinished) {
                 result[1] = 1;
             }

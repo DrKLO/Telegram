@@ -149,7 +149,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     private LinearLayoutManager layoutManager;
     AlertDialog progressDialog;
 
-    private boolean[] selected = new boolean[] { true, true, true, true, true, true, true, true, true };
+    private boolean[] selected = new boolean[] { true, true, true, true, true, true, true, true, true, true };
     private long databaseSize = -1;
     private long cacheSize = -1, cacheEmojiSize = -1, cacheTempSize = -1;
     private long documentsSize = -1;
@@ -374,7 +374,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             if (canceled) {
                 return;
             }
-            totalSize = lastTotalSizeCalculated = cacheSize + cacheTempSize + videoSize + audioSize + photoSize + documentsSize + musicSize + stickersCacheSize;
+            totalSize = lastTotalSizeCalculated = cacheSize + cacheTempSize + videoSize + audioSize + photoSize + documentsSize + musicSize + storiesSize + stickersCacheSize;
             lastTotalSizeCalculatedTime = System.currentTimeMillis();
 
             File path;
@@ -441,13 +441,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     private void updateChart() {
         if (cacheChart != null) {
             if (!calculating && totalSize > 0) {
-                CacheChart.SegmentSize[] segments = new CacheChart.SegmentSize[9];
+                CacheChart.SegmentSize[] segments = new CacheChart.SegmentSize[10];
                 for (int i = 0; i < itemInners.size(); ++i) {
                     ItemInner item = itemInners.get(i);
                     if (item.viewType == VIEW_TYPE_SECTION) {
                         if (item.index < 0) {
                             if (collapsed) {
-                                segments[8] = CacheChart.SegmentSize.of(item.size, selected[8]);
+                                segments[9] = CacheChart.SegmentSize.of(item.size, selected[9]);
                             }
                         } else {
                             segments[item.index] = CacheChart.SegmentSize.of(item.size, selected[item.index]);
@@ -716,13 +716,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalDocumentCache), 2, documentsSize, Theme.key_statisticChartLine_green));
             }
             if (musicSize > 0) {
-                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalMusicCache), 3, musicSize, Theme.key_statisticChartLine_red));
+                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalMusicCache), 3, musicSize, Theme.key_statisticChartLine_purple));
             }
             if (audioSize > 0) {
                 sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalAudioCache), 4, audioSize, Theme.key_statisticChartLine_lightgreen));
             }
             if (storiesSize > 0) {
-                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalStoriesCache), 5, storiesSize, Theme.key_statisticChartLine_indigo));
+                sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalStoriesCache), 5, storiesSize, Theme.key_statisticChartLine_red));
             }
             if (stickersCacheSize > 0) {
                 sections.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalStickersCache), 6, stickersCacheSize, Theme.key_statisticChartLine_orange));
@@ -739,13 +739,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 hasCache = true;
 
                 if (tempSizes == null) {
-                    tempSizes = new float[9];
+                    tempSizes = new float[10];
                 }
                 for (int i = 0; i < tempSizes.length; ++i) {
                     tempSizes[i] = (float) size(i);
                 }
                 if (percents == null) {
-                    percents = new int[9];
+                    percents = new int[10];
                 }
                 AndroidUtilities.roundPercents(tempSizes, percents);
 
@@ -759,7 +759,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         sum += sections.get(i).size;
                         sumPercents += percents[sections.get(i).index];
                     }
-                    percents[8] = sumPercents;
+                    percents[9] = sumPercents;
                     itemInners.add(ItemInner.asCheckBox(LocaleController.getString(R.string.LocalOther), -1, sum, Theme.key_statisticChartLine_golden));
                     if (!collapsed) {
                         itemInners.addAll(sections.subList(MAX_NOT_COLLAPSED, sections.size()));
@@ -963,7 +963,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         long clearedSize = 0;
         boolean allItemsClear = true;
         final int[] clearDirI = new int[] { 0 };
-        int clearDirCount = (selected[0] ? 2 : 0) + (selected[1] ? 2 : 0) + (selected[2] ? 2 : 0) + (selected[3] ? 2 : 0) + (selected[4] ? 1 : 0) + (selected[5] ? 2 : 0) + (selected[6] ? 1 : 0) + (selected[7] ? 1 : 0);
+        int clearDirCount = (selected[0] ? 2 : 0) + (selected[1] ? 2 : 0) + (selected[2] ? 2 : 0) + (selected[3] ? 2 : 0) + (selected[4] ? 1 : 0) + (selected[5] ? 2 : 0) + (selected[6] ? 1 : 0) + (selected[7] ? 1 : 0) + (selected[8] ? 1 : 0);
         long time = System.currentTimeMillis();
         Utilities.Callback<Float> updateProgress = t -> {
             onProgress.run(clearDirI[0] / (float) clearDirCount + (1f / clearDirCount) * MathUtils.clamp(t, 0, 1), false);
@@ -1001,7 +1001,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 clearedSize += storiesSize;
             } else if (a == 6) {
                 type = 100;
-                clearedSize += stickersCacheSize + cacheEmojiSize;
+                clearedSize += stickersCacheSize;
             } else if (a == 7) {
                 clearedSize += cacheSize;
                 documentsMusicType = 5;
@@ -1088,7 +1088,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
         }
         final boolean imagesClearedFinal = imagesCleared;
-        totalSize = lastTotalSizeCalculated = cacheSize + cacheTempSize + videoSize + audioSize + photoSize + documentsSize + musicSize + stickersCacheSize;
+        totalSize = lastTotalSizeCalculated = cacheSize + cacheTempSize + videoSize + audioSize + photoSize + documentsSize + musicSize + stickersCacheSize + storiesSize;
         lastTotalSizeCalculatedTime = System.currentTimeMillis();
         Arrays.fill(selected, true);
 
@@ -1176,16 +1176,17 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             case 2: return documentsSize;
             case 3: return musicSize;
             case 4: return audioSize;
-            case 5: return stickersCacheSize;
-            case 6: return cacheSize;
-            case 7: return cacheTempSize;
+            case 5: return storiesSize;
+            case 6: return stickersCacheSize;
+            case 7: return cacheSize;
+            case 8: return cacheTempSize;
             default: return 0;
         }
     }
 
     private int sectionsSelected() {
         int count = 0;
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 9; ++i) {
             if (selected[i] && size(i) > 0) {
                 count++;
             }

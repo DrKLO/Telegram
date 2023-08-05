@@ -13,6 +13,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ReactedUserHolderView;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.UserCell;
@@ -174,6 +175,16 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.view = cell.avatarView;
                     holder.params = cell.params;
                     holder.avatarImage = cell.avatarView.getImageReceiver();
+                    holder.clipParent = (View) cell.getParent();
+                    updateClip(holder);
+                    return true;
+                }
+            } else if (child instanceof ProfileSearchCell) {
+                ProfileSearchCell cell = (ProfileSearchCell) child;
+                if (cell.getDialogId() == dialogId) {
+                    holder.view = cell;
+                    holder.params = cell.avatarStoryParams;
+                    holder.avatarImage = cell.avatarImage;
                     holder.clipParent = (View) cell.getParent();
                     updateClip(holder);
                     return true;

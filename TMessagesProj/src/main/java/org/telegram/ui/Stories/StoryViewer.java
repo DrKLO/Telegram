@@ -22,7 +22,6 @@ import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -38,6 +37,7 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 import androidx.viewpager.widget.ViewPager;
@@ -74,7 +74,6 @@ import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.TreeSet;
 
 public class StoryViewer {
 
@@ -203,6 +202,7 @@ public class StoryViewer {
     private boolean flingCalled;
     private boolean invalidateOutRect;
     private boolean isHintVisible;
+    private boolean isInTextSelectionMode;
     private boolean isOverlayVisible;
     Bitmap playerStubBitmap;
     public Paint playerStubPaint;
@@ -374,7 +374,7 @@ public class StoryViewer {
                         return false;
                     }
                     if (allowIntercept && peerView != null) {
-                        if (keyboardVisible || isCaption || isCaptionPartVisible || isHintVisible) {
+                        if (keyboardVisible || isCaption || isCaptionPartVisible || isHintVisible || isInTextSelectionMode) {
                             closeKeyboardOrEmoji();
                         } else {
                             boolean forward = e.getX() > containerView.getMeasuredWidth() * 0.33f;
@@ -758,6 +758,10 @@ public class StoryViewer {
                 @Override
                 public boolean dispatchTouchEvent(MotionEvent ev) {
                     boolean swipeToReplyCancelled = false;
+                    PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+                    if (peerStoriesView != null && peerStoriesView.checkTextSelectionEvent(ev)) {
+                        return true;
+                    }
                     if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
                         inSwipeToDissmissMode = false;
                         AndroidUtilities.cancelRunOnUIThread(longPressRunnable);
@@ -787,7 +791,6 @@ public class StoryViewer {
                     }
                     if (ev.getAction() == MotionEvent.ACTION_DOWN) {
                         swipeToReplyWaitingKeyboard = false;
-                        PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
                         if (peerStoriesView != null) {
                             peerStoriesView.onActionDown(ev);
                         }
@@ -812,14 +815,11 @@ public class StoryViewer {
                             override = true;
                         }
                     }
-                    if (selfStoriesViewsOffset == 0 && !inSwipeToDissmissMode && !isCaption && storiesViewPager.currentState != ViewPager.SCROLL_STATE_DRAGGING) {
-                        PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
-                        if (peerStoriesView != null) {
-                            AndroidUtilities.getViewPositionInParent(peerStoriesView.storyContainer, this, pointPosition);
-                            ev.offsetLocation(-pointPosition[0], -pointPosition[1]);
-                            storiesViewPager.getCurrentPeerView().checkPinchToZoom(ev);
-                            ev.offsetLocation(pointPosition[0], pointPosition[1]);
-                        }
+                    if (peerStoriesView != null && selfStoriesViewsOffset == 0 && !inSwipeToDissmissMode && !isCaption && storiesViewPager.currentState != ViewPager.SCROLL_STATE_DRAGGING) {
+                        AndroidUtilities.getViewPositionInParent(peerStoriesView.storyContainer, this, pointPosition);
+                        ev.offsetLocation(-pointPosition[0], -pointPosition[1]);
+                        storiesViewPager.getCurrentPeerView().checkPinchToZoom(ev);
+                        ev.offsetLocation(pointPosition[0], pointPosition[1]);
                     }
                     if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
                         lastX.clear();
@@ -859,7 +859,7 @@ public class StoryViewer {
                             delayedTapRunnable = () -> setInTouchMode(true);
                             AndroidUtilities.runOnUIThread(delayedTapRunnable, 150);
                         }
-                        if (allowIntercept && !keyboardVisible) {
+                        if (allowIntercept && !keyboardVisible && !isInTextSelectionMode) {
                             AndroidUtilities.runOnUIThread(longPressRunnable, 400);
                         }
                     } else if (ev.getAction() == MotionEvent.ACTION_MOVE) {
@@ -869,6 +869,9 @@ public class StoryViewer {
                             if (dy > dx && dy > AndroidUtilities.touchSlop * 2) {
                                 inSwipeToDissmissMode = true;
                                 PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
+                                if (peerView != null) {
+                                    peerView.cancelTextSelection();
+                                }
                                 allowSwipeToReply = !peerView.isSelf;
                                 allowSelfStoriesView = peerView.isSelf && !peerView.unsupported && peerView.currentStory.storyItem != null;
                                 if (allowSelfStoriesView) {
@@ -1314,6 +1317,12 @@ public class StoryViewer {
                 }
 
                 @Override
+                public void setIsInSelectionMode(boolean selectionMode) {
+                    StoryViewer.this.isInTextSelectionMode = selectionMode;
+                    updatePlayingMode();
+                }
+
+                @Override
                 public int getKeyboardHeight() {
                     return realKeyboardHeight;
                 }
@@ -1452,10 +1461,11 @@ public class StoryViewer {
     }
 
     private void showKeyboard() {
-        storiesViewPager.getCurrentPeerView().showKeyboard();
-        AndroidUtilities.runOnUIThread(() -> {
-            cancelSwipeToReply();
-        }, 200);
+        PeerStoriesView currentPeerView = storiesViewPager.getCurrentPeerView();
+        if (currentPeerView != null) {
+            currentPeerView.showKeyboard();
+        }
+        AndroidUtilities.runOnUIThread(this::cancelSwipeToReply, 200);
     }
 
     ValueAnimator swipeToViewsAnimator;
@@ -1469,7 +1479,10 @@ public class StoryViewer {
             swipeToViewsAnimator = ValueAnimator.ofFloat(selfStoriesViewsOffset, open ? selfStoryViewsView.maxSelfStoriesViewsOffset : 0);
             swipeToViewsAnimator.addUpdateListener(animation -> {
                 selfStoriesViewsOffset = (float) animation.getAnimatedValue();
-                storiesViewPager.getCurrentPeerView().invalidate();
+                final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+                if (peerStoriesView != null) {
+                    peerStoriesView.invalidate();
+                }
                 containerView.invalidate();
             });
             swipeToViewsAnimator.addListener(new AnimatorListenerAdapter() {
@@ -1477,7 +1490,10 @@ public class StoryViewer {
                 public void onAnimationEnd(Animator animation) {
                     locker.unlock();
                     selfStoriesViewsOffset = open ? selfStoryViewsView.maxSelfStoriesViewsOffset : 0;
-                    storiesViewPager.getCurrentPeerView().invalidate();
+                    final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+                    if (peerStoriesView != null) {
+                        peerStoriesView.invalidate();
+                    }
                     containerView.invalidate();
                     swipeToViewsAnimator = null;
                 }
@@ -1499,7 +1515,9 @@ public class StoryViewer {
             containerView.addView(selfStoryViewsView, 0);
         }
         PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
-        selfStoryViewsView.setItems(peerStoriesView.getStoryItems(), peerStoriesView.getSelectedPosition());
+        if (peerStoriesView != null) {
+            selfStoryViewsView.setItems(peerStoriesView.getStoryItems(), peerStoriesView.getSelectedPosition());
+        }
     }
 
     public void showDialog(Dialog dialog) {
@@ -1528,7 +1546,10 @@ public class StoryViewer {
                 swipeToReplyOffset = (float) animation.getAnimatedValue();
                 int maxOffset = AndroidUtilities.dp(200);
                 swipeToReplyProgress = Utilities.clamp(swipeToReplyOffset / maxOffset, 1f, 0);
-                storiesViewPager.getCurrentPeerView().invalidate();
+                PeerStoriesView peerView = storiesViewPager == null ? null : storiesViewPager.getCurrentPeerView();
+                if (peerView != null) {
+                    peerView.invalidate();
+                }
             });
             swipeToReplyBackAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -1536,7 +1557,10 @@ public class StoryViewer {
                     swipeToReplyBackAnimator = null;
                     swipeToReplyOffset = 0;
                     swipeToReplyProgress = 0;
-                    storiesViewPager.getCurrentPeerView().invalidate();
+                    PeerStoriesView peerView = storiesViewPager == null ? null : storiesViewPager.getCurrentPeerView();
+                    if (peerView != null) {
+                        peerView.invalidate();
+                    }
                 }
             });
             swipeToReplyBackAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
@@ -1564,6 +1588,7 @@ public class StoryViewer {
         return true;
     }
 
+    @Nullable
     public PeerStoriesView getCurrentPeerView() {
         if (storiesViewPager == null) {
             return null;
@@ -1604,8 +1629,10 @@ public class StoryViewer {
         for (int i = 0; i < preparedPlayers.size(); i++) {
             preparedPlayers.get(i).setAudioEnabled(!isInSilentMode, true);
         }
-        PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
-        peerStoriesView.sharedResources.setIconMuted(!soundEnabled(), true);
+        final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+        if (peerStoriesView != null) {
+            peerStoriesView.sharedResources.setIconMuted(!soundEnabled(), true);
+        }
     }
 
     private void checkInSilentMode() {
@@ -1626,7 +1653,7 @@ public class StoryViewer {
             transitionViewHolder.storyImage.setVisible(true, true);
         }
         if (storiesList != null) {
-            PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
+            final PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
             if (peerView != null) {
                 int position = peerView.getSelectedPosition();
                 if (position >= 0 && position < storiesList.messageObjects.size()) {
@@ -1656,7 +1683,7 @@ public class StoryViewer {
                 transitionViewHolder.storyImage.setAlpha(1f);
                 transitionViewHolder.storyImage.setVisible(true, true);
             }
-            PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
+            final PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
             int position = peerView == null ? 0 : peerView.getSelectedPosition();
             int storyId = peerView == null || position < 0 || position >= peerView.storyItems.size() ? 0 : peerView.storyItems.get(position).id;
             TLRPC.StoryItem storyItem = peerView == null || position < 0 || position >= peerView.storyItems.size() ? null : peerView.storyItems.get(position);
@@ -1759,7 +1786,7 @@ public class StoryViewer {
     }
 
     public boolean isPaused() {
-        return isPopupVisible || isBulletinVisible || isCaption || isWaiting || isInTouchMode || keyboardVisible || currentDialog != null || allowTouchesByViewpager || isClosed || isRecording || progressToOpen != 1f || selfStoriesViewsOffset != 0 || isHintVisible || (isSwiping && USE_SURFACE_VIEW) || isOverlayVisible;
+        return isPopupVisible || isBulletinVisible || isCaption || isWaiting || isInTouchMode || keyboardVisible || currentDialog != null || allowTouchesByViewpager || isClosed || isRecording || progressToOpen != 1f || selfStoriesViewsOffset != 0 || isHintVisible || (isSwiping && USE_SURFACE_VIEW) || isOverlayVisible || isInTextSelectionMode;
     }
 
     public void updatePlayingMode() {
@@ -1792,7 +1819,7 @@ public class StoryViewer {
         if (selfStoryViewsView != null && selfStoriesViewsOffset != 0) {
             return true;
         }
-        PeerStoriesView currentPeerView = storiesViewPager.getCurrentPeerView();
+        final PeerStoriesView currentPeerView = storiesViewPager.getCurrentPeerView();
         if (currentPeerView != null) {
             //fix view pager strange coordinates
             //just skip page.getX()
@@ -1818,7 +1845,7 @@ public class StoryViewer {
     }
 
     public boolean closeKeyboardOrEmoji() {
-        PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+        final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
         if (peerStoriesView != null) {
             return peerStoriesView.closeKeyboardOrEmoji();
         }
@@ -1835,7 +1862,7 @@ public class StoryViewer {
         if (progressToDismiss != newProgress) {
             progressToDismiss = newProgress;
             checkNavBarColor();
-            PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+            final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
             if (peerStoriesView != null) {
                 peerStoriesView.progressToDismissUpdated();
             }
@@ -1854,7 +1881,7 @@ public class StoryViewer {
         animationInProgress = true;
         fromDismissOffset = swipeToDismissOffset;
         if (transitionViewHolder.radialProgressUpload != null) {
-            PeerStoriesView peerStoriesView = getCurrentPeerView();
+            final PeerStoriesView peerStoriesView = getCurrentPeerView();
             if (peerStoriesView != null && peerStoriesView.headerView.radialProgress != null) {
                 peerStoriesView.headerView.radialProgress.copyParams(transitionViewHolder.radialProgressUpload);
             }
@@ -1888,7 +1915,7 @@ public class StoryViewer {
                     transitionViewHolder.storyImage.setAlpha(1f);
                     transitionViewHolder.storyImage.setVisible(true, true);
                 }
-                PeerStoriesView peerStoriesView = getCurrentPeerView();
+                final PeerStoriesView peerStoriesView = getCurrentPeerView();
                 if (peerStoriesView != null) {
                     peerStoriesView.updatePosition();
                 }
@@ -1989,7 +2016,7 @@ public class StoryViewer {
                         transitionViewHolder.storyImage.setVisible(true, true);
                     }
                     if (transitionViewHolder.radialProgressUpload != null) {
-                        PeerStoriesView peerStoriesView = getCurrentPeerView();
+                        final PeerStoriesView peerStoriesView = getCurrentPeerView();
                         if (peerStoriesView != null && peerStoriesView.headerView.radialProgress != null) {
                             transitionViewHolder.radialProgressUpload.copyParams(peerStoriesView.headerView.radialProgress);
                         }
@@ -2146,8 +2173,13 @@ public class StoryViewer {
         return containerView;
     }
 
+    @Nullable
     public FrameLayout getContainerForBulletin() {
-        return storiesViewPager.getCurrentPeerView().storyContainer;
+        final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+        if (peerStoriesView != null) {
+            return peerStoriesView.storyContainer;
+        }
+        return null;
     }
 
     public void startActivityForResult(Intent photoPickerIntent, int code) {
@@ -2159,7 +2191,9 @@ public class StoryViewer {
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         PeerStoriesView currentPeerView = storiesViewPager.getCurrentPeerView();
-        currentPeerView.onActivityResult(requestCode, resultCode, data);
+        if (currentPeerView != null) {
+            currentPeerView.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     public void dispatchKeyEvent(KeyEvent event) {
@@ -2193,7 +2227,10 @@ public class StoryViewer {
 
     public void setSelfStoriesViewsOffset(float currentTranslation) {
         selfStoriesViewsOffset = currentTranslation;
-        storiesViewPager.getCurrentPeerView().invalidate();
+        final PeerStoriesView peerStoriesView = storiesViewPager.getCurrentPeerView();
+        if (peerStoriesView != null) {
+            peerStoriesView.invalidate();
+        }
         containerView.invalidate();
     }
 
@@ -2415,7 +2452,7 @@ public class StoryViewer {
                         if (firstFrameRendered && playbackState == ExoPlayer.STATE_BUFFERING) {
                             logBuffering = true;
                             AndroidUtilities.runOnUIThread(() -> {
-                                PeerStoriesView storiesView = getCurrentPeerView();
+                                final PeerStoriesView storiesView = getCurrentPeerView();
                                 if (storiesView != null && storiesView.currentStory.storyItem != null) {
                                     FileLog.d("StoryViewer displayed story buffering dialogId=" + storiesView.getCurrentPeer() + " storyId=" + storiesView.currentStory.storyItem.id);
                                 }
@@ -2424,7 +2461,7 @@ public class StoryViewer {
                         if (logBuffering && playbackState == ExoPlayer.STATE_READY) {
                             logBuffering = false;
                             AndroidUtilities.runOnUIThread(() -> {
-                                PeerStoriesView storiesView = getCurrentPeerView();
+                                final PeerStoriesView storiesView = getCurrentPeerView();
                                 if (storiesView != null && storiesView.currentStory.storyItem != null) {
                                     FileLog.d("StoryViewer displayed story playing dialogId=" + storiesView.getCurrentPeer() + " storyId=" + storiesView.currentStory.storyItem.id);
                                 }
@@ -2516,6 +2553,10 @@ public class StoryViewer {
                 }
                 videoPlayer = null;
             });
+            if (playerStubBitmap != null) {
+                AndroidUtilities.recycleBitmap(playerStubBitmap);
+                playerStubBitmap = null;
+            }
             return true;
         }
 

@@ -5185,7 +5185,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             return;
         } else {
             messageEditText.setEnabled(true);
-            messageEditText.setInputType(commonInputType);
+            if (messageEditText.getInputType() != commonInputType) {
+                messageEditText.setInputType(commonInputType);
+            } else {
+
+            }
         }
         if (replyingMessageObject != null && replyingMessageObject.messageOwner.reply_markup != null && !TextUtils.isEmpty(replyingMessageObject.messageOwner.reply_markup.placeholder)) {
             messageEditText.setHintText(replyingMessageObject.messageOwner.reply_markup.placeholder, animated);

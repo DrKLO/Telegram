@@ -137,16 +137,16 @@ public class DownloadButton extends ImageView {
             toast.hide();
             toast = null;
         }
+        if (buildingVideo != null) {
+            buildingVideo.stop(true);
+            buildingVideo = null;
+        }
         if (prepare != null) {
             preparing = true;
             prepare.run(this::onClickInternal);
         }
         if (currentEntry.wouldBeVideo()) {
             downloadingVideo = true;
-            if (buildingVideo != null) {
-                buildingVideo.stop(true);
-                buildingVideo = null;
-            }
             toast = new PreparingVideoToast(getContext());
             toast.setOnCancelListener(() -> {
                 preparing = false;

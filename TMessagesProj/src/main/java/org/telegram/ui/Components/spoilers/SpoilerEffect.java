@@ -298,7 +298,6 @@ public class SpoilerEffect extends Drawable {
             int dt = (int) Math.min(curTime - lastDrawTime, renderDelayMs);
             boolean hasAnimator = false;
 
-
             lastDrawTime = curTime;
 
             int left = getBounds().left, top = getBounds().top, right = getBounds().right, bottom = getBounds().bottom;

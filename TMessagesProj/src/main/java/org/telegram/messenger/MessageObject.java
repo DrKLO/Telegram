@@ -1354,7 +1354,7 @@ public class MessageObject {
     }
 
     public void createStrippedThumb() {
-        if (photoThumbs == null || !canCreateStripedThubms() && !hasExtendedMediaPreview()) {
+        if (photoThumbs == null || !canCreateStripedThubms() && !hasExtendedMediaPreview() || strippedThumb != null) {
             return;
         }
         try {
@@ -4835,7 +4835,15 @@ public class MessageObject {
         }
         String text = messageOwner.message;
         ArrayList<TLRPC.MessageEntity> entities = messageOwner.entities;
-        if (hasExtendedMedia()) {
+        if (type == TYPE_STORY) {
+            if (messageOwner.media != null && messageOwner.media.storyItem != null) {
+                text = messageOwner.media.storyItem.caption;
+                entities = messageOwner.media.storyItem.entities;
+            } else {
+                text = "";
+                entities = new ArrayList<>();
+            }
+        } else if (hasExtendedMedia()) {
             text = messageOwner.message = messageOwner.media.description;
         }
         if (captionTranslated = translated) {
@@ -4844,7 +4852,7 @@ public class MessageObject {
         }
         if (!isMediaEmpty() && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) && !TextUtils.isEmpty(text)) {
             caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-            caption = replaceAnimatedEmoji(caption, Theme.chat_msgTextPaint.getFontMetricsInt());
+            caption = replaceAnimatedEmoji(caption, entities, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
 
             boolean hasEntities;
             if (messageOwner.send_state != MESSAGE_SEND_STATE_SENT) {

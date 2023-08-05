@@ -704,7 +704,6 @@ public class ContentPreviewViewer {
 
     public boolean onTouch(MotionEvent event, final RecyclerListView listView, final int height, final Object listener, ContentPreviewViewerDelegate contentPreviewViewerDelegate, Theme.ResourcesProvider resourcesProvider) {
         delegate = contentPreviewViewerDelegate;
-        this.resourcesProvider = resourcesProvider;
         if (delegate != null && !delegate.can()) {
             return false;
         }
@@ -908,7 +907,6 @@ public class ContentPreviewViewer {
 
     public boolean onInterceptTouchEvent(MotionEvent event, final RecyclerListView listView, final int height, ContentPreviewViewerDelegate contentPreviewViewerDelegate, Theme.ResourcesProvider resourcesProvider) {
         delegate = contentPreviewViewerDelegate;
-        this.resourcesProvider = resourcesProvider;
         if (delegate != null && !delegate.can()) {
             return false;
         }
@@ -1299,10 +1297,22 @@ public class ContentPreviewViewer {
         currentQuery = null;
         delegate = null;
         isVisible = false;
+        resourcesProvider = null;
         if (unlockPremiumView != null) {
             unlockPremiumView.animate().alpha(0).translationY(AndroidUtilities.dp(56)).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
         }
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 8);
+    }
+
+    public void clearDelegate(ContentPreviewViewerDelegate contentPreviewViewerDelegate) {
+        if (delegate == contentPreviewViewerDelegate) {
+            currentDocument = null;
+            currentStickerSet = null;
+            currentQuery = null;
+            delegate = null;
+            resourcesProvider = null;
+            reset();
+        }
     }
 
     public void destroy() {
@@ -1494,20 +1504,10 @@ public class ContentPreviewViewer {
         AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
             blurrBitmap = bitmap;
             preparingBitmap = false;
+            if (containerView != null) {
+                containerView.invalidate();
+            }
         }, 12);
-//        View parentView = parentActivity.getWindow().getDecorView();
-//        int w = (int) (parentView.getMeasuredWidth() / 12.0f);
-//        int h = (int) (parentView.getMeasuredHeight() / 12.0f);
-//        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-//        Canvas canvas = new Canvas(bitmap);
-//        canvas.scale(1.0f / 12.0f, 1.0f / 12.0f);
-//        canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-//        parentView.draw(canvas);
-//        if (parentActivity instanceof LaunchActivity && ((LaunchActivity) parentActivity).getActionBarLayout().getLastFragment().getVisibleDialog() != null) {
-//            ((LaunchActivity) parentActivity).getActionBarLayout().getLastFragment().getVisibleDialog().getWindow().getDecorView().draw(canvas);
-//        }
-//        Utilities.stackBlurBitmap(bitmap, Math.max(10, Math.max(w, h) / 180));
-//        blurrBitmap = bitmap;
     }
 
     public boolean showMenuFor(View view) {

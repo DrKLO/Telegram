@@ -216,9 +216,11 @@ public class SelfStoryViewsView extends FrameLayout {
         float alpha = Utilities.clamp(progressToOpen / 0.5f, 1f, 0);
       //  selfStoriesPreviewView.setAlpha(alpha);
 
-        PeerStoriesView currentView = storyViewer.getCurrentPeerView();
+        final PeerStoriesView currentView = storyViewer.getCurrentPeerView();
         if (oldProgressToOpen == 1f && progressToOpen != 1f) {
-            currentView.selectPosition(selfStoriesPreviewView.getClosestPosition());
+            if (currentView != null) {
+                currentView.selectPosition(selfStoriesPreviewView.getClosestPosition());
+            }
             selfStoriesPreviewView.abortScroll();
         }
         if (currentView != null) {

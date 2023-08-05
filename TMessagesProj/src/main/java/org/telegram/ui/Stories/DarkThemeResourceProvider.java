@@ -138,6 +138,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_outBubbleGradient1, 0);
         sparseIntArray.put(Theme.key_chat_outBubbleGradient2, 0);
         sparseIntArray.put(Theme.key_chat_outBubbleGradient3, 0);
+        sparseIntArray.put(Theme.key_chat_textSelectBackground, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.6f));
 
         appendColors();
         dividerPaint.setColor(getColor(Theme.key_divider));

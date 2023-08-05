@@ -30,6 +30,7 @@ public class PremiumLockIconView extends ImageView {
     StarParticlesView.Drawable starParticles;
     private boolean locked;
     private Theme.ResourcesProvider resourcesProvider;
+    boolean attachedToWindow;
 
     public PremiumLockIconView(Context context, int type) {
         this(context, type, null);
@@ -165,6 +166,9 @@ public class PremiumLockIconView extends ImageView {
     }
 
     private void updateGradient() {
+        if (!attachedToWindow) {
+            return;
+        }
         if (getMeasuredHeight() != 0 && getMeasuredWidth() != 0) {
             int c1 = currentColor;
             int c2;
@@ -190,6 +194,27 @@ public class PremiumLockIconView extends ImageView {
                 invalidate();
             }
         }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        attachedToWindow = true;
+        if (type != TYPE_REACTIONS) {
+            updateGradient();
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        attachedToWindow = false;
+        if (paint != null) {
+            paint.setShader(null);
+            paint = null;
+        }
+        shader = null;
+        wasDrawn = false;
     }
 
     public void setWaitingImage() {

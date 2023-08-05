@@ -45,14 +45,14 @@ public class CacheChart extends View {
     private RectF chartBounds = new RectF();
     private RectF chartInnerBounds = new RectF();
 
-    private static final int DEFAULT_SECTIONS_COUNT = 9;
+    private static final int DEFAULT_SECTIONS_COUNT = 10;
     private static final int[] DEFAULT_COLORS = new int[] {
         Theme.key_statisticChartLine_lightblue,
         Theme.key_statisticChartLine_blue,
         Theme.key_statisticChartLine_green,
-        Theme.key_statisticChartLine_red,
+        Theme.key_statisticChartLine_purple,
         Theme.key_statisticChartLine_lightgreen,
-        Theme.key_statisticChartLine_indigo,
+        Theme.key_statisticChartLine_red,
         Theme.key_statisticChartLine_orange,
         Theme.key_statisticChartLine_cyan,
         Theme.key_statisticChartLine_purple,
@@ -65,7 +65,7 @@ public class CacheChart extends View {
         R.raw.cache_documents,
         R.raw.cache_music,
         R.raw.cache_videos,
-        R.raw.cache_other,
+        R.raw.cache_music,
         R.raw.cache_stickers,
         R.raw.cache_profile_photos,
         R.raw.cache_other,
@@ -705,7 +705,7 @@ public class CacheChart extends View {
             k++;
         }
 
-        String[] fileSize = AndroidUtilities.formatFileSize(segmentsSum).split(" ");
+        String[] fileSize = AndroidUtilities.formatFileSize(segmentsSum, true, true).split(" ");
         String top = fileSize.length > 0 ? fileSize[0] : "";
         if (top.length() >= 4 && segmentsSum < 1024L * 1024L * 1024L) {
             top = top.split("\\.")[0];

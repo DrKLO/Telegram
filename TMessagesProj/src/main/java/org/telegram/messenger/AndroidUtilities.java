@@ -174,6 +174,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.IDN;
@@ -246,9 +247,6 @@ public class AndroidUtilities {
     private static Boolean isTablet = null, wasTablet = null, isSmallScreen = null;
     private static int adjustOwnerClassGuid = 0;
     private static int altFocusableClassGuid = 0;
-
-    private static Paint roundPaint;
-    private static RectF bitmapRect;
 
     public static final RectF rectTmp = new RectF();
     public static final Rect rectTmp2 = new Rect();
@@ -513,9 +511,17 @@ public class AndroidUtilities {
             return;
         }
         if (bitmapToRecycle != null && !bitmapToRecycle.isEmpty()) {
+            ArrayList<WeakReference<Bitmap>> bitmapsToRecycleRef = new ArrayList<>();
+            for (int i = 0; i < bitmapToRecycle.size(); i++) {
+                Bitmap bitmap = bitmapToRecycle.get(i);
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    bitmapsToRecycleRef.add(new WeakReference<>(bitmap));
+                }
+            }
             AndroidUtilities.runOnUIThread(() -> Utilities.globalQueue.postRunnable(() -> {
-                for (int i = 0; i < bitmapToRecycle.size(); i++) {
-                    Bitmap bitmap = bitmapToRecycle.get(i);
+                for (int i = 0; i < bitmapsToRecycleRef.size(); i++) {
+                    Bitmap bitmap = bitmapsToRecycleRef.get(i).get();
+                    bitmapsToRecycleRef.get(i).clear();
                     if (bitmap != null && !bitmap.isRecycled()) {
                         try {
                             bitmap.recycle();
@@ -3202,10 +3208,10 @@ public class AndroidUtilities {
     }
 
     public static String formatFileSize(long size) {
-        return formatFileSize(size, false);
+        return formatFileSize(size, false, false);
     }
 
-    public static String formatFileSize(long size, boolean removeZero) {
+    public static String formatFileSize(long size, boolean removeZero, boolean makeShort) {
         if (size == 0) {
             return String.format("%d KB", 0);
         } else if (size < 1024) {
@@ -3228,6 +3234,8 @@ public class AndroidUtilities {
             float value = (int) (size / 1024L / 1024L) / 1000.0f;
             if (removeZero && (value - (int) value) * 10 == 0) {
                 return String.format("%d GB", (int) value);
+            } else if (makeShort) {
+                return String.format("%.1f GB", value);
             } else {
                 return String.format("%.2f GB", value);
             }
@@ -5370,10 +5378,12 @@ public class AndroidUtilities {
             System.gc();
             clone = ByteBuffer.allocate(original.capacity());
         }
+        int position = original.position();
         original.rewind();
         clone.put(original);
         original.rewind();
         clone.flip();
+        clone.position(position);
         return clone;
     }
 }

@@ -2090,9 +2090,9 @@ public class MediaDataController extends BaseController {
     }
 
     public static long calcHash(long hash, long id) {
-        hash ^= id >> 21;
-        hash ^= id << 35;
-        hash ^= id >> 4;
+        hash ^= hash >> 21;
+        hash ^= hash << 35;
+        hash ^= hash >> 4;
         return hash + id;
     }
 

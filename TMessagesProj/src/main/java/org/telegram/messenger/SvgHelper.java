@@ -43,6 +43,8 @@ import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
@@ -109,19 +111,19 @@ public class SvgHelper {
         private Paint backgroundPaint;
         protected int width;
         protected int height;
-        private static int[] parentPosition = new int[2];
+        private static final int[] parentPosition = new int[2];
 
-        private Bitmap[] backgroundBitmap = new Bitmap[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-        private Canvas[] backgroundCanvas = new Canvas[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-        private LinearGradient[] placeholderGradient = new LinearGradient[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
-        private Matrix[] placeholderMatrix = new Matrix[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final Bitmap[] backgroundBitmap = new Bitmap[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final Canvas[] backgroundCanvas = new Canvas[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final LinearGradient[] placeholderGradient = new LinearGradient[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
+        private final Matrix[] placeholderMatrix = new Matrix[1 + DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         private static float totalTranslation;
         private static float gradientWidth;
         private static long lastUpdateTime;
         private static Runnable shiftRunnable;
         private static WeakReference<Drawable> shiftDrawable;
         private ImageReceiver parentImageReceiver;
-        private int[] currentColor = new int[2];
+        private final int[] currentColor = new int[2];
         private int currentColorKey;
         private Integer overrideColor;
         private Theme.ResourcesProvider currentResourcesProvider;
@@ -441,6 +443,7 @@ public class SvgHelper {
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, color, false, scale);
+           ///handler.alphaOnly = true;
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();
@@ -456,6 +459,9 @@ public class SvgHelper {
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
             SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
+            if (!white) {
+                handler.alphaOnly = true;
+            }
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();
@@ -1116,6 +1122,7 @@ public class SvgHelper {
         boolean pushed = false;
 
         private HashMap<String, StyleSet> globalStyles = new HashMap<>();
+        private boolean alphaOnly;
 
         private SVGHandler(int dw, int dh, Integer color, boolean asDrawable, float scale) {
             globalScale = scale;
@@ -1275,7 +1282,7 @@ public class SvgHelper {
                         height *= scale;
                     }
                     if (drawable == null) {
-                        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                        bitmap = Bitmap.createBitmap(width, height, alphaOnly ? Bitmap.Config.ALPHA_8 : Bitmap.Config.ARGB_8888);
                         bitmap.eraseColor(0);
                         canvas = new Canvas(bitmap);
                         if (scale != 0) {

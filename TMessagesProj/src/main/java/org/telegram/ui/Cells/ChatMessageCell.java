@@ -84,6 +84,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatMessageSharedResources;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -1287,6 +1288,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private Theme.ResourcesProvider resourcesProvider;
     private final boolean canDrawBackgroundInParent;
+    private ChatMessageSharedResources sharedResources;
 
     // Public for enter transition
     public List<SpoilerEffect> replySpoilers = new ArrayList<>();
@@ -1298,13 +1300,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public boolean isBlurred;
 
     public ChatMessageCell(Context context) {
-        this(context, false, null);
+        this(context, false, null, null);
     }
 
-    public ChatMessageCell(Context context, boolean canDrawBackgroundInParent, Theme.ResourcesProvider resourcesProvider) {
+    public ChatMessageCell(Context context, boolean canDrawBackgroundInParent, ChatMessageSharedResources sharedResources, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
         this.canDrawBackgroundInParent = canDrawBackgroundInParent;
+        this.sharedResources = sharedResources;
+        if (this.sharedResources == null) {
+            this.sharedResources = new ChatMessageSharedResources(context);
+        }
 
         backgroundDrawable = new MessageBackgroundDrawable(this);
         avatarImage = new ImageReceiver();
@@ -10293,13 +10299,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
         if (currentMessageObject.type == MessageObject.TYPE_GEO && !(MessageObject.getMedia(currentMessageObject.messageOwner) instanceof TLRPC.TL_messageMediaGeoLive) && currentMapProvider == 2 && photoImage.hasNotThumb()) {
-            int w = (int) (Theme.chat_redLocationIcon.getIntrinsicWidth() * 0.8f);
-            int h = (int) (Theme.chat_redLocationIcon.getIntrinsicHeight() * 0.8f);
+            Drawable redLocationIcon = sharedResources.getRedLocationIcon();
+            int w = (int) (redLocationIcon.getIntrinsicWidth() * 0.8f);
+            int h = (int) (redLocationIcon.getIntrinsicHeight() * 0.8f);
             int x = (int) (photoImage.getImageX() + (photoImage.getImageWidth() - w) / 2);
             int y = (int) (photoImage.getImageY() + (photoImage.getImageHeight() / 2 - h) - AndroidUtilities.dp(16) * (1f - CubicBezierInterpolator.EASE_OUT_BACK.getInterpolation(photoImage.getCurrentAlpha())));
-            Theme.chat_redLocationIcon.setAlpha((int) (255 * Math.min(1, photoImage.getCurrentAlpha() * 5)));
-            Theme.chat_redLocationIcon.setBounds(x, y, x + w, y + h);
-            Theme.chat_redLocationIcon.draw(canvas);
+            redLocationIcon.setAlpha((int) (255 * Math.min(1, photoImage.getCurrentAlpha() * 5)));
+            redLocationIcon.setBounds(x, y, x + w, y + h);
+            redLocationIcon.draw(canvas);
             if (photoImage.getCurrentAlpha() < 1) {
                 invalidate();
             }
@@ -17192,9 +17199,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         int cx = (int) (photoImage.getImageX() + photoImage.getImageWidth() / 2 - AndroidUtilities.dp(31));
                         cy = (int) (photoImage.getImageY() + photoImage.getImageHeight() / 2 - AndroidUtilities.dp(38) - AndroidUtilities.dp(16) * (1f - CubicBezierInterpolator.EASE_OUT_BACK.getInterpolation(progress)));
 
-                        setDrawableBounds(Theme.chat_msgAvatarLiveLocationDrawable, cx, cy);
-                        Theme.chat_msgAvatarLiveLocationDrawable.setAlpha((int) (255 * Math.min(1, progress * 5)));
-                        Theme.chat_msgAvatarLiveLocationDrawable.draw(canvas);
+                        Drawable msgAvatarLiveLocation = sharedResources.getAvatarLiveLocation();
+                        setDrawableBounds(msgAvatarLiveLocation, cx, cy);
+                        msgAvatarLiveLocation.setAlpha((int) (255 * Math.min(1, progress * 5)));
+                        msgAvatarLiveLocation.draw(canvas);
 
                         locationImageReceiver.setImageCoords(cx + AndroidUtilities.dp(5.0f), cy + AndroidUtilities.dp(5.0f), AndroidUtilities.dp(52), AndroidUtilities.dp(52));
                         locationImageReceiver.setAlpha(Math.min(1, progress * 5));

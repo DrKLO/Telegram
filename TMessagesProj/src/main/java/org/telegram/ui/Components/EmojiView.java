@@ -5738,6 +5738,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         if (colorPickerView != null && colorPickerView.isShowing()) {
             colorPickerView.dismiss();
         }
+        ContentPreviewViewer.getInstance().clearDelegate(contentPreviewViewerDelegate);
     }
 
     private void checkDocuments(boolean isGif) {

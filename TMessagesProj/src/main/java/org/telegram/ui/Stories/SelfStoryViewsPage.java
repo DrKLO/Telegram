@@ -70,7 +70,6 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
-        addView(titleView);
 
         recyclerListView = new RecyclerListView(context) {
             @Override
@@ -109,15 +108,18 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
         View shadowView2 = new View(getContext());
         shadowView2.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
-        addView(shadowView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8, 0, 0, TOP_PADDING - 16, 0, 0));
+        addView(shadowView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 10, 0, 0, TOP_PADDING - 17, 0, 0));
 
+        addView(titleView);
     }
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         if (child == recyclerListView) {
+            canvas.save();
             canvas.clipRect(0, AndroidUtilities.dp(TOP_PADDING), getMeasuredWidth(), getMeasuredHeight());
             super.drawChild(canvas, child, drawingTime);
+            canvas.restore();
             return true;
         }
         return super.drawChild(canvas, child, drawingTime);

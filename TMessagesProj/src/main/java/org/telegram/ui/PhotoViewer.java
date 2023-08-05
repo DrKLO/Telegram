@@ -186,6 +186,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.PhotoPickerPhotoCell;
+import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -297,6 +298,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private PhotoViewerActionBarContainer actionBarContainer;
     private PhotoCountView countView;
     public boolean closePhotoAfterSelect = true;
+    private TextSelectionHelper.SimpleTextSelectionHelper textSelectionHelper;
 
     private static class PhotoViewerActionBarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -4465,6 +4467,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             };
 
             @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (textSelectionHelper.isInSelectionMode()) {
+                     textSelectionHelper.getOverlayView(getContext()).checkCancelAction(ev);
+
+                    if (textSelectionHelper.getOverlayView(getContext()).onTouchEvent(ev)) {
+                        return true;
+                    }
+                    return true;
+                }
+                return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
             protected void onAttachedToWindow() {
                 super.onAttachedToWindow();
 
@@ -4476,6 +4491,22 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 super.onDetachedFromWindow();
 
                 Bulletin.removeDelegate(this);
+            }
+
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                View overlay = textSelectionHelper.getOverlayView(windowView.getContext());
+                if (child == overlay) {
+                    return false;
+                }
+                return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                View overlay = textSelectionHelper.getOverlayView(windowView.getContext());
+                overlay.draw(canvas);
             }
         };
         containerView.setFocusable(false);
@@ -6129,7 +6160,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return false;
         });
 
-
         captionLimitView = new TextView(parentActivity);
         captionLimitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         captionLimitView.setTextColor(0xffEC7777);
@@ -7025,6 +7055,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         doneButtonFullWidth.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
         doneButtonFullWidth.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+
+        textSelectionHelper = new TextSelectionHelper.SimpleTextSelectionHelper(null, resourcesProvider);
+        textSelectionHelper.useMovingOffset = false;
+        View overlay = textSelectionHelper.getOverlayView(windowView.getContext());
+        if (overlay != null) {
+            AndroidUtilities.removeFromParent(overlay);
+            containerView.addView(overlay);
+        }
+        textSelectionHelper.setParentView(containerView);
+        textSelectionHelper.setInvalidateParent();
     }
 
     public void showCaptionLimitBulletin(FrameLayout view) {
@@ -7388,7 +7428,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private TextView createCaptionTextView() {
-        TextView textView = new SpoilersTextView(activityContext) {
+        SpoilersTextView textView = new SpoilersTextView(activityContext) {
 
             private LinkSpanDrawable<ClickableSpan> pressedLink;
             private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
@@ -7397,6 +7437,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             public boolean onTouchEvent(MotionEvent event) {
                 if (getLayout() == null) {
                     return false;
+                }
+                if (textSelectionHelper != null && getStaticTextLayout() != null) {
+                    textSelectionHelper.setSelectabeleView(this);
+                    textSelectionHelper.update(getPaddingLeft(), getPaddingTop());
+                    textSelectionHelper.onTouchEvent(event);
                 }
                 boolean linkResult = false;
                 if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
@@ -7452,6 +7497,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return bottomTouchEnabled && b;
             }
 
+
             @Override
             public void setPressed(boolean pressed) {
                 final boolean needsRefresh = pressed != isPressed();
@@ -7465,6 +7511,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             
             @Override
             protected void onDraw(Canvas canvas) {
+                if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
+                    canvas.save();
+                    canvas.translate(getPaddingLeft(), getPaddingTop());
+                    if (textSelectionHelper != null && getStaticTextLayout() != null && textSelectionHelper.isCurrent(this)) {
+                        textSelectionHelper.draw(canvas);
+                    }
+                    canvas.restore();
+                }
+
                 canvas.save();
                 canvas.translate(getPaddingLeft(), 0);
                 if (links.draw(canvas)) {
@@ -7504,6 +7559,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 canvas.restore();
             }
         };
+
         ViewHelper.setPadding(textView, 16, 8, 16, 8);
         textView.setLinkTextColor(0xff79c4fc);
         textView.setTextColor(0xffffffff);
